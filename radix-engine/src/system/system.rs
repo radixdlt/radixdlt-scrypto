@@ -18,6 +18,7 @@ use crate::system::system_callback::{
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
+use crate::system::system_modules::transaction_runtime::Event;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
@@ -2530,11 +2531,14 @@ where
             )),
         }?;
 
+        let event = Event {
+            type_identifier: event_type_identifier,
+            payload: event_data,
+            discard_on_failure: true,
+        };
+
         // Adding the event to the event store
-        self.api
-            .kernel_get_system()
-            .modules
-            .add_event(event_type_identifier, event_data)?;
+        self.api.kernel_get_system().modules.add_event(event)?;
 
         Ok(())
     }

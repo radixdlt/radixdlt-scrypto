@@ -20,7 +20,7 @@ use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
-use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
+use crate::system::system_modules::transaction_runtime::{Event, TransactionRuntimeModule};
 use crate::track::interface::StoreCommit;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
@@ -398,11 +398,7 @@ impl SystemModuleMixer {
         Ok(())
     }
 
-    pub fn add_event(
-        &mut self,
-        identifier: EventTypeIdentifier,
-        data: Vec<u8>,
-    ) -> Result<(), RuntimeError> {
+    pub fn add_event(&mut self, event: Event) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
             if self.transaction_runtime.events.len() >= self.limits.config().max_number_of_events {
                 return Err(RuntimeError::SystemModuleError(
@@ -411,11 +407,11 @@ impl SystemModuleMixer {
                     ),
                 ));
             }
-            if data.len() > self.limits.config().max_event_size {
+            if event.payload.len() > self.limits.config().max_event_size {
                 return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::TransactionLimitsError(
                         TransactionLimitsError::EventSizeTooLarge {
-                            actual: data.len(),
+                            actual: event.payload.len(),
                             max: self.limits.config().max_event_size,
                         },
                     ),
@@ -427,7 +423,7 @@ impl SystemModuleMixer {
             .enabled_modules
             .contains(EnabledModules::TRANSACTION_RUNTIME)
         {
-            self.transaction_runtime.add_event(identifier, data)
+            self.transaction_runtime.add_event(event)
         }
 
         Ok(())

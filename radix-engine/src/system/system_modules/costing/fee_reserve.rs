@@ -431,7 +431,9 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             fee_summary.total_execution_cost_xrd
                 + fee_summary.total_tipping_cost_xrd
                 + fee_summary.total_state_expansion_cost_xrd,
-            fee_summary.fees_to_distribute() + fee_summary.tips_to_distribute()
+            fee_summary.to_proposer_amount()
+                + fee_summary.to_validator_set_amount()
+                + fee_summary.to_burn_amount()
         );
         fee_summary
     }

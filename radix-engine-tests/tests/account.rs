@@ -95,7 +95,7 @@ where
     );
 
     // Assert
-    let other_account_balance: Decimal = test_runner.account_balance(other_account, XRD).unwrap();
+    let other_account_balance: Decimal = test_runner.get_component_balance(other_account, XRD);
     let transfer_amount = other_account_balance - 10000 /* initial balance */;
 
     assert_eq!(

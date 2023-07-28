@@ -1,4 +1,5 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
+use crate::blueprints::resource::BurnFungibleResourceEvent;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
@@ -16,7 +17,10 @@ use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use radix_engine_common::constants::*;
-use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::api::{LockFlags, ObjectModuleId};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
@@ -294,11 +298,55 @@ where
                             );
                         }
 
-                        // Finalize everything
-                        let (application_events, application_logs) =
+                        // Finalize events and logs
+                        let (mut application_events, application_logs) =
                             runtime_module.finalize(is_success);
+                        /*
+                            Emit XRD burn event, ignoring costing and limits.
+                            Otherwise, we won't be able to commit failed transactions.
+                            May also cache the information for better performance.
+                        */
+                        let handle = track
+                            .open_substate(
+                                RESOURCE_PACKAGE.as_node_id(),
+                                MAIN_BASE_PARTITION
+                                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                                    .unwrap(),
+                                &SubstateKey::Map(
+                                    scrypto_encode(&BlueprintVersionKey::new_default(
+                                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                                    ))
+                                    .unwrap(),
+                                ),
+                                LockFlags::read_only(),
+                                &mut |_| -> Result<(), ()> { Ok(()) },
+                            )
+                            .unwrap();
+                        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
+                            track.read_substate(handle).as_typed().unwrap();
+                        track.close_substate(handle);
+                        let type_pointer = substate
+                            .value
+                            .unwrap()
+                            .interface
+                            .get_event_type_pointer("BurnFungibleResourceEvent")
+                            .unwrap();
+                        application_events.push((
+                            EventTypeIdentifier(
+                                Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
+                                type_pointer,
+                            ),
+                            scrypto_encode(&BurnFungibleResourceEvent {
+                                amount: fee_summary.to_burn_amount(),
+                            })
+                            .unwrap(),
+                        ));
+
+                        // Finalize execution trace
                         let execution_trace =
                             execution_trace_module.finalize(&fee_payments, is_success);
+
+                        // Finalize track
                         let (tracked_nodes, deleted_partitions) = track.finalize();
                         let state_update_summary =
                             StateUpdateSummary::new(self.substate_db, &tracked_nodes);
@@ -506,16 +554,12 @@ where
             .and_then(|x| {
                 let info = track.get_commit_info();
                 for commit in &info {
-                    if let Err(e) = system.modules.apply_execution_cost(CostingEntry::Commit {
+                    system.modules.apply_execution_cost(CostingEntry::Commit {
                         store_commit: commit,
-                    }) {
-                        return Err(e);
-                    }
+                    })?;
                 }
                 for commit in &info {
-                    if let Err(e) = system.modules.apply_state_expansion_cost(commit) {
-                        return Err(e);
-                    }
+                    system.modules.apply_state_expansion_cost(commit)?;
                 }
 
                 Ok(x)
@@ -672,8 +716,9 @@ where
             required -= amount;
         }
 
-        let tips_to_distribute = fee_summary.tips_to_distribute();
-        let fees_to_distribute = fee_summary.fees_to_distribute();
+        let to_proposer = fee_summary.to_proposer_amount();
+        let to_validator_set = fee_summary.to_validator_set_amount();
+        let to_burn = fee_summary.to_burn_amount();
 
         // Sanity checks
         assert!(
@@ -687,15 +732,14 @@ where
             required
         );
         let remaining_collected_fees = collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */;
-        let to_distribute = tips_to_distribute + fees_to_distribute;
         assert!(
-            to_distribute == remaining_collected_fees,
-            "Remaining collected fee isn't equal to amount to distribute: {} != {}",
+            remaining_collected_fees  == to_proposer + to_validator_set + to_burn,
+            "Remaining collected fee isn't equal to amount to distribute (proposer/validator set/burn): {} != {}",
             remaining_collected_fees,
-            to_distribute,
+            to_proposer + to_validator_set + to_burn,
         );
 
-        if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {
+        if !to_proposer.is_zero() || !to_validator_set.is_zero() {
             // Fetch current leader
             // TODO: maybe we should move current leader into validator rewards?
             let handle = track
@@ -724,23 +768,16 @@ where
                 .unwrap();
             let mut substate: FieldSubstate<ValidatorRewardsSubstate> =
                 track.read_substate(handle).as_typed().unwrap();
-            let proposer_rewards = if let Some(current_leader) = current_leader {
-                let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
-                    + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
+            if let Some(current_leader) = current_leader {
                 substate
                     .value
                     .0
                     .proposer_rewards
                     .entry(current_leader)
                     .or_default()
-                    .add_assign(rewards);
-                rewards
+                    .add_assign(to_proposer);
             } else {
-                Decimal::ZERO
-            };
-            let validator_set_rewards = {
-                tips_to_distribute * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
-                    + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+                // If there is no current leader, the rewards go to the pool
             };
             let vault_node_id = substate.value.0.rewards_vault.0 .0;
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
@@ -760,7 +797,7 @@ where
                 track.read_substate(handle).as_typed().unwrap();
             substate.value.0.put(
                 collected_fees
-                    .take_by_amount(proposer_rewards + validator_set_rewards)
+                    .take_by_amount(to_proposer + to_validator_set)
                     .unwrap(),
             );
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));

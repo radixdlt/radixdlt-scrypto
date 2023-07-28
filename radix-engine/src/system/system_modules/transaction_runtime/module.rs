@@ -5,11 +5,18 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 
 #[derive(Debug, Clone)]
+pub struct Event {
+    pub type_identifier: EventTypeIdentifier,
+    pub payload: Vec<u8>,
+    pub discard_on_failure: bool,
+}
+
+#[derive(Debug, Clone)]
 pub struct TransactionRuntimeModule {
     pub tx_hash: Hash,
     pub next_id: u32,
     pub logs: Vec<(Level, String)>,
-    pub events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+    pub events: Vec<Event>,
     pub replacements: IndexMap<(NodeId, ObjectModuleId), (NodeId, ObjectModuleId)>,
 }
 
@@ -32,8 +39,8 @@ impl TransactionRuntimeModule {
         self.logs.push((level, message))
     }
 
-    pub fn add_event(&mut self, identifier: EventTypeIdentifier, data: Vec<u8>) {
-        self.events.push((identifier, data))
+    pub fn add_event(&mut self, event: Event) {
+        self.events.push(event)
     }
 
     pub fn add_replacement(
@@ -53,14 +60,21 @@ impl TransactionRuntimeModule {
         self,
         is_success: bool,
     ) -> (Vec<(EventTypeIdentifier, Vec<u8>)>, Vec<(Level, String)>) {
-        if !is_success {
-            return (Vec::new(), self.logs);
-        }
+        let mut results = Vec::new();
 
-        let mut events = self.events;
-        for (event_identifier, _) in events.iter_mut() {
+        for Event {
+            mut type_identifier,
+            payload,
+            discard_on_failure,
+        } in self.events.into_iter()
+        {
+            // Revert if failure
+            if discard_on_failure && !is_success {
+                continue;
+            }
+
             // Apply replacements
-            let (node_id, module_id) = match event_identifier {
+            let (node_id, module_id) = match &mut type_identifier {
                 EventTypeIdentifier(Emitter::Method(node_id, module_id), _) => (node_id, module_id),
                 EventTypeIdentifier(Emitter::Function(node_id, module_id, _), _) => {
                     (node_id, module_id)
@@ -72,9 +86,12 @@ impl TransactionRuntimeModule {
                 *node_id = *new_node_id;
                 *module_id = *new_module_id;
             }
+
+            // Add to results
+            results.push((type_identifier, payload))
         }
 
-        (events, self.logs)
+        (results, self.logs)
     }
 }
 
