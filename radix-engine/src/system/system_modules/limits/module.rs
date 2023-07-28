@@ -65,7 +65,6 @@ impl LimitsModule {
             StoreAccess::NewEntryInTrack => {
                 self.number_of_substates_in_track += 1;
             }
-            StoreAccess::ReadFromHeap => (),
         }
 
         if self.number_of_substates_in_track > self.config.max_number_of_substates_in_track {

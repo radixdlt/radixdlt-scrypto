@@ -238,7 +238,10 @@ impl FeeTable {
                     .map(|x| x.values().map(|x| x.len()).sum::<usize>())
                     .sum::<usize>();
 
-                add(base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(total_substate_size))
+                add(
+                    base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                    Self::data_processing_cost(total_substate_size),
+                )
             }
             CreateNodeEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
             CreateNodeEvent::End(..) => 0,
@@ -254,7 +257,10 @@ impl FeeTable {
                     .values()
                     .map(|x| x.values().map(|x| x.len()).sum::<usize>())
                     .sum::<usize>();
-                add(45537u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(total_substate_size))
+                add(
+                    45537u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                    Self::data_processing_cost(total_substate_size),
+                )
             }
         }
     }
@@ -262,9 +268,10 @@ impl FeeTable {
     #[inline]
     pub fn move_module_cost(&self, event: &MoveModuleEvent) -> u32 {
         match event {
-            MoveModuleEvent::StoreAccess(store_access) => 
-                add( 3094u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-                self.store_access_cost(store_access)),
+            MoveModuleEvent::StoreAccess(store_access) => add(
+                3094u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                self.store_access_cost(store_access),
+            ),
         }
     }
 
@@ -302,7 +309,10 @@ impl FeeTable {
                 } else {
                     0
                 };
-                add(base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(*size))
+                add(
+                    base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                    Self::data_processing_cost(*size),
+                )
             }
         }
     }
@@ -310,18 +320,16 @@ impl FeeTable {
     #[inline]
     pub fn read_substate_cost(&self, event: &ReadSubstateEvent) -> u32 {
         match event {
-            ReadSubstateEvent::End { value, .. } => {
-                // let base_cost: u32 = if store_access
-                //     .iter()
-                //     .find(|e| *e == &StoreAccess::ReadFromHeap)
-                //     .is_some()
-                // {
-                //     5851
-                // } else {
-                //     11805
-                // };
-                
-                add(500, Self::data_processing_cost(value.len()))
+            ReadSubstateEvent::End {
+                value,
+                read_from_heap,
+                ..
+            } => {
+                let base_cost: u32 = if *read_from_heap { 5851 } else { 11805 };
+                add(
+                    base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                    Self::data_processing_cost(value.len()),
+                )
             }
         }
     }
@@ -329,9 +337,10 @@ impl FeeTable {
     #[inline]
     pub fn write_substate_cost(&self, event: &WriteSubstateEvent) -> u32 {
         match event {
-            WriteSubstateEvent::Start { value, .. } => {
-                add(4510u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(value.len()))
-            }
+            WriteSubstateEvent::Start { value, .. } => add(
+                4510u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                Self::data_processing_cost(value.len()),
+            ),
         }
     }
 
@@ -346,7 +355,10 @@ impl FeeTable {
     #[inline]
     pub fn set_substate_cost(&self, event: &SetSubstateEvent) -> u32 {
         match event {
-            SetSubstateEvent::Start(value) => add(4733u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(value.len())),
+            SetSubstateEvent::Start(value) => add(
+                4733u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                Self::data_processing_cost(value.len()),
+            ),
             SetSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
     }
@@ -405,9 +417,6 @@ impl FeeTable {
             }
             StoreAccess::NewEntryInTrack => {
                 // The max number of entries is limited by limits module.
-                0
-            }
-            StoreAccess::ReadFromHeap => {
                 0
             }
         }

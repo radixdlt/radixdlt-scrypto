@@ -744,7 +744,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         heap: &'f Heap,
         store: &'f mut S,
         lock_handle: LockHandle,
-    ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
+    ) -> Result<(&'f IndexedScryptoValue, bool), ReadSubstateError> {
         let SubstateLock {
             node_id,
             partition_num,
@@ -756,14 +756,16 @@ impl<C, L: Clone> CallFrame<C, L> {
             .get(&lock_handle)
             .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
 
+        let mut read_from_heap = false;
         let substate = if let Some(store_handle) = store_handle {
             store.read_substate(*store_handle)
         } else {
+            read_from_heap = true;
             heap.get_substate(node_id, *partition_num, substate_key)
                 .expect("Substate missing in heap")
         };
 
-        Ok(substate)
+        Ok((substate, read_from_heap))
     }
 
     pub fn write_substate<'f, S: SubstateStore>(

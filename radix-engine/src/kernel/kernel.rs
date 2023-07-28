@@ -766,7 +766,7 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let value = self
+        let (value, read_from_heap) = self
             .current_frame
             .read_substate(&self.heap, self.store, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
@@ -778,6 +778,7 @@ where
             ReadSubstateEvent::End {
                 handle: lock_handle,
                 value,
+                read_from_heap,
             },
         )?;
 
