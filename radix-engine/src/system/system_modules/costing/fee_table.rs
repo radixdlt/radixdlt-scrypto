@@ -364,7 +364,7 @@ impl FeeTable {
     #[inline]
     pub fn set_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
         add3(
-            4799u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            4733u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
             Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )
@@ -389,7 +389,7 @@ impl FeeTable {
     #[inline]
     pub fn scan_keys_cost(&self, store_access: &StoreAccessInfo) -> u32 {
         add(
-            3443u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            3395u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
             Self::store_access_cost(store_access),
         )
     }

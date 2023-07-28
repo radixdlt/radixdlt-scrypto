@@ -206,6 +206,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
+    #[trace_resources]
     fn invoke(
         &mut self,
         invocation: Box<KernelInvocation>,

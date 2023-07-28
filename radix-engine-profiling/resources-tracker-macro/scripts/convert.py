@@ -121,9 +121,9 @@ for path in file_list:
             key += "::" + param[0]
 
         # handle before_invoke
-        param = child.xpath("./self::before_invoke/@arg0")
-        if param:
-            key += "::" + param[0]
+#        param = child.xpath("./self::before_invoke/@arg0")
+#        if param:
+#            key += "::" + param[0]
 
         # handle after_invoke
         param = child.xpath("./self::after_invoke/@arg0")
@@ -143,6 +143,27 @@ for path in file_list:
                 key += "::store"
             else:
                 key += "::heap"
+
+        # handle kernel_scan_keys
+#        param = child.xpath("./self::kernel_scan_keys[@arg0 | @count]")
+#        if param:
+#            entity_type = param[0].attrib["arg0"]
+#            count = param[0].attrib["count"]
+#            key += "::" + entity_type + "::" + count
+
+        # handle kernel_scan_sorted_substates
+#        param = child.xpath("./self::kernel_scan_sorted_substates[@arg0 | @count]")
+#        if param:
+#            entity_type = param[0].attrib["arg0"]
+#            count = param[0].attrib["count"]
+#            key += "::" + entity_type + "::" + count
+
+        # handle kernel_set_substate
+#        param = child.xpath("./self::kernel_set_substate[@arg0 | @arg1]")
+#        if param:
+#            entity_type = param[0].attrib["arg0"]
+#            value_len = param[0].attrib["arg1"]
+#            key += "::" + entity_type + "::" + value_len
 
         # correcting parenthesis
         c1 = key.count('(')
