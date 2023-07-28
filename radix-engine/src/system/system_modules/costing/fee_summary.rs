@@ -38,12 +38,27 @@ impl FeeSummary {
         self.total_bad_debt_xrd == 0.into()
     }
 
-    pub fn fees_to_distribute(&self) -> Decimal {
+    fn tips(&self) -> Decimal {
+        self.total_tipping_cost_xrd
+    }
+
+    fn fees(&self) -> Decimal {
         self.total_execution_cost_xrd + self.total_state_expansion_cost_xrd
     }
 
-    pub fn tips_to_distribute(&self) -> Decimal {
-        self.total_tipping_cost_xrd
+    pub fn to_proposer_amount(&self) -> Decimal {
+        self.tips() * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
+            + self.fees() * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100)
+    }
+
+    pub fn to_validator_set_amount(&self) -> Decimal {
+        self.tips() * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+            + self.fees() * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+    }
+
+    pub fn to_burn_amount(&self) -> Decimal {
+        self.tips() * TIPS_TO_BURN_PERCENTAGE / dec!(100)
+            + self.fees() * FEES_TO_BURN_PERCENTAGE / dec!(100)
     }
 
     pub fn total_cost(&self) -> Decimal {
@@ -71,12 +86,12 @@ impl FeeSummary {
     }
 
     pub fn expected_reward_as_proposer_if_single_validator(&self) -> Decimal {
-        self.tips_to_distribute() * (TIPS_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
-            + self.fees_to_distribute() * (FEES_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
+        self.tips() * (TIPS_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
+            + self.fees() * (FEES_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
     }
 
     pub fn expected_reward_as_active_validator_if_single_validator(&self) -> Decimal {
-        self.tips_to_distribute() * (TIPS_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
-            + self.fees_to_distribute() * (FEES_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
+        self.tips() * (TIPS_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
+            + self.fees() * (FEES_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
     }
 }
