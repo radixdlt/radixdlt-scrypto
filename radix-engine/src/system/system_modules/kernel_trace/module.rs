@@ -171,12 +171,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
-            ReadSubstateEvent::End { handle, value } => {
+            ReadSubstateEvent::End { handle, value, read_from_heap } => {
                 log!(
                     api,
-                    "Reading substate: handle = {}, size = {}",
+                    "Reading substate: handle = {}, size = {}, read_from_heap = {}",
                     handle,
-                    value.len()
+                    value.len(),
+                    read_from_heap
                 );
             }
         }
