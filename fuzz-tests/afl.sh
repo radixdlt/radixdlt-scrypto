@@ -103,14 +103,14 @@ if [ $cmd = "run" ] ; then
 
     for (( i=0; i<$cpus; i++ )) ; do
         power_schedule=${SCHEDULES_ARR[$(( i % SCHEDULES_LEN))]}
+        name=${target}_${i}_${power_schedule}
+        id=${i}_${power_schedule}
         if [ $i -eq 0 ] ; then
-            name=${target}_${i}_${power_schedule}
             # main fuzzer
-            fuzz_args="-M $name "
+            fuzz_args="-M $id "
         else
-            name=${target}_${i}_${power_schedule}
             # secondary fuzzer
-            fuzz_args="-S $name "
+            fuzz_args="-S $id "
         fi
         fuzz_args+="-p $power_schedule "
         # TODO: use different fuzzing variants per instance
