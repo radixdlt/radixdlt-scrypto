@@ -21,8 +21,6 @@ use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
-#[cfg(feature = "resource_tracker")]
-use crate::track::interface::StoreAccess;
 use crate::track::interface::StoreCommit;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;

@@ -905,7 +905,7 @@ where
         Ok(keys)
     }
 
-    #[trace_resources(log=count)]
+    #[trace_resources(log=limit)]
     fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
