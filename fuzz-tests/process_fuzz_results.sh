@@ -4,7 +4,8 @@
 set -e
 set -u
 
-TARGET=transaction
+#TARGET=transaction
+TARGET=wasm_instrument
 CRASH_INVENTORY_FILE=crash_inventory.txt
 CRASH_SUMMARY=crash_summary.txt
 ARTIFACT_NAME=fuzz_${TARGET}.tgz
