@@ -7,7 +7,8 @@ set -u
 DFLT_CPUS=1
 DFLT_INTERVAL=60
 # At the moment this is the only supported test
-DFLT_TARGET=transaction
+#DFLT_TARGET=transaction
+DFLT_TARGET=wasm_instrument
 DFLT_AFL_TIMEOUT=1000
 
 function usage() {

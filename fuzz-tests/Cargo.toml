@@ -51,6 +51,12 @@ path = "src/bin/transaction.rs"
 #test = false
 doc = false
 
+[[bin]]
+name = "wasm_instrument"
+path = "src/bin/wasm_instrument.rs"
+#test = false
+doc = false
+
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "fuzzer" ]
