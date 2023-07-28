@@ -1,20 +1,20 @@
-Total Cost (XRD)                                                           ,     0.13758855,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.13722855,     99.7%
+Total Cost (XRD)                                                           ,     0.13748343,    100.0%
++ Execution Cost (XRD)                                                     ,     0.13712343,     99.7%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00036,      0.3%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       13722855,    100.0%
+Total Cost Units Consumed                                                  ,       13712343,    100.0%
 AfterInvoke                                                                ,           1880,      0.0%
 AllocateNodeId                                                             ,          30500,      0.2%
 BeforeInvoke                                                               ,          34224,      0.2%
-CloseSubstate                                                              ,         428000,      3.1%
+CloseSubstate                                                              ,         426000,      3.1%
 Commit::GlobalAccount                                                      ,         100002,      0.7%
 Commit::GlobalGenericComponent                                             ,         100025,      0.7%
 Commit::GlobalNonFungibleResourceManager                                   ,         400016,      2.9%
 Commit::InternalFungibleVault                                              ,         400033,      2.9%
 CreateNode                                                                 ,          58736,      0.4%
 DropNode                                                                   ,          57994,      0.4%
-EmitEvent                                                                  ,           7140,      0.1%
+EmitEvent                                                                  ,           4548,      0.0%
 GenerateRuid                                                               ,            500,      0.0%
 LockFee                                                                    ,            500,      0.0%
 OpenSubstate                                                               ,        3845677,     28.0%
@@ -23,12 +23,12 @@ OpenSubstate::GlobalFungibleResourceManager                                ,    
 OpenSubstate::GlobalGenericComponent                                       ,           5924,      0.0%
 OpenSubstate::GlobalNonFungibleResourceManager                             ,          40472,      0.3%
 OpenSubstate::GlobalPackage                                                ,        1853062,     13.5%
-OpenSubstate::InternalFungibleVault                                        ,          59680,      0.4%
+OpenSubstate::InternalFungibleVault                                        ,          56720,      0.4%
 OpenSubstate::InternalGenericComponent                                     ,         303268,      2.2%
 PrepareWasmCode                                                            ,        1613508,     11.8%
 QueryActor                                                                 ,           9500,      0.1%
 QueryAuthZone                                                              ,           2000,      0.0%
-ReadSubstate                                                               ,        2326080,     17.0%
+ReadSubstate                                                               ,        2323120,     16.9%
 RunNativeCode::AuthZone_pop                                                ,          50666,      0.4%
 RunNativeCode::AuthZone_push                                               ,          59672,      0.4%
 RunNativeCode::Worktop_drain                                               ,          22525,      0.2%
