@@ -19,12 +19,16 @@ pub struct MetadataScenario {
 
 pub struct MetadataScenarioConfig {
     pub user_account_1: VirtualAccount,
+    pub user_account_sandbox: VirtualAccount,
+    pub user_account_dashboard: VirtualAccount,
 }
 
 impl Default for MetadataScenarioConfig {
     fn default() -> Self {
         Self {
             user_account_1: secp256k1_account_1(),
+            user_account_sandbox: secp256k1_account_sandbox(),
+            user_account_dashboard: secp256k1_account_dashboard(),
         }
     }
 }
@@ -64,7 +68,11 @@ impl ScenarioInstance for MetadataScenario {
     }
 
     fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError> {
-        let MetadataScenarioConfig { user_account_1 } = &self.config;
+        let MetadataScenarioConfig {
+            user_account_1,
+            user_account_sandbox,
+            user_account_dashboard,
+        } = &self.config;
         let MetadataScenarioState {
             package_with_metadata,
             component_with_metadata,
@@ -266,6 +274,52 @@ impl ScenarioInstance for MetadataScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
+                    "metadata-set-metadata-on-dashboard-account-succeeds",
+                    |builder| {
+                        builder
+                            .set_metadata(
+                                user_account_dashboard.address,
+                                "account_type",
+                                MetadataValue::String("dapp definition".to_owned()),
+                            )
+                            .set_metadata(
+                                user_account_dashboard.address,
+                                "name",
+                                MetadataValue::String("Radix Dashboard".to_owned()),
+                            )
+                            .set_metadata(
+                                user_account_dashboard.address,
+                                "description",
+                                MetadataValue::String("A collection of tools to assist with standard actions, and a place to look up anything on the ledger.".to_owned()))
+                    },
+                    vec![&user_account_dashboard.key],
+                )
+            }
+            9 => {
+                core.check_commit_success(core.check_previous(&previous)?)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "metadata-set-metadata-on-sandbox-account-succeeds",
+                    |builder| {
+                        builder
+                            .set_metadata(
+                                user_account_sandbox.address,
+                                "account_type",
+                                MetadataValue::String("dapp definition".to_owned()),
+                            )
+                            .set_metadata(
+                                user_account_sandbox.address,
+                                "name",
+                                MetadataValue::String("Radix Sandbox dApp".to_owned()),
+                            )
+                    },
+                    vec![&user_account_sandbox.key],
+                )
+            }
+            10 => {
+                core.check_commit_success(core.check_previous(&previous)?)?;
+
+                core.next_transaction_with_faucet_lock_fee(
                     "metadata-update-recently-locked-metadata-fails",
                     |builder| {
                         builder.set_metadata(
@@ -283,6 +337,11 @@ impl ScenarioInstance for MetadataScenario {
                 let output = ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
                         .add("user_account_1", user_account_1.address.clone())
+                        .add("user_account_sandbox", user_account_sandbox.address.clone())
+                        .add(
+                            "user_account_dashboard",
+                            user_account_dashboard.address.clone(),
+                        )
                         .add("package_with_metadata", package_with_metadata.unwrap())
                         .add("component_with_metadata", component_with_metadata.unwrap())
                         .add("resource_with_metadata1", resource_with_metadata1.unwrap())
