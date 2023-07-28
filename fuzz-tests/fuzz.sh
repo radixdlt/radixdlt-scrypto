@@ -15,9 +15,7 @@ DFLT_TARGET=transaction
 DFLT_TIMEOUT=1000
 
 function usage() {
-    echo "$0 [FUZZ-TARGET] [FUZZER/COMMAND] [SUBCOMMAND] [COMMAND-ARGS]"
-    echo "Available fuzz targets"
-    echo "    transaction"
+    echo "$0 [FUZZER/COMMAND] [SUBCOMMAND] [FUZZ-TARGET] [COMMAND-ARGS]"
     echo "Available fuzzers"
     echo "    libfuzzer  - 'cargo fuzz' wrapper"
     echo "    afl        - 'cargo afl' wrapper"
@@ -46,19 +44,21 @@ function usage() {
     echo "        minimize    - Minimize the input data"
     echo "  Args:"
     echo "        timeout     - timeout in ms"
+    echo "Available fuzz targets"
+    echo "    transaction"
     echo "Examples:"
     echo "  - build AFL fuzz tests"
-    echo "    $0 afl build"
+    echo "    $0 afl build transaction"
     echo "  - run AFL tests for 1h"
-    echo "    $0 afl run -V 3600"
+    echo "    $0 afl run transaction -V 3600"
     echo "  - run LibFuzzer for 1h"
-    echo "    $0 libfuzzer run -max_total_time=3600"
+    echo "    $0 libfuzzer run transaction -max_total_time=3600"
     echo "  - run simple-fuzzer for 1h"
-    echo "    $0 simple run --duration 3600"
+    echo "    $0 simple run transaction --duration 3600"
     echo "  - reproduce some crash discovered by 'libfuzzer'"
-    echo "    $0 libfuzzer run ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
+    echo "    $0 libfuzzer run transaction ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
     echo "  - reproduce some crash discovered by 'libfuzzer' using 'simple-fuzzer'"
-    echo "    RUST_BACKTRACE=1 $0 simple run ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
+    echo "    RUST_BACKTRACE=1 $0 simple run transaction ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
 }
 
 function error() {
@@ -69,8 +69,16 @@ function error() {
 }
 
 function fuzzer_libfuzzer() {
-    local cmd=${1:-$DFLT_SUBCOMMAND}
-    shift
+    local cmd=$DFLT_SUBCOMMAND
+    if [ $# -ge 1 ] ; then
+        cmd=$1
+        shift
+    fi
+    local target=$DFLT_TARGET
+    if [ $# -ge 1 ] ; then
+        target=$1
+        shift
+    fi
     local run_args=""
     if [ "$cmd" = "run" ] ; then
         run_args="$@"
@@ -103,8 +111,16 @@ function fuzzer_libfuzzer() {
 }
 
 function fuzzer_afl() {
-    local cmd=${1:-$DFLT_SUBCOMMAND}
-    shift
+    local cmd=$DFLT_SUBCOMMAND
+    if [ $# -ge 1 ] ; then
+        cmd=$1
+        shift
+    fi
+    local target=$DFLT_TARGET
+    if [ $# -ge 1 ] ; then
+        target=$1
+        shift
+    fi
 
     if [ $cmd = "build" ] ; then
         set -x
@@ -136,8 +152,16 @@ function fuzzer_afl() {
 }
 
 function fuzzer_simple() {
-    local cmd=${1:-$DFLT_SUBCOMMAND}
-    shift
+    local cmd=$DFLT_SUBCOMMAND
+    if [ $# -ge 1 ] ; then
+        cmd=$1
+        shift
+    fi
+    local target=$DFLT_TARGET
+    if [ $# -ge 1 ] ; then
+        target=$1
+        shift
+    fi
 
     set -x
     cargo $cmd --release \
@@ -147,6 +171,11 @@ function fuzzer_simple() {
 }
 
 function generate_input() {
+    local target=$DFLT_TARGET
+    if [ $# -ge 1 ] ; then
+        target=$1
+        shift
+    fi
     # available modes: raw, unique, minimize
     local mode=${1:-minimize}
     local timeout=${2:-$DFLT_TIMEOUT}
@@ -220,12 +249,7 @@ function generate_input() {
         exit 1
     fi
 }
-if [ $# -ge 1 ] ; then
-    target=$1
-    shift
-else
-    target=$DFLT_TARGET
-fi
+
 if [ $# -ge 1 ] ; then
     # available fuzzers/commands: libfuzzer, afl, simple, generate-input
     cmd=$1
