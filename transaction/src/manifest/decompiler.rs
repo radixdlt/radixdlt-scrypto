@@ -265,7 +265,17 @@ pub fn decompile_instruction<F: fmt::Write>(
         InstructionV1::PushToAuthZone { proof_id } => {
             ("PUSH_TO_AUTH_ZONE", to_manifest_value(&(proof_id,))?)
         }
-        InstructionV1::ClearAuthZone => ("CLEAR_AUTH_ZONE", to_manifest_value_and_unwrap!(&())),
+        InstructionV1::DropAuthZoneProofs => {
+            ("DROP_AUTH_ZONE_PROOFS", to_manifest_value_and_unwrap!(&()))
+        }
+        InstructionV1::DropAuthZoneRegularProofs => (
+            "DROP_AUTH_ZONE_REGULAR_PROOFS",
+            to_manifest_value_and_unwrap!(&()),
+        ),
+        InstructionV1::DropAuthZoneSignatureProofs => (
+            "DROP_AUTH_ZONE_SIGNATURE_PROOFS",
+            to_manifest_value_and_unwrap!(&()),
+        ),
         InstructionV1::CreateProofFromAuthZoneOfAmount {
             resource_address,
             amount,
@@ -294,8 +304,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                 to_manifest_value(&(resource_address, proof))?,
             )
         }
-
-        InstructionV1::ClearSignatureProofs => ("CLEAR_SIGNATURE_PROOFS", to_manifest_value(&())?),
 
         InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount } => {
             let proof = context.new_proof();
@@ -634,6 +642,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             (name, parameters)
         }
 
+        InstructionV1::DropNamedProofs => ("DROP_NAMED_PROOFS", to_manifest_value(&())?),
         InstructionV1::DropAllProofs => ("DROP_ALL_PROOFS", to_manifest_value(&())?),
         InstructionV1::AllocateGlobalAddress {
             package_address,

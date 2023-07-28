@@ -41,11 +41,12 @@ pub enum InstructionIdent {
 
     PopFromAuthZone,
     PushToAuthZone,
-    ClearAuthZone,
     CreateProofFromAuthZoneOfAmount,
     CreateProofFromAuthZoneOfNonFungibles,
     CreateProofFromAuthZoneOfAll,
-    ClearSignatureProofs,
+    DropAuthZoneProofs,
+    DropAuthZoneRegularProofs,
+    DropAuthZoneSignatureProofs,
     CreateProofFromBucketOfAmount,
     CreateProofFromBucketOfNonFungibles,
     CreateProofFromBucketOfAll,
@@ -57,6 +58,7 @@ pub enum InstructionIdent {
     CallRoyaltyMethod,
     CallMetadataMethod,
     CallRoleAssignmentMethod,
+    DropNamedProofs,
     DropAllProofs,
     AllocateGlobalAddress,
 
@@ -124,7 +126,6 @@ impl InstructionIdent {
 
             "POP_FROM_AUTH_ZONE" => InstructionIdent::PopFromAuthZone,
             "PUSH_TO_AUTH_ZONE" => InstructionIdent::PushToAuthZone,
-            "CLEAR_AUTH_ZONE" => InstructionIdent::ClearAuthZone,
             "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT" => {
                 InstructionIdent::CreateProofFromAuthZoneOfAmount
             }
@@ -132,7 +133,9 @@ impl InstructionIdent {
                 InstructionIdent::CreateProofFromAuthZoneOfNonFungibles
             }
             "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL" => InstructionIdent::CreateProofFromAuthZoneOfAll,
-            "CLEAR_SIGNATURE_PROOFS" => InstructionIdent::ClearSignatureProofs,
+            "DROP_AUTH_ZONE_PROOFS" => InstructionIdent::DropAuthZoneProofs,
+            "DROP_AUTH_ZONE_SIGNATURE_PROOFS" => InstructionIdent::DropAuthZoneSignatureProofs,
+            "DROP_AUTH_ZONE_REGULAR_PROOFS" => InstructionIdent::DropAuthZoneRegularProofs,
 
             "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT" => InstructionIdent::CreateProofFromBucketOfAmount,
             "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES" => {
@@ -150,6 +153,7 @@ impl InstructionIdent {
             "CALL_METADATA_METHOD" => InstructionIdent::CallMetadataMethod,
             "CALL_ROLE_ASSIGNMENT_METHOD" => InstructionIdent::CallRoleAssignmentMethod,
 
+            "DROP_NAMED_PROOFS" => InstructionIdent::DropNamedProofs,
             "DROP_ALL_PROOFS" => InstructionIdent::DropAllProofs,
             "ALLOCATE_GLOBAL_ADDRESS" => InstructionIdent::AllocateGlobalAddress,
 
@@ -518,7 +522,11 @@ impl Parser {
             InstructionIdent::PushToAuthZone => Instruction::PushToAuthZone {
                 proof: self.parse_value()?,
             },
-            InstructionIdent::ClearAuthZone => Instruction::ClearAuthZone,
+            InstructionIdent::DropAuthZoneProofs => Instruction::DropAuthZoneProofs,
+            InstructionIdent::DropAuthZoneRegularProofs => Instruction::DropAuthZoneRegularProofs,
+            InstructionIdent::DropAuthZoneSignatureProofs => {
+                Instruction::DropAuthZoneSignatureProofs
+            }
             InstructionIdent::CreateProofFromAuthZoneOfAmount => {
                 Instruction::CreateProofFromAuthZoneOfAmount {
                     resource_address: self.parse_value()?,
@@ -539,7 +547,6 @@ impl Parser {
                     new_proof: self.parse_value()?,
                 }
             }
-            InstructionIdent::ClearSignatureProofs => Instruction::ClearSignatureProofs,
 
             InstructionIdent::CreateProofFromBucketOfAmount => {
                 Instruction::CreateProofFromBucketOfAmount {
@@ -598,6 +605,7 @@ impl Parser {
                 method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
+            InstructionIdent::DropNamedProofs => Instruction::DropNamedProofs,
             InstructionIdent::DropAllProofs => Instruction::DropAllProofs,
             InstructionIdent::AllocateGlobalAddress => Instruction::AllocateGlobalAddress {
                 package_address: self.parse_value()?,

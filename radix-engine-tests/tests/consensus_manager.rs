@@ -2037,8 +2037,9 @@ fn owner_can_lock_stake_units() {
         Some(stake_units_to_lock_amount)
     );
     assert_eq!(
-        test_runner.account_balance(validator_account, validator_substate.stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount)
+        test_runner
+            .get_component_balance(validator_account, validator_substate.stake_unit_resource),
+        total_stake_amount - stake_units_to_lock_amount
     )
 }
 
@@ -2133,8 +2134,8 @@ fn owner_can_start_unlocking_stake_units() {
         btreemap!(initial_epoch.after(unlock_epochs_delay) => stake_units_to_unlock_amount)
     );
     assert_eq!(
-        test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount) // NOT in the external vault yet
+        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        total_stake_amount - stake_units_to_lock_amount // NOT in the external vault yet
     )
 }
 
@@ -2233,8 +2234,8 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         btreemap!(initial_epoch.after(unlock_epochs_delay) => stake_units_to_unlock_total_amount)
     );
     assert_eq!(
-        test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount) // NOT in the external vault yet
+        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        total_stake_amount - stake_units_to_lock_amount // NOT in the external vault yet
     )
 }
 
@@ -2472,8 +2473,8 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         btreemap!() // removed from the pending tracker
     );
     assert_eq!(
-        test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount + stake_units_to_unlock_amount)
+        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        total_stake_amount - stake_units_to_lock_amount + stake_units_to_unlock_amount
     )
 }
 
@@ -2586,8 +2587,8 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         btreemap!(initial_epoch.after(unlock_epochs_delay) => stake_units_to_unlock_amount)
     );
     assert_eq!(
-        test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount) // still NOT in the external vault
+        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        total_stake_amount - stake_units_to_lock_amount // still NOT in the external vault
     )
 }
 
@@ -2780,8 +2781,10 @@ fn test_tips_and_fee_distribution_single_validator() {
         .build();
 
     // Do some transaction
-    let receipt1 = test_runner
-        .execute_manifest_ignoring_fee(ManifestBuilder::new().clear_auth_zone().build(), vec![]);
+    let receipt1 = test_runner.execute_manifest_ignoring_fee(
+        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+        vec![],
+    );
     let result1 = receipt1.expect_commit_success();
 
     // Advance epoch
@@ -2840,8 +2843,10 @@ fn test_tips_and_fee_distribution_two_validators() {
         .build();
 
     // Do some transaction
-    let receipt1 = test_runner
-        .execute_manifest_ignoring_fee(ManifestBuilder::new().clear_auth_zone().build(), vec![]);
+    let receipt1 = test_runner.execute_manifest_ignoring_fee(
+        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+        vec![],
+    );
     let result1 = receipt1.expect_commit_success();
 
     // Advance epoch
@@ -2853,15 +2858,14 @@ fn test_tips_and_fee_distribution_two_validators() {
     assert_eq!(events[0].epoch, initial_epoch);
     assert_close_to!(
         events[0].amount,
-        result1.fee_summary.tips_to_distribute()
-            + result1.fee_summary.fees_to_distribute() * dec!("0.25")
-            + result1.fee_summary.fees_to_distribute() * dec!("0.25") * initial_stake_amount1
+        result1.fee_summary.to_proposer_amount()
+            + result1.fee_summary.to_validator_set_amount() * initial_stake_amount1
                 / (initial_stake_amount1 + initial_stake_amount2)
     );
     assert_eq!(events[1].epoch, initial_epoch);
     assert_close_to!(
         events[1].amount,
-        result1.fee_summary.fees_to_distribute() * dec!("0.25") * initial_stake_amount2
+        result1.fee_summary.to_validator_set_amount() * initial_stake_amount2
             / (initial_stake_amount1 + initial_stake_amount2)
     );
 }

@@ -354,7 +354,7 @@ fn run_radiswap(mode: Mode) {
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
         .expect_commit_success();
-    assert_eq!(test_runner.account_balance(account3, btc), Some(btc_amount));
+    assert_eq!(test_runner.get_component_balance(account3, btc), btc_amount);
 
     // Swap 2,000 BTC into ETH
     let btc_to_swap = Decimal::from(2000);
@@ -371,8 +371,8 @@ fn run_radiswap(mode: Mode) {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
-    let remaining_btc = test_runner.account_balance(account3, btc).unwrap();
-    let eth_received = test_runner.account_balance(account3, eth).unwrap();
+    let remaining_btc = test_runner.get_component_balance(account3, btc);
+    let eth_received = test_runner.get_component_balance(account3, eth);
     assert_eq!(remaining_btc, btc_amount - btc_to_swap);
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
     let commit_result = receipt.expect_commit(true);
@@ -424,7 +424,7 @@ fn run_flash_loan(mode: Mode) {
     // Take loan
     let loan_amount = Decimal::from(50);
     let repay_amount = loan_amount * dec!("1.001");
-    let old_balance = test_runner.account_balance(account3, XRD).unwrap();
+    let old_balance = test_runner.get_component_balance(account3, XRD);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account3, 500)
@@ -444,10 +444,10 @@ fn run_flash_loan(mode: Mode) {
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
     let commit_result = receipt.expect_commit(true);
-    let new_balance = test_runner.account_balance(account3, XRD).unwrap();
+    let new_balance = test_runner.get_component_balance(account3, XRD);
     assert!(test_runner
-        .account_balance(account3, promise_token_address)
-        .is_none());
+        .get_component_balance(account3, promise_token_address)
+        .is_zero());
     assert_eq!(
         old_balance - new_balance,
         commit_result.fee_summary.total_execution_cost_xrd

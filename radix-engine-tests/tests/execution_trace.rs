@@ -127,7 +127,7 @@ fn test_trace_fee_payments() {
             "create_and_fund_a_component",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
-        .clear_auth_zone()
+        .drop_auth_zone_proofs()
         .build();
 
     let funded_component = test_runner
@@ -147,7 +147,7 @@ fn test_trace_fee_payments() {
             "test_lock_contingent_fee",
             manifest_args!(),
         )
-        .clear_auth_zone()
+        .drop_auth_zone_proofs()
         .build();
 
     let receipt = test_runner.preview_manifest(manifest, vec![], 0, PreviewFlags::default());

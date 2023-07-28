@@ -350,7 +350,9 @@ where
                 .map_err(GeneratorError::IdValidationError)?;
             InstructionV1::PushToAuthZone { proof_id }
         }
-        ast::Instruction::ClearAuthZone => InstructionV1::ClearAuthZone,
+        ast::Instruction::DropAuthZoneProofs => InstructionV1::DropAuthZoneProofs,
+        ast::Instruction::DropAuthZoneRegularProofs => InstructionV1::DropAuthZoneRegularProofs,
+        ast::Instruction::DropAuthZoneSignatureProofs => InstructionV1::DropAuthZoneSignatureProofs,
 
         ast::Instruction::CreateProofFromAuthZoneOfAmount {
             resource_address,
@@ -400,12 +402,6 @@ where
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromAuthZoneOfAll { resource_address }
-        }
-        ast::Instruction::ClearSignatureProofs => {
-            id_validator
-                .drop_all_proofs()
-                .map_err(GeneratorError::IdValidationError)?;
-            InstructionV1::ClearSignatureProofs
         }
 
         ast::Instruction::BurnResource { bucket } => {
@@ -569,9 +565,16 @@ where
             }
         }
 
+        ast::Instruction::DropNamedProofs => {
+            id_validator
+                .drop_all_named_proofs()
+                .map_err(GeneratorError::IdValidationError)?;
+            InstructionV1::DropNamedProofs
+        }
+
         ast::Instruction::DropAllProofs => {
             id_validator
-                .drop_all_proofs()
+                .drop_all_named_proofs()
                 .map_err(GeneratorError::IdValidationError)?;
             InstructionV1::DropAllProofs
         }

@@ -154,6 +154,12 @@ pub enum ConsensusManagerPartitionOffset {
     RegisteredValidatorsByStakeIndex,
 }
 
+impl From<ConsensusManagerPartitionOffset> for PartitionOffset {
+    fn from(value: ConsensusManagerPartitionOffset) -> Self {
+        PartitionOffset(value as u8)
+    }
+}
+
 impl TryFrom<u8> for ConsensusManagerPartitionOffset {
     type Error = ();
 
@@ -163,7 +169,7 @@ impl TryFrom<u8> for ConsensusManagerPartitionOffset {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
 pub enum ConsensusManagerField {
     Config,
     ConsensusManager,
@@ -175,7 +181,7 @@ pub enum ConsensusManagerField {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
 pub enum ValidatorField {
     Validator,
     ProtocolUpdateReadinessSignal,
