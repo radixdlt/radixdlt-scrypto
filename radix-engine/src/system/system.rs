@@ -1458,7 +1458,7 @@ where
                     module_id,
                     ident: method_name.to_string(),
 
-                    auth_actor_info: auth_actor_info.clone(),
+                    auth_zone: auth_actor_info.clone(),
                     object_info,
                 }),
                 args,
@@ -2005,7 +2005,7 @@ where
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
         let blueprint_id = BlueprintId::new(&package_address, blueprint_name);
-        let auth_info = AuthModule::on_call_function(self, &blueprint_id, function_name)?;
+        let auth_zone = AuthModule::on_call_function(self, &blueprint_id, function_name)?;
 
         let rtn = self
             .api
@@ -2013,13 +2013,13 @@ where
                 call_frame_data: Actor::Function(FunctionActor {
                     blueprint_id,
                     ident: function_name.to_string(),
-                    auth_info: auth_info.clone(),
+                    auth_zone: auth_zone.clone(),
                 }),
                 args,
             }))
             .map(|v| v.into())?;
 
-        AuthModule::on_call_function_finish(self, auth_info)?;
+        AuthModule::on_call_function_finish(self, auth_zone)?;
 
         Ok(rtn)
     }

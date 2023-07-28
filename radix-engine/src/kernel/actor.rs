@@ -10,18 +10,13 @@ pub struct InstanceContext {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthActorInfo {
-    pub self_auth_zone: NodeId,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MethodActor {
     pub direct_access: bool,
     pub node_id: NodeId,
     pub module_id: ObjectModuleId,
     pub ident: String,
 
-    pub auth_actor_info: AuthActorInfo,
+    pub auth_zone: NodeId,
 
     // Cached info
     pub object_info: ObjectInfo,
@@ -48,7 +43,7 @@ pub struct FunctionActor {
     pub blueprint_id: BlueprintId,
     pub ident: String,
 
-    pub auth_info: AuthActorInfo,
+    pub auth_zone: NodeId,
 }
 
 impl FunctionActor {
@@ -149,31 +144,13 @@ impl CallFrameReferences for Actor {
 }
 
 impl Actor {
-    pub fn auth_info(&self) -> Option<AuthActorInfo> {
-        match self {
-            Actor::Root | Actor::BlueprintHook(..) => None,
-            Actor::Method(method_actor) => Some(method_actor.auth_actor_info.clone()),
-            Actor::Function(function_actor) => Some(function_actor.auth_info.clone()),
-        }
-    }
-
     pub fn self_auth_zone(&self) -> Option<NodeId> {
         match self {
             Actor::Root | Actor::BlueprintHook(..) => None,
-            Actor::Method(method_actor) => Some(method_actor.auth_actor_info.self_auth_zone),
-            Actor::Function(function_actor) => Some(function_actor.auth_info.self_auth_zone),
+            Actor::Method(method_actor) => Some(method_actor.auth_zone),
+            Actor::Function(function_actor) => Some(function_actor.auth_zone),
         }
     }
-
-    /*
-    pub fn caller_authzone(&self) -> Option<CallerAuthZone> {
-        match self {
-            Actor::Root | Actor::BlueprintHook(..) => None,
-            Actor::Method(method_actor) => method_actor.auth_actor_info.caller_auth_zone.clone(),
-            Actor::Function(function_actor) => function_actor.auth_info.caller_auth_zone.clone(),
-        }
-    }
-     */
 
     pub fn instance_context(&self) -> Option<InstanceContext> {
         let method_actor = match self {

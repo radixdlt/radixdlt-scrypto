@@ -2,7 +2,7 @@ use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, AuthActorInfo};
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::ReferenceOrigin;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::module::KernelModule;
@@ -75,13 +75,13 @@ impl AuthModule {
         api: &mut SystemService<Y, V>,
         blueprint_id: &BlueprintId,
         ident: &str,
-    ) -> Result<AuthActorInfo, RuntimeError>
+    ) -> Result<NodeId, RuntimeError>
     where
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
         // Create AuthActorInfo
-        let auth_info = {
+        let auth_zone = {
             // TODO: Remove special casing use of transaction processor and just have virtual resources
             // stored in root call frame
             let is_transaction_processor_blueprint = blueprint_id
@@ -126,21 +126,21 @@ impl AuthModule {
                 blueprint_id: blueprint_id.clone(),
                 ident: ident.to_string(),
             };
-            Self::check_permission(&auth_info.self_auth_zone, permission, fn_identifier, api)?;
+            Self::check_permission(&auth_zone, permission, fn_identifier, api)?;
         }
 
-        Ok(auth_info)
+        Ok(auth_zone)
     }
 
     pub fn on_call_function_finish<V, Y>(
         api: &mut SystemService<Y, V>,
-        auth_actor_info: AuthActorInfo,
+        auth_zone: NodeId,
     ) -> Result<(), RuntimeError>
     where
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        Self::on_execution_finish(api, auth_actor_info)
+        Self::on_execution_finish(api, auth_zone)
     }
 
     pub fn on_call_method<V, Y>(
@@ -150,12 +150,12 @@ impl AuthModule {
         direct_access: bool,
         ident: &str,
         args: &IndexedScryptoValue,
-    ) -> Result<AuthActorInfo, RuntimeError>
+    ) -> Result<NodeId, RuntimeError>
     where
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        let auth_info = Self::on_execution_start(
+        let auth_zone = Self::on_execution_start(
             api,
             Some((receiver, direct_access)),
             btreeset!(),
@@ -186,21 +186,21 @@ impl AuthModule {
                 blueprint_id: blueprint_id.clone(),
                 ident: ident.to_string(),
             };
-            Self::check_permission(&auth_info.self_auth_zone, permission, fn_identifier, api)?;
+            Self::check_permission(&auth_zone, permission, fn_identifier, api)?;
         }
 
-        Ok(auth_info)
+        Ok(auth_zone)
     }
 
     pub fn on_call_method_finish<V, Y>(
         api: &mut SystemService<Y, V>,
-        auth_actor_info: AuthActorInfo,
+        auth_zone: NodeId,
     ) -> Result<(), RuntimeError>
     where
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        Self::on_execution_finish(api, auth_actor_info)
+        Self::on_execution_finish(api, auth_zone)
     }
 
     fn copy_global_caller<V, Y>(
@@ -229,7 +229,7 @@ impl AuthModule {
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
-    ) -> Result<AuthActorInfo, RuntimeError>
+    ) -> Result<NodeId, RuntimeError>
     where
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
@@ -254,7 +254,7 @@ impl AuthModule {
                     let current_ref_origin = node_visibility
                         .reference_origin(current_method_actor.node_id)
                         .unwrap();
-                    let self_auth_zone = current_method_actor.auth_actor_info.self_auth_zone;
+                    let self_auth_zone = current_method_actor.auth_zone;
                     match (current_ref_origin, next_is_barrier) {
                         (ReferenceOrigin::Global(address), true) => {
                             let global_caller: GlobalCaller = address.into();
@@ -267,7 +267,7 @@ impl AuthModule {
                     }
                 }
                 Actor::Function(function_actor) => {
-                    let self_auth_zone = function_actor.auth_info.self_auth_zone;
+                    let self_auth_zone = function_actor.auth_zone;
                     let global_caller = function_actor.as_global_caller();
                     if next_is_barrier {
                         (Some((global_caller, Reference(self_auth_zone))), None)
@@ -328,18 +328,17 @@ impl AuthModule {
             system.kernel_close_substate(parent_lock_handle)?;
         }
 
-        Ok(AuthActorInfo { self_auth_zone })
+        Ok(self_auth_zone)
     }
 
     fn on_execution_finish<V, Y>(
         api: &mut SystemService<Y, V>,
-        auth_actor_info: AuthActorInfo,
+        self_auth_zone: NodeId,
     ) -> Result<(), RuntimeError>
     where
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        let self_auth_zone = auth_actor_info.self_auth_zone;
         // Detach proofs from the auth zone
         let handle = api.kernel_open_substate(
             &self_auth_zone,
