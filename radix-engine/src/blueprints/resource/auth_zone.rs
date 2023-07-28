@@ -232,7 +232,16 @@ impl AuthZoneBlueprint {
         Ok(Proof(Own(node_id)))
     }
 
-    pub(crate) fn clear<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub(crate) fn drop_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::drop_signature_proofs(api)?;
+        Self::drop_regular_proofs(api)?;
+        Ok(())
+    }
+
+    pub(crate) fn drop_signature_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -242,31 +251,30 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
-        auth_zone.clear_signature_proofs();
-        let proofs = auth_zone.drain();
+        auth_zone.remove_signature_proofs();
+        api.field_write_typed(handle, &auth_zone)?;
+        api.field_close(handle)?;
+
+        Ok(())
+    }
+
+    pub(crate) fn drop_regular_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            AuthZoneField::AuthZone.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
+        let proofs = auth_zone.remove_regular_proofs();
         api.field_write_typed(handle, &auth_zone)?;
         api.field_close(handle)?;
 
         for proof in proofs {
             proof.drop(api)?;
         }
-
-        Ok(())
-    }
-
-    pub(crate) fn clear_signature_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            AuthZoneField::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
-        auth_zone.clear_signature_proofs();
-        api.field_write_typed(handle, &auth_zone)?;
-        api.field_close(handle)?;
 
         Ok(())
     }
@@ -282,8 +290,7 @@ impl AuthZoneBlueprint {
         )?;
 
         let mut auth_zone: AuthZone = api.field_read_typed(auth_zone_handle)?;
-        let proofs = auth_zone.drain();
-
+        let proofs = auth_zone.remove_regular_proofs();
         api.field_write_typed(auth_zone_handle, &auth_zone)?;
 
         Ok(proofs)

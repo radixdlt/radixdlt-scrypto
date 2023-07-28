@@ -146,8 +146,9 @@ pub const AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str = "AuthZone_create_
 pub const AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME: &str =
     "AuthZone_create_proof_of_non_fungibles";
 pub const AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME: &str = "AuthZone_create_proof_of_all";
-pub const AUTH_ZONE_CLEAR_EXPORT_NAME: &str = "AuthZone_clear";
-pub const AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME: &str = "AuthZone_clear_signature_proofs";
+pub const AUTH_ZONE_DROP_SIGNATURE_PROOFS_EXPORT_NAME: &str = "AuthZone_drop_signature_proofs";
+pub const AUTH_ZONE_DROP_REGULAR_PROOFS_EXPORT_NAME: &str = "AuthZone_drop_regular_proofs";
+pub const AUTH_ZONE_DROP_PROOFS_EXPORT_NAME: &str = "AuthZone_drop_proofs";
 pub const AUTH_ZONE_DRAIN_EXPORT_NAME: &str = "AuthZone_drain";
 pub const AUTH_ZONE_ASSERT_ACCESS_RULE_EXPORT_NAME: &str = "AuthZone_assert_access_rule";
 
@@ -2097,31 +2098,46 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
-                AUTH_ZONE_CLEAR_IDENT.to_string(),
+                AUTH_ZONE_DROP_PROOFS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
+                        aggregator.add_child_type_and_descendents::<AuthZoneDropProofsInput>(),
                     ),
                     output: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
+                        aggregator.add_child_type_and_descendents::<AuthZoneDropProofsOutput>(),
                     ),
-                    export: AUTH_ZONE_CLEAR_EXPORT_NAME.to_string(),
+                    export: AUTH_ZONE_DROP_PROOFS_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
-                AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
+                AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: TypeRef::Static(
                         aggregator
-                            .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
+                            .add_child_type_and_descendents::<AuthZoneDropSignatureProofsInput>(),
                     ),
                     output: TypeRef::Static(
                         aggregator
-                            .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
+                            .add_child_type_and_descendents::<AuthZoneDropSignatureProofsOutput>(),
                     ),
-                    export: AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME.to_string(),
+                    export: AUTH_ZONE_DROP_SIGNATURE_PROOFS_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                AUTH_ZONE_DROP_REGULAR_PROOFS_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AuthZoneDropSignatureProofsInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AuthZoneDropSignatureProofsOutput>(),
+                    ),
+                    export: AUTH_ZONE_DROP_REGULAR_PROOFS_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -3052,21 +3068,30 @@ impl ResourceNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&proof))
             }
-            AUTH_ZONE_CLEAR_EXPORT_NAME => {
-                let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
+            AUTH_ZONE_DROP_PROOFS_EXPORT_NAME => {
+                let _input: AuthZoneDropProofsInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                AuthZoneBlueprint::clear(api)?;
+                AuthZoneBlueprint::drop_proofs(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&()))
             }
-            AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME => {
-                let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
+            AUTH_ZONE_DROP_SIGNATURE_PROOFS_EXPORT_NAME => {
+                let _input: AuthZoneDropProofsInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                AuthZoneBlueprint::clear_signature_proofs(api)?;
+                AuthZoneBlueprint::drop_signature_proofs(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&()))
+            }
+            AUTH_ZONE_DROP_REGULAR_PROOFS_EXPORT_NAME => {
+                let _input: AuthZoneDropProofsInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                AuthZoneBlueprint::drop_regular_proofs(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&()))
             }

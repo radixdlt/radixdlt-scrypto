@@ -199,7 +199,9 @@ impl NotarizedTransactionValidator {
                         .drop_proof(&proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::ClearAuthZone => {}
+                InstructionV1::DropAuthZoneProofs => {}
+                InstructionV1::DropAuthZoneRegularProofs => {}
+                InstructionV1::DropAuthZoneSignatureProofs => {}
                 InstructionV1::CreateProofFromAuthZoneOfAmount { .. } => {
                     let _ = id_validator
                         .new_proof(ProofKind::AuthZoneProof)
@@ -240,12 +242,16 @@ impl NotarizedTransactionValidator {
                         .drop_proof(&proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::DropAllProofs => {
+                InstructionV1::DropNamedProofs => {
                     id_validator
-                        .drop_all_proofs()
+                        .drop_all_named_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::ClearSignatureProofs => {}
+                InstructionV1::DropAllProofs => {
+                    id_validator
+                        .drop_all_named_proofs()
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
                 InstructionV1::CallFunction { args, .. }
                 | InstructionV1::CallMethod { args, .. }
                 | InstructionV1::CallRoyaltyMethod { args, .. }
@@ -724,7 +730,7 @@ mod tests {
                 notary_is_signatory: false,
                 tip_percentage: 5,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build())
+            .manifest(ManifestBuilder::new().drop_auth_zone_proofs().build())
             .message(message);
 
         builder = builder.notarize(&sk_notary);
@@ -751,7 +757,7 @@ mod tests {
                 notary_is_signatory: false,
                 tip_percentage: 5,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build());
+            .manifest(ManifestBuilder::new().drop_auth_zone_proofs().build());
 
         for signer in signers {
             builder = builder.sign(&Secp256k1PrivateKey::from_u64(signer).unwrap());

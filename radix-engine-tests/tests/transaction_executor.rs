@@ -29,7 +29,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
         },
         ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .clear_auth_zone()
+            .drop_auth_zone_proofs()
             .build(),
     );
 
@@ -69,7 +69,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
         },
         ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .clear_auth_zone()
+            .drop_auth_zone_proofs()
             .build(),
     );
 
@@ -116,7 +116,10 @@ fn test_normal_transaction_flow() {
         {
             let mut builder = ManifestBuilder::new();
             builder.add_blob([123u8; 1023 * 1024].to_vec());
-            builder.lock_fee_from_faucet().clear_auth_zone().build()
+            builder
+                .lock_fee_from_faucet()
+                .drop_auth_zone_proofs()
+                .build()
         },
     )
     .to_raw()

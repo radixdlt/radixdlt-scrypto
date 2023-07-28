@@ -71,8 +71,6 @@ impl FeeTable {
     }
 
     fn data_processing_cost(size: usize) -> u32 {
-        // FIXME: add payload against schema validation costs
-
         // Based on benchmark `bench_decode_sbor`
         // Time for processing a byte: 10.244 µs / 1068 = 0.00959176029
 
@@ -382,12 +380,6 @@ impl FeeTable {
     pub fn panic_cost(&self, size: usize) -> u32 {
         500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
     }
-
-    //======================
-    // System module costs
-    //======================
-    // FIXME: add more costing rules
-    // We should account for running system modules, such as auth and royalty.
 }
 
 #[inline]

@@ -15,7 +15,7 @@ fn test_transaction_preview_cost_estimate() {
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .clear_auth_zone()
+        .drop_auth_zone_proofs()
         .build();
     let preview_flags = PreviewFlags {
         use_free_credit: true,
@@ -59,7 +59,7 @@ fn test_transaction_preview_without_locking_fee() {
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new()
         // Explicitly don't lock fee from faucet
-        .clear_auth_zone()
+        .drop_auth_zone_proofs()
         .build();
     let preview_flags = PreviewFlags {
         use_free_credit: true,
