@@ -325,7 +325,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         internal_call_dispatch!(api.kernel_get_system(), on_open_substate(api, event))
     }
 
-    #[trace_resources]
+    #[trace_resources(log={
+        match event {
+            ReadSubstateEvent::End{ read_from_heap, .. } => *read_from_heap,
+        }
+    })]
     fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         event: &ReadSubstateEvent,

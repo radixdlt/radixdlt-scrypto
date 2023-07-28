@@ -42,12 +42,13 @@ lazy_static! {
         costs
             .entry(PACKAGE_PACKAGE)
             .or_default()
-            .insert(PACKAGE_PUBLISH_NATIVE_IDENT, (1001, 7424624));
+            .insert(PACKAGE_PUBLISH_NATIVE_IDENT, (794, 9121128));
         costs
             .entry(PACKAGE_PACKAGE)
             .or_default()
-            .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (1055, 14305886));
-        costs
+            // FIXME: publish_wasm_advanced is too expensinve, dividing by 3 to let large package (1MiB) to be published
+            .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (3273 / 3, 10224507));
+    costs
     };
 }
 
@@ -184,21 +185,27 @@ impl FeeTable {
     // Kernel costs
     //======================
 
-    // FIXME: adjust base cost for following ops
-
     #[inline]
     pub fn before_invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {
-        add(500, Self::data_processing_cost(input_size))
+        // used max cpu instruction counts
+        add(
+            1041 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            Self::data_processing_cost(input_size),
+        )
     }
 
     #[inline]
     pub fn after_invoke_cost(&self, input_size: usize) -> u32 {
-        Self::data_processing_cost(input_size)
+        // used max cpu instruction counts
+        add(
+            4321 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            Self::data_processing_cost(input_size),
+        )
     }
 
     #[inline]
     pub fn allocate_node_id_cost(&self) -> u32 {
-        3278u32 / CPU_INSTRUCTIONS_TO_COST_UNIT
+        3560u32 / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
 
     #[inline]
@@ -207,28 +214,28 @@ impl FeeTable {
             CreateNodeEvent::Start(node_id, node_substates) => {
                 let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
                     match entity_type {
-                        EntityType::GlobalAccessController => 10757,
-                        EntityType::GlobalAccount => 36506,
-                        EntityType::GlobalConsensusManager => 8523,
-                        EntityType::GlobalFungibleResourceManager => 8989,
-                        EntityType::GlobalGenericComponent => 8659,
-                        EntityType::GlobalIdentity => 50353,
-                        EntityType::GlobalMultiResourcePool => 9454,
-                        EntityType::GlobalNonFungibleResourceManager => 8656,
-                        EntityType::GlobalOneResourcePool => 9007,
-                        EntityType::GlobalPackage => 8435,
-                        EntityType::GlobalTransactionTracker => 8672,
-                        EntityType::GlobalTwoResourcePool => 9400,
-                        EntityType::GlobalValidator => 10563,
-                        EntityType::GlobalVirtualEd25519Account => 50887,
-                        EntityType::GlobalVirtualEd25519Identity => 0, // TODO: cover that in tests
-                        EntityType::GlobalVirtualSecp256k1Account => 8608,
-                        EntityType::GlobalVirtualSecp256k1Identity => 50780,
-                        EntityType::InternalAccount => 4688,
-                        EntityType::InternalFungibleVault => 5049,
-                        EntityType::InternalGenericComponent => 7336,
-                        EntityType::InternalKeyValueStore => 1466,
-                        EntityType::InternalNonFungibleVault => 4986,
+                        EntityType::GlobalAccessController => 9370,
+                        EntityType::GlobalAccount => 8504,
+                        EntityType::GlobalConsensusManager => 6527,
+                        EntityType::GlobalFungibleResourceManager => 6858,
+                        EntityType::GlobalGenericComponent => 6591,
+                        EntityType::GlobalIdentity => 8740,
+                        EntityType::GlobalMultiResourcePool => 8826,
+                        EntityType::GlobalNonFungibleResourceManager => 6589,
+                        EntityType::GlobalOneResourcePool => 8463,
+                        EntityType::GlobalPackage => 6367,
+                        EntityType::GlobalTransactionTracker => 6631,
+                        EntityType::GlobalTwoResourcePool => 8456,
+                        EntityType::GlobalValidator => 8225,
+                        EntityType::GlobalVirtualEd25519Account => 7262,
+                        EntityType::GlobalVirtualEd25519Identity => 0, // FIXME: cover that in tests
+                        EntityType::GlobalVirtualSecp256k1Account => 6538,
+                        EntityType::GlobalVirtualSecp256k1Identity => 9012,
+                        EntityType::InternalAccount => 5662,
+                        EntityType::InternalFungibleVault => 4661,
+                        EntityType::InternalGenericComponent => 6978,
+                        EntityType::InternalKeyValueStore => 1204,
+                        EntityType::InternalNonFungibleVault => 4532,
                     }
                 } else {
                     0
@@ -258,7 +265,7 @@ impl FeeTable {
                     .map(|x| x.values().map(|x| x.len()).sum::<usize>())
                     .sum::<usize>();
                 add(
-                    45537u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                    30526u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                     Self::data_processing_cost(total_substate_size),
                 )
             }
@@ -269,7 +276,7 @@ impl FeeTable {
     pub fn move_module_cost(&self, event: &MoveModuleEvent) -> u32 {
         match event {
             MoveModuleEvent::StoreAccess(store_access) => add(
-                3094u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                2853u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                 self.store_access_cost(store_access),
             ),
         }
@@ -283,28 +290,28 @@ impl FeeTable {
             OpenSubstateEvent::End { size, node_id, .. } => {
                 let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
                     match entity_type {
-                        EntityType::GlobalAccessController => 9360,
-                        EntityType::GlobalAccount => 37068,
-                        EntityType::GlobalConsensusManager => 8171,
-                        EntityType::GlobalFungibleResourceManager => 9105,
-                        EntityType::GlobalGenericComponent => 37037,
-                        EntityType::GlobalIdentity => 39406,
-                        EntityType::GlobalMultiResourcePool => 9467,
-                        EntityType::GlobalNonFungibleResourceManager => 7584,
-                        EntityType::GlobalOneResourcePool => 9369,
-                        EntityType::GlobalPackage => 20730,
-                        EntityType::GlobalTransactionTracker => 7508,
-                        EntityType::GlobalTwoResourcePool => 21242,
-                        EntityType::GlobalValidator => 8344,
-                        EntityType::GlobalVirtualEd25519Account => 36466,
-                        EntityType::GlobalVirtualEd25519Identity => 0, // TODO: cover that in tests
-                        EntityType::GlobalVirtualSecp256k1Account => 24346,
-                        EntityType::GlobalVirtualSecp256k1Identity => 38876,
-                        EntityType::InternalAccount => 34663,
-                        EntityType::InternalFungibleVault => 9699,
-                        EntityType::InternalGenericComponent => 6453,
-                        EntityType::InternalKeyValueStore => 24412,
-                        EntityType::InternalNonFungibleVault => 6916,
+                        EntityType::GlobalAccessController => 9256,
+                        EntityType::GlobalAccount => 9146,
+                        EntityType::GlobalConsensusManager => 7034,
+                        EntityType::GlobalFungibleResourceManager => 7054,
+                        EntityType::GlobalGenericComponent => 8856,
+                        EntityType::GlobalIdentity => 9421,
+                        EntityType::GlobalMultiResourcePool => 9244,
+                        EntityType::GlobalNonFungibleResourceManager => 8906,
+                        EntityType::GlobalOneResourcePool => 9445,
+                        EntityType::GlobalPackage => 13410,
+                        EntityType::GlobalTransactionTracker => 6582,
+                        EntityType::GlobalTwoResourcePool => 9218,
+                        EntityType::GlobalValidator => 7306,
+                        EntityType::GlobalVirtualEd25519Account => 6953,
+                        EntityType::GlobalVirtualEd25519Identity => 0, // FIXME: cover that in tests
+                        EntityType::GlobalVirtualSecp256k1Account => 8884,
+                        EntityType::GlobalVirtualSecp256k1Identity => 9855,
+                        EntityType::InternalAccount => 6152,
+                        EntityType::InternalFungibleVault => 7202,
+                        EntityType::InternalGenericComponent => 6289,
+                        EntityType::InternalKeyValueStore => 17812,
+                        EntityType::InternalNonFungibleVault => 9545,
                     }
                 } else {
                     0
@@ -325,7 +332,7 @@ impl FeeTable {
                 read_from_heap,
                 ..
             } => {
-                let base_cost: u32 = if *read_from_heap { 5851 } else { 11805 };
+                let base_cost: u32 = if *read_from_heap { 2127 } else { 3345 };
                 add(
                     base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
                     Self::data_processing_cost(value.len()),
@@ -338,7 +345,7 @@ impl FeeTable {
     pub fn write_substate_cost(&self, event: &WriteSubstateEvent) -> u32 {
         match event {
             WriteSubstateEvent::Start { value, .. } => add(
-                4510u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                2003u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                 Self::data_processing_cost(value.len()),
             ),
         }
@@ -348,7 +355,7 @@ impl FeeTable {
     pub fn close_substate_cost(&self, event: &CloseSubstateEvent) -> u32 {
         match event {
             CloseSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
-            CloseSubstateEvent::End(..) => 4087u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            CloseSubstateEvent::End(..) => 3596u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
         }
     }
 
@@ -356,7 +363,7 @@ impl FeeTable {
     pub fn set_substate_cost(&self, event: &SetSubstateEvent) -> u32 {
         match event {
             SetSubstateEvent::Start(value) => add(
-                4733u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                8026u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                 Self::data_processing_cost(value.len()),
             ),
             SetSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
@@ -366,7 +373,7 @@ impl FeeTable {
     #[inline]
     pub fn remove_substate_cost(&self, event: &RemoveSubstateEvent) -> u32 {
         match event {
-            RemoveSubstateEvent::Start => 16523u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            RemoveSubstateEvent::Start => 16440u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
             RemoveSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
     }
@@ -374,7 +381,7 @@ impl FeeTable {
     #[inline]
     pub fn scan_keys_cost(&self, event: &ScanKeysEvent) -> u32 {
         match event {
-            ScanKeysEvent::Start => 3395u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            ScanKeysEvent::Start => 14285u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
             ScanKeysEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
     }
@@ -383,7 +390,7 @@ impl FeeTable {
     pub fn drain_substates_cost(&self, event: &DrainSubstatesEvent) -> u32 {
         match event {
             DrainSubstatesEvent::Start(count) => {
-                let cpu_instructions = add(3692u32, mul(13222u32, *count));
+                let cpu_instructions = add(3140u32, mul(14227u32, *count));
                 cpu_instructions / CPU_INSTRUCTIONS_TO_COST_UNIT
             }
             DrainSubstatesEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
@@ -393,7 +400,7 @@ impl FeeTable {
     #[inline]
     pub fn scan_sorted_substates_cost(&self, event: &ScanSortedSubstatesEvent) -> u32 {
         match event {
-            ScanSortedSubstatesEvent::Start => 6665u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            ScanSortedSubstatesEvent::Start => 6388u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
             ScanSortedSubstatesEvent::StoreAccess(store_access) => {
                 self.store_access_cost(store_access)
             }

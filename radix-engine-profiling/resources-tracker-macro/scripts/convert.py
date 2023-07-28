@@ -116,7 +116,7 @@ for path in file_list:
         #     key += "::" + param[0]
 
         # handle kernel_drain_substates
-        param = child.xpath("./self::kernel_drain_substates/@count")
+        param = child.xpath("./self::kernel_drain_substates/@limit")
         if param:
             key += "::" + param[0]
 
@@ -138,11 +138,11 @@ for path in file_list:
         # handle kernel_read_substate
         resolve_heap_or_track = child.xpath("./self::kernel_read_substate/on_read_substate")
         if resolve_heap_or_track:
-            store_info_len = resolve_heap_or_track[0].attrib["arg1"]
-            if int(store_info_len) == 0:
-                key += "::store"
-            else:
+            read_from_heap = resolve_heap_or_track[0].attrib["arg0"]
+            if read_from_heap == "true":
                 key += "::heap"
+            else:
+                key += "::store"
 
         # handle kernel_scan_keys
 #        param = child.xpath("./self::kernel_scan_keys[@arg0 | @count]")
