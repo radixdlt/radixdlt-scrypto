@@ -1823,3 +1823,9 @@ impl ManifestBuilder {
         decompile_with_known_naming(&self.instructions, network_definition, self.object_names())
     }
 }
+
+impl Default for ManifestBuilder {
+    fn default() -> Self {
+        ManifestBuilder::new()
+    }
+}
