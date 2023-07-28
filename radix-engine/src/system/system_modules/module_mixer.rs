@@ -248,7 +248,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for SystemModuleMixe
         internal_call_dispatch!(api.kernel_get_system(), on_execution_finish(api, message))
     }
 
-    #[trace_resources(log=output_size)]
+    #[trace_resources]
     fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         output: &IndexedScryptoValue,
