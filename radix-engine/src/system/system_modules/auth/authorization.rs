@@ -170,7 +170,7 @@ impl Authorization {
                 if let ResourceOrNonFungible::NonFungible(non_fungible_global_id) = resource_rule {
                     if is_first_barrier {
                         if auth_zone
-                            .virtual_non_fungibles_non_extending_barrier()
+                            .virtual_global_call_frame_proofs()
                             .contains(&non_fungible_global_id)
                         {
                             return Ok(true);
@@ -179,7 +179,7 @@ impl Authorization {
 
                     if rev_index == 0 {
                         if auth_zone
-                            .virtual_non_fungibles_non_extending()
+                            .virtual_local_call_frame_proofs()
                             .contains(&non_fungible_global_id)
                         {
                             return Ok(true);

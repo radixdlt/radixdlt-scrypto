@@ -33,7 +33,7 @@ fn test_component_royalty() {
 
     // Act
     // Call the paid method
-    let account_pre_balance = test_runner.account_balance(account, XRD);
+    let account_pre_balance = test_runner.get_component_balance(account, XRD);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -45,7 +45,7 @@ fn test_component_royalty() {
     // Assert
     let commit_result = receipt.expect_commit(true);
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("3"));
-    let account_post_balance = test_runner.account_balance(account, XRD);
+    let account_post_balance = test_runner.get_component_balance(account, XRD);
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance - account_post_balance,
@@ -82,7 +82,7 @@ fn test_component_royalty_in_usd() {
     let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
     // Call the paid method
-    let account_pre_balance = test_runner.account_balance(account, XRD);
+    let account_pre_balance = test_runner.get_component_balance(account, XRD);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -96,7 +96,7 @@ fn test_component_royalty_in_usd() {
         commit_result.fee_summary.total_royalty_cost_xrd,
         dec!(1) * Decimal::try_from(USD_PRICE_IN_XRD).unwrap()
     );
-    let account_post_balance = test_runner.account_balance(account, XRD);
+    let account_post_balance = test_runner.get_component_balance(account, XRD);
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance - account_post_balance,
@@ -119,7 +119,7 @@ fn test_package_royalty() {
         _owner_badge_resource,
     ) = set_up_package_and_component();
 
-    let account_pre_balance = test_runner.account_balance(account, XRD);
+    let account_pre_balance = test_runner.get_component_balance(account, XRD);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -133,7 +133,7 @@ fn test_package_royalty() {
         commit_result.fee_summary.total_royalty_cost_xrd,
         dec!(1) + dec!("2")
     );
-    let account_post_balance = test_runner.account_balance(account, XRD);
+    let account_post_balance = test_runner.get_component_balance(account, XRD);
     let package_royalty = test_runner
         .inspect_package_royalty(package_address)
         .unwrap();

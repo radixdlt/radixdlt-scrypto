@@ -1,0 +1,26 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+SET_METADATA
+    Address("account_sim16xygyhqp3x3awxlz3c5dzrm7jqghgpgs776v4af0yfr7xljqv060nu")
+    "account_type"
+    Enum<0u8>(
+        "dapp definition"
+    )
+;
+SET_METADATA
+    Address("account_sim16xygyhqp3x3awxlz3c5dzrm7jqghgpgs776v4af0yfr7xljqv060nu")
+    "name"
+    Enum<0u8>(
+        "Radix Dashboard"
+    )
+;
+SET_METADATA
+    Address("account_sim16xygyhqp3x3awxlz3c5dzrm7jqghgpgs776v4af0yfr7xljqv060nu")
+    "description"
+    Enum<0u8>(
+        "A collection of tools to assist with standard actions, and a place to look up anything on the ledger."
+    )
+;
