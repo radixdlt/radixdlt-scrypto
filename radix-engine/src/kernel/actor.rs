@@ -1,3 +1,8 @@
+use crate::kernel::call_frame::ReferenceOrigin;
+use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_callback_api::CallFrameReferences;
+use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
@@ -9,15 +14,8 @@ pub struct InstanceContext {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ReceiverType {
-    DirectAccess,
-    OnHeapObject,
-    OnStoredObject(GlobalAddress),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct MethodActor {
-    pub receiver_type: ReceiverType,
+    pub direct_access: bool,
     pub node_id: NodeId,
     pub module_id: ObjectModuleId,
     pub ident: String,
@@ -72,6 +70,74 @@ pub enum Actor {
     BlueprintHook(BlueprintHookActor),
 }
 
+impl CallFrameReferences for Actor {
+    fn global_references(&self) -> Vec<NodeId> {
+        let mut global_refs = Vec::new();
+
+        if let Some(blueprint_id) = self.blueprint_id() {
+            global_refs.push(blueprint_id.package_address.into_node_id());
+        }
+
+        if let Actor::Method(MethodActor {
+            node_id,
+            object_info,
+            ..
+        }) = self
+        {
+            if let OuterObjectInfo::Some { outer_object } =
+                object_info.blueprint_info.outer_obj_info
+            {
+                global_refs.push(outer_object.clone().into_node_id());
+            }
+
+            if node_id.is_global() {
+                global_refs.push(node_id.clone());
+            }
+        }
+
+        global_refs
+    }
+
+    fn direct_access_references(&self) -> Vec<NodeId> {
+        if self.is_direct_access() {
+            self.node_id().into_iter().collect()
+        } else {
+            vec![]
+        }
+    }
+
+    fn stable_transient_references(&self) -> Vec<NodeId> {
+        if self.is_direct_access() {
+            vec![]
+        } else {
+            self.node_id()
+                .into_iter()
+                .filter(|n| !n.is_global())
+                .collect()
+        }
+    }
+
+    fn len(&self) -> usize {
+        match self {
+            Actor::Root => 1,
+            Actor::Method(MethodActor { ident, node_id, .. }) => {
+                node_id.as_ref().len() + ident.len()
+            }
+            Actor::Function(FunctionActor {
+                blueprint_id,
+                ident,
+            }) => {
+                blueprint_id.package_address.as_ref().len()
+                    + blueprint_id.blueprint_name.len()
+                    + ident.len()
+            }
+            Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                blueprint_id.package_address.as_ref().len() + blueprint_id.blueprint_name.len() + 1
+            }
+        }
+    }
+}
+
 impl Actor {
     pub fn instance_context(&self) -> Option<InstanceContext> {
         let method_actor = match self {
@@ -106,26 +172,6 @@ impl Actor {
                 ..
             }) => Some((node_id, ObjectModuleId::Main)),
             Actor::BlueprintHook(..) | Actor::Root | Actor::Function(..) => None,
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        match self {
-            Actor::Root => 1,
-            Actor::Method(MethodActor { ident, node_id, .. }) => {
-                node_id.as_ref().len() + ident.len()
-            }
-            Actor::Function(FunctionActor {
-                blueprint_id,
-                ident,
-            }) => {
-                blueprint_id.package_address.as_ref().len()
-                    + blueprint_id.blueprint_name.len()
-                    + ident.len()
-            }
-            Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
-                blueprint_id.package_address.as_ref().len() + blueprint_id.blueprint_name.len() + 1
-            }
         }
     }
 
@@ -199,31 +245,8 @@ impl Actor {
 
     pub fn is_direct_access(&self) -> bool {
         match self {
-            Actor::Method(MethodActor {
-                receiver_type: ReceiverType::DirectAccess,
-                ..
-            }) => true,
+            Actor::Method(MethodActor { direct_access, .. }) => *direct_access,
             _ => false,
-        }
-    }
-
-    pub fn receiver_type(&self) -> Option<ReceiverType> {
-        match self {
-            Actor::Method(MethodActor { receiver_type, .. }) => Some(receiver_type.clone()),
-            _ => None,
-        }
-    }
-
-    pub fn as_global_caller(&self) -> Option<GlobalCaller> {
-        match self {
-            Actor::Method(actor) => match &actor.receiver_type {
-                ReceiverType::OnStoredObject(global_address) => Some(global_address.clone().into()),
-                _ => None,
-            },
-            Actor::Function(FunctionActor { blueprint_id, .. }) => {
-                Some(blueprint_id.clone().into())
-            }
-            _ => None,
         }
     }
 
@@ -243,8 +266,7 @@ impl Actor {
     }
 
     /// Proofs which exist only on the local call frame
-    /// FIXME: Update abstractions such that it is based on local call frame
-    pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
+    pub fn get_local_call_frame_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
         if let Some(blueprint_id) = self.blueprint_id() {
             btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
                 blueprint_id.package_address
@@ -254,8 +276,25 @@ impl Actor {
         }
     }
 
-    pub fn get_virtual_non_extending_barrier_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
-        if let Some(global_caller) = self.as_global_caller() {
+    pub fn get_global_call_frame_proofs<V: SystemCallbackObject, Y: KernelApi<SystemConfig<V>>>(
+        &self,
+        api: &mut Y,
+    ) -> BTreeSet<NonFungibleGlobalId> {
+        let global_caller: Option<GlobalCaller> = match self {
+            Actor::Method(actor) => {
+                let node_visibility = api.kernel_get_node_visibility(&actor.node_id);
+                match node_visibility.reference_origin(actor.node_id).unwrap() {
+                    ReferenceOrigin::Heap | ReferenceOrigin::DirectlyAccessed => None,
+                    ReferenceOrigin::Global(address) => Some(address.into()),
+                }
+            }
+            Actor::Function(FunctionActor { blueprint_id, .. }) => {
+                Some(blueprint_id.clone().into())
+            }
+            _ => None,
+        };
+
+        if let Some(global_caller) = global_caller {
             btreeset!(NonFungibleGlobalId::global_caller_badge(global_caller))
         } else {
             btreeset!()
@@ -263,18 +302,18 @@ impl Actor {
     }
 
     pub fn method(
-        receiver_type: ReceiverType,
+        direct_access: bool,
         node_id: NodeId,
         module_id: ObjectModuleId,
         ident: String,
         object_info: ObjectInfo,
     ) -> Self {
         Self::Method(MethodActor {
-            receiver_type,
+            direct_access,
             node_id,
             module_id,
             ident,
-            object_info: object_info,
+            object_info,
         })
     }
 

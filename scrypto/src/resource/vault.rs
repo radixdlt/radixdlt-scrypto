@@ -63,9 +63,9 @@ pub trait ScryptoFungibleVault {
 }
 
 pub trait ScryptoNonFungibleVault {
-    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
+    fn non_fungible_local_ids(&self, limit: u32) -> BTreeSet<NonFungibleLocalId>;
 
-    fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>>;
+    fn non_fungibles<T: NonFungibleData>(&self, limit: u32) -> Vec<NonFungible<T>>;
 
     fn non_fungible_local_id(&self) -> NonFungibleLocalId;
 
@@ -423,13 +423,14 @@ impl ScryptoVault for NonFungibleVault {
 }
 
 impl ScryptoNonFungibleVault for NonFungibleVault {
-    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+    fn non_fungible_local_ids(&self, limit: u32) -> BTreeSet<NonFungibleLocalId> {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
                 NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-                scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput {}).unwrap(),
+                scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit: limit })
+                    .unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -439,9 +440,9 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault.
-    fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
+    fn non_fungibles<T: NonFungibleData>(&self, limit: u32) -> Vec<NonFungible<T>> {
         let resource_address = self.0.resource_address();
-        self.non_fungible_local_ids()
+        self.non_fungible_local_ids(limit)
             .iter()
             .map(|id| NonFungible::from(NonFungibleGlobalId::new(resource_address, id.clone())))
             .collect()
@@ -452,11 +453,11 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
     /// # Panics
     /// Panics if this is not a singleton bucket
     fn non_fungible_local_id(&self) -> NonFungibleLocalId {
-        let non_fungible_local_ids = self.non_fungible_local_ids();
+        let non_fungible_local_ids = self.non_fungible_local_ids(2);
         if non_fungible_local_ids.len() != 1 {
             panic!("Expecting singleton NFT vault");
         }
-        self.non_fungible_local_ids().into_iter().next().unwrap()
+        non_fungible_local_ids.into_iter().next().unwrap()
     }
 
     /// Returns a singleton non-fungible.
@@ -464,7 +465,8 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
     /// # Panics
     /// Panics if this is not a singleton bucket
     fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
-        let non_fungibles = self.non_fungibles();
+        // Use limit of 2 in order to verify singleton
+        let non_fungibles = self.non_fungibles(2);
         if non_fungibles.len() != 1 {
             panic!("Expecting singleton NFT vault");
         }
