@@ -17,7 +17,7 @@ impl LocalAuthZone {
         Y: ClientApi<E>,
     {
         let auth_zone = api.get_auth_zone()?;
-        OwnedAuthZone(Own(auth_zone)).drain(api)
+        AuthZoneRef(auth_zone).drain(api)
     }
 
     pub fn drop_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -27,7 +27,7 @@ impl LocalAuthZone {
         Y: ClientApi<E>,
     {
         let auth_zone = api.get_auth_zone()?;
-        OwnedAuthZone(Own(auth_zone)).drop_proofs(api)
+        AuthZoneRef(auth_zone).drop_proofs(api)
     }
 
     pub fn drop_regular_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -37,7 +37,7 @@ impl LocalAuthZone {
         Y: ClientApi<E>,
     {
         let auth_zone = api.get_auth_zone()?;
-        OwnedAuthZone(Own(auth_zone)).drop_regular_proofs(api)
+        AuthZoneRef(auth_zone).drop_regular_proofs(api)
     }
 
     pub fn drop_signature_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -47,7 +47,7 @@ impl LocalAuthZone {
         Y: ClientApi<E>,
     {
         let auth_zone = api.get_auth_zone()?;
-        OwnedAuthZone(Own(auth_zone)).drop_signature_proofs(api)
+        AuthZoneRef(auth_zone).drop_signature_proofs(api)
     }
 
     pub fn pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<Proof, E>
@@ -55,7 +55,7 @@ impl LocalAuthZone {
         Y: ClientApi<E>,
     {
         let auth_zone = api.get_auth_zone()?;
-        OwnedAuthZone(Own(auth_zone)).pop(api)
+        AuthZoneRef(auth_zone).pop(api)
     }
 
     pub fn create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -67,7 +67,7 @@ impl LocalAuthZone {
         Y: ClientApi<E>,
     {
         let auth_zone = api.get_auth_zone()?;
-        OwnedAuthZone(Own(auth_zone)).create_proof_of_amount(amount, resource_address, api)
+        AuthZoneRef(auth_zone).create_proof_of_amount(amount, resource_address, api)
     }
 
     pub fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -79,7 +79,7 @@ impl LocalAuthZone {
         Y: ClientApi<E>,
     {
         let auth_zone = api.get_auth_zone()?;
-        OwnedAuthZone(Own(auth_zone)).create_proof_of_non_fungibles(ids, resource_address, api)
+        AuthZoneRef(auth_zone).create_proof_of_non_fungibles(ids, resource_address, api)
     }
 
     pub fn create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -90,7 +90,7 @@ impl LocalAuthZone {
         Y: ClientApi<E>,
     {
         let auth_zone = api.get_auth_zone()?;
-        OwnedAuthZone(Own(auth_zone)).create_proof_of_all(resource_address, api)
+        AuthZoneRef(auth_zone).create_proof_of_all(resource_address, api)
     }
 
     pub fn push<P: Into<Proof>, Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -103,6 +103,6 @@ impl LocalAuthZone {
         let proof: Proof = proof.into();
 
         let auth_zone = api.get_auth_zone()?;
-        OwnedAuthZone(Own(auth_zone)).push(proof, api)
+        AuthZoneRef(auth_zone).push(proof, api)
     }
 }
