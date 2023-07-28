@@ -12,7 +12,7 @@ CREATE_PROOF_FROM_BUCKET_OF_ALL Bucket("some_xrd") Proof("proof1c");
 CLONE_PROOF Proof("proof1c") Proof("proof1d");
 DROP_PROOF Proof("proof1d");
 DROP_PROOF Proof("proof1c");
-CLEAR_AUTH_ZONE;
+DROP_AUTH_ZONE_PROOFS;
 
 # Create a proof from account and drop it
 CALL_METHOD Address("${account_address}") "create_proof_of_amount" Address("${resource_address}") Decimal("5.0");
@@ -24,11 +24,20 @@ CALL_METHOD Address("${account_address}") "create_proof_of_amount" Address("${re
 CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT Address("${resource_address}") Decimal("1") Proof("proof4");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES Address("${non_fungible_resource_address}") Array<NonFungibleLocalId>(NonFungibleLocalId("#123#")) Proof("proof5");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL Address("${non_fungible_resource_address}") Proof("proof6");
-CLEAR_AUTH_ZONE;
 
-# Drop all virtual proofs in the auth zone.
-CLEAR_SIGNATURE_PROOFS;
+# Drop all signature proofs in the auth zone.
+DROP_AUTH_ZONE_SIGNATURE_PROOFS;
 
-# Drop all proofs, and move resources to account
+# Drop all regular proofs in the auth zone.
+DROP_AUTH_ZONE_REGULAR_PROOFS;
+
+# Drop all proofs in the auth zone.
+DROP_AUTH_ZONE_PROOFS;
+
+# Drop all proofs
+DROP_NAMED_PROOFS;
+
+# Drop all proofs
 DROP_ALL_PROOFS;
+
 CALL_METHOD Address("${account_address}") "deposit_batch" Expression("ENTIRE_WORKTOP");

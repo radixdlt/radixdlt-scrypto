@@ -82,11 +82,7 @@ impl AuthZone {
         self.proofs.pop()
     }
 
-    pub fn drain(&mut self) -> Vec<Proof> {
-        self.proofs.drain(0..).collect()
-    }
-
-    pub fn clear_signature_proofs(&mut self) {
+    pub fn remove_signature_proofs(&mut self) {
         self.virtual_resources.retain(|x| {
             x != &SECP256K1_SIGNATURE_VIRTUAL_BADGE && x != &ED25519_SIGNATURE_VIRTUAL_BADGE
         });
@@ -98,5 +94,9 @@ impl AuthZone {
             x.resource_address() != SECP256K1_SIGNATURE_VIRTUAL_BADGE
                 && x.resource_address() != ED25519_SIGNATURE_VIRTUAL_BADGE
         });
+    }
+
+    pub fn remove_regular_proofs(&mut self) -> Vec<Proof> {
+        self.proofs.drain(0..).collect()
     }
 }
