@@ -252,6 +252,7 @@ pub struct TestRunnerBuilder<E, D> {
     custom_database: D,
     trace: bool,
     state_hashing: bool,
+    collect_events: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -260,11 +261,9 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_genesis: None,
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
-            #[cfg(not(feature = "resource_tracker"))]
             trace: true,
-            #[cfg(feature = "resource_tracker")]
-            trace: false,
             state_hashing: false,
+            collect_events: true,
         }
     }
 }
@@ -277,6 +276,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
 
     pub fn with_state_hashing(mut self) -> Self {
         self.state_hashing = true;
+        self
+    }
+
+    pub fn collect_events(mut self) -> Self {
+        self.collect_events = true;
         self
     }
 
@@ -295,6 +299,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: self.custom_database,
             trace: self.trace,
             state_hashing: self.state_hashing,
+            collect_events: self.collect_events,
         }
     }
 
@@ -305,10 +310,20 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: database,
             trace: self.trace,
             state_hashing: self.state_hashing,
+            collect_events: self.collect_events,
         }
     }
 
     pub fn build_and_get_epoch(self) -> (TestRunner<E, D>, ActiveValidatorSet) {
+        //---------- Override configs for resource tracker ---------------
+        let bootstrap_trace = false;
+
+        #[cfg(not(feature = "resource_tracker"))]
+        let trace = self.trace;
+        #[cfg(feature = "resource_tracker")]
+        let trace = false;
+        //----------------------------------------------------------------
+
         let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
@@ -316,9 +331,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         let native_vm = NativeVm::new_with_extension(self.custom_extension);
         let vm = Vm::new(&scrypto_vm, native_vm.clone());
         let mut substate_db = self.custom_database;
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
+        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, bootstrap_trace);
         let GenesisReceipts {
-            wrap_up_receipt, ..
+            system_bootstrap_receipt,
+            data_ingestion_receipts,
+            wrap_up_receipt,
         } = match self.custom_genesis {
             Some(custom_genesis) => bootstrapper
                 .bootstrap_with_genesis_data(
@@ -331,6 +348,29 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
                 )
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),
+        };
+
+        let collected_events = if self.collect_events {
+            let mut events = Vec::new();
+
+            events.push(
+                system_bootstrap_receipt
+                    .expect_commit_success()
+                    .application_events
+                    .clone(),
+            );
+            for receipt in data_ingestion_receipts {
+                events.push(receipt.expect_commit_success().application_events.clone());
+            }
+            events.push(
+                wrap_up_receipt
+                    .expect_commit_success()
+                    .application_events
+                    .clone(),
+            );
+            Some(events)
+        } else {
+            None
         };
 
         // Note that 0 is not a valid private key
@@ -348,7 +388,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
                 .map(|_| StateHashSupport::new()),
             next_private_key,
             next_transaction_nonce,
-            trace: self.trace,
+            trace,
+            collected_events,
         };
 
         let next_epoch = wrap_up_receipt
@@ -371,6 +412,7 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     next_transaction_nonce: u32,
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
+    collected_events: Option<Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>>,
 }
 
 #[derive(Clone)]
@@ -410,6 +452,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
     pub fn substate_db_mut(&mut self) -> &mut D {
         &mut self.database
+    }
+
+    pub fn collected_events(&self) -> &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>> {
+        self.collected_events
+            .as_ref()
+            .expect("Event collection not enabled")
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -519,23 +567,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .map(|r| r.value.0.amount())
     }
 
-    pub fn account_balance(
-        &mut self,
-        account_address: ComponentAddress,
-        resource_address: ResourceAddress,
-    ) -> Option<Decimal> {
-        let vaults = self.get_component_vaults(account_address, resource_address);
-        let index = if resource_address.eq(&XRD) {
-            // To account for royalty vault
-            1usize
-        } else {
-            0usize
-        };
-        vaults
-            .get(index)
-            .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
-    }
-
     pub fn find_all_nodes(&self) -> IndexSet<NodeId> {
         let mut node_ids = index_set_new();
         for pk in self.database.list_partition_keys() {
@@ -546,24 +577,33 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn find_all_components(&self) -> Vec<ComponentAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<ComponentAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| ComponentAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn find_all_packages(&self) -> Vec<PackageAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<PackageAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| PackageAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn find_all_resources(&self) -> Vec<ResourceAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<ResourceAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| ResourceAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn get_package_scrypto_schemas(
@@ -633,6 +673,19 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let mut traverser = StateTreeTraverser::new(&self.database, &mut vault_finder, 100);
         traverser.traverse_all_descendents(None, *node_id);
         vault_finder.to_vaults()
+    }
+
+    pub fn get_component_balance(
+        &mut self,
+        account_address: ComponentAddress,
+        resource_address: ResourceAddress,
+    ) -> Decimal {
+        let vaults = self.get_component_vaults(account_address, resource_address);
+        let mut sum = Decimal::ZERO;
+        for vault in vaults {
+            sum += self.inspect_vault_balance(vault).unwrap();
+        }
+        sum
     }
 
     pub fn inspect_vault_balance(&mut self, vault_id: NodeId) -> Option<Decimal> {
@@ -1072,6 +1125,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             self.database.commit(&commit.state_updates.database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates.database_updates);
+            }
+            if let Some(events) = &mut self.collected_events {
+                events.push(commit.application_events.clone());
             }
         }
         transaction_receipt

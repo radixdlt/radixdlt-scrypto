@@ -1,4 +1,3 @@
-use std::collections::LinkedList;
 use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
     CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
@@ -17,6 +16,7 @@ use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Box;
 use sbor::prelude::Vec;
+use sbor::rust::collections::LinkedList;
 use utils::prelude::index_set_new;
 use utils::rust::prelude::IndexSet;
 
@@ -550,7 +550,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
 
         Ok(substates)
     }
-
 
     pub fn move_node_to_store<E>(
         heap: &mut Heap,

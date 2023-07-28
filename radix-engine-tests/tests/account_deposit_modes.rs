@@ -622,9 +622,9 @@ impl AccountDepositModesTestRunner {
 
         let balance = self
             .test_runner
-            .account_balance(self.component_address, resource_address);
+            .get_component_balance(self.component_address, resource_address);
         let manifest = ManifestBuilder::new()
-            .withdraw_from_account(self.component_address, resource_address, balance.unwrap())
+            .withdraw_from_account(self.component_address, resource_address, balance)
             .try_deposit_batch_or_refund(virtual_account)
             .build();
 
