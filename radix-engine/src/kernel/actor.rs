@@ -58,6 +58,10 @@ impl FunctionActor {
             ident: self.ident.to_string(),
         }
     }
+
+    pub fn as_global_caller(&self) -> GlobalCaller {
+        GlobalCaller::PackageBlueprint(self.blueprint_id.clone())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -203,10 +203,10 @@ impl AuthModule {
         Self::on_execution_finish(api, auth_actor_info)
     }
 
-    fn open_auth_zone<V, Y>(
+    fn copy_global_caller<V, Y>(
         system: &mut SystemService<Y, V>,
         node_id: &NodeId,
-    ) -> Result<(AuthZone, LockHandle), RuntimeError>
+    ) -> Result<(Option<(GlobalCaller, Reference)>, Option<LockHandle>), RuntimeError>
     where
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
@@ -221,7 +221,7 @@ impl AuthModule {
 
         let auth_zone: FieldSubstate<AuthZone> =
             system.kernel_read_substate(handle)?.as_typed().unwrap();
-        Ok((auth_zone.value.0, handle))
+        Ok((auth_zone.value.0.global_caller, Some(handle)))
     }
 
     fn on_execution_start<V, Y>(
@@ -234,78 +234,50 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        let is_barrier = if let Some((receiver, direct_access)) = receiver {
-            let object_info = system.get_object_info(receiver)?;
-            object_info.global || direct_access
-        } else {
-            true
-        };
+        let (auth_zone, parent_lock_handle) = {
+            let next_is_barrier = if let Some((receiver, direct_access)) = receiver {
+                let object_info = system.get_object_info(receiver)?;
+                object_info.global || direct_access
+            } else {
+                true
+            };
 
-        let self_auth_zone = {
             let current_actor = system.current_actor();
             let local_package_address = current_actor.package_address();
 
+            // Retrieve global caller property of next auth zone
             let (global_caller, parent_lock_handle) = match current_actor {
-                Actor::Root => (None, None),
+                Actor::Root | Actor::BlueprintHook(..) => (None, None),
                 Actor::Method(current_method_actor) => {
-                    // TODO: Check actor object module id?
                     let node_visibility =
                         system.kernel_get_node_visibility(&current_method_actor.node_id);
-                    let ref_origin = node_visibility
+                    let current_ref_origin = node_visibility
                         .reference_origin(current_method_actor.node_id)
                         .unwrap();
-                    match ref_origin {
-                        ReferenceOrigin::Global(address) => {
-                            if is_barrier {
-                                (
-                                    Some((
-                                        address.into(),
-                                        Reference(
-                                            current_method_actor.auth_actor_info.self_auth_zone,
-                                        ),
-                                    )),
-                                    None,
-                                )
-                            } else {
-                                // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                                let (auth_zone, handle) = Self::open_auth_zone(
-                                    system,
-                                    &current_method_actor.auth_actor_info.self_auth_zone,
-                                )?;
-                                (auth_zone.global_caller, Some(handle))
-                            }
+                    let self_auth_zone = current_method_actor.auth_actor_info.self_auth_zone;
+                    match (current_ref_origin, next_is_barrier) {
+                        (ReferenceOrigin::Global(address), true) => {
+                            let global_caller: GlobalCaller = address.into();
+                            (Some((global_caller, Reference(self_auth_zone))), None)
                         }
-                        ReferenceOrigin::Heap => {
-                            // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                            let (auth_zone, handle) = Self::open_auth_zone(
-                                system,
-                                &current_method_actor.auth_actor_info.self_auth_zone,
-                            )?;
-                            (auth_zone.global_caller, Some(handle))
+                        (ReferenceOrigin::DirectlyAccessed, _) => (None, None),
+                        (ReferenceOrigin::Global(..), false) | (ReferenceOrigin::Heap, _) => {
+                            Self::copy_global_caller(system, &self_auth_zone)?
                         }
-                        ReferenceOrigin::DirectlyAccessed => (None, None),
                     }
                 }
-                Actor::BlueprintHook(_) => (None, None),
                 Actor::Function(function_actor) => {
-                    if is_barrier {
-                        (
-                            Some((
-                                GlobalCaller::PackageBlueprint(function_actor.blueprint_id.clone()),
-                                Reference(function_actor.auth_info.self_auth_zone),
-                            )),
-                            None,
-                        )
+                    let self_auth_zone = function_actor.auth_info.self_auth_zone;
+                    let global_caller = function_actor.as_global_caller();
+                    if next_is_barrier {
+                        (Some((global_caller, Reference(self_auth_zone))), None)
                     } else {
-                        // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                        let (auth_zone, handle) =
-                            Self::open_auth_zone(system, &function_actor.auth_info.self_auth_zone)?;
-                        (auth_zone.global_caller, Some(handle))
+                        Self::copy_global_caller(system, &self_auth_zone)?
                     }
                 }
             };
 
-            let self_auth_zone_parent = if is_barrier {
+            let self_auth_zone_parent = if next_is_barrier {
                 None
             } else {
                 system
@@ -323,39 +295,38 @@ impl AuthModule {
                 self_auth_zone_parent,
             );
 
-            // Create node
-            let auth_zone_node_id = system
-                .api
-                .kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
-
-            system.api.kernel_create_node(
-                auth_zone_node_id,
-                btreemap!(
-                    MAIN_BASE_PARTITION => btreemap!(
-                        AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
-                    ),
-                    TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                        global: false,
-
-                        module_versions: btreemap!(
-                            ObjectModuleId::Main => BlueprintVersion::default(),
-                        ),
-                        blueprint_info: BlueprintInfo {
-                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
-                            outer_obj_info: OuterObjectInfo::default(),
-                            features: btreeset!(),
-                            instance_schema: None,
-                        }
-                    }))
-                ),
-            )?;
-
-            if let Some(parent_lock_handle) = parent_lock_handle {
-                system.kernel_close_substate(parent_lock_handle)?;
-            }
-
-            auth_zone_node_id
+            (auth_zone, parent_lock_handle)
         };
+
+        // Create node
+        let self_auth_zone = system
+            .api
+            .kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+
+        system.api.kernel_create_node(
+            self_auth_zone,
+            btreemap!(
+                MAIN_BASE_PARTITION => btreemap!(
+                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
+                ),
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                    global: false,
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
+                    blueprint_info: BlueprintInfo {
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                        outer_obj_info: OuterObjectInfo::default(),
+                        features: btreeset!(),
+                        instance_schema: None,
+                    }
+                }))
+            ),
+        )?;
+
+        if let Some(parent_lock_handle) = parent_lock_handle {
+            system.kernel_close_substate(parent_lock_handle)?;
+        }
 
         Ok(AuthActorInfo { self_auth_zone })
     }
