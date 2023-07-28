@@ -1,7 +1,12 @@
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
+    OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::{
     blueprints::package::*,
     kernel::actor::Actor,
-    track::interface::{StoreAccess, StoreAccessInfo, StoreCommit},
+    track::interface::{StoreAccess, StoreCommit},
     types::*,
 };
 use lazy_static::lazy_static;
@@ -81,36 +86,6 @@ impl FeeTable {
         // Time for processing a byte: 10.075 µs / 1169 = 0.00861847733
 
         mul(cast(size), 2)
-    }
-
-    fn store_access_cost(store_access: &StoreAccessInfo) -> u32 {
-        let mut sum = 0;
-        for info in store_access {
-            let cost = match info {
-                StoreAccess::ReadFromDb(size) => {
-                    // Execution time (µs): 0.0009622109 * size + 389.5155
-                    // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
-                    // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                    add(cast(*size) / 10, 40_000)
-                }
-                StoreAccess::ReadFromDbNotFound => {
-                    // Execution time (µs): varies, using max 1,600
-                    // Execution cost: 1,600 * 100
-                    // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                    160_000
-                }
-                StoreAccess::NewEntryInTrack => {
-                    // The max number of entries is limited by limits module.
-                    0
-                }
-                StoreAccess::ReadFromHeap => {
-                    // Handled in read_substate_cost() function.
-                    0
-                }
-            };
-            sum = add(sum, cost);
-        }
-        sum
     }
 
     //======================
@@ -227,180 +202,215 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn create_node_cost(
-        &self,
-        node_id: &NodeId,
-        total_substate_size: usize,
-        store_access: &StoreAccessInfo,
-    ) -> u32 {
-        let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
-            match entity_type {
-                EntityType::GlobalAccessController => 10757,
-                EntityType::GlobalAccount => 36506,
-                EntityType::GlobalConsensusManager => 8523,
-                EntityType::GlobalFungibleResourceManager => 8989,
-                EntityType::GlobalGenericComponent => 8659,
-                EntityType::GlobalIdentity => 50353,
-                EntityType::GlobalMultiResourcePool => 9454,
-                EntityType::GlobalNonFungibleResourceManager => 8656,
-                EntityType::GlobalOneResourcePool => 9007,
-                EntityType::GlobalPackage => 8435,
-                EntityType::GlobalTransactionTracker => 8672,
-                EntityType::GlobalTwoResourcePool => 9400,
-                EntityType::GlobalValidator => 10563,
-                EntityType::GlobalVirtualEd25519Account => 50887,
-                EntityType::GlobalVirtualEd25519Identity => 0, // TODO: cover that in tests
-                EntityType::GlobalVirtualSecp256k1Account => 8608,
-                EntityType::GlobalVirtualSecp256k1Identity => 50780,
-                EntityType::InternalAccount => 4688,
-                EntityType::InternalFungibleVault => 5049,
-                EntityType::InternalGenericComponent => 7336,
-                EntityType::InternalKeyValueStore => 1466,
-                EntityType::InternalNonFungibleVault => 4986,
+    pub fn create_node_cost(&self, event: &CreateNodeEvent) -> u32 {
+        match event {
+            CreateNodeEvent::Start(node_id, node_substates) => {
+                let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
+                    match entity_type {
+                        EntityType::GlobalAccessController => 10757,
+                        EntityType::GlobalAccount => 36506,
+                        EntityType::GlobalConsensusManager => 8523,
+                        EntityType::GlobalFungibleResourceManager => 8989,
+                        EntityType::GlobalGenericComponent => 8659,
+                        EntityType::GlobalIdentity => 50353,
+                        EntityType::GlobalMultiResourcePool => 9454,
+                        EntityType::GlobalNonFungibleResourceManager => 8656,
+                        EntityType::GlobalOneResourcePool => 9007,
+                        EntityType::GlobalPackage => 8435,
+                        EntityType::GlobalTransactionTracker => 8672,
+                        EntityType::GlobalTwoResourcePool => 9400,
+                        EntityType::GlobalValidator => 10563,
+                        EntityType::GlobalVirtualEd25519Account => 50887,
+                        EntityType::GlobalVirtualEd25519Identity => 0, // TODO: cover that in tests
+                        EntityType::GlobalVirtualSecp256k1Account => 8608,
+                        EntityType::GlobalVirtualSecp256k1Identity => 50780,
+                        EntityType::InternalAccount => 4688,
+                        EntityType::InternalFungibleVault => 5049,
+                        EntityType::InternalGenericComponent => 7336,
+                        EntityType::InternalKeyValueStore => 1466,
+                        EntityType::InternalNonFungibleVault => 4986,
+                    }
+                } else {
+                    0
+                };
+                let total_substate_size = node_substates
+                    .values()
+                    .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+                    .sum::<usize>();
+
+                add(base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(total_substate_size))
             }
-        } else {
-            0
-        };
-        add3(
-            base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::data_processing_cost(total_substate_size),
-            Self::store_access_cost(store_access),
-        )
+            CreateNodeEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+            CreateNodeEvent::End(..) => 0,
+        }
     }
 
     #[inline]
-    pub fn drop_node_cost(&self, size: usize) -> u32 {
-        add(
-            45537u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::data_processing_cost(size),
-        )
-    }
-
-    #[inline]
-    pub fn move_modules_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(
-            3094u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::store_access_cost(store_access),
-        )
-    }
-
-    #[inline]
-    pub fn open_substate_cost(
-        &self,
-        node_id: &NodeId,
-        size: usize,
-        store_access: &StoreAccessInfo,
-    ) -> u32 {
-        let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
-            match entity_type {
-                EntityType::GlobalAccessController => 9360,
-                EntityType::GlobalAccount => 37068,
-                EntityType::GlobalConsensusManager => 8171,
-                EntityType::GlobalFungibleResourceManager => 9105,
-                EntityType::GlobalGenericComponent => 37037,
-                EntityType::GlobalIdentity => 39406,
-                EntityType::GlobalMultiResourcePool => 9467,
-                EntityType::GlobalNonFungibleResourceManager => 7584,
-                EntityType::GlobalOneResourcePool => 9369,
-                EntityType::GlobalPackage => 20730,
-                EntityType::GlobalTransactionTracker => 7508,
-                EntityType::GlobalTwoResourcePool => 21242,
-                EntityType::GlobalValidator => 8344,
-                EntityType::GlobalVirtualEd25519Account => 36466,
-                EntityType::GlobalVirtualEd25519Identity => 0, // TODO: cover that in tests
-                EntityType::GlobalVirtualSecp256k1Account => 24346,
-                EntityType::GlobalVirtualSecp256k1Identity => 38876,
-                EntityType::InternalAccount => 34663,
-                EntityType::InternalFungibleVault => 9699,
-                EntityType::InternalGenericComponent => 6453,
-                EntityType::InternalKeyValueStore => 24412,
-                EntityType::InternalNonFungibleVault => 6916,
+    pub fn drop_node_cost(&self, event: &DropNodeEvent) -> u32 {
+        match event {
+            DropNodeEvent::Start(..) => 0,
+            DropNodeEvent::End(_node_id, node_substates) => {
+                let total_substate_size = node_substates
+                    .values()
+                    .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+                    .sum::<usize>();
+                add(45537u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(total_substate_size))
             }
-        } else {
-            0
-        };
-        add3(
-            base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
+        }
     }
 
     #[inline]
-    pub fn read_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        let base_cost: u32 = if store_access
-            .iter()
-            .find(|e| *e == &StoreAccess::ReadFromHeap)
-            .is_some()
-        {
-            5851
-        } else {
-            11805
-        };
-        add3(
-            base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
+    pub fn move_module_cost(&self, event: &MoveModuleEvent) -> u32 {
+        match event {
+            MoveModuleEvent::StoreAccess(store_access) => 
+                add( 3094u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                self.store_access_cost(store_access)),
+        }
     }
 
     #[inline]
-    pub fn write_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
-            4510u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
+    pub fn open_substate_cost(&self, event: &OpenSubstateEvent) -> u32 {
+        match event {
+            OpenSubstateEvent::Start { .. } => 0,
+            OpenSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+            OpenSubstateEvent::End { size, node_id, .. } => {
+                let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
+                    match entity_type {
+                        EntityType::GlobalAccessController => 9360,
+                        EntityType::GlobalAccount => 37068,
+                        EntityType::GlobalConsensusManager => 8171,
+                        EntityType::GlobalFungibleResourceManager => 9105,
+                        EntityType::GlobalGenericComponent => 37037,
+                        EntityType::GlobalIdentity => 39406,
+                        EntityType::GlobalMultiResourcePool => 9467,
+                        EntityType::GlobalNonFungibleResourceManager => 7584,
+                        EntityType::GlobalOneResourcePool => 9369,
+                        EntityType::GlobalPackage => 20730,
+                        EntityType::GlobalTransactionTracker => 7508,
+                        EntityType::GlobalTwoResourcePool => 21242,
+                        EntityType::GlobalValidator => 8344,
+                        EntityType::GlobalVirtualEd25519Account => 36466,
+                        EntityType::GlobalVirtualEd25519Identity => 0, // TODO: cover that in tests
+                        EntityType::GlobalVirtualSecp256k1Account => 24346,
+                        EntityType::GlobalVirtualSecp256k1Identity => 38876,
+                        EntityType::InternalAccount => 34663,
+                        EntityType::InternalFungibleVault => 9699,
+                        EntityType::InternalGenericComponent => 6453,
+                        EntityType::InternalKeyValueStore => 24412,
+                        EntityType::InternalNonFungibleVault => 6916,
+                    }
+                } else {
+                    0
+                };
+                add(base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(*size))
+            }
+        }
     }
 
     #[inline]
-    pub fn close_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(
-            4087u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::store_access_cost(store_access),
-        )
+    pub fn read_substate_cost(&self, event: &ReadSubstateEvent) -> u32 {
+        match event {
+            ReadSubstateEvent::End { value, .. } => {
+                // let base_cost: u32 = if store_access
+                //     .iter()
+                //     .find(|e| *e == &StoreAccess::ReadFromHeap)
+                //     .is_some()
+                // {
+                //     5851
+                // } else {
+                //     11805
+                // };
+                
+                add(500, Self::data_processing_cost(value.len()))
+            }
+        }
     }
 
     #[inline]
-    pub fn set_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
-            4733u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
+    pub fn write_substate_cost(&self, event: &WriteSubstateEvent) -> u32 {
+        match event {
+            WriteSubstateEvent::Start { value, .. } => {
+                add(4510u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(value.len()))
+            }
+        }
     }
 
     #[inline]
-    pub fn remove_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(
-            16523u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::store_access_cost(store_access),
-        )
+    pub fn close_substate_cost(&self, event: &CloseSubstateEvent) -> u32 {
+        match event {
+            CloseSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+            CloseSubstateEvent::End(..) => 4087u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+        }
     }
 
     #[inline]
-    pub fn scan_sorted_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(
-            6665u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::store_access_cost(store_access),
-        )
+    pub fn set_substate_cost(&self, event: &SetSubstateEvent) -> u32 {
+        match event {
+            SetSubstateEvent::Start(value) => add(4733u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(value.len())),
+            SetSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+        }
     }
 
     #[inline]
-    pub fn scan_keys_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(
-            3395u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::store_access_cost(store_access),
-        )
+    pub fn remove_substate_cost(&self, event: &RemoveSubstateEvent) -> u32 {
+        match event {
+            RemoveSubstateEvent::Start => 16523u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            RemoveSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+        }
     }
 
     #[inline]
-    pub fn drain_substates_cost(&self, count: u32, store_access: &StoreAccessInfo) -> u32 {
-        let cpu_instructions = add(3692u32, mul(13222u32, count));
-        add(
-            cpu_instructions / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::store_access_cost(store_access),
-        )
+    pub fn scan_keys_cost(&self, event: &ScanKeysEvent) -> u32 {
+        match event {
+            ScanKeysEvent::Start => 3395u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            ScanKeysEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+        }
+    }
+
+    #[inline]
+    pub fn drain_substates_cost(&self, event: &DrainSubstatesEvent) -> u32 {
+        match event {
+            DrainSubstatesEvent::Start(count) => {
+                let cpu_instructions = add(3692u32, mul(13222u32, *count));
+                cpu_instructions / CPU_INSTRUCTIONS_TO_COST_UNIT
+            }
+            DrainSubstatesEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+        }
+    }
+
+    #[inline]
+    pub fn scan_sorted_substates_cost(&self, event: &ScanSortedSubstatesEvent) -> u32 {
+        match event {
+            ScanSortedSubstatesEvent::Start => 6665u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            ScanSortedSubstatesEvent::StoreAccess(store_access) => {
+                self.store_access_cost(store_access)
+            }
+        }
+    }
+
+    #[inline]
+    fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
+        match store_access {
+            StoreAccess::ReadFromDb(size) => {
+                // Execution time (µs): 0.0009622109 * size + 389.5155
+                // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                add(cast(*size) / 10, 40_000)
+            }
+            StoreAccess::ReadFromDbNotFound => {
+                // Execution time (µs): varies, using max 1,600
+                // Execution cost: 1,600 * 100
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                160_000
+            }
+            StoreAccess::NewEntryInTrack => {
+                // The max number of entries is limited by limits module.
+                0
+            }
+            StoreAccess::ReadFromHeap => {
+                0
+            }
+        }
     }
 
     //======================
@@ -472,11 +482,6 @@ fn cast(a: usize) -> u32 {
 #[inline]
 fn add(a: u32, b: u32) -> u32 {
     a.checked_add(b).unwrap_or(u32::MAX)
-}
-
-#[inline]
-fn add3(a: u32, b: u32, c: u32) -> u32 {
-    add(add(a, b), c)
 }
 
 #[inline]

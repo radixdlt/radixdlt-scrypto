@@ -51,7 +51,7 @@ mod vault_proof {
             let clone = proof.clone();
 
             assert_eq!(
-                self.vault.as_non_fungible().non_fungible_local_ids(),
+                self.vault.as_non_fungible().non_fungible_local_ids(100),
                 non_fungible_local_ids
             );
             assert_eq!(
@@ -126,7 +126,7 @@ mod vault_proof {
             bucket: Bucket,
             ids: BTreeSet<NonFungibleLocalId>,
         ) {
-            let vault_fungible_ids = self.vault.as_non_fungible().non_fungible_local_ids();
+            let vault_fungible_ids = self.vault.as_non_fungible().non_fungible_local_ids(100);
             self.vault
                 .as_non_fungible()
                 .authorize_with_non_fungibles(&vault_fungible_ids, || {

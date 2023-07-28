@@ -4,26 +4,27 @@ use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::resource::AuthZone;
-use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
+use crate::errors::{RuntimeError, SystemError};
 use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
-use crate::kernel::call_frame::CallFrameEventHandler;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::heap::Heap;
-use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
+    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::system::module::SystemModule;
 use crate::system::system::FieldSubstate;
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
-use crate::track::interface::StoreAccessInfo;
-use crate::track::interface::SubstateStore;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -92,6 +93,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
+    type CallFrameData = Actor;
     type LockData = SystemLockData;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -108,154 +110,82 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_teardown(api)
     }
 
-    fn before_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
     where
-        Y: KernelApi<Self>,
+        Y: KernelInternalApi<Self>,
     {
-        SystemModuleMixer::before_drop_node(api, node_id)
+        SystemModuleMixer::on_drop_node(api, &event)
     }
 
-    fn after_drop_node<Y>(api: &mut Y, total_substate_size: usize) -> Result<(), RuntimeError>
+    fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
     where
-        Y: KernelApi<Self>,
+        Y: KernelInternalApi<Self>,
     {
-        SystemModuleMixer::after_drop_node(api, total_substate_size)
+        SystemModuleMixer::on_create_node(api, &event)
     }
 
-    fn before_create_node<Y>(
-        node_id: &NodeId,
-        node_module_init: &BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+    fn on_move_module<Y>(api: &mut Y, event: MoveModuleEvent) -> Result<(), RuntimeError>
+    where
+        Y: KernelInternalApi<Self>,
+    {
+        SystemModuleMixer::on_move_module(api, &event)
+    }
+
+    fn on_open_substate<Y>(api: &mut Y, event: OpenSubstateEvent) -> Result<(), RuntimeError>
+    where
+        Y: KernelInternalApi<Self>,
+    {
+        SystemModuleMixer::on_open_substate(api, &event)
+    }
+
+    fn on_close_substate<Y>(api: &mut Y, event: CloseSubstateEvent) -> Result<(), RuntimeError>
+    where
+        Y: KernelInternalApi<Self>,
+    {
+        SystemModuleMixer::on_close_substate(api, &event)
+    }
+
+    fn on_read_substate<Y>(api: &mut Y, event: ReadSubstateEvent) -> Result<(), RuntimeError>
+    where
+        Y: KernelInternalApi<Self>,
+    {
+        SystemModuleMixer::on_read_substate(api, &event)
+    }
+
+    fn on_write_substate<Y>(api: &mut Y, event: WriteSubstateEvent) -> Result<(), RuntimeError>
+    where
+        Y: KernelInternalApi<Self>,
+    {
+        SystemModuleMixer::on_write_substate(api, &event)
+    }
+
+    fn on_set_substate(&mut self, event: SetSubstateEvent) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_set_substate(self, &event)
+    }
+
+    fn on_remove_substate(&mut self, event: RemoveSubstateEvent) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_remove_substate(self, &event)
+    }
+
+    fn on_scan_keys(&mut self, event: ScanKeysEvent) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_scan_keys(self, &event)
+    }
+
+    fn on_scan_sorted_substates(
+        &mut self,
+        event: ScanSortedSubstatesEvent,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_scan_sorted_substates(self, &event)
+    }
+
+    fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_drain_substates(self, &event)
+    }
+
+    fn before_invoke<Y>(
+        invocation: &KernelInvocation<Actor>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::before_create_node(api, node_id, node_module_init)
-    }
-
-    fn before_open_substate<Y>(
-        node_id: &NodeId,
-        partition_num: &PartitionNumber,
-        substate_key: &SubstateKey,
-        flags: &LockFlags,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::before_open_substate(api, node_id, partition_num, substate_key, flags)
-    }
-
-    fn after_open_substate<Y>(
-        handle: LockHandle,
-        node_id: &NodeId,
-        size: usize,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_open_substate(api, handle, node_id, store_access, size)
-    }
-
-    fn after_close_substate<Y>(
-        lock_handle: LockHandle,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_close_substate(api, lock_handle, store_access)
-    }
-
-    fn after_read_substate<Y>(
-        lock_handle: LockHandle,
-        value_size: usize,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_read_substate(api, lock_handle, value_size, store_access)
-    }
-
-    fn after_write_substate<Y>(
-        lock_handle: LockHandle,
-        value_size: usize,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_write_substate(api, lock_handle, value_size, store_access)
-    }
-
-    fn after_set_substate<Y>(
-        value_size: usize,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_set_substate(api, value_size, store_access)
-    }
-
-    fn after_remove_substate<Y>(
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_remove_substate(api, store_access)
-    }
-
-    fn after_scan_keys<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_scan_keys(api, store_access)
-    }
-
-    fn after_scan_sorted_substates<Y>(
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_scan_sorted_substates(api, store_access)
-    }
-
-    fn after_drain_substates<Y>(
-        count: u32,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_drain_substates(api, count, store_access)
-    }
-
-    fn after_create_node<Y>(
-        node_id: &NodeId,
-        total_substate_size: usize,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_create_node(api, node_id, total_substate_size, store_access)
-    }
-
-    fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -271,7 +201,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_push_frame<Y>(
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -302,7 +232,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_execution_start(api)
     }
 
-    fn on_execution_finish<Y>(message: &Message, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -313,7 +243,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn after_pop_frame<Y>(
         dropped_actor: &Actor,
-        message: &Message,
+        message: &CallFrameMessage,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -321,7 +251,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         SystemModuleMixer::after_pop_frame(api, dropped_actor, message)?;
 
-        let current_actor = api.kernel_get_system_state().current_actor;
+        let current_actor = api.kernel_get_system_state().current_call_frame;
         let is_to_barrier = current_actor.is_barrier();
         let destination_blueprint_id = current_actor.blueprint_id();
         for node_id in &message.move_nodes {
@@ -342,27 +272,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_allocate_node_id(api, entity_type)
-    }
-
-    fn after_move_modules<Y>(
-        src_node_id: &NodeId,
-        src_partition_number: PartitionNumber,
-        dest_node_id: &NodeId,
-        dest_partition_number: PartitionNumber,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_move_modules(
-            api,
-            src_node_id,
-            src_partition_number,
-            dest_node_id,
-            dest_partition_number,
-            store_access,
-        )
     }
 
     //--------------------------------------------------------------------------
@@ -659,7 +568,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 system.allocate_virtual_global_address(blueprint_id.clone(), address)?;
 
             api.kernel_invoke(Box::new(KernelInvocation {
-                actor: Actor::BlueprintHook(BlueprintHookActor {
+                call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
                     blueprint_id: blueprint_id.clone(),
                     hook: BlueprintHook::OnVirtualize,
                     receiver: None,
@@ -676,7 +585,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         }
     }
 
-    fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drop_node_mut<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -698,7 +607,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?;
                 if definition.hook_exports.contains_key(&BlueprintHook::OnDrop) {
                     api.kernel_invoke(Box::new(KernelInvocation {
-                        actor: Actor::BlueprintHook(BlueprintHookActor {
+                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
                             blueprint_id: node_object_info.blueprint_info.blueprint_id.clone(),
                             hook: BlueprintHook::OnDrop,
                             receiver: Some(node_id.clone()),
@@ -747,7 +656,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?;
                 if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
                     api.kernel_invoke(Box::new(KernelInvocation {
-                        actor: Actor::BlueprintHook(BlueprintHookActor {
+                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
                             receiver: Some(node_id.clone()),
                             blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
                             hook: BlueprintHook::OnMove,
@@ -768,15 +677,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
     }
-}
 
-impl<C: SystemCallbackObject> CallFrameEventHandler for SystemConfig<C> {
-    fn on_persist_node<S: SubstateStore>(
-        &mut self,
-        heap: &mut Heap,
-        store: &mut S,
-        node_id: &NodeId,
-    ) -> Result<(), String> {
+    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError> {
         // Read type info
         let maybe_type_info = if let Some(substate) = heap.get_substate(
             node_id,
@@ -784,15 +686,6 @@ impl<C: SystemCallbackObject> CallFrameEventHandler for SystemConfig<C> {
             &TypeInfoField::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
-            Some(type_info)
-        } else if let Ok((handle, _)) = store.acquire_lock(
-            node_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-            LockFlags::read_only(),
-        ) {
-            let type_info: TypeInfoSubstate = store.read_substate(handle).0.as_typed().unwrap();
-            store.close_substate(handle);
             Some(type_info)
         } else {
             None
@@ -824,7 +717,9 @@ impl<C: SystemCallbackObject> CallFrameEventHandler for SystemConfig<C> {
         if is_persist_allowed {
             Ok(())
         } else {
-            Err("Persistence prohibited".to_owned())
+            Err(RuntimeError::SystemError(
+                SystemError::PersistenceProhibited,
+            ))
         }
     }
 }
