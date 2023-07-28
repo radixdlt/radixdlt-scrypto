@@ -1,7 +1,6 @@
 use super::call_frame::NodeVisibility;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
-use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::kernel::kernel_callback_api::{CallFrameReferences, KernelCallbackObject};
 use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
 use crate::track::interface::NodeSubstates;
@@ -98,7 +97,7 @@ pub trait KernelSubstateApi<L> {
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<IndexedScryptoValue, RuntimeError>;
+    ) -> Result<&IndexedScryptoValue, RuntimeError>;
 
     /// Writes a value to the substate locked by the given lock handle
     fn kernel_write_substate(
@@ -157,32 +156,30 @@ pub trait KernelSubstateApi<L> {
 }
 
 #[derive(Debug)]
-pub struct KernelInvocation {
-    /// FIXME: redo actor generification
-    /// Temporarily restored as there's a large conflict with `develop` branch
-    pub actor: Actor,
+pub struct KernelInvocation<C> {
+    pub call_frame_data: C,
     pub args: IndexedScryptoValue,
 }
 
-impl KernelInvocation {
+impl<C: CallFrameReferences> KernelInvocation<C> {
     pub fn len(&self) -> usize {
-        self.actor.len() + self.args.len()
+        self.call_frame_data.len() + self.args.len()
     }
 }
 
 /// API for invoking a function creating a new call frame and passing
 /// control to the callee
-pub trait KernelInvokeApi {
+pub trait KernelInvokeApi<C> {
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation>,
+        invocation: Box<KernelInvocation<C>>,
     ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
 pub struct SystemState<'a, M: KernelCallbackObject> {
     pub system: &'a mut M,
-    pub current_actor: &'a Actor,
-    pub caller_actor: &'a Actor,
+    pub current_call_frame: &'a M::CallFrameData,
+    pub caller_call_frame: &'a M::CallFrameData,
 }
 
 /// Internal API for kernel modules.
@@ -207,6 +204,9 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi + KernelSubstateApi<M::LockData> + KernelInvokeApi + KernelInternalApi<M>
+    KernelNodeApi
+    + KernelSubstateApi<M::LockData>
+    + KernelInvokeApi<M::CallFrameData>
+    + KernelInternalApi<M>
 {
 }

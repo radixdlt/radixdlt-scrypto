@@ -188,6 +188,20 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
+impl Default for NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
+    fn default() -> Self {
+        Self {
+            owner_role: Default::default(),
+            track_total_supply: true,
+            non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+            entries: Default::default(),
+            resource_roles: Default::default(),
+            metadata: Default::default(),
+            address_reservation: Default::default(),
+        }
+    }
+}
+
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
