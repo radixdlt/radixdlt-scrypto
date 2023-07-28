@@ -192,14 +192,6 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                InstructionV1::ClearAuthZone => {
-                    LocalAuthZone::clear(api)?;
-                    InstructionOutput::None
-                }
-                InstructionV1::ClearSignatureProofs => {
-                    LocalAuthZone::clear_signature_proofs(api)?;
-                    InstructionOutput::None
-                }
                 InstructionV1::PushToAuthZone { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
                     LocalAuthZone::push(proof, api)?;
@@ -248,6 +240,18 @@ impl TransactionProcessorBlueprint {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.create_proof_of_all(api)?;
                     processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneProofs => {
+                    LocalAuthZone::drop_proofs(api)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneRegularProofs => {
+                    LocalAuthZone::drop_regular_proofs(api)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneSignatureProofs => {
+                    LocalAuthZone::drop_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::BurnResource { bucket_id } => {
@@ -379,15 +383,19 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-                InstructionV1::DropAllProofs => {
-                    // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
-                    // the former will drop all named proofs before clearing the auth zone.
-
+                InstructionV1::DropNamedProofs => {
                     for (_, real_id) in processor.proof_mapping.drain(..) {
                         let proof = Proof(Own(real_id));
                         proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
-                    LocalAuthZone::clear(api)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAllProofs => {
+                    for (_, real_id) in processor.proof_mapping.drain(..) {
+                        let proof = Proof(Own(real_id));
+                        proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
+                    }
+                    LocalAuthZone::drop_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::AllocateGlobalAddress {

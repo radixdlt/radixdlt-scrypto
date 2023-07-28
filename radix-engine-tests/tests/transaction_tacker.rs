@@ -108,7 +108,7 @@ fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransacti
         .manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
-                .clear_auth_zone()
+                .drop_auth_zone_proofs()
                 .build(),
         )
         .sign(&sk1)

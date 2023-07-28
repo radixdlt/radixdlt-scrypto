@@ -187,7 +187,7 @@ DROP_PROOF
 DROP_PROOF
     Proof("proof3")
 ;
-CLEAR_AUTH_ZONE;
+DROP_AUTH_ZONE_PROOFS;
 CALL_METHOD
     Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
     "create_proof_of_amount"
@@ -222,8 +222,10 @@ CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
     Address("resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha")
     Proof("proof8")
 ;
-CLEAR_AUTH_ZONE;
-CLEAR_SIGNATURE_PROOFS;
+DROP_AUTH_ZONE_SIGNATURE_PROOFS;
+DROP_AUTH_ZONE_REGULAR_PROOFS;
+DROP_AUTH_ZONE_PROOFS;
+DROP_NAMED_PROOFS;
 DROP_ALL_PROOFS;
 CALL_METHOD
     Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")

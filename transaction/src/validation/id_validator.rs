@@ -118,7 +118,7 @@ impl ManifestValidator {
         }
     }
 
-    pub fn drop_all_proofs(&mut self) -> Result<(), ManifestIdValidationError> {
+    pub fn drop_all_named_proofs(&mut self) -> Result<(), ManifestIdValidationError> {
         self.proof_ids.clear();
         Ok(())
     }

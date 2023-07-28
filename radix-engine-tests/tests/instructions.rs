@@ -11,7 +11,7 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-fn clear_auth_zone_should_not_drop_named_proofs() {
+fn drop_auth_zone_proofs_should_not_drop_named_proofs() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -21,8 +21,8 @@ fn clear_auth_zone_should_not_drop_named_proofs() {
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
         .create_proof_from_auth_zone_of_all(XRD, "proof")
-        .clear_auth_zone()
-        .drop_proof("proof") // Proof should continue to work after CLEAR_AUTH_ZONE
+        .drop_auth_zone_proofs()
+        .drop_proof("proof") // Proof should continue to work after DROP_AUTH_ZONE_PROOFS
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -52,7 +52,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
             // We capture the proof before the lookup knows that the proof has been cleared,
             // which causes a panic in the lookup and would void the test too early!
             let proof = lookup.proof("proof");
-            builder.drop_all_proofs().drop_proof(proof) // Proof should fail after CLEAR_AUTH_ZONE
+            builder.drop_all_proofs().drop_proof(proof) // Proof should fail after DROP_AUTH_ZONE_PROOFS
         })
         .build();
     let receipt = test_runner.execute_manifest(
@@ -72,7 +72,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
 }
 
 #[test]
-fn clear_signature_proofs_should_invalid_public_key_proof() {
+fn drop_auth_zone_signature_proofs_should_invalid_public_key_proof() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -83,7 +83,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
-        .clear_signature_proofs()
+        .drop_auth_zone_signature_proofs()
         .create_proof_from_account_of_amount(other_account, XRD, dec!(1))
         .build();
     let receipt = test_runner.execute_manifest(
@@ -103,7 +103,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
 }
 
 #[test]
-fn clear_signature_proofs_should_not_invalid_physical_proof() {
+fn drop_auth_zone_signature_proofs_should_not_invalid_physical_proof() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -114,7 +114,7 @@ fn clear_signature_proofs_should_not_invalid_physical_proof() {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
-        .clear_signature_proofs()
+        .drop_auth_zone_signature_proofs()
         .create_proof_from_account_of_amount(other_account, XRD, dec!(1))
         .build();
     let receipt = test_runner.execute_manifest(
