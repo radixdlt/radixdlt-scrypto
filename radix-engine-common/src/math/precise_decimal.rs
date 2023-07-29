@@ -1393,12 +1393,14 @@ mod tests {
         let sqrt_of_42 = pdec!(42).sqrt();
         let sqrt_of_0 = pdec!(0).sqrt();
         let sqrt_of_negative = pdec!("-1").sqrt();
+        let sqrt_max = PreciseDecimal::MAX.sqrt();
         assert_eq!(
             sqrt_of_42.unwrap(),
             pdec!("6.4807406984078602309659674360879966577052043070583465497113543978")
         );
         assert_eq!(sqrt_of_0.unwrap(), pdec!(0));
         assert_eq!(sqrt_of_negative, None);
+        assert_eq!(sqrt_max.unwrap(), pdec!("818773715074641276175512015429796283075074324.7124323706182185360075675478248529291552403694480161540131015399"));
     }
 
     #[test]
@@ -1406,6 +1408,7 @@ mod tests {
         let cbrt_of_42 = pdec!(42).cbrt();
         let cbrt_of_0 = pdec!(0).cbrt();
         let cbrt_of_negative_42 = pdec!("-42").cbrt();
+        let cbrt_max = PreciseDecimal::MAX.cbrt();
         assert_eq!(
             cbrt_of_42,
             pdec!("3.4760266448864497867398652190045374340048385387869674214742239567")
@@ -1415,6 +1418,7 @@ mod tests {
             cbrt_of_negative_42,
             pdec!("-3.4760266448864497867398652190045374340048385387869674214742239567")
         );
+        assert_eq!(cbrt_max, pdec!("875203934614058436946717595963.2260367816582100146171120658369118456037101309163370783243490842"));
     }
 
     #[test]
