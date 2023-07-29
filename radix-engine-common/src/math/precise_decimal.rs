@@ -283,7 +283,7 @@ impl PreciseDecimal {
             return Self::ZERO;
         }
 
-        // By reasoning in the same way as before, we realise that we need to multiply by 10^36
+        // By reasoning in the same way as before, we realise that we need to multiply by 10^128
         let self_bigint = BigInt::from(self.0);
         let correct_nb: BigInt = self_bigint * BigInt::from(PreciseDecimal::one().0).pow(2_u32);
         let cbrt = BnumI512::try_from(correct_nb.cbrt()).unwrap();
