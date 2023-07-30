@@ -17,7 +17,7 @@ DropNode                                                                   ,    
 EmitEvent                                                                  ,           4548,      0.0%
 GenerateRuid                                                               ,            500,      0.0%
 LockFee                                                                    ,            500,      0.0%
-OpenSubstate                                                               ,        3845677,     28.0%
+OpenSubstate                                                               ,        3845680,     28.0%
 OpenSubstate::GlobalAccount                                                ,          15452,      0.1%
 OpenSubstate::GlobalFungibleResourceManager                                ,          25562,      0.2%
 OpenSubstate::GlobalGenericComponent                                       ,           5924,      0.0%
