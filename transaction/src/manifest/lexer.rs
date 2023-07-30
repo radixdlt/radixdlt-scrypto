@@ -486,6 +486,48 @@ mod tests {
     }
 
     #[test]
+    fn test_balanced_decimal() {
+        lex_ok!(
+            "BalancedDecimal(\"12\")",
+            vec![
+                TokenKind::Ident("BalancedDecimal".to_string()),
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("12".into()),
+                TokenKind::CloseParenthesis,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_balanced_decimal_colletion() {
+        lex_ok!(
+            "Array<BalancedDecimal>(BalancedDecimal(\"12\"), BalancedDecimal(\"212\"), BalancedDecimal(\"1984\"))",
+            vec![
+                TokenKind::Ident("Array".to_string()),
+                TokenKind::LessThan,
+                TokenKind::Ident("BalancedDecimal".to_string()),
+                TokenKind::GreaterThan,
+                TokenKind::OpenParenthesis,
+                TokenKind::Ident("BalancedDecimal".to_string()),
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("12".into()),
+                TokenKind::CloseParenthesis,
+                TokenKind::Comma,
+                TokenKind::Ident("BalancedDecimal".to_string()),
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("212".into()),
+                TokenKind::CloseParenthesis,
+                TokenKind::Comma,
+                TokenKind::Ident("BalancedDecimal".to_string()),
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("1984".into()),
+                TokenKind::CloseParenthesis,
+                TokenKind::CloseParenthesis,
+            ]
+        );
+    }
+
+    #[test]
     fn test_precise_decimal() {
         lex_ok!(
             "PreciseDecimal(\"12\")",

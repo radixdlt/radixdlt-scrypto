@@ -1,4 +1,4 @@
-use crate::data::{to_decimal, to_non_fungible_local_id, to_precise_decimal};
+use crate::data::{to_decimal, to_balanced_decimal, to_non_fungible_local_id, to_precise_decimal};
 use radix_engine_interface::data::manifest::{
     model::*, ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
 };
@@ -486,6 +486,16 @@ pub fn format_custom_value<F: fmt::Write>(
                 to_decimal(value.clone())
             )?;
         }
+        ManifestCustomValue::BalancedDecimal(value) => {
+            write_with_indent!(
+                f,
+                context,
+                indent_start,
+                depth,
+                "BalancedDecimal(\"{}\")",
+                to_balanced_decimal(value.clone())
+            )?;
+        }
         ManifestCustomValue::PreciseDecimal(value) => {
             write_with_indent!(
                 f,
@@ -535,6 +545,7 @@ pub fn format_value_kind(value_kind: &ManifestValueKind) -> &str {
             ManifestCustomValueKind::Expression => "Expression",
             ManifestCustomValueKind::Blob => "Blob",
             ManifestCustomValueKind::Decimal => "Decimal",
+            ManifestCustomValueKind::BalancedDecimal => "BalancedDecimal",
             ManifestCustomValueKind::PreciseDecimal => "PreciseDecimal",
             ManifestCustomValueKind::NonFungibleLocalId => "NonFungibleLocalId",
             ManifestCustomValueKind::AddressReservation => "AddressReservation",

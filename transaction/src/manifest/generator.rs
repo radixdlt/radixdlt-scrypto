@@ -52,7 +52,7 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::math::{Decimal, PreciseDecimal};
+use radix_engine_interface::math::{Decimal, BalancedDecimal, PreciseDecimal};
 use radix_engine_interface::types::GlobalAddress;
 use radix_engine_interface::types::InternalAddress;
 use radix_engine_interface::types::ResourceAddress;
@@ -81,6 +81,7 @@ pub enum GeneratorError {
     InvalidComponentAddress(String),
     InvalidResourceAddress(String),
     InvalidDecimal(String),
+    InvalidBalancedDecimal(String),
     InvalidPreciseDecimal(String),
     InvalidHash(String),
     InvalidNodeId(String),
@@ -857,6 +858,18 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
     }
 }
 
+fn generate_balanced_decimal(value: &ast::Value) -> Result<BalancedDecimal, GeneratorError> {
+    match value {
+        ast::Value::BalancedDecimal(inner) => match &**inner {
+            ast::Value::String(s) => BalancedDecimal::from_str(s)
+                .map_err(|_| GeneratorError::InvalidBalancedDecimal(s.into())),
+
+            v => invalid_type!(v, ast::ValueKind::String),
+        },
+        v => invalid_type!(v, ast::ValueKind::Decimal),
+    }
+}
+
 fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, GeneratorError> {
     match value {
         ast::Value::PreciseDecimal(inner) => match &**inner {
@@ -1410,6 +1423,9 @@ where
         ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
             value: ManifestCustomValue::Decimal(from_decimal(v)),
         }),
+        ast::Value::BalancedDecimal(_) => generate_balanced_decimal(value).map(|v| Value::Custom {
+            value: ManifestCustomValue::BalancedDecimal(from_balanced_decimal(v)),
+        }),
         ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
             value: ManifestCustomValue::PreciseDecimal(from_precise_decimal(v)),
         }),
@@ -1690,6 +1706,15 @@ mod tests {
             InstructionV1::AssertWorktopContains {
                 amount: Decimal::from(1),
                 resource_address,
+            },
+        );
+        generate_instruction_ok!(
+            r#"CALL_FUNCTION  Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")  "Airdrop"  "new"  500u32  BalancedDecimal("120");"#,
+            InstructionV1::CallFunction {
+                package_address: package_address.into(),
+                blueprint_name: "Airdrop".into(),
+                function_name: "new".to_string(),
+                args: manifest_args!(500u32, bdec!("120")).into()
             },
         );
         generate_instruction_ok!(

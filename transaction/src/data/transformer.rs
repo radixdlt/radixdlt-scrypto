@@ -128,6 +128,9 @@ pub fn transform<T: TransformHandler<E>, E>(
             ManifestCustomValue::Decimal(d) => Ok(ScryptoValue::Custom {
                 value: ScryptoCustomValue::Decimal(to_decimal(d)),
             }),
+            ManifestCustomValue::BalancedDecimal(d) => Ok(ScryptoValue::Custom {
+                value: ScryptoCustomValue::BalancedDecimal(to_balanced_decimal(d)),
+            }),
             ManifestCustomValue::PreciseDecimal(d) => Ok(ScryptoValue::Custom {
                 value: ScryptoCustomValue::PreciseDecimal(to_precise_decimal(d)),
             }),
@@ -168,6 +171,9 @@ pub fn transform_value_kind(kind: ManifestValueKind) -> ScryptoValueKind {
             ManifestCustomValueKind::Blob => ScryptoValueKind::Array,
             ManifestCustomValueKind::Decimal => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::Decimal)
+            }
+            ManifestCustomValueKind::BalancedDecimal => {
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::BalancedDecimal)
             }
             ManifestCustomValueKind::PreciseDecimal => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)

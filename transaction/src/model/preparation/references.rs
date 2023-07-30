@@ -27,6 +27,7 @@ pub fn extract_references(
                         | ManifestCustomValue::Expression(_)
                         | ManifestCustomValue::Blob(_)
                         | ManifestCustomValue::Decimal(_)
+                        | ManifestCustomValue::BalancedDecimal(_)
                         | ManifestCustomValue::PreciseDecimal(_)
                         | ManifestCustomValue::NonFungibleLocalId(_) => {}
                     }

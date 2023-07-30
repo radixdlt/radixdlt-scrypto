@@ -299,6 +299,7 @@ pub enum ValueKind {
     Expression,
     Blob,
     Decimal,
+    BalancedDecimal,
     PreciseDecimal,
     NonFungibleLocalId,
     AddressReservation,
@@ -357,6 +358,7 @@ impl ValueKind {
             ValueKind::Expression => ManifestValueKind::Custom(ManifestCustomValueKind::Expression),
             ValueKind::Blob => ManifestValueKind::Custom(ManifestCustomValueKind::Blob),
             ValueKind::Decimal => ManifestValueKind::Custom(ManifestCustomValueKind::Decimal),
+            ValueKind::BalancedDecimal => ManifestValueKind::Custom(ManifestCustomValueKind::BalancedDecimal),
             ValueKind::PreciseDecimal => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::PreciseDecimal)
             }
@@ -416,6 +418,7 @@ pub enum Value {
     Expression(Box<Value>),
     Blob(Box<Value>),
     Decimal(Box<Value>),
+    BalancedDecimal(Box<Value>),
     PreciseDecimal(Box<Value>),
     NonFungibleLocalId(Box<Value>),
     AddressReservation(Box<Value>),
@@ -464,6 +467,7 @@ impl Value {
             Value::Expression(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Expression),
             Value::Blob(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Blob),
             Value::Decimal(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Decimal),
+            Value::BalancedDecimal(_) => ManifestValueKind::Custom(ManifestCustomValueKind::BalancedDecimal),
             Value::PreciseDecimal(_) => {
                 ManifestValueKind::Custom(ManifestCustomValueKind::PreciseDecimal)
             }

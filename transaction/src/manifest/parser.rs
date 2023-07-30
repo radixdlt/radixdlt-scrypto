@@ -239,6 +239,7 @@ pub enum SborValueIdent {
     Expression,
     Blob,
     Decimal,
+    BalancedDecimal,
     PreciseDecimal,
     NonFungibleLocalId,
     AddressReservation,
@@ -273,6 +274,7 @@ impl SborValueIdent {
             "Expression" => SborValueIdent::Expression,
             "Blob" => SborValueIdent::Blob,
             "Decimal" => SborValueIdent::Decimal,
+            "BalancedDecimal" => SborValueIdent::BalancedDecimal,
             "PreciseDecimal" => SborValueIdent::PreciseDecimal,
             "NonFungibleLocalId" => SborValueIdent::NonFungibleLocalId,
             "AddressReservation" => SborValueIdent::AddressReservation,
@@ -322,6 +324,7 @@ pub enum SborValueKindIdent {
     Expression,
     Blob,
     Decimal,
+    BalancedDecimal,
     PreciseDecimal,
     NonFungibleLocalId,
     AddressReservation,
@@ -367,6 +370,7 @@ impl SborValueKindIdent {
             "Expression" => SborValueKindIdent::Expression,
             "Blob" => SborValueKindIdent::Blob,
             "Decimal" => SborValueKindIdent::Decimal,
+            "BalancedDecimal" => SborValueKindIdent::BalancedDecimal,
             "PreciseDecimal" => SborValueKindIdent::PreciseDecimal,
             "NonFungibleLocalId" => SborValueKindIdent::NonFungibleLocalId,
             "AddressReservation" => SborValueKindIdent::AddressReservation,
@@ -790,6 +794,7 @@ impl Parser {
                     }
                     SborValueIdent::Blob => Value::Blob(self.parse_values_one()?.into()),
                     SborValueIdent::Decimal => Value::Decimal(self.parse_values_one()?.into()),
+                    SborValueIdent::BalancedDecimal => Value::BalancedDecimal(self.parse_values_one()?.into()),
                     SborValueIdent::PreciseDecimal => {
                         Value::PreciseDecimal(self.parse_values_one()?.into())
                     }
@@ -973,6 +978,7 @@ impl Parser {
                     SborValueKindIdent::Expression => ValueKind::Expression,
                     SborValueKindIdent::Blob => ValueKind::Blob,
                     SborValueKindIdent::Decimal => ValueKind::Decimal,
+                    SborValueKindIdent::BalancedDecimal => ValueKind::BalancedDecimal,
                     SborValueKindIdent::PreciseDecimal => ValueKind::PreciseDecimal,
                     SborValueKindIdent::NonFungibleLocalId => ValueKind::NonFungibleLocalId,
                     SborValueKindIdent::AddressReservation => ValueKind::AddressReservation,

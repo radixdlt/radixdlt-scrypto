@@ -2,7 +2,8 @@ CALL_METHOD
     Address("${component_address}")
     "complicated_method"
     Decimal("1")
-    PreciseDecimal("2");
+    BalancedDecimal("2")
+    PreciseDecimal("3");
 
 CALL_ROYALTY_METHOD
     Address("${component_address}")

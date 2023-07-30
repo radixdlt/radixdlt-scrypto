@@ -373,7 +373,8 @@ CALL_METHOD
     Address("${component_address}")
     "complicated_method"
     Decimal("1")
-    PreciseDecimal("2")
+    BalancedDecimal("2")
+    PreciseDecimal("3")
 ;
 SET_COMPONENT_ROYALTY
     Address("${component_address}")
@@ -506,6 +507,7 @@ CALL_METHOD
     Expression("ENTIRE_WORKTOP")
     Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
     Decimal("1.2")
+    BalancedDecimal("1.2")
     PreciseDecimal("1.2")
     NonFungibleLocalId("<SomeId>")
     NonFungibleLocalId("#12#")
