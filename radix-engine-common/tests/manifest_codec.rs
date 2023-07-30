@@ -10,8 +10,9 @@ struct TestStruct {
     f: ManifestExpression,
     g: ManifestBlobRef,
     h: ManifestDecimal,
-    i: ManifestPreciseDecimal,
-    j: ManifestNonFungibleLocalId,
+    i: ManifestBalancedDecimal,
+    j: ManifestPreciseDecimal,
+    k: ManifestNonFungibleLocalId,
 }
 
 #[test]
@@ -23,8 +24,9 @@ fn test_encode_and_decode() {
         f: ManifestExpression::EntireAuthZone,
         g: ManifestBlobRef([6u8; 32]),
         h: ManifestDecimal([7u8; 32]),
-        i: ManifestPreciseDecimal([8u8; 64]),
-        j: ManifestNonFungibleLocalId::string("abc".to_owned()).unwrap(),
+        i: ManifestBalancedDecimal([8u8; 32]),
+        j: ManifestPreciseDecimal([9u8; 64]),
+        k: ManifestNonFungibleLocalId::string("abc".to_owned()).unwrap(),
     };
 
     let bytes = manifest_encode(&t).unwrap();
@@ -33,7 +35,7 @@ fn test_encode_and_decode() {
         vec![
             77, // prefix
             33, // struct
-            8,  // field length
+            9,  // field length
             128, 0, 93, 166, 99, 24, 198, 49, 140, 97, 245, 166, 27, 76, 99, 24, 198, 49, 140, 247,
             148, 170, 141, 41, 95, 20, 230, 49, 140, 99, 24, 198, // address
             129, 4, 0, 0, 0, // bucket
@@ -43,9 +45,11 @@ fn test_encode_and_decode() {
             6, 6, 6, 6, 6, // blob
             133, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
             7, 7, 7, 7, 7, // decimal
-            134, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-            8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-            8, 8, 8, 8, 8, 8, 8, 8, // precise decimal
+            137, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+            8, 8, 8, 8, 8, // balanced decimal
+            134, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+            9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+            9, 9, 9, 9, 9, 9, 9, 9, // precise decimal
             135, 0, 3, 97, 98, 99, // non-fungible local id
         ]
     );

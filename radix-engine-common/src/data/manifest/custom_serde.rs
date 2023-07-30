@@ -71,6 +71,10 @@ impl SerializableCustomExtension for ManifestCustomExtension {
                 SerializableType::String(format!("{}", to_decimal(&value))),
                 true,
             ),
+            ManifestCustomValue::BalancedDecimal(value) => (
+                SerializableType::String(format!("{}", to_balanced_decimal(&value))),
+                true,
+            ),
             ManifestCustomValue::PreciseDecimal(value) => (
                 SerializableType::String(format!("{}", to_precise_decimal(&value))),
                 true,
@@ -184,6 +188,9 @@ mod tests {
                 value: ManifestCustomValue::Decimal(ManifestDecimal([0; 32])),
             },
             ManifestValue::Custom {
+                value: ManifestCustomValue::BalancedDecimal(ManifestBalancedDecimal([0; 32])),
+            },
+            ManifestValue::Custom {
                 value: ManifestCustomValue::PreciseDecimal(ManifestPreciseDecimal([0; 64])),
             },
             ManifestValue::Custom {
@@ -222,6 +229,10 @@ mod tests {
                     "value": "0"
                 },
                 {
+                    "kind": "BalancedDecimal",
+                    "value": "0"
+                },
+                {
                     "kind": "PreciseDecimal",
                     "value": "0"
                 },
@@ -257,6 +268,10 @@ mod tests {
             },
             {
                 "kind": "Decimal",
+                "value": "0"
+            },
+            {
+                "kind": "BalancedDecimal",
                 "value": "0"
             },
             {

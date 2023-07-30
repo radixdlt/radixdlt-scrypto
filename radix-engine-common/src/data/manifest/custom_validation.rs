@@ -205,6 +205,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
             }
             // No custom validations apply (yet) to Decimal/PreciseDecimal/NonFungibleLocalId
             ManifestCustomValue::Decimal(_) => {}
+            ManifestCustomValue::BalancedDecimal(_) => {}
             ManifestCustomValue::PreciseDecimal(_) => {}
             ManifestCustomValue::NonFungibleLocalId(_) => {}
         };
@@ -231,7 +232,7 @@ mod tests {
     use crate::data::scrypto::model::NonFungibleLocalId;
     use crate::data::scrypto::{well_known_scrypto_custom_types, ScryptoValue};
     use crate::data::scrypto::{ScryptoCustomSchema, ScryptoDescribe};
-    use crate::math::{Decimal, PreciseDecimal};
+    use crate::math::{BalancedDecimal, Decimal, PreciseDecimal};
     use crate::types::{PackageAddress, ResourceAddress};
 
     pub struct Bucket;
@@ -262,6 +263,7 @@ mod tests {
         Bucket,
         Proof,
         Decimal,
+        BalancedDecimal,
         PreciseDecimal,
         NonFungibleLocalId,
         Vec<Proof>,
@@ -289,6 +291,9 @@ mod tests {
             },
             ManifestValue::Custom {
                 value: ManifestCustomValue::Decimal(ManifestDecimal([0; 32])),
+            },
+            ManifestValue::Custom {
+                value: ManifestCustomValue::BalancedDecimal(ManifestBalancedDecimal([0; 32])),
             },
             ManifestValue::Custom {
                 value: ManifestCustomValue::PreciseDecimal(ManifestPreciseDecimal([0; 64])),

@@ -55,6 +55,12 @@ impl CustomExtension for ManifestCustomExtension {
             ManifestCustomValueKind::Decimal => {
                 matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Decimal))
             }
+            ManifestCustomValueKind::BalancedDecimal => {
+                matches!(
+                    type_kind,
+                    TypeKind::Custom(ScryptoCustomTypeKind::BalancedDecimal)
+                )
+            }
             ManifestCustomValueKind::PreciseDecimal => matches!(
                 type_kind,
                 TypeKind::Custom(ScryptoCustomTypeKind::PreciseDecimal)

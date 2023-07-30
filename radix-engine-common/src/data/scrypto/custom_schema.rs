@@ -10,6 +10,7 @@ pub enum ScryptoCustomTypeKind {
     Reference,
     Own,
     Decimal,
+    BalancedDecimal,
     PreciseDecimal,
     NonFungibleLocalId,
 }
@@ -119,6 +120,7 @@ impl CustomSchema for ScryptoCustomSchema {
             ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKind::Reference,
             ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
+            ScryptoCustomTypeKind::BalancedDecimal => ScryptoCustomTypeKind::BalancedDecimal,
             ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKind::PreciseDecimal,
             ScryptoCustomTypeKind::NonFungibleLocalId => ScryptoCustomTypeKind::NonFungibleLocalId,
         }
@@ -138,6 +140,7 @@ impl CustomSchema for ScryptoCustomSchema {
             ScryptoCustomTypeKind::Reference
             | ScryptoCustomTypeKind::Own
             | ScryptoCustomTypeKind::Decimal
+            | ScryptoCustomTypeKind::BalancedDecimal
             | ScryptoCustomTypeKind::PreciseDecimal
             | ScryptoCustomTypeKind::NonFungibleLocalId => {
                 // No validations
@@ -157,6 +160,7 @@ impl CustomSchema for ScryptoCustomSchema {
             ScryptoCustomTypeKind::Reference
             | ScryptoCustomTypeKind::Own
             | ScryptoCustomTypeKind::Decimal
+            | ScryptoCustomTypeKind::BalancedDecimal
             | ScryptoCustomTypeKind::PreciseDecimal
             | ScryptoCustomTypeKind::NonFungibleLocalId => {
                 validate_childless_metadata(type_metadata)?;
@@ -186,6 +190,7 @@ impl CustomSchema for ScryptoCustomSchema {
                 }
             }
             ScryptoCustomTypeKind::Decimal
+            | ScryptoCustomTypeKind::BalancedDecimal
             | ScryptoCustomTypeKind::PreciseDecimal
             | ScryptoCustomTypeKind::NonFungibleLocalId => {
                 // All these custom type kinds only support `SchemaTypeValidation::None`.
@@ -230,6 +235,12 @@ impl CustomExtension for ScryptoCustomExtension {
             }
             ScryptoCustomValueKind::Decimal => {
                 matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Decimal))
+            }
+            ScryptoCustomValueKind::BalancedDecimal => {
+                matches!(
+                    type_kind,
+                    TypeKind::Custom(ScryptoCustomTypeKind::BalancedDecimal)
+                )
             }
             ScryptoCustomValueKind::PreciseDecimal => matches!(
                 type_kind,

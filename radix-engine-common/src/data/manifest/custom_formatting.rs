@@ -64,6 +64,9 @@ impl FormattableCustomExtension for ManifestCustomExtension {
             ManifestCustomValue::Decimal(value) => {
                 write!(f, "\"{}\"", to_decimal(value))?;
             }
+            ManifestCustomValue::BalancedDecimal(value) => {
+                write!(f, "\"{}\"", to_balanced_decimal(value))?;
+            }
             ManifestCustomValue::PreciseDecimal(value) => {
                 write!(f, "\"{}\"", to_precise_decimal(value))?;
             }
@@ -105,6 +108,9 @@ mod tests {
                 value: ManifestCustomValue::Decimal(ManifestDecimal([0; 32])),
             },
             ManifestValue::Custom {
+                value: ManifestCustomValue::BalancedDecimal(ManifestBalancedDecimal([0; 32])),
+            },
+            ManifestValue::Custom {
                 value: ManifestCustomValue::PreciseDecimal(ManifestPreciseDecimal([0; 64])),
             },
             ManifestValue::Custom {
@@ -121,7 +127,7 @@ mod tests {
         ))
         .unwrap();
 
-        let expected = format!("Tuple(Address(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Blob(\"0000000000000000000000000000000000000000000000000000000000000000\"), Bucket(\"0\"), Proof(\"0\"), Decimal(\"0\"), PreciseDecimal(\"0\"), NonFungibleLocalId(\"<hello>\"), Expression(\"ENTIRE_AUTH_ZONE\"), Expression(\"ENTIRE_WORKTOP\"))");
+        let expected = format!("Tuple(Address(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Blob(\"0000000000000000000000000000000000000000000000000000000000000000\"), Bucket(\"0\"), Proof(\"0\"), Decimal(\"0\"), BalancedDecimal(\"0\"), PreciseDecimal(\"0\"), NonFungibleLocalId(\"<hello>\"), Expression(\"ENTIRE_AUTH_ZONE\"), Expression(\"ENTIRE_WORKTOP\"))");
 
         let context = ManifestValueDisplayContext::with_optional_bech32(Some(&encoder));
 

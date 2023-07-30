@@ -30,6 +30,12 @@ impl CustomExtension for ScryptoCustomExtension {
             ScryptoCustomValueKind::Decimal => {
                 matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Decimal))
             }
+            ScryptoCustomValueKind::BalancedDecimal => {
+                matches!(
+                    type_kind,
+                    TypeKind::Custom(ScryptoCustomTypeKind::BalancedDecimal)
+                )
+            }
             ScryptoCustomValueKind::PreciseDecimal => matches!(
                 type_kind,
                 TypeKind::Custom(ScryptoCustomTypeKind::PreciseDecimal)

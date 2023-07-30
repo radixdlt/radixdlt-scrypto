@@ -8,6 +8,7 @@ pub enum ScryptoCustomValue {
     Reference(Reference),
     Own(Own),
     Decimal(Decimal),
+    BalancedDecimal(BalancedDecimal),
     PreciseDecimal(PreciseDecimal),
     NonFungibleLocalId(NonFungibleLocalId),
 }
@@ -18,6 +19,7 @@ impl CustomValue<ScryptoCustomValueKind> for ScryptoCustomValue {
             ScryptoCustomValue::Reference(_) => ScryptoCustomValueKind::Reference,
             ScryptoCustomValue::Own(_) => ScryptoCustomValueKind::Own,
             ScryptoCustomValue::Decimal(_) => ScryptoCustomValueKind::Decimal,
+            ScryptoCustomValue::BalancedDecimal(_) => ScryptoCustomValueKind::BalancedDecimal,
             ScryptoCustomValue::PreciseDecimal(_) => ScryptoCustomValueKind::PreciseDecimal,
             ScryptoCustomValue::NonFungibleLocalId(_) => ScryptoCustomValueKind::NonFungibleLocalId,
         }
@@ -35,6 +37,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
             ScryptoCustomValue::Reference(v) => v.encode_body(encoder),
             ScryptoCustomValue::Own(v) => v.encode_body(encoder),
             ScryptoCustomValue::Decimal(v) => v.encode_body(encoder),
+            ScryptoCustomValue::BalancedDecimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::NonFungibleLocalId(v) => v.encode_body(encoder),
         }
@@ -56,6 +59,10 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
                 }
                 ScryptoCustomValueKind::Decimal => {
                     Decimal::decode_body_with_value_kind(decoder, value_kind).map(Self::Decimal)
+                }
+                ScryptoCustomValueKind::BalancedDecimal => {
+                    BalancedDecimal::decode_body_with_value_kind(decoder, value_kind)
+                        .map(Self::BalancedDecimal)
                 }
                 ScryptoCustomValueKind::PreciseDecimal => {
                     PreciseDecimal::decode_body_with_value_kind(decoder, value_kind)
@@ -130,19 +137,23 @@ mod tests {
     fn test_custom_types_group4() {
         let values = (
             Decimal::ONE,
+            BalancedDecimal::ONE,
             PreciseDecimal::ONE,
             NonFungibleLocalId::integer(1),
             NonFungibleLocalId::bytes(vec![2, 3]).unwrap(),
         );
+        println!("{:?}", scrypto_encode(&BalancedDecimal::ONE).unwrap());
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
             vec![
                 92, // prefix
                 33, // tuple
-                4,  // length
+                5,  // length
                 160, 0, 0, 100, 167, 179, 182, 224, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // decimal
+                208, 0, 0, 0, 0, 64, 34, 138, 9, 122, 196, 134, 90, 168, 76, 59, 75, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // balanced decimal
                 176, 0, 0, 0, 0, 0, 0, 0, 0, 1, 31, 106, 191, 100, 237, 56, 110, 237, 151, 167,
                 218, 244, 249, 63, 233, 3, 79, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -157,6 +168,9 @@ mod tests {
                 fields: vec![
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::Decimal(Decimal::ONE),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::BalancedDecimal(BalancedDecimal::ONE),
                     },
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ONE),

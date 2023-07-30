@@ -13,6 +13,7 @@ pub enum ManifestCustomValue {
     Expression(ManifestExpression),
     Blob(ManifestBlobRef),
     Decimal(ManifestDecimal),
+    BalancedDecimal(ManifestBalancedDecimal),
     PreciseDecimal(ManifestPreciseDecimal),
     NonFungibleLocalId(ManifestNonFungibleLocalId),
     AddressReservation(ManifestAddressReservation),
@@ -27,6 +28,7 @@ impl CustomValue<ManifestCustomValueKind> for ManifestCustomValue {
             ManifestCustomValue::Expression(_) => ManifestCustomValueKind::Expression,
             ManifestCustomValue::Blob(_) => ManifestCustomValueKind::Blob,
             ManifestCustomValue::Decimal(_) => ManifestCustomValueKind::Decimal,
+            ManifestCustomValue::BalancedDecimal(_) => ManifestCustomValueKind::BalancedDecimal,
             ManifestCustomValue::PreciseDecimal(_) => ManifestCustomValueKind::PreciseDecimal,
             ManifestCustomValue::NonFungibleLocalId(_) => {
                 ManifestCustomValueKind::NonFungibleLocalId
@@ -61,6 +63,8 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             ManifestCustomValue::Decimal(_) => {
                 encoder.write_value_kind(ValueKind::Custom(ManifestCustomValueKind::Decimal))
             }
+            ManifestCustomValue::BalancedDecimal(_) => encoder
+                .write_value_kind(ValueKind::Custom(ManifestCustomValueKind::BalancedDecimal)),
             ManifestCustomValue::PreciseDecimal(_) => {
                 encoder.write_value_kind(ValueKind::Custom(ManifestCustomValueKind::PreciseDecimal))
             }
@@ -82,6 +86,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             ManifestCustomValue::Expression(v) => v.encode_body(encoder),
             ManifestCustomValue::Blob(v) => v.encode_body(encoder),
             ManifestCustomValue::Decimal(v) => v.encode_body(encoder),
+            ManifestCustomValue::BalancedDecimal(v) => v.encode_body(encoder),
             ManifestCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
             ManifestCustomValue::NonFungibleLocalId(v) => v.encode_body(encoder),
             ManifestCustomValue::AddressReservation(v) => v.encode_body(encoder),
@@ -120,6 +125,10 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
                 ManifestCustomValueKind::Decimal => {
                     ManifestDecimal::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::Decimal)
+                }
+                ManifestCustomValueKind::BalancedDecimal => {
+                    ManifestBalancedDecimal::decode_body_with_value_kind(decoder, value_kind)
+                        .map(Self::BalancedDecimal)
                 }
                 ManifestCustomValueKind::PreciseDecimal => {
                     ManifestPreciseDecimal::decode_body_with_value_kind(decoder, value_kind)

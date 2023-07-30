@@ -39,6 +39,36 @@ macro_rules! i {
     };
 }
 
+/// Creates a `BalancedDecimal` from literals.
+///
+#[macro_export]
+macro_rules! bdec {
+    ($x:literal) => {
+        $crate::math::BalancedDecimal::try_from($x).unwrap()
+    };
+
+    ($base:literal, $shift:literal) => {
+        // Base can be any type that converts into a BalancedDecimal, and shift must support
+        // comparison and `-` unary operation, enforced by rustc.
+        {
+            let base = $crate::math::BalancedDecimal::try_from($base).unwrap();
+            if $shift >= 0 {
+                base * $crate::math::BalancedDecimal::try_from(
+                    $crate::math::BnumI256::from(10u8)
+                        .pow(u32::try_from($shift).expect("Shift overflow")),
+                )
+                .expect("Shift overflow")
+            } else {
+                base / $crate::math::BalancedDecimal::try_from(
+                    $crate::math::BnumI256::from(10u8)
+                        .pow(u32::try_from(-$shift).expect("Shift overflow")),
+                )
+                .expect("Shift overflow")
+            }
+        }
+    };
+}
+
 /// Creates a `PreciseDecimal` from literals.
 ///
 #[macro_export]

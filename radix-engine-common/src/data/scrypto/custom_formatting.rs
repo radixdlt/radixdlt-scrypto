@@ -53,6 +53,9 @@ impl FormattableCustomExtension for ScryptoCustomExtension {
             ScryptoCustomValue::Decimal(value) => {
                 write!(f, "\"{}\"", value)?;
             }
+            ScryptoCustomValue::BalancedDecimal(value) => {
+                write!(f, "\"{}\"", value)?;
+            }
             ScryptoCustomValue::PreciseDecimal(value) => {
                 write!(f, "\"{}\"", value)?;
             }
@@ -73,7 +76,6 @@ mod tests {
 
     #[test]
     fn test_rustlike_string_format_with_network() {
-        use crate::math::{Decimal, PreciseDecimal};
         let encoder = AddressBech32Encoder::for_simulator();
         let value = ScryptoValue::Tuple {
             fields: vec![
@@ -88,6 +90,9 @@ mod tests {
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::Decimal(Decimal::ONE / 100),
+                },
+                Value::Custom {
+                    value: ScryptoCustomValue::BalancedDecimal(BalancedDecimal::ONE / 10000),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),
@@ -113,7 +118,7 @@ mod tests {
             ],
         };
 
-        let expected = format!("Tuple(Reference(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Own(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Decimal(\"1\"), Decimal(\"0.01\"), PreciseDecimal(\"0\"), NonFungibleLocalId(\"<hello>\"), NonFungibleLocalId(\"#123#\"), NonFungibleLocalId(\"[2345]\"), NonFungibleLocalId(\"{{1111111111111111-1111111111111111-1111111111111111-1111111111111111}}\"))");
+        let expected = format!("Tuple(Reference(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Own(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Decimal(\"1\"), Decimal(\"0.01\"), BalancedDecimal(\"0.0001\"), PreciseDecimal(\"0\"), NonFungibleLocalId(\"<hello>\"), NonFungibleLocalId(\"#123#\"), NonFungibleLocalId(\"[2345]\"), NonFungibleLocalId(\"{{1111111111111111-1111111111111111-1111111111111111-1111111111111111}}\"))");
 
         let context = ScryptoValueDisplayContext::with_optional_bech32(Some(&encoder));
 

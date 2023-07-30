@@ -244,6 +244,11 @@ create_well_known_lookup!(
             unnamed_type_kind(ScryptoCustomTypeKind::Decimal, None)
         ),
         (
+            BALANCED_DECIMAL,
+            VALUE_KIND_BALANCED_DECIMAL,
+            unnamed_type_kind(ScryptoCustomTypeKind::BalancedDecimal, None)
+        ),
+        (
             PRECISE_DECIMAL,
             VALUE_KIND_PRECISE_DECIMAL,
             unnamed_type_kind(ScryptoCustomTypeKind::PreciseDecimal, None)

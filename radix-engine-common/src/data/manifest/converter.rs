@@ -1,4 +1,6 @@
-use super::model::{ManifestDecimal, ManifestNonFungibleLocalId, ManifestPreciseDecimal};
+use super::model::{
+    ManifestBalancedDecimal, ManifestDecimal, ManifestNonFungibleLocalId, ManifestPreciseDecimal,
+};
 use crate::data::scrypto::model::*;
 use crate::math::*;
 use sbor::rust::prelude::*;
@@ -7,6 +9,10 @@ use sbor::rust::prelude::*;
 
 pub fn to_decimal(d: &ManifestDecimal) -> Decimal {
     Decimal::try_from(d.0.as_slice()).unwrap()
+}
+
+pub fn to_balanced_decimal(d: &ManifestBalancedDecimal) -> BalancedDecimal {
+    BalancedDecimal::try_from(d.0.as_slice()).unwrap()
 }
 
 pub fn to_precise_decimal(d: &ManifestPreciseDecimal) -> PreciseDecimal {
@@ -24,6 +30,10 @@ pub fn to_non_fungible_local_id(id: ManifestNonFungibleLocalId) -> NonFungibleLo
 
 pub fn from_decimal(d: &Decimal) -> ManifestDecimal {
     ManifestDecimal(d.to_vec().try_into().unwrap())
+}
+
+pub fn from_balanced_decimal(d: &BalancedDecimal) -> ManifestBalancedDecimal {
+    ManifestBalancedDecimal(d.to_vec().try_into().unwrap())
 }
 
 pub fn from_precise_decimal(d: &PreciseDecimal) -> ManifestPreciseDecimal {

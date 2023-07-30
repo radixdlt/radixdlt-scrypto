@@ -42,6 +42,7 @@ impl IndexedScryptoValue {
                                 owned_nodes.push(node_id.0.into());
                             }
                             ScryptoCustomValue::Decimal(_)
+                            | ScryptoCustomValue::BalancedDecimal(_)
                             | ScryptoCustomValue::PreciseDecimal(_)
                             | ScryptoCustomValue::NonFungibleLocalId(_) => {}
                         }

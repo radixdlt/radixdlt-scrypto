@@ -8,6 +8,7 @@ pub const MANIFEST_VALUE_KIND_PROOF: u8 = 0x82;
 pub const MANIFEST_VALUE_KIND_EXPRESSION: u8 = 0x83;
 pub const MANIFEST_VALUE_KIND_BLOB: u8 = 0x84;
 pub const MANIFEST_VALUE_KIND_DECIMAL: u8 = 0x85;
+pub const MANIFEST_VALUE_KIND_BALANCED_DECIMAL: u8 = 0x89;
 pub const MANIFEST_VALUE_KIND_PRECISE_DECIMAL: u8 = 0x86;
 pub const MANIFEST_VALUE_KIND_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
 pub const MANIFEST_VALUE_KIND_ADDRESS_RESERVATION: u8 = 0x88;
@@ -26,6 +27,7 @@ pub enum ManifestCustomValueKind {
     Expression,
     Blob,
     Decimal,
+    BalancedDecimal,
     PreciseDecimal,
     NonFungibleLocalId,
     AddressReservation,
@@ -46,6 +48,7 @@ impl CustomValueKind for ManifestCustomValueKind {
             Self::Expression => MANIFEST_VALUE_KIND_EXPRESSION,
             Self::Blob => MANIFEST_VALUE_KIND_BLOB,
             Self::Decimal => MANIFEST_VALUE_KIND_DECIMAL,
+            Self::BalancedDecimal => MANIFEST_VALUE_KIND_BALANCED_DECIMAL,
             Self::PreciseDecimal => MANIFEST_VALUE_KIND_PRECISE_DECIMAL,
             Self::NonFungibleLocalId => MANIFEST_VALUE_KIND_NON_FUNGIBLE_LOCAL_ID,
             Self::AddressReservation => MANIFEST_VALUE_KIND_ADDRESS_RESERVATION,
@@ -60,6 +63,7 @@ impl CustomValueKind for ManifestCustomValueKind {
             MANIFEST_VALUE_KIND_EXPRESSION => Some(ManifestCustomValueKind::Expression),
             MANIFEST_VALUE_KIND_BLOB => Some(ManifestCustomValueKind::Blob),
             MANIFEST_VALUE_KIND_DECIMAL => Some(ManifestCustomValueKind::Decimal),
+            MANIFEST_VALUE_KIND_BALANCED_DECIMAL => Some(ManifestCustomValueKind::BalancedDecimal),
             MANIFEST_VALUE_KIND_PRECISE_DECIMAL => Some(ManifestCustomValueKind::PreciseDecimal),
             MANIFEST_VALUE_KIND_NON_FUNGIBLE_LOCAL_ID => {
                 Some(ManifestCustomValueKind::NonFungibleLocalId)

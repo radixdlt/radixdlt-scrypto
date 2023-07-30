@@ -26,6 +26,9 @@ impl SerializableCustomExtension for ScryptoCustomExtension {
             ScryptoCustomValue::Decimal(value) => {
                 (SerializableType::String(value.to_string()), false)
             }
+            ScryptoCustomValue::BalancedDecimal(value) => {
+                (SerializableType::String(value.to_string()), false)
+            }
             ScryptoCustomValue::PreciseDecimal(value) => {
                 (SerializableType::String(value.to_string()), false)
             }
@@ -135,6 +138,9 @@ mod tests {
                     value: ScryptoCustomValue::Decimal(Decimal::ONE / 100),
                 },
                 Value::Custom {
+                    value: ScryptoCustomValue::BalancedDecimal(BalancedDecimal::ONE / 10000),
+                },
+                Value::Custom {
                     value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),
                 },
                 Value::Custom {
@@ -177,6 +183,10 @@ mod tests {
                     "value": "0.01"
                 },
                 {
+                    "kind": "BalancedDecimal",
+                    "value": "0.0001"
+                },
+                {
                     "kind": "PreciseDecimal",
                     "value": "0"
                 },
@@ -210,6 +220,7 @@ mod tests {
                 "value": FUNGIBLE_RESOURCE_SIM_ADDRESS
             },
             "1",
+            "0.0001",
             "0.01",
             "0",
             {
