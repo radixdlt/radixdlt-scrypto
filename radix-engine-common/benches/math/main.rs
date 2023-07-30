@@ -1,9 +1,11 @@
 use criterion::{criterion_group, criterion_main};
+mod balanced_decimal;
 mod decimal;
 mod integer;
 mod macros;
 mod precise_decimal;
 
+use balanced_decimal::*;
 use decimal::*;
 use integer::*;
 use precise_decimal::*;
@@ -18,6 +20,17 @@ criterion_group!(
     bench_decimal_pow,
     bench_decimal_from_string,
     bench_decimal_to_string,
+);
+criterion_group!(
+    bench_balanced_decimal,
+    bench_balanceddecimal_add,
+    bench_balanceddecimal_sub,
+    bench_balanceddecimal_mul,
+    bench_balanceddecimal_div,
+    bench_balanceddecimal_root,
+    bench_balanceddecimal_pow,
+    bench_balanceddecimal_from_string,
+    bench_balanceddecimal_to_string,
 );
 criterion_group!(
     bench_precise_decimal,
