@@ -652,6 +652,21 @@ macro_rules! try_from_integer {
 }
 try_from_integer!(BnumI256, BnumI512, BnumU256, BnumU512);
 
+pub trait PrecisionRounding {
+    fn floor_to_decimal(&self) -> Decimal;
+    fn ceil_to_decimal(&self) -> Decimal;
+}
+
+impl PrecisionRounding for BalancedDecimal {
+    fn floor_to_decimal(&self) -> Decimal {
+        Decimal::from(self.round(Decimal::SCALE as i32, RoundingMode::ToNegativeInfinity))
+    }
+
+    fn ceil_to_decimal(&self) -> Decimal {
+        Decimal::from(self.round(Decimal::SCALE as i32, RoundingMode::ToPositiveInfinity))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1062,6 +1077,48 @@ mod tests {
     #[should_panic]
     fn test_ceiling_overflow_balanced_decimal() {
         BalancedDecimal::MAX.ceiling();
+    }
+
+    #[test]
+    fn test_floor_to_decimal_balanced_decimal() {
+        assert_eq!(
+            BalancedDecimal::MAX.floor_to_decimal().to_string(),
+            "578960446186580977117854925043439539266.349923328202820197"
+        );
+        assert_eq!(bdec!("1.0000000000000000012").floor_to_decimal().to_string(), "1.000000000000000001");
+        assert_eq!(bdec!("1.0").floor_to_decimal().to_string(), "1");
+        assert_eq!(bdec!("0.0000000000000000009").floor_to_decimal().to_string(), "0");
+        assert_eq!(bdec!("0").floor_to_decimal().to_string(), "0");
+        assert_eq!(bdec!("-0.0000000000000000002").floor_to_decimal().to_string(), "-0.000000000000000001");
+        assert_eq!(bdec!("-1").floor_to_decimal().to_string(), "-1");
+        assert_eq!(bdec!("-5.0000000000000000057").floor_to_decimal().to_string(), "-5.000000000000000006");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_floor_to_decimal_overflow_balanced_decimal() {
+        BalancedDecimal::MIN.floor_to_decimal();
+    }
+
+    #[test]
+    fn test_ceil_to_decimal_balanced_decimal() {
+        assert_eq!(bdec!("1.0000000000000000012").ceil_to_decimal().to_string(), "1.000000000000000002");
+        assert_eq!(bdec!("1.0").ceil_to_decimal().to_string(), "1");
+        assert_eq!(bdec!("0.0000000000000000009").ceil_to_decimal().to_string(), "0.000000000000000001");
+        assert_eq!(bdec!("0").ceil_to_decimal().to_string(), "0");
+        assert_eq!(bdec!("-0.0000000000000000016").ceil_to_decimal().to_string(), "-0.000000000000000001");
+        assert_eq!(bdec!("-1").ceil_to_decimal().to_string(), "-1");
+        assert_eq!(bdec!("-5.0000000000000000052").ceil_to_decimal().to_string(), "-5.000000000000000005");
+        assert_eq!(
+            BalancedDecimal::MIN.ceil_to_decimal().to_string(),
+            "-578960446186580977117854925043439539266.349923328202820197"
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_ceil_to_decimal_overflow_balanced_decimal() {
+        BalancedDecimal::MAX.ceil_to_decimal();
     }
 
     #[test]
