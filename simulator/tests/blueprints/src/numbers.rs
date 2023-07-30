@@ -5,7 +5,7 @@ mod numbers {
     struct Numbers {}
 
     impl Numbers {
-        pub fn test_input(_: Decimal, _: PreciseDecimal) {
+        pub fn test_input(_: Decimal, _: BalancedDecimal, _: PreciseDecimal) {
             info!("Call succeeded");
         }
     }

@@ -4,7 +4,7 @@
 //! builder that is being used.
 
 use radix_engine::types::*;
-use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
+use transaction::data::{from_decimal, from_non_fungible_local_id, from_balanced_decimal, from_precise_decimal};
 use transaction::prelude::*;
 
 use super::{parse_resource_specifier, ResourceSpecifier};
@@ -170,6 +170,16 @@ fn build_call_argument<'a>(
             builder,
             ManifestValue::Custom {
                 value: ManifestCustomValue::Decimal(from_decimal(
+                    argument
+                        .parse()
+                        .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?,
+                )),
+            },
+        )),
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::BalancedDecimal) => Ok((
+            builder,
+            ManifestValue::Custom {
+                value: ManifestCustomValue::BalancedDecimal(from_balanced_decimal(
                     argument
                         .parse()
                         .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?,
@@ -547,6 +557,20 @@ mod test {
 
         // Assert
         assert_eq!(parsed_arg, resource_address)
+    }
+
+    #[test]
+    pub fn parsing_of_balanced_decimal_succeeds() {
+        // Arrange
+        let arg = "12";
+        let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::BalancedDecimal);
+
+        // Act
+        let parsed_arg: BalancedDecimal = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+            .expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, BalancedDecimal::from_str("12").unwrap())
     }
 
     #[test]

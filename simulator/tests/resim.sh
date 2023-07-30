@@ -117,7 +117,7 @@ $resim transfer 2 $token $account2 --proofs $supervisor_badge:1 $admin_badge:1 $
 $resim mint 100000 $token --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
 
 # Test - math types and numbers
-$resim call-function $package "Numbers" test_input 1 2
+$resim call-function $package "Numbers" test_input 1 2 3
 
 # Test - set epoch
 $resim set-current-epoch 100
