@@ -220,8 +220,8 @@ mod tests {
                 "value": FUNGIBLE_RESOURCE_SIM_ADDRESS
             },
             "1",
-            "0.0001",
             "0.01",
+            "0.0001",
             "0",
             {
                 "kind": "NonFungibleLocalId",
