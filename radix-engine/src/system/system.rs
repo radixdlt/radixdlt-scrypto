@@ -382,10 +382,7 @@ where
                         self.validate_substate_does_not_contain_refs(&indexed_value)?;
                     }
 
-                    partition.insert(
-                        SubstateKey::Field(i as u8),
-                        indexed_value,
-                    );
+                    partition.insert(SubstateKey::Field(i as u8), indexed_value);
                 }
 
                 partitions.insert(offset.clone(), partition);
