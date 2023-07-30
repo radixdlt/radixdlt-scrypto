@@ -254,6 +254,19 @@ where
         Ok(())
     }
 
+    /*
+    fn validate_indexed_value<'s>(
+        &'s mut self,
+        blueprint_id: &BlueprintId,
+        value: &IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        self.get_blueprint_default_interface(blueprint_id.clone()).unwrap().blueprint_type
+
+
+        Ok(())
+    }
+     */
+
     fn validate_instance_schema_and_state(
         &mut self,
         blueprint_id: &BlueprintId,
@@ -364,9 +377,11 @@ where
                         },
                     };
 
+                    let indexed_value = IndexedScryptoValue::from_typed(&substate);
+
                     partition.insert(
                         SubstateKey::Field(i as u8),
-                        IndexedScryptoValue::from_typed(&substate),
+                        indexed_value,
                     );
                 }
 

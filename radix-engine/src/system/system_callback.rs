@@ -701,7 +701,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     };
                     let maybe_definition = self.blueprint_cache.get(&canonical_id);
                     if let Some(definition) = maybe_definition {
-                        !definition.is_transient
+                        !definition.interface.is_transient
                     } else {
                         panic!("Blueprint definition not available for heap node");
                     }
