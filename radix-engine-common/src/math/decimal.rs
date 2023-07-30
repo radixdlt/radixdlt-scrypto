@@ -14,6 +14,7 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::math::bnum_integer::*;
 use crate::math::rounding_mode::*;
+use crate::math::BalancedDecimal;
 use crate::math::PreciseDecimal;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
@@ -586,6 +587,12 @@ impl std::error::Error for ParseDecimalError {}
 impl fmt::Display for ParseDecimalError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+impl From<BalancedDecimal> for Decimal {
+    fn from(val: BalancedDecimal) -> Self {
+        Self(val.0 / BnumI256::from(10i8).pow(BalancedDecimal::SCALE - Self::SCALE))
     }
 }
 
@@ -1205,6 +1212,34 @@ mod tests {
     fn test_from_str_failure_decimal() {
         let dec = Decimal::from_str("non_decimal_value");
         assert_eq!(dec, Err(ParseDecimalError::InvalidDigit));
+    }
+
+    macro_rules! test_from_into_balanced_decimal_decimal {
+        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_from_into_balanced_decimal_decimal_ $suffix>]() {
+                    let bdec = bdec!($from);
+                    let dec = Decimal::from(bdec);
+                    assert_eq!(dec.to_string(), $expected);
+
+                    let dec: Decimal = bdec.into();
+                    assert_eq!(dec.to_string(), $expected);
+                }
+            )*
+            }
+        };
+    }
+
+    test_from_into_balanced_decimal_decimal! {
+        ("12345678.12345678901234567890123456789012345678", "12345678.123456789012345678", 1),
+        ("0.00000000000000000000000000089012345678", "0", 2),
+        ("-0.00000000000000000000000000089012345678", "0", 3),
+        ("5", "5", 4),
+        ("12345678.1", "12345678.1", 5),
+        ("578960446186580977117854925043439539266.34992332820282019728792003956564819967", "578960446186580977117854925043439539266.349923328202820197", 6),
+        ("-578960446186580977117854925043439539266.34992332820282019728792003956564819968", "-578960446186580977117854925043439539266.349923328202820197", 7)
     }
 
     macro_rules! test_from_into_precise_decimal_decimal {

@@ -15,6 +15,7 @@ use sbor::*;
 
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
+use crate::math::balanced_decimal::*;
 use crate::math::bnum_integer::*;
 use crate::math::decimal::*;
 use crate::math::rounding_mode::*;
@@ -615,6 +616,12 @@ impl From<Decimal> for PreciseDecimal {
             BnumI512::try_from(val.0).unwrap()
                 * BnumI512::from(10i8).pow(Self::SCALE - Decimal::SCALE),
         )
+    }
+}
+
+impl From<BalancedDecimal> for PreciseDecimal {
+    fn from(val: BalancedDecimal) -> Self {
+        Self(BnumI512::from(val.0) * BnumI512::from(10i8).pow(Self::SCALE - BalancedDecimal::SCALE))
     }
 }
 
@@ -1295,6 +1302,32 @@ mod tests {
         ("12345678.123456789012345678", "12345678.123456789012345678", 1),
         ("0.000000000000000001", "0.000000000000000001", 2),
         ("-0.000000000000000001", "-0.000000000000000001", 3),
+        ("5", "5", 4),
+        ("12345678.1", "12345678.1", 5)
+    }
+
+    macro_rules! test_from_into_balanced_decimal_precise_decimal {
+        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_from_into_balanced_decimal_precise_decimal_ $suffix>]() {
+                    let dec = bdec!($from);
+                    let pdec = PreciseDecimal::from(dec);
+                    assert_eq!(pdec.to_string(), $expected);
+
+                    let pdec: PreciseDecimal = dec.into();
+                    assert_eq!(pdec.to_string(), $expected);
+                }
+            )*
+            }
+        };
+    }
+
+    test_from_into_balanced_decimal_precise_decimal! {
+        ("12345678.12345678901234567890123456789012345678", "12345678.12345678901234567890123456789012345678", 1),
+        ("0.00000000000000000000000000000000000001", "0.00000000000000000000000000000000000001", 2),
+        ("-0.00000000000000000000000000000000000001", "-0.00000000000000000000000000000000000001", 3),
         ("5", "5", 4),
         ("12345678.1", "12345678.1", 5)
     }
