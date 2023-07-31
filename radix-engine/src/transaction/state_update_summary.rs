@@ -55,6 +55,8 @@ impl StateUpdateSummary {
             }
         }
 
+        SchemaTracker::new(substate_db, &updates).run();
+
         let (balance_changes, direct_vault_updates) =
             BalanceAccounter::new(substate_db, &updates).run();
 
@@ -102,15 +104,39 @@ impl BalanceChange {
 /// Note that the implementation below assumes that substate owned objects can not be
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
-pub struct BalanceAccounter<'a, S: SubstateDatabase> {
+pub struct SchemaTracker<'a, S: SubstateDatabase> {
     substate_db: &'a S,
+    tracked: &'a IndexMap<NodeId, TrackedNode>,
+}
+
+impl<'a, S: SubstateDatabase> SchemaTracker<'a, S> {
+    pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
+        Self {
+            substate_db,
+            tracked,
+        }
+    }
+
+    pub fn run(
+        &self,
+    ) {
+        for node_id in self.tracked.keys() {
+        }
+    }
+}
+
+/// Note that the implementation below assumes that substate owned objects can not be
+/// detached. If this changes, we will have to account for objects that are removed
+/// from a substate.
+pub struct BalanceAccounter<'a, S: SubstateDatabase> {
+    system_reader: SystemReader<'a, S>,
     tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
 impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
-            substate_db,
+            system_reader: SystemReader::new(substate_db, tracked),
             tracked,
         }
     }
@@ -263,6 +289,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         node_id: &NodeId,
     ) -> Option<(ResourceAddress, BalanceChange)> {
         let type_info: TypeInfoSubstate = self
+            .system_reader
             .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 node_id,
                 TYPE_INFO_FIELD_PARTITION,
@@ -283,6 +310,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         {
             // If there is an update to the liquid resource
             if let Some(substate) = self
+                .system_reader
                 .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                     node_id,
                     MAIN_BASE_PARTITION,
@@ -290,6 +318,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 )
             {
                 let old_substate = self
+                    .system_reader
                     .fetch_substate_from_database::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                         node_id,
                         MAIN_BASE_PARTITION,
@@ -351,6 +380,20 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             }
         }
         .map(|x| (resource_address, x))
+    }
+}
+
+pub struct SystemReader<'a, S: SubstateDatabase> {
+    substate_db: &'a S,
+    tracked: &'a IndexMap<NodeId, TrackedNode>,
+}
+
+impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
+    pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
+        Self {
+            substate_db,
+            tracked,
+        }
     }
 
     fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(

@@ -609,24 +609,18 @@ where
         &mut self,
         node_id: &NodeId,
     ) -> Result<TypeInfoSubstate, RuntimeError> {
-        self.api
+        let handle = self.api
             .kernel_open_substate(
                 node_id,
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
-            )
-            .and_then(|lock_handle| {
-                self.api
-                    .kernel_read_substate(lock_handle)
-                    .and_then(|x| Ok(x.as_typed::<TypeInfoSubstate>().unwrap()))
-                    .and_then(|substate| {
-                        self.api
-                            .kernel_close_substate(lock_handle)
-                            .and_then(|_| Ok(substate))
-                    })
-            })
+            )?;
+        let value = self.api.kernel_read_substate(handle)?;
+        let type_info = value.as_typed::<TypeInfoSubstate>().unwrap();
+        self.api.kernel_close_substate(handle)?;
+        Ok(type_info)
     }
 
     fn new_object_internal(
