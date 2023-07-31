@@ -1243,6 +1243,68 @@ mod tests {
     }
 
     #[test]
+    fn test_function_limits() {
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (result i32)
+                    (i32.const 11)
+                )
+                (func (result i32)
+                    (i32.const 22)
+                )
+                (func (result i32)
+                    (i32.const 33)
+                )
+            )
+            "#,
+            PrepareError::TooManyFunctions,
+            |x| WasmModule::enforce_function_limit(x, 2, 3, 3)
+        );
+
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (param i32 i32 i32 i32) (result i32)
+                    (i32.const 22)
+                )
+            )
+            "#,
+            PrepareError::TooManyFunctionParams,
+            |x| WasmModule::enforce_function_limit(x, 2, 3, 3)
+        );
+
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (result i32)
+                    (local $v1 i32)
+
+                    (local.set $v1 (i32.const 1))
+
+                    (i32.const 22)
+                )
+                (func (result i32)
+                    (local $v1 i32)
+                    (local $v2 i64)
+                    (local $v3 i64)
+                    (local $v4 i32)
+
+                    (local.set $v1 (i32.const 1))
+                    (local.set $v2 (i64.const 2))
+                    (local.set $v3 (i64.const 3))
+                    (local.set $v4 (i32.const 4))
+
+                    (i32.const 22)
+                )
+            )
+            "#,
+            PrepareError::TooManyFunctionLocals,
+            |x| WasmModule::enforce_function_limit(x, 2, 3, 3)
+        );
+    }
+
+    #[test]
     fn test_blueprint_constraints() {
         let mut blueprints = BTreeMap::new();
         blueprints.insert(
