@@ -18,7 +18,7 @@ use scrypto_unit::{DefaultTestRunner, TestRunnerBuilder, TestRunnerSnapshot};
 #[cfg(test)]
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use strum::EnumCount;
-use transaction::manifest::ast::{ Instruction, InstructionDiscriminants};
+use transaction::manifest::ast::{Instruction, InstructionDiscriminants};
 use transaction::model::InstructionV1;
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
@@ -133,12 +133,13 @@ impl TxFuzzer {
             let mut substate_iter = self
                 .runner
                 .substate_db()
-                .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
+                .list_mapped::<SpreadPrefixKeyMapper, (), MapKey>(
                     &vault,
                     MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
                 );
 
-            substate_iter.next().map(|(_key, id)| {
+            substate_iter.next().map(|(key, _value)| {
+                let id: NonFungibleLocalId = scrypto_decode(key.for_map().unwrap()).unwrap();
                 btree_ids.push(id);
             });
         }
