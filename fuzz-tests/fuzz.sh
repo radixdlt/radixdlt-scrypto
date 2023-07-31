@@ -16,6 +16,9 @@ DFLT_TIMEOUT=1000
 
 function usage() {
     echo "$0 [FUZZER/COMMAND] [SUBCOMMAND] [FUZZ-TARGET] [COMMAND-ARGS]"
+    echo "Available targets:"
+    echo "    transaction"
+    echo "    wasm_instrument"
     echo "Available fuzzers"
     echo "    libfuzzer  - 'cargo fuzz' wrapper"
     echo "    afl        - 'cargo afl' wrapper"

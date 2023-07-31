@@ -7,24 +7,26 @@ set -u
 DFLT_CPUS=1
 DFLT_INTERVAL=60
 # At the moment this is the only supported test
-#DFLT_TARGET=transaction
-DFLT_TARGET=wasm_instrument
+DFLT_TARGET=transaction
 DFLT_AFL_TIMEOUT=1000
 
 function usage() {
-    echo "$0 [COMMAND] [COMMAND-ARGS]"
+    echo "$0 [COMMAND] [FUZZ-TARGET] [COMMAND-ARGS]"
+    echo "Available targets:"
+    echo "    transaction"
+    echo "    wasm_instrument"
     echo "Commands:"
-    echo "    run <duration> <instances> [timeout]"
+    echo "    run <target ><duration> <instances> [timeout]"
     echo "            Run given number of AFL instances (default: $DFLT_CPUS) in screen sessions"
     echo "            for a given number of seconds."
     echo "            For 'instances' one can specify"
     echo "              all      - to run as many instances as CPU cores available"
     echo "              <number> - to run <number> of instances"
     echo "            'timeout' is an AFL timeout in ms"
-    echo "    watch <interval>"
+    echo "    watch <target> <interval>"
     echo "            Monitor AFL instances until they are finished."
     echo "            One can specify interval (default: $DFLT_INTERVAL) to output the status"
-    echo "    quit    Quit all AFL instances"
+    echo "    quit <target>   Quit all AFL instances"
 }
 
 function error() {
@@ -61,9 +63,16 @@ function humanize_seconds()
    fi
 }
 
+cmd=watch
+if [ $# -ge 1 ] ; then
+    cmd=$1
+    shift
+fi
 target=$DFLT_TARGET
-cmd=${1:-watch}
-shift
+if [ $# -ge 1 ] ; then
+    target=$1
+    shift
+fi
 
 # Trying different power schedules, but keeping in mind that "fast" and "explore" are most effective ones,
 # thus they are duplicated.
