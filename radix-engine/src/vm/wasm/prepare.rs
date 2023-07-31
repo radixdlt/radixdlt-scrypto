@@ -838,12 +838,47 @@ impl WasmModule {
     pub fn enforce_function_limit(
         self,
         max_number_of_functions: u32,
+        max_number_of_function_params: u32,
+        max_number_of_function_locals: u32,
     ) -> Result<Self, PrepareError> {
         if self.module.num_local_functions() > max_number_of_functions {
             return Err(PrepareError::TooManyFunctions);
         }
 
-        // FIXME: do we need to enforce limit on the number of locals and parameters?
+        for func_idx in 0..self.module.num_local_functions() {
+            if let wasmparser::Type::Func(ty) = self
+                .module
+                .get_type_by_func_idx(func_idx)
+                .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?
+            {
+                if ty.params().len() > max_number_of_function_params as usize {
+                    return Err(PrepareError::TooManyFunctionParams);
+                }
+            }
+        }
+
+        for func_body in self
+            .module
+            .code_section()
+            .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?
+            .unwrap_or(vec![])
+        {
+            let local_reader = func_body
+                .get_locals_reader()
+                .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+            let mut locals_count = 0;
+
+            for local in local_reader.into_iter() {
+                // Number of locals of of some type
+                let (count, _ty) =
+                    local.map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+                locals_count += count;
+            }
+
+            if locals_count > max_number_of_function_locals {
+                return Err(PrepareError::TooManyFunctionLocals);
+            }
+        }
 
         Ok(self)
     }

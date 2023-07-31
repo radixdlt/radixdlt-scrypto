@@ -13,5 +13,11 @@ pub const MAX_NUMBER_OF_GLOBALS: u32 = 512;
 /// The max number of functions
 pub const MAX_NUMBER_OF_FUNCTIONS: u32 = 64 * 1024;
 
+/// The max number of function parameters
+pub const MAX_NUMBER_OF_FUNCTION_PARAMS: u32 = 3;
+
+/// The max number of function local variables
+pub const MAX_NUMBER_OF_FUNCTION_LOCALS: u32 = 3;
+
 /// The number of entries in the engine cache
 pub const WASM_ENGINE_CACHE_SIZE: usize = 1000;
