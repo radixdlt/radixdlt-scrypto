@@ -1,10 +1,11 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::prelude::scrypto_decode;
+use radix_engine_common::prelude::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -13,7 +14,7 @@ use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::FieldSubstate;
+use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::track::TrackedSubstateValue;
 use crate::track::{TrackedNode, Write};
 
@@ -105,14 +106,14 @@ impl BalanceChange {
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
 pub struct SchemaTracker<'a, S: SubstateDatabase> {
-    substate_db: &'a S,
+    system_reader: SystemReader<'a, S>,
     tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
 impl<'a, S: SubstateDatabase> SchemaTracker<'a, S> {
     pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
-            substate_db,
+            system_reader: SystemReader::new(substate_db, tracked),
             tracked,
         }
     }
@@ -120,7 +121,23 @@ impl<'a, S: SubstateDatabase> SchemaTracker<'a, S> {
     pub fn run(
         &self,
     ) {
-        for node_id in self.tracked.keys() {
+        for (node_id, tracked_node) in self.tracked {
+            let type_info = self.system_reader.get_type_info(node_id).unwrap();
+            match type_info {
+                TypeInfoSubstate::Object(info) => {
+                    let blueprint_id = info.blueprint_info.blueprint_id;
+                    let bp_definition = self.system_reader.get_blueprint_definition(&blueprint_id).unwrap();
+                    println!("{:?}", blueprint_id);
+                }
+                _ => println!("{:?}", type_info),
+            }
+
+            for (partition_num, tracked_partition) in &tracked_node.tracked_partitions {
+                for (key, tracked_substate) in &tracked_partition.substates {
+
+                }
+
+            }
         }
     }
 }
@@ -394,6 +411,37 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
             substate_db,
             tracked,
         }
+    }
+
+    pub fn get_type_info(
+        &self,
+        node_id: &NodeId,
+    ) -> Option<TypeInfoSubstate> {
+        let type_info: TypeInfoSubstate = self
+            .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                node_id,
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+            )?;
+
+        Some(type_info)
+    }
+
+    pub fn get_blueprint_definition(
+        &self,
+        blueprint_id: &BlueprintId,
+    ) -> Option<BlueprintDefinition> {
+        let bp_version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name.clone());
+        let definition = self
+            .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<BlueprintDefinition>>(
+                blueprint_id.package_address.as_node_id(),
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                    .unwrap(),
+                &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
+            )?;
+
+        definition.value
     }
 
     fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(

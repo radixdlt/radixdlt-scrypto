@@ -174,6 +174,18 @@ pub struct BlueprintInterface {
 }
 
 impl BlueprintInterface {
+    pub fn get_field_type_pointer(&self, field_index: u8) -> Option<TypePointer> {
+        self.state.get_field_type_pointer(field_index)
+    }
+
+    pub fn get_kv_key_type_pointer(&self, collection_index: u8) -> Option<TypePointer> {
+        self.state.get_kv_key_type_pointer(collection_index)
+    }
+
+    pub fn get_kv_value_type_pointer(&self, collection_index: u8) -> Option<(TypePointer, bool)> {
+        self.state.get_kv_value_type_pointer(collection_index)
+    }
+
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_none() {
@@ -190,38 +202,6 @@ impl BlueprintInterface {
             }
         }
         None
-    }
-
-    pub fn get_field_type_pointer(&self, field_index: u8) -> Option<TypePointer> {
-        let (_partition, fields) = self.state.fields.clone()?;
-        let field_schema = fields.get(field_index.clone() as usize)?;
-        Some(field_schema.field.clone())
-    }
-
-    pub fn get_kv_key_type_pointer(&self, collection_index: u8) -> Option<TypePointer> {
-        let (_partition, schema) = self
-            .state
-            .collections
-            .get(collection_index.clone() as usize)?;
-        match schema {
-            BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
-                Some(key_value_store.key.clone())
-            }
-            _ => None,
-        }
-    }
-
-    pub fn get_kv_value_type_pointer(&self, collection_index: u8) -> Option<(TypePointer, bool)> {
-        let (_partition, schema) = self
-            .state
-            .collections
-            .get(collection_index.clone() as usize)?;
-        match schema {
-            BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
-                Some((key_value_store.value.clone(), key_value_store.can_own))
-            }
-            _ => None,
-        }
     }
 
     pub fn get_function_input_type_pointer(&self, ident: &str) -> Option<TypePointer> {
@@ -298,6 +278,36 @@ impl IndexedStateSchema {
         match &self.fields {
             Some((_, indices)) => indices.len(),
             _ => 0usize,
+        }
+    }
+
+    pub fn get_field_type_pointer(&self, field_index: u8) -> Option<TypePointer> {
+        let (_partition, fields) = self.fields.clone()?;
+        let field_schema = fields.get(field_index.clone() as usize)?;
+        Some(field_schema.field.clone())
+    }
+
+    pub fn get_kv_key_type_pointer(&self, collection_index: u8) -> Option<TypePointer> {
+        let (_partition, schema) = self
+            .collections
+            .get(collection_index.clone() as usize)?;
+        match schema {
+            BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
+                Some(key_value_store.key.clone())
+            }
+            _ => None,
+        }
+    }
+
+    pub fn get_kv_value_type_pointer(&self, collection_index: u8) -> Option<(TypePointer, bool)> {
+        let (_partition, schema) = self
+            .collections
+            .get(collection_index.clone() as usize)?;
+        match schema {
+            BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
+                Some((key_value_store.value.clone(), key_value_store.can_own))
+            }
+            _ => None,
         }
     }
 
