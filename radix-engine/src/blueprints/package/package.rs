@@ -606,7 +606,7 @@ pub fn create_bootstrap_package_partitions(
                 IndexedScryptoValue::from_typed(&value),
             );
         }
-        partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
+        partitions.insert(METADATA_BASE_PARTITION, metadata_partition);
     }
 
     {

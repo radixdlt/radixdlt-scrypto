@@ -12,7 +12,7 @@ use radix_engine_interface::prelude::{scrypto_decode, CONSENSUS_MANAGER_PACKAGE}
 use radix_engine_interface::types::{
     AccountPartitionOffset, ConsensusManagerPartitionOffset, FungibleVaultField,
     IndexedScryptoValue, NonFungibleVaultField, PartitionNumber, PartitionOffset, ResourceAddress,
-    TypeInfoField, MAIN_BASE_PARTITION, METADATA_KV_STORE_PARTITION,
+    TypeInfoField, MAIN_BASE_PARTITION, METADATA_BASE_PARTITION,
     ROLE_ASSIGNMENT_BASE_PARTITION, ROYALTY_BASE_PARTITION, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
@@ -197,7 +197,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     ] {
                         self.traverse_substates::<FieldKey>(node_id, partition_num, depth)
                     }
-                    for partition_num in [METADATA_KV_STORE_PARTITION] {
+                    for partition_num in [METADATA_BASE_PARTITION] {
                         self.traverse_substates::<MapKey>(node_id, partition_num, depth)
                     }
 

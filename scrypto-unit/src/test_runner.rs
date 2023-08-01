@@ -516,7 +516,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .database
             .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
                 address.as_node_id(),
-                METADATA_KV_STORE_PARTITION,
+                METADATA_BASE_PARTITION,
                 &SubstateKey::Map(key),
             )?
             .value;
