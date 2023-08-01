@@ -974,28 +974,24 @@ impl ValidatorBlueprint {
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
                     EpochRegisteredValidatorByStakeEntry {
-                        component_address: address,
                         validator: Validator { key, stake },
                     },
                 )?;
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
-                let (address, mut validator) = api
-                    .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
+                let mut validator = api
+                    .actor_sorted_index_remove_typed::<EpochRegisteredValidatorByStakeEntry>(
                         OBJECT_HANDLE_OUTER_OBJECT,
                         CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
-                validator.key = key;
+                validator.validator.key = key;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
-                    EpochRegisteredValidatorByStakeEntry {
-                        component_address: address,
-                        validator,
-                    },
+                    validator,
                 )?;
             }
             UpdateSecondaryIndex::UpdateStake {
@@ -1003,22 +999,19 @@ impl ValidatorBlueprint {
                 new_index_key,
                 new_stake_amount,
             } => {
-                let (address, mut validator) = api
-                    .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
+                let mut validator = api
+                    .actor_sorted_index_remove_typed::<EpochRegisteredValidatorByStakeEntry>(
                         OBJECT_HANDLE_OUTER_OBJECT,
                         CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
-                validator.stake = new_stake_amount;
+                validator.validator.stake = new_stake_amount;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     new_index_key,
-                    EpochRegisteredValidatorByStakeEntry {
-                        component_address: address,
-                        validator,
-                    },
+                    validator,
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {

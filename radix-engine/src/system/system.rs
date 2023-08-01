@@ -1981,7 +1981,7 @@ where
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         limit: u32,
-    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    ) -> Result<Vec<(SortedKey, Vec<u8>)>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num, ..) =
@@ -1991,7 +1991,7 @@ where
             .api
             .kernel_scan_sorted_substates(&node_id, partition_num, limit)?
             .into_iter()
-            .map(|value| value.into())
+            .map(|(key, value)| (SortedKey(key.0, key.1), value.into()))
             .collect();
 
         Ok(substates)
@@ -2757,7 +2757,7 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, RuntimeError> {
         self.api
             .kernel_scan_sorted_substates(node_id, partition_num, limit)
     }

@@ -1151,7 +1151,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         on_store_access: &mut F,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
+    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(
@@ -1169,7 +1169,19 @@ impl<C, L: Clone> CallFrame<C, L> {
                 .map_err(|e| CallbackError::CallbackError(e))?
         };
 
-        for substate in &substates {
+        for (key, substate) in &substates {
+            let key = IndexedScryptoValue::from_slice(&key.1).unwrap();
+            for reference in key.references() {
+                if reference.is_global() {
+                    self.stable_references
+                        .insert(reference.clone(), StableReferenceType::Global);
+                } else {
+                    return Err(CallbackError::Error(
+                        CallFrameScanSortedSubstatesError::OwnedNodeNotSupported(reference.clone()),
+                    ));
+                }
+            }
+
             for reference in substate.references() {
                 if reference.is_global() {
                     self.stable_references

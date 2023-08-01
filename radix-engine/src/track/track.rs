@@ -945,7 +945,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         limit: u32,
         on_store_access: &mut F,
-    ) -> Result<Vec<IndexedScryptoValue>, E> {
+    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, E> {
         // TODO: ensure we abort if any substates are write locked.
         let limit: usize = limit.try_into().unwrap();
 
@@ -991,8 +991,14 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         for result in
             OverlayingResultIterator::new(db_read_entries, tracked_entry_changes).take(limit)
         {
-            let (_key, value) = result?;
-            items.push(value);
+
+            let (db_sort_key, value) = result?;
+            let substate_key = M::from_db_sort_key::<SortedU16Key>(&db_sort_key);
+            let sorted_key = match substate_key {
+                SubstateKey::Sorted(sorted) => sorted,
+                _ => panic!("Should be a sorted key"),
+            };
+            items.push((sorted_key, value));
         }
 
         // Use the statistics (gathered by the `.inspect()`s above) to update the track's metadata and to return costing info
