@@ -361,7 +361,7 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn key_value_store_partition(
+    pub fn into_key_value_store_partition(
         mut self,
         collection_index: u8,
     ) -> Option<(PartitionOffset, BlueprintKeyValueStoreSchema<TypePointer>)> {
@@ -376,14 +376,17 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn index_partition(
-        &self,
+    pub fn into_index_partition(
+        mut self,
         collection_index: u8,
-    ) -> Option<(PartitionOffset, &BlueprintKeyValueStoreSchema<TypePointer>)> {
-        match self.collections.get(collection_index as usize) {
-            Some((offset, BlueprintCollectionSchema::Index(schema))) => {
-                Some((offset.clone(), schema))
-            }
+    ) -> Option<(PartitionOffset, BlueprintKeyValueStoreSchema<TypePointer>)> {
+        let index = collection_index as usize;
+        if index >= self.collections.len() {
+            return None;
+        }
+
+        match self.collections.swap_remove(index) {
+            (offset, BlueprintCollectionSchema::Index(schema)) => Some((offset, schema)),
             _ => None,
         }
     }
