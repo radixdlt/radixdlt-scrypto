@@ -345,77 +345,106 @@ impl From<bool> for Decimal {
     }
 }
 
-impl<T: TryInto<Decimal>> Add<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
-    type Output = Decimal;
+impl Add<PreciseDecimal> for Decimal {
+    type Output = PreciseDecimal;
 
-    fn add(self, other: T) -> Self::Output {
-        let a = self.0;
-        let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: BnumI256 = b_dec.0;
-        let c = a + b;
-        Decimal(c)
+    fn add(self, other: PreciseDecimal) -> Self::Output {
+        other + self
     }
 }
 
-impl<T: TryInto<Decimal>> Sub<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
-    type Output = Decimal;
+impl Sub<PreciseDecimal> for Decimal {
+    type Output = PreciseDecimal;
 
-    fn sub(self, other: T) -> Self::Output {
-        let a = self.0;
-        let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: BnumI256 = b_dec.0;
-        let c: BnumI256 = a - b;
-        Decimal(c)
+    fn sub(self, other: PreciseDecimal) -> Self::Output {
+        PreciseDecimal::from(self) - other
     }
 }
 
-impl<T: TryInto<Decimal>> Mul<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
-    type Output = Decimal;
+impl Mul<PreciseDecimal> for Decimal {
+    type Output = PreciseDecimal;
 
-    fn mul(self, other: T) -> Self::Output {
-        // Use BnumI384 (BInt<6>) to not overflow.
-        let a = BnumI384::from(self.0);
-        let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b = BnumI384::from(b_dec.0);
-        let c = a * b / BnumI384::from(Self::ONE.0);
-        let c_256 = BnumI256::try_from(c).expect("Overflow");
-        Decimal(c_256)
+    fn mul(self, other: PreciseDecimal) -> Self::Output {
+        other * self
     }
 }
 
-impl<T: TryInto<Decimal>> Div<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
-    type Output = Decimal;
+impl Div<PreciseDecimal> for Decimal {
+    type Output = PreciseDecimal;
 
-    fn div(self, other: T) -> Self::Output {
-        // Use BnumI384 (BInt<6>) to not overflow.
-        let a = BnumI384::from(self.0);
-        let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b = BnumI384::from(b_dec.0);
-        let c = a * BnumI384::from(Self::ONE.0) / b;
-        let c_256 = BnumI256::try_from(c).expect("Overflow");
-        Decimal(c_256)
+    fn div(self, other: PreciseDecimal) -> Self::Output {
+        PreciseDecimal::from(self) / other
     }
 }
 
-impl Neg for Decimal {
-    type Output = Decimal;
+macro_rules! arith_ops {
+    ($type:ident) => {
+        impl Add<$type> for Decimal {
+            type Output = Decimal;
 
-    fn neg(self) -> Self::Output {
-        Decimal(-self.0)
-    }
+            fn add(self, other: $type) -> Self::Output {
+                let a = self.0;
+                let b_dec: Decimal = other.try_into().expect("Overflow");
+                let b: BnumI256 = b_dec.0;
+                let c = a + b;
+                Decimal(c)
+            }
+        }
+
+        impl Sub<$type> for Decimal {
+            type Output = Decimal;
+
+            fn sub(self, other: $type) -> Self::Output {
+                let a = self.0;
+                let b_dec: Decimal = other.try_into().expect("Overflow");
+                let b: BnumI256 = b_dec.0;
+                let c: BnumI256 = a - b;
+                Decimal(c)
+            }
+        }
+
+        impl Mul<$type> for Decimal {
+            type Output = Decimal;
+
+            fn mul(self, other: $type) -> Self::Output {
+                // Use BnumI384 (BInt<6>) to not overflow.
+                let a = BnumI384::from(self.0);
+                let b_dec: Decimal = other.try_into().expect("Overflow");
+                let b = BnumI384::from(b_dec.0);
+                let c = a * b / BnumI384::from(Self::ONE.0);
+                let c_256 = BnumI256::try_from(c).expect("Overflow");
+                Decimal(c_256)
+            }
+        }
+
+        impl Div<$type> for Decimal {
+            type Output = Decimal;
+
+            fn div(self, other: $type) -> Self::Output {
+                // Use BnumI384 (BInt<6>) to not overflow.
+                let a = BnumI384::from(self.0);
+                let b_dec: Decimal = other.try_into().expect("Overflow");
+                let b = BnumI384::from(b_dec.0);
+                let c = a * BnumI384::from(Self::ONE.0) / b;
+                let c_256 = BnumI256::try_from(c).expect("Overflow");
+                Decimal(c_256)
+            }
+        }
+    };
 }
+arith_ops!(u8);
+arith_ops!(u16);
+arith_ops!(u32);
+arith_ops!(u64);
+arith_ops!(u128);
+arith_ops!(usize);
+arith_ops!(i8);
+arith_ops!(i16);
+arith_ops!(i32);
+arith_ops!(i64);
+arith_ops!(i128);
+arith_ops!(isize);
+arith_ops!(Decimal);
 
 impl<T: TryInto<Decimal>> AddAssign<T> for Decimal
 where
@@ -454,6 +483,14 @@ where
     fn div_assign(&mut self, other: T) {
         let other: Decimal = other.try_into().expect("Overflow");
         self.0 /= other.0;
+    }
+}
+
+impl Neg for Decimal {
+    type Output = Decimal;
+
+    fn neg(self) -> Self::Output {
+        Decimal(-self.0)
     }
 }
 

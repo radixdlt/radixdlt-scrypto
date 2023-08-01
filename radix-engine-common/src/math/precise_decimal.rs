@@ -1471,4 +1471,59 @@ mod tests {
             Err(ParsePreciseDecimalError::UnsupportedDecimalPlace)
         ))
     }
+
+    // These tests make sure that any basic arithmetic operation
+    // between Decimal and PreciseDecimal produces a PreciseDecimal, no matter the order.
+    // Additionally result of such operation shall be equal, if operands are derived from the same
+    // value
+    // Example:
+    //   Decimal(10) * PreciseDecimal(10) -> PreciseDecimal(100)
+    //   PreciseDecimal(10) * Decimal(10) -> PreciseDecimal(100)
+    #[test]
+    fn test_arith_precise_decimal_decimal() {
+        let p1 = PreciseDecimal::from(Decimal::MAX);
+        let d1 = Decimal::from(2);
+        let d2 = Decimal::MAX;
+        let p2 = PreciseDecimal::from(2);
+        assert_eq!(p1 * d1, d2 * p2);
+        assert_eq!(p1 / d1, d2 / p2);
+        assert_eq!(p1 + d1, d2 + p2);
+        assert_eq!(p1 - d1, d2 - p2);
+
+        let p1 = PreciseDecimal::from(Decimal::MIN);
+        let d1 = Decimal::from(2);
+        let d2 = Decimal::MIN;
+        let p2 = PreciseDecimal::from(2);
+        assert_eq!(p1 * d1, d2 * p2);
+        assert_eq!(p1 / d1, d2 / p2);
+        assert_eq!(p1 + d1, d2 + p2);
+        assert_eq!(p1 - d1, d2 - p2);
+
+        let p1 = pdec!("0.000001");
+        let d1 = dec!("0.001");
+        let d2 = dec!("0.000001");
+        let p2 = pdec!("0.001");
+        assert_eq!(p1 * d1, d2 * p2);
+        assert_eq!(p1 / d1, d2 / p2);
+        assert_eq!(p1 + d1, d2 + p2);
+        assert_eq!(p1 - d1, d2 - p2);
+
+        let p1 = pdec!("0.000000000000000001");
+        let d1 = Decimal::MIN;
+        let d2 = dec!("0.000000000000000001");
+        let p2 = PreciseDecimal::from(Decimal::MIN);
+        assert_eq!(p1 * d1, d2 * p2);
+        assert_eq!(p1 / d1, d2 / p2);
+        assert_eq!(p1 + d1, d2 + p2);
+        assert_eq!(p1 - d1, d2 - p2);
+
+        let p1 = PreciseDecimal::ZERO;
+        let d1 = Decimal::ONE;
+        let d2 = Decimal::ZERO;
+        let p2 = PreciseDecimal::ONE;
+        assert_eq!(p1 * d1, d2 * p2);
+        assert_eq!(p1 / d1, d2 / p2);
+        assert_eq!(p1 + d1, d2 + p2);
+        assert_eq!(p1 - d1, d2 - p2);
+    }
 }
