@@ -536,7 +536,6 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
             new_components,
             new_resources,
             new_vaults,
-            substate_schema_pointers: index_map_new(),
             balance_changes: index_map_new(),
             direct_vault_updates: index_map_new(),
         },

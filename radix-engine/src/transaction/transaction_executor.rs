@@ -348,12 +348,16 @@ where
 
                         // Finalize track
                         let (tracked_nodes, deleted_partitions) = track.finalize();
+
+                        let schema_pointers = SchemaPointers::new(self.substate_db, &tracked_nodes);
+
                         let state_update_summary =
                             StateUpdateSummary::new(self.substate_db, &tracked_nodes);
                         let state_updates = to_state_updates::<SpreadPrefixKeyMapper>(
                             tracked_nodes,
                             deleted_partitions,
                         );
+
 
                         TransactionResult::Commit(CommitResult {
                             state_updates,
@@ -365,6 +369,7 @@ where
                             fee_summary,
                             application_events,
                             application_logs,
+                            schema_pointers,
                             execution_trace,
                         })
                     }
