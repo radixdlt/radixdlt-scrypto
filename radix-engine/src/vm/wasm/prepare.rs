@@ -869,7 +869,7 @@ impl WasmModule {
             let mut locals_count = 0;
 
             for local in local_reader.into_iter() {
-                // Number of locals of of some type
+                // Number of locals of some type
                 let (count, _ty) =
                     local.map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
                 locals_count += count;
