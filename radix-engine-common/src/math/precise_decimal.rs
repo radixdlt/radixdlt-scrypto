@@ -432,6 +432,58 @@ impl Neg for PreciseDecimal {
     }
 }
 
+macro_rules! arith_ops_for_primitive_types {
+    ($type:ident) => {
+        impl Add<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            fn add(self, other: PreciseDecimal) -> Self::Output {
+                let a = PreciseDecimal::from(self);
+                a + other
+            }
+        }
+
+        impl Sub<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            fn sub(self, other: PreciseDecimal) -> Self::Output {
+                let a = PreciseDecimal::from(self);
+                a - other
+            }
+        }
+
+        impl Mul<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            fn mul(self, other: PreciseDecimal) -> Self::Output {
+                let a = PreciseDecimal::from(self);
+                a * other
+            }
+        }
+
+        impl Div<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            fn div(self, other: PreciseDecimal) -> Self::Output {
+                let a = PreciseDecimal::from(self);
+                a / other
+            }
+        }
+    };
+}
+arith_ops_for_primitive_types!(u8);
+arith_ops_for_primitive_types!(u16);
+arith_ops_for_primitive_types!(u32);
+arith_ops_for_primitive_types!(u64);
+arith_ops_for_primitive_types!(u128);
+arith_ops_for_primitive_types!(usize);
+arith_ops_for_primitive_types!(i8);
+arith_ops_for_primitive_types!(i16);
+arith_ops_for_primitive_types!(i32);
+arith_ops_for_primitive_types!(i64);
+arith_ops_for_primitive_types!(i128);
+arith_ops_for_primitive_types!(isize);
+
 impl<T: TryInto<PreciseDecimal>> AddAssign<T> for PreciseDecimal
 where
     <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
@@ -1526,4 +1578,59 @@ mod tests {
         assert_eq!(p1 + d1, d2 + p2);
         assert_eq!(p1 - d1, d2 - p2);
     }
+
+    // These tests make sure that any basic arithmetic operation
+    // between primitive type and PreciseDecimal produces a PreciseDecimal, no matter the order.
+    // Additionally result of such operation shall be equal, if operands are derived from the same
+    // value
+    // Example:
+    //   PreciseDecimal(10) * 10_u32 -> PreciseDecimal(100)
+    //   10_u32 * PreciseDecimal(10) -> PreciseDecimal(100)
+    macro_rules! test_arith_precise_decimal_primitive {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_arith_precise_decimal_$type>]() {
+                    let d1 = PreciseDecimal::ONE;
+                    let u1 = 2 as $type;
+                    let u2 = 1 as $type;
+                    let d2 = PreciseDecimal::from(2);
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+
+                    let d1 = pdec!("2");
+                    let u1 = $type::MAX;
+                    let u2 = 2 as $type;
+                    let d2 = PreciseDecimal::from($type::MAX);
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+
+                    let d1 = PreciseDecimal::from($type::MIN);
+                    let u1 = 2 as $type;
+                    let u2 = $type::MIN;
+                    let d2 = pdec!("2");
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+                }
+            }
+        };
+    }
+    test_arith_precise_decimal_primitive!(u8);
+    test_arith_precise_decimal_primitive!(u16);
+    test_arith_precise_decimal_primitive!(u32);
+    test_arith_precise_decimal_primitive!(u64);
+    test_arith_precise_decimal_primitive!(u128);
+    test_arith_precise_decimal_primitive!(usize);
+    test_arith_precise_decimal_primitive!(i8);
+    test_arith_precise_decimal_primitive!(i16);
+    test_arith_precise_decimal_primitive!(i32);
+    test_arith_precise_decimal_primitive!(i64);
+    test_arith_precise_decimal_primitive!(i128);
+    test_arith_precise_decimal_primitive!(isize);
 }
