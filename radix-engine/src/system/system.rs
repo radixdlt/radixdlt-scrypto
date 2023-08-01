@@ -34,7 +34,7 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintKeyValueStoreSchema, Condition, InstanceSchema, KeyValueStoreSchema,
+    BlueprintKeyValueSchema, Condition, InstanceSchema, KeyValueStoreSchema,
 };
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
@@ -875,7 +875,7 @@ where
         (
             NodeId,
             PartitionNumber,
-            BlueprintKeyValueStoreSchema<TypePointer>,
+            BlueprintKeyValueSchema<TypePointer>,
             Option<InstanceSchema>,
             BlueprintId,
         ),
@@ -915,7 +915,7 @@ where
         (
             NodeId,
             PartitionNumber,
-            BlueprintKeyValueStoreSchema<TypePointer>,
+            BlueprintKeyValueSchema<TypePointer>,
             Option<InstanceSchema>,
             BlueprintId,
         ),
@@ -950,7 +950,7 @@ where
 
         let (partition_offset, _) = interface
             .state
-            .sorted_index_partition(collection_index)
+            .into_sorted_index_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
                     info.blueprint_id,

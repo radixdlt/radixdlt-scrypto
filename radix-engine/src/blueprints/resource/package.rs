@@ -23,7 +23,7 @@ use radix_engine_interface::schema::{
     FunctionSchemaInit,
 };
 use radix_engine_interface::schema::{
-    BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, TypeRef,
+    BlueprintKeyValueSchema, BlueprintStateSchemaInit, TypeRef,
 };
 use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
 
@@ -426,7 +426,7 @@ impl ResourceNativePackage {
 
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::KeyValueStore(
-                BlueprintKeyValueStoreSchema {
+                BlueprintKeyValueSchema {
                     key: TypeRef::Static(
                         aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
                     ),
@@ -998,7 +998,7 @@ impl ResourceNativePackage {
             ));
 
             let mut collections = Vec::new();
-            collections.push(BlueprintCollectionSchema::Index(BlueprintKeyValueStoreSchema {
+            collections.push(BlueprintCollectionSchema::Index(BlueprintKeyValueSchema {
                 key: TypeRef::Static(aggregator.add_child_type_and_descendents::<NonFungibleLocalId>()),
                 value: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
                 can_own: false,

@@ -12,7 +12,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
-    BlueprintSortedIndexSchema, BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit,
+    BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit,
     ReceiverInfo, TypeRef,
 };
 
@@ -53,7 +53,11 @@ impl ConsensusManagerNativePackage {
 
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::SortedIndex(
-                BlueprintSortedIndexSchema {},
+                BlueprintKeyValueSchema {
+                    key: TypeRef::Static(aggregator.add_child_type_and_descendents::<ComponentAddress>()),
+                    value: TypeRef::Static(aggregator.add_child_type_and_descendents::<Validator>()),
+                    can_own: false,
+                }
             ));
 
             let mut functions = BTreeMap::new();
