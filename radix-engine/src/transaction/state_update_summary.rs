@@ -122,48 +122,31 @@ impl<'a, S: SubstateDatabase> SchemaTracker<'a, S> {
     pub fn run(
         &self,
     ) {
-        let role_assignment_blueprint_id = ObjectModuleId::RoleAssignment.static_blueprint().unwrap();
-        let role_assignment_bp_definition = self.system_reader.get_blueprint_definition(&role_assignment_blueprint_id).unwrap();
-
-        let royalty_blueprint_id = ObjectModuleId::Royalty.static_blueprint().unwrap();
-        let royalty_bp_definition = self.system_reader.get_blueprint_definition(&royalty_blueprint_id).unwrap();
-
-        let metadat_blueprint_id = ObjectModuleId::Metadata.static_blueprint().unwrap();
-        let metadata_bp_definition = self.system_reader.get_blueprint_definition(&metadat_blueprint_id).unwrap();
-
         for (node_id, tracked_node) in self.tracked {
-            let main_type_info = self.system_reader.get_type_info(node_id).unwrap();
-            let interface = match main_type_info {
-                TypeInfoSubstate::Object(info) => {
-                    let blueprint_id = info.blueprint_info.blueprint_id;
-                    let bp_definition = self.system_reader.get_blueprint_definition(&blueprint_id).unwrap();
-                    bp_definition.interface
-                }
-                _ => continue,
-            };
-
             for (partition_num, tracked_partition) in &tracked_node.tracked_partitions {
                 for (_, tracked_substate) in &tracked_partition.substates {
-                    if partition_num.ge(&MAIN_BASE_PARTITION) {
-                        let partition_offset = PartitionOffset(partition_num.0 - MAIN_BASE_PARTITION.0);
-                        let type_pointer = interface.state.get_type_pointer(&partition_offset, &tracked_substate.substate_key);
-                        println!("Main {:?}", type_pointer);
-                    } else if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
-                        let partition_offset = PartitionOffset(partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0);
-                        let type_pointer = role_assignment_bp_definition.interface.state.get_type_pointer(&partition_offset, &tracked_substate.substate_key);
-                        println!("RoleAssignment {:?}", type_pointer);
-                    } else if partition_num.ge(&ROYALTY_BASE_PARTITION) {
-                        let partition_offset = PartitionOffset(partition_num.0 - ROYALTY_BASE_PARTITION.0);
-                        let type_pointer = royalty_bp_definition.interface.state.get_type_pointer(&partition_offset, &tracked_substate.substate_key);
-                        println!("Royalty {:?}", type_pointer);
-                    } else if partition_num.ge(&METADATA_BASE_PARTITION) {
-                        let partition_offset = PartitionOffset(partition_num.0 - METADATA_BASE_PARTITION.0);
-                        let type_pointer = metadata_bp_definition.interface.state.get_type_pointer(&partition_offset, &tracked_substate.substate_key);
-                        println!("Metadata {:?}", type_pointer);
-                    } else if partition_num.eq(&TYPE_INFO_FIELD_PARTITION) {
-                        println!("TypeInfo");
-                    } else {
-                        panic!("Unknown Partition")
+                    let partition_description = self.system_reader.partition_description(partition_num);
+                    match partition_description {
+                        SystemPartitionDescription::Module(module_id, offset) => {
+                            let blueprint_id = if let ObjectModuleId::Main = module_id {
+                                let main_type_info = self.system_reader.get_type_info(node_id).unwrap();
+                                match main_type_info {
+                                    TypeInfoSubstate::Object(info) => {
+                                        info.blueprint_info.blueprint_id
+                                    }
+                                    _ => continue,
+                                }
+                            } else {
+                                module_id.static_blueprint().unwrap()
+                            };
+
+                            let bp_def = self.system_reader.get_blueprint_definition(&blueprint_id).unwrap();
+                            let type_pointer = bp_def.interface.state.get_type_pointer(&offset, &tracked_substate.substate_key);
+                            println!("{:?}", type_pointer);
+                        }
+                        SystemPartitionDescription::TypeInfo => {
+                            println!("TypeInfo");
+                        }
                     }
                 }
             }
@@ -429,6 +412,11 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     }
 }
 
+pub enum SystemPartitionDescription {
+    Module(ObjectModuleId, PartitionOffset),
+    TypeInfo,
+}
+
 pub struct SystemReader<'a, S: SubstateDatabase> {
     substate_db: &'a S,
     tracked: &'a IndexMap<NodeId, TrackedNode>,
@@ -439,6 +427,29 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
         Self {
             substate_db,
             tracked,
+        }
+    }
+
+    pub fn partition_description(
+        &self,
+        partition_num: &PartitionNumber
+    ) -> SystemPartitionDescription {
+        if partition_num.ge(&MAIN_BASE_PARTITION) {
+            let partition_offset = PartitionOffset(partition_num.0 - MAIN_BASE_PARTITION.0);
+            SystemPartitionDescription::Module(ObjectModuleId::Main, partition_offset)
+        } else if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
+            let partition_offset = PartitionOffset(partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0);
+            SystemPartitionDescription::Module(ObjectModuleId::RoleAssignment, partition_offset)
+        } else if partition_num.ge(&ROYALTY_BASE_PARTITION) {
+            let partition_offset = PartitionOffset(partition_num.0 - ROYALTY_BASE_PARTITION.0);
+            SystemPartitionDescription::Module(ObjectModuleId::Royalty, partition_offset)
+        } else if partition_num.ge(&METADATA_BASE_PARTITION) {
+            let partition_offset = PartitionOffset(partition_num.0 - METADATA_BASE_PARTITION.0);
+            SystemPartitionDescription::Module(ObjectModuleId::Metadata, partition_offset)
+        } else if partition_num.eq(&TYPE_INFO_FIELD_PARTITION) {
+            SystemPartitionDescription::TypeInfo
+        } else {
+            panic!("Should not get here")
         }
     }
 
