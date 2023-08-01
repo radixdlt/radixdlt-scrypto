@@ -379,7 +379,7 @@ impl IndexedStateSchema {
     pub fn index_partition(
         &self,
         collection_index: u8,
-    ) -> Option<(PartitionOffset, &BlueprintIndexSchema)> {
+    ) -> Option<(PartitionOffset, &BlueprintKeyValueStoreSchema<TypePointer>)> {
         match self.collections.get(collection_index as usize) {
             Some((offset, BlueprintCollectionSchema::Index(schema))) => {
                 Some((offset.clone(), schema))

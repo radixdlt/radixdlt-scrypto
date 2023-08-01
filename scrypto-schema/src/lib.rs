@@ -145,22 +145,19 @@ impl<T> BlueprintKeyValueStoreSchema<T> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintIndexSchema {}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSortedIndexSchema {}
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum BlueprintCollectionSchema<T> {
     KeyValueStore(BlueprintKeyValueStoreSchema<T>),
-    Index(BlueprintIndexSchema),
+    Index(BlueprintKeyValueStoreSchema<T>),
     SortedIndex(BlueprintSortedIndexSchema),
 }
 
 impl<T> BlueprintCollectionSchema<T> {
     pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintCollectionSchema<U> {
         match self {
-            BlueprintCollectionSchema::Index(schema) => BlueprintCollectionSchema::Index(schema),
+            BlueprintCollectionSchema::Index(schema) => BlueprintCollectionSchema::Index(schema.map(f)),
             BlueprintCollectionSchema::SortedIndex(schema) => {
                 BlueprintCollectionSchema::SortedIndex(schema)
             }

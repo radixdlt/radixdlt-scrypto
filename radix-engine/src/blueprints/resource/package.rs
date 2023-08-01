@@ -19,7 +19,7 @@ use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema, Generic,
 };
 use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintIndexSchema,
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
     FunctionSchemaInit,
 };
 use radix_engine_interface::schema::{
@@ -998,7 +998,11 @@ impl ResourceNativePackage {
             ));
 
             let mut collections = Vec::new();
-            collections.push(BlueprintCollectionSchema::Index(BlueprintIndexSchema {}));
+            collections.push(BlueprintCollectionSchema::Index(BlueprintKeyValueStoreSchema {
+                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<NonFungibleLocalId>()),
+                value: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
+                can_own: false,
+            }));
 
             let mut functions = BTreeMap::new();
             functions.insert(
