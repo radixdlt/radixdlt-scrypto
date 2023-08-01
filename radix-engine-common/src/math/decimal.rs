@@ -377,7 +377,7 @@ impl Div<PreciseDecimal> for Decimal {
     }
 }
 
-macro_rules! arith_ops {
+macro_rules! arith_ops_for_decimal {
     ($type:ident) => {
         impl Add<$type> for Decimal {
             type Output = Decimal;
@@ -432,19 +432,71 @@ macro_rules! arith_ops {
         }
     };
 }
-arith_ops!(u8);
-arith_ops!(u16);
-arith_ops!(u32);
-arith_ops!(u64);
-arith_ops!(u128);
-arith_ops!(usize);
-arith_ops!(i8);
-arith_ops!(i16);
-arith_ops!(i32);
-arith_ops!(i64);
-arith_ops!(i128);
-arith_ops!(isize);
-arith_ops!(Decimal);
+arith_ops_for_decimal!(u8);
+arith_ops_for_decimal!(u16);
+arith_ops_for_decimal!(u32);
+arith_ops_for_decimal!(u64);
+arith_ops_for_decimal!(u128);
+arith_ops_for_decimal!(usize);
+arith_ops_for_decimal!(i8);
+arith_ops_for_decimal!(i16);
+arith_ops_for_decimal!(i32);
+arith_ops_for_decimal!(i64);
+arith_ops_for_decimal!(i128);
+arith_ops_for_decimal!(isize);
+arith_ops_for_decimal!(Decimal);
+
+macro_rules! arith_ops_for_primitive_types {
+    ($type:ident) => {
+        impl Add<Decimal> for $type {
+            type Output = Decimal;
+
+            fn add(self, other: Decimal) -> Self::Output {
+                let a = Decimal::from(self);
+                a + other
+            }
+        }
+
+        impl Sub<Decimal> for $type {
+            type Output = Decimal;
+
+            fn sub(self, other: Decimal) -> Self::Output {
+                let a = Decimal::from(self);
+                a - other
+            }
+        }
+
+        impl Mul<Decimal> for $type {
+            type Output = Decimal;
+
+            fn mul(self, other: Decimal) -> Self::Output {
+                let a = Decimal::from(self);
+                a * other
+            }
+        }
+
+        impl Div<Decimal> for $type {
+            type Output = Decimal;
+
+            fn div(self, other: Decimal) -> Self::Output {
+                let a = Decimal::from(self);
+                a / other
+            }
+        }
+    };
+}
+arith_ops_for_primitive_types!(u8);
+arith_ops_for_primitive_types!(u16);
+arith_ops_for_primitive_types!(u32);
+arith_ops_for_primitive_types!(u64);
+arith_ops_for_primitive_types!(u128);
+arith_ops_for_primitive_types!(usize);
+arith_ops_for_primitive_types!(i8);
+arith_ops_for_primitive_types!(i16);
+arith_ops_for_primitive_types!(i32);
+arith_ops_for_primitive_types!(i64);
+arith_ops_for_primitive_types!(i128);
+arith_ops_for_primitive_types!(isize);
 
 impl<T: TryInto<Decimal>> AddAssign<T> for Decimal
 where
@@ -1414,4 +1466,59 @@ mod tests {
             Err(ParseDecimalError::UnsupportedDecimalPlace)
         ))
     }
+
+    // These tests make sure that any basic arithmetic operation
+    // between primitive type and Decimal produces a Decimal, no matter the order.
+    // Additionally result of such operation shall be equal, if operands are derived from the same
+    // value
+    // Example:
+    //   Decimal(10) * 10_u32 -> Decimal(100)
+    //   10_u32 * Decimal(10) -> Decimal(100)
+    macro_rules! test_arith_decimal_primitive {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_arith_decimal_$type>]() {
+                    let d1 = Decimal::ONE;
+                    let u1 = 2 as $type;
+                    let u2 = 1 as $type;
+                    let d2 = Decimal::from(2);
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+
+                    let d1 = dec!("2");
+                    let u1 = $type::MAX;
+                    let u2 = 2 as $type;
+                    let d2 = Decimal::from($type::MAX);
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+
+                    let d1 = Decimal::from($type::MIN);
+                    let u1 = 2 as $type;
+                    let u2 = $type::MIN;
+                    let d2 = dec!("2");
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+                }
+            }
+        };
+    }
+    test_arith_decimal_primitive!(u8);
+    test_arith_decimal_primitive!(u16);
+    test_arith_decimal_primitive!(u32);
+    test_arith_decimal_primitive!(u64);
+    test_arith_decimal_primitive!(u128);
+    test_arith_decimal_primitive!(usize);
+    test_arith_decimal_primitive!(i8);
+    test_arith_decimal_primitive!(i16);
+    test_arith_decimal_primitive!(i32);
+    test_arith_decimal_primitive!(i64);
+    test_arith_decimal_primitive!(i128);
+    test_arith_decimal_primitive!(isize);
 }
