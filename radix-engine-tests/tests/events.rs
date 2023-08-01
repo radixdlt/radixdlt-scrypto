@@ -139,15 +139,12 @@ fn scrypto_can_emit_registered_events() {
     });
     assert!(match events.get(1) {
         Some((
-            event_identifier @ EventTypeIdentifier(
-                Emitter::Function(node_id, ObjectModuleId::Main, blueprint_name),
-                ..,
-            ),
+            event_identifier @ EventTypeIdentifier(Emitter::Function(blueprint_id), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<RegisteredEvent>(event_identifier)
             && is_decoded_equal(&RegisteredEvent { number: 12 }, event_data)
-            && node_id == package_address.as_node_id()
-            && blueprint_name == "ScryptoEvents" =>
+            && blueprint_id.package_address == package_address
+            && blueprint_id.blueprint_name.eq("ScryptoEvents") =>
             true,
         _ => false,
     });

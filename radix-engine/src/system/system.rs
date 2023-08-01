@@ -2556,15 +2556,8 @@ where
                 Emitter::Method(node_id.clone(), module_id.clone()),
                 type_pointer,
             )),
-            Actor::Function(FunctionActor {
-                blueprint_id: ref blueprint,
-                ..
-            }) => Ok(EventTypeIdentifier(
-                Emitter::Function(
-                    blueprint.package_address.into(),
-                    ObjectModuleId::Main,
-                    blueprint.blueprint_name.to_string(),
-                ),
+            Actor::Function(FunctionActor { blueprint_id, .. }) => Ok(EventTypeIdentifier(
+                Emitter::Function(blueprint_id.clone()),
                 type_pointer,
             )),
             _ => Err(RuntimeError::SystemModuleError(

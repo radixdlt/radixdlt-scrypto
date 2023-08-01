@@ -92,19 +92,23 @@ impl CommitResult {
     pub fn next_epoch(&self) -> Option<EpochChangeEvent> {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
-            if let EventTypeIdentifier(
-                Emitter::Function(node_id, ObjectModuleId::Main, ..)
-                | Emitter::Method(node_id, ObjectModuleId::Main),
-                ..,
-            ) = event_type_id
-            {
-                if node_id == CONSENSUS_MANAGER_PACKAGE.as_node_id()
-                    || node_id.entity_type() == Some(EntityType::GlobalConsensusManager)
+            let is_consensus_manager = match &event_type_id.0 {
+                Emitter::Method(node_id, ObjectModuleId::Main)
+                    if node_id.entity_type() == Some(EntityType::GlobalConsensusManager) =>
                 {
-                    if let Ok(epoch_change_event) = scrypto_decode::<EpochChangeEvent>(&event_data)
-                    {
-                        return Some(epoch_change_event);
-                    }
+                    true
+                }
+                Emitter::Function(blueprint_id)
+                    if blueprint_id.package_address.eq(&CONSENSUS_MANAGER_PACKAGE) =>
+                {
+                    true
+                }
+                _ => false,
+            };
+
+            if is_consensus_manager {
+                if let Ok(epoch_change_event) = scrypto_decode::<EpochChangeEvent>(&event_data) {
+                    return Some(epoch_change_event);
                 }
             }
         }

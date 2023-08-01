@@ -1,10 +1,10 @@
 use crate::api::ObjectModuleId;
 use crate::blueprints::package::TypePointer;
+use crate::types::BlueprintId;
 use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;
 use radix_engine_common::types::NodeId;
 use sbor::rust::fmt;
-use sbor::rust::string::String;
 use utils::ContextualDisplay;
 
 /// Identifies a specific event schema emitter by some emitter RENode.
@@ -20,9 +20,7 @@ pub struct EventTypeIdentifier(pub Emitter, pub TypePointer);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Emitter {
-    // (Node id, module id, blueprint name)
-    Function(NodeId, ObjectModuleId, String),
-    // (Node id, module id)
+    Function(BlueprintId),
     Method(NodeId, ObjectModuleId),
 }
 
@@ -35,13 +33,12 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         match self {
-            Self::Function(node_id, module_id, blueprint_name) => {
+            Self::Function(blueprint_id) => {
                 write!(
                     f,
-                    "Function {{ node: {}, module_id: {:?}, blueprint_name: {} }}",
-                    node_id.display(*context),
-                    module_id,
-                    blueprint_name
+                    "Function {{ package: {}, blueprint_name: {} }}",
+                    blueprint_id.package_address.display(*context),
+                    blueprint_id.blueprint_name,
                 )
             }
             Self::Method(node_id, module_id) => {

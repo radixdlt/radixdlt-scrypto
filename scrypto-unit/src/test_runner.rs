@@ -1887,10 +1887,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     }
                 }
             }
-            EventTypeIdentifier(Emitter::Function(node_id, ..), schema_pointer) => (
-                PackageAddress::new_or_panic(node_id.0),
-                schema_pointer.clone(),
-            ),
+            EventTypeIdentifier(Emitter::Function(blueprint_id), schema_pointer) => {
+                (blueprint_id.package_address, schema_pointer.clone())
+            }
         };
 
         match schema_pointer {
