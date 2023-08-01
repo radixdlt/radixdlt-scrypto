@@ -123,20 +123,23 @@ impl<'a, S: SubstateDatabase> SchemaTracker<'a, S> {
     ) {
         for (node_id, tracked_node) in self.tracked {
             let type_info = self.system_reader.get_type_info(node_id).unwrap();
-            match type_info {
+            let interface = match type_info {
                 TypeInfoSubstate::Object(info) => {
                     let blueprint_id = info.blueprint_info.blueprint_id;
                     let bp_definition = self.system_reader.get_blueprint_definition(&blueprint_id).unwrap();
-                    println!("{:?}", blueprint_id);
+                    bp_definition.interface
                 }
-                _ => println!("{:?}", type_info),
-            }
+                _ => continue,
+            };
 
             for (partition_num, tracked_partition) in &tracked_node.tracked_partitions {
-                for (key, tracked_substate) in &tracked_partition.substates {
-
+                for (_, tracked_substate) in &tracked_partition.substates {
+                    if partition_num.ge(&MAIN_BASE_PARTITION) {
+                        let partition_offset = PartitionOffset(partition_num.0 - MAIN_BASE_PARTITION.0);
+                        let type_pointer = interface.state.get_type_pointer(&partition_offset, &tracked_substate.substate_key);
+                        println!("{:?}", type_pointer);
+                    }
                 }
-
             }
         }
     }

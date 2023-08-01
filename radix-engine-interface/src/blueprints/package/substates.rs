@@ -281,6 +281,43 @@ impl IndexedStateSchema {
         }
     }
 
+    pub fn get_type_pointer(&self, partition_offset: &PartitionOffset, key: &SubstateKey) -> Option<TypePointer> {
+        if partition_offset.0 >= self.num_partitions {
+            return None;
+        }
+
+        if let Some((offset, fields)) = &self.fields {
+            if offset.eq(partition_offset) {
+                if let SubstateKey::Field(field_index) = key {
+                    return fields.get(*field_index as usize).map(|field| field.field);
+                } else {
+                    return None;
+                }
+            }
+        }
+
+        for (offset, collection_schema) in &self.collections {
+            if offset.eq(partition_offset) {
+                match (collection_schema, key) {
+                    (BlueprintCollectionSchema::KeyValueStore(kv_store_schema), SubstateKey::Map(..)) => {
+                        return Some(kv_store_schema.value)
+                    }
+                    (BlueprintCollectionSchema::Index(..), SubstateKey::Map(..)) => {
+                        // FIXME: Add schema to index
+                        return None;
+                    }
+                    (BlueprintCollectionSchema::SortedIndex(..), SubstateKey::Sorted(..)) => {
+                        // FIXME: Add schema to SortedIndex
+                        return None;
+                    }
+                    _ => return None,
+                }
+            }
+        }
+
+        None
+    }
+
     pub fn get_field_type_pointer(&self, field_index: u8) -> Option<TypePointer> {
         let (_partition, fields) = self.fields.clone()?;
         let field_schema = fields.get(field_index.clone() as usize)?;
