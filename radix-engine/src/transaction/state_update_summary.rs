@@ -141,7 +141,7 @@ impl<'a, S: SubstateDatabase> SchemaTracker<'a, S> {
                             };
 
                             let bp_def = self.system_reader.get_blueprint_definition(&blueprint_id).unwrap();
-                            let type_pointer = bp_def.interface.state.get_type_pointer(&offset, &tracked_substate.substate_key);
+                            let type_pointer = bp_def.interface.state.get_type_pointer(&offset, &tracked_substate.substate_key).unwrap();
                             println!("{:?}", type_pointer);
                         }
                         SystemPartitionDescription::TypeInfo => {

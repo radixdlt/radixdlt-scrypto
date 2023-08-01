@@ -1929,7 +1929,7 @@ where
         self.validate_payload_against_blueprint_schema(
             &blueprint_id,
             &instance_schema,
-            &[(&sorted_key.1, schema.key)/*, (&buffer, schema.value)*/],
+            &[(&sorted_key.1, schema.key), (&buffer, schema.value)],
         )?;
 
         let value = IndexedScryptoValue::from_vec(buffer)

@@ -443,7 +443,6 @@ impl ValidatorBlueprint {
                 Some(UpdateSecondaryIndex::Create {
                     index_key: new_index_key.clone(),
                     stake: new_stake_amount,
-                    primary: validator_address,
                     key: validator.key,
                 })
             } else {
@@ -965,7 +964,6 @@ impl ValidatorBlueprint {
         match update {
             UpdateSecondaryIndex::Create {
                 index_key,
-                primary: address,
                 key,
                 stake,
             } => {
@@ -973,20 +971,18 @@ impl ValidatorBlueprint {
                     OBJECT_HANDLE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
-                    EpochRegisteredValidatorByStakeEntry {
-                        validator: Validator { key, stake },
-                    },
+                    Validator { key, stake },
                 )?;
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
                 let mut validator = api
-                    .actor_sorted_index_remove_typed::<EpochRegisteredValidatorByStakeEntry>(
+                    .actor_sorted_index_remove_typed::<Validator>(
                         OBJECT_HANDLE_OUTER_OBJECT,
                         CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
-                validator.validator.key = key;
+                validator.key = key;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
@@ -1000,13 +996,13 @@ impl ValidatorBlueprint {
                 new_stake_amount,
             } => {
                 let mut validator = api
-                    .actor_sorted_index_remove_typed::<EpochRegisteredValidatorByStakeEntry>(
+                    .actor_sorted_index_remove_typed::<Validator>(
                         OBJECT_HANDLE_OUTER_OBJECT,
                         CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
-                validator.validator.stake = new_stake_amount;
+                validator.stake = new_stake_amount;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,

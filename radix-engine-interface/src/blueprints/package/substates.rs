@@ -299,16 +299,14 @@ impl IndexedStateSchema {
         for (offset, collection_schema) in &self.collections {
             if offset.eq(partition_offset) {
                 match (collection_schema, key) {
-                    (BlueprintCollectionSchema::KeyValueStore(kv_store_schema), SubstateKey::Map(..)) => {
-                        return Some(kv_store_schema.value)
+                    (BlueprintCollectionSchema::KeyValueStore(kv_schema), SubstateKey::Map(..)) => {
+                        return Some(kv_schema.value)
                     }
-                    (BlueprintCollectionSchema::Index(..), SubstateKey::Map(..)) => {
-                        // FIXME: Add schema to index
-                        return None;
+                    (BlueprintCollectionSchema::Index(kv_schema), SubstateKey::Map(..)) => {
+                        return Some(kv_schema.value)
                     }
-                    (BlueprintCollectionSchema::SortedIndex(..), SubstateKey::Sorted(..)) => {
-                        // FIXME: Add schema to SortedIndex
-                        return None;
+                    (BlueprintCollectionSchema::SortedIndex(kv_schema), SubstateKey::Sorted(..)) => {
+                        return Some(kv_schema.value)
                     }
                     _ => return None,
                 }

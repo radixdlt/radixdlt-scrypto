@@ -498,7 +498,7 @@ pub enum TypedMainModuleSubstateValue {
     NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
     NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
     ConsensusManagerField(TypedConsensusManagerFieldValue),
-    ConsensusManagerRegisteredValidatorsByStakeIndexEntry(EpochRegisteredValidatorByStakeEntry),
+    ConsensusManagerRegisteredValidatorsByStakeIndexEntry(Validator),
     Validator(TypedValidatorFieldValue),
     AccessController(TypedAccessControllerFieldValue),
     Account(TypedAccountFieldValue),
