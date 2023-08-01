@@ -739,10 +739,7 @@ impl ConsensusManagerBlueprint {
         // then let's be even more accurate here. This sort is stable, so if two validators tie, then the resultant order will be
         // decided on sort key DESC.
         top_registered_validators.sort_by(|(_, validator_1), (_, validator_2)| {
-            validator_1
-                .stake
-                .cmp(&validator_2.stake)
-                .reverse()
+            validator_1.stake.cmp(&validator_2.stake).reverse()
         });
 
         let next_active_validator_set = ActiveValidatorSet {

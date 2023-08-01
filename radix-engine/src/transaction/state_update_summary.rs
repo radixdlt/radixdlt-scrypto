@@ -1,12 +1,14 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_common::prelude::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintVersionKey, TypePointer, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -25,6 +27,8 @@ pub struct StateUpdateSummary {
     pub new_components: Vec<ComponentAddress>,
     pub new_resources: Vec<ResourceAddress>,
     pub new_vaults: Vec<InternalAddress>,
+    pub substate_schema_pointers:
+        IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, SubstateSchemaPointer>>>,
     pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
     /// This field accounts for Direct vault recalls (and the owner is not loaded during the transaction);
     pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
@@ -57,7 +61,7 @@ impl StateUpdateSummary {
             }
         }
 
-        SchemaTracker::new(substate_db, &updates).run();
+        let substate_schema_pointers = SubstateSchemaMapper::new(substate_db, &updates).run();
 
         let (balance_changes, direct_vault_updates) =
             BalanceAccounter::new(substate_db, &updates).run();
@@ -67,6 +71,7 @@ impl StateUpdateSummary {
             new_components: new_components.into_iter().collect(),
             new_resources: new_resources.into_iter().collect(),
             new_vaults: new_vaults.into_iter().collect(),
+            substate_schema_pointers,
             balance_changes,
             direct_vault_updates,
         }
@@ -103,15 +108,22 @@ impl BalanceChange {
     }
 }
 
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub enum SubstateSchemaPointer {
+    KeyValueStore,
+    Object(PackageAddress, TypePointer),
+    TypeInfo,
+}
+
 /// Note that the implementation below assumes that substate owned objects can not be
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
-pub struct SchemaTracker<'a, S: SubstateDatabase> {
+pub struct SubstateSchemaMapper<'a, S: SubstateDatabase> {
     system_reader: SystemReader<'a, S>,
     tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
-impl<'a, S: SubstateDatabase> SchemaTracker<'a, S> {
+impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
     pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
             system_reader: SystemReader::new(substate_db, tracked),
@@ -121,36 +133,62 @@ impl<'a, S: SubstateDatabase> SchemaTracker<'a, S> {
 
     pub fn run(
         &self,
-    ) {
+    ) -> IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, SubstateSchemaPointer>>>
+    {
+        let mut substate_schema_pointers = index_map_new();
         for (node_id, tracked_node) in self.tracked {
             for (partition_num, tracked_partition) in &tracked_node.tracked_partitions {
                 for (_, tracked_substate) in &tracked_partition.substates {
-                    let partition_description = self.system_reader.partition_description(partition_num);
-                    match partition_description {
-                        SystemPartitionDescription::Module(module_id, offset) => {
+                    let partition_description =
+                        self.system_reader.partition_description(partition_num);
+                    let schema_pointer = match partition_description {
+                        SystemPartitionDescription::Module(module_id, offset) => (|| {
                             let blueprint_id = if let ObjectModuleId::Main = module_id {
-                                let main_type_info = self.system_reader.get_type_info(node_id).unwrap();
+                                let main_type_info =
+                                    self.system_reader.get_type_info(node_id).unwrap();
                                 match main_type_info {
                                     TypeInfoSubstate::Object(info) => {
                                         info.blueprint_info.blueprint_id
                                     }
-                                    _ => continue,
+                                    TypeInfoSubstate::KeyValueStore(..) => {
+                                        return SubstateSchemaPointer::KeyValueStore
+                                    }
+                                    _ => panic!("Unexpected Type Info {:?}", main_type_info),
                                 }
                             } else {
                                 module_id.static_blueprint().unwrap()
                             };
 
-                            let bp_def = self.system_reader.get_blueprint_definition(&blueprint_id).unwrap();
-                            let type_pointer = bp_def.interface.state.get_type_pointer(&offset, &tracked_substate.substate_key).unwrap();
-                            println!("{:?}", type_pointer);
-                        }
-                        SystemPartitionDescription::TypeInfo => {
-                            println!("TypeInfo");
-                        }
-                    }
+                            let bp_def = self
+                                .system_reader
+                                .get_blueprint_definition(&blueprint_id)
+                                .unwrap();
+                            let type_pointer = bp_def
+                                .interface
+                                .state
+                                .get_type_pointer(&offset, &tracked_substate.substate_key)
+                                .unwrap();
+
+                            SubstateSchemaPointer::Object(
+                                blueprint_id.package_address,
+                                type_pointer,
+                            )
+                        })(
+                        ),
+                        SystemPartitionDescription::TypeInfo => SubstateSchemaPointer::TypeInfo,
+                    };
+
+                    substate_schema_pointers
+                        .entry(node_id.clone())
+                        .or_insert(index_map_new())
+                        .entry(partition_num.clone())
+                        .or_insert(index_map_new())
+                        .insert(tracked_substate.substate_key.clone(), schema_pointer);
                 }
             }
         }
+
+        substate_schema_pointers
     }
 }
 
@@ -432,13 +470,14 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
 
     pub fn partition_description(
         &self,
-        partition_num: &PartitionNumber
+        partition_num: &PartitionNumber,
     ) -> SystemPartitionDescription {
         if partition_num.ge(&MAIN_BASE_PARTITION) {
             let partition_offset = PartitionOffset(partition_num.0 - MAIN_BASE_PARTITION.0);
             SystemPartitionDescription::Module(ObjectModuleId::Main, partition_offset)
         } else if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
-            let partition_offset = PartitionOffset(partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0);
+            let partition_offset =
+                PartitionOffset(partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0);
             SystemPartitionDescription::Module(ObjectModuleId::RoleAssignment, partition_offset)
         } else if partition_num.ge(&ROYALTY_BASE_PARTITION) {
             let partition_offset = PartitionOffset(partition_num.0 - ROYALTY_BASE_PARTITION.0);
@@ -453,10 +492,7 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
         }
     }
 
-    pub fn get_type_info(
-        &self,
-        node_id: &NodeId,
-    ) -> Option<TypeInfoSubstate> {
+    pub fn get_type_info(&self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
         let type_info: TypeInfoSubstate = self
             .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 node_id,

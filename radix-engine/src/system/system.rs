@@ -609,14 +609,13 @@ where
         &mut self,
         node_id: &NodeId,
     ) -> Result<TypeInfoSubstate, RuntimeError> {
-        let handle = self.api
-            .kernel_open_substate(
-                node_id,
-                TYPE_INFO_FIELD_PARTITION,
-                &TypeInfoField::TypeInfo.into(),
-                LockFlags::read_only(),
-                SystemLockData::default(),
-            )?;
+        let handle = self.api.kernel_open_substate(
+            node_id,
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+            LockFlags::read_only(),
+            SystemLockData::default(),
+        )?;
         let value = self.api.kernel_read_substate(handle)?;
         let type_info = value.as_typed::<TypeInfoSubstate>().unwrap();
         self.api.kernel_close_substate(handle)?;
@@ -919,7 +918,7 @@ where
             Option<InstanceSchema>,
             BlueprintId,
         ),
-        RuntimeError
+        RuntimeError,
     > {
         let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
 
@@ -938,7 +937,13 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, kv_schema, info.instance_schema, info.blueprint_id))
+        Ok((
+            node_id,
+            partition_num,
+            kv_schema,
+            info.instance_schema,
+            info.blueprint_id,
+        ))
     }
 
     fn get_actor_sorted_index(
@@ -953,7 +958,7 @@ where
             Option<InstanceSchema>,
             BlueprintId,
         ),
-        RuntimeError
+        RuntimeError,
     > {
         let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
 
@@ -972,7 +977,13 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, kv_schema, info.instance_schema, info.blueprint_id))
+        Ok((
+            node_id,
+            partition_num,
+            kv_schema,
+            info.instance_schema,
+            info.blueprint_id,
+        ))
     }
 
     fn resolve_blueprint_from_modules(
@@ -1824,7 +1835,8 @@ where
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, schema, instance_schema, blueprint_id) = self.get_actor_index(actor_object_type, collection_index)?;
+        let (node_id, partition_num, schema, instance_schema, blueprint_id) =
+            self.get_actor_index(actor_object_type, collection_index)?;
 
         self.validate_payload_against_blueprint_schema(
             &blueprint_id,
@@ -1854,7 +1866,8 @@ where
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, ..) = self.get_actor_index(actor_object_type, collection_index)?;
+        let (node_id, partition_num, ..) =
+            self.get_actor_index(actor_object_type, collection_index)?;
 
         let rtn = self
             .api
@@ -1873,7 +1886,8 @@ where
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, ..) = self.get_actor_index(actor_object_type, collection_index)?;
+        let (node_id, partition_num, ..) =
+            self.get_actor_index(actor_object_type, collection_index)?;
 
         let substates = self
             .api
@@ -1894,7 +1908,8 @@ where
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, ..) = self.get_actor_index(actor_object_type, collection_index)?;
+        let (node_id, partition_num, ..) =
+            self.get_actor_index(actor_object_type, collection_index)?;
 
         let substates = self
             .api

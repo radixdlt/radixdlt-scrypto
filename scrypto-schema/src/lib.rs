@@ -154,7 +154,9 @@ pub enum BlueprintCollectionSchema<T> {
 impl<T> BlueprintCollectionSchema<T> {
     pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintCollectionSchema<U> {
         match self {
-            BlueprintCollectionSchema::Index(schema) => BlueprintCollectionSchema::Index(schema.map(f)),
+            BlueprintCollectionSchema::Index(schema) => {
+                BlueprintCollectionSchema::Index(schema.map(f))
+            }
             BlueprintCollectionSchema::SortedIndex(schema) => {
                 BlueprintCollectionSchema::SortedIndex(schema.map(f))
             }

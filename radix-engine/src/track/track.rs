@@ -991,7 +991,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         for result in
             OverlayingResultIterator::new(db_read_entries, tracked_entry_changes).take(limit)
         {
-
             let (db_sort_key, value) = result?;
             let substate_key = M::from_db_sort_key::<SortedU16Key>(&db_sort_key);
             let sorted_key = match substate_key {

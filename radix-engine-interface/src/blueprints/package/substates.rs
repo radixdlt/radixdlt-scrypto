@@ -281,7 +281,11 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn get_type_pointer(&self, partition_offset: &PartitionOffset, key: &SubstateKey) -> Option<TypePointer> {
+    pub fn get_type_pointer(
+        &self,
+        partition_offset: &PartitionOffset,
+        key: &SubstateKey,
+    ) -> Option<TypePointer> {
         if partition_offset.0 >= self.num_partitions {
             return None;
         }
@@ -305,9 +309,10 @@ impl IndexedStateSchema {
                     (BlueprintCollectionSchema::Index(kv_schema), SubstateKey::Map(..)) => {
                         return Some(kv_schema.value)
                     }
-                    (BlueprintCollectionSchema::SortedIndex(kv_schema), SubstateKey::Sorted(..)) => {
-                        return Some(kv_schema.value)
-                    }
+                    (
+                        BlueprintCollectionSchema::SortedIndex(kv_schema),
+                        SubstateKey::Sorted(..),
+                    ) => return Some(kv_schema.value),
                     _ => return None,
                 }
             }
@@ -323,9 +328,7 @@ impl IndexedStateSchema {
     }
 
     pub fn get_kv_key_type_pointer(&self, collection_index: u8) -> Option<TypePointer> {
-        let (_partition, schema) = self
-            .collections
-            .get(collection_index.clone() as usize)?;
+        let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
             BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
                 Some(key_value_store.key.clone())
@@ -335,9 +338,7 @@ impl IndexedStateSchema {
     }
 
     pub fn get_kv_value_type_pointer(&self, collection_index: u8) -> Option<(TypePointer, bool)> {
-        let (_partition, schema) = self
-            .collections
-            .get(collection_index.clone() as usize)?;
+        let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
             BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
                 Some((key_value_store.value.clone(), key_value_store.can_own))

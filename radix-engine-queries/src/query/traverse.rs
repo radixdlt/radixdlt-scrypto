@@ -12,8 +12,8 @@ use radix_engine_interface::prelude::{scrypto_decode, CONSENSUS_MANAGER_PACKAGE}
 use radix_engine_interface::types::{
     AccountPartitionOffset, ConsensusManagerPartitionOffset, FungibleVaultField,
     IndexedScryptoValue, NonFungibleVaultField, PartitionNumber, PartitionOffset, ResourceAddress,
-    TypeInfoField, MAIN_BASE_PARTITION, METADATA_BASE_PARTITION,
-    ROLE_ASSIGNMENT_BASE_PARTITION, ROYALTY_BASE_PARTITION, TYPE_INFO_FIELD_PARTITION,
+    TypeInfoField, MAIN_BASE_PARTITION, METADATA_BASE_PARTITION, ROLE_ASSIGNMENT_BASE_PARTITION,
+    ROYALTY_BASE_PARTITION, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::{
