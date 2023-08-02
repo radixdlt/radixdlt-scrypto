@@ -72,7 +72,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             Array<Tuple>(
                 Tuple(
                     Enum<1u8>(
-                        "ComplexFungibleData"
+                        "NestedFungibleData"
                     ),
                     Enum<1u8>(
                         Enum<0u8>(

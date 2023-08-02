@@ -680,6 +680,26 @@ impl ManifestBuilder {
         self.add_instruction(instruction)
     }
 
+    pub fn update_non_fungible_data(
+        self,
+        resource_address: impl ResolvableResourceAddress,
+        id: NonFungibleLocalId,
+        field_name: impl Into<String>,
+        data: impl ManifestEncode,
+    ) -> Self {
+        let address = resource_address.resolve(&self.registrar);
+        let data = manifest_decode(&manifest_encode(&data).unwrap()).unwrap();
+        self.call_method(
+            address,
+            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
+            NonFungibleResourceManagerUpdateDataManifestInput {
+                id,
+                field_name: field_name.into(),
+                data,
+            },
+        )
+    }
+
     pub fn create_identity_advanced(self, owner_role: OwnerRole) -> Self {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: IDENTITY_PACKAGE.into(),
