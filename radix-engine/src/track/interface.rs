@@ -3,12 +3,6 @@ use crate::types::*;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
-/// Error when acquiring a lock.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum TrackGetSubstateError {
-    NotFound(NodeId, PartitionNumber, SubstateKey),
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallbackError<E, C> {
     Error(E),
@@ -67,37 +61,16 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
     ) -> TrackedSubstateInfo;
 
-    /// Acquires a lock over a substate.
-    /// Returns tuple of lock handle id and information if particular substate
-    /// is locked for the first time during transaction execution.
-    fn get_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
-        &mut self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-        on_store_access: &mut F,
-    ) -> Result<&IndexedScryptoValue, CallbackError<TrackGetSubstateError, E>> {
-        self.get_substate_or_default(
-            node_id,
-            partition_num,
-            substate_key,
-            on_store_access,
-            || None,
-        )
-    }
-
-    fn get_substate_or_default<
+    fn get_substate<
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,
-        V: FnOnce() -> Option<IndexedScryptoValue>,
     >(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         on_store_access: &mut F,
-        virtualize: V,
-    ) -> Result<&IndexedScryptoValue, CallbackError<TrackGetSubstateError, E>>;
+    ) -> Result<Option<&IndexedScryptoValue>, E>;
 
     /// Inserts a substate into the substate store.
     ///

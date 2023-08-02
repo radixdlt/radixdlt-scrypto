@@ -320,6 +320,7 @@ where
                                 ),
                                 &mut |_| -> Result<(), ()> { Ok(()) },
                             )
+                            .unwrap()
                             .unwrap();
                         let substate: KeyValueEntrySubstate<BlueprintDefinition> =
                             substate.as_typed().unwrap();
@@ -406,20 +407,18 @@ where
     fn read_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
-        let substate: FieldSubstate<ConsensusManagerSubstate> = match track.get_substate(
+        match track.get_substate(
             CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
             &mut |_| -> Result<(), ()> { Ok(()) },
-        ) {
-            Ok(x) => x,
-            Err(_) => {
-                return None;
-            }
+        ).unwrap() {
+            Some(x) => {
+                let substate: FieldSubstate<ConsensusManagerSubstate> = x.as_typed().unwrap();
+                Some(substate.value.0.epoch)
+            },
+            None => None
         }
-        .as_typed()
-        .unwrap();
-        Some(substate.value.0.epoch)
     }
 
     fn validate_epoch_range(
@@ -456,6 +455,7 @@ where
                 &mut |_| -> Result<(), ()> { Ok(()) },
             )
             .unwrap()
+            .unwrap()
             .as_typed()
             .unwrap();
 
@@ -465,32 +465,30 @@ where
             .partition_for_expiry_epoch(expiry_epoch)
             .expect("Transaction tracker should cover all valid epoch ranges");
 
-        let substate: KeyValueEntrySubstate<TransactionStatus> = track
-            .get_substate_or_default(
+        let substate = track
+            .get_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 PartitionNumber(partition_number),
                 &SubstateKey::Map(intent_hash.to_vec()),
                 &mut |_| -> Result<(), ()> { Ok(()) },
-                || {
-                    Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                        value: Option::<TransactionStatus>::None,
-                        mutability: SubstateMutability::Mutable,
-                    }))
-                },
             )
-            .unwrap()
-            .as_typed()
             .unwrap();
 
-        match substate.value {
-            Some(status) => match status {
-                TransactionStatus::CommittedSuccess | TransactionStatus::CommittedFailure => {
-                    return Err(RejectionError::IntentHashPreviouslyCommitted);
+        match substate {
+            Some(value) => {
+                let substate: KeyValueEntrySubstate<TransactionStatus> = value.as_typed().unwrap();
+                match substate.value {
+                    Some(status) => match status {
+                        TransactionStatus::CommittedSuccess | TransactionStatus::CommittedFailure => {
+                            return Err(RejectionError::IntentHashPreviouslyCommitted);
+                        }
+                        TransactionStatus::Cancelled => {
+                            return Err(RejectionError::IntentHashPreviouslyCancelled);
+                        }
+                    },
+                    None => {}
                 }
-                TransactionStatus::Cancelled => {
-                    return Err(RejectionError::IntentHashPreviouslyCancelled);
-                }
-            },
+            }
             None => {}
         }
 
@@ -649,6 +647,7 @@ where
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap()
+                .unwrap()
                 .as_typed()
                 .unwrap();
             substate.value.0.put(LiquidFungibleResource::new(amount));
@@ -694,6 +693,7 @@ where
                     &FungibleVaultField::LiquidFungible.into(),
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
+                .unwrap()
                 .unwrap()
                 .as_typed()
                 .unwrap();
@@ -752,6 +752,7 @@ where
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap()
+                .unwrap()
                 .as_typed()
                 .unwrap();
             let current_leader = substate.value.0.current_leader;
@@ -764,6 +765,7 @@ where
                     &ConsensusManagerField::ValidatorRewards.into(),
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
+                .unwrap()
                 .unwrap()
                 .as_typed()
                 .unwrap();
@@ -798,6 +800,7 @@ where
                     &FungibleVaultField::LiquidFungible.into(),
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
+                .unwrap()
                 .unwrap()
                 .as_typed()
                 .unwrap();
@@ -834,6 +837,7 @@ where
                 &TransactionTrackerField::TransactionTracker.into(),
                 &mut |_| -> Result<(), ()> { Ok(()) },
             )
+            .unwrap()
             .unwrap()
             .as_typed()
             .unwrap();

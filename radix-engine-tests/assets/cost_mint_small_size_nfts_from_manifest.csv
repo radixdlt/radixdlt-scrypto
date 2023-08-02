@@ -1,14 +1,14 @@
-Total Cost (XRD)                                                           ,     1.02044899,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.93785899,     91.9%
+Total Cost (XRD)                                                           ,     1.01935897,    100.0%
++ Execution Cost (XRD)                                                     ,     0.93685897,     91.9%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
-+ State Expansion Cost (XRD)                                               ,        0.08259,      8.1%
++ State Expansion Cost (XRD)                                               ,         0.0825,      8.1%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       93785899,    100.0%
+Total Cost Units Consumed                                                  ,       93685897,    100.0%
 AfterInvoke                                                                ,            494,      0.0%
 AllocateNodeId                                                             ,          10500,      0.0%
 BeforeInvoke                                                               ,          22096,      0.0%
 CloseSubstate                                                              ,         327500,      0.3%
-Commit::GlobalAccount                                                      ,         200012,      0.2%
+Commit::GlobalAccount                                                      ,         100010,      0.1%
 Commit::GlobalGenericComponent                                             ,         100018,      0.1%
 Commit::GlobalNonFungibleResourceManager                                   ,       43501376,     46.4%
 Commit::InternalFungibleVault                                              ,         100010,      0.1%

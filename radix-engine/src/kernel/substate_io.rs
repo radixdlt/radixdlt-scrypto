@@ -14,7 +14,6 @@ use radix_engine_common::types::SubstateKey;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use sbor::prelude::Box;
 use sbor::prelude::Vec;
 use sbor::rust::collections::LinkedList;
 use utils::prelude::index_set_new;
@@ -247,7 +246,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             partition_num,
             substate_key,
             on_store_access,
-            default,
         )?;
 
 
@@ -292,7 +290,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
 
             (lock_data, None)
         } else {
-            return Err(CallbackError::Error(OpenSubstateError::InvalidClientMissingSubstate));
+            return Err(CallbackError::Error(OpenSubstateError::SubstateFault));
         };
 
         let global_lock_handle = match self.substate_locks.lock(
@@ -338,7 +336,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             SubstateDevice::Store => self
                 .store
                 .get_substate(node_id, *partition_num, substate_key, &mut |_| Err(()))
-                .expect("Getting substate on handled substate should not incur a store access."),
+                .expect("Getting substate on handled substate should not incur a store access.").unwrap(),
         };
 
         substate
@@ -656,22 +654,17 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         on_store_access: &mut F,
-        default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<Option<&'a IndexedScryptoValue>, CallbackError<OpenSubstateError, E>> {
         let value = match location {
             SubstateDevice::Heap => heap.get_substate(node_id, partition_num, substate_key),
-            SubstateDevice::Store => {
-                let value = store
-                    .get_substate_or_default(
+            SubstateDevice::Store =>
+                store
+                    .get_substate(
                         node_id,
                         partition_num,
                         substate_key,
                         &mut |store_access| on_store_access(heap, store_access),
-                        || default.map(|f| f()),
-                    )
-                    .map_err(|x| x.map(|e| OpenSubstateError::TrackError(Box::new(e))))?;
-                Some(value)
-            },
+                    ).map_err(|e| CallbackError::CallbackError(e))?
         };
 
         Ok(value)

@@ -84,7 +84,7 @@ pub fn test_open_substate_of_invisible_package_address() {
     assert!(matches!(
         result,
         Err(RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(_))
+            CallFrameError::OpenSubstateError(OpenSubstateError::SubstateFault)
         )))
     ));
 }

@@ -1,5 +1,5 @@
 use crate::track::interface::{
-    CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackGetSubstateError,
+    NodeSubstates, StoreAccess, SubstateStore,
     TrackedSubstateInfo,
 };
 use crate::track::utils::OverlayingResultIterator;
@@ -475,19 +475,17 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             .or_insert(TrackedPartition::new())
     }
 
-    /// Returns tuple of TrackedSubstateValue and boolean value which is true if substate
-    /// with specified db_key was found in tracked substates list (no db access needed).
     fn get_tracked_substate_virtualize<
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,
-        V: FnOnce() -> Option<IndexedScryptoValue>,
+        //V: FnOnce() -> Option<IndexedScryptoValue>,
     >(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
         on_store_access: &mut F,
-        virtualize: V,
+        //virtualize: V,
     ) -> Result<&mut TrackedSubstateValue, E> {
         let db_sort_key = M::to_db_sort_key(&substate_key);
 
@@ -521,6 +519,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                     };
                     e.insert(tracked);
                 } else {
+                    /*
                     let value = virtualize();
                     if let Some(value) = value {
                         let tracked = TrackedSubstate {
@@ -531,37 +530,40 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                         };
                         e.insert(tracked);
                     } else {
+                     */
                         let tracked = TrackedSubstate {
                             substate_key,
                             substate_value: TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent),
                         };
                         e.insert(tracked);
-                    }
+                    //}
                 }
             }
             Entry::Occupied(mut entry) => {
-                let read_only_non_existent = matches!(
-                    entry.get().substate_value,
-                    TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent)
-                );
-                if read_only_non_existent {
-                    let value = virtualize();
-                    if let Some(value) = value {
-                        let tracked = TrackedSubstate {
-                            substate_key,
-                            substate_value: TrackedSubstateValue::ReadNonExistAndWrite(
-                                RuntimeSubstate::new(value),
-                            ),
-                        };
-                        entry.insert(tracked);
-                    } else {
+                /*
+            let read_only_non_existent = matches!(
+                entry.get().substate_value,
+                TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent)
+            );
+            if read_only_non_existent {
+                let value = virtualize();
+                if let Some(value) = value {
+                    let tracked = TrackedSubstate {
+                        substate_key,
+                        substate_value: TrackedSubstateValue::ReadNonExistAndWrite(
+                            RuntimeSubstate::new(value),
+                        ),
+                    };
+                    entry.insert(tracked);
+                } else {
                         let tracked = TrackedSubstate {
                             substate_key,
                             substate_value: TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent),
                         };
                         entry.insert(tracked);
-                    }
+                    //}
                 }
+                 */
             }
         }
 
@@ -580,7 +582,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             partition_num,
             substate_key,
             on_store_access,
-            || None,
         )
     }
 }
@@ -928,33 +929,28 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         info
     }
 
-    fn get_substate_or_default<
+    fn get_substate<
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,
-        V: FnOnce() -> Option<IndexedScryptoValue>,
     >(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         on_store_access: &mut F,
-        virtualize: V,
-    ) -> Result<&IndexedScryptoValue, CallbackError<TrackGetSubstateError, E>> {
+    ) -> Result<Option<&IndexedScryptoValue>, E> {
         // Load the substate from state track
-        let tracked = match self.get_tracked_substate_virtualize(
+        let tracked = self.get_tracked_substate_virtualize(
             node_id,
             partition_num,
             substate_key.clone(),
             on_store_access,
-            virtualize,
-        ) {
-            Ok(tracked) => tracked,
-            Err(e) => {
-                return Err(CallbackError::CallbackError(e));
-            }
-        };
+        )?;
 
-        let value = match tracked.get_runtime_substate_mut() {
+        let value = tracked.get_runtime_substate_mut().map(|v| &v.value);
+
+            /*
+        let value = match  {
             Some(x) => &x.value,
             None => {
                 return Err(CallbackError::Error(TrackGetSubstateError::NotFound(
@@ -964,6 +960,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 )));
             }
         };
+             */
 
         Ok(value)
     }
