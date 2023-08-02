@@ -348,6 +348,7 @@ impl From<bool> for Decimal {
 impl Add<Decimal> for Decimal {
     type Output = Decimal;
 
+    #[inline]
     fn add(self, other: Decimal) -> Self::Output {
         let a = self.0;
         let b = other.0;
@@ -358,6 +359,7 @@ impl Add<Decimal> for Decimal {
 impl Sub<Decimal> for Decimal {
     type Output = Decimal;
 
+    #[inline]
     fn sub(self, other: Decimal) -> Self::Output {
         let a = self.0;
         let b = other.0;
@@ -368,6 +370,7 @@ impl Sub<Decimal> for Decimal {
 impl Mul<Decimal> for Decimal {
     type Output = Decimal;
 
+    #[inline]
     fn mul(self, other: Decimal) -> Self::Output {
         // Use BnumI384 (BInt<6>) to not overflow.
         let a = BnumI384::from(self.0);
@@ -381,6 +384,7 @@ impl Mul<Decimal> for Decimal {
 impl Div<Decimal> for Decimal {
     type Output = Decimal;
 
+    #[inline]
     fn div(self, other: Decimal) -> Self::Output {
         // Use BnumI384 (BInt<6>) to not overflow.
         let a = BnumI384::from(self.0);

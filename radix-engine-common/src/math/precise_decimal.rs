@@ -363,6 +363,7 @@ impl From<bool> for PreciseDecimal {
 impl Add<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
+    #[inline]
     fn add(self, other: PreciseDecimal) -> Self::Output {
         let a = self.0;
         let b = other.0;
@@ -373,6 +374,7 @@ impl Add<PreciseDecimal> for PreciseDecimal {
 impl Sub<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
+    #[inline]
     fn sub(self, other: PreciseDecimal) -> Self::Output {
         let a = self.0;
         let b = other.0;
@@ -383,6 +385,7 @@ impl Sub<PreciseDecimal> for PreciseDecimal {
 impl Mul<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
+    #[inline]
     fn mul(self, other: PreciseDecimal) -> Self::Output {
         // Use BnumI768 to not overflow.
         let a = BnumI768::from(self.0);
@@ -396,6 +399,7 @@ impl Mul<PreciseDecimal> for PreciseDecimal {
 impl Div<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
+    #[inline]
     fn div(self, other: PreciseDecimal) -> Self::Output {
         // Use BnumI768 to not overflow.
         let a = BnumI768::from(self.0);
