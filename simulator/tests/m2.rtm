@@ -21,7 +21,7 @@ DROP_PROOF Proof("proof2");
 
 # Test - bucket proof
 CALL_METHOD Address("${account}") "withdraw" Address("${xrd}") Decimal("5.0");
-CLEAR_AUTH_ZONE;
+DROP_AUTH_ZONE_PROOFS;
 TAKE_ALL_FROM_WORKTOP Address("${xrd}") Bucket("xrd");
 CREATE_PROOF_FROM_BUCKET_OF_ALL Bucket("xrd") Proof("proof3");
 CLONE_PROOF Proof("proof3") Proof("proof4");

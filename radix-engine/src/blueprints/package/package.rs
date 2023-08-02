@@ -1,4 +1,4 @@
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::SecurifiedRoleAssignment;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
@@ -8,14 +8,14 @@ use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipien
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::PrepareError;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::royalty::ComponentRoyalty;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{
-    ClientApi, ClientObjectApi, FieldValue, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
+    ClientApi, FieldValue, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
 };
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
@@ -28,7 +28,7 @@ use sbor::LocalTypeIndex;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_modules::access_rules::AccessRulesNativePackage;
+use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::{
     FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
@@ -346,7 +346,7 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
 
                 let check_list = |list: &RoleList| {
                     for role_key in &list.list {
-                        if AccessRulesNativePackage::is_reserved_role_key(role_key) {
+                        if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
                             continue;
                         }
                         if !role_specification.contains_key(role_key) {
@@ -359,7 +359,7 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                 if let RoleSpecification::Normal(roles) = roles {
                     for (role_key, role_list) in roles {
                         check_list(role_list)?;
-                        if AccessRulesNativePackage::is_reserved_role_key(role_key) {
+                        if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
                             return Err(PackageError::DefiningReservedRoleKey(
                                 blueprint.to_string(),
                                 role_key.clone(),
@@ -416,7 +416,7 @@ const SECURIFY_OWNER_ROLE: &str = "securify_owner";
 
 struct SecurifiedPackage;
 
-impl SecurifiedAccessRules for SecurifiedPackage {
+impl SecurifiedRoleAssignment for SecurifiedPackage {
     type OwnerBadgeNonFungibleData = PackageOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
@@ -614,11 +614,18 @@ pub fn create_bootstrap_package_partitions(
             TYPE_INFO_FIELD_PARTITION,
             type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                 global: true,
-                blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-                version: BlueprintVersion::default(),
-                blueprint_info: ObjectBlueprintInfo::default(),
-                features: btreeset!(),
-                instance_schema: None,
+                module_versions: btreemap!(
+                    ObjectModuleId::Main => BlueprintVersion::default(),
+                    ObjectModuleId::Metadata => BlueprintVersion::default(),
+                    ObjectModuleId::RoleAssignment => BlueprintVersion::default(),
+                ),
+
+                blueprint_info: BlueprintInfo {
+                    blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+                    outer_obj_info: OuterObjectInfo::default(),
+                    features: btreeset!(),
+                    instance_schema: None,
+                },
             })),
         );
     }
@@ -630,7 +637,7 @@ fn globalize_package<Y>(
     package_address_reservation: Option<GlobalAddressReservation>,
     package_structure: PackageStructure,
     metadata: Own,
-    access_rules: AccessRules,
+    role_assignment: RoleAssignment,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
 where
@@ -751,14 +758,11 @@ where
         kv_entries,
     )?;
 
-    let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::Disabled, api)?;
-
     let address = api.globalize(
         btreemap!(
             ObjectModuleId::Main => package_object,
             ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::Royalty => royalty.0,
-            ObjectModuleId::AccessRules => access_rules.0.0,
+            ObjectModuleId::RoleAssignment => role_assignment.0.0,
         ),
         package_address_reservation,
     )?;
@@ -927,6 +931,7 @@ impl PackageNativePackage {
         let blueprints = btreemap!(
             PACKAGE_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 feature_set: btreeset!(
                     PACKAGE_ROYALTY_FEATURE.to_string(),
                 ),
@@ -944,9 +949,9 @@ impl PackageNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions: btreemap!(),
                         functions,
                     },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -955,7 +960,7 @@ impl PackageNativePackage {
                         btreemap!(
                             PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
                             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
-                            PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
+                            PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                         )
                     ),
                     method_auth: MethodAuthTemplate::StaticRoles(
@@ -1144,22 +1149,25 @@ impl PackageNativePackage {
                             definition_init.schema.state,
                         ),
                     },
+                    is_transient: definition_init.is_transient,
                     function_exports,
-                    virtual_lazy_load_functions: definition_init
-                        .schema
-                        .functions
-                        .virtual_lazy_load_functions
-                        .into_iter()
-                        .map(|(key, export_name)| {
-                            (
-                                key,
-                                PackageExport {
-                                    code_hash,
-                                    export_name,
-                                },
-                            )
-                        })
-                        .collect(),
+                    hook_exports: {
+                        definition_init
+                            .schema
+                            .hooks
+                            .hooks
+                            .into_iter()
+                            .map(|(k, v)| {
+                                (
+                                    k,
+                                    PackageExport {
+                                        code_hash,
+                                        export_name: v,
+                                    },
+                                )
+                            })
+                            .collect()
+                    },
                 };
                 definitions.insert(blueprint.clone(), definition);
 
@@ -1202,14 +1210,14 @@ impl PackageNativePackage {
             VmType::Native,
             native_package_code_id.to_be_bytes().to_vec(),
         )?;
-        let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?;
+        let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
 
         globalize_package(
             package_address,
             package_structure,
             metadata,
-            access_rules,
+            role_assignment,
             api,
         )
     }
@@ -1232,7 +1240,7 @@ impl PackageNativePackage {
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
         })?;
 
-        let (access_rules, bucket) = SecurifiedPackage::create_securified(
+        let (role_assignment, bucket) = SecurifiedPackage::create_securified(
             PackageOwnerBadgeData {
                 name: "Package Owner Badge".to_owned(),
                 package: address.try_into().expect("Impossible Case"),
@@ -1246,7 +1254,7 @@ impl PackageNativePackage {
             Some(address_reservation),
             package_structure,
             metadata,
-            access_rules,
+            role_assignment,
             api,
         )?;
 
@@ -1268,13 +1276,13 @@ impl PackageNativePackage {
         let package_structure =
             Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code)?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
-        let access_rules = SecurifiedPackage::create_advanced(owner_role, api)?;
+        let role_assignment = SecurifiedPackage::create_advanced(owner_role, api)?;
 
         globalize_package(
             package_address,
             package_structure,
             metadata,
-            access_rules,
+            role_assignment,
             api,
         )
     }
@@ -1295,8 +1303,11 @@ impl PackageRoyaltyNativeBlueprint {
     {
         {
             let mut service = SystemService::new(api);
-            let object_info = service.get_object_info(receiver)?;
-            if !object_info.features.contains(PACKAGE_ROYALTY_FEATURE) {
+            if !service.is_feature_enabled(
+                receiver,
+                ObjectModuleId::Main,
+                PACKAGE_ROYALTY_FEATURE,
+            )? {
                 return Ok(());
             }
         }
@@ -1402,8 +1413,8 @@ impl PackageAuthNativeBlueprint {
                     Ok(ResolvedPermission::AccessRule(AccessRule::DenyAll))
                 }
             }
-            FunctionAuth::AccessRules(access_rules) => {
-                let access_rule = access_rules.get(ident);
+            FunctionAuth::AccessRules(rules) => {
+                let access_rule = rules.get(ident);
                 if let Some(access_rule) = access_rule {
                     Ok(ResolvedPermission::AccessRule(access_rule.clone()))
                 } else {
@@ -1413,7 +1424,7 @@ impl PackageAuthNativeBlueprint {
                     Err(RuntimeError::SystemModuleError(
                         SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
                             blueprint_id,
-                            ident: FnIdent::Application(ident.to_string()),
+                            ident: ident.to_string(),
                         })),
                     ))
                 }

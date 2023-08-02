@@ -15,7 +15,7 @@ use transaction::prelude::*;
 #[test]
 fn test_manifest_with_non_existent_resource() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let non_existent_resource = resource_address(EntityType::GlobalFungibleResourceManager, 222);
 
@@ -44,13 +44,13 @@ fn test_manifest_with_non_existent_resource() {
 #[test]
 fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(1))
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .create_proof_from_auth_zone_of_all(XRD, "proof1")
         .push_to_auth_zone("proof1")
         .try_deposit_batch_or_abort(account)
@@ -77,7 +77,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
 #[test]
 fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -104,7 +104,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
 #[test]
 fn test_non_existent_blob_hash() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -148,7 +148,7 @@ fn test_non_existent_blob_hash() {
 #[test]
 fn test_entire_auth_zone() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
@@ -179,7 +179,7 @@ fn test_entire_auth_zone() {
 #[test]
 fn test_faucet_drain_attempt_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act

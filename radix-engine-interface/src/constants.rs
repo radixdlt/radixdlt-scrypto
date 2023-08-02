@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 
-pub use radix_engine_common::native_addresses::*;
+pub use radix_engine_common::constants::*;
 
 // Currently, functions and methods can reference these well-known nodes without declaring
 // the dependency in the package info.
@@ -39,7 +39,7 @@ lazy_static! {
             TRANSACTION_PROCESSOR_PACKAGE.into(),
             METADATA_MODULE_PACKAGE.into(),
             ROYALTY_MODULE_PACKAGE.into(),
-            ACCESS_RULES_MODULE_PACKAGE.into(),
+            ROLE_ASSIGNMENT_MODULE_PACKAGE.into(),
             GENESIS_HELPER_PACKAGE.into(),
             FAUCET_PACKAGE.into(),
             POOL_PACKAGE.into(),

@@ -1,7 +1,7 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_modules::access_rules::OwnerRoleSubstate;
+use crate::system::node_modules::role_assignment::OwnerRoleSubstate;
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{
@@ -170,7 +170,7 @@ impl Authorization {
                 if let ResourceOrNonFungible::NonFungible(non_fungible_global_id) = resource_rule {
                     if is_first_barrier {
                         if auth_zone
-                            .virtual_non_fungibles_non_extending_barrier()
+                            .virtual_global_call_frame_proofs()
                             .contains(&non_fungible_global_id)
                         {
                             return Ok(true);
@@ -179,7 +179,7 @@ impl Authorization {
 
                     if rev_index == 0 {
                         if auth_zone
-                            .virtual_non_fungibles_non_extending()
+                            .virtual_local_call_frame_proofs()
                             .contains(&non_fungible_global_id)
                         {
                             return Ok(true);
@@ -328,20 +328,20 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules_of: &NodeId,
+        role_assignment_of: &NodeId,
         key: &ModuleRoleKey,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         let access_rule = if key.key.key.eq(SELF_ROLE) {
             // FIXME: Prevent panics of node id, this may be triggered by vaults and auth zone
             rule!(require(global_caller(GlobalAddress::new_or_panic(
-                access_rules_of.0
+                role_assignment_of.0
             ))))
         } else {
             let handle = api.kernel_open_substate_with_default(
-                access_rules_of,
-                ACCESS_RULES_BASE_PARTITION
-                    .at_offset(ACCESS_RULES_ROLE_DEF_PARTITION_OFFSET)
+                role_assignment_of,
+                ROLE_ASSIGNMENT_BASE_PARTITION
+                    .at_offset(ROLE_ASSIGNMENT_ROLE_DEF_PARTITION_OFFSET)
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 LockFlags::read_only(),
@@ -359,9 +359,9 @@ impl Authorization {
                 Some(access_rule) => access_rule,
                 None => {
                     let handle = api.kernel_open_substate(
-                        access_rules_of,
-                        ACCESS_RULES_BASE_PARTITION
-                            .at_offset(ACCESS_RULES_FIELDS_PARTITION_OFFSET)
+                        role_assignment_of,
+                        ROLE_ASSIGNMENT_BASE_PARTITION
+                            .at_offset(ROLE_ASSIGNMENT_FIELDS_PARTITION_OFFSET)
                             .unwrap(),
                         &SubstateKey::Field(0u8),
                         LockFlags::read_only(),
@@ -430,7 +430,7 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules_of: &NodeId,
+        role_assignment_of: &NodeId,
         module: ObjectModuleId,
         role_list: &RoleList,
         api: &mut Y,
@@ -442,7 +442,7 @@ impl Authorization {
             let result = Self::check_authorization_against_role_key_internal(
                 acting_location,
                 auth_zone_id,
-                access_rules_of,
+                role_assignment_of,
                 &module_role_key,
                 api,
             )?;

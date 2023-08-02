@@ -1,7 +1,7 @@
-use crate::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
+use crate::api::node_modules::auth::ROLE_ASSIGNMENT_BLUEPRINT;
 use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
 use crate::constants::{
-    ACCESS_RULES_MODULE_PACKAGE, METADATA_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
+    METADATA_MODULE_PACKAGE, ROLE_ASSIGNMENT_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
 };
 use crate::types::*;
 #[cfg(feature = "radix_engine_fuzzing")]
@@ -35,7 +35,7 @@ pub enum ObjectModuleId {
     Main,
     Metadata,
     Royalty,
-    AccessRules,
+    RoleAssignment,
 }
 
 impl ObjectModuleId {
@@ -44,7 +44,7 @@ impl ObjectModuleId {
             ObjectModuleId::Main => 0u8,
             ObjectModuleId::Metadata => 1u8,
             ObjectModuleId::Royalty => 2u8,
-            ObjectModuleId::AccessRules => 3u8,
+            ObjectModuleId::RoleAssignment => 3u8,
         }
     }
 
@@ -52,7 +52,7 @@ impl ObjectModuleId {
         match self {
             ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,
             ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
-            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_PARTITION,
+            ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
             ObjectModuleId::Main => MAIN_BASE_PARTITION,
         }
     }
@@ -67,9 +67,9 @@ impl ObjectModuleId {
                 &ROYALTY_MODULE_PACKAGE,
                 COMPONENT_ROYALTY_BLUEPRINT,
             )),
-            ObjectModuleId::AccessRules => Some(BlueprintId::new(
-                &ACCESS_RULES_MODULE_PACKAGE,
-                ACCESS_RULES_BLUEPRINT,
+            ObjectModuleId::RoleAssignment => Some(BlueprintId::new(
+                &ROLE_ASSIGNMENT_MODULE_PACKAGE,
+                ROLE_ASSIGNMENT_BLUEPRINT,
             )),
             ObjectModuleId::Main => None,
         }
@@ -125,13 +125,14 @@ pub trait ClientObjectApi<E> {
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;
 
-    /// Drops an object, returns the fields of the object
+    /// Drops an owned object, returns the fields of the object
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, E>;
 
-    /// Get info regarding a visible object
-    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
+    /// Get the blueprint id of a visible object
+    fn get_blueprint_id(&mut self, node_id: &NodeId) -> Result<BlueprintId, E>;
 
-    fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
+    /// Get the outer object of a visible object
+    fn get_outer_object(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 
     /// Pre-allocates a global address, for a future globalization.
     fn allocate_global_address(
@@ -144,6 +145,8 @@ pub trait ClientObjectApi<E> {
         blueprint_id: BlueprintId,
         global_address: GlobalAddress,
     ) -> Result<GlobalAddressReservation, E>;
+
+    fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all with the provided global address.
@@ -168,7 +171,7 @@ pub trait ClientObjectApi<E> {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E> {
-        self.call_method_advanced(receiver, false, ObjectModuleId::Main, method_name, args)
+        self.call_method_advanced(receiver, ObjectModuleId::Main, false, method_name, args)
     }
 
     fn call_direct_access_method(
@@ -177,15 +180,15 @@ pub trait ClientObjectApi<E> {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E> {
-        self.call_method_advanced(receiver, true, ObjectModuleId::Main, method_name, args)
+        self.call_method_advanced(receiver, ObjectModuleId::Main, true, method_name, args)
     }
 
     /// Calls a method on an object module
     fn call_method_advanced(
         &mut self,
         receiver: &NodeId,
-        direct_access: bool, // May change to enum for other types of reference in future
         module_id: ObjectModuleId,
+        direct_access: bool, // May change to enum for other types of reference in future
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;

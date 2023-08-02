@@ -29,8 +29,8 @@ fn update_expected_costs() {
     run_publish_large_package(Mode::OutputCosting(
         "./assets/cost_publish_large_package.csv".to_string(),
     ));
-    run_mint_mid_size_nfts_from_manifest(Mode::OutputCosting(
-        "./assets/cost_mint_mid_size_nfts_from_manifest.csv".to_string(),
+    run_mint_large_size_nfts_from_manifest(Mode::OutputCosting(
+        "./assets/cost_mint_large_size_nfts_from_manifest.csv".to_string(),
     ));
     run_mint_small_size_nfts_from_manifest(Mode::OutputCosting(
         "./assets/cost_mint_small_size_nfts_from_manifest.csv".to_string(),
@@ -43,6 +43,7 @@ fn test_basic_transfer() {
         "../assets/cost_transfer.csv"
     ))));
 }
+
 #[test]
 fn test_transfer_to_virtual_account() {
     run_basic_transfer_to_virtual_account(Mode::AssertCosting(load_cost_breakdown(include_str!(
@@ -72,9 +73,9 @@ fn test_publish_large_package() {
 }
 
 #[test]
-fn test_mint_mid_size_nfts_from_manifest() {
-    run_mint_mid_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_str!(
-        "../assets/cost_mint_mid_size_nfts_from_manifest.csv"
+fn test_mint_large_size_nfts_from_manifest() {
+    run_mint_large_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_mint_large_size_nfts_from_manifest.csv"
     ))));
 }
 
@@ -87,7 +88,7 @@ fn test_mint_small_size_nfts_from_manifest() {
 
 #[cfg(feature = "std")]
 fn execute_with_time_logging(
-    test_runner: &mut TestRunner,
+    test_runner: &mut DefaultTestRunner,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
@@ -103,7 +104,7 @@ fn execute_with_time_logging(
 
 #[cfg(feature = "alloc")]
 fn execute_with_time_logging(
-    test_runner: &mut TestRunner,
+    test_runner: &mut DefaultTestRunner,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
@@ -233,7 +234,7 @@ impl Mode {
 
 fn run_basic_transfer(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
 
@@ -256,7 +257,7 @@ fn run_basic_transfer(mode: Mode) {
 
 fn run_basic_transfer_to_virtual_account(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let account2 = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
         Secp256k1PublicKey([123u8; 33]),
@@ -280,7 +281,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
 }
 
 fn run_radiswap(mode: Mode) {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Scrypto developer
     let (pk1, _, _) = test_runner.new_allocated_account();
@@ -353,7 +354,7 @@ fn run_radiswap(mode: Mode) {
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
         .expect_commit_success();
-    assert_eq!(test_runner.account_balance(account3, btc), Some(btc_amount));
+    assert_eq!(test_runner.get_component_balance(account3, btc), btc_amount);
 
     // Swap 2,000 BTC into ETH
     let btc_to_swap = Decimal::from(2000);
@@ -370,8 +371,8 @@ fn run_radiswap(mode: Mode) {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
-    let remaining_btc = test_runner.account_balance(account3, btc).unwrap();
-    let eth_received = test_runner.account_balance(account3, eth).unwrap();
+    let remaining_btc = test_runner.get_component_balance(account3, btc);
+    let eth_received = test_runner.get_component_balance(account3, eth);
     assert_eq!(remaining_btc, btc_amount - btc_to_swap);
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
     let commit_result = receipt.expect_commit(true);
@@ -380,7 +381,7 @@ fn run_radiswap(mode: Mode) {
 }
 
 fn run_flash_loan(mode: Mode) {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Scrypto developer
     let (pk1, _, _) = test_runner.new_allocated_account();
@@ -423,7 +424,7 @@ fn run_flash_loan(mode: Mode) {
     // Take loan
     let loan_amount = Decimal::from(50);
     let repay_amount = loan_amount * dec!("1.001");
-    let old_balance = test_runner.account_balance(account3, XRD).unwrap();
+    let old_balance = test_runner.get_component_balance(account3, XRD);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account3, 500)
@@ -443,10 +444,10 @@ fn run_flash_loan(mode: Mode) {
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
     let commit_result = receipt.expect_commit(true);
-    let new_balance = test_runner.account_balance(account3, XRD).unwrap();
+    let new_balance = test_runner.get_component_balance(account3, XRD);
     assert!(test_runner
-        .account_balance(account3, promise_token_address)
-        .is_none());
+        .get_component_balance(account3, promise_token_address)
+        .is_zero());
     assert_eq!(
         old_balance - new_balance,
         commit_result.fee_summary.total_execution_cost_xrd
@@ -460,7 +461,7 @@ fn run_flash_loan(mode: Mode) {
 
 fn run_publish_large_package(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let code = wat2wasm(&format!(
@@ -500,19 +501,21 @@ fn run_mint_small_size_nfts_from_manifest(mode: Mode) {
     )
 }
 
-fn run_mint_mid_size_nfts_from_manifest(mode: Mode) {
+fn run_mint_large_size_nfts_from_manifest(mode: Mode) {
+    const N: usize = 50;
+
     run_mint_nfts_from_manifest(
         mode,
         TestNonFungibleData {
             metadata: btreemap!(
-                "Name".to_string() => "Type".to_string(),
-                "Abilities".to_string() => "Lightning Rod".to_string(),
-                "Egg Groups".to_string() => "Field and Fairy or No Eggs Discovered".to_string(),
-                "Hatch time".to_string() => "10 cycles".to_string(),
-                "Height".to_string() => "0.4 m".to_string(),
-                "Weight".to_string() => "6.0 kg".to_string(),
-                "Base experience yield".to_string() => "82".to_string(),
-                "Leveling rate".to_string() => "Medium Fast".to_string(),
+                "Name".to_string() => "Type".repeat(N),
+                "Abilities".to_string() => "Lightning Rod".repeat(N),
+                "Egg Groups".to_string() => "Field and Fairy or No Eggs Discovered".repeat(N),
+                "Hatch time".to_string() => "10 cycles".repeat(N),
+                "Height".to_string() => "0.4 m".repeat(N),
+                "Weight".to_string() => "6.0 kg".repeat(N),
+                "Base experience yield".to_string() => "82".repeat(N),
+                "Leveling rate".to_string() => "Medium Fast".repeat(N),
             ),
         },
     )
@@ -520,7 +523,7 @@ fn run_mint_mid_size_nfts_from_manifest(mode: Mode) {
 
 fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -553,7 +556,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
             manifest.clone(),
         );
         let raw_transaction = transaction.to_raw().unwrap();
-        if raw_transaction.0.len() > DEFAULT_MAX_TRANSACTION_SIZE {
+        if raw_transaction.0.len() > MAX_TRANSACTION_SIZE {
             high = mid - 1;
         } else {
             let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -583,7 +586,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
 #[test]
 fn can_run_large_manifest() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -613,7 +616,7 @@ fn can_run_large_manifest() {
 #[test]
 fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
 
@@ -634,9 +637,9 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     receipt.expect_commit(true);
 }
 
-fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAddress) {
+fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, ComponentAddress) {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component
@@ -691,4 +694,26 @@ struct TestNonFungibleData {
 
 impl NonFungibleData for TestNonFungibleData {
     const MUTABLE_FIELDS: &'static [&'static str] = &["metadata"];
+}
+
+/// This test verified that we can publish a large package of size as close as possible to current
+/// limit: 1,048,576 bytes minus SBOR overhead.
+///
+/// If it fails, update `radix-engine-tests/blueprints/large_package/` by adding or removing blueprints
+/// to make sure the size is close to 1MB. This is often needed when the WASM interface or compiler
+/// changes.
+///
+/// List of blueprints and its size can be displayed using command
+/// `ls -lSk ./radix-engine-tests/tests/blueprints/target/wasm32-unknown-unknown/release/*.wasm`
+///
+#[test]
+fn publish_package_1mib() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, definition) = Compile::compile("./tests/blueprints/large_package");
+    println!("Code size: {}", code.len());
+    assert!(code.len() <= 1000 * 1024);
+    assert!(code.len() >= 900 * 1024);
+
+    // internally validates if publish succeeded
+    test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 }

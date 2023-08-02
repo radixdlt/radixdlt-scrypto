@@ -4,7 +4,7 @@ use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -14,12 +14,14 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
-    let mut scrypto_interpreter = ScryptoVm {
+    let scrypto_vm = ScryptoVm {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_validator_config: WasmValidatorConfigV1::new(),
     };
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
+    Bootstrapper::new(&mut substate_db, vm.clone(), false)
         .bootstrap_test_default()
         .unwrap();
 
@@ -39,7 +41,7 @@ fn bench_transfer(c: &mut Criterion) {
                 .build();
             let account = execute_and_commit_transaction(
                 &mut substate_db,
-                &mut scrypto_interpreter,
+                vm.clone(),
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::for_notarized_transaction(),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
@@ -66,7 +68,7 @@ fn bench_transfer(c: &mut Criterion) {
     for nonce in 0..1000 {
         execute_and_commit_transaction(
             &mut substate_db,
-            &mut scrypto_interpreter,
+            vm.clone(),
             &FeeReserveConfig::default(),
             &ExecutionConfig::for_notarized_transaction(),
             &TestTransaction::new_from_nonce(manifest.clone(), nonce)
@@ -86,11 +88,11 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Loop
     let mut nonce = 3;
-    c.bench_function("Transfer::run", |b| {
+    c.bench_function("transaction::transfer", |b| {
         b.iter(|| {
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,
-                &mut scrypto_interpreter,
+                vm.clone(),
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::for_notarized_transaction(),
                 &TestTransaction::new_from_nonce(manifest.clone(), nonce)

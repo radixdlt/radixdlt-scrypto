@@ -22,7 +22,7 @@ pub use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault as 
 
 pub const NON_FUNGIBLE_VAULT_CONTENTS_INDEX: CollectionIndex = 0u8;
 
-pub use crate::types::NonFungibleLocalId as NonFungibleVaultContentsEntry;
+pub type NonFungibleVaultContentsEntry = ();
 
 pub struct NonFungibleVaultBlueprint;
 
@@ -55,7 +55,12 @@ impl NonFungibleVaultBlueprint {
         let taken = Self::internal_take_by_amount(n, api)?;
 
         // Create node
-        NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)
+        let ids = taken.into_ids();
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
+
+        Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids))?;
+
+        Ok(bucket)
     }
 
     pub fn take_non_fungibles<Y>(
@@ -71,7 +76,12 @@ impl NonFungibleVaultBlueprint {
         let taken = Self::internal_take_non_fungibles(non_fungible_local_ids, api)?;
 
         // Create node
-        NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)
+        let ids = taken.into_ids();
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
+
+        Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids))?;
+
+        Ok(bucket)
     }
 
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
@@ -82,9 +92,12 @@ impl NonFungibleVaultBlueprint {
 
         // Drop other bucket
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
+        let ids = other_bucket.liquid.ids().clone();
 
         // Put
         Self::internal_put(other_bucket.liquid, api)?;
+
+        Runtime::emit_event(api, DepositResourceEvent::Ids(ids))?;
 
         Ok(())
     }
@@ -99,13 +112,20 @@ impl NonFungibleVaultBlueprint {
     }
 
     pub fn get_non_fungible_local_ids<Y>(
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut ids = Self::liquid_non_fungible_local_ids(api)?;
-        ids.extend(Self::locked_non_fungible_local_ids(api)?);
+        let mut ids = Self::locked_non_fungible_local_ids(limit, api)?;
+        let id_len: u32 = ids.len().try_into().unwrap();
+
+        if id_len < limit {
+            let locked_count = limit - id_len;
+            ids.extend(Self::liquid_non_fungible_local_ids(locked_count, api)?);
+        }
+
         Ok(ids)
     }
 
@@ -121,9 +141,10 @@ impl NonFungibleVaultBlueprint {
 
         let taken = Self::internal_take_by_amount(n, api)?;
 
-        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
+        let ids = taken.into_ids();
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
+        Runtime::emit_event(api, RecallResourceEvent::Ids(ids))?;
 
         Ok(bucket)
     }
@@ -176,9 +197,10 @@ impl NonFungibleVaultBlueprint {
 
         let taken = Self::internal_take_non_fungibles(&non_fungible_local_ids, api)?;
 
-        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
+        let ids = taken.into_ids();
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(api, RecallResourceEvent::Ids(non_fungible_local_ids))?;
+        Runtime::emit_event(api, RecallResourceEvent::Ids(ids))?;
 
         Ok(bucket)
     }
@@ -391,22 +413,23 @@ impl NonFungibleVaultBlueprint {
     }
 
     fn liquid_non_fungible_local_ids<Y>(
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        // FIXME: only allow a certain amount to be returned
-        let items: Vec<NonFungibleLocalId> = api.actor_index_scan_typed(
+        let items: Vec<NonFungibleLocalId> = api.actor_index_scan_keys_typed(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
-            u32::MAX,
+            limit,
         )?;
         let ids = items.into_iter().collect();
         Ok(ids)
     }
 
     fn locked_non_fungible_local_ids<Y>(
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
@@ -418,7 +441,8 @@ impl NonFungibleVaultBlueprint {
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
-        let ids = substate_ref.ids();
+        let limit: usize = limit.try_into().unwrap();
+        let ids = substate_ref.ids().into_iter().take(limit).collect();
         api.field_close(handle)?;
         Ok(ids)
     }
@@ -446,20 +470,18 @@ impl NonFungibleVaultBlueprint {
         substate_ref.amount -= Decimal::from(n);
 
         let taken = {
-            let ids: Vec<NonFungibleLocalId> = api.actor_index_take_typed(
+            let ids: Vec<(NonFungibleLocalId, ())> = api.actor_index_drain_typed(
                 OBJECT_HANDLE_SELF,
                 NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
                 n,
             )?;
             LiquidNonFungibleResource {
-                ids: ids.into_iter().collect(),
+                ids: ids.into_iter().map(|(key, _value)| key).collect(),
             }
         };
 
         api.field_write_typed(handle, &substate_ref)?;
         api.field_close(handle)?;
-
-        Runtime::emit_event(api, WithdrawResourceEvent::Ids(taken.ids.clone()))?;
 
         Ok(taken)
     }
@@ -497,7 +519,6 @@ impl NonFungibleVaultBlueprint {
             }
         }
 
-        Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids.clone()))?;
         api.field_write_typed(handle, &substate_ref)?;
         api.field_close(handle)?;
 
@@ -515,8 +536,6 @@ impl NonFungibleVaultBlueprint {
             return Ok(());
         }
 
-        let event = DepositResourceEvent::Ids(resource.ids().clone());
-
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::LiquidNonFungible.into(),
@@ -533,15 +552,13 @@ impl NonFungibleVaultBlueprint {
             api.actor_index_insert_typed(
                 OBJECT_HANDLE_SELF,
                 NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
-                scrypto_encode(&id).unwrap(),
                 id,
+                (),
             )?;
         }
 
         api.field_write_typed(handle, &vault)?;
         api.field_close(handle)?;
-
-        Runtime::emit_event(api, event)?;
 
         Ok(())
     }

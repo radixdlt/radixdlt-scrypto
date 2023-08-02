@@ -1,5 +1,5 @@
 use super::*;
-use crate::native_addresses::RESOURCE_PACKAGE;
+use crate::constants::RESOURCE_PACKAGE;
 use sbor::rust::prelude::*;
 use sbor::*;
 

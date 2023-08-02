@@ -7,7 +7,7 @@ use transaction::prelude::*;
 #[test]
 fn test_balance_changes_when_success() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -83,7 +83,7 @@ fn test_balance_changes_when_success() {
 #[test]
 fn test_balance_changes_when_failure() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -148,7 +148,7 @@ fn test_balance_changes_when_failure() {
 #[test]
 fn test_balance_changes_when_recall() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
 
@@ -196,7 +196,7 @@ fn test_balance_changes_when_recall() {
 #[test]
 fn test_balance_changes_when_transferring_non_fungibles() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
 

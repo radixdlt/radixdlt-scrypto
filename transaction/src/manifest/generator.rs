@@ -5,14 +5,13 @@ use crate::internal_prelude::TransactionManifestV1;
 use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
+use radix_engine_common::constants::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::AddressBech32Decoder;
 use radix_engine_interface::api::node_modules::auth::{
-    ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_OWNER_ROLE_IDENT,
-    ACCESS_RULES_SET_ROLE_IDENT,
+    ROLE_ASSIGNMENT_LOCK_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::metadata::{
@@ -351,7 +350,9 @@ where
                 .map_err(GeneratorError::IdValidationError)?;
             InstructionV1::PushToAuthZone { proof_id }
         }
-        ast::Instruction::ClearAuthZone => InstructionV1::ClearAuthZone,
+        ast::Instruction::DropAuthZoneProofs => InstructionV1::DropAuthZoneProofs,
+        ast::Instruction::DropAuthZoneRegularProofs => InstructionV1::DropAuthZoneRegularProofs,
+        ast::Instruction::DropAuthZoneSignatureProofs => InstructionV1::DropAuthZoneSignatureProofs,
 
         ast::Instruction::CreateProofFromAuthZoneOfAmount {
             resource_address,
@@ -401,12 +402,6 @@ where
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromAuthZoneOfAll { resource_address }
-        }
-        ast::Instruction::ClearSignatureProofs => {
-            id_validator
-                .drop_all_proofs()
-                .map_err(GeneratorError::IdValidationError)?;
-            InstructionV1::ClearSignatureProofs
         }
 
         ast::Instruction::BurnResource { bucket } => {
@@ -551,7 +546,7 @@ where
                 args,
             }
         }
-        ast::Instruction::CallAccessRulesMethod {
+        ast::Instruction::CallRoleAssignmentMethod {
             address,
             method_name,
             args,
@@ -563,16 +558,23 @@ where
             id_validator
                 .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
-            InstructionV1::CallAccessRulesMethod {
+            InstructionV1::CallRoleAssignmentMethod {
                 address,
                 method_name,
                 args,
             }
         }
 
+        ast::Instruction::DropNamedProofs => {
+            id_validator
+                .drop_all_named_proofs()
+                .map_err(GeneratorError::IdValidationError)?;
+            InstructionV1::DropNamedProofs
+        }
+
         ast::Instruction::DropAllProofs => {
             id_validator
-                .drop_all_proofs()
+                .drop_all_named_proofs()
                 .map_err(GeneratorError::IdValidationError)?;
             InstructionV1::DropAllProofs
         }
@@ -746,19 +748,31 @@ where
                 args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
-        ast::Instruction::SetOwnerRole { address, args } => InstructionV1::CallAccessRulesMethod {
+        ast::Instruction::SetOwnerRole { address, args } => {
+            InstructionV1::CallRoleAssignmentMethod {
+                address: generate_dynamic_global_address(
+                    address,
+                    address_bech32_decoder,
+                    resolver,
+                )?,
+                method_name: ROLE_ASSIGNMENT_SET_OWNER_IDENT.to_string(),
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::LockOwnerRole { address, args } => {
+            InstructionV1::CallRoleAssignmentMethod {
+                address: generate_dynamic_global_address(
+                    address,
+                    address_bech32_decoder,
+                    resolver,
+                )?,
+                method_name: ROLE_ASSIGNMENT_LOCK_OWNER_IDENT.to_string(),
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::SetRole { address, args } => InstructionV1::CallRoleAssignmentMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
-            method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
-            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::LockOwnerRole { address, args } => InstructionV1::CallAccessRulesMethod {
-            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
-            method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
-            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::SetRole { address, args } => InstructionV1::CallAccessRulesMethod {
-            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
-            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
+            method_name: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
 
@@ -1473,8 +1487,8 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
     use crate::signing::secp256k1::Secp256k1PrivateKey;
+    use radix_engine_common::constants::CONSENSUS_MANAGER;
     use radix_engine_common::manifest_args;
-    use radix_engine_common::native_addresses::CONSENSUS_MANAGER;
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::AddressBech32Decoder;
     use radix_engine_interface::api::node_modules::metadata::MetadataValue;

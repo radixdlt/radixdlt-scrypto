@@ -151,6 +151,7 @@ impl PoolNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -162,10 +163,8 @@ impl PoolNativePackage {
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -317,6 +316,7 @@ impl PoolNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -328,10 +328,8 @@ impl PoolNativePackage {
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -482,6 +480,7 @@ impl PoolNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -493,10 +492,8 @@ impl PoolNativePackage {
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {

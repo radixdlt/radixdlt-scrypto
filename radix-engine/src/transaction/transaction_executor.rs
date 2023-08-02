@@ -1,4 +1,5 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
+use crate::blueprints::resource::BurnFungibleResourceEvent;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
@@ -6,6 +7,7 @@ use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
@@ -14,10 +16,11 @@ use crate::track::interface::SubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
-use crate::vm::wasm::*;
-use crate::vm::{ScryptoVm, Vm};
-use radix_engine_constants::*;
-use radix_engine_interface::api::LockFlags;
+use radix_engine_common::constants::*;
+use radix_engine_interface::api::{LockFlags, ObjectModuleId};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
@@ -34,10 +37,10 @@ pub struct FeeReserveConfig {
 impl Default for FeeReserveConfig {
     fn default() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
-            usd_price: DEFAULT_USD_PRICE_IN_XRD.try_into().unwrap(),
-            state_expansion_price: DEFAULT_STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
-            system_loan: DEFAULT_SYSTEM_LOAN,
+            cost_unit_price: COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
+            state_expansion_price: STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
+            system_loan: SYSTEM_LOAN_AMOUNT,
         }
     }
 }
@@ -68,24 +71,22 @@ impl ExecutionConfig {
     fn default() -> Self {
         Self {
             enabled_modules: EnabledModules::for_notarized_transaction(),
-            max_execution_trace_depth: DEFAULT_MAX_EXECUTION_TRACE_DEPTH,
-            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+            max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
+            max_call_depth: MAX_CALL_DEPTH,
+            cost_unit_limit: COST_UNIT_LIMIT,
             abort_when_loan_repaid: false,
-            max_number_of_substates_in_track: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK,
-            max_number_of_substates_in_heap: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_HEAP,
-            max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
-            max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
+            max_number_of_substates_in_track: MAX_NUMBER_OF_SUBSTATES_IN_TRACK,
+            max_number_of_substates_in_heap: MAX_NUMBER_OF_SUBSTATES_IN_HEAP,
+            max_substate_size: MAX_SUBSTATE_SIZE,
+            max_invoke_input_size: MAX_INVOKE_PAYLOAD_SIZE,
             enable_cost_breakdown: false,
-            max_event_size: DEFAULT_MAX_EVENT_SIZE,
-            max_log_size: DEFAULT_MAX_LOG_SIZE,
-            max_panic_message_size: DEFAULT_MAX_PANIC_MESSAGE_SIZE,
-            max_number_of_logs: DEFAULT_MAX_NUMBER_OF_LOGS,
-            max_number_of_events: DEFAULT_MAX_NUMBER_OF_EVENTS,
-            max_per_function_royalty_in_xrd: Decimal::try_from(
-                DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD,
-            )
-            .unwrap(),
+            max_event_size: MAX_EVENT_SIZE,
+            max_log_size: MAX_LOG_SIZE,
+            max_panic_message_size: MAX_PANIC_MESSAGE_SIZE,
+            max_number_of_logs: MAX_NUMBER_OF_LOGS,
+            max_number_of_events: MAX_NUMBER_OF_EVENTS,
+            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                .unwrap(),
         }
     }
 
@@ -157,25 +158,21 @@ impl ExecutionConfig {
 /// An executor that runs transactions.
 /// This is no longer public -- it can be removed / merged into the exposed functions in a future small PR
 /// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
-struct TransactionExecutor<'s, 'w, S, W>
+struct TransactionExecutor<'s, S, V: SystemCallbackObject + Clone>
 where
     S: SubstateDatabase,
-    W: WasmEngine,
 {
     substate_db: &'s S,
-    scrypto_vm: &'w ScryptoVm<W>,
+    vm: V,
 }
 
-impl<'s, 'w, S, W> TransactionExecutor<'s, 'w, S, W>
+impl<'s, S, V> TransactionExecutor<'s, S, V>
 where
     S: SubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 {
-    pub fn new(substate_db: &'s S, scrypto_vm: &'w ScryptoVm<W>) -> Self {
-        Self {
-            substate_db,
-            scrypto_vm,
-        }
+    pub fn new(substate_db: &'s S, vm: V) -> Self {
+        Self { substate_db, vm }
     }
 
     pub fn execute(
@@ -301,11 +298,55 @@ where
                             );
                         }
 
-                        // Finalize everything
-                        let (application_events, application_logs) =
+                        // Finalize events and logs
+                        let (mut application_events, application_logs) =
                             runtime_module.finalize(is_success);
+                        /*
+                            Emit XRD burn event, ignoring costing and limits.
+                            Otherwise, we won't be able to commit failed transactions.
+                            May also cache the information for better performance.
+                        */
+                        let handle = track
+                            .open_substate(
+                                RESOURCE_PACKAGE.as_node_id(),
+                                MAIN_BASE_PARTITION
+                                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                                    .unwrap(),
+                                &SubstateKey::Map(
+                                    scrypto_encode(&BlueprintVersionKey::new_default(
+                                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                                    ))
+                                    .unwrap(),
+                                ),
+                                LockFlags::read_only(),
+                                &mut |_| -> Result<(), ()> { Ok(()) },
+                            )
+                            .unwrap();
+                        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
+                            track.read_substate(handle).as_typed().unwrap();
+                        track.close_substate(handle);
+                        let type_pointer = substate
+                            .value
+                            .unwrap()
+                            .interface
+                            .get_event_type_pointer("BurnFungibleResourceEvent")
+                            .unwrap();
+                        application_events.push((
+                            EventTypeIdentifier(
+                                Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
+                                type_pointer,
+                            ),
+                            scrypto_encode(&BurnFungibleResourceEvent {
+                                amount: fee_summary.to_burn_amount(),
+                            })
+                            .unwrap(),
+                        ));
+
+                        // Finalize execution trace
                         let execution_trace =
                             execution_trace_module.finalize(&fee_payments, is_success);
+
+                        // Finalize track
                         let (tracked_nodes, deleted_partitions) = track.finalize();
                         let state_update_summary =
                             StateUpdateSummary::new(self.substate_db, &tracked_nodes);
@@ -367,19 +408,20 @@ where
     fn read_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
-        let handle = match track.acquire_lock(
+        let handle = match track.open_substate(
             CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
+            &mut |_| -> Result<(), ()> { Ok(()) },
         ) {
-            Ok(x) => x.0,
+            Ok(x) => x,
             Err(_) => {
                 return None;
             }
         };
         let substate: FieldSubstate<ConsensusManagerSubstate> =
-            track.read_substate(handle).0.as_typed().unwrap();
+            track.read_substate(handle).as_typed().unwrap();
         track.close_substate(handle);
         Some(substate.value.0.epoch)
     }
@@ -411,16 +453,16 @@ where
         expiry_epoch: Epoch,
     ) -> Result<(), RejectionError> {
         let handle = track
-            .acquire_lock(
+            .open_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::read_only(),
+                &mut |_| -> Result<(), ()> { Ok(()) },
             )
-            .unwrap()
-            .0;
+            .unwrap();
         let substate: FieldSubstate<TransactionTrackerSubstate> =
-            track.read_substate(handle).0.as_typed().unwrap();
+            track.read_substate(handle).as_typed().unwrap();
         track.close_substate(handle);
 
         let partition_number = substate
@@ -430,11 +472,12 @@ where
             .expect("Transaction tracker should cover all valid epoch ranges");
 
         let handle = track
-            .acquire_lock_virtualize(
+            .open_substate_virtualize(
                 TRANSACTION_TRACKER.as_node_id(),
                 PartitionNumber(partition_number),
                 &SubstateKey::Map(intent_hash.to_vec()),
                 LockFlags::read_only(),
+                &mut |_| -> Result<(), ()> { Ok(()) },
                 || {
                     Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
                         value: Option::<TransactionStatus>::None,
@@ -442,10 +485,9 @@ where
                     }))
                 },
             )
-            .unwrap()
-            .0;
+            .unwrap();
         let substate: KeyValueEntrySubstate<TransactionStatus> =
-            track.read_substate(handle).0.as_typed().unwrap();
+            track.read_substate(handle).as_typed().unwrap();
         track.close_substate(handle);
 
         match substate.value {
@@ -483,9 +525,7 @@ where
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
-            callback_obj: Vm {
-                scrypto_vm: self.scrypto_vm,
-            },
+            callback_obj: self.vm.clone(),
             modules: SystemModuleMixer::new(
                 execution_config.enabled_modules,
                 executable.intent_hash().to_hash(),
@@ -514,16 +554,12 @@ where
             .and_then(|x| {
                 let info = track.get_commit_info();
                 for commit in &info {
-                    if let Err(e) = system.modules.apply_execution_cost(CostingEntry::Commit {
+                    system.modules.apply_execution_cost(CostingEntry::Commit {
                         store_commit: commit,
-                    }) {
-                        return Err(e);
-                    }
+                    })?;
                 }
                 for commit in &info {
-                    if let Err(e) = system.modules.apply_state_expansion_cost(commit) {
-                        return Err(e);
-                    }
+                    system.modules.apply_state_expansion_cost(commit)?;
                 }
 
                 Ok(x)
@@ -613,15 +649,16 @@ where
         for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
             let node_id = recipient_vault_id;
             let substate_key = FungibleVaultField::LiquidFungible.into();
-            let (handle, _store_access) = track
-                .acquire_lock(
+            let handle = track
+                .open_substate(
                     &node_id,
                     MAIN_BASE_PARTITION,
                     &substate_key,
                     LockFlags::MUTABLE,
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
-            let (substate_value, _store_access) = track.read_substate(handle);
+            let substate_value = track.read_substate(handle);
             let mut substate: FieldSubstate<LiquidFungibleResource> =
                 substate_value.as_typed().unwrap();
             substate.value.0.put(LiquidFungibleResource::new(amount));
@@ -653,15 +690,16 @@ where
             required -= amount;
 
             // Refund overpayment
-            let (handle, _store_access) = track
-                .acquire_lock(
+            let handle = track
+                .open_substate(
                     &vault_id,
                     MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
                     LockFlags::MUTABLE,
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
-            let (substate_value, _store_access) = track.read_substate(handle);
+            let substate_value = track.read_substate(handle);
             let mut substate: FieldSubstate<LiquidFungibleResource> =
                 substate_value.as_typed().unwrap();
             substate.value.0.put(locked);
@@ -678,8 +716,9 @@ where
             required -= amount;
         }
 
-        let tips_to_distribute = fee_summary.tips_to_distribute();
-        let fees_to_distribute = fee_summary.fees_to_distribute();
+        let to_proposer = fee_summary.to_proposer_amount();
+        let to_validator_set = fee_summary.to_validator_set_amount();
+        let to_burn = fee_summary.to_burn_amount();
 
         // Sanity checks
         assert!(
@@ -693,60 +732,52 @@ where
             required
         );
         let remaining_collected_fees = collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */;
-        let to_distribute = tips_to_distribute + fees_to_distribute;
         assert!(
-            to_distribute == remaining_collected_fees,
-            "Remaining collected fee isn't equal to amount to distribute: {} != {}",
+            remaining_collected_fees  == to_proposer + to_validator_set + to_burn,
+            "Remaining collected fee isn't equal to amount to distribute (proposer/validator set/burn): {} != {}",
             remaining_collected_fees,
-            to_distribute,
+            to_proposer + to_validator_set + to_burn,
         );
 
-        if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {
+        if !to_proposer.is_zero() || !to_validator_set.is_zero() {
             // Fetch current leader
             // TODO: maybe we should move current leader into validator rewards?
             let handle = track
-                .acquire_lock(
+                .open_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &ConsensusManagerField::ConsensusManager.into(),
                     LockFlags::read_only(),
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
-                .unwrap()
-                .0;
+                .unwrap();
             let substate: FieldSubstate<ConsensusManagerSubstate> =
-                track.read_substate(handle).0.as_typed().unwrap();
+                track.read_substate(handle).as_typed().unwrap();
             let current_leader = substate.value.0.current_leader;
             track.close_substate(handle);
 
             // Update validator rewards
             let handle = track
-                .acquire_lock(
+                .open_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &ConsensusManagerField::ValidatorRewards.into(),
                     LockFlags::MUTABLE,
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
-                .unwrap()
-                .0;
+                .unwrap();
             let mut substate: FieldSubstate<ValidatorRewardsSubstate> =
-                track.read_substate(handle).0.as_typed().unwrap();
-            let proposer_rewards = if let Some(current_leader) = current_leader {
-                let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
-                    + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
+                track.read_substate(handle).as_typed().unwrap();
+            if let Some(current_leader) = current_leader {
                 substate
                     .value
                     .0
                     .proposer_rewards
                     .entry(current_leader)
                     .or_default()
-                    .add_assign(rewards);
-                rewards
+                    .add_assign(to_proposer);
             } else {
-                Decimal::ZERO
-            };
-            let validator_set_rewards = {
-                tips_to_distribute * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
-                    + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+                // If there is no current leader, the rewards go to the pool
             };
             let vault_node_id = substate.value.0.rewards_vault.0 .0;
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
@@ -754,19 +785,19 @@ where
 
             // Put validator rewards into the vault
             let handle = track
-                .acquire_lock(
+                .open_substate(
                     &vault_node_id,
                     MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
                     LockFlags::MUTABLE,
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
-                .unwrap()
-                .0;
+                .unwrap();
             let mut substate: FieldSubstate<LiquidFungibleResource> =
-                track.read_substate(handle).0.as_typed().unwrap();
+                track.read_substate(handle).as_typed().unwrap();
             substate.value.0.put(
                 collected_fees
-                    .take_by_amount(proposer_rewards + validator_set_rewards)
+                    .take_by_amount(to_proposer + to_validator_set)
                     .unwrap(),
             );
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
@@ -784,16 +815,16 @@ where
     ) {
         // Read the intent hash store
         let handle = track
-            .acquire_lock(
+            .open_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::MUTABLE,
+                &mut |_| -> Result<(), ()> { Ok(()) },
             )
-            .unwrap()
-            .0;
+            .unwrap();
         let mut transaction_tracker: FieldSubstate<TransactionTrackerSubstate> =
-            track.read_substate(handle).0.as_typed().unwrap();
+            track.read_substate(handle).as_typed().unwrap();
 
         // Update the status of the intent hash
         if let TransactionIntentHash::ToCheck {
@@ -807,11 +838,12 @@ where
                 .partition_for_expiry_epoch(*expiry_epoch)
             {
                 let handle = track
-                    .acquire_lock_virtualize(
+                    .open_substate_virtualize(
                         TRANSACTION_TRACKER.as_node_id(),
                         PartitionNumber(partition_number),
                         &SubstateKey::Map(intent_hash.to_vec()),
                         LockFlags::MUTABLE,
+                        &mut |_| -> Result<(), ()> { Ok(()) },
                         || {
                             Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
                                 value: Option::<TransactionStatus>::None,
@@ -819,8 +851,7 @@ where
                             }))
                         },
                     )
-                    .unwrap()
-                    .0;
+                    .unwrap();
                 track.update_substate(
                     handle,
                     IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
@@ -952,17 +983,17 @@ where
 
 pub fn execute_and_commit_transaction<
     S: SubstateDatabase + CommittableSubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 >(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoVm<W>,
+    vm: V,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
     let receipt = execute_transaction(
         substate_db,
-        scrypto_interpreter,
+        vm,
         fee_reserve_config,
         execution_config,
         transaction,
@@ -973,14 +1004,14 @@ pub fn execute_and_commit_transaction<
     receipt
 }
 
-pub fn execute_transaction<S: SubstateDatabase, W: WasmEngine>(
+pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
     substate_db: &S,
-    scrypto_interpreter: &ScryptoVm<W>,
+    vm: V,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    TransactionExecutor::new(substate_db, scrypto_interpreter).execute(
+    TransactionExecutor::new(substate_db, vm).execute(
         transaction,
         fee_reserve_config,
         execution_config,

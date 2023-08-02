@@ -106,7 +106,7 @@ lazy_static! {
                 Main = 0;
                 Metadata = 1;
                 Royalty = 2;
-                AccessRules = 3;
+                RoleAssignment = 3;
             }
         );
 

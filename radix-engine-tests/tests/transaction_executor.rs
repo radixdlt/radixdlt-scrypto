@@ -4,7 +4,7 @@ use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::*;
 use transaction::errors::TransactionValidationError;
@@ -14,7 +14,7 @@ use transaction::validation::*;
 #[test]
 fn transaction_executed_before_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     let current_epoch = Epoch::of(150);
     let valid_from_epoch = Epoch::of(151);
@@ -29,7 +29,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
         },
         ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .clear_auth_zone()
+            .drop_auth_zone_proofs()
             .build(),
     );
 
@@ -54,7 +54,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
 #[test]
 fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     let current_epoch = Epoch::of(157);
     let valid_from_epoch = Epoch::of(151);
@@ -69,7 +69,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
         },
         ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .clear_auth_zone()
+            .drop_auth_zone_proofs()
             .build(),
     );
 
@@ -94,12 +94,15 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
 #[test]
 fn test_normal_transaction_flow() {
     // Arrange
-    let mut scrypto_interpreter = ScryptoVm {
+    let scrypto_vm = ScryptoVm {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_validator_config: WasmValidatorConfigV1::new(),
     };
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
+
     let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, true)
+    Bootstrapper::new(&mut substate_db, vm.clone(), true)
         .bootstrap_test_default()
         .unwrap();
 
@@ -113,7 +116,10 @@ fn test_normal_transaction_flow() {
         {
             let mut builder = ManifestBuilder::new();
             builder.add_blob([123u8; 1023 * 1024].to_vec());
-            builder.lock_fee_from_faucet().clear_auth_zone().build()
+            builder
+                .lock_fee_from_faucet()
+                .drop_auth_zone_proofs()
+                .build()
         },
     )
     .to_raw()
@@ -129,7 +135,7 @@ fn test_normal_transaction_flow() {
     // Act
     let receipt = execute_and_commit_transaction(
         &mut substate_db,
-        &mut scrypto_interpreter,
+        vm,
         &fee_reserve_config,
         &execution_config,
         &executable,

@@ -5,21 +5,20 @@ use crate::errors::RuntimeError;
 use crate::roles_template;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };
+use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
     BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 
-const ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
-const ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed25519";
+pub const ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
 
 pub struct AccountNativePackage;
 
@@ -50,6 +49,15 @@ impl AccountNativePackage {
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ResourceDepositRule>(),
                 ),
+                can_own: false,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ResourceOrNonFungible>(),
+                ),
+                value: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
                 can_own: false,
             },
         ));
@@ -356,15 +364,107 @@ impl AccountNativePackage {
             },
         );
 
-        let virtual_lazy_load_functions = btreemap!(
-            ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID => ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME.to_string(),
-            ACCOUNT_CREATE_VIRTUAL_ED25519_ID => ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
+        functions.insert(
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountTryAuthorizedDepositOrRefundInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountTryAuthorizedDepositOrRefundOutput>(),
+                ),
+                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrRefundInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrRefundOutput>(),
+                ),
+                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositOrAbortInput>(
+                        ),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositOrAbortOutput>(
+                        ),
+                ),
+                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrAbortInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrAbortOutput>(),
+                ),
+                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountAddAuthorizedDepositorInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountAddAuthorizedDepositorOutput>(),
+                ),
+                export: ACCOUNT_ADD_AUTHORIZED_DEPOSITOR.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveAuthorizedDepositorInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveAuthorizedDepositorOutput>(),
+                ),
+                export: ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR.to_string(),
+            },
         );
 
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 feature_set: btreeset!(),
                 dependencies: btreeset!(
                     SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -382,9 +482,9 @@ impl AccountNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions,
                         functions,
                     },
+                    hooks: BlueprintHooksInit { hooks: btreemap!(BlueprintHook::OnVirtualize => ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME.to_string()) }
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -411,11 +511,17 @@ impl AccountNativePackage {
                             ACCOUNT_DEPOSIT_BATCH_IDENT => [OWNER_ROLE];
                             ACCOUNT_BURN_IDENT => [OWNER_ROLE];
                             ACCOUNT_BURN_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR => [OWNER_ROLE];
+                            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR => [OWNER_ROLE];
 
                             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodAccessibility::Public;
                             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodAccessibility::Public;
                             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodAccessibility::Public;
                             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodAccessibility::Public;
+                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT => MethodAccessibility::Public;
+                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodAccessibility::Public;
+                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT => MethodAccessibility::Public;
+                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodAccessibility::Public;
                         }
                     )),
                 },
@@ -434,20 +540,12 @@ impl AccountNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         match export_name {
-            ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
-                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
+            ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME => {
+                let input: OnVirtualizeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::create_virtual_secp256k1(input, api)?;
-
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
-                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = AccountBlueprint::create_virtual_ed25519(input, api)?;
+                let rtn = AccountBlueprint::on_virtualize(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -539,6 +637,58 @@ impl AccountNativePackage {
                 })?;
 
                 let rtn = AccountBlueprint::try_deposit_batch_or_abort(input.buckets, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT => {
+                let input: AccountTryAuthorizedDepositOrRefundInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+
+                let rtn = AccountBlueprint::try_authorized_deposit_or_refund(
+                    input.bucket,
+                    input.badge,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT => {
+                let input: AccountTryAuthorizedDepositBatchOrRefundInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+
+                let rtn = AccountBlueprint::try_authorized_deposit_batch_or_refund(
+                    input.buckets,
+                    input.badge,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT => {
+                let input: AccountTryAuthorizedDepositOrAbortInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+
+                let rtn = AccountBlueprint::try_authorized_deposit_or_abort(
+                    input.bucket,
+                    input.badge,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT => {
+                let input: AccountTryAuthorizedDepositBatchOrAbortInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+
+                let rtn = AccountBlueprint::try_authorized_deposit_batch_or_abort(
+                    input.buckets,
+                    input.badge,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {
@@ -650,6 +800,23 @@ impl AccountNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR => {
+                let AccountAddAuthorizedDepositorInput { badge } =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = AccountBlueprint::add_authorized_depositor(badge, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR => {
+                let AccountRemoveAuthorizedDepositorInput { badge } =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = AccountBlueprint::remove_authorized_depositor(badge, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),

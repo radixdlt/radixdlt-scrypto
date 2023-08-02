@@ -1,13 +1,12 @@
 [package]
 name = "radix-engine-queries"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
 radix-engine = { path = "../radix-engine", default-features = false }
 radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
-radix-engine-constants = { path = "../radix-engine-constants", default-features = false }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 utils = { path = "../utils", default-features = false }

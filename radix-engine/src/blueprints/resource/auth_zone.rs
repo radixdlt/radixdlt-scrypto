@@ -6,7 +6,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use native_sdk::resource::NativeProof;
-use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 
@@ -90,14 +90,18 @@ impl AuthZoneBlueprint {
                         TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                             global: false,
 
-                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
-                            version: BlueprintVersion::default(),
+                            module_versions: btreemap!(
+                                ObjectModuleId::Main => BlueprintVersion::default(),
+                            ),
 
-                            blueprint_info: ObjectBlueprintInfo::Inner {
-                                outer_object: resource_address.into(),
-                            },
-                            features: btreeset!(),
-                            instance_schema: None,
+                            blueprint_info: BlueprintInfo {
+                                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                                outer_obj_info: OuterObjectInfo::Some {
+                                    outer_object: resource_address.into(),
+                                },
+                                features: btreeset!(),
+                                instance_schema: None,
+                            }
                         })),
                     ),
                 )?;
@@ -110,14 +114,18 @@ impl AuthZoneBlueprint {
                     TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                         global: false,
 
-                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                        version: BlueprintVersion::default(),
+                        module_versions: btreemap!(
+                            ObjectModuleId::Main => BlueprintVersion::default(),
+                        ),
 
-                        blueprint_info: ObjectBlueprintInfo::Inner {
-                            outer_object: resource_address.into(),
-                        },
-                        features: btreeset!(),
-                        instance_schema: None,
+                        blueprint_info: BlueprintInfo {
+                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                            outer_obj_info: OuterObjectInfo::Some {
+                                outer_object: resource_address.into(),
+                            },
+                            features: btreeset!(),
+                            instance_schema: None,
+                        }
                     }))),
                 )?;
             }
@@ -154,14 +162,18 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                    version: BlueprintVersion::default(),
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
 
-                    blueprint_info: ObjectBlueprintInfo::Inner {
-                        outer_object: resource_address.into(),
-                    },
-                    features: btreeset!(),
-                    instance_schema: None,
+                    blueprint_info: BlueprintInfo {
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                        outer_obj_info: OuterObjectInfo::Some {
+                            outer_object: resource_address.into(),
+                        },
+                        features: btreeset!(),
+                        instance_schema: None,
+                    }
                 }))
             ),
         )?;
@@ -200,14 +212,18 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
-                    version: BlueprintVersion::default(),
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
 
-                    blueprint_info: ObjectBlueprintInfo::Inner {
-                        outer_object: resource_address.into(),
+                    blueprint_info: BlueprintInfo {
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
+                        outer_obj_info: OuterObjectInfo::Some {
+                            outer_object: resource_address.into(),
+                        },
+                        features: btreeset!(),
+                        instance_schema: None,
                     },
-                    features: btreeset!(),
-                    instance_schema: None,
                 }))
             ),
         )?;
@@ -215,7 +231,16 @@ impl AuthZoneBlueprint {
         Ok(Proof(Own(node_id)))
     }
 
-    pub(crate) fn clear<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub(crate) fn drop_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::drop_signature_proofs(api)?;
+        Self::drop_regular_proofs(api)?;
+        Ok(())
+    }
+
+    pub(crate) fn drop_signature_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -225,31 +250,30 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
-        auth_zone.clear_signature_proofs();
-        let proofs = auth_zone.drain();
+        auth_zone.remove_signature_proofs();
+        api.field_write_typed(handle, &auth_zone)?;
+        api.field_close(handle)?;
+
+        Ok(())
+    }
+
+    pub(crate) fn drop_regular_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            AuthZoneField::AuthZone.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
+        let proofs = auth_zone.remove_regular_proofs();
         api.field_write_typed(handle, &auth_zone)?;
         api.field_close(handle)?;
 
         for proof in proofs {
             proof.drop(api)?;
         }
-
-        Ok(())
-    }
-
-    pub(crate) fn clear_signature_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            AuthZoneField::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
-        auth_zone.clear_signature_proofs();
-        api.field_write_typed(handle, &auth_zone)?;
-        api.field_close(handle)?;
 
         Ok(())
     }
@@ -265,49 +289,9 @@ impl AuthZoneBlueprint {
         )?;
 
         let mut auth_zone: AuthZone = api.field_read_typed(auth_zone_handle)?;
-        let proofs = auth_zone.drain();
-
+        let proofs = auth_zone.remove_regular_proofs();
         api.field_write_typed(auth_zone_handle, &auth_zone)?;
 
         Ok(proofs)
-    }
-
-    pub(crate) fn drop<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
-    {
-        // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
-
-        let input: AuthZoneDropInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
-
-        // Detach proofs from the auth zone
-        let handle = api.kernel_open_substate(
-            input.auth_zone.0.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &AuthZoneField::AuthZone.into(),
-            LockFlags::MUTABLE,
-            SystemLockData::Default,
-        )?;
-        let mut auth_zone_substate: AuthZone =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let proofs = core::mem::replace(&mut auth_zone_substate.proofs, Vec::new());
-        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&auth_zone_substate))?;
-        api.kernel_close_substate(handle)?;
-
-        // Destroy all proofs
-        // Note: the current auth zone will be used for authentication; It's just empty.
-        for proof in proofs {
-            proof.drop(api)?;
-        }
-
-        // Drop self
-        api.drop_object(input.auth_zone.0.as_node_id())?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }

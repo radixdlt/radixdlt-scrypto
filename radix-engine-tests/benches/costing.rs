@@ -1,15 +1,19 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use paste::paste;
 use radix_engine::{
     system::system_modules::costing::SystemLoanFeeReserve,
     types::*,
     utils::ExtractSchemaError,
     vm::{
-        wasm::{DefaultWasmEngine, WasmEngine, WasmInstance, WasmRuntime, WasmValidator},
+        wasm::{
+            DefaultWasmEngine, WasmEngine, WasmInstance, WasmModule, WasmRuntime, WasmValidator,
+        },
         wasm_runtime::NoOpWasmRuntime,
     },
 };
 use radix_engine_queries::typed_substate_layout::PackageDefinition;
 use sbor::rust::iter;
+use scrypto_unit::TestRunnerBuilder;
 use transaction::{
     prelude::Secp256k1PrivateKey,
     validation::{recover_secp256k1, verify_secp256k1},
@@ -77,7 +81,7 @@ fn bench_spin_loop(c: &mut Criterion) {
     c.bench_function("costing::spin_loop", |b| {
         b.iter(|| {
             let fee_reserve = SystemLoanFeeReserve::default()
-                .with_free_credit(Decimal::try_from(DEFAULT_FREE_CREDIT_IN_XRD).unwrap());
+                .with_free_credit(Decimal::try_from(FREE_CREDIT_IN_XRD).unwrap());
             wasm_execution_units_consumed = 0;
             let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
                 fee_reserve,
@@ -96,34 +100,43 @@ fn bench_spin_loop(c: &mut Criterion) {
     );
 }
 
-fn bench_instantiate_radiswap(c: &mut Criterion) {
-    // Prepare code
-    let code = include_bytes!("../../assets/radiswap.wasm");
+macro_rules! bench_instantiate {
+    ($what:literal) => {
+        paste! {
+        fn [< bench_instantiate_ $what >] (c: &mut Criterion) {
+            // Prepare code
+            let code = include_bytes!(concat!("../../assets/", $what, ".wasm"));
 
-    // Instrument
-    let validator = WasmValidator::default();
-    let instrumented_code = validator
-        .validate(code, iter::empty())
-        .map_err(|e| ExtractSchemaError::InvalidWasm(e))
-        .unwrap()
-        .0;
+            // Instrument
+            let validator = WasmValidator::default();
+            let instrumented_code = validator
+                .validate(code, iter::empty())
+                .map_err(|e| ExtractSchemaError::InvalidWasm(e))
+                .unwrap()
+                .0;
 
-    c.bench_function("costing::instantiate_radiswap", |b| {
-        b.iter(|| {
-            let wasm_engine = DefaultWasmEngine::default();
-            wasm_engine.instantiate(Hash([0u8; 32]), &instrumented_code);
-        })
-    });
+            c.bench_function(concat!("costing::instantiate_", $what), |b| {
+                b.iter(|| {
+                    let wasm_engine = DefaultWasmEngine::default();
+                    wasm_engine.instantiate(Hash([0u8; 32]), &instrumented_code);
+                })
+            });
 
-    println!("Code length: {}", instrumented_code.len());
+            println!("Code length: {}", instrumented_code.len());
+        }
+        }
+    };
 }
+
+bench_instantiate!("radiswap");
+bench_instantiate!("flash_loan");
 
 fn bench_validate_wasm(c: &mut Criterion) {
     let code = include_bytes!("../../assets/radiswap.wasm");
     let definition: PackageDefinition =
         manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
 
-    c.bench_function("WASM::validate_wasm", |b| {
+    c.bench_function("costing::validate_wasm", |b| {
         b.iter(|| {
             WasmValidator::default()
                 .validate(code, definition.blueprints.values())
@@ -134,6 +147,33 @@ fn bench_validate_wasm(c: &mut Criterion) {
     println!("Code length: {}", code.len());
 }
 
+fn bench_deserialize_wasm(c: &mut Criterion) {
+    let code = include_bytes!("../../assets/radiswap.wasm");
+
+    c.bench_function("costing::deserialize_wasm", |b| {
+        b.iter(|| WasmModule::init(code).unwrap())
+    });
+}
+
+fn bench_prepare_wasm(c: &mut Criterion) {
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let code = include_bytes!("../../assets/radiswap.wasm").to_vec();
+    let package_definition: PackageDefinition =
+        manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+
+    c.bench_function("costing::bench_prepare_wasm", |b| {
+        b.iter(|| {
+            let (pk1, _, _) = test_runner.new_allocated_account();
+            test_runner.publish_package(
+                code.clone(),
+                package_definition.clone(),
+                btreemap!(),
+                OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
+            );
+        })
+    });
+}
+
 criterion_group!(
     costing,
     bench_decode_sbor,
@@ -141,6 +181,9 @@ criterion_group!(
     bench_validate_secp256k1,
     bench_spin_loop,
     bench_instantiate_radiswap,
+    bench_instantiate_flash_loan,
+    bench_deserialize_wasm,
     bench_validate_wasm,
+    bench_prepare_wasm,
 );
 criterion_main!(costing);

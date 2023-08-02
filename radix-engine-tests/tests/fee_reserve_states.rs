@@ -6,7 +6,7 @@ use transaction::prelude::*;
 #[test]
 fn test_fee_states() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -30,17 +30,17 @@ fn test_fee_states() {
     let (cost_unit_limit, cost_unit_price, tip_percentage, remaining_fee_balance) = receipt
         .expect_commit_success()
         .output::<(u32, Decimal, u32, Decimal)>(1);
-    assert_eq!(cost_unit_limit, DEFAULT_COST_UNIT_LIMIT);
+    assert_eq!(cost_unit_limit, COST_UNIT_LIMIT);
     assert_eq!(
         cost_unit_price,
-        Decimal::try_from(DEFAULT_COST_UNIT_PRICE_IN_XRD).unwrap()
+        Decimal::try_from(COST_UNIT_PRICE_IN_XRD).unwrap()
     );
     assert_eq!(tip_percentage, DEFAULT_TIP_PERCENTAGE as u32);
     // At the time checking fee balance, it should be still using system loan. This is because
     // loan is designed to be slightly more than what it takes to `lock_fee` from a component.
     // Therefore, the balance should be between `fee_locked` and `fee_locked + loan_in_xrd`.
-    let loan_in_xrd = Decimal::from(DEFAULT_SYSTEM_LOAN)
-        * (Decimal::try_from(DEFAULT_COST_UNIT_PRICE_IN_XRD).unwrap()
+    let loan_in_xrd = Decimal::from(SYSTEM_LOAN_AMOUNT)
+        * (Decimal::try_from(COST_UNIT_PRICE_IN_XRD).unwrap()
             * (dec!(1) + Decimal::from(DEFAULT_TIP_PERCENTAGE) / dec!(100)));
     assert!(fee_locked < remaining_fee_balance);
     assert!(remaining_fee_balance < fee_locked + loan_in_xrd);

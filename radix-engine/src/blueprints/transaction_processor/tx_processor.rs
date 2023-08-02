@@ -75,8 +75,8 @@ macro_rules! handle_call_method {
 
         let rtn = $api.call_method_advanced(
             $node_id,
-            $direct_access,
             $module_id,
+            $direct_access,
             &$method_name,
             scrypto_encode(&scrypto_value).unwrap(),
         )?;
@@ -108,13 +108,15 @@ impl TransactionProcessorBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {
                         global: false,
-
-                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
-                        version: BlueprintVersion::default(),
-
-                        instance_schema: None,
-                        blueprint_info: ObjectBlueprintInfo::default(),
-                        features: btreeset!(),
+                        module_versions: btreemap!(
+                            ObjectModuleId::Main => BlueprintVersion::default(),
+                        ),
+                        blueprint_info: BlueprintInfo {
+                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
+                            instance_schema: None,
+                            outer_obj_info: OuterObjectInfo::default(),
+                            features: btreeset!(),
+                        }
                     })
                 )
             ),
@@ -190,14 +192,6 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                InstructionV1::ClearAuthZone => {
-                    LocalAuthZone::clear(api)?;
-                    InstructionOutput::None
-                }
-                InstructionV1::ClearSignatureProofs => {
-                    LocalAuthZone::clear_signature_proofs(api)?;
-                    InstructionOutput::None
-                }
                 InstructionV1::PushToAuthZone { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
                     LocalAuthZone::push(proof, api)?;
@@ -246,6 +240,18 @@ impl TransactionProcessorBlueprint {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.create_proof_of_all(api)?;
                     processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneProofs => {
+                    LocalAuthZone::drop_proofs(api)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneRegularProofs => {
+                    LocalAuthZone::drop_regular_proofs(api)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneSignatureProofs => {
+                    LocalAuthZone::drop_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::BurnResource { bucket_id } => {
@@ -344,14 +350,14 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-                InstructionV1::CallAccessRulesMethod {
+                InstructionV1::CallRoleAssignmentMethod {
                     address,
                     method_name,
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_method!(
-                        ObjectModuleId::AccessRules,
+                        ObjectModuleId::RoleAssignment,
                         address.as_node_id(),
                         false,
                         method_name,
@@ -377,15 +383,19 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-                InstructionV1::DropAllProofs => {
-                    // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
-                    // the former will drop all named proofs before clearing the auth zone.
-
+                InstructionV1::DropNamedProofs => {
                     for (_, real_id) in processor.proof_mapping.drain(..) {
                         let proof = Proof(Own(real_id));
                         proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
-                    LocalAuthZone::clear(api)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAllProofs => {
+                    for (_, real_id) in processor.proof_mapping.drain(..) {
+                        let proof = Proof(Own(real_id));
+                        proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
+                    }
+                    LocalAuthZone::drop_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::AllocateGlobalAddress {
@@ -607,8 +617,8 @@ impl TransactionProcessor {
             let info = TypeInfoBlueprint::get_type(node_id, api)?;
             match info {
                 TypeInfoSubstate::Object(info) => match (
-                    info.blueprint_id.package_address,
-                    info.blueprint_id.blueprint_name.as_str(),
+                    info.blueprint_info.blueprint_id.package_address,
+                    info.blueprint_info.blueprint_id.blueprint_name.as_str(),
                 ) {
                     (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
                     | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {

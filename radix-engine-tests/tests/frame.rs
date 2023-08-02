@@ -1,14 +1,14 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
-use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
+use radix_engine_common::constants::MAX_CALL_DEPTH;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
 fn test_max_call_depth_success() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act
@@ -18,7 +18,7 @@ fn test_max_call_depth_success() {
     // * 1: Transaction Executor
     // * 2-15: Caller::call x 14
     // ============================
-    let num_calls = u32::try_from(DEFAULT_MAX_CALL_DEPTH).unwrap() - 1u32;
+    let num_calls = u32::try_from(MAX_CALL_DEPTH).unwrap() - 1u32;
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -37,7 +37,7 @@ fn test_max_call_depth_success() {
 #[test]
 fn test_max_call_depth_failure() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act

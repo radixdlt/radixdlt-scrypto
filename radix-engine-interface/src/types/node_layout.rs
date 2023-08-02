@@ -16,13 +16,13 @@ pub const ROYALTY_CONFIG_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8
 pub const ROYALTY_FIELDS_PARTITION: PartitionNumber = PartitionNumber(2u8);
 pub const ROYALTY_CONFIG_PARTITION: PartitionNumber = PartitionNumber(3u8);
 
-pub const ACCESS_RULES_BASE_PARTITION: PartitionNumber = PartitionNumber(4u8);
-pub const ACCESS_RULES_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
-pub const ACCESS_RULES_ROLE_DEF_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
-pub const ACCESS_RULES_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
+pub const ROLE_ASSIGNMENT_BASE_PARTITION: PartitionNumber = PartitionNumber(4u8);
+pub const ROLE_ASSIGNMENT_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
+pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
+pub const ROLE_ASSIGNMENT_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 
-pub const ACCESS_RULES_FIELDS_PARTITION: PartitionNumber = PartitionNumber(4u8);
-pub const ACCESS_RULES_ROLE_DEF_PARTITION: PartitionNumber = PartitionNumber(5u8);
+pub const ROLE_ASSIGNMENT_FIELDS_PARTITION: PartitionNumber = PartitionNumber(4u8);
+pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION: PartitionNumber = PartitionNumber(5u8);
 
 pub const MAIN_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 
@@ -40,11 +40,11 @@ pub enum RoyaltyField {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum AccessRulesField {
+pub enum RoleAssignmentField {
     OwnerRole,
 }
 
-impl TryFrom<u8> for AccessRulesField {
+impl TryFrom<u8> for RoleAssignmentField {
     type Error = ();
 
     fn try_from(offset: u8) -> Result<Self, Self::Error> {
@@ -154,6 +154,12 @@ pub enum ConsensusManagerPartitionOffset {
     RegisteredValidatorsByStakeIndex,
 }
 
+impl From<ConsensusManagerPartitionOffset> for PartitionOffset {
+    fn from(value: ConsensusManagerPartitionOffset) -> Self {
+        PartitionOffset(value as u8)
+    }
+}
+
 impl TryFrom<u8> for ConsensusManagerPartitionOffset {
     type Error = ();
 
@@ -163,7 +169,7 @@ impl TryFrom<u8> for ConsensusManagerPartitionOffset {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
 pub enum ConsensusManagerField {
     Config,
     ConsensusManager,
@@ -175,7 +181,7 @@ pub enum ConsensusManagerField {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
 pub enum ValidatorField {
     Validator,
     ProtocolUpdateReadinessSignal,
@@ -233,6 +239,9 @@ pub enum AccountPartitionOffset {
     Account,
     AccountVaultsByResourceAddress,
     AccountResourceDepositRuleByAddress,
+    /// Map<ResourceOrNonFungible, ()> - A map of a [`ResourceOrNonFungible`] to Unit that stores
+    /// the badges of allowed depositors into accounts
+    AccountAllowedDepositorsByResourceOrNonFungible,
 }
 
 impl From<AccountPartitionOffset> for PartitionOffset {
@@ -308,7 +317,7 @@ macro_rules! substate_key {
 
 substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
-substate_key!(AccessRulesField);
+substate_key!(RoleAssignmentField);
 substate_key!(ComponentField);
 substate_key!(PackageField);
 substate_key!(FungibleResourceManagerField);

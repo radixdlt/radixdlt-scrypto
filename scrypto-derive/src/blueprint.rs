@@ -564,7 +564,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                         BlueprintFunctionsSchemaInit {
                             functions,
-                            virtual_lazy_load_functions: BTreeMap::default(),
                         }
                     };
 
@@ -588,6 +587,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         state,
                         events,
                         functions,
+                        hooks: BlueprintHooksInit::default(),
                     }
                 };
 
@@ -607,6 +607,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                     blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+                    is_transient: false,
                     feature_set: BTreeSet::default(),
                     dependencies,
                     schema,
@@ -1460,7 +1461,6 @@ mod tests {
 
                                 BlueprintFunctionsSchemaInit {
                                     functions,
-                                    virtual_lazy_load_functions: BTreeMap::default(),
                                 }
                             };
 
@@ -1479,6 +1479,7 @@ mod tests {
                                 state,
                                 events,
                                 functions,
+                                hooks: BlueprintHooksInit::default(),
                             }
                         };
 
@@ -1495,6 +1496,7 @@ mod tests {
 
                         let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                             blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+                            is_transient: false,
                             feature_set: BTreeSet::default(),
                             dependencies,
                             schema,

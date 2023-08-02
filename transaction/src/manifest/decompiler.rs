@@ -1,12 +1,11 @@
 use crate::data::*;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
+use radix_engine_common::constants::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_interface::address::AddressBech32Encoder;
 use radix_engine_interface::api::node_modules::auth::{
-    ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_OWNER_ROLE_IDENT,
-    ACCESS_RULES_SET_ROLE_IDENT,
+    ROLE_ASSIGNMENT_LOCK_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::metadata::{
@@ -266,7 +265,17 @@ pub fn decompile_instruction<F: fmt::Write>(
         InstructionV1::PushToAuthZone { proof_id } => {
             ("PUSH_TO_AUTH_ZONE", to_manifest_value(&(proof_id,))?)
         }
-        InstructionV1::ClearAuthZone => ("CLEAR_AUTH_ZONE", to_manifest_value_and_unwrap!(&())),
+        InstructionV1::DropAuthZoneProofs => {
+            ("DROP_AUTH_ZONE_PROOFS", to_manifest_value_and_unwrap!(&()))
+        }
+        InstructionV1::DropAuthZoneRegularProofs => (
+            "DROP_AUTH_ZONE_REGULAR_PROOFS",
+            to_manifest_value_and_unwrap!(&()),
+        ),
+        InstructionV1::DropAuthZoneSignatureProofs => (
+            "DROP_AUTH_ZONE_SIGNATURE_PROOFS",
+            to_manifest_value_and_unwrap!(&()),
+        ),
         InstructionV1::CreateProofFromAuthZoneOfAmount {
             resource_address,
             amount,
@@ -295,8 +304,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                 to_manifest_value(&(resource_address, proof))?,
             )
         }
-
-        InstructionV1::ClearSignatureProofs => ("CLEAR_SIGNATURE_PROOFS", to_manifest_value(&())?),
 
         InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount } => {
             let proof = context.new_proof();
@@ -556,7 +563,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             let parameters = Value::Tuple { fields };
             (name, parameters)
         }
-        InstructionV1::CallAccessRulesMethod {
+        InstructionV1::CallRoleAssignmentMethod {
             address,
             method_name,
             args,
@@ -564,15 +571,15 @@ pub fn decompile_instruction<F: fmt::Write>(
             let mut fields = Vec::new();
             let name = match (address, method_name.as_str()) {
                 /* Access rules */
-                (address, ACCESS_RULES_SET_OWNER_ROLE_IDENT) => {
+                (address, ROLE_ASSIGNMENT_SET_OWNER_IDENT) => {
                     fields.push(address.to_instruction_argument());
                     "SET_OWNER_ROLE"
                 }
-                (address, ACCESS_RULES_LOCK_OWNER_ROLE_IDENT) => {
+                (address, ROLE_ASSIGNMENT_LOCK_OWNER_IDENT) => {
                     fields.push(address.to_instruction_argument());
                     "LOCK_OWNER_ROLE"
                 }
-                (address, ACCESS_RULES_SET_ROLE_IDENT) => {
+                (address, ROLE_ASSIGNMENT_SET_IDENT) => {
                     fields.push(address.to_instruction_argument());
                     "SET_ROLE"
                 }
@@ -581,7 +588,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 _ => {
                     fields.push(address.to_instruction_argument());
                     fields.push(to_manifest_value(method_name)?);
-                    "CALL_ACCESS_RULES_METHOD"
+                    "CALL_ROLE_ASSIGNMENT_METHOD"
                 }
             };
 
@@ -635,6 +642,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             (name, parameters)
         }
 
+        InstructionV1::DropNamedProofs => ("DROP_NAMED_PROOFS", to_manifest_value(&())?),
         InstructionV1::DropAllProofs => ("DROP_ALL_PROOFS", to_manifest_value(&())?),
         InstructionV1::AllocateGlobalAddress {
             package_address,

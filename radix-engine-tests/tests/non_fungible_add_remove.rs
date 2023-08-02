@@ -6,7 +6,7 @@ use transaction::prelude::*;
 #[test]
 fn add_and_remove_of_non_fungible_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -30,7 +30,7 @@ fn add_and_remove_of_non_fungible_should_succeed() {
 #[test]
 fn mint_and_burn_of_non_fungible_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -54,7 +54,7 @@ fn mint_and_burn_of_non_fungible_should_succeed() {
 #[test]
 fn mint_and_burn_of_non_fungible_2x_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -83,7 +83,7 @@ fn mint_and_burn_of_non_fungible_2x_should_fail() {
 #[test]
 fn mint_of_previously_minted_burned_non_fungible_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()

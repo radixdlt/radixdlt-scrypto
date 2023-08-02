@@ -8,7 +8,7 @@ use transaction::prelude::*;
 #[test]
 fn can_get_from_scrypto() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
 
     // Act
@@ -42,7 +42,7 @@ fn can_get_from_scrypto() {
 #[test]
 fn can_set_from_scrypto() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -69,11 +69,11 @@ fn can_set_from_scrypto() {
 #[test]
 fn cannot_initialize_metadata_if_key_too_long() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
 
     // Act
-    let key = "a".repeat(DEFAULT_MAX_METADATA_KEY_STRING_LEN + 1);
+    let key = "a".repeat(MAX_METADATA_KEY_STRING_LEN + 1);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -99,7 +99,7 @@ fn cannot_initialize_metadata_if_key_too_long() {
 #[test]
 fn cannot_set_metadata_if_key_too_long() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -113,7 +113,7 @@ fn cannot_set_metadata_if_key_too_long() {
         .lock_fee_from_faucet()
         .set_metadata(
             component_address,
-            "a".repeat(DEFAULT_MAX_METADATA_KEY_STRING_LEN + 1),
+            "a".repeat(MAX_METADATA_KEY_STRING_LEN + 1),
             MetadataValue::Bool(true),
         )
         .build();
@@ -133,11 +133,11 @@ fn cannot_set_metadata_if_key_too_long() {
 #[test]
 fn cannot_initialize_metadata_if_value_too_long() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
 
     // Act
-    let value = "a".repeat(DEFAULT_MAX_METADATA_VALUE_SBOR_LEN + 1);
+    let value = "a".repeat(MAX_METADATA_VALUE_SBOR_LEN + 1);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -163,7 +163,7 @@ fn cannot_initialize_metadata_if_value_too_long() {
 #[test]
 fn cannot_set_metadata_if_value_too_long() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -178,7 +178,7 @@ fn cannot_set_metadata_if_value_too_long() {
         .set_metadata(
             component_address,
             "a",
-            MetadataValue::String("a".repeat(DEFAULT_MAX_METADATA_VALUE_SBOR_LEN + 1)),
+            MetadataValue::String("a".repeat(MAX_METADATA_VALUE_SBOR_LEN + 1)),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -197,7 +197,7 @@ fn cannot_set_metadata_if_value_too_long() {
 #[test]
 fn cannot_set_metadata_if_initialized_empty_locked() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()

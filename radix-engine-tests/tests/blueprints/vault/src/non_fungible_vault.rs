@@ -91,7 +91,7 @@ mod vault_test {
 
         pub fn new_vault_with_get_non_fungible_local_ids() -> Global<NonFungibleVault> {
             let vault = Self::create_non_fungible_vault();
-            let _ids = vault.as_non_fungible().non_fungible_local_ids();
+            let _ids = vault.as_non_fungible().non_fungible_local_ids(100);
             Self { vault }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)

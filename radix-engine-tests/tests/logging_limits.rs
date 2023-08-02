@@ -68,7 +68,7 @@ fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
 fn test_emit_log(message_size: usize, iterations: usize, expected_err: Option<RuntimeError>) {
     // Arrange
     let code = prepare_code(message_size, iterations);
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let package_address = test_runner.publish_package(
         code,
         single_function_package_definition("Test", "f"),
@@ -93,18 +93,18 @@ fn test_emit_log(message_size: usize, iterations: usize, expected_err: Option<Ru
 
 #[test]
 fn test_emit_some_logs() {
-    test_emit_log(DEFAULT_MAX_LOG_SIZE, DEFAULT_MAX_NUMBER_OF_LOGS - 1, None);
+    test_emit_log(MAX_LOG_SIZE, MAX_NUMBER_OF_LOGS - 1, None);
 }
 
 #[test]
 fn test_emit_large_logs() {
     test_emit_log(
-        DEFAULT_MAX_LOG_SIZE + 1,
+        MAX_LOG_SIZE + 1,
         1,
         Some(RuntimeError::SystemModuleError(
             SystemModuleError::TransactionLimitsError(TransactionLimitsError::LogSizeTooLarge {
-                actual: DEFAULT_MAX_LOG_SIZE + 1,
-                max: DEFAULT_MAX_LOG_SIZE,
+                actual: MAX_LOG_SIZE + 1,
+                max: MAX_LOG_SIZE,
             }),
         )),
     );
@@ -112,7 +112,7 @@ fn test_emit_large_logs() {
 #[test]
 fn test_emit_lots_of_logs() {
     test_emit_log(
-        DEFAULT_MAX_LOG_SIZE,
+        MAX_LOG_SIZE,
         1_000_000,
         Some(RuntimeError::SystemModuleError(
             SystemModuleError::TransactionLimitsError(TransactionLimitsError::TooManyLogs),

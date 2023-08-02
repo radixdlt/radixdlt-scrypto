@@ -72,7 +72,6 @@ where
 
     fn actor_call_module_method(
         &mut self,
-        object_handle: u32,
         module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
@@ -84,9 +83,9 @@ where
             .and_then(|x| ObjectModuleId::from_repr(x))
             .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
 
-        let return_data =
-            self.api
-                .actor_call_module_method(object_handle, module_id, ident.as_str(), args)?;
+        let return_data = self
+            .api
+            .actor_call_module(module_id, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }
@@ -120,8 +119,8 @@ where
 
         let return_data = self.api.call_method_advanced(
             &receiver,
-            is_direct_access,
             module_id,
+            is_direct_access,
             ident.as_str(),
             args,
         )?;
@@ -336,7 +335,7 @@ where
     }
 
     fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let actor = self.api.actor_get_blueprint()?;
+        let actor = self.api.actor_get_blueprint_id()?;
 
         let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
         self.allocate_buffer(buffer)
@@ -351,7 +350,7 @@ where
 
     fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         let rule =
-            scrypto_decode::<AccessRule>(&rule).map_err(WasmRuntimeError::InvalidAccessRules)?;
+            scrypto_decode::<AccessRule>(&rule).map_err(WasmRuntimeError::InvalidAccessRule)?;
 
         self.api
             .assert_access_rule(rule)
@@ -382,7 +381,7 @@ where
         Ok(())
     }
 
-    fn get_object_info(
+    fn get_blueprint_id(
         &mut self,
         node_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -390,9 +389,23 @@ where
             TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let type_info = self.api.get_object_info(&node_id)?;
+        let blueprint_id = self.api.get_blueprint_id(&node_id)?;
 
-        let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
+        let buffer = scrypto_encode(&blueprint_id).expect("Failed to encode type_info");
+        self.allocate_buffer(buffer)
+    }
+
+    fn get_outer_object(
+        &mut self,
+        node_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+        let address = self.api.get_outer_object(&node_id)?;
+
+        let buffer = scrypto_encode(&address).expect("Failed to encode GlobalAddress");
         self.allocate_buffer(buffer)
     }
 

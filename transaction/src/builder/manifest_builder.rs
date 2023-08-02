@@ -366,11 +366,6 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::PushToAuthZone { proof_id: proof })
     }
 
-    /// Clears the auth zone.
-    pub fn clear_auth_zone(self) -> Self {
-        self.add_instruction(InstructionV1::ClearAuthZone)
-    }
-
     /// Creates proof from the auth zone by amount.
     pub fn create_proof_from_auth_zone_of_amount(
         self,
@@ -501,9 +496,25 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::DropAllProofs)
     }
 
-    /// Drops all virtual proofs.
-    pub fn clear_signature_proofs(self) -> Self {
-        self.add_instruction(InstructionV1::ClearSignatureProofs)
+    /// Drops named proofs.
+    pub fn drop_named_proofs(self) -> Self {
+        self.registrar.consume_all_proofs();
+        self.add_instruction(InstructionV1::DropNamedProofs)
+    }
+
+    /// Drops auth zone signature proofs.
+    pub fn drop_auth_zone_signature_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneSignatureProofs)
+    }
+
+    /// Drops auth zone regular proofs.
+    pub fn drop_auth_zone_regular_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneRegularProofs)
+    }
+
+    /// Drop auth zone proofs.
+    pub fn drop_auth_zone_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneProofs)
     }
 
     /// Creates a fungible resource
@@ -995,7 +1006,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: address.into(),
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ComponentSetRoyaltyInput {
+            args: to_manifest_value_and_unwrap!(&ComponentRoyaltySetInput {
                 method: method.into(),
                 amount,
             }),
@@ -1011,7 +1022,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: address.into(),
             method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ComponentLockRoyaltyInput {
+            args: to_manifest_value_and_unwrap!(&ComponentRoyaltyLockInput {
                 method: method.into(),
             }),
         })
@@ -1031,10 +1042,10 @@ impl ManifestBuilder {
 
     pub fn set_owner_role(self, address: impl ResolvableGlobalAddress, rule: AccessRule) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesSetOwnerRoleInput { rule }),
+            method_name: ROLE_ASSIGNMENT_SET_OWNER_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentSetOwnerInput { rule }),
         })
     }
 
@@ -1046,10 +1057,10 @@ impl ManifestBuilder {
         rule: AccessRule,
     ) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesSetRoleInput {
+            method_name: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentSetInput {
                 module,
                 role_key,
                 rule,
@@ -1059,10 +1070,10 @@ impl ManifestBuilder {
 
     pub fn lock_owner_role(self, address: impl ResolvableGlobalAddress) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesLockOwnerRoleInput {}),
+            method_name: ROLE_ASSIGNMENT_LOCK_OWNER_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentLockOwnerInput {}),
         })
     }
 
@@ -1073,10 +1084,10 @@ impl ManifestBuilder {
         role_key: RoleKey,
     ) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_GET_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesGetRoleInput { module, role_key }),
+            method_name: ROLE_ASSIGNMENT_GET_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentGetInput { module, role_key }),
         })
     }
 

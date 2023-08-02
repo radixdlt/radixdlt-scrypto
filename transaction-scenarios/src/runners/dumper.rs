@@ -1,3 +1,5 @@
+use radix_engine::system::system_callback_api::SystemCallbackObject;
+use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, Vm};
 use radix_engine::{
     system::bootstrap::Bootstrapper,
     vm::{
@@ -24,8 +26,13 @@ pub fn run_all_in_memory_and_dump_examples(
 ) -> Result<(), FullScenarioError> {
     let mut substate_db = InMemorySubstateDatabase::standard();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm {
+        scrypto_vm: &scrypto_vm,
+        native_vm,
+    };
 
-    let receipts = Bootstrapper::new(&mut substate_db, &scrypto_vm, false)
+    let receipts = Bootstrapper::new(&mut substate_db, vm, false)
         .bootstrap_test_default()
         .unwrap();
     let epoch = receipts
@@ -70,32 +77,34 @@ where
 {
     let fee_reserve_config = FeeReserveConfig::default();
     let execution_config = ExecutionConfig::for_test_transaction();
-    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
 
     run_scenario(
         context,
         &validator,
         substate_db,
-        &scrypto_interpreter,
+        vm,
         &fee_reserve_config,
         &execution_config,
         scenario,
     )
 }
 
-pub fn run_scenario<S, W>(
+pub fn run_scenario<S, V>(
     context: &RunnerContext,
     validator: &NotarizedTransactionValidator,
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoVm<W>,
+    vm: V,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     scenario: &mut Box<dyn ScenarioInstance>,
 ) -> Result<EndState, FullScenarioError>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 {
     let mut previous = None;
     loop {
@@ -111,7 +120,7 @@ where
                 next.dump_manifest(&context.dump_manifest_root, &context.network);
                 previous = Some(execute_and_commit_transaction(
                     substate_db,
-                    scrypto_interpreter,
+                    vm.clone(),
                     fee_reserve_config,
                     execution_config,
                     &transaction.get_executable(),

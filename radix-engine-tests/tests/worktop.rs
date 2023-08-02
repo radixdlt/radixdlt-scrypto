@@ -12,7 +12,7 @@ use transaction::prelude::*;
 #[test]
 fn test_worktop_resource_leak() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -39,12 +39,12 @@ fn test_worktop_resource_leak() {
 #[test]
 fn test_many_current_auth_zone_call() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let mut expressions = Vec::<ManifestExpression>::new();
-    for _ in 0..5000 {
+    for _ in 0..10000 {
         expressions.push(ManifestExpression::EntireAuthZone);
     }
     let manifest = ManifestBuilder::new()
@@ -70,7 +70,7 @@ fn test_many_current_auth_zone_call() {
 #[test]
 fn test_many_worktop_call() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act

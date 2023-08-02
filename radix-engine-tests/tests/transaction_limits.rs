@@ -10,7 +10,7 @@ use transaction::prelude::*;
 #[test]
 fn transaction_limit_exceeded_substate_read_count_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
     let component_address = test_runner
         .execute_manifest(
@@ -64,7 +64,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
 #[test]
 fn transaction_limit_exceeded_substate_write_count_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
     let component_address = test_runner
         .execute_manifest(
@@ -118,7 +118,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
 #[test]
 fn test_default_substate_size_limit() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
     // Act
     let manifest = ManifestBuilder::new()
@@ -127,7 +127,7 @@ fn test_default_substate_size_limit() {
             package_address,
             "TransactionLimitSubstateTest",
             "write_large_value",
-            manifest_args!(DEFAULT_MAX_SUBSTATE_SIZE - 14),
+            manifest_args!(MAX_SUBSTATE_SIZE - 14),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -142,7 +142,7 @@ fn test_default_substate_size_limit() {
             package_address,
             "TransactionLimitSubstateTest",
             "write_large_value",
-            manifest_args!(DEFAULT_MAX_SUBSTATE_SIZE - 13),
+            manifest_args!(MAX_SUBSTATE_SIZE - 13),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -167,14 +167,14 @@ fn test_default_invoke_payload_size_limit() {
     encoder.write_size(1).unwrap();
     encoder.write_value_kind(ValueKind::Array).unwrap();
     encoder.write_value_kind(ValueKind::U8).unwrap();
-    encoder.write_size(DEFAULT_MAX_INVOKE_INPUT_SIZE).unwrap();
+    encoder.write_size(MAX_INVOKE_PAYLOAD_SIZE).unwrap();
     let overhead_len = overhead.len();
     let actor_len = PACKAGE_PACKAGE.as_ref().len() + "InvokeLimitsTest".len() + "callee".len();
     println!("{:?}", overhead_len);
     println!("{:?}", actor_len);
 
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
     // Act
     let manifest = ManifestBuilder::new()
@@ -183,7 +183,7 @@ fn test_default_invoke_payload_size_limit() {
             package_address,
             "InvokeLimitsTest",
             "call",
-            manifest_args!(DEFAULT_MAX_INVOKE_INPUT_SIZE - actor_len - overhead_len),
+            manifest_args!(MAX_INVOKE_PAYLOAD_SIZE - actor_len - overhead_len),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -198,7 +198,7 @@ fn test_default_invoke_payload_size_limit() {
             package_address,
             "InvokeLimitsTest",
             "call",
-            manifest_args!(DEFAULT_MAX_INVOKE_INPUT_SIZE - actor_len - overhead_len + 1),
+            manifest_args!(MAX_INVOKE_PAYLOAD_SIZE - actor_len - overhead_len + 1),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -217,7 +217,7 @@ fn test_default_invoke_payload_size_limit() {
 #[ignore]
 fn reproduce_crash() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
 
     // Act
@@ -235,7 +235,7 @@ fn reproduce_crash() {
 
 #[test]
 fn verify_log_size_limit() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_limits");
 
     let manifest = ManifestBuilder::new()
@@ -243,7 +243,7 @@ fn verify_log_size_limit() {
             package_address,
             "TransactionLimitTest",
             "emit_log_of_size",
-            manifest_args!(DEFAULT_MAX_LOG_SIZE + 1),
+            manifest_args!(MAX_LOG_SIZE + 1),
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -260,7 +260,7 @@ fn verify_log_size_limit() {
 
 #[test]
 fn verify_event_size_limit() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_limits");
 
     let manifest = ManifestBuilder::new()
@@ -268,7 +268,7 @@ fn verify_event_size_limit() {
             package_address,
             "TransactionLimitTest",
             "emit_event_of_size",
-            manifest_args!(DEFAULT_MAX_EVENT_SIZE + 1),
+            manifest_args!(MAX_EVENT_SIZE + 1),
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -285,7 +285,7 @@ fn verify_event_size_limit() {
 
 #[test]
 fn verify_panic_size_limit() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_limits");
 
     let manifest = ManifestBuilder::new()
@@ -293,7 +293,7 @@ fn verify_panic_size_limit() {
             package_address,
             "TransactionLimitTest",
             "panic_of_size",
-            manifest_args!(DEFAULT_MAX_PANIC_MESSAGE_SIZE + 1),
+            manifest_args!(MAX_PANIC_MESSAGE_SIZE + 1),
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);

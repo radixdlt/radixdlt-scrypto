@@ -6,16 +6,35 @@ use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::vm::wasm::{WasmEngine, WasmValidator};
-use crate::vm::{NativeVm, ScryptoVm};
+use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 
-pub struct Vm<'g, W: WasmEngine> {
+pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,
+    pub native_vm: NativeVm<E>,
 }
 
-impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
+impl<'g, W: WasmEngine, E: NativeVmExtension> Vm<'g, W, E> {
+    pub fn new(scrypto_vm: &'g ScryptoVm<W>, native_vm: NativeVm<E>) -> Self {
+        Self {
+            scrypto_vm,
+            native_vm,
+        }
+    }
+}
+
+impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
+    fn clone(&self) -> Self {
+        Self {
+            scrypto_vm: self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        }
+    }
+}
+
+impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
     fn invoke<Y>(
         address: &PackageAddress,
         export: PackageExport,
@@ -76,7 +95,11 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         .expect(&format!("Original code not found: {:?}", export))
                 };
 
-                let mut vm_instance = { NativeVm::create_instance(address, &original_code.code)? };
+                let mut vm_instance = api
+                    .kernel_get_system()
+                    .callback_obj
+                    .native_vm
+                    .create_instance(address, &original_code.code)?;
                 let output = { vm_instance.invoke(export.export_name.as_str(), input, api)? };
 
                 output
@@ -168,6 +191,7 @@ impl VmPackageValidation {
                             generics,
                             state: BlueprintStateSchemaInit { collections, .. },
                             functions,
+                            hooks,
                             ..
                         },
                     ..
@@ -200,10 +224,10 @@ impl VmPackageValidation {
                         ));
                     }
 
-                    if !functions.virtual_lazy_load_functions.is_empty() {
+                    if !hooks.hooks.is_empty() {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::PackageError(PackageError::WasmUnsupported(
-                                "Lazy load functions not supported".to_string(),
+                                "Hooks not supported".to_string(),
                             )),
                         ));
                     }

@@ -7,7 +7,7 @@ use radix_engine::{
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
-use scrypto_unit::{is_auth_error, TestRunner};
+use scrypto_unit::{is_auth_error, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 
 #[test]
@@ -406,7 +406,7 @@ fn contributing_tokens_that_do_not_belong_to_pool_fails() {
 #[test]
 fn creating_a_pool_with_non_fungible_resources_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
 
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
@@ -744,7 +744,7 @@ fn cant_withdraw_without_proper_signature() {
 }
 
 struct TestEnvironment<const N: usize> {
-    test_runner: TestRunner,
+    test_runner: DefaultTestRunner,
 
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
@@ -761,7 +761,7 @@ impl<const N: usize> TestEnvironment<N> {
     }
 
     pub fn new_with_owner(divisibility: [u8; N], owner_role: OwnerRole) -> Self {
-        let mut test_runner = TestRunner::builder().without_trace().build();
+        let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 

@@ -11,13 +11,11 @@ pub enum PrepareError {
     DeserializationError,
     /// Failed to validate
     /// See <https://webassembly.github.io/spec/core/valid/index.html>
-    ValidationError,
+    ValidationError(String),
     /// Failed to serialize.
     SerializationError,
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
-    /// The wasm module uses float points.
-    FloatingPointNotAllowed,
     /// Invalid import section
     InvalidImport(InvalidImport),
     /// Invalid memory section
@@ -28,6 +26,10 @@ pub enum PrepareError {
     TooManyTargetsInBrTable,
     /// Too many functions
     TooManyFunctions,
+    /// Too many function parameters
+    TooManyFunctionParams,
+    /// Too many function local variables
+    TooManyFunctionLocals,
     /// Too many globals
     TooManyGlobals,
     /// No export section
@@ -39,13 +41,19 @@ pub enum PrepareError {
     /// The wasm module does not have the `scrypto_free` export.
     NoScryptoFreeExport,
     /// Failed to inject instruction metering
-    RejectedByInstructionMetering,
+    RejectedByInstructionMetering { reason: String },
     /// Failed to inject stack metering
-    RejectedByStackMetering,
+    RejectedByStackMetering { reason: String },
     /// Not instantiatable
     NotInstantiatable { reason: String },
     /// Not compilable
     NotCompilable,
+    /// Wrap errors returned by WasmInstrument::ModuleInfoError
+    /// It is wrapped to String, because it's members cannot derive: Sbor, Eq and PartialEq
+    ModuleInfoError(String),
+    /// Wrap errors returned by wasmparser
+    /// It is wrapped to String, because wasmparser error (BinaryReaderError) members cannot derive: Sbor, Eq and PartialEq
+    WasmParserError(String),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Sbor)]
@@ -121,7 +129,7 @@ pub enum WasmRuntimeError {
     InvalidObjectStates(DecodeError),
 
     /// Invalid access rules
-    InvalidAccessRules(DecodeError),
+    InvalidAccessRule(DecodeError),
 
     /// Invalid modules
     InvalidModules(DecodeError),

@@ -63,7 +63,11 @@ impl FungibleVaultBlueprint {
         let taken = Self::internal_take(amount, api)?;
 
         // Create node
-        FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)
+        let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;
+
+        Runtime::emit_event(api, WithdrawResourceEvent::Amount(taken.amount()))?;
+
+        Ok(bucket)
     }
 
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
@@ -74,9 +78,12 @@ impl FungibleVaultBlueprint {
 
         // Drop other bucket
         let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
+        let amount = other_bucket.liquid.amount();
 
         // Put
         Self::internal_put(other_bucket.liquid, api)?;
+
+        Runtime::emit_event(api, DepositResourceEvent::Amount(amount))?;
 
         Ok(())
     }
@@ -102,8 +109,7 @@ impl FungibleVaultBlueprint {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         // Check resource address and amount
-        let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
+        let resource_address = ResourceAddress::new_or_panic(api.actor_get_outer_object()?.into());
         if resource_address != XRD {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
@@ -422,8 +428,6 @@ impl FungibleVaultBlueprint {
         api.field_write_typed(handle, &substate_ref)?;
         api.field_close(handle)?;
 
-        Runtime::emit_event(api, WithdrawResourceEvent::Amount(amount))?;
-
         Ok(taken)
     }
 
@@ -435,8 +439,6 @@ impl FungibleVaultBlueprint {
             return Ok(());
         }
 
-        let event = DepositResourceEvent::Amount(resource.amount());
-
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
@@ -446,8 +448,6 @@ impl FungibleVaultBlueprint {
         substate_ref.put(resource);
         api.field_write_typed(handle, &substate_ref)?;
         api.field_close(handle)?;
-
-        Runtime::emit_event(api, event)?;
 
         Ok(())
     }

@@ -41,11 +41,11 @@ fn resolve_typed_event_key_from_event_type_identifier(
 
     match &event_type_identifier.0 {
         /* Method or Function emitter on a known node module */
-        Emitter::Method(_, ObjectModuleId::AccessRules)
-        | Emitter::Function(_, ObjectModuleId::AccessRules, ..) => {
-            TypedAccessRulesBlueprintEventKey::new(
-                &ACCESS_RULES_PACKAGE_DEFINITION,
-                ACCESS_RULES_BLUEPRINT,
+        Emitter::Method(_, ObjectModuleId::RoleAssignment)
+        | Emitter::Function(_, ObjectModuleId::RoleAssignment, ..) => {
+            TypedRoleAssignmentBlueprintEventKey::new(
+                &ROLE_ASSIGNMENT_PACKAGE_DEFINITION,
+                ROLE_ASSIGNMENT_BLUEPRINT,
                 &local_type_index,
             )
             .map(TypedNativeEventKey::from)
@@ -135,8 +135,8 @@ fn resolve_typed_event_key_from_event_type_identifier(
                     &local_type_index,
                 )
                 .map(TypedNativeEventKey::from),
-                ACCESS_RULES_MODULE_PACKAGE => TypedAccessRulesPackageEventKey::new(
-                    &ACCESS_RULES_PACKAGE_DEFINITION,
+                ROLE_ASSIGNMENT_MODULE_PACKAGE => TypedRoleAssignmentPackageEventKey::new(
+                    &ROLE_ASSIGNMENT_PACKAGE_DEFINITION,
                     &blueprint_name,
                     &local_type_index,
                 )
@@ -350,8 +350,8 @@ define_structure! {
     },
 
     /* Node Module Packages */
-    AccessRules => {
-        AccessRules => [
+    RoleAssignment => {
+        RoleAssignment => [
             SetRoleEvent,
             LockRoleEvent,
             SetAndLockRoleEvent,

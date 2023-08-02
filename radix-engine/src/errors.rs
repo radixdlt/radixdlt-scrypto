@@ -12,18 +12,17 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
-    CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
-    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CloseSubstateError,
+    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
+    CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
     CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError,
     OpenSubstateError, PassMessageError, ReadSubstateError, WriteSubstateError,
 };
-use crate::system::node_modules::access_rules::AccessRulesError;
 use crate::system::node_modules::metadata::MetadataPanicError;
+use crate::system::node_modules::role_assignment::RoleAssignmentError;
 use crate::system::node_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
 use crate::system::system_modules::limits::TransactionLimitsError;
-use crate::system::system_modules::node_move::NodeMoveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
@@ -136,7 +135,6 @@ impl CanBeAbortion for RuntimeError {
 pub enum KernelError {
     // Call frame
     CallFrameError(CallFrameError),
-    NodeOrphaned(NodeId),
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -148,15 +146,22 @@ pub enum KernelError {
     // Substate lock/read/write/unlock
     LockDoesNotExist(LockHandle),
 
-    // Invoke
-    InvalidInvokeAccess,
+    OrphanedNodes(Vec<NodeId>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidDropNodeAccess {
+pub struct InvalidDropAccess {
     pub node_id: NodeId,
     pub package_address: PackageAddress,
     pub blueprint_name: String,
+    pub actor_package: Option<PackageAddress>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidGlobalizeAccess {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub actor_package: Option<PackageAddress>,
 }
 
 impl CanBeAbortion for VmError {
@@ -190,8 +195,8 @@ pub enum CallFrameError {
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
 
-    ScanSubstatesError(CallFrameScanSubstateError),
-    TakeSubstatesError(CallFrameTakeSortedSubstatesError),
+    ScanSubstatesError(CallFrameScanKeysError),
+    DrainSubstatesError(CallFrameDrainSubstatesError),
     ScanSortedSubstatesError(CallFrameScanSortedSubstatesError),
     SetSubstatesError(CallFrameSetSubstateError),
     RemoveSubstatesError(CallFrameRemoveSubstateError),
@@ -199,13 +204,18 @@ pub enum CallFrameError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
+    NoBlueprintId,
+    NoPackageAddress,
     InvalidObjectHandle,
-    NodeIdNotExist,
     GlobalAddressDoesNotExist,
     NoParent,
     NotAnAddressReservation,
     NotAnObject,
-    NotAMethod,
+    PersistenceProhibited,
+    ModulesDontHaveOuterObjects,
+    ActorNodeIdDoesNotExist,
+    ActorModuleIdIdDoesNotExist,
+    ActorObjectInfoDoesNotExist,
     OuterObjectDoesNotExist,
     NotAFieldHandle,
     NotAFieldWriteHandle,
@@ -216,6 +226,7 @@ pub enum SystemError {
     MutatingImmutableSubstate,
     MutatingImmutableFieldSubstate(ObjectHandle, u8),
     NotAKeyValueStore,
+    ObjectModuleDoesNotExist(ObjectModuleId),
     CannotStoreOwnedInIterable,
     InvalidSubstateWrite(String),
     InvalidKeyValueStoreOwnership,
@@ -225,7 +236,6 @@ pub enum SystemError {
     InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize(CannotGlobalizeError),
     MissingModule(ObjectModuleId),
-    InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidGlobalAddressReservation,
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
@@ -235,7 +245,8 @@ pub enum SystemError {
     AssertAccessRuleFailed,
     BlueprintDoesNotExist(CanonicalBlueprintId),
     AuthTemplateDoesNotExist(CanonicalBlueprintId),
-    InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
+    InvalidGlobalizeAccess(Box<InvalidGlobalizeAccess>),
+    InvalidDropAccess(Box<InvalidDropAccess>),
     InvalidScryptoValue(DecodeError),
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
@@ -261,6 +272,7 @@ pub enum SystemUpstreamError {
 
     FnNotFound(String),
     ReceiverNotMatch(String),
+    HookNotFound(BlueprintHook),
 
     InputDecodeError(DecodeError),
     InputSchemaNotMatch(String, String),
@@ -292,7 +304,6 @@ pub enum CreateObjectError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemModuleError {
-    NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
     TransactionLimitsError(TransactionLimitsError),
@@ -325,21 +336,12 @@ pub enum CannotGlobalizeError {
     InvalidBlueprintId,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidModuleSet(pub BTreeSet<ObjectModuleId>);
-
 impl CanBeAbortion for SystemModuleError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
             Self::CostingError(err) => err.abortion(),
             _ => None,
         }
-    }
-}
-
-impl From<NodeMoveError> for SystemModuleError {
-    fn from(error: NodeMoveError) -> Self {
-        Self::NodeMoveError(error)
     }
 }
 
@@ -423,7 +425,7 @@ pub enum ApplicationError {
     //===================
     // Node module errors
     //===================
-    AccessRulesError(AccessRulesError),
+    RoleAssignmentError(RoleAssignmentError),
 
     MetadataError(MetadataPanicError),
 
@@ -491,9 +493,9 @@ impl From<FungibleResourceManagerError> for ApplicationError {
     }
 }
 
-impl From<AccessRulesError> for ApplicationError {
-    fn from(value: AccessRulesError) -> Self {
-        Self::AccessRulesError(value)
+impl From<RoleAssignmentError> for ApplicationError {
+    fn from(value: RoleAssignmentError) -> Self {
+        Self::RoleAssignmentError(value)
     }
 }
 
@@ -548,5 +550,80 @@ impl From<CloseSubstateError> for CallFrameError {
 impl From<PassMessageError> for CallFrameError {
     fn from(value: PassMessageError) -> Self {
         Self::PassMessageError(value)
+    }
+}
+
+impl From<MoveModuleError> for CallFrameError {
+    fn from(value: MoveModuleError) -> Self {
+        Self::MoveModuleError(value)
+    }
+}
+
+impl From<ReadSubstateError> for CallFrameError {
+    fn from(value: ReadSubstateError) -> Self {
+        Self::ReadSubstateError(value)
+    }
+}
+
+impl From<WriteSubstateError> for CallFrameError {
+    fn from(value: WriteSubstateError) -> Self {
+        Self::WriteSubstateError(value)
+    }
+}
+
+impl From<CreateNodeError> for CallFrameError {
+    fn from(value: CreateNodeError) -> Self {
+        Self::CreateNodeError(value)
+    }
+}
+
+impl From<DropNodeError> for CallFrameError {
+    fn from(value: DropNodeError) -> Self {
+        Self::DropNodeError(value)
+    }
+}
+
+impl From<CreateFrameError> for CallFrameError {
+    fn from(value: CreateFrameError) -> Self {
+        Self::CreateFrameError(value)
+    }
+}
+
+impl From<CallFrameScanKeysError> for CallFrameError {
+    fn from(value: CallFrameScanKeysError) -> Self {
+        Self::ScanSubstatesError(value)
+    }
+}
+
+impl From<CallFrameScanSortedSubstatesError> for CallFrameError {
+    fn from(value: CallFrameScanSortedSubstatesError) -> Self {
+        Self::ScanSortedSubstatesError(value)
+    }
+}
+
+impl From<CallFrameDrainSubstatesError> for CallFrameError {
+    fn from(value: CallFrameDrainSubstatesError) -> Self {
+        Self::DrainSubstatesError(value)
+    }
+}
+
+impl From<CallFrameSetSubstateError> for CallFrameError {
+    fn from(value: CallFrameSetSubstateError) -> Self {
+        Self::SetSubstatesError(value)
+    }
+}
+
+impl From<CallFrameRemoveSubstateError> for CallFrameError {
+    fn from(value: CallFrameRemoveSubstateError) -> Self {
+        Self::RemoveSubstatesError(value)
+    }
+}
+
+impl<T> From<T> for RuntimeError
+where
+    T: Into<CallFrameError>,
+{
+    fn from(value: T) -> Self {
+        Self::KernelError(KernelError::CallFrameError(value.into()))
     }
 }

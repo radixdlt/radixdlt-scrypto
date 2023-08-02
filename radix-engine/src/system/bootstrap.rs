@@ -11,18 +11,17 @@ use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
 };
-use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
+use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::SystemUpdates;
 use crate::transaction::{
     execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, StateUpdateSummary,
     TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
-use crate::vm::ScryptoVm;
 use lazy_static::lazy_static;
 use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
@@ -56,7 +55,7 @@ lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
     pub static ref DEFAULT_VALIDATOR_USD_COST: Decimal = dec!("100");
     pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal =
-        *DEFAULT_VALIDATOR_USD_COST * Decimal::try_from(DEFAULT_USD_PRICE_IN_XRD).unwrap();
+        *DEFAULT_VALIDATOR_USD_COST * Decimal::try_from(USD_PRICE_IN_XRD).unwrap();
 }
 
 //==========================================================================================
@@ -228,29 +227,25 @@ impl FlashReceipt {
     }
 }
 
-pub struct Bootstrapper<'s, 'i, S, W>
+pub struct Bootstrapper<'s, S, V>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 {
     substate_db: &'s mut S,
-    scrypto_vm: &'i ScryptoVm<W>,
+    vm: V,
     trace: bool,
 }
 
-impl<'s, 'i, S, W> Bootstrapper<'s, 'i, S, W>
+impl<'s, S, V> Bootstrapper<'s, S, V>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 {
-    pub fn new(
-        substate_db: &'s mut S,
-        scrypto_vm: &'i ScryptoVm<W>,
-        trace: bool,
-    ) -> Bootstrapper<'s, 'i, S, W> {
+    pub fn new(substate_db: &'s mut S, vm: V, trace: bool) -> Bootstrapper<'s, S, V> {
         Bootstrapper {
             substate_db,
-            scrypto_vm,
+            vm,
             trace,
         }
     }
@@ -348,7 +343,7 @@ where
 
         let receipt = execute_transaction(
             self.substate_db,
-            self.scrypto_vm,
+            self.vm.clone(),
             &FeeReserveConfig::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
@@ -374,7 +369,7 @@ where
             create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
         let receipt = execute_transaction(
             self.substate_db,
-            self.scrypto_vm,
+            self.vm.clone(),
             &FeeReserveConfig::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
@@ -395,7 +390,7 @@ where
 
         let receipt = execute_transaction(
             self.substate_db,
-            self.scrypto_vm,
+            self.vm.clone(),
             &FeeReserveConfig::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
@@ -443,9 +438,9 @@ pub fn create_system_bootstrap_flash(
             },
         ),
         (
-            ACCESS_RULES_MODULE_PACKAGE,
-            AccessRulesNativePackage::definition(),
-            ACCESS_RULES_CODE_ID,
+            ROLE_ASSIGNMENT_MODULE_PACKAGE,
+            RoleAssignmentNativePackage::definition(),
+            ROLE_ASSIGNMENT_CODE_ID,
             metadata_init! {
                 "name" => "Access Rules Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the access rules module that is used by resources, components, and packages.".to_owned(), locked;

@@ -2,19 +2,19 @@ use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, MethodActor};
-use crate::kernel::call_frame::Message;
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelApi;
 use crate::system::module::SystemModule;
 use crate::system::node_init::type_info_partition;
-use crate::system::node_modules::access_rules::AccessRulesNativePackage;
+use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
-use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
 };
@@ -41,7 +41,7 @@ pub enum FailedAccessRules {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
     pub failed_access_rules: FailedAccessRules,
-    pub fn_identifier: FnIdentifier,
+    pub fn_identifier: Option<FnIdentifier>,
 }
 
 #[derive(Debug, Clone)]
@@ -49,7 +49,7 @@ pub struct AuthModule {
     pub params: AuthZoneParams,
     /// Stack of auth zones
     /// Invariants:
-    /// - An auth zone is created for every non-frame.
+    /// - An auth zone is created for every non-root frame.
     /// - Auth zones are created by the caller frame and moved to the callee
     pub auth_zone_stack: Vec<NodeId>,
 }
@@ -66,7 +66,7 @@ pub enum AuthorityListAuthorizationResult {
 
 pub enum ResolvedPermission {
     RoleList {
-        access_rules_of: NodeId,
+        role_assignment_of: NodeId,
         module_id: ObjectModuleId,
         role_list: RoleList,
     },
@@ -97,7 +97,7 @@ impl AuthModule {
                 Actor::Method(actor) => {
                     let resolved_permission =
                         Self::resolve_method_permission(actor, args, &mut system)?;
-                    let acting_location = if actor.module_object_info.global {
+                    let acting_location = if actor.object_info.global {
                         ActingLocation::AtBarrier
                     } else {
                         ActingLocation::AtLocalBarrier
@@ -105,10 +105,10 @@ impl AuthModule {
 
                     (resolved_permission, acting_location)
                 }
-                Actor::Function {
+                Actor::Function(FunctionActor {
                     blueprint_id,
                     ident,
-                } => {
+                }) => {
                     let resolved_permission =
                         PackageAuthNativeBlueprint::resolve_function_permission(
                             blueprint_id.package_address.as_node_id(),
@@ -119,7 +119,7 @@ impl AuthModule {
 
                     (resolved_permission, ActingLocation::AtBarrier)
                 }
-                Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
+                Actor::BlueprintHook(..) | Actor::Root => return Ok(()),
             };
 
             // Step 2: Check permission
@@ -141,7 +141,7 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         resolved_permission: ResolvedPermission,
-        fn_identifier: FnIdentifier,
+        fn_identifier: Option<FnIdentifier>,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         match resolved_permission {
@@ -169,14 +169,14 @@ impl AuthModule {
                 }
             }
             ResolvedPermission::RoleList {
-                access_rules_of,
+                role_assignment_of,
                 role_list,
                 module_id,
             } => {
                 let result = Authorization::check_authorization_against_role_list(
                     acting_location,
                     *auth_zone_id,
-                    &access_rules_of,
+                    &role_assignment_of,
                     module_id,
                     &role_list,
                     api,
@@ -204,8 +204,8 @@ impl AuthModule {
     ) -> Result<ResolvedPermission, RuntimeError> {
         let method_key = MethodKey::new(callee.ident.as_str());
 
-        if let ObjectModuleId::AccessRules = callee.module_id {
-            return AccessRulesNativePackage::authorization(
+        if let ObjectModuleId::RoleAssignment = callee.module_id {
+            return RoleAssignmentNativePackage::authorization(
                 &callee.node_id,
                 method_key.ident.as_str(),
                 args,
@@ -213,29 +213,23 @@ impl AuthModule {
             );
         }
 
+        let blueprint_id = api
+            .get_blueprint_info(&callee.node_id, callee.module_id)?
+            .blueprint_id;
+
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
-            callee
-                .module_object_info
-                .blueprint_id
-                .package_address
-                .as_node_id(),
-            &BlueprintVersionKey::new_default(
-                callee
-                    .module_object_info
-                    .blueprint_id
-                    .blueprint_name
-                    .as_str(),
-            ),
+            blueprint_id.package_address.as_node_id(),
+            &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
             api.api,
         )?
         .method_auth;
 
-        let (access_rules_of, method_permissions) = match auth_template {
+        let (role_assignment_of, method_permissions) = match auth_template {
             MethodAuthTemplate::StaticRoles(static_roles) => {
-                let access_rules_of = match static_roles.roles {
+                let role_assignment_of = match static_roles.roles {
                     RoleSpecification::Normal(..) => {
                         // Non-globalized objects do not have access rules module
-                        if !callee.module_object_info.global {
+                        if !callee.object_info.global {
                             return Ok(ResolvedPermission::AllowAll);
                         }
 
@@ -245,12 +239,12 @@ impl AuthModule {
                         let node_id = callee.node_id;
                         let info = api.get_object_info(&node_id)?;
 
-                        let access_rules_of = info.get_outer_object();
-                        access_rules_of.into_node_id()
+                        let role_assignment_of = info.get_outer_object();
+                        role_assignment_of.into_node_id()
                     }
                 };
 
-                (access_rules_of, static_roles.methods)
+                (role_assignment_of, static_roles.methods)
             }
             MethodAuthTemplate::AllowAll => return Ok(ResolvedPermission::AllowAll),
         };
@@ -258,24 +252,32 @@ impl AuthModule {
         match method_permissions.get(&method_key) {
             Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
             Some(MethodAccessibility::OwnPackageOnly) => {
-                let package = callee.module_object_info.blueprint_id.package_address;
+                let package = blueprint_id.package_address;
                 Ok(ResolvedPermission::AccessRule(rule!(require(
                     package_of_direct_caller(package)
                 ))))
             }
-            Some(MethodAccessibility::OuterObjectOnly) => {
-                match callee.module_object_info.blueprint_info {
-                    ObjectBlueprintInfo::Inner { outer_object } => Ok(
-                        ResolvedPermission::AccessRule(rule!(require(global_caller(outer_object)))),
-                    ),
-                    ObjectBlueprintInfo::Outer { .. } => Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
-                    )),
+            Some(MethodAccessibility::OuterObjectOnly) => match callee.module_id {
+                ObjectModuleId::Main => {
+                    let outer_object_info = &callee.object_info.blueprint_info.outer_obj_info;
+                    match outer_object_info {
+                        OuterObjectInfo::Some { outer_object } => {
+                            Ok(ResolvedPermission::AccessRule(rule!(require(
+                                global_caller(*outer_object)
+                            ))))
+                        }
+                        OuterObjectInfo::None { .. } => Err(RuntimeError::SystemModuleError(
+                            SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
+                        )),
+                    }
                 }
-            }
+                _ => Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
+                )),
+            },
             Some(MethodAccessibility::RoleProtected(role_list)) => {
                 Ok(ResolvedPermission::RoleList {
-                    access_rules_of,
+                    role_assignment_of,
                     role_list: role_list.clone(),
                     module_id: callee.module_id,
                 })
@@ -294,12 +296,11 @@ impl AuthModule {
     fn create_auth_zone<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         // Add Global Object and Package Actor Auth
-        let virtual_non_fungibles_non_extending = callee.get_virtual_non_extending_proofs();
-        let virtual_non_fungibles_non_extending_barrier =
-            callee.get_virtual_non_extending_barrier_proofs();
+        let local_call_frame_proofs = callee.get_local_call_frame_proofs();
+        let global_call_frame_proofs = callee.get_global_call_frame_proofs(api);
 
         // Prepare a new auth zone
         let is_barrier = callee.is_barrier();
@@ -328,8 +329,8 @@ impl AuthModule {
             vec![],
             virtual_resources,
             virtual_non_fungibles,
-            virtual_non_fungibles_non_extending,
-            virtual_non_fungibles_non_extending_barrier,
+            local_call_frame_proofs,
+            global_call_frame_proofs,
             is_barrier,
             parent,
         );
@@ -347,12 +348,15 @@ impl AuthModule {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
-                    version: BlueprintVersion::default(),
-
-                    blueprint_info: ObjectBlueprintInfo::default(),
-                    features: btreeset!(),
-                    instance_schema: None,
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
+                    blueprint_info: BlueprintInfo {
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                        outer_obj_info: OuterObjectInfo::default(),
+                        features: btreeset!(),
+                        instance_schema: None,
+                    }
                 }))
             ),
         )?;
@@ -375,7 +379,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         AuthModule::check_authorization(callee, args, api)
@@ -385,6 +389,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _dropped_actor: &Actor,
+        _message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         // update internal state
         api.kernel_get_system().modules.auth.auth_zone_stack.pop();

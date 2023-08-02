@@ -6,7 +6,7 @@ use transaction::prelude::*;
 #[test]
 fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
 
     // Act

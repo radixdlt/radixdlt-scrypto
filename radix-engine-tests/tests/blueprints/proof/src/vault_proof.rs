@@ -51,7 +51,7 @@ mod vault_proof {
             let clone = proof.clone();
 
             assert_eq!(
-                self.vault.as_non_fungible().non_fungible_local_ids(),
+                self.vault.as_non_fungible().non_fungible_local_ids(100),
                 non_fungible_local_ids
             );
             assert_eq!(
@@ -80,6 +80,14 @@ mod vault_proof {
 
         pub fn receive_proof_and_push_to_auth_zone(proof: Proof) {
             LocalAuthZone::push(proof); // should fail here
+        }
+
+        pub fn receive_proof_and_pass_to_scrypto_function(proof: Proof) {
+            Blueprint::<VaultProof>::receive_proof(proof);
+        }
+
+        pub fn receive_proof_and_drop(proof: Proof) {
+            proof.drop();
         }
 
         pub fn compose_vault_and_bucket_proof(&mut self, bucket: Bucket) {
@@ -118,7 +126,7 @@ mod vault_proof {
             bucket: Bucket,
             ids: BTreeSet<NonFungibleLocalId>,
         ) {
-            let vault_fungible_ids = self.vault.as_non_fungible().non_fungible_local_ids();
+            let vault_fungible_ids = self.vault.as_non_fungible().non_fungible_local_ids(100);
             self.vault
                 .as_non_fungible()
                 .authorize_with_non_fungibles(&vault_fungible_ids, || {

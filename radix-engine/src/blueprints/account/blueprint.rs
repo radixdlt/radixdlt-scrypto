@@ -1,24 +1,28 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignment};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeFungibleVault;
 use native_sdk::resource::NativeNonFungibleVault;
 use native_sdk::resource::NativeVault;
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::api::{CollectionIndex, FieldValue};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
+use radix_engine_interface::hooks::OnVirtualizeInput;
+use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::metadata_init;
+
+pub const ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID: u8 = 0u8;
+pub const ACCOUNT_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
@@ -40,6 +44,9 @@ pub enum AccountError {
         resource_address: ResourceAddress,
     },
     NotAllBucketsCouldBeDeposited,
+    NotAnAuthorizedDepositor {
+        depositor: ResourceOrNonFungible,
+    },
 }
 
 impl From<AccountError> for RuntimeError {
@@ -52,13 +59,13 @@ pub const SECURIFY_ROLE: &'static str = "securify";
 
 struct SecurifiedAccount;
 
-impl SecurifiedAccessRules for SecurifiedAccount {
+impl SecurifiedRoleAssignment for SecurifiedAccount {
     type OwnerBadgeNonFungibleData = AccountOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
 
-impl PresecurifiedAccessRules for SecurifiedAccount {}
+impl PresecurifiedRoleAssignment for SecurifiedAccount {}
 
 pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;
@@ -66,11 +73,14 @@ pub type AccountVaultIndexEntry = Option<Own>;
 pub const ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX: CollectionIndex = 1u8;
 pub type AccountResourceDepositRuleEntry = Option<ResourceDepositRule>;
 
+pub const ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX: CollectionIndex = 2u8;
+pub type AccountAuthorizedDepositorsEntry = Option<()>;
+
 pub struct AccountBlueprint;
 
 impl AccountBlueprint {
     fn create_modules<Y>(
-        access_rules: AccessRules,
+        role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
@@ -81,7 +91,7 @@ impl AccountBlueprint {
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
-            ObjectModuleId::AccessRules => access_rules.0,
+            ObjectModuleId::RoleAssignment => role_assignment.0,
             ObjectModuleId::Metadata => metadata,
             ObjectModuleId::Royalty => royalty,
         );
@@ -89,32 +99,33 @@ impl AccountBlueprint {
         Ok(modules)
     }
 
-    pub fn create_virtual_secp256k1<Y>(
-        input: VirtualLazyLoadInput,
+    pub fn on_virtualize<Y>(
+        input: OnVirtualizeInput,
         api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
-    }
-
-    pub fn create_virtual_ed25519<Y>(
-        input: VirtualLazyLoadInput,
-        api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
+        match input.variant_id {
+            ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID => {
+                let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
+                Self::create_virtual(public_key_hash, input.address_reservation, api)
+            }
+            ACCOUNT_CREATE_VIRTUAL_ED25519_ID => {
+                let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
+                Self::create_virtual(public_key_hash, input.address_reservation, api)
+            }
+            x => Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+                format!("Unexpected variant id: {:?}", x),
+            ))),
+        }
     }
 
     fn create_virtual<Y>(
         public_key_hash: PublicKeyHash,
+        address_reservation: GlobalAddressReservation,
         api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -133,9 +144,9 @@ impl AccountBlueprint {
 
         let account = Self::create_local(api)?;
         let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
-        let access_rules = SecurifiedAccount::create_presecurified(owner_id, api)?;
+        let role_assignment = SecurifiedAccount::create_presecurified(owner_id, api)?;
         let mut modules = Self::create_modules(
-            access_rules,
+            role_assignment,
             metadata_init!(
                 // NOTE:
                 // This is the owner key for ROLA. We choose to set this explicitly to simplify the
@@ -148,10 +159,13 @@ impl AccountBlueprint {
             ),
             api,
         )?;
-
         modules.insert(ObjectModuleId::Main, account);
 
-        Ok(modules)
+        api.globalize(
+            modules.into_iter().map(|(k, v)| (k, v.0)).collect(),
+            Some(address_reservation),
+        )?;
+        Ok(())
     }
 
     pub fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
@@ -178,9 +192,9 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = SecurifiedAccount::create_advanced(owner_role, api)?;
+        let role_assignment = SecurifiedAccount::create_advanced(owner_role, api)?;
         let mut modules = Self::create_modules(
-            access_rules,
+            role_assignment,
             metadata_init!(
                 "owner_badge" => EMPTY, locked;
             ),
@@ -204,7 +218,7 @@ impl AccountBlueprint {
         })?;
 
         let account = Self::create_local(api)?;
-        let (access_rules, bucket) = SecurifiedAccount::create_securified(
+        let (role_assignment, bucket) = SecurifiedAccount::create_securified(
             AccountOwnerBadgeData {
                 name: "Account Owner Badge".into(),
                 account: address.try_into().expect("Impossible Case"),
@@ -213,7 +227,7 @@ impl AccountBlueprint {
             api,
         )?;
         let mut modules = Self::create_modules(
-            access_rules,
+            role_assignment,
             metadata_init! {
                 "owner_badge" => NonFungibleLocalId::bytes(address.as_node_id().0).unwrap(), locked;
             },
@@ -389,6 +403,124 @@ impl AccountBlueprint {
         } else {
             Ok(())
         }
+    }
+
+    pub fn try_authorized_deposit_or_refund<Y>(
+        bucket: Bucket,
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<Option<Bucket>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // Check whether the passed badge is in the authorized depositors list, if not, return all
+        // of the passed resources back to the caller.
+        if Self::validate_badge_is_authorized_depositor(&badge, api)?.is_err() {
+            return Ok(Some(bucket));
+        } else {
+            // Validate that the badge is actually present in the auth zone.
+            Self::validate_badge_is_present(badge, api)?;
+
+            // Perform the deposit.
+            Self::deposit(bucket, api)?;
+            Ok(None)
+        }
+    }
+
+    pub fn try_authorized_deposit_batch_or_refund<Y>(
+        buckets: Vec<Bucket>,
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<Vec<Bucket>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // Check whether the passed badge is in the authorized depositors list, if not, return all
+        // of the passed resources back to the caller.
+        if Self::validate_badge_is_authorized_depositor(&badge, api)?.is_err() {
+            return Ok(buckets);
+        } else {
+            // Validate that the badge is actually present in the auth zone.
+            Self::validate_badge_is_present(badge, api)?;
+
+            // Perform the deposit.
+            Self::deposit_batch(buckets, api)?;
+            Ok(vec![])
+        }
+    }
+
+    pub fn try_authorized_deposit_or_abort<Y>(
+        bucket: Bucket,
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::validate_badge_is_authorized_depositor(&badge, api)??;
+        Self::validate_badge_is_present(badge, api)?;
+        Self::deposit(bucket, api)?;
+        Ok(())
+    }
+
+    pub fn try_authorized_deposit_batch_or_abort<Y>(
+        buckets: Vec<Bucket>,
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::validate_badge_is_authorized_depositor(&badge, api)??;
+        Self::validate_badge_is_present(badge, api)?;
+        Self::deposit_batch(buckets, api)?;
+        Ok(())
+    }
+
+    // Returns a result of a result. The outer result's error type is [`RuntimeError`] and it's for
+    // cases when something about the process fails, e.g., reading the KVStore fails for some reason
+    // or other cases. The inner result is for whether the validation succeeded or not.
+    fn validate_badge_is_authorized_depositor<Y>(
+        badge: &ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<Result<(), AccountError>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // Read the account's authorized depositors to ensure that this badge is on the list of
+        // permitted depositors
+        let encoded_key =
+            scrypto_encode(badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX,
+            &encoded_key,
+            LockFlags::read_only(),
+        )?;
+        let entry: AccountAuthorizedDepositorsEntry =
+            api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
+        if entry.is_none() {
+            Ok(Err(AccountError::NotAnAuthorizedDepositor {
+                depositor: badge.clone(),
+            }))
+        } else {
+            Ok(Ok(()))
+        }
+    }
+
+    fn validate_badge_is_present<Y>(
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // At this point we know that the badge is in the set of allowed depositors, so, we create
+        // an access rule and assert against it.
+        let access_rule =
+            AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(badge)));
+        Runtime::assert_access_rule(access_rule, api)?;
+        Ok(())
     }
 
     pub fn withdraw<Y>(
@@ -590,6 +722,43 @@ impl AccountBlueprint {
                 )?;
             }
         };
+        Ok(())
+    }
+
+    pub fn add_authorized_depositor<Y>(
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let encoded_key =
+            scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX,
+            &encoded_key,
+            LockFlags::MUTABLE,
+        )?;
+        api.key_value_entry_set_typed(kv_store_entry_lock_handle, &())?;
+        api.key_value_entry_close(kv_store_entry_lock_handle)?;
+        Ok(())
+    }
+
+    pub fn remove_authorized_depositor<Y>(
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let encoded_key =
+            scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
+        api.actor_remove_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX,
+            &encoded_key,
+        )?;
         Ok(())
     }
 

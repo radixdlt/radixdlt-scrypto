@@ -1,4 +1,4 @@
-use super::actor::{Actor, MethodActor};
+use super::actor::Actor;
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
@@ -9,15 +9,21 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::{CallFrameEventHandler, CallFrameMessage};
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
+    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::track::interface::{AcquireLockError, NodeSubstates, StoreAccessInfo, SubstateStore};
+use crate::track::interface::{
+    CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackOpenSubstateError,
+};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -25,6 +31,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
@@ -94,21 +101,22 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             // We have a reference to a node which can't be invoked - so it must be a direct access,
             // let's validate it as such
 
-            let (handle, _store_access) = kernel
+            let handle = kernel
                 .store
-                .acquire_lock(
+                .open_substate(
                     node_id,
                     TYPE_INFO_FIELD_PARTITION,
                     &TypeInfoField::TypeInfo.into(),
                     LockFlags::read_only(),
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .map_err(|_| KernelError::InvalidReference(*node_id))?;
-            let (substate_ref, _store_access) = kernel.store.read_substate(handle);
+            let substate_ref = kernel.store.read_substate(handle);
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             kernel.store.close_substate(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_id: blueprint,
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
                     global,
                     ..
                 }) => {
@@ -118,9 +126,9 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                             .add_global_reference(GlobalAddress::new_or_panic(
                                 node_id.clone().into(),
                             ));
-                    } else if blueprint.package_address.eq(&RESOURCE_PACKAGE)
-                        && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-                            || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
+                    } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                        && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+                            || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                     {
                         kernel.current_frame.add_direct_access_reference(
                             InternalAddress::new_or_panic(node_id.clone().into()),
@@ -181,11 +189,11 @@ pub struct Kernel<
     S: SubstateStore,
 {
     /// Stack
-    current_frame: CallFrame<M::LockData>,
+    current_frame: CallFrame<M::CallFrameData, M::LockData>,
     // This stack could potentially be removed and just use the native stack
     // but keeping this call_frames stack may potentially prove useful if implementing
     // execution pause and/or for better debuggability
-    prev_frame_stack: Vec<CallFrame<M::LockData>>,
+    prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
 
     /// Heap
     heap: Heap,
@@ -195,122 +203,56 @@ pub struct Kernel<
     /// ID allocator
     id_allocator: &'g mut IdAllocator,
 
-    /// Upstream system layer
+    /// Upper system layer
     callback: &'g mut M,
 }
 
-impl<'g, M, S> Kernel<'g, M, S>
-where
+struct KernelHandler<
+    'a,
     M: KernelCallbackObject,
-    S: SubstateStore,
+    F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+> {
+    callback: &'a mut M,
+    prev_frame: Option<&'a CallFrame<M::CallFrameData, M::LockData>>,
+    on_store_access: F,
+}
+
+impl<
+        M: KernelCallbackObject,
+        F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+    > CallFrameEventHandler<M::CallFrameData, M::LockData, RuntimeError>
+    for KernelHandler<'_, M, F>
 {
-    fn invoke(
-        &mut self,
-        invocation: Box<KernelInvocation>,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
-        // Check actor visibility
-        let can_be_invoked = match &invocation.actor {
-            Actor::Method(MethodActor {
-                node_id,
-                is_direct_access,
-                ..
-            }) => self
-                .current_frame
-                .get_node_visibility(&node_id)
-                .can_be_invoked(*is_direct_access),
-            Actor::Function {
-                blueprint_id: blueprint,
-                ..
-            }
-            | Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
-                ..
-            } => {
-                // FIXME: combine this with reference check of invocation
-                self.current_frame
-                    .get_node_visibility(blueprint.package_address.as_node_id())
-                    .can_be_invoked(false)
-            }
-            Actor::Root => true,
-        };
-        if !can_be_invoked {
-            return Err(RuntimeError::KernelError(KernelError::InvalidInvokeAccess));
-        }
-
-        // Before push call frame
-        let mut message = Message::from_indexed_scrypto_value(&invocation.args);
-        let actor = invocation.actor;
-        let args = &invocation.args;
-        M::before_push_frame(&actor, &mut message, &args, self)?;
-
-        // Push call frame
-        {
-            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, actor, message)
-                .map_err(CallFrameError::CreateFrameError)
-                .map_err(KernelError::CallFrameError)?;
-            let parent = mem::replace(&mut self.current_frame, frame);
-            self.prev_frame_stack.push(parent);
-        }
-
-        // Execute
-        let (output, message) = {
-            // Handle execution start
-            M::on_execution_start(self)?;
-
-            // Auto drop locks
-            self.current_frame
-                .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::CloseSubstateError)
-                .map_err(KernelError::CallFrameError)?;
-
-            // Run
-            let output = M::invoke_upstream(args, self)?;
-            let mut message = Message::from_indexed_scrypto_value(&output);
-
-            // Auto-drop locks again in case module forgot to drop
-            self.current_frame
-                .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::CloseSubstateError)
-                .map_err(KernelError::CallFrameError)?;
-
-            // Handle execution finish
-            M::on_execution_finish(&mut message, self)?;
-
-            (output, message)
-        };
-
-        // Move
-        {
-            let parent = self.prev_frame_stack.last_mut().unwrap();
-
-            // Move resource
-            CallFrame::pass_message(&mut self.current_frame, parent, message)
-                .map_err(CallFrameError::PassMessageError)
-                .map_err(KernelError::CallFrameError)?;
-
-            // Auto-drop
-            let owned_nodes = self.current_frame.owned_nodes();
-            M::auto_drop(owned_nodes, self)?;
-
-            // Now, check if any own has been left!
-            if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
-                return Err(RuntimeError::KernelError(KernelError::NodeOrphaned(
-                    node_id,
-                )));
-            }
-        }
-
-        // Pop call frame
-        {
-            let parent = self.prev_frame_stack.pop().unwrap();
-
-            let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
-
-            M::after_pop_frame(self, dropped_frame.actor())?;
-        }
-
-        Ok(output)
+    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError> {
+        self.callback.on_persist_node(heap, node_id)
     }
+
+    fn on_store_access(
+        &mut self,
+        current_frame: &CallFrame<M::CallFrameData, M::LockData>,
+        heap: &Heap,
+        store_access: StoreAccess,
+    ) -> Result<(), RuntimeError> {
+        let mut read_only = KernelReadOnly {
+            current_frame,
+            prev_frame: self.prev_frame,
+            heap,
+            callback: self.callback,
+        };
+
+        (self.on_store_access)(&mut read_only, store_access)
+    }
+}
+
+macro_rules! as_read_only {
+    ($kernel:expr) => {{
+        KernelReadOnly {
+            current_frame: &$kernel.current_frame,
+            prev_frame: $kernel.prev_frame_stack.last(),
+            heap: &$kernel.heap,
+            callback: $kernel.callback,
+        }
+    }};
 }
 
 impl<'g, M, S> KernelNodeApi for Kernel<'g, M, S>
@@ -318,26 +260,6 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=node_id.entity_type())]
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
-        M::before_drop_node(node_id, self)?;
-
-        let node = self
-            .current_frame
-            .drop_node(&mut self.heap, node_id)
-            .map_err(CallFrameError::DropNodeError)
-            .map_err(KernelError::CallFrameError)?;
-
-        let total_substate_size = node
-            .values()
-            .map(|x| x.values().map(|x| x.len()).sum::<usize>())
-            .sum::<usize>();
-
-        M::after_drop_node(self, total_substate_size)?;
-
-        Ok(node)
-    }
-
     #[trace_resources(log=entity_type)]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
         M::on_allocate_node_id(entity_type, self)?;
@@ -351,28 +273,57 @@ where
         node_id: NodeId,
         node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError> {
-        M::before_create_node(&node_id, &node_substates, self)?;
+        let mut read_only = as_read_only!(self);
+        M::on_create_node(
+            &mut read_only,
+            CreateNodeEvent::Start(&node_id, &node_substates),
+        )?;
 
-        let total_substate_size = node_substates
-            .values()
-            .map(|x| x.values().map(|x| x.len()).sum::<usize>())
-            .sum::<usize>();
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                M::on_create_node(api, CreateNodeEvent::StoreAccess(&store_access))
+            },
+        };
 
-        let store_access = self
-            .current_frame
+        self.current_frame
             .create_node(
                 node_id,
                 node_substates,
                 &mut self.heap,
                 self.store,
-                node_id.is_global(),
+                &mut handler,
             )
-            .map_err(CallFrameError::CreateNodeError)
-            .map_err(KernelError::CallFrameError)?;
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::CreateNodeError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
 
-        M::after_create_node(&node_id, total_substate_size, &store_access, self)?;
+        let mut read_only = as_read_only!(self);
+        M::on_create_node(&mut read_only, CreateNodeEvent::End(&node_id))?;
 
         Ok(())
+    }
+
+    #[trace_resources(log=node_id.entity_type())]
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
+        let mut read_only = as_read_only!(self);
+        M::on_drop_node(&mut read_only, DropNodeEvent::Start(node_id))?;
+
+        M::on_drop_node_mut(node_id, self)?;
+        let node_substates = self
+            .current_frame
+            .drop_node(&mut self.heap, node_id)
+            .map_err(CallFrameError::DropNodeError)
+            .map_err(KernelError::CallFrameError)?;
+
+        let mut read_only = as_read_only!(self);
+        M::on_drop_node(&mut read_only, DropNodeEvent::End(node_id, &node_substates))?;
+
+        Ok(node_substates)
     }
 
     #[trace_resources]
@@ -383,8 +334,15 @@ where
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        let store_access = self
-            .current_frame
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                M::on_move_module(api, MoveModuleEvent::StoreAccess(&store_access))
+            },
+        };
+
+        self.current_frame
             .move_module(
                 src_node_id,
                 src_partition_number,
@@ -392,17 +350,20 @@ where
                 dest_partition_number,
                 &mut self.heap,
                 self.store,
+                &mut handler,
             )
-            .map_err(CallFrameError::MoveModuleError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
-
-        M::after_move_modules(src_node_id, dest_node_id, &store_access, self)?;
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::MoveModuleError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
 
         Ok(())
     }
 }
 
+// TODO: Remove
 impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
@@ -417,17 +378,65 @@ where
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
-        let caller = match self.prev_frame_stack.last() {
-            Some(call_frame) => call_frame.actor(),
+        let caller_actor = match self.prev_frame_stack.last() {
+            Some(call_frame) => call_frame.data(),
             None => {
                 // This will only occur on initialization
-                self.current_frame.actor()
+                self.current_frame.data()
             }
         };
         SystemState {
             system: &mut self.callback,
-            caller,
-            current: self.current_frame.actor(),
+            current_call_frame: self.current_frame.data(),
+            caller_call_frame: caller_actor,
+        }
+    }
+
+    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
+        let mut read_only = as_read_only!(self);
+        read_only.kernel_read_bucket(bucket_id)
+    }
+
+    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
+        let mut read_only = as_read_only!(self);
+        read_only.kernel_read_proof(proof_id)
+    }
+}
+
+struct KernelReadOnly<'g, M>
+where
+    M: KernelCallbackObject,
+{
+    current_frame: &'g CallFrame<M::CallFrameData, M::LockData>,
+    prev_frame: Option<&'g CallFrame<M::CallFrameData, M::LockData>>,
+    heap: &'g Heap,
+    callback: &'g mut M,
+}
+
+impl<'g, M> KernelInternalApi<M> for KernelReadOnly<'g, M>
+where
+    M: KernelCallbackObject,
+{
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
+        self.current_frame.get_node_visibility(node_id)
+    }
+
+    fn kernel_get_current_depth(&self) -> usize {
+        self.current_frame.depth()
+    }
+
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
+        let caller_call_frame = match self.prev_frame {
+            Some(call_frame) => call_frame.data(),
+            None => {
+                // This will only occur on initialization
+                self.current_frame.data()
+            }
+        };
+        SystemState {
+            system: self.callback,
+            current_call_frame: self.current_frame.data(),
+            caller_call_frame,
         }
     }
 
@@ -440,12 +449,14 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(info)
-                    if info.blueprint_id.package_address == RESOURCE_PACKAGE
-                        && (info.blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || info.blueprint_id.blueprint_name
+                    if info.blueprint_info.blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (info.blueprint_info.blueprint_id.blueprint_name
+                            == FUNGIBLE_BUCKET_BLUEPRINT
+                            || info.blueprint_info.blueprint_id.blueprint_name
                                 == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
                 {
                     let is_fungible = info
+                        .blueprint_info
                         .blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_BUCKET_BLUEPRINT);
@@ -504,13 +515,13 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_id: blueprint,
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
                     ..
-                }) if blueprint.package_address == RESOURCE_PACKAGE
-                    && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
-                        || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
+                }) if blueprint_id.package_address == RESOURCE_PACKAGE
+                    && (blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
+                        || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
                 {
-                    blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
+                    blueprint_id.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
                 }
                 _ => {
                     return None;
@@ -593,70 +604,122 @@ where
         default: Option<fn() -> IndexedScryptoValue>,
         data: M::LockData,
     ) -> Result<LockHandle, RuntimeError> {
-        M::before_open_substate(&node_id, &partition_num, substate_key, &flags, self)?;
+        let mut read_only = as_read_only!(self);
+        M::on_open_substate(
+            &mut read_only,
+            OpenSubstateEvent::Start {
+                node_id: &node_id,
+                partition_num: &partition_num,
+                substate_key,
+                flags: &flags,
+            },
+        )?;
 
-        let maybe_lock_handle = self.current_frame.acquire_lock(
+        let maybe_lock_handle = self.current_frame.open_substate(
             &mut self.heap,
             self.store,
             node_id,
             partition_num,
             substate_key,
             flags,
+            &mut |current_frame, heap, store_access| {
+                let mut read_only = KernelReadOnly {
+                    current_frame,
+                    prev_frame: self.prev_frame_stack.last(),
+                    heap,
+                    callback: self.callback,
+                };
+
+                M::on_open_substate(
+                    &mut read_only,
+                    OpenSubstateEvent::StoreAccess(&store_access),
+                )
+            },
             default,
             data,
         );
 
-        let (lock_handle, value_size, store_access): (u32, usize, StoreAccessInfo) =
-            match &maybe_lock_handle {
-                Ok((lock_handle, value_size, store_access)) => {
-                    (*lock_handle, *value_size, store_access.clone())
-                }
-                Err(OpenSubstateError::TrackError(track_err)) => {
-                    if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
-                        let retry = M::on_substate_lock_fault(
-                            *node_id,
-                            partition_num,
-                            &substate_key,
-                            self,
-                        )?;
+        let (lock_handle, value_size): (u32, usize) = match &maybe_lock_handle {
+            Ok((lock_handle, value_size)) => (*lock_handle, *value_size),
+            Err(CallbackError::CallbackError(e)) => return Err(e.clone()),
+            Err(CallbackError::Error(OpenSubstateError::TrackError(track_err))) => {
+                if matches!(track_err.as_ref(), TrackOpenSubstateError::NotFound(..)) {
+                    let retry =
+                        M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
 
-                        if retry {
-                            self.current_frame
-                                .acquire_lock(
-                                    &mut self.heap,
-                                    self.store,
-                                    &node_id,
-                                    partition_num,
-                                    &substate_key,
-                                    flags,
-                                    None,
-                                    M::LockData::default(),
-                                )
-                                .map_err(CallFrameError::OpenSubstateError)
-                                .map_err(KernelError::CallFrameError)?
-                        } else {
-                            return maybe_lock_handle
-                                .map(|(lock_handle, _, _)| lock_handle)
-                                .map_err(CallFrameError::OpenSubstateError)
-                                .map_err(KernelError::CallFrameError)
-                                .map_err(RuntimeError::KernelError);
-                        }
+                    if retry {
+                        self.current_frame
+                            .open_substate(
+                                &mut self.heap,
+                                self.store,
+                                &node_id,
+                                partition_num,
+                                &substate_key,
+                                flags,
+                                &mut |current_frame, heap, store_access| {
+                                    let mut read_only = KernelReadOnly {
+                                        current_frame,
+                                        prev_frame: self.prev_frame_stack.last(),
+                                        heap,
+                                        callback: self.callback,
+                                    };
+
+                                    M::on_open_substate(
+                                        &mut read_only,
+                                        OpenSubstateEvent::StoreAccess(&store_access),
+                                    )
+                                },
+                                None,
+                                M::LockData::default(),
+                            )
+                            .map_err(|e| match e {
+                                CallbackError::Error(e) => {
+                                    RuntimeError::KernelError(KernelError::CallFrameError(
+                                        CallFrameError::OpenSubstateError(e),
+                                    ))
+                                }
+                                CallbackError::CallbackError(e) => e,
+                            })?
                     } else {
-                        return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                            CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(
-                                track_err.clone(),
-                            )),
-                        )));
+                        return maybe_lock_handle
+                            .map(|(lock_handle, _)| lock_handle)
+                            .map_err(|e| match e {
+                                CallbackError::Error(e) => {
+                                    RuntimeError::KernelError(KernelError::CallFrameError(
+                                        CallFrameError::OpenSubstateError(e),
+                                    ))
+                                }
+                                CallbackError::CallbackError(e) => e,
+                            });
                     }
-                }
-                Err(err) => {
+                } else {
                     return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                        CallFrameError::OpenSubstateError(err.clone()),
+                        CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(
+                            track_err.clone(),
+                        )),
                     )));
                 }
-            };
+            }
+            Err(err) => {
+                let runtime_error = match err {
+                    CallbackError::Error(e) => RuntimeError::KernelError(
+                        KernelError::CallFrameError(CallFrameError::OpenSubstateError(e.clone())),
+                    ),
+                    CallbackError::CallbackError(e) => e.clone(),
+                };
+                return Err(runtime_error);
+            }
+        };
 
-        M::after_open_substate(lock_handle, node_id, value_size, &store_access, self)?;
+        let mut read_only = as_read_only!(self);
+        M::on_open_substate(
+            &mut read_only,
+            OpenSubstateEvent::End {
+                handle: lock_handle,
+                node_id: &node_id,
+                size: value_size,
+            },
+        )?;
 
         Ok(lock_handle)
     }
@@ -675,13 +738,25 @@ where
 
     #[trace_resources]
     fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        let store_access = self
-            .current_frame
-            .close_substate(&mut self.heap, self.store, lock_handle)
-            .map_err(CallFrameError::CloseSubstateError)
-            .map_err(KernelError::CallFrameError)?;
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
+            },
+        };
 
-        M::on_close_substate(lock_handle, &store_access, self)?;
+        self.current_frame
+            .close_substate(&mut self.heap, self.store, &mut handler, lock_handle)
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::CloseSubstateError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
+
+        let mut read_only = as_read_only!(self);
+        M::on_close_substate(&mut read_only, CloseSubstateEvent::End(lock_handle))?;
 
         Ok(())
     }
@@ -691,21 +766,22 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let (value, store_access) = self
+        let value = self
             .current_frame
-            .read_substate(&mut self.heap, self.store, lock_handle)
+            .read_substate(&self.heap, self.store, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?;
-        let value_size = value.len();
 
-        M::on_read_substate(lock_handle, value_size, &store_access, self)?;
+        let mut read_only = as_read_only!(self);
+        M::on_read_substate(
+            &mut read_only,
+            ReadSubstateEvent::End {
+                handle: lock_handle,
+                value,
+            },
+        )?;
 
-        // Double read due to borrow chacker of self.
-        Ok(self
-            .current_frame
-            .read_substate(&mut self.heap, self.store, lock_handle)
-            .unwrap()
-            .0)
+        Ok(value)
     }
 
     #[trace_resources]
@@ -714,16 +790,19 @@ where
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let value_size = value.len();
+        let mut read_only = as_read_only!(self);
+        M::on_write_substate(
+            &mut read_only,
+            WriteSubstateEvent::Start {
+                handle: lock_handle,
+                value: &value,
+            },
+        )?;
 
-        let store_access = self
-            .current_frame
-            .write_substate(&mut self.heap, self.store, lock_handle, value)
-            .map_err(CallFrameError::WriteSubstateError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+        self.current_frame
+            .write_substate(&mut self.heap, self.store, lock_handle, value)?;
 
-        M::on_write_substate(lock_handle, value_size, &store_access, self)
+        Ok(())
     }
 
     #[trace_resources]
@@ -734,22 +813,28 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let value_size = value.len();
-        let store_access = self
-            .current_frame
+        self.callback
+            .on_set_substate(SetSubstateEvent::Start(&value))?;
+
+        self.current_frame
             .set_substate(
                 node_id,
                 partition_num,
                 substate_key,
                 value,
+                &mut |store_access| {
+                    self.callback
+                        .on_set_substate(SetSubstateEvent::StoreAccess(&store_access))
+                },
                 &mut self.heap,
                 self.store,
             )
-            .map_err(CallFrameError::SetSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
-
-        M::on_set_substate(value_size, &store_access, self)?;
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::SetSubstatesError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
 
         Ok(())
     }
@@ -761,22 +846,95 @@ where
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        let (substate, store_access) = self
+        self.callback
+            .on_remove_substate(RemoveSubstateEvent::Start)?;
+
+        let substate = self
             .current_frame
             .remove_substate(
                 node_id,
                 partition_num,
                 &substate_key,
+                &mut |store_access| {
+                    self.callback
+                        .on_remove_substate(RemoveSubstateEvent::StoreAccess(&store_access))
+                },
                 &mut self.heap,
                 self.store,
             )
-            .map_err(CallFrameError::RemoveSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
-
-        M::on_take_substates(&store_access, self)?;
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::RemoveSubstatesError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
 
         Ok(substate)
+    }
+
+    #[trace_resources]
+    fn kernel_scan_keys<K: SubstateKeyContent>(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        limit: u32,
+    ) -> Result<Vec<SubstateKey>, RuntimeError> {
+        self.callback.on_scan_keys(ScanKeysEvent::Start)?;
+
+        let keys = self
+            .current_frame
+            .scan_keys::<K, _, _, _>(
+                node_id,
+                partition_num,
+                limit,
+                &mut |store_access| {
+                    self.callback
+                        .on_scan_keys(ScanKeysEvent::StoreAccess(&store_access))
+                },
+                &mut self.heap,
+                self.store,
+            )
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::ScanSubstatesError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
+
+        Ok(keys)
+    }
+
+    #[trace_resources]
+    fn kernel_drain_substates<K: SubstateKeyContent>(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        limit: u32,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        self.callback
+            .on_drain_substates(DrainSubstatesEvent::Start)?;
+
+        let substates = self
+            .current_frame
+            .drain_substates::<K, _, _, _>(
+                node_id,
+                partition_num,
+                limit,
+                &mut |store_access| {
+                    self.callback
+                        .on_drain_substates(DrainSubstatesEvent::StoreAccess(&store_access))
+                },
+                &mut self.heap,
+                self.store,
+            )
+            .map_err(|e| match e {
+                CallbackError::CallbackError(e) => e,
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::DrainSubstatesError(e),
+                )),
+            })?;
+
+        Ok(substates)
     }
 
     #[trace_resources]
@@ -784,60 +942,37 @@ where
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substates, store_access) = self
-            .current_frame
-            .scan_sorted(node_id, partition_num, count, &mut self.heap, self.store)
-            .map_err(CallFrameError::ScanSortedSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+        self.callback
+            .on_scan_sorted_substates(ScanSortedSubstatesEvent::Start)?;
 
-        M::on_scan_substates(&store_access, self)?;
+        let substates =
+            self.current_frame
+                .scan_sorted(
+                    node_id,
+                    partition_num,
+                    limit,
+                    &mut |store_access| {
+                        self.callback.on_scan_sorted_substates(
+                            ScanSortedSubstatesEvent::StoreAccess(&store_access),
+                        )
+                    },
+                    &mut self.heap,
+                    self.store,
+                )
+                .map_err(|e| match e {
+                    CallbackError::Error(e) => RuntimeError::KernelError(
+                        KernelError::CallFrameError(CallFrameError::ScanSortedSubstatesError(e)),
+                    ),
+                    CallbackError::CallbackError(e) => e,
+                })?;
 
         Ok(substates)
     }
-
-    #[trace_resources]
-    fn kernel_scan_substates(
-        &mut self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, store_access) = self
-            .current_frame
-            .scan_substates(node_id, partition_num, count, &mut self.heap, self.store)
-            .map_err(CallFrameError::ScanSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
-
-        M::on_scan_substates(&store_access, self)?;
-
-        Ok(substeates)
-    }
-
-    #[trace_resources]
-    fn kernel_take_substates(
-        &mut self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, store_access) = self
-            .current_frame
-            .take_substates(node_id, partition_num, count, &mut self.heap, self.store)
-            .map_err(CallFrameError::TakeSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
-
-        M::on_take_substates(&store_access, self)?;
-
-        Ok(substeates)
-    }
 }
 
-impl<'g, M, S> KernelInvokeApi for Kernel<'g, M, S>
+impl<'g, M, S> KernelInvokeApi<M::CallFrameData> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: SubstateStore,
@@ -845,15 +980,116 @@ where
     #[trace_resources]
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation>,
+        invocation: Box<KernelInvocation<M::CallFrameData>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         M::before_invoke(invocation.as_ref(), self)?;
 
-        let rtn = self.invoke(invocation)?;
+        // Before push call frame
+        let callee = invocation.call_frame_data;
+        let args = &invocation.args;
+        let message = {
+            let mut message = CallFrameMessage::from_input(&args, &callee);
+            M::before_push_frame(&callee, &mut message, &args, self)?;
 
-        M::after_invoke(rtn.len(), self)?;
+            message
+        };
 
-        Ok(rtn)
+        // Push call frame
+        {
+            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, callee, message)
+                .map_err(CallFrameError::CreateFrameError)
+                .map_err(KernelError::CallFrameError)?;
+            let parent = mem::replace(&mut self.current_frame, frame);
+            self.prev_frame_stack.push(parent);
+        }
+
+        // Execute
+        let (output, message) = {
+            // Handle execution start
+            M::on_execution_start(self)?;
+
+            let mut handler = KernelHandler {
+                callback: self.callback,
+                prev_frame: self.prev_frame_stack.last(),
+                on_store_access: |api, store_access| {
+                    M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
+                },
+            };
+
+            // Auto drop locks
+            self.current_frame
+                .close_all_substates(&mut self.heap, self.store, &mut handler)
+                .map_err(|e| {
+                    e.to_runtime_error(|e| {
+                        RuntimeError::KernelError(KernelError::CallFrameError(
+                            CallFrameError::CloseSubstateError(e),
+                        ))
+                    })
+                })?;
+
+            // Run
+            let output = M::invoke_upstream(args, self)?;
+            let message = CallFrameMessage::from_output(&output);
+
+            // Auto-drop locks again in case module forgot to drop
+            let mut handler = KernelHandler {
+                callback: self.callback,
+                prev_frame: self.prev_frame_stack.last(),
+                on_store_access: |api, store_access| {
+                    M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
+                },
+            };
+
+            self.current_frame
+                .close_all_substates(&mut self.heap, self.store, &mut handler)
+                .map_err(|e| {
+                    e.to_runtime_error(|e| {
+                        RuntimeError::KernelError(KernelError::CallFrameError(
+                            CallFrameError::CloseSubstateError(e),
+                        ))
+                    })
+                })?;
+
+            // Handle execution finish
+            M::on_execution_finish(&message, self)?;
+
+            (output, message)
+        };
+
+        // Move
+        {
+            let parent = self.prev_frame_stack.last_mut().unwrap();
+
+            // Move resource
+            CallFrame::pass_message(&mut self.current_frame, parent, message.clone())
+                .map_err(CallFrameError::PassMessageError)
+                .map_err(KernelError::CallFrameError)?;
+
+            // Auto-drop
+            let owned_nodes = self.current_frame.owned_nodes();
+            M::auto_drop(owned_nodes, self)?;
+
+            // Now, check if any own has been left!
+            let owned_nodes = self.current_frame.owned_nodes();
+            if !owned_nodes.is_empty() {
+                return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
+                    owned_nodes,
+                )));
+            }
+        }
+
+        // Pop call frame
+        {
+            let parent = self.prev_frame_stack.pop().unwrap();
+
+            let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
+
+            M::after_pop_frame(dropped_frame.data(), &message, self)?;
+        }
+
+        M::after_invoke(output.len(), self)?;
+
+        Ok(output)
     }
 }
 

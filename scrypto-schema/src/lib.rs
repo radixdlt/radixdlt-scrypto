@@ -45,6 +45,13 @@ pub enum Generic {
     Any,
 }
 
+#[derive(Copy, Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum BlueprintHook {
+    OnVirtualize,
+    OnMove,
+    OnDrop,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchemaInit {
     pub generics: Vec<Generic>,
@@ -52,6 +59,7 @@ pub struct BlueprintSchemaInit {
     pub state: BlueprintStateSchemaInit,
     pub events: BlueprintEventSchemaInit,
     pub functions: BlueprintFunctionsSchemaInit,
+    pub hooks: BlueprintHooksInit,
 }
 
 impl Default for BlueprintSchemaInit {
@@ -66,6 +74,7 @@ impl Default for BlueprintSchemaInit {
             state: BlueprintStateSchemaInit::default(),
             events: BlueprintEventSchemaInit::default(),
             functions: BlueprintFunctionsSchemaInit::default(),
+            hooks: BlueprintHooksInit::default(),
         }
     }
 }
@@ -93,16 +102,22 @@ pub struct FunctionSchemaInit {
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintFunctionsSchemaInit {
     pub functions: BTreeMap<String, FunctionSchemaInit>,
-    pub virtual_lazy_load_functions: BTreeMap<u8, String>,
 }
 
-impl BlueprintFunctionsSchemaInit {
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintHooksInit {
+    // TODO: allow registration of variant count if we make virtualizable entity type fully dynamic
+    pub hooks: BTreeMap<BlueprintHook, String>,
+}
+
+impl BlueprintSchemaInit {
     pub fn exports(&self) -> Vec<String> {
-        let mut exports: Vec<String> = self.functions.values().map(|t| t.export.clone()).collect();
-        for export in self.virtual_lazy_load_functions.values() {
-            exports.push(export.clone());
-        }
-        exports
+        self.functions
+            .functions
+            .values()
+            .map(|t| t.export.clone())
+            .chain(self.hooks.hooks.values().cloned())
+            .collect()
     }
 }
 

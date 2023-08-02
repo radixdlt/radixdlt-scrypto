@@ -1,0 +1,18 @@
+[package]
+name = "large_package"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../../../../sbor" }
+scrypto = { path = "../../../../scrypto" }
+
+non_fungible = { path = "../non_fungible" }
+fake_bucket = { path = "../fake_bucket" }
+fee_reserve_states = { path = "../fee_reserve_states" }
+
+[dev-dependencies]
+radix-engine = { path = "../../../../radix-engine" }
+
+[lib]
+crate-type = ["cdylib", "lib"]

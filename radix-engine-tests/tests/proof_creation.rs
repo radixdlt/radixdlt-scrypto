@@ -8,7 +8,7 @@ use transaction::prelude::*;
 
 fn create_proof_internal(function_name: &str, error: Option<&str>) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof_creation");
 
     // Act
@@ -96,7 +96,7 @@ fn can_create_proof_from_non_fungible_auth_zone() {
 #[test]
 fn test_create_non_fungible_proof_with_large_amount() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _sk, account) = test_runner.new_account(false);
     let resource_address = test_runner.create_non_fungible_resource(account);
 
@@ -123,4 +123,48 @@ fn test_create_non_fungible_proof_with_large_amount() {
             ))
         )
     })
+}
+
+fn compose_proof(amount: Decimal) -> u32 {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk1, _, account1) = test_runner.new_account(false);
+    let (pk2, _, account2) = test_runner.new_account(false);
+    let (pk3, _, account3) = test_runner.new_account(false);
+    let (pk4, _, account4) = test_runner.new_account(false);
+
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account1)
+        .create_proof_from_account_of_amount(account2, XRD, 1)
+        .create_proof_from_account_of_amount(account3, XRD, 1)
+        .create_proof_from_account_of_amount(account4, XRD, 1)
+        .create_proof_from_auth_zone_of_amount(XRD, amount, "new_proof")
+        .build();
+
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![
+            NonFungibleGlobalId::from_public_key(&pk1),
+            NonFungibleGlobalId::from_public_key(&pk2),
+            NonFungibleGlobalId::from_public_key(&pk3),
+            NonFungibleGlobalId::from_public_key(&pk4),
+        ],
+    );
+    receipt
+        .expect_commit_success()
+        .fee_summary
+        .execution_cost_sum
+}
+
+#[test]
+fn test_proof_composition() {
+    let cost1 = compose_proof(dec!(1));
+    let cost2 = compose_proof(dec!(2));
+    let cost3 = compose_proof(dec!(3));
+
+    let delta1 = (cost2 - cost1) as f32;
+    let delta2 = (cost3 - cost2) as f32;
+    // Assert that delta1 is roughly equal to delta2
+    // The computation cost delta should be exactly equal, but there is substate
+    // size difference, which affect many cost entries.
+    assert!((delta2 - delta1).abs() / delta1 < 0.02);
 }

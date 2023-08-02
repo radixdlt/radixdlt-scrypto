@@ -86,19 +86,27 @@ impl ListableSubstateDatabase for RocksdbSubstateStore {
     }
 }
 
-fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
+pub fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
     let mut buffer = Vec::new();
-    buffer.extend(u32::try_from(partition_key.0.len()).unwrap().to_be_bytes());
-    buffer.extend(partition_key.0.clone());
+    buffer.extend(
+        u32::try_from(partition_key.node_key.len())
+            .unwrap()
+            .to_be_bytes(),
+    );
+    buffer.extend(partition_key.node_key.clone());
+    buffer.push(partition_key.partition_num);
     buffer.extend(sort_key.0.clone());
     buffer
 }
 
-fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
+pub fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
     let partition_key_len =
         usize::try_from(u32::from_be_bytes(copy_u8_array(&buffer[..4]))).unwrap();
-    let sort_key_offset = 4 + partition_key_len;
-    let partition_key = DbPartitionKey(buffer[4..sort_key_offset].to_vec());
-    let sort_key = DbSortKey(buffer[sort_key_offset..].to_vec());
+    let partition_byte_offset = 4 + partition_key_len;
+    let partition_key = DbPartitionKey {
+        node_key: buffer[4..partition_byte_offset].to_vec(),
+        partition_num: buffer[partition_byte_offset],
+    };
+    let sort_key = DbSortKey(buffer[partition_byte_offset + 1..].to_vec());
     (partition_key, sort_key)
 }

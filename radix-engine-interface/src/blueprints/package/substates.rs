@@ -18,7 +18,7 @@ pub const ACCESS_CONTROLLER_CODE_ID: u64 = 6u64;
 pub const TRANSACTION_PROCESSOR_CODE_ID: u64 = 7u64;
 pub const METADATA_CODE_ID: u64 = 10u64;
 pub const ROYALTY_CODE_ID: u64 = 11u64;
-pub const ACCESS_RULES_CODE_ID: u64 = 12u64;
+pub const ROLE_ASSIGNMENT_CODE_ID: u64 = 12u64;
 pub const POOL_CODE_ID: u64 = 13u64;
 pub const TRANSACTION_TRACKER_CODE_ID: u64 = 14u64;
 
@@ -152,6 +152,7 @@ pub struct PackageExport {
 pub struct BlueprintDefinition {
     // Frontend interface, this must be backward compatible with minor version updates
     pub interface: BlueprintInterface,
+    pub is_transient: bool,
 
     // Backend implementation pointers
 
@@ -159,7 +160,7 @@ pub struct BlueprintDefinition {
     // matches that of the `functions` under `interface`. This is currently maintained since the
     // `publish` interface uses `BlueprintDefinitionInit` rather than `BlueprintDefinition`.
     pub function_exports: BTreeMap<String, PackageExport>,
-    pub virtual_lazy_load_functions: BTreeMap<u8, PackageExport>,
+    pub hook_exports: BTreeMap<BlueprintHook, PackageExport>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

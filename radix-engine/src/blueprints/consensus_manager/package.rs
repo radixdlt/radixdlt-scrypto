@@ -163,6 +163,7 @@ impl ConsensusManagerNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 feature_set: btreeset!(),
                 dependencies: btreeset!(
                     XRD.into(),
@@ -178,10 +179,8 @@ impl ConsensusManagerNativePackage {
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -447,6 +446,7 @@ impl ConsensusManagerNativePackage {
                 blueprint_type: BlueprintType::Inner {
                     outer_blueprint: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
                 },
+                is_transient: false,
                 feature_set: btreeset!(),
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
@@ -457,10 +457,8 @@ impl ConsensusManagerNativePackage {
                         collections: vec![],
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions: btreemap!(),
-                        functions,
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {

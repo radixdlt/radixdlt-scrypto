@@ -12,7 +12,7 @@ use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_type
 use radix_engine_store_interface::interface::DatabaseUpdate;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use sbor::rust::ops::Deref;
-use scrypto_unit::{CustomGenesis, TestRunner};
+use scrypto_unit::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction_scenarios::scenario::{NextAction, ScenarioCore};
 use transaction_scenarios::scenarios::get_builder_for_every_scenario;
@@ -20,6 +20,8 @@ use transaction_scenarios::scenarios::get_builder_for_every_scenario;
 #[test]
 fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
@@ -37,7 +39,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -65,6 +67,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
 #[test]
 fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
@@ -121,7 +124,14 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
+    let mut bootstrapper = Bootstrapper::new(
+        &mut substate_db,
+        Vm {
+            scrypto_vm: &scrypto_vm,
+            native_vm,
+        },
+        true,
+    );
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -149,7 +159,7 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
 #[test]
 fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_typed() {
     let network = NetworkDefinition::simulator();
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     let mut next_nonce: u32 = 0;
     for scenario_builder in get_builder_for_every_scenario() {
@@ -186,7 +196,7 @@ fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_t
 #[test]
 fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
     let network = NetworkDefinition::simulator();
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     let mut next_nonce: u32 = 0;
     for scenario_builder in get_builder_for_every_scenario() {
@@ -238,7 +248,7 @@ fn typed_native_event_type_contains_all_native_events() {
         "TransactionProcessor" => TRANSACTION_PROCESSOR_PACKAGE_DEFINITION.deref(),
         "Metadata" => METADATA_PACKAGE_DEFINITION.deref(),
         "Royalty" => ROYALTY_PACKAGE_DEFINITION.deref(),
-        "AccessRules" => ACCESS_RULES_PACKAGE_DEFINITION.deref(),
+        "RoleAssignment" => ROLE_ASSIGNMENT_PACKAGE_DEFINITION.deref(),
     };
 
     // Act

@@ -14,7 +14,7 @@ use transaction::prelude::*;
 
 #[test]
 fn check_native_function_base_costs() {
-    let test_runner = TestRunner::builder().build();
+    let test_runner = TestRunnerBuilder::new().build();
     let mut lookup: IndexMap<PackageAddress, IndexSet<String>> = index_map_new();
     let package_addresses = test_runner.find_all_packages();
     for package_address in package_addresses {
@@ -89,7 +89,7 @@ fn check_native_function_base_costs() {
 
 #[test]
 fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
-    let test_runner = TestRunner::builder().build();
+    let test_runner = TestRunnerBuilder::new().build();
     let bech32 = AddressBech32Encoder::for_simulator();
 
     let package_addresses = test_runner.find_all_packages();
@@ -361,7 +361,7 @@ impl CheckResult {
 #[test]
 pub fn test_fake_bucket() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package

@@ -352,10 +352,6 @@ pub enum InstructionV1 {
     #[sbor(discriminator(INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR))]
     PushToAuthZone { proof_id: ManifestProof },
 
-    /// Clears the auth zone.
-    #[sbor(discriminator(INSTRUCTION_CLEAR_AUTH_ZONE_DISCRIMINATOR))]
-    ClearAuthZone,
-
     /// Creates a proof from the auth zone, by the given amount
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR))]
     CreateProofFromAuthZoneOfAmount {
@@ -373,9 +369,14 @@ pub enum InstructionV1 {
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR))]
     CreateProofFromAuthZoneOfAll { resource_address: ResourceAddress },
 
-    /// Drop all virtual proofs (can only be auth zone proofs).
-    #[sbor(discriminator(INSTRUCTION_CLEAR_SIGNATURE_PROOFS_DISCRIMINATOR))]
-    ClearSignatureProofs,
+    #[sbor(discriminator(INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR))]
+    DropAuthZoneProofs,
+
+    #[sbor(discriminator(INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR))]
+    DropAuthZoneRegularProofs,
+
+    #[sbor(discriminator(INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR))]
+    DropAuthZoneSignatureProofs,
 
     //==============
     // Named bucket
@@ -441,8 +442,8 @@ pub enum InstructionV1 {
         args: ManifestValue,
     },
 
-    #[sbor(discriminator(INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR))]
-    CallAccessRulesMethod {
+    #[sbor(discriminator(INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR))]
+    CallRoleAssignmentMethod {
         address: DynamicGlobalAddress,
         method_name: String,
         args: ManifestValue,
@@ -458,6 +459,9 @@ pub enum InstructionV1 {
     //==============
     // Complex
     //==============
+    #[sbor(discriminator(INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR))]
+    DropNamedProofs,
+
     /// Drops all proofs, both named proofs and auth zone proofs.
     #[sbor(discriminator(INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR))]
     DropAllProofs,
@@ -498,11 +502,12 @@ pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
 //==============
 pub const INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR: u8 = 0x10;
 pub const INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR: u8 = 0x11;
-pub const INSTRUCTION_CLEAR_AUTH_ZONE_DISCRIMINATOR: u8 = 0x12;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR: u8 = 0x14;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x15;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR: u8 = 0x16;
-pub const INSTRUCTION_CLEAR_SIGNATURE_PROOFS_DISCRIMINATOR: u8 = 0x17;
+pub const INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR: u8 = 0x12;
+pub const INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR: u8 = 0x13;
+pub const INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR: u8 = 0x17;
 
 //==============
 // Named bucket
@@ -525,11 +530,12 @@ pub const INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR: u8 = 0x40;
 pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 0x41;
 pub const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 0x42;
 pub const INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR: u8 = 0x43;
-pub const INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR: u8 = 0x44;
+pub const INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR: u8 = 0x44;
 pub const INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR: u8 = 0x45;
 
 //==============
 // Complex
 //==============
+pub const INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR: u8 = 0x52;
 pub const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
 pub const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;

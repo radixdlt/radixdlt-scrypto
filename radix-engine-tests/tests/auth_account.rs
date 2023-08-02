@@ -7,7 +7,7 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 fn test_auth_rule(
-    test_runner: &mut TestRunner,
+    test_runner: &mut DefaultTestRunner,
     auth_rule: &AccessRule,
     signer_public_keys: &[PublicKey],
     should_succeed: bool,
@@ -35,7 +35,7 @@ fn test_auth_rule(
 
 #[test]
 fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
     let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
 
@@ -53,7 +53,7 @@ fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
 
 #[test]
 fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
     let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
     let (pk2, _, auth2) = test_runner.new_key_pair_with_auth_address();
@@ -77,7 +77,7 @@ fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
 
 #[test]
 fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
     let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
 
@@ -89,7 +89,7 @@ fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
 #[test]
 fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
     let (_, _, auth1) = test_runner.new_key_pair_with_auth_address();
 
@@ -99,7 +99,7 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
 
 #[test]
 fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, auth0) = test_runner.new_key_pair_with_auth_address();
     let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
     let (pk2, _, auth2) = test_runner.new_key_pair_with_auth_address();
@@ -114,7 +114,7 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
 
 #[test]
 fn can_withdraw_from_my_complex_account() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
     let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
     let (pk2, _, auth2) = test_runner.new_key_pair_with_auth_address();
@@ -140,7 +140,7 @@ fn can_withdraw_from_my_complex_account() {
 
 #[test]
 fn cannot_withdraw_from_my_complex_account() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
     let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
     let (_, _, auth2) = test_runner.new_key_pair_with_auth_address();
@@ -162,7 +162,7 @@ fn cannot_withdraw_from_my_complex_account() {
 
 #[test]
 fn can_withdraw_from_my_complex_account_2() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
     let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
     let (pk2, _, auth2) = test_runner.new_key_pair_with_auth_address();
@@ -185,7 +185,7 @@ fn can_withdraw_from_my_complex_account_2() {
 
 #[test]
 fn cannot_withdraw_from_my_complex_account_2() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
     let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
     let (pk2, _, auth2) = test_runner.new_key_pair_with_auth_address();
@@ -215,7 +215,7 @@ fn cannot_withdraw_from_my_complex_account_2() {
 #[test]
 fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let xrd_auth = rule!(require(XRD));
     let account = test_runner.new_account_advanced(OwnerRole::Fixed(xrd_auth));
     let (_, _, other_account) = test_runner.new_allocated_account();
@@ -242,7 +242,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
 #[test]
 fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let xrd_auth = rule!(require_amount(Decimal(BnumI256::from(1)), XRD));
     let account = test_runner.new_account_advanced(OwnerRole::Fixed(xrd_auth));
     let (_, _, other_account) = test_runner.new_allocated_account();
@@ -269,7 +269,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
 #[test]
 fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let xrd_auth = rule!(require_amount(Decimal::from(2), XRD));
     let account = test_runner.new_account_advanced(OwnerRole::Fixed(xrd_auth));
     let (_, _, other_account) = test_runner.new_allocated_account();
@@ -296,7 +296,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
 #[test]
 fn can_update_updatable_owner_role_account() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let xrd_auth = rule!(require_amount(Decimal(BnumI256::from(1)), XRD));
     let account = test_runner.new_account_advanced(OwnerRole::Updatable(xrd_auth));
 
@@ -322,7 +322,7 @@ fn can_update_updatable_owner_role_account() {
 #[test]
 fn cannot_set_royalty_on_accounts() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let account = test_runner.new_account_advanced(OwnerRole::Updatable(AccessRule::AllowAll));
 
     let manifest = ManifestBuilder::new()

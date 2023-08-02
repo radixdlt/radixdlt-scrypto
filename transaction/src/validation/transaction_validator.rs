@@ -61,12 +61,12 @@ impl ValidationConfig {
     pub fn default(network_id: u8) -> Self {
         Self {
             network_id,
-            max_notarized_payload_size: DEFAULT_MAX_TRANSACTION_SIZE,
-            min_cost_unit_limit: DEFAULT_MIN_COST_UNIT_LIMIT,
-            max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
-            min_tip_percentage: DEFAULT_MIN_TIP_PERCENTAGE,
-            max_tip_percentage: DEFAULT_MAX_TIP_PERCENTAGE,
-            max_epoch_range: DEFAULT_MAX_EPOCH_RANGE,
+            max_notarized_payload_size: MAX_TRANSACTION_SIZE,
+            min_cost_unit_limit: MIN_COST_UNIT_LIMIT,
+            max_cost_unit_limit: MAX_COST_UNIT_LIMIT,
+            min_tip_percentage: MIN_TIP_PERCENTAGE,
+            max_tip_percentage: MAX_TIP_PERCENTAGE,
+            max_epoch_range: MAX_EPOCH_RANGE,
             message_validation: MessageValidationConfig::default(),
         }
     }
@@ -199,7 +199,9 @@ impl NotarizedTransactionValidator {
                         .drop_proof(&proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::ClearAuthZone => {}
+                InstructionV1::DropAuthZoneProofs => {}
+                InstructionV1::DropAuthZoneRegularProofs => {}
+                InstructionV1::DropAuthZoneSignatureProofs => {}
                 InstructionV1::CreateProofFromAuthZoneOfAmount { .. } => {
                     let _ = id_validator
                         .new_proof(ProofKind::AuthZoneProof)
@@ -240,17 +242,21 @@ impl NotarizedTransactionValidator {
                         .drop_proof(&proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::DropAllProofs => {
+                InstructionV1::DropNamedProofs => {
                     id_validator
-                        .drop_all_proofs()
+                        .drop_all_named_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::ClearSignatureProofs => {}
+                InstructionV1::DropAllProofs => {
+                    id_validator
+                        .drop_all_named_proofs()
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
                 InstructionV1::CallFunction { args, .. }
                 | InstructionV1::CallMethod { args, .. }
                 | InstructionV1::CallRoyaltyMethod { args, .. }
                 | InstructionV1::CallMetadataMethod { args, .. }
-                | InstructionV1::CallAccessRulesMethod { args, .. } => {
+                | InstructionV1::CallRoleAssignmentMethod { args, .. } => {
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
@@ -462,13 +468,7 @@ mod tests {
             TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::EpochRangeTooLarge
             ),
-            (
-                Epoch::zero(),
-                Epoch::of(DEFAULT_MAX_EPOCH_RANGE + 1),
-                5,
-                vec![1],
-                2
-            )
+            (Epoch::zero(), Epoch::of(MAX_EPOCH_RANGE + 1), 5, vec![1], 2)
         );
     }
 
@@ -730,7 +730,7 @@ mod tests {
                 notary_is_signatory: false,
                 tip_percentage: 5,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build())
+            .manifest(ManifestBuilder::new().drop_auth_zone_proofs().build())
             .message(message);
 
         builder = builder.notarize(&sk_notary);
@@ -757,7 +757,7 @@ mod tests {
                 notary_is_signatory: false,
                 tip_percentage: 5,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build());
+            .manifest(ManifestBuilder::new().drop_auth_zone_proofs().build());
 
         for signer in signers {
             builder = builder.sign(&Secp256k1PrivateKey::from_u64(signer).unwrap());

@@ -1,5 +1,4 @@
 use scrypto::api::*;
-use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, NonFungibleData)]
@@ -377,7 +376,7 @@ mod non_fungible_test {
                 BTreeSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
-                vault.as_non_fungible().non_fungible_local_ids(),
+                vault.as_non_fungible().non_fungible_local_ids(100),
                 BTreeSet::from([
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3)

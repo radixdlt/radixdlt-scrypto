@@ -2,16 +2,18 @@ use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::{FieldKey, MapKey, ScryptoValue, SubstateKey};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
+use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::constants::{ACCOUNT_PACKAGE, RESOURCE_PACKAGE};
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
+use radix_engine_interface::prelude::{scrypto_decode, CONSENSUS_MANAGER_PACKAGE};
 use radix_engine_interface::types::{
-    AccountPartitionOffset, FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField,
-    PartitionNumber, PartitionOffset, ResourceAddress, TypeInfoField, ACCESS_RULES_BASE_PARTITION,
-    MAIN_BASE_PARTITION, METADATA_KV_STORE_PARTITION, ROYALTY_BASE_PARTITION,
-    TYPE_INFO_FIELD_PARTITION,
+    AccountPartitionOffset, ConsensusManagerPartitionOffset, FungibleVaultField,
+    IndexedScryptoValue, NonFungibleVaultField, PartitionNumber, PartitionOffset, ResourceAddress,
+    TypeInfoField, MAIN_BASE_PARTITION, METADATA_KV_STORE_PARTITION,
+    ROLE_ASSIGNMENT_BASE_PARTITION, ROYALTY_BASE_PARTITION, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::{
@@ -121,8 +123,13 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 }
             }
             TypeInfoSubstate::Object(info) => {
-                if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                if info
+                    .blueprint_info
+                    .blueprint_id
+                    .package_address
+                    .eq(&RESOURCE_PACKAGE)
                     && info
+                        .blueprint_info
                         .blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_VAULT_BLUEPRINT)
@@ -141,8 +148,13 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         &ResourceAddress::new_or_panic(info.get_outer_object().into()),
                         &liquid.value.0,
                     );
-                } else if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                } else if info
+                    .blueprint_info
+                    .blueprint_id
+                    .package_address
+                    .eq(&RESOURCE_PACKAGE)
                     && info
+                        .blueprint_info
                         .blueprint_id
                         .blueprint_name
                         .eq(NON_FUNGIBLE_VAULT_BLUEPRINT)
@@ -164,11 +176,13 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                     let entries = self
                         .substate_db
-                        .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
+                        .list_mapped::<SpreadPrefixKeyMapper, (), MapKey>(
                             &node_id,
                             MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
                         );
-                    for (_key, non_fungible_local_id) in entries {
+                    for (key, _value) in entries {
+                        let non_fungible_local_id: NonFungibleLocalId =
+                            scrypto_decode(key.for_map().unwrap()).unwrap();
                         self.visitor.visit_non_fungible(
                             node_id,
                             &ResourceAddress::new_or_panic(info.get_outer_object().into()),
@@ -179,7 +193,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     for partition_num in [
                         TYPE_INFO_FIELD_PARTITION,
                         ROYALTY_BASE_PARTITION,
-                        ACCESS_RULES_BASE_PARTITION,
+                        ROLE_ASSIGNMENT_BASE_PARTITION,
                     ] {
                         self.traverse_substates::<FieldKey>(node_id, partition_num, depth)
                     }
@@ -187,8 +201,16 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         self.traverse_substates::<MapKey>(node_id, partition_num, depth)
                     }
 
-                    if info.blueprint_id.package_address.eq(&ACCOUNT_PACKAGE)
-                        && info.blueprint_id.blueprint_name.eq(ACCOUNT_BLUEPRINT)
+                    if info
+                        .blueprint_info
+                        .blueprint_id
+                        .package_address
+                        .eq(&ACCOUNT_PACKAGE)
+                        && info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .eq(ACCOUNT_BLUEPRINT)
                     {
                         self.traverse_substates::<MapKey>(
                             node_id,
@@ -205,6 +227,43 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 .at_offset(
                                     AccountPartitionOffset::AccountResourceDepositRuleByAddress
                                         .into(),
+                                )
+                                .unwrap(),
+                            depth,
+                        );
+                        self.traverse_substates::<MapKey>(
+                            node_id,
+                            MAIN_BASE_PARTITION
+                                .at_offset(
+                                    AccountPartitionOffset::AccountAllowedDepositorsByResourceOrNonFungible
+                                        .into(),
+                                )
+                                .unwrap(),
+                            depth,
+                        )
+                    } else if info
+                        .blueprint_info
+                        .blueprint_id
+                        .package_address
+                        .eq(&CONSENSUS_MANAGER_PACKAGE)
+                        && info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .eq(CONSENSUS_MANAGER_BLUEPRINT)
+                    {
+                        self.traverse_substates::<FieldKey>(
+                            node_id,
+                            MAIN_BASE_PARTITION
+                                .at_offset(ConsensusManagerPartitionOffset::ConsensusManager.into())
+                                .unwrap(),
+                            depth,
+                        );
+                        self.traverse_substates::<MapKey>(
+                            node_id,
+                            MAIN_BASE_PARTITION
+                                .at_offset(
+                                    ConsensusManagerPartitionOffset::RegisteredValidatorsByStakeIndex.into(),
                                 )
                                 .unwrap(),
                             depth,

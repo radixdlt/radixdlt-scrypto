@@ -1,14 +1,13 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignment};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::roles_template;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
@@ -16,6 +15,7 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::hooks::{OnVirtualizeInput, OnVirtualizeOutput};
 use radix_engine_interface::metadata_init;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit, ReceiverInfo,
@@ -23,8 +23,10 @@ use radix_engine_interface::schema::{
 };
 use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 
-const IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
-const IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed25519";
+pub const IDENTITY_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
+
+pub const IDENTITY_CREATE_VIRTUAL_SECP256K1_ID: u8 = 0u8;
+pub const IDENTITY_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
 
 pub struct IdentityNativePackage;
 
@@ -77,15 +79,11 @@ impl IdentityNativePackage {
             },
         );
 
-        let virtual_lazy_load_functions = btreemap!(
-            IDENTITY_CREATE_VIRTUAL_SECP256K1_ID => IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME.to_string(),
-            IDENTITY_CREATE_VIRTUAL_ED25519_ID => IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
-        );
-
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             IDENTITY_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 feature_set: btreeset!(),
                 dependencies: btreeset!(
                     SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -102,11 +100,12 @@ impl IdentityNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions,
                         functions,
                     },
+                    hooks: BlueprintHooksInit {
+                        hooks: btreemap!(BlueprintHook::OnVirtualize => IDENTITY_ON_VIRTUALIZE_EXPORT_NAME.to_string())
+                    }
                 },
-
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
@@ -162,21 +161,12 @@ impl IdentityNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
-                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
+            IDENTITY_ON_VIRTUALIZE_EXPORT_NAME => {
+                let input: OnVirtualizeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::create_virtual_secp256k1(input, api)?;
-
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
-                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-
-                let rtn = IdentityBlueprint::create_virtual_ed25519(input, api)?;
+                let rtn = IdentityBlueprint::on_virtualize(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -191,13 +181,13 @@ const SECURIFY_ROLE: &'static str = "securify";
 
 struct SecurifiedIdentity;
 
-impl SecurifiedAccessRules for SecurifiedIdentity {
+impl SecurifiedRoleAssignment for SecurifiedIdentity {
     type OwnerBadgeNonFungibleData = IdentityOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
 
-impl PresecurifiedAccessRules for SecurifiedIdentity {}
+impl PresecurifiedRoleAssignment for SecurifiedIdentity {}
 
 pub struct IdentityBlueprint;
 
@@ -209,10 +199,10 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let access_rules = SecurifiedIdentity::create_advanced(owner_role, api)?;
+        let role_assignment = SecurifiedIdentity::create_advanced(owner_role, api)?;
 
         let modules = Self::create_object(
-            access_rules,
+            role_assignment,
             metadata_init!(
                 "owner_badge" => EMPTY, locked;
             ),
@@ -231,7 +221,7 @@ impl IdentityBlueprint {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
         })?;
-        let (access_rules, bucket) = SecurifiedIdentity::create_securified(
+        let (role_assignment, bucket) = SecurifiedIdentity::create_securified(
             IdentityOwnerBadgeData {
                 name: "Identity Owner Badge".to_string(),
                 identity: address.try_into().expect("Impossible Case"),
@@ -241,7 +231,7 @@ impl IdentityBlueprint {
         )?;
 
         let modules = Self::create_object(
-            access_rules,
+            role_assignment,
             metadata_init! {
                 "owner_badge" => NonFungibleLocalId::bytes(address.as_node_id().0).unwrap(), locked;
             },
@@ -252,32 +242,33 @@ impl IdentityBlueprint {
         Ok((address, bucket))
     }
 
-    pub fn create_virtual_secp256k1<Y>(
-        input: VirtualLazyLoadInput,
+    pub fn on_virtualize<Y>(
+        input: OnVirtualizeInput,
         api: &mut Y,
-    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
+    ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
-    }
-
-    pub fn create_virtual_ed25519<Y>(
-        input: VirtualLazyLoadInput,
-        api: &mut Y,
-    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
+        match input.variant_id {
+            IDENTITY_CREATE_VIRTUAL_SECP256K1_ID => {
+                let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
+                Self::create_virtual(public_key_hash, input.address_reservation, api)
+            }
+            IDENTITY_CREATE_VIRTUAL_ED25519_ID => {
+                let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
+                Self::create_virtual(public_key_hash, input.address_reservation, api)
+            }
+            x => Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+                format!("Unexpected variant id: {:?}", x),
+            ))),
+        }
     }
 
     fn create_virtual<Y>(
         public_key_hash: PublicKeyHash,
+        address_reservation: GlobalAddressReservation,
         api: &mut Y,
-    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -295,10 +286,10 @@ impl IdentityBlueprint {
         };
 
         let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
-        let access_rules = SecurifiedIdentity::create_presecurified(owner_id, api)?;
+        let role_assignment = SecurifiedIdentity::create_presecurified(owner_id, api)?;
 
         let modules = Self::create_object(
-            access_rules,
+            role_assignment,
             metadata_init! {
                 // NOTE:
                 // This is the owner key for ROLA. We choose to set this explicitly to simplify the
@@ -312,7 +303,11 @@ impl IdentityBlueprint {
             api,
         )?;
 
-        Ok(modules)
+        api.globalize(
+            modules.into_iter().map(|(k, v)| (k, v.0)).collect(),
+            Some(address_reservation),
+        )?;
+        Ok(())
     }
 
     fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
@@ -332,7 +327,7 @@ impl IdentityBlueprint {
     }
 
     fn create_object<Y>(
-        access_rules: AccessRules,
+        role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
@@ -346,7 +341,7 @@ impl IdentityBlueprint {
 
         let modules = btreemap!(
             ObjectModuleId::Main => Own(object_id),
-            ObjectModuleId::AccessRules => access_rules.0,
+            ObjectModuleId::RoleAssignment => role_assignment.0,
             ObjectModuleId::Metadata => metadata,
             ObjectModuleId::Royalty => royalty,
         );

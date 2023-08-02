@@ -1,12 +1,12 @@
 use super::call_frame::NodeVisibility;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
-use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::kernel::kernel_callback_api::{CallFrameReferences, KernelCallbackObject};
 use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
@@ -140,48 +140,46 @@ pub trait KernelSubstateApi<L> {
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 
-    fn kernel_scan_substates(
+    fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
+    ) -> Result<Vec<SubstateKey>, RuntimeError>;
 
-    fn kernel_take_substates(
+    fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
 }
 
 #[derive(Debug)]
-pub struct KernelInvocation {
-    /// FIXME: redo actor generification
-    /// Temporarily restored as there's a large conflict with `develop` branch
-    pub actor: Actor,
+pub struct KernelInvocation<C> {
+    pub call_frame_data: C,
     pub args: IndexedScryptoValue,
 }
 
-impl KernelInvocation {
+impl<C: CallFrameReferences> KernelInvocation<C> {
     pub fn len(&self) -> usize {
-        self.actor.len() + self.args.len()
+        self.call_frame_data.len() + self.args.len()
     }
 }
 
 /// API for invoking a function creating a new call frame and passing
 /// control to the callee
-pub trait KernelInvokeApi {
+pub trait KernelInvokeApi<C> {
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation>,
+        invocation: Box<KernelInvocation<C>>,
     ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
 pub struct SystemState<'a, M: KernelCallbackObject> {
     pub system: &'a mut M,
-    pub current: &'a Actor,
-    pub caller: &'a Actor,
+    pub current_call_frame: &'a M::CallFrameData,
+    pub caller_call_frame: &'a M::CallFrameData,
 }
 
 /// Internal API for kernel modules.
@@ -197,7 +195,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
 
-    // TODO: Cleanup
+    /// Returns the visibility of a node
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
@@ -206,6 +204,9 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi + KernelSubstateApi<M::LockData> + KernelInvokeApi + KernelInternalApi<M>
+    KernelNodeApi
+    + KernelSubstateApi<M::LockData>
+    + KernelInvokeApi<M::CallFrameData>
+    + KernelInternalApi<M>
 {
 }

@@ -44,6 +44,7 @@ impl TransactionProcessorNativePackage {
         let blueprints = btreemap!(
             TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: true,
                 feature_set: btreeset!(),
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
@@ -55,9 +56,9 @@ impl TransactionProcessorNativePackage {
                     },
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
-                        virtual_lazy_load_functions: btreemap!(),
                     },
                     events: BlueprintEventSchemaInit::default(),
+                    hooks: BlueprintHooksInit::default(),
                 },
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {

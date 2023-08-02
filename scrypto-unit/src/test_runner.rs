@@ -15,7 +15,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
@@ -27,9 +27,10 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
-    PackageRoyaltyAccumulatorSubstate, TypePointer, PACKAGE_BLUEPRINT,
-    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
+    BlueprintDefinitionInit, PackageDefinition, PackagePublishNativeManifestInput,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
+    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+    PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::math::Decimal;
@@ -41,12 +42,12 @@ use radix_engine_queries::typed_substate_layout::{
     BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
 };
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::interface::{ListableSubstateDatabase, SubstateDatabase};
-use radix_engine_store_interface::{
-    db_key_mapper::{
-        MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
-    },
-    interface::{CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates},
+use radix_engine_store_interface::db_key_mapper::{
+    MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+};
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, ListableSubstateDatabase,
+    SubstateDatabase,
 };
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
@@ -234,13 +235,40 @@ impl CustomGenesis {
     }
 }
 
-pub struct TestRunnerBuilder {
-    custom_genesis: Option<CustomGenesis>,
-    trace: bool,
-    state_hashing: bool,
+pub trait TestDatabase:
+    SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase
+{
+}
+impl<T: SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase> TestDatabase
+    for T
+{
 }
 
-impl TestRunnerBuilder {
+pub type DefaultTestRunner = TestRunner<NoExtension, InMemorySubstateDatabase>;
+
+pub struct TestRunnerBuilder<E, D> {
+    custom_genesis: Option<CustomGenesis>,
+    custom_extension: E,
+    custom_database: D,
+    trace: bool,
+    state_hashing: bool,
+    collect_events: bool,
+}
+
+impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
+    pub fn new() -> Self {
+        TestRunnerBuilder {
+            custom_genesis: None,
+            custom_extension: NoExtension,
+            custom_database: InMemorySubstateDatabase::standard(),
+            trace: true,
+            state_hashing: false,
+            collect_events: true,
+        }
+    }
+}
+
+impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
     pub fn without_trace(mut self) -> Self {
         self.trace = false;
         self
@@ -251,21 +279,63 @@ impl TestRunnerBuilder {
         self
     }
 
+    pub fn collect_events(mut self) -> Self {
+        self.collect_events = true;
+        self
+    }
+
     pub fn with_custom_genesis(mut self, genesis: CustomGenesis) -> Self {
         self.custom_genesis = Some(genesis);
         self
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner, ActiveValidatorSet) {
-        let scrypto_interpreter = ScryptoVm {
+    pub fn with_custom_extension<NE: NativeVmExtension>(
+        self,
+        extension: NE,
+    ) -> TestRunnerBuilder<NE, D> {
+        TestRunnerBuilder::<NE, D> {
+            custom_genesis: self.custom_genesis,
+            custom_extension: extension,
+            custom_database: self.custom_database,
+            trace: self.trace,
+            state_hashing: self.state_hashing,
+            collect_events: self.collect_events,
+        }
+    }
+
+    pub fn with_custom_database<ND: TestDatabase>(self, database: ND) -> TestRunnerBuilder<E, ND> {
+        TestRunnerBuilder::<E, ND> {
+            custom_genesis: self.custom_genesis,
+            custom_extension: self.custom_extension,
+            custom_database: database,
+            trace: self.trace,
+            state_hashing: self.state_hashing,
+            collect_events: self.collect_events,
+        }
+    }
+
+    pub fn build_and_get_epoch(self) -> (TestRunner<E, D>, ActiveValidatorSet) {
+        //---------- Override configs for resource tracker ---------------
+        let bootstrap_trace = false;
+
+        #[cfg(not(feature = "resource_tracker"))]
+        let trace = self.trace;
+        #[cfg(feature = "resource_tracker")]
+        let trace = false;
+        //----------------------------------------------------------------
+
+        let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
-        let mut substate_db = InMemorySubstateDatabase::standard();
-
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false);
+        let native_vm = NativeVm::new_with_extension(self.custom_extension);
+        let vm = Vm::new(&scrypto_vm, native_vm.clone());
+        let mut substate_db = self.custom_database;
+        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, bootstrap_trace);
         let GenesisReceipts {
-            wrap_up_receipt, ..
+            system_bootstrap_receipt,
+            data_ingestion_receipts,
+            wrap_up_receipt,
         } = match self.custom_genesis {
             Some(custom_genesis) => bootstrapper
                 .bootstrap_with_genesis_data(
@@ -280,6 +350,29 @@ impl TestRunnerBuilder {
             None => bootstrapper.bootstrap_test_default().unwrap(),
         };
 
+        let collected_events = if self.collect_events {
+            let mut events = Vec::new();
+
+            events.push(
+                system_bootstrap_receipt
+                    .expect_commit_success()
+                    .application_events
+                    .clone(),
+            );
+            for receipt in data_ingestion_receipts {
+                events.push(receipt.expect_commit_success().application_events.clone());
+            }
+            events.push(
+                wrap_up_receipt
+                    .expect_commit_success()
+                    .application_events
+                    .clone(),
+            );
+            Some(events)
+        } else {
+            None
+        };
+
         // Note that 0 is not a valid private key
         let next_private_key = 100;
 
@@ -287,14 +380,16 @@ impl TestRunnerBuilder {
         let next_transaction_nonce = 100;
 
         let runner = TestRunner {
-            scrypto_interpreter,
-            substate_db,
+            scrypto_vm,
+            native_vm,
+            database: substate_db,
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
                 .map(|_| StateHashSupport::new()),
             next_private_key,
             next_transaction_nonce,
-            trace: self.trace,
+            trace,
+            collected_events,
         };
 
         let next_epoch = wrap_up_receipt
@@ -304,43 +399,34 @@ impl TestRunnerBuilder {
         (runner, next_epoch.validator_set)
     }
 
-    pub fn build(self) -> TestRunner {
+    pub fn build(self) -> TestRunner<E, D> {
         self.build_and_get_epoch().0
     }
 }
 
-pub struct TestRunner {
-    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
-    substate_db: InMemorySubstateDatabase,
+pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
+    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    native_vm: NativeVm<E>,
+    database: D,
     next_private_key: u64,
     next_transaction_nonce: u32,
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
+    collected_events: Option<Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>>,
 }
 
 #[derive(Clone)]
 pub struct TestRunnerSnapshot {
-    substate_db: InMemorySubstateDatabase,
+    database: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
     state_hash_support: Option<StateHashSupport>,
 }
 
-impl TestRunner {
-    pub fn builder() -> TestRunnerBuilder {
-        TestRunnerBuilder {
-            custom_genesis: None,
-            #[cfg(not(feature = "resource_tracker"))]
-            trace: true,
-            #[cfg(feature = "resource_tracker")]
-            trace: false,
-            state_hashing: false,
-        }
-    }
-
+impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
     pub fn create_snapshot(&self) -> TestRunnerSnapshot {
         TestRunnerSnapshot {
-            substate_db: self.substate_db.clone(),
+            database: self.database.clone(),
             next_private_key: self.next_private_key,
             next_transaction_nonce: self.next_transaction_nonce,
             state_hash_support: self.state_hash_support.clone(),
@@ -348,22 +434,30 @@ impl TestRunner {
     }
 
     pub fn restore_snapshot(&mut self, snapshot: TestRunnerSnapshot) {
-        self.substate_db = snapshot.substate_db;
+        self.database = snapshot.database;
         self.next_private_key = snapshot.next_private_key;
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
         self.state_hash_support = snapshot.state_hash_support;
     }
+}
 
+impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn faucet_component(&self) -> GlobalAddress {
         FAUCET.clone().into()
     }
 
-    pub fn substate_db(&self) -> &InMemorySubstateDatabase {
-        &self.substate_db
+    pub fn substate_db(&self) -> &D {
+        &self.database
     }
 
-    pub fn substate_db_mut(&mut self) -> &mut InMemorySubstateDatabase {
-        &mut self.substate_db
+    pub fn substate_db_mut(&mut self) -> &mut D {
+        &mut self.database
+    }
+
+    pub fn collected_events(&self) -> &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>> {
+        self.collected_events
+            .as_ref()
+            .expect("Event collection not enabled")
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -419,7 +513,7 @@ impl TestRunner {
         let key = scrypto_encode(key).unwrap();
 
         let metadata_value = self
-            .substate_db
+            .database
             .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
                 address.as_node_id(),
                 METADATA_KV_STORE_PARTITION,
@@ -432,7 +526,7 @@ impl TestRunner {
 
     pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
         let accumulator = self
-            .substate_db
+            .database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ComponentRoyaltySubstate>>(
                 component_address.as_node_id(),
                 ROYALTY_FIELDS_PARTITION,
@@ -441,7 +535,7 @@ impl TestRunner {
             .unwrap()
             .value
             .0;
-        self.substate_db
+        self.database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                 accumulator.royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
@@ -455,7 +549,7 @@ impl TestRunner {
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let output = self
-            .substate_db
+            .database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<PackageRoyaltyAccumulatorSubstate>>(
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION,
@@ -464,7 +558,7 @@ impl TestRunner {
             .value
             .0;
 
-        self.substate_db
+        self.database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                 output.royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
@@ -473,26 +567,9 @@ impl TestRunner {
             .map(|r| r.value.0.amount())
     }
 
-    pub fn account_balance(
-        &mut self,
-        account_address: ComponentAddress,
-        resource_address: ResourceAddress,
-    ) -> Option<Decimal> {
-        let vaults = self.get_component_vaults(account_address, resource_address);
-        let index = if resource_address.eq(&XRD) {
-            // To account for royalty vault
-            1usize
-        } else {
-            0usize
-        };
-        vaults
-            .get(index)
-            .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
-    }
-
     pub fn find_all_nodes(&self) -> IndexSet<NodeId> {
         let mut node_ids = index_set_new();
-        for pk in self.substate_db.list_partition_keys() {
+        for pk in self.database.list_partition_keys() {
             let (node_id, _) = SpreadPrefixKeyMapper::from_db_partition_key(&pk);
             node_ids.insert(node_id);
         }
@@ -500,24 +577,33 @@ impl TestRunner {
     }
 
     pub fn find_all_components(&self) -> Vec<ComponentAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<ComponentAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| ComponentAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn find_all_packages(&self) -> Vec<PackageAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<PackageAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| PackageAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn find_all_resources(&self) -> Vec<ResourceAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<ResourceAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| ResourceAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn get_package_scrypto_schemas(
@@ -584,9 +670,22 @@ impl TestRunner {
     ) -> Vec<NodeId> {
         let node_id = component_address.as_node_id();
         let mut vault_finder = VaultFinder::new(resource_address);
-        let mut traverser = StateTreeTraverser::new(&self.substate_db, &mut vault_finder, 100);
+        let mut traverser = StateTreeTraverser::new(&self.database, &mut vault_finder, 100);
         traverser.traverse_all_descendents(None, *node_id);
         vault_finder.to_vaults()
+    }
+
+    pub fn get_component_balance(
+        &mut self,
+        account_address: ComponentAddress,
+        resource_address: ResourceAddress,
+    ) -> Decimal {
+        let vaults = self.get_component_vaults(account_address, resource_address);
+        let mut sum = Decimal::ZERO;
+        for vault in vaults {
+            sum += self.inspect_vault_balance(vault).unwrap();
+        }
+        sum
     }
 
     pub fn inspect_vault_balance(&mut self, vault_id: NodeId) -> Option<Decimal> {
@@ -623,11 +722,14 @@ impl TestRunner {
 
         let mut substate_iter = self
             .substate_db()
-            .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
+            .list_mapped::<SpreadPrefixKeyMapper, (), MapKey>(
                 &vault_id,
                 MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
             );
-        let id = substate_iter.next().map(|(_key, id)| id);
+        let id = substate_iter.next().map(|(key, _value)| {
+            let id: NonFungibleLocalId = scrypto_decode(key.for_map().unwrap()).unwrap();
+            id
+        });
 
         amount.map(|amount| (amount, id))
     }
@@ -637,7 +739,7 @@ impl TestRunner {
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
         let node_id = component_address.as_node_id();
-        let mut accounter = ResourceAccounter::new(&self.substate_db);
+        let mut accounter = ResourceAccounter::new(&self.database);
         accounter.traverse(node_id.clone());
         accounter.close().balances
     }
@@ -786,6 +888,29 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         let address = receipt.expect_commit(true).new_component_addresses()[0];
         address
+    }
+
+    pub fn publish_native_package(
+        &mut self,
+        native_package_code_id: u64,
+        definition: PackageDefinition,
+    ) -> PackageAddress {
+        let receipt = self.execute_system_transaction(
+            vec![InstructionV1::CallFunction {
+                package_address: DynamicPackageAddress::Static(PACKAGE_PACKAGE),
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+                args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+                    definition,
+                    native_package_code_id,
+                    metadata: MetadataInit::default(),
+                    package_address: None,
+                }),
+            }],
+            btreeset!(AuthAddresses::system_role()),
+        );
+        let package_address: PackageAddress = receipt.expect_commit(true).output(0);
+        package_address
     }
 
     pub fn publish_package_at_address(
@@ -984,18 +1109,25 @@ impl TestRunner {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.trace);
 
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        };
+
         let transaction_receipt = execute_transaction(
-            &mut self.substate_db,
-            &self.scrypto_interpreter,
+            &mut self.database,
+            vm,
             &fee_reserve_config,
             &execution_config,
             &executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.transaction_result {
-            self.substate_db
-                .commit(&commit.state_updates.database_updates);
+            self.database.commit(&commit.state_updates.database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates.database_updates);
+            }
+            if let Some(events) = &mut self.collected_events {
+                events.push(commit.application_events.clone());
             }
         }
         transaction_receipt
@@ -1006,13 +1138,12 @@ impl TestRunner {
         preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
     ) -> Result<TransactionReceipt, PreviewError> {
-        execute_preview(
-            &self.substate_db,
-            &mut self.scrypto_interpreter,
-            network,
-            preview_intent,
-            self.trace,
-        )
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        };
+
+        execute_preview(&self.database, vm, network, preview_intent, self.trace)
     }
 
     pub fn preview_manifest(
@@ -1023,9 +1154,13 @@ impl TestRunner {
         flags: PreviewFlags,
     ) -> TransactionReceipt {
         let epoch = self.get_current_epoch();
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        };
         execute_preview(
-            &mut self.substate_db,
-            &self.scrypto_interpreter,
+            &mut self.database,
+            vm,
             &NetworkDefinition::simulator(),
             PreviewIntentV1 {
                 intent: IntentV1 {
@@ -1290,7 +1425,7 @@ impl TestRunner {
     }
 
     pub fn create_freezeable_non_fungible(&mut self, account: ComponentAddress) -> ResourceAddress {
-        self.create_non_fungible_resource_with_access_rules(
+        self.create_non_fungible_resource_with_roles(
             NonFungibleResourceRoles {
                 burn_roles: burn_roles! {
                     burner => rule!(allow_all);
@@ -1367,13 +1502,10 @@ impl TestRunner {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        self.create_non_fungible_resource_with_access_rules(
-            NonFungibleResourceRoles::default(),
-            account,
-        )
+        self.create_non_fungible_resource_with_roles(NonFungibleResourceRoles::default(), account)
     }
 
-    pub fn create_non_fungible_resource_with_access_rules(
+    pub fn create_non_fungible_resource_with_roles(
         &mut self,
         resource_roles: NonFungibleResourceRoles,
         account: ComponentAddress,
@@ -1535,7 +1667,7 @@ impl TestRunner {
 
     pub fn set_current_epoch(&mut self, epoch: Epoch) {
         let mut substate = self
-            .substate_db
+            .database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
                 &CONSENSUS_MANAGER.as_node_id(),
                 MAIN_BASE_PARTITION,
@@ -1543,7 +1675,7 @@ impl TestRunner {
             )
             .unwrap();
         substate.value.0.epoch = epoch;
-        self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+        self.database.put_mapped::<SpreadPrefixKeyMapper, _>(
             &CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
@@ -1728,8 +1860,8 @@ impl TestRunner {
         let (package_address, schema_pointer) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
                 match node_module {
-                    ObjectModuleId::AccessRules => {
-                        (ACCESS_RULES_MODULE_PACKAGE, schema_pointer.clone())
+                    ObjectModuleId::RoleAssignment => {
+                        (ROLE_ASSIGNMENT_MODULE_PACKAGE, schema_pointer.clone())
                     }
                     ObjectModuleId::Royalty => (ROYALTY_MODULE_PACKAGE, schema_pointer.clone()),
                     ObjectModuleId::Metadata => (METADATA_MODULE_PACKAGE, schema_pointer.clone()),
@@ -1745,9 +1877,9 @@ impl TestRunner {
 
                         match type_info {
                             TypeInfoSubstate::Object(ObjectInfo {
-                                blueprint_id: blueprint,
+                                blueprint_info: BlueprintInfo { blueprint_id, .. },
                                 ..
-                            }) => (blueprint.package_address, *schema_pointer),
+                            }) => (blueprint_id.package_address, *schema_pointer),
                             _ => {
                                 panic!("No event schema.")
                             }
@@ -1924,7 +2056,7 @@ pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
 ) -> PackageDefinition {
-    PackageDefinition::single_test_function(blueprint_name, function_name)
+    PackageDefinition::new_single_function_test_definition(blueprint_name, function_name)
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

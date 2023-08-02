@@ -1,6 +1,5 @@
 use scrypto::api::ClientObjectApi;
 use scrypto::api::FieldValue;
-use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
 #[blueprint]

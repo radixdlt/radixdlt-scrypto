@@ -1,7 +1,7 @@
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -81,6 +81,7 @@ impl TransactionTrackerNativePackage {
         let blueprints = btreemap!(
             TRANSACTION_TRACKER_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 dependencies: btreeset!(
                 ),
                 feature_set: btreeset!(),
@@ -93,9 +94,9 @@ impl TransactionTrackerNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions: btreemap!(),
                         functions,
                     },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -220,14 +221,14 @@ impl TransactionTrackerBlueprint {
                 epochs_per_partition: EPOCHS_PER_PARTITION,
             })],
         )?;
-        let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?.0;
+        let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
             btreemap!(
                 ObjectModuleId::Main => intent_store,
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
@@ -250,7 +251,7 @@ mod tests {
             * 5 // Targeted epoch duration: 5 mins
             / 60
             / 24;
-        assert!(covered_epochs >= DEFAULT_MAX_EPOCH_RANGE);
+        assert!(covered_epochs >= MAX_EPOCH_RANGE);
         assert_eq!(covered_days, 65);
     }
 

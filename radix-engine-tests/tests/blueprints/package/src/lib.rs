@@ -49,14 +49,13 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
-        functions: BlueprintFunctionsSchemaInit {
-            functions,
-            virtual_lazy_load_functions: BTreeMap::default(),
-        },
+        functions: BlueprintFunctionsSchemaInit { functions },
+        hooks: BlueprintHooksInit::default(),
     };
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+        is_transient: false,
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema,
@@ -100,14 +99,13 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
-        functions: BlueprintFunctionsSchemaInit {
-            functions,
-            virtual_lazy_load_functions: BTreeMap::default(),
-        },
+        functions: BlueprintFunctionsSchemaInit { functions },
+        hooks: BlueprintHooksInit::default(),
     };
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+        is_transient: false,
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema,
@@ -151,14 +149,13 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
-        functions: BlueprintFunctionsSchemaInit {
-            functions,
-            virtual_lazy_load_functions: BTreeMap::default(),
-        },
+        functions: BlueprintFunctionsSchemaInit { functions },
+        hooks: BlueprintHooksInit::default(),
     };
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+        is_transient: false,
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema,
@@ -201,6 +198,7 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+        is_transient: false,
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema: BlueprintSchemaInit {
@@ -211,10 +209,8 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
                 collections: vec![],
             },
             events: BlueprintEventSchemaInit::default(),
-            functions: BlueprintFunctionsSchemaInit {
-                functions,
-                virtual_lazy_load_functions: BTreeMap::default(),
-            },
+            functions: BlueprintFunctionsSchemaInit { functions },
+            hooks: BlueprintHooksInit::default(),
         },
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {

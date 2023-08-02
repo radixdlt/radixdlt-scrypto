@@ -7,7 +7,7 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
-use scrypto_unit::{CustomGenesis, TestRunner};
+use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 
 #[test]
@@ -1634,7 +1634,7 @@ fn is_drop_non_empty_bucket_error(error: &RuntimeError) -> bool {
 
 #[allow(dead_code)]
 struct AccessControllerTestRunner {
-    pub test_runner: TestRunner,
+    pub test_runner: DefaultTestRunner,
 
     pub account: (ComponentAddress, PublicKey),
 
@@ -1649,7 +1649,7 @@ struct AccessControllerTestRunner {
 #[allow(dead_code)]
 impl AccessControllerTestRunner {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
-        let mut test_runner = TestRunner::builder()
+        let mut test_runner = TestRunnerBuilder::new()
             .without_trace()
             .with_custom_genesis(CustomGenesis::default(
                 Epoch::of(1),
