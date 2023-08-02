@@ -128,7 +128,6 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
 /// from a substate.
 pub struct EventSchemaMapper<'a, S: SubstateDatabase> {
     system_reader: SystemReader<'a, S>,
-    tracked: &'a IndexMap<NodeId, TrackedNode>,
     application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
 }
 
@@ -140,7 +139,6 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
     ) -> Self {
         Self {
             system_reader: SystemReader::new(substate_db, tracked),
-            tracked,
             application_events,
         }
     }

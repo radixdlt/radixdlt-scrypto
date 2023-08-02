@@ -118,19 +118,19 @@ impl CommitResult {
         None
     }
 
-    pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
+    pub fn new_package_addresses(&self) -> &IndexSet<PackageAddress> {
         &self.state_update_summary.new_packages
     }
 
-    pub fn new_component_addresses(&self) -> &Vec<ComponentAddress> {
+    pub fn new_component_addresses(&self) -> &IndexSet<ComponentAddress> {
         &self.state_update_summary.new_components
     }
 
-    pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
+    pub fn new_resource_addresses(&self) -> &IndexSet<ResourceAddress> {
         &self.state_update_summary.new_resources
     }
 
-    pub fn new_vault_addresses(&self) -> &Vec<InternalAddress> {
+    pub fn new_vault_addresses(&self) -> &IndexSet<InternalAddress> {
         &self.state_update_summary.new_vaults
     }
 

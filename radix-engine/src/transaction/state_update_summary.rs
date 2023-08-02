@@ -18,10 +18,10 @@ use crate::transaction::SystemReader;
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
-    pub new_packages: Vec<PackageAddress>,
-    pub new_components: Vec<ComponentAddress>,
-    pub new_resources: Vec<ResourceAddress>,
-    pub new_vaults: Vec<InternalAddress>,
+    pub new_packages: IndexSet<PackageAddress>,
+    pub new_components: IndexSet<ComponentAddress>,
+    pub new_resources: IndexSet<ResourceAddress>,
+    pub new_vaults: IndexSet<InternalAddress>,
     pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
     /// This field accounts for Direct vault recalls (and the owner is not loaded during the transaction);
     pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
@@ -58,10 +58,10 @@ impl StateUpdateSummary {
             BalanceAccounter::new(substate_db, &updates).run();
 
         StateUpdateSummary {
-            new_packages: new_packages.into_iter().collect(),
-            new_components: new_components.into_iter().collect(),
-            new_resources: new_resources.into_iter().collect(),
-            new_vaults: new_vaults.into_iter().collect(),
+            new_packages,
+            new_components,
+            new_resources,
+            new_vaults,
             balance_changes,
             direct_vault_updates,
         }

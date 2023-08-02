@@ -1665,9 +1665,5 @@ fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceA
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-    *receipt
-        .expect_commit(true)
-        .new_resource_addresses()
-        .get(0)
-        .unwrap()
+    receipt.expect_commit(true).new_resource_addresses()[0]
 }

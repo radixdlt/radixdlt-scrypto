@@ -102,7 +102,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                     )
                 },
                 |_, _, state, result| {
-                    let resource_address = *result.new_resource_addresses().get(0).unwrap();
+                    let resource_address = result.new_resource_addresses()[0];
                     state.badge = Some(resource_address);
                     Ok(())
                 },
