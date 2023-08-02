@@ -8,7 +8,7 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, OpenSubstateHandle, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
-use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError};
+use super::heap::{Heap, HeapRemoveModuleError};
 
 /// A message used for communication between call frames.
 ///
@@ -308,7 +308,7 @@ pub enum MoveModuleError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum OpenSubstateError {
     NodeNotVisible(NodeId),
-    HeapError(HeapOpenSubstateError),
+    InvalidClientMissingSubstate,
     TrackError(Box<TrackGetSubstateError>),
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
     LockUnmodifiedBaseOnHeapNode,

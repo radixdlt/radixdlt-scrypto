@@ -32,6 +32,7 @@ pub struct LockData {
     location: SubstateDevice,
     owned_nodes: IndexSet<NodeId>,
     non_global_references: IndexSet<NodeId>,
+    virtualized: Option<IndexedScryptoValue>,
 }
 
 pub trait SubstateIOHandler<E> {
@@ -249,22 +250,49 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             default,
         )?;
 
-        let mut owned_nodes = index_set_new();
-        for node_id in substate_value.owned_nodes() {
-            owned_nodes.insert(*node_id);
-        }
-        let mut non_global_references = index_set_new(); // du-duplicated
-        for node_id in substate_value.references() {
-            if !node_id.is_global() {
-                non_global_references.insert(*node_id);
-            }
-        }
 
-        let lock_data = LockData {
-            flags,
-            location: substate_location,
-            owned_nodes,
-            non_global_references,
+        let (lock_data, substate_value) = if let Some(substate_value) = substate_value {
+            let mut owned_nodes = index_set_new();
+            for node_id in substate_value.owned_nodes() {
+                owned_nodes.insert(*node_id);
+            }
+            let mut non_global_references = index_set_new(); // du-duplicated
+            for node_id in substate_value.references() {
+                if !node_id.is_global() {
+                    non_global_references.insert(*node_id);
+                }
+            }
+
+            let lock_data = LockData {
+                flags,
+                location: substate_location,
+                owned_nodes,
+                non_global_references,
+                virtualized: None,
+            };
+
+            (lock_data, Some(substate_value))
+        } else if let Some(compute_default) = default {
+            let default_value = compute_default();
+            let mut non_global_references = index_set_new(); // du-duplicated
+            for node_id in default_value.references() {
+                if !node_id.is_global() {
+                    non_global_references.insert(*node_id);
+                }
+            }
+            // FIXME: Add checks that there are no owned nodes
+
+            let lock_data = LockData {
+                flags,
+                location: substate_location,
+                owned_nodes: index_set_new(),
+                non_global_references,
+                virtualized: Some(default_value),
+            };
+
+            (lock_data, None)
+        } else {
+            return Err(CallbackError::Error(OpenSubstateError::InvalidClientMissingSubstate));
         };
 
         let global_lock_handle = match self.substate_locks.lock(
@@ -284,12 +312,23 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             }
         };
 
+        let substate_value = substate_value.unwrap_or_else(|| {
+            let (.., data) = self.substate_locks.get(global_lock_handle);
+            data.virtualized.as_ref().unwrap()
+        });
+
+
         Ok((global_lock_handle, substate_value, substate_location))
     }
 
     pub fn read_substate(&mut self, global_lock_handle: u32) -> &IndexedScryptoValue {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get(global_lock_handle);
+
+        // If substate is current virtualized, just return it
+        if let Some(virtualized) = &lock_data.virtualized {
+            return virtualized;
+        }
 
         let substate = match lock_data.location {
             SubstateDevice::Heap => self
@@ -334,6 +373,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         if !lock_data.flags.contains(LockFlags::MUTABLE) {
             return Err(CallbackError::Error(WriteSubstateError::NoWritePermission));
         }
+
+        // Remove any virtualized state if it exists
+        let _ = lock_data.virtualized.take();
 
         // Process owned
         {
@@ -615,22 +657,21 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         substate_key: &SubstateKey,
         on_store_access: &mut F,
         default: Option<fn() -> IndexedScryptoValue>,
-    ) -> Result<&'a IndexedScryptoValue, CallbackError<OpenSubstateError, E>> {
+    ) -> Result<Option<&'a IndexedScryptoValue>, CallbackError<OpenSubstateError, E>> {
         let value = match location {
-            SubstateDevice::Heap => heap
-                .get_substate_or_default(node_id, partition_num, substate_key, || {
-                    default.map(|f| f())
-                })
-                .map_err(|e| CallbackError::Error(OpenSubstateError::HeapError(e)))?,
-            SubstateDevice::Store => store
-                .get_substate_or_default(
-                    node_id,
-                    partition_num,
-                    substate_key,
-                    &mut |store_access| on_store_access(heap, store_access),
-                    || default.map(|f| f()),
-                )
-                .map_err(|x| x.map(|e| OpenSubstateError::TrackError(Box::new(e))))?,
+            SubstateDevice::Heap => heap.get_substate(node_id, partition_num, substate_key),
+            SubstateDevice::Store => {
+                let value = store
+                    .get_substate_or_default(
+                        node_id,
+                        partition_num,
+                        substate_key,
+                        &mut |store_access| on_store_access(heap, store_access),
+                        || default.map(|f| f()),
+                    )
+                    .map_err(|x| x.map(|e| OpenSubstateError::TrackError(Box::new(e))))?;
+                Some(value)
+            },
         };
 
         Ok(value)
