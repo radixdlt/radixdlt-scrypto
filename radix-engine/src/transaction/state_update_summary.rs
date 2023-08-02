@@ -1,12 +1,11 @@
-use radix_engine_common::prelude::{scrypto_decode};
+use radix_engine_common::prelude::scrypto_decode;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_store_interface::{
-    db_key_mapper::{SpreadPrefixKeyMapper},
-    interface::SubstateDatabase,
+    db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
 };
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;

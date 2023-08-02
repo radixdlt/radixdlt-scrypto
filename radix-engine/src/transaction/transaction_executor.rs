@@ -349,7 +349,11 @@ where
                         // Finalize track
                         let (tracked_nodes, deleted_partitions) = track.finalize();
 
-                        let schema_pointers = SchemaPointers::new(self.substate_db, &tracked_nodes);
+                        let schema_pointers = SchemaPointers::new(
+                            self.substate_db,
+                            &tracked_nodes,
+                            &application_events,
+                        );
 
                         let state_update_summary =
                             StateUpdateSummary::new(self.substate_db, &tracked_nodes);
@@ -357,7 +361,6 @@ where
                             tracked_nodes,
                             deleted_partitions,
                         );
-
 
                         TransactionResult::Commit(CommitResult {
                             state_updates,

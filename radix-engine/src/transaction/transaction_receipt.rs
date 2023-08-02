@@ -6,6 +6,7 @@ use crate::system::system_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
 };
 use crate::track::StateUpdates;
+use crate::transaction::SchemaPointers;
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::AddressDisplayContext;
@@ -15,7 +16,6 @@ use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
 use sbor::representations::*;
 use utils::ContextualDisplay;
-use crate::transaction::SchemaPointers;
 
 #[derive(Debug, Clone, Default, ScryptoSbor)]
 pub struct ResourcesUsage {

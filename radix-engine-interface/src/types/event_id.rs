@@ -15,10 +15,10 @@ use utils::ContextualDisplay;
 ///
 /// It is important to note that application events are always emitted by an RENode, meaning that
 /// there is always an emitter of some [`NodeId`].
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub struct EventTypeIdentifier(pub Emitter, pub TypePointer);
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum Emitter {
     Function(BlueprintId),
     Method(NodeId, ObjectModuleId),
