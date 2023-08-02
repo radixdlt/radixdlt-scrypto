@@ -26,6 +26,10 @@ pub enum PrepareError {
     TooManyTargetsInBrTable,
     /// Too many functions
     TooManyFunctions,
+    /// Too many function parameters
+    TooManyFunctionParams,
+    /// Too many function local variables
+    TooManyFunctionLocals,
     /// Too many globals
     TooManyGlobals,
     /// No export section

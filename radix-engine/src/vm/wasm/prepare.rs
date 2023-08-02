@@ -838,12 +838,55 @@ impl WasmModule {
     pub fn enforce_function_limit(
         self,
         max_number_of_functions: u32,
+        max_number_of_function_params: u32,
+        max_number_of_function_locals: u32,
     ) -> Result<Self, PrepareError> {
         if self.module.num_local_functions() > max_number_of_functions {
             return Err(PrepareError::TooManyFunctions);
         }
 
-        // FIXME: do we need to enforce limit on the number of locals and parameters?
+        for func_idx in 0..self.module.num_local_functions() {
+            if let wasmparser::Type::Func(ty) = self
+                .module
+                .get_type_by_func_idx(func_idx)
+                .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?
+            {
+                if ty.params().len() > max_number_of_function_params as usize {
+                    return Err(PrepareError::TooManyFunctionParams);
+                }
+            }
+        }
+
+        for func_body in self
+            .module
+            .code_section()
+            .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?
+            .unwrap_or(vec![])
+        {
+            let local_reader = func_body
+                .get_locals_reader()
+                .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+            let cnt = local_reader.get_count();
+            let mut locals_count = 0;
+
+            // According to the documentation local_reader.get_count() would do the job here
+            // see: https://docs.rs/wasmparser/latest/wasmparser/struct.LocalsReader.html#method.get_count
+            // But the description is misleading, get_count() returns the number of different types of
+            // locals (or number of LocalReader iterator items).
+            // To get the number of locals we need to iterate over LocalReader, which
+            // returns following tuple for each item:
+            //  ( u32, ValType) - where u32 is the number of locals of ValType
+            for local in local_reader.into_iter() {
+                // Number of locals of some type
+                let (count, _ty) =
+                    local.map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+                locals_count += count;
+            }
+
+            if locals_count > max_number_of_function_locals {
+                return Err(PrepareError::TooManyFunctionLocals);
+            }
+        }
 
         Ok(self)
     }
@@ -1204,6 +1247,68 @@ mod tests {
             "#,
             PrepareError::TooManyTargetsInBrTable,
             |x| WasmModule::enforce_br_table_limit(x, 5)
+        );
+    }
+
+    #[test]
+    fn test_function_limits() {
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (result i32)
+                    (i32.const 11)
+                )
+                (func (result i32)
+                    (i32.const 22)
+                )
+                (func (result i32)
+                    (i32.const 33)
+                )
+            )
+            "#,
+            PrepareError::TooManyFunctions,
+            |x| WasmModule::enforce_function_limit(x, 2, 3, 3)
+        );
+
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (param i32 i32 i32 i32) (result i32)
+                    (i32.const 22)
+                )
+            )
+            "#,
+            PrepareError::TooManyFunctionParams,
+            |x| WasmModule::enforce_function_limit(x, 2, 3, 3)
+        );
+
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (result i32)
+                    (local $v1 i32)
+
+                    (local.set $v1 (i32.const 1))
+
+                    (i32.const 22)
+                )
+                (func (result i32)
+                    (local $v1 i32)
+                    (local $v2 i64)
+                    (local $v3 i64)
+                    (local $v4 i32)
+
+                    (local.set $v1 (i32.const 1))
+                    (local.set $v2 (i64.const 2))
+                    (local.set $v3 (i64.const 3))
+                    (local.set $v4 (i32.const 4))
+
+                    (i32.const 22)
+                )
+            )
+            "#,
+            PrepareError::TooManyFunctionLocals,
+            |x| WasmModule::enforce_function_limit(x, 2, 3, 3)
         );
     }
 

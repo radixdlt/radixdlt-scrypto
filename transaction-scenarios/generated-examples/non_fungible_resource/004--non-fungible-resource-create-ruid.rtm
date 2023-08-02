@@ -74,7 +74,7 @@ CALL_FUNCTION
             Array<Tuple>(
                 Tuple(
                     Enum<1u8>(
-                        "ComplexFungibleData"
+                        "NestedFungibleData"
                     ),
                     Enum<1u8>(
                         Enum<0u8>(
