@@ -1,13 +1,13 @@
 use crate::types::*;
 use crate::vm::wasm::{constants::*, errors::*, PrepareError};
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
+use syn::Ident;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
     utils::module_info::ModuleInfo,
 };
 use wasmparser::{ExternalKind, FuncType, Operator, Type, TypeRef, ValType, WasmFeatures};
-use syn::Ident;
 
 use super::WasmiModule;
 #[derive(Debug)]
@@ -852,7 +852,8 @@ impl WasmModule {
     pub fn enforce_export_names(self) -> Result<Self, PrepareError> {
         // Any exported name should follow Rust Identifier specification
         for name in &self.module.export_names {
-            syn::parse_str::<Ident>(name).map_err(|_| PrepareError::InvalidExportName(name.to_string()))?;
+            syn::parse_str::<Ident>(name)
+                .map_err(|_| PrepareError::InvalidExportName(name.to_string()))?;
         }
 
         Ok(self)

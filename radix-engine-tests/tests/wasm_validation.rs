@@ -31,7 +31,19 @@ fn test_large_memory() {
 #[test]
 fn invalid_export_name_should_fail() {
     // List of some invalid names (non conforming to Rust Ident).
-    let names = ["a b", "a$", "a!", "a-", "a\u{221A}", "\0", "a\'", "self", "crate", "super", "Self"];
+    let names = [
+        "a b",
+        "a$",
+        "a!",
+        "a-",
+        "a\u{221A}",
+        "\0",
+        "a\'",
+        "self",
+        "crate",
+        "super",
+        "Self",
+    ];
     // Veryfing various export names like function, global and memory section.
     let replace_tokens = ["FUNCTION_NAME", "GLOBAL_NAME", "MEMORY_NAME"];
 
