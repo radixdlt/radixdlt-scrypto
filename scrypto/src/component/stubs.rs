@@ -229,6 +229,7 @@ extern_blueprint_internal! {
     ValidatorFunctions
     {},
     {
+        fn accepts_delegated_stake(&self) -> bool;
         fn apply_emission(&mut self, xrd_bucket: Bucket, epoch: Epoch, proposals_made: u64, proposals_missed: u64);
         fn apply_reward(&mut self, xrd_bucket: Bucket, epoch: Epoch);
         fn claim_xrd(&mut self, bucket: Bucket) -> Bucket;
