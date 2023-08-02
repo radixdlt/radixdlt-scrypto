@@ -866,8 +866,16 @@ impl WasmModule {
             let local_reader = func_body
                 .get_locals_reader()
                 .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+            let cnt = local_reader.get_count();
             let mut locals_count = 0;
 
+            // According to the documentation local_reader.get_count() would do the job here
+            // see: https://docs.rs/wasmparser/latest/wasmparser/struct.LocalsReader.html#method.get_count
+            // But the description is misleading, get_count() returns the number of different types of
+            // locals (or number of LocalReader iterator items).
+            // To get the number of locals we need to iterate over LocalReader, which
+            // returns following tuple for each item:
+            //  ( u32, ValType) - where u32 is the number of locals of ValType
             for local in local_reader.into_iter() {
                 // Number of locals of some type
                 let (count, _ty) =
