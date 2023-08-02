@@ -429,6 +429,15 @@ pub struct ValidatorTotalStakeUnitSupplyInput {}
 
 pub type ValidatorTotalStakeUnitSupplyOutput = Decimal;
 
+pub const VALIDATOR_GET_REDEMPTION_VALUE_IDENT: &str = "get_redemption_value";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorGetRedemptionValueInput {
+    pub amount_of_stake_units: Decimal
+}
+
+pub type ValidatorGetRedemptionValueOutput = Decimal;
+
 pub const VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS: &str = "signal_protocol_update_readiness";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]

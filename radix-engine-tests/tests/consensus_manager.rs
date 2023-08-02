@@ -1911,7 +1911,7 @@ fn cannot_claim_unstake_immediately() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .take_all_from_worktop(validator_substate.unstake_nft, "unstake_nft")
+        .take_all_from_worktop(validator_substate.claim_nft, "unstake_nft")
         .claim_xrd(validator_address, "unstake_nft")
         .try_deposit_batch_or_abort(account_with_su)
         .build();
@@ -1969,8 +1969,8 @@ fn can_claim_unstake_after_epochs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account_with_su, validator_substate.unstake_nft, 1)
-        .take_all_from_worktop(validator_substate.unstake_nft, "unstake_receipt")
+        .withdraw_from_account(account_with_su, validator_substate.claim_nft, 1)
+        .take_all_from_worktop(validator_substate.claim_nft, "unstake_receipt")
         .claim_xrd(validator_address, "unstake_receipt")
         .try_deposit_batch_or_abort(account_with_su)
         .build();
