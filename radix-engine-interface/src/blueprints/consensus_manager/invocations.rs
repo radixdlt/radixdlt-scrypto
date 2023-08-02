@@ -415,6 +415,13 @@ pub struct ValidatorAcceptsDelegatedStakeInput {}
 
 pub type ValidatorAcceptsDelegatedStakeOutput = bool;
 
+pub const VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT: &str = "total_stake_xrd_amount";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ValidatorTotalStakeXrdAmountInput {}
+
+pub type ValidatorTotalStakeXrdAmountOutput = Decimal;
+
 pub const VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS: &str = "signal_protocol_update_readiness";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]

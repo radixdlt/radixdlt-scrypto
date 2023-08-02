@@ -622,6 +622,24 @@ impl ValidatorBlueprint {
         Ok(substate.accepts_delegated_stake)
     }
 
+    pub fn total_stake_xrd_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::read_only(),
+        )?;
+
+        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let stake_vault = Vault(substate.stake_xrd_vault_id);
+        let stake_amount = stake_vault.amount(api)?;
+        api.field_close(handle)?;
+
+        Ok(stake_amount)
+    }
+
     pub fn update_accept_delegated_stake<Y>(
         accept_delegated_stake: bool,
         api: &mut Y,

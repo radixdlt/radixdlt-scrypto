@@ -351,6 +351,21 @@ impl ConsensusManagerNativePackage {
                 },
             );
             functions.insert(
+                VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ValidatorTotalStakeXrdAmountInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ValidatorTotalStakeXrdAmountOutput>(),
+                    ),
+                    export: VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT.to_string(),
+                },
+            );
+            functions.insert(
                 VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -469,6 +484,7 @@ impl ConsensusManagerNativePackage {
                             VALIDATOR_CLAIM_XRD_IDENT => MethodAccessibility::Public;
                             VALIDATOR_STAKE_IDENT => MethodAccessibility::Public;
                             VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT => MethodAccessibility::Public;
+                            VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT => MethodAccessibility::Public;
                             VALIDATOR_STAKE_AS_OWNER_IDENT => [OWNER_ROLE];
                             VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
                             VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
@@ -657,6 +673,13 @@ impl ConsensusManagerNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::accepts_delegated_stake(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT => {
+                let _: ValidatorTotalStakeXrdAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::total_stake_xrd_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS => {
