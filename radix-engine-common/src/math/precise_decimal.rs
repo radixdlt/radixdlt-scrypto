@@ -360,86 +360,91 @@ impl From<bool> for PreciseDecimal {
     }
 }
 
-impl<T: TryInto<PreciseDecimal>> Add<T> for PreciseDecimal
-where
-    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
-{
+impl Add<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
-    fn add(self, other: T) -> Self::Output {
+    fn add(self, other: PreciseDecimal) -> Self::Output {
         let a = self.0;
-        let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b: BnumI512 = b_dec.0;
-        let c = a + b;
-        PreciseDecimal(c)
+        let b = other.0;
+        PreciseDecimal(a + b)
     }
 }
 
-impl<T: TryInto<PreciseDecimal>> Sub<T> for PreciseDecimal
-where
-    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
-{
+impl Sub<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
-    fn sub(self, other: T) -> Self::Output {
+    fn sub(self, other: PreciseDecimal) -> Self::Output {
         let a = self.0;
-        let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b: BnumI512 = b_dec.0;
-        let c: BnumI512 = a - b;
-        PreciseDecimal(c)
+        let b = other.0;
+        PreciseDecimal(a - b)
     }
 }
 
-impl<T: TryInto<PreciseDecimal>> Mul<T> for PreciseDecimal
-where
-    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
-{
+impl Mul<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
-    fn mul(self, other: T) -> Self::Output {
+    fn mul(self, other: PreciseDecimal) -> Self::Output {
         // Use BnumI768 to not overflow.
         let a = BnumI768::from(self.0);
-        let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b = BnumI768::from(b_dec.0);
+        let b = BnumI768::from(other.0);
         let c = a * b / BnumI768::from(Self::ONE.0);
         let c_512 = BnumI512::try_from(c).expect("Overflow");
         PreciseDecimal(c_512)
     }
 }
 
-impl<T: TryInto<PreciseDecimal>> Div<T> for PreciseDecimal
-where
-    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
-{
+impl Div<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
-    fn div(self, other: T) -> Self::Output {
+    fn div(self, other: PreciseDecimal) -> Self::Output {
         // Use BnumI768 to not overflow.
         let a = BnumI768::from(self.0);
-        let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b = BnumI768::from(b_dec.0);
+        let b = BnumI768::from(other.0);
         let c = a * BnumI768::from(Self::ONE.0) / b;
         let c_512 = BnumI512::try_from(c).expect("Overflow");
         PreciseDecimal(c_512)
     }
 }
 
-impl Neg for PreciseDecimal {
-    type Output = PreciseDecimal;
-
-    fn neg(self) -> Self::Output {
-        PreciseDecimal(-self.0)
-    }
-}
-
-macro_rules! arith_ops_for_primitive_types {
+macro_rules! impl_arith_ops {
     ($type:ident) => {
+        impl Add<$type> for PreciseDecimal {
+            type Output = PreciseDecimal;
+
+            fn add(self, other: $type) -> Self::Output {
+                self + PreciseDecimal::from(other)
+            }
+        }
+
+        impl Sub<$type> for PreciseDecimal {
+            type Output = PreciseDecimal;
+
+            fn sub(self, other: $type) -> Self::Output {
+                self - PreciseDecimal::from(other)
+            }
+        }
+
+        impl Mul<$type> for PreciseDecimal {
+            type Output = PreciseDecimal;
+
+            fn mul(self, other: $type) -> Self::Output {
+                self * PreciseDecimal::from(other)
+            }
+        }
+
+        impl Div<$type> for PreciseDecimal {
+            type Output = PreciseDecimal;
+
+            fn div(self, other: $type) -> Self::Output {
+                self / PreciseDecimal::from(other)
+            }
+        }
+
         impl Add<PreciseDecimal> for $type {
             type Output = PreciseDecimal;
 
             fn add(self, other: PreciseDecimal) -> Self::Output {
-                let a = PreciseDecimal::from(self);
-                a + other
+                PreciseDecimal::from(self) + other
             }
         }
 
@@ -447,8 +452,7 @@ macro_rules! arith_ops_for_primitive_types {
             type Output = PreciseDecimal;
 
             fn sub(self, other: PreciseDecimal) -> Self::Output {
-                let a = PreciseDecimal::from(self);
-                a - other
+                PreciseDecimal::from(self) - other
             }
         }
 
@@ -456,8 +460,7 @@ macro_rules! arith_ops_for_primitive_types {
             type Output = PreciseDecimal;
 
             fn mul(self, other: PreciseDecimal) -> Self::Output {
-                let a = PreciseDecimal::from(self);
-                a * other
+                PreciseDecimal::from(self) * other
             }
         }
 
@@ -465,24 +468,56 @@ macro_rules! arith_ops_for_primitive_types {
             type Output = PreciseDecimal;
 
             fn div(self, other: PreciseDecimal) -> Self::Output {
-                let a = PreciseDecimal::from(self);
-                a / other
+                PreciseDecimal::from(self) / other
             }
         }
     };
 }
-arith_ops_for_primitive_types!(u8);
-arith_ops_for_primitive_types!(u16);
-arith_ops_for_primitive_types!(u32);
-arith_ops_for_primitive_types!(u64);
-arith_ops_for_primitive_types!(u128);
-arith_ops_for_primitive_types!(usize);
-arith_ops_for_primitive_types!(i8);
-arith_ops_for_primitive_types!(i16);
-arith_ops_for_primitive_types!(i32);
-arith_ops_for_primitive_types!(i64);
-arith_ops_for_primitive_types!(i128);
-arith_ops_for_primitive_types!(isize);
+impl_arith_ops!(u8);
+impl_arith_ops!(u16);
+impl_arith_ops!(u32);
+impl_arith_ops!(u64);
+impl_arith_ops!(u128);
+impl_arith_ops!(usize);
+impl_arith_ops!(i8);
+impl_arith_ops!(i16);
+impl_arith_ops!(i32);
+impl_arith_ops!(i64);
+impl_arith_ops!(i128);
+impl_arith_ops!(isize);
+
+// Arithmetic ops with Decimal, they shall produce PreciseDecimal
+impl Add<Decimal> for PreciseDecimal {
+    type Output = PreciseDecimal;
+
+    fn add(self, other: Decimal) -> Self::Output {
+        self + PreciseDecimal::from(other)
+    }
+}
+
+impl Sub<Decimal> for PreciseDecimal {
+    type Output = PreciseDecimal;
+
+    fn sub(self, other: Decimal) -> Self::Output {
+        self - PreciseDecimal::from(other)
+    }
+}
+
+impl Mul<Decimal> for PreciseDecimal {
+    type Output = PreciseDecimal;
+
+    fn mul(self, other: Decimal) -> Self::Output {
+        self * PreciseDecimal::from(other)
+    }
+}
+
+impl Div<Decimal> for PreciseDecimal {
+    type Output = PreciseDecimal;
+
+    fn div(self, other: Decimal) -> Self::Output {
+        self / PreciseDecimal::from(other)
+    }
+}
 
 impl<T: TryInto<PreciseDecimal>> AddAssign<T> for PreciseDecimal
 where
@@ -521,6 +556,14 @@ where
     fn div_assign(&mut self, other: T) {
         let other: PreciseDecimal = other.try_into().expect("Overflow");
         self.0 /= other.0;
+    }
+}
+
+impl Neg for PreciseDecimal {
+    type Output = PreciseDecimal;
+
+    fn neg(self) -> Self::Output {
+        PreciseDecimal(-self.0)
     }
 }
 

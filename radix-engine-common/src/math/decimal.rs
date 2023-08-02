@@ -345,11 +345,138 @@ impl From<bool> for Decimal {
     }
 }
 
+impl Add<Decimal> for Decimal {
+    type Output = Decimal;
+
+    fn add(self, other: Decimal) -> Self::Output {
+        let a = self.0;
+        let b = other.0;
+        Decimal(a + b)
+    }
+}
+
+impl Sub<Decimal> for Decimal {
+    type Output = Decimal;
+
+    fn sub(self, other: Decimal) -> Self::Output {
+        let a = self.0;
+        let b = other.0;
+        Decimal(a - b)
+    }
+}
+
+impl Mul<Decimal> for Decimal {
+    type Output = Decimal;
+
+    fn mul(self, other: Decimal) -> Self::Output {
+        // Use BnumI384 (BInt<6>) to not overflow.
+        let a = BnumI384::from(self.0);
+        let b = BnumI384::from(other.0);
+        let c = a * b / BnumI384::from(Self::ONE.0);
+        let c_256 = BnumI256::try_from(c).expect("Overflow");
+        Decimal(c_256)
+    }
+}
+
+impl Div<Decimal> for Decimal {
+    type Output = Decimal;
+
+    fn div(self, other: Decimal) -> Self::Output {
+        // Use BnumI384 (BInt<6>) to not overflow.
+        let a = BnumI384::from(self.0);
+        let b = BnumI384::from(other.0);
+        let c = a * BnumI384::from(Self::ONE.0) / b;
+        let c_256 = BnumI256::try_from(c).expect("Overflow");
+        Decimal(c_256)
+    }
+}
+
+macro_rules! impl_arith_ops {
+    ($type:ident) => {
+        impl Add<$type> for Decimal {
+            type Output = Decimal;
+
+            fn add(self, other: $type) -> Self::Output {
+                self + Decimal::from(other)
+            }
+        }
+
+        impl Sub<$type> for Decimal {
+            type Output = Decimal;
+
+            fn sub(self, other: $type) -> Self::Output {
+                self - Decimal::from(other)
+            }
+        }
+
+        impl Mul<$type> for Decimal {
+            type Output = Decimal;
+
+            fn mul(self, other: $type) -> Self::Output {
+                self * Decimal::from(other)
+            }
+        }
+
+        impl Div<$type> for Decimal {
+            type Output = Decimal;
+
+            fn div(self, other: $type) -> Self::Output {
+                self / Decimal::from(other)
+            }
+        }
+
+        impl Add<Decimal> for $type {
+            type Output = Decimal;
+
+            fn add(self, other: Decimal) -> Self::Output {
+                Decimal::from(self) + other
+            }
+        }
+
+        impl Sub<Decimal> for $type {
+            type Output = Decimal;
+
+            fn sub(self, other: Decimal) -> Self::Output {
+                Decimal::from(self) - other
+            }
+        }
+
+        impl Mul<Decimal> for $type {
+            type Output = Decimal;
+
+            fn mul(self, other: Decimal) -> Self::Output {
+                Decimal::from(self) * other
+            }
+        }
+
+        impl Div<Decimal> for $type {
+            type Output = Decimal;
+
+            fn div(self, other: Decimal) -> Self::Output {
+                Decimal::from(self) / other
+            }
+        }
+    };
+}
+impl_arith_ops!(u8);
+impl_arith_ops!(u16);
+impl_arith_ops!(u32);
+impl_arith_ops!(u64);
+impl_arith_ops!(u128);
+impl_arith_ops!(usize);
+impl_arith_ops!(i8);
+impl_arith_ops!(i16);
+impl_arith_ops!(i32);
+impl_arith_ops!(i64);
+impl_arith_ops!(i128);
+impl_arith_ops!(isize);
+
+// Arithmetic ops with PreciseDecimal, they shall produce PreciseDecimal
 impl Add<PreciseDecimal> for Decimal {
     type Output = PreciseDecimal;
 
     fn add(self, other: PreciseDecimal) -> Self::Output {
-        other + self
+        PreciseDecimal::from(self) + other
     }
 }
 
@@ -365,7 +492,7 @@ impl Mul<PreciseDecimal> for Decimal {
     type Output = PreciseDecimal;
 
     fn mul(self, other: PreciseDecimal) -> Self::Output {
-        other * self
+        PreciseDecimal::from(self) * other
     }
 }
 
@@ -376,127 +503,6 @@ impl Div<PreciseDecimal> for Decimal {
         PreciseDecimal::from(self) / other
     }
 }
-
-macro_rules! arith_ops_for_decimal {
-    ($type:ident) => {
-        impl Add<$type> for Decimal {
-            type Output = Decimal;
-
-            fn add(self, other: $type) -> Self::Output {
-                let a = self.0;
-                let b_dec: Decimal = other.try_into().expect("Overflow");
-                let b: BnumI256 = b_dec.0;
-                let c = a + b;
-                Decimal(c)
-            }
-        }
-
-        impl Sub<$type> for Decimal {
-            type Output = Decimal;
-
-            fn sub(self, other: $type) -> Self::Output {
-                let a = self.0;
-                let b_dec: Decimal = other.try_into().expect("Overflow");
-                let b: BnumI256 = b_dec.0;
-                let c: BnumI256 = a - b;
-                Decimal(c)
-            }
-        }
-
-        impl Mul<$type> for Decimal {
-            type Output = Decimal;
-
-            fn mul(self, other: $type) -> Self::Output {
-                // Use BnumI384 (BInt<6>) to not overflow.
-                let a = BnumI384::from(self.0);
-                let b_dec: Decimal = other.try_into().expect("Overflow");
-                let b = BnumI384::from(b_dec.0);
-                let c = a * b / BnumI384::from(Self::ONE.0);
-                let c_256 = BnumI256::try_from(c).expect("Overflow");
-                Decimal(c_256)
-            }
-        }
-
-        impl Div<$type> for Decimal {
-            type Output = Decimal;
-
-            fn div(self, other: $type) -> Self::Output {
-                // Use BnumI384 (BInt<6>) to not overflow.
-                let a = BnumI384::from(self.0);
-                let b_dec: Decimal = other.try_into().expect("Overflow");
-                let b = BnumI384::from(b_dec.0);
-                let c = a * BnumI384::from(Self::ONE.0) / b;
-                let c_256 = BnumI256::try_from(c).expect("Overflow");
-                Decimal(c_256)
-            }
-        }
-    };
-}
-arith_ops_for_decimal!(u8);
-arith_ops_for_decimal!(u16);
-arith_ops_for_decimal!(u32);
-arith_ops_for_decimal!(u64);
-arith_ops_for_decimal!(u128);
-arith_ops_for_decimal!(usize);
-arith_ops_for_decimal!(i8);
-arith_ops_for_decimal!(i16);
-arith_ops_for_decimal!(i32);
-arith_ops_for_decimal!(i64);
-arith_ops_for_decimal!(i128);
-arith_ops_for_decimal!(isize);
-arith_ops_for_decimal!(Decimal);
-
-macro_rules! arith_ops_for_primitive_types {
-    ($type:ident) => {
-        impl Add<Decimal> for $type {
-            type Output = Decimal;
-
-            fn add(self, other: Decimal) -> Self::Output {
-                let a = Decimal::from(self);
-                a + other
-            }
-        }
-
-        impl Sub<Decimal> for $type {
-            type Output = Decimal;
-
-            fn sub(self, other: Decimal) -> Self::Output {
-                let a = Decimal::from(self);
-                a - other
-            }
-        }
-
-        impl Mul<Decimal> for $type {
-            type Output = Decimal;
-
-            fn mul(self, other: Decimal) -> Self::Output {
-                let a = Decimal::from(self);
-                a * other
-            }
-        }
-
-        impl Div<Decimal> for $type {
-            type Output = Decimal;
-
-            fn div(self, other: Decimal) -> Self::Output {
-                let a = Decimal::from(self);
-                a / other
-            }
-        }
-    };
-}
-arith_ops_for_primitive_types!(u8);
-arith_ops_for_primitive_types!(u16);
-arith_ops_for_primitive_types!(u32);
-arith_ops_for_primitive_types!(u64);
-arith_ops_for_primitive_types!(u128);
-arith_ops_for_primitive_types!(usize);
-arith_ops_for_primitive_types!(i8);
-arith_ops_for_primitive_types!(i16);
-arith_ops_for_primitive_types!(i32);
-arith_ops_for_primitive_types!(i64);
-arith_ops_for_primitive_types!(i128);
-arith_ops_for_primitive_types!(isize);
 
 impl<T: TryInto<Decimal>> AddAssign<T> for Decimal
 where
