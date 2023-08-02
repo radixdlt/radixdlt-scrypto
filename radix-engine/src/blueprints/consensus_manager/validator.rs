@@ -254,7 +254,6 @@ impl ValidatorBlueprint {
         Ok(stake_unit_bucket)
     }
 
-
     pub fn unstake<Y>(stake_unit_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -270,7 +269,11 @@ impl ValidatorBlueprint {
 
         // Unstake
         let (unstake_bucket, new_stake_amount) = {
-            let xrd_amount = Self::calculate_redemption_value(stake_unit_bucket_amount, &validator_substate, api)?;
+            let xrd_amount = Self::calculate_redemption_value(
+                stake_unit_bucket_amount,
+                &validator_substate,
+                api,
+            )?;
 
             let mut stake_vault = Vault(validator_substate.stake_xrd_vault_id);
             let mut unstake_vault = Vault(validator_substate.pending_xrd_withdraw_vault_id);
@@ -653,11 +656,13 @@ impl ValidatorBlueprint {
         Ok(total_stake_unit_supply)
     }
 
-    pub fn get_redemption_value<Y>(amount_of_stake_units: Decimal, api: &mut Y) -> Result<Decimal, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    pub fn get_redemption_value<Y>(
+        amount_of_stake_units: Decimal,
+        api: &mut Y,
+    ) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
     {
-        /*
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             ValidatorField::Validator.into(),
@@ -665,15 +670,11 @@ impl ValidatorBlueprint {
         )?;
 
         let substate: ValidatorSubstate = api.field_read_typed(handle)?;
-        let stake_vault = Vault(substate.stake_xrd_vault_id);
-        let stake_amount = stake_vault.amount(api)?;
-
-
+        let redemption_value =
+            Self::calculate_redemption_value(amount_of_stake_units, &substate, api)?;
         api.field_close(handle)?;
 
-
-         */
-        todo!()
+        Ok(redemption_value)
     }
 
     pub fn update_accept_delegated_stake<Y>(
@@ -1088,7 +1089,7 @@ impl ValidatorBlueprint {
     }
 
     fn calculate_redemption_value<Y: ClientApi<RuntimeError>>(
-        stake_unit_amount: Decimal,
+        amount_of_stake_units: Decimal,
         validator_substate: &ValidatorSubstate,
         api: &mut Y,
     ) -> Result<Decimal, RuntimeError> {
@@ -1100,7 +1101,7 @@ impl ValidatorBlueprint {
         let xrd_amount = if total_stake_unit_supply.is_zero() {
             Decimal::zero()
         } else {
-            stake_unit_amount * active_stake_amount / total_stake_unit_supply
+            amount_of_stake_units * active_stake_amount / total_stake_unit_supply
         };
 
         Ok(xrd_amount)

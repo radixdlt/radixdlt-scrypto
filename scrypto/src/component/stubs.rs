@@ -234,6 +234,7 @@ extern_blueprint_internal! {
         fn apply_reward(&mut self, xrd_bucket: Bucket, epoch: Epoch);
         fn claim_xrd(&mut self, bucket: Bucket) -> Bucket;
         fn finish_unlock_owner_stake_units(&mut self) -> Bucket;
+        fn get_redemption_value(&self, amount_of_stake_units: Decimal) -> Decimal;
         fn lock_owner_stake_units(&mut self, stake_unit_bucket: Bucket);
         fn register(&mut self);
         fn stake(&mut self, stake: Bucket) -> Bucket;

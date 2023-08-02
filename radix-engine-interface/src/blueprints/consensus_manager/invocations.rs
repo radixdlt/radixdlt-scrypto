@@ -433,7 +433,7 @@ pub const VALIDATOR_GET_REDEMPTION_VALUE_IDENT: &str = "get_redemption_value";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorGetRedemptionValueInput {
-    pub amount_of_stake_units: Decimal
+    pub amount_of_stake_units: Decimal,
 }
 
 pub type ValidatorGetRedemptionValueOutput = Decimal;

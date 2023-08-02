@@ -16,5 +16,9 @@ mod validator_access {
         pub fn total_stake_unit_supply(validator: Global<Validator>) -> Decimal {
             validator.total_stake_unit_supply()
         }
+
+        pub fn get_redemption_value(validator: Global<Validator>, amount: Decimal) -> Decimal {
+            validator.get_redemption_value(amount)
+        }
     }
 }
