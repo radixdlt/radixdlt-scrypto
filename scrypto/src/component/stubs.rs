@@ -239,6 +239,7 @@ extern_blueprint_internal! {
         fn stake(&mut self, stake: Bucket) -> Bucket;
         fn stake_as_owner(&mut self, stake: Bucket) -> Bucket;
         fn start_unlock_owner_stake_units(&mut self, requested_stake_unit_amount: Decimal);
+        fn total_stake_unit_supply(&self) -> Decimal;
         fn total_stake_xrd_amount(&self) -> Decimal;
         fn unregister(&mut self);
         fn unstake(&mut self, stake_unit_bucket: Bucket) -> Bucket;

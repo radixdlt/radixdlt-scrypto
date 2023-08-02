@@ -12,5 +12,9 @@ mod validator_access {
         pub fn total_stake_xrd_amount(validator: Global<Validator>) -> Decimal {
             validator.total_stake_xrd_amount()
         }
+
+        pub fn total_stake_unit_supply(validator: Global<Validator>) -> Decimal {
+            validator.total_stake_unit_supply()
+        }
     }
 }

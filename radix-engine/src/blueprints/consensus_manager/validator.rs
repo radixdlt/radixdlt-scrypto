@@ -640,6 +640,24 @@ impl ValidatorBlueprint {
         Ok(stake_amount)
     }
 
+    pub fn total_stake_unit_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::read_only(),
+        )?;
+
+        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let stake_resource = ResourceManager(substate.stake_unit_resource);
+        let total_stake_unit_supply = stake_resource.total_supply(api)?.unwrap();
+        api.field_close(handle)?;
+
+        Ok(total_stake_unit_supply)
+    }
+
     pub fn update_accept_delegated_stake<Y>(
         accept_delegated_stake: bool,
         api: &mut Y,
