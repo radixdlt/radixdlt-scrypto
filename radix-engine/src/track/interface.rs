@@ -61,10 +61,22 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
     ) -> TrackedSubstateInfo;
 
-    fn get_substate<
-        E,
-        F: FnMut(StoreAccess) -> Result<(), E>,
-    >(
+    fn read_substate(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
+        self.get_substate(node_id, partition_num, substate_key, &mut |_| -> Result<
+            (),
+            (),
+        > {
+            Ok(())
+        })
+        .unwrap()
+    }
+
+    fn get_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

@@ -1,8 +1,6 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO, SubstateIOHandler};
-use crate::track::interface::{
-    CallbackError, NodeSubstates, StoreAccess, SubstateStore,
-};
+use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, OpenSubstateHandle, SubstateKey};
@@ -309,6 +307,7 @@ pub enum MoveModuleError {
 pub enum OpenSubstateError {
     NodeNotVisible(NodeId),
     SubstateFault,
+    InvalidDefaultValue,
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
     LockUnmodifiedBaseOnHeapNode,
     LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),

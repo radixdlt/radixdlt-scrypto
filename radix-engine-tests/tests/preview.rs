@@ -79,7 +79,7 @@ fn test_transaction_preview_without_locking_fee() {
     println!("{:?}", preview_receipt);
     assert!(fee_summary.total_execution_cost_xrd.is_positive());
     assert_eq!(fee_summary.total_tipping_cost_xrd, dec!("0"));
-    assert!(fee_summary.total_state_expansion_cost_xrd.is_positive());
+    assert_eq!(fee_summary.total_state_expansion_cost_xrd, dec!("0"));
     assert_eq!(fee_summary.total_royalty_cost_xrd, dec!("0"));
     assert_eq!(fee_summary.total_payments(), dec!("0")); // no one is paying the fees; wallets need to fill the gap.
 }

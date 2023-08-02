@@ -248,7 +248,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             on_store_access,
         )?;
 
-
         let (lock_data, substate_value) = if let Some(substate_value) = substate_value {
             let mut owned_nodes = index_set_new();
             for node_id in substate_value.owned_nodes() {
@@ -278,7 +277,10 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     non_global_references.insert(*node_id);
                 }
             }
-            // FIXME: Add checks that there are no owned nodes
+
+            if !default_value.owned_nodes().is_empty() {
+                return Err(CallbackError::Error(OpenSubstateError::InvalidDefaultValue));
+            }
 
             let lock_data = LockData {
                 flags,
@@ -315,7 +317,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             data.virtualized.as_ref().unwrap()
         });
 
-
         Ok((global_lock_handle, substate_value, substate_location))
     }
 
@@ -336,7 +337,8 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             SubstateDevice::Store => self
                 .store
                 .get_substate(node_id, *partition_num, substate_key, &mut |_| Err(()))
-                .expect("Getting substate on handled substate should not incur a store access.").unwrap(),
+                .expect("Getting substate on handled substate should not incur a store access.")
+                .unwrap(),
         };
 
         substate
@@ -657,14 +659,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
     ) -> Result<Option<&'a IndexedScryptoValue>, CallbackError<OpenSubstateError, E>> {
         let value = match location {
             SubstateDevice::Heap => heap.get_substate(node_id, partition_num, substate_key),
-            SubstateDevice::Store =>
-                store
-                    .get_substate(
-                        node_id,
-                        partition_num,
-                        substate_key,
-                        &mut |store_access| on_store_access(heap, store_access),
-                    ).map_err(|e| CallbackError::CallbackError(e))?
+            SubstateDevice::Store => store
+                .get_substate(node_id, partition_num, substate_key, &mut |store_access| {
+                    on_store_access(heap, store_access)
+                })
+                .map_err(|e| CallbackError::CallbackError(e))?,
         };
 
         Ok(value)

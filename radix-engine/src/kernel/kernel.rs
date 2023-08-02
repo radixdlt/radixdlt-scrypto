@@ -23,9 +23,7 @@ use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::track::interface::{
-    CallbackError, NodeSubstates, StoreAccess, SubstateStore,
-};
+use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -112,13 +110,11 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             let substate_ref = kernel
                 .substate_io
                 .store
-                .get_substate(
+                .read_substate(
                     node_id,
                     TYPE_INFO_FIELD_PARTITION,
                     &TypeInfoField::TypeInfo.into(),
-                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
-                .unwrap()
                 .ok_or_else(|| KernelError::InvalidReference(*node_id))?;
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             match type_substate {
@@ -667,22 +663,18 @@ where
                             M::LockData::default(),
                         )
                         .map_err(|e| match e {
-                            CallbackError::Error(e) => {
-                                RuntimeError::KernelError(KernelError::CallFrameError(
-                                    CallFrameError::OpenSubstateError(e),
-                                ))
-                            }
+                            CallbackError::Error(e) => RuntimeError::KernelError(
+                                KernelError::CallFrameError(CallFrameError::OpenSubstateError(e)),
+                            ),
                             CallbackError::CallbackError(e) => e,
                         })?
                 } else {
                     return maybe_lock_handle
                         .map(|(lock_handle, _)| lock_handle)
                         .map_err(|e| match e {
-                            CallbackError::Error(e) => {
-                                RuntimeError::KernelError(KernelError::CallFrameError(
-                                    CallFrameError::OpenSubstateError(e),
-                                ))
-                            }
+                            CallbackError::Error(e) => RuntimeError::KernelError(
+                                KernelError::CallFrameError(CallFrameError::OpenSubstateError(e)),
+                            ),
                             CallbackError::CallbackError(e) => e,
                         });
                 }

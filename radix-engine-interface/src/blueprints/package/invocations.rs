@@ -7,8 +7,8 @@ use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use sbor::basic_well_known_types::ANY_ID;
 use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
-use scrypto_schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FunctionSchemaInit};
 use scrypto_schema::TypeRef;
+use scrypto_schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FunctionSchemaInit};
 use scrypto_schema::{BlueprintFunctionsSchemaInit, ReceiverInfo};
 use scrypto_schema::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
 
@@ -291,11 +291,13 @@ impl PackageDefinition {
             BlueprintDefinitionInit {
                 schema: BlueprintSchemaInit {
                     state: BlueprintStateSchemaInit {
-                        collections: vec![BlueprintCollectionSchema::KeyValueStore(BlueprintKeyValueStoreSchema {
-                            key: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                            value: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                            can_own: true,
-                        })],
+                        collections: vec![BlueprintCollectionSchema::KeyValueStore(
+                            BlueprintKeyValueStoreSchema {
+                                key: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                                value: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                                can_own: true,
+                            },
+                        )],
                         ..Default::default()
                     },
                     functions: BlueprintFunctionsSchemaInit {

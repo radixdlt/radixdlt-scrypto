@@ -25,8 +25,8 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-            where
-                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        where
+            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         {
             match export_name {
                 "test" => {
@@ -34,7 +34,7 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
                         OBJECT_HANDLE_SELF,
                         0u8,
                         &scrypto_encode(&()).unwrap(),
-                        LockFlags::read_only()
+                        LockFlags::read_only(),
                     )?;
                 }
                 "new" => {
@@ -88,7 +88,9 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
     let result = receipt.expect_commit_success();
     for ((node_id, _partition_num), updates) in &result.state_updates.system_updates {
         for (_key, update) in updates {
-            if matches!(update, DatabaseUpdate::Set(..)) && node_id.eq(component_address.as_node_id()) {
+            if matches!(update, DatabaseUpdate::Set(..))
+                && node_id.eq(component_address.as_node_id())
+            {
                 panic!("No database writes to the component should have occurred");
             }
         }
