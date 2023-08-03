@@ -9,7 +9,9 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::{CallFrameEventHandler, CallFrameMessage};
+use crate::kernel::call_frame::{
+    CallFrameEventHandler, CallFrameMessage, CallFrameStoreAccessEvent,
+};
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
@@ -210,18 +212,17 @@ pub struct Kernel<
 struct KernelHandler<
     'a,
     M: KernelCallbackObject,
-    F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+    F: FnMut(&mut KernelReadOnly<M>, Option<StoreAccess>) -> Result<(), RuntimeError>,
 > {
     callback: &'a mut M,
     prev_frame: Option<&'a CallFrame<M::CallFrameData, M::LockData>>,
     on_store_access: F,
-    read_from_heap: bool,
 }
 
 impl<
         'a,
         M: KernelCallbackObject,
-        F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+        F: FnMut(&mut KernelReadOnly<M>, Option<StoreAccess>) -> Result<(), RuntimeError>,
     > KernelHandler<'a, M, F>
 {
     pub fn new(
@@ -233,14 +234,13 @@ impl<
             callback,
             prev_frame,
             on_store_access,
-            read_from_heap: false,
         }
     }
 }
 
 impl<
         M: KernelCallbackObject,
-        F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+        F: FnMut(&mut KernelReadOnly<M>, Option<StoreAccess>) -> Result<(), RuntimeError>,
     > CallFrameEventHandler<M::CallFrameData, M::LockData, RuntimeError>
     for KernelHandler<'_, M, F>
 {
@@ -252,7 +252,7 @@ impl<
         &mut self,
         current_frame: &CallFrame<M::CallFrameData, M::LockData>,
         heap: &Heap,
-        store_access: StoreAccess,
+        store_access: CallFrameStoreAccessEvent,
     ) -> Result<(), RuntimeError> {
         let mut read_only = KernelReadOnly {
             current_frame,
@@ -261,11 +261,12 @@ impl<
             callback: self.callback,
         };
 
-        (self.on_store_access)(&mut read_only, store_access)
-    }
-
-    fn on_read_from_heap(&mut self) {
-        self.read_from_heap = true;
+        match store_access {
+            CallFrameStoreAccessEvent::StoreAccess(store_access) => {
+                (self.on_store_access)(&mut read_only, Some(store_access))
+            }
+            CallFrameStoreAccessEvent::HeapAccess => (self.on_store_access)(&mut read_only, None),
+        }
     }
 }
 
@@ -307,7 +308,9 @@ where
         let mut handler = KernelHandler::new(
             self.callback,
             self.prev_frame_stack.last(),
-            |api, store_access| M::on_create_node(api, CreateNodeEvent::StoreAccess(&store_access)),
+            |api, store_access| {
+                M::on_create_node(api, CreateNodeEvent::StoreAccess(&store_access.unwrap()))
+            },
         );
 
         self.current_frame
@@ -360,7 +363,9 @@ where
         let mut handler = KernelHandler::new(
             self.callback,
             self.prev_frame_stack.last(),
-            |api, store_access| M::on_move_module(api, MoveModuleEvent::StoreAccess(&store_access)),
+            |api, store_access| {
+                M::on_move_module(api, MoveModuleEvent::StoreAccess(&store_access.unwrap()))
+            },
         );
 
         self.current_frame
@@ -763,7 +768,7 @@ where
             self.callback,
             self.prev_frame_stack.last(),
             |api, store_access| {
-                M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
+                M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access.unwrap()))
             },
         );
 
@@ -787,11 +792,15 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let mut handler = KernelHandler::new(
-            self.callback,
-            self.prev_frame_stack.last(),
-            |_api, _store_access| Ok(()),
-        );
+        let mut read_from_heap: bool = false;
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |_, _| {
+                read_from_heap = true;
+                Ok(())
+            },
+        };
 
         let value = self
             .current_frame
@@ -799,7 +808,6 @@ where
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
-        let read_from_heap = handler.read_from_heap;
         let mut read_only = as_read_only!(self);
         M::on_read_substate(
             &mut read_only,
@@ -1040,7 +1048,10 @@ where
                 self.callback,
                 self.prev_frame_stack.last(),
                 |api, store_access| {
-                    M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
+                    M::on_close_substate(
+                        api,
+                        CloseSubstateEvent::StoreAccess(&store_access.unwrap()),
+                    )
                 },
             );
 
@@ -1064,7 +1075,10 @@ where
                 self.callback,
                 self.prev_frame_stack.last(),
                 |api, store_access| {
-                    M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
+                    M::on_close_substate(
+                        api,
+                        CloseSubstateEvent::StoreAccess(&store_access.unwrap()),
+                    )
                 },
             );
 

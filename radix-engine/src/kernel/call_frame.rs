@@ -191,6 +191,11 @@ impl NodeVisibility {
     }
 }
 
+pub enum CallFrameStoreAccessEvent {
+    StoreAccess(StoreAccess),
+    HeapAccess,
+}
+
 pub trait CallFrameEventHandler<C, L, E> {
     fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
 
@@ -198,10 +203,8 @@ pub trait CallFrameEventHandler<C, L, E> {
         &mut self,
         current_frame: &CallFrame<C, L>,
         heap: &Heap,
-        store_access: StoreAccess,
+        store_access: CallFrameStoreAccessEvent,
     ) -> Result<(), E>;
-
-    fn on_read_from_heap(&mut self);
 }
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
@@ -762,7 +765,9 @@ impl<C, L: Clone> CallFrame<C, L> {
         let value = if let Some(store_handle) = store_handle {
             store.read_substate(*store_handle)
         } else {
-            handler.on_read_from_heap();
+            handler
+                .on_store_access(self, heap, CallFrameStoreAccessEvent::HeapAccess)
+                .map_err(|_| ReadSubstateError::LockNotFound(1))?;
             heap.get_substate(node_id, *partition_num, substate_key)
                 .expect("Substate missing in heap")
         };
@@ -863,7 +868,11 @@ impl<C, L: Clone> CallFrame<C, L> {
 
             store
                 .create_node(node_id, node_substates, &mut |store_access| {
-                    handler.on_store_access(self, heap, store_access)
+                    handler.on_store_access(
+                        self,
+                        heap,
+                        CallFrameStoreAccessEvent::StoreAccess(store_access),
+                    )
                 })
                 .map_err(CallbackError::CallbackError)?;
         } else {
@@ -982,7 +991,13 @@ impl<C, L: Clone> CallFrame<C, L> {
                         dest_partition_number,
                         substate_key,
                         substate_value,
-                        &mut |store_access| handler.on_store_access(self, heap, store_access),
+                        &mut |store_access| {
+                            handler.on_store_access(
+                                self,
+                                heap,
+                                CallFrameStoreAccessEvent::StoreAccess(store_access),
+                            )
+                        },
                     )
                     .map_err(|e| e.map(MoveModuleError::TrackSetSubstateError))?
             }
@@ -1267,7 +1282,11 @@ impl<C, L: Clone> CallFrame<C, L> {
 
             store
                 .create_node(node_id.clone(), node_substates, &mut |store_access| {
-                    handler.on_store_access(self, heap, store_access)
+                    handler.on_store_access(
+                        self,
+                        heap,
+                        CallFrameStoreAccessEvent::StoreAccess(store_access),
+                    )
                 })
                 .map_err(CallbackError::CallbackError)?;
         }
