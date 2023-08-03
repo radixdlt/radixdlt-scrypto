@@ -323,6 +323,11 @@ mod tests {
             "package_rdx1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxcntrlr",
         );
         check_address(
+            POOL_PACKAGE.as_ref(),
+            EntityType::GlobalPackage,
+            "package_rdx1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxplxxxx",
+        );
+        check_address(
             TRANSACTION_PROCESSOR_PACKAGE.as_ref(),
             EntityType::GlobalPackage,
             "package_rdx1pkgxxxxxxxxxtxnpxrxxxxxxxxx002962227406xxxxxxxxxtxnpxr",
