@@ -131,7 +131,7 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum ResourceDepositRule {
+            enum ResourcePreference {
                 Neither = 0;
                 Allowed = 1;
                 Disallowed = 2;

@@ -11,7 +11,7 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
-pub enum ResourceDepositRule {
+pub enum ResourcePreference {
     /// The resource is neither on the allow or deny list.
     Neither,
 
@@ -227,18 +227,18 @@ pub struct AccountChangeDefaultDepositRuleInput {
 pub type AccountChangeDefaultDepositRuleOutput = ();
 
 //============================
-// Configure Resource Deposit Rule
+// Configure Resource Preference
 //============================
 
-pub const ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT: &str = "configure_resource_deposit_rule";
+pub const ACCOUNT_CONFIGURE_RESOURCE_PREFERENCE_IDENT: &str = "configure_resource_preference";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountConfigureResourceDepositRuleInput {
+pub struct AccountConfigureResourcePreferenceInput {
     pub resource_address: ResourceAddress,
-    pub resource_deposit_configuration: ResourceDepositRule,
+    pub resource_deposit_configuration: ResourcePreference,
 }
 
-pub type AccountConfigureResourceDepositRuleOutput = ();
+pub type AccountConfigureResourcePreferenceOutput = ();
 
 //===============================
 // Account Try Deposit Or Refund

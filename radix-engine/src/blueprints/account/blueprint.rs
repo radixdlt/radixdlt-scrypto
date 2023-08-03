@@ -59,7 +59,7 @@ pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;
 
 pub const ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX: CollectionIndex = 1u8;
-pub type AccountResourceDepositRuleEntry = Option<ResourceDepositRule>;
+pub type AccountResourcePreferenceEntry = Option<ResourcePreference>;
 
 pub const ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX: CollectionIndex = 2u8;
 pub type AccountAuthorizedDepositorsEntry = Option<()>;
@@ -676,9 +676,9 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn configure_resource_deposit_rule<Y>(
+    pub fn configure_resource_preference<Y>(
         resource_address: ResourceAddress,
-        resource_deposit_configuration: ResourceDepositRule,
+        resource_deposit_configuration: ResourcePreference,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -687,7 +687,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         match resource_deposit_configuration {
-            ResourceDepositRule::Allowed | ResourceDepositRule::Disallowed => {
+            ResourcePreference::Allowed | ResourcePreference::Disallowed => {
                 let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
                     OBJECT_HANDLE_SELF,
                     ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
@@ -702,7 +702,7 @@ impl AccountBlueprint {
 
                 api.key_value_entry_close(kv_store_entry_lock_handle)?;
             }
-            ResourceDepositRule::Neither => {
+            ResourcePreference::Neither => {
                 api.actor_remove_key_value_entry(
                     OBJECT_HANDLE_SELF,
                     ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
@@ -832,13 +832,13 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_deposit_rule =
+        let resource_preference =
             Self::get_resource_deposit_configuration(resource_address, api)?;
 
-        let is_deposit_allowed = match resource_deposit_rule {
-            ResourceDepositRule::Allowed => true,
-            ResourceDepositRule::Disallowed => false,
-            ResourceDepositRule::Neither => {
+        let is_deposit_allowed = match resource_preference {
+            ResourcePreference::Allowed => true,
+            ResourcePreference::Disallowed => false,
+            ResourcePreference::Neither => {
                 let default = Self::get_default_deposit_rule(api)?;
                 match default {
                     DefaultDepositRule::Accept => true,
@@ -887,7 +887,7 @@ impl AccountBlueprint {
     fn get_resource_deposit_configuration<Y>(
         resource_address: &ResourceAddress,
         api: &mut Y,
-    ) -> Result<ResourceDepositRule, RuntimeError>
+    ) -> Result<ResourcePreference, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -902,11 +902,11 @@ impl AccountBlueprint {
 
         let resource_deposit_configuration = {
             let entry =
-                api.key_value_entry_get_typed::<ResourceDepositRule>(kv_store_entry_lock_handle)?;
+                api.key_value_entry_get_typed::<ResourcePreference>(kv_store_entry_lock_handle)?;
 
             match entry {
                 Option::Some(resource_deposit_configuration) => resource_deposit_configuration,
-                Option::None => ResourceDepositRule::Neither,
+                Option::None => ResourcePreference::Neither,
             }
         };
 

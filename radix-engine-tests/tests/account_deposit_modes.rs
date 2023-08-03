@@ -540,17 +540,17 @@ impl AccountDepositModesTestRunner {
         self.execute_manifest(manifest, sign)
     }
 
-    fn configure_resource_deposit_rule(
+    fn configure_resource_preference(
         &mut self,
         resource_address: ResourceAddress,
-        resource_deposit_configuration: ResourceDepositRule,
+        resource_deposit_configuration: ResourcePreference,
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.component_address,
-                ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT,
-                AccountConfigureResourceDepositRuleInput {
+                ACCOUNT_CONFIGURE_RESOURCE_PREFERENCE_IDENT,
+                AccountConfigureResourcePreferenceInput {
                     resource_address,
                     resource_deposit_configuration,
                 },
@@ -564,7 +564,7 @@ impl AccountDepositModesTestRunner {
         resource_address: ResourceAddress,
         sign: bool,
     ) -> TransactionReceipt {
-        self.configure_resource_deposit_rule(resource_address, ResourceDepositRule::Allowed, sign)
+        self.configure_resource_preference(resource_address, ResourcePreference::Allowed, sign)
     }
 
     pub fn add_to_deny_list(
@@ -572,11 +572,7 @@ impl AccountDepositModesTestRunner {
         resource_address: ResourceAddress,
         sign: bool,
     ) -> TransactionReceipt {
-        self.configure_resource_deposit_rule(
-            resource_address,
-            ResourceDepositRule::Disallowed,
-            sign,
-        )
+        self.configure_resource_preference(resource_address, ResourcePreference::Disallowed, sign)
     }
 
     pub fn remove_from_allow_list(
@@ -584,7 +580,7 @@ impl AccountDepositModesTestRunner {
         resource_address: ResourceAddress,
         sign: bool,
     ) -> TransactionReceipt {
-        self.configure_resource_deposit_rule(resource_address, ResourceDepositRule::Neither, sign)
+        self.configure_resource_preference(resource_address, ResourcePreference::Neither, sign)
     }
 
     pub fn remove_from_deny_list(
@@ -592,7 +588,7 @@ impl AccountDepositModesTestRunner {
         resource_address: ResourceAddress,
         sign: bool,
     ) -> TransactionReceipt {
-        self.configure_resource_deposit_rule(resource_address, ResourceDepositRule::Neither, sign)
+        self.configure_resource_preference(resource_address, ResourcePreference::Neither, sign)
     }
 
     pub fn virtual_signature_badge(&self) -> NonFungibleGlobalId {

@@ -47,7 +47,7 @@ impl AccountNativePackage {
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
                 value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<ResourceDepositRule>(),
+                    aggregator.add_child_type_and_descendents::<ResourcePreference>(),
                 ),
                 can_own: false,
             },
@@ -293,14 +293,14 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT.to_string(),
+            ACCOUNT_CONFIGURE_RESOURCE_PREFERENCE_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: TypeRef::Static(aggregator
-                    .add_child_type_and_descendents::<AccountConfigureResourceDepositRuleInput>()),
+                    .add_child_type_and_descendents::<AccountConfigureResourcePreferenceInput>()),
                 output: TypeRef::Static(aggregator
-                    .add_child_type_and_descendents::<AccountConfigureResourceDepositRuleOutput>()),
-                export: ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AccountConfigureResourcePreferenceOutput>()),
+                export: ACCOUNT_CONFIGURE_RESOURCE_PREFERENCE_IDENT.to_string(),
             },
         );
 
@@ -498,7 +498,7 @@ impl AccountNativePackage {
                             ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
 
                             ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
-                            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_CONFIGURE_RESOURCE_PREFERENCE_IDENT => [OWNER_ROLE];
                             ACCOUNT_WITHDRAW_IDENT => [OWNER_ROLE];
                             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
                             ACCOUNT_LOCK_FEE_IDENT => [OWNER_ROLE];
@@ -782,14 +782,14 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::set_default_deposit_rule(default, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => {
-                let AccountConfigureResourceDepositRuleInput {
+            ACCOUNT_CONFIGURE_RESOURCE_PREFERENCE_IDENT => {
+                let AccountConfigureResourcePreferenceInput {
                     resource_address,
                     resource_deposit_configuration,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::configure_resource_deposit_rule(
+                let rtn = AccountBlueprint::configure_resource_preference(
                     resource_address,
                     resource_deposit_configuration,
                     api,

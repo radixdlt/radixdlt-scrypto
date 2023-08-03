@@ -126,7 +126,7 @@ extern_blueprint_internal! {
         fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal);
         fn burn_non_fungibles(&mut self, resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>);
         fn set_default_deposit_rule(&self, default: DefaultDepositRule);
-        fn configure_resource_deposit_rule(&self, resource_address: ResourceAddress, resource_deposit_configuration: ResourceDepositRule);
+        fn configure_resource_preference(&self, resource_address: ResourceAddress, resource_deposit_configuration: ResourcePreference);
         fn create_proof(&self, resource_address: ResourceAddress) -> Proof;
         fn create_proof_of_amount(&self, resource_address: ResourceAddress, amount: Decimal) -> Proof;
         fn create_proof_of_non_fungibles(&self, resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>) -> Proof;
