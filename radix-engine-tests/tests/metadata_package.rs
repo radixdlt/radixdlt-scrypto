@@ -56,7 +56,7 @@ fn can_set_package_metadata_with_owner() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package(code, single_function_package_definition("Test", "f"))
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let package_address = receipt.expect_commit(true).new_package_addresses()[0];

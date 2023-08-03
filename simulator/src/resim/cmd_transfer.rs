@@ -56,7 +56,7 @@ impl Transfer {
         }
         let manifest = builder
             .withdraw_from_account(default_account, self.resource_address.0, self.amount)
-            .try_deposit_batch_or_refund(self.recipient.0)
+            .try_deposit_batch_or_refund(self.recipient.0, None)
             .build();
         handle_manifest(
             manifest,

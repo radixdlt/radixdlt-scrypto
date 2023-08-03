@@ -459,16 +459,16 @@ impl AccountDepositModesTestRunner {
         deposit_method: DepositMethod,
         sign: bool,
     ) -> TransactionReceipt {
-        let (method, is_vec) = match deposit_method {
-            DepositMethod::Deposit => (ACCOUNT_DEPOSIT_IDENT, false),
-            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT, false),
-            DepositMethod::TryDepositOrAbort => (ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, false),
-            DepositMethod::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true),
+        let (method, is_vec, insert_badge) = match deposit_method {
+            DepositMethod::Deposit => (ACCOUNT_DEPOSIT_IDENT, false, false),
+            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT, false, true),
+            DepositMethod::TryDepositOrAbort => (ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, false, true),
+            DepositMethod::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true, false),
             DepositMethod::TryDepositBatchOrRefund => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT, true)
+                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT, true, true)
             }
             DepositMethod::TryDepositBatchOrAbort => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT, true)
+                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT, true, true)
             }
         };
 
@@ -477,10 +477,13 @@ impl AccountDepositModesTestRunner {
             .take_all_from_worktop(resource_address, "bucket")
             .with_name_lookup(|builder, lookup| {
                 let bucket = lookup.bucket("bucket");
-                let args = if is_vec {
-                    manifest_args!(vec![bucket])
-                } else {
-                    manifest_args!(bucket)
+                let args = match (is_vec, insert_badge) {
+                    (true, true) => {
+                        manifest_args!(vec![bucket], Option::<ResourceOrNonFungible>::None)
+                    }
+                    (true, false) => manifest_args!(vec![bucket]),
+                    (false, true) => manifest_args!(bucket, Option::<ResourceOrNonFungible>::None),
+                    (false, false) => manifest_args!(bucket),
                 };
                 builder.call_method(self.component_address, method, args)
             })
@@ -493,16 +496,16 @@ impl AccountDepositModesTestRunner {
         deposit_method: DepositMethod,
         sign: bool,
     ) -> TransactionReceipt {
-        let (method, is_vec) = match deposit_method {
-            DepositMethod::Deposit => (ACCOUNT_DEPOSIT_IDENT, false),
-            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT, false),
-            DepositMethod::TryDepositOrAbort => (ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, false),
-            DepositMethod::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true),
+        let (method, is_vec, insert_badge) = match deposit_method {
+            DepositMethod::Deposit => (ACCOUNT_DEPOSIT_IDENT, false, false),
+            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT, false, true),
+            DepositMethod::TryDepositOrAbort => (ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, false, true),
+            DepositMethod::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true, false),
             DepositMethod::TryDepositBatchOrRefund => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT, true)
+                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT, true, true)
             }
             DepositMethod::TryDepositBatchOrAbort => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT, true)
+                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT, true, true)
             }
         };
 
@@ -514,10 +517,15 @@ impl AccountDepositModesTestRunner {
                 builder.call_method(
                     self.component_address,
                     method,
-                    if is_vec {
-                        manifest_args!(vec![bucket])
-                    } else {
-                        manifest_args!(bucket)
+                    match (is_vec, insert_badge) {
+                        (true, true) => {
+                            manifest_args!(vec![bucket], Option::<ResourceOrNonFungible>::None)
+                        }
+                        (true, false) => manifest_args!(vec![bucket]),
+                        (false, true) => {
+                            manifest_args!(bucket, Option::<ResourceOrNonFungible>::None)
+                        }
+                        (false, false) => manifest_args!(bucket),
                     },
                 )
             })
@@ -614,7 +622,7 @@ impl AccountDepositModesTestRunner {
             .get_component_balance(self.component_address, resource_address);
         let manifest = ManifestBuilder::new()
             .withdraw_from_account(self.component_address, resource_address, balance)
-            .try_deposit_batch_or_refund(virtual_account)
+            .try_deposit_batch_or_refund(virtual_account, None)
             .build();
 
         self.execute_manifest(manifest, true)

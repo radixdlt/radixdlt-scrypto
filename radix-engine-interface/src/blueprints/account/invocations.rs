@@ -108,6 +108,11 @@ pub struct AccountDepositInput {
     pub bucket: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountDepositManifestInput {
+    pub bucket: ManifestBucket,
+}
+
 pub type AccountDepositOutput = ();
 
 //=======================
@@ -119,6 +124,11 @@ pub const ACCOUNT_DEPOSIT_BATCH_IDENT: &str = "deposit_batch";
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct AccountDepositBatchInput {
     pub buckets: Vec<Bucket>,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountDepositBatchManifestInput {
+    pub buckets: Vec<ManifestBucket>,
 }
 
 pub type AccountDepositBatchOutput = ();
@@ -259,6 +269,13 @@ pub const ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT: &str = "try_deposit_or_refund";
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct AccountTryDepositOrRefundInput {
     pub bucket: Bucket,
+    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountTryDepositOrRefundManifestInput {
+    pub bucket: ManifestBucket,
+    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
 }
 
 pub type AccountTryDepositOrRefundOutput = Option<Bucket>;
@@ -272,6 +289,13 @@ pub const ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT: &str = "try_deposit_batch_o
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct AccountTryDepositBatchOrRefundInput {
     pub buckets: Vec<Bucket>,
+    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountTryDepositBatchOrRefundManifestInput {
+    pub buckets: Vec<ManifestBucket>,
+    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
 }
 
 pub type AccountTryDepositBatchOrRefundOutput = Vec<Bucket>;
@@ -285,6 +309,13 @@ pub const ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT: &str = "try_deposit_or_abort";
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct AccountTryDepositOrAbortInput {
     pub bucket: Bucket,
+    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountTryDepositOrAbortManifestInput {
+    pub bucket: ManifestBucket,
+    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
 }
 
 pub type AccountTryDepositOrAbortOutput = ();
@@ -298,91 +329,16 @@ pub const ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT: &str = "try_deposit_batch_or
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct AccountTryDepositBatchOrAbortInput {
     pub buckets: Vec<Bucket>,
+    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountTryDepositBatchOrAbortManifestInput {
+    pub buckets: Vec<ManifestBucket>,
+    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
 }
 
 pub type AccountTryDepositBatchOrAbortOutput = ();
-
-//==========================================
-// Account Try Authorized Deposit Or Refund
-//==========================================
-
-pub const ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT: &str = "try_authorized_deposit_or_refund";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryAuthorizedDepositOrRefundInput {
-    pub bucket: Bucket,
-    pub badge: ResourceOrNonFungible,
-}
-
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
-pub struct AccountTryAuthorizedDepositOrRefundManifestInput {
-    pub bucket: ManifestBucket,
-    pub badge: ResourceOrNonFungible,
-}
-
-pub type AccountTryAuthorizedDepositOrRefundOutput = Option<Bucket>;
-
-//================================================
-// Account Try Authorized Deposit Batch Or Refund
-//================================================
-
-pub const ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT: &str =
-    "try_authorized_deposit_batch_or_refund";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryAuthorizedDepositBatchOrRefundInput {
-    pub buckets: Vec<Bucket>,
-    pub badge: ResourceOrNonFungible,
-}
-
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
-pub struct AccountTryAuthorizedDepositBatchOrRefundManifestInput {
-    pub buckets: Vec<ManifestBucket>,
-    pub badge: ResourceOrNonFungible,
-}
-
-pub type AccountTryAuthorizedDepositBatchOrRefundOutput = Vec<Bucket>;
-
-//=========================================
-// Account Try Authorized Deposit Or Abort
-//=========================================
-
-pub const ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT: &str = "try_authorized_deposit_or_abort";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryAuthorizedDepositOrAbortInput {
-    pub bucket: Bucket,
-    pub badge: ResourceOrNonFungible,
-}
-
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
-pub struct AccountTryAuthorizedDepositOrAbortManifestInput {
-    pub bucket: ManifestBucket,
-    pub badge: ResourceOrNonFungible,
-}
-
-pub type AccountTryAuthorizedDepositOrAbortOutput = ();
-
-//===============================================
-// Account Try Authorized Deposit Batch Or Abort
-//===============================================
-
-pub const ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT: &str =
-    "try_authorized_deposit_batch_or_abort";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryAuthorizedDepositBatchOrAbortInput {
-    pub buckets: Vec<Bucket>,
-    pub badge: ResourceOrNonFungible,
-}
-
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
-pub struct AccountTryAuthorizedDepositBatchOrAbortManifestInput {
-    pub buckets: Vec<ManifestBucket>,
-    pub badge: ResourceOrNonFungible,
-}
-
-pub type AccountTryAuthorizedDepositBatchOrAbortOutput = ();
 
 //==============
 // Account Burn

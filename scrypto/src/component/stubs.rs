@@ -138,14 +138,10 @@ extern_blueprint_internal! {
         fn lock_fee_and_withdraw(&mut self, amount_to_lock: Decimal, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
         fn lock_fee_and_withdraw_non_fungibles(&mut self, amount_to_lock: Decimal, resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>) -> Bucket;
         fn securify(&mut self) -> Bucket;
-        fn try_deposit_batch_or_abort(&mut self, buckets: Vec<Bucket>);
-        fn try_deposit_batch_or_refund(&mut self, buckets: Vec<Bucket>) -> Vec<Bucket>;
-        fn try_deposit_or_abort(&mut self, bucket: Bucket);
-        fn try_deposit_or_refund(&mut self, bucket: Bucket) -> Option<Bucket>;
-        fn try_authorized_deposit_batch_or_abort(&mut self, buckets: Vec<Bucket>, badge: ResourceOrNonFungible);
-        fn try_authorized_deposit_batch_or_refund(&mut self, buckets: Vec<Bucket>, badge: ResourceOrNonFungible) -> Vec<Bucket>;
-        fn try_authorized_deposit_or_abort(&mut self, bucket: Bucket, badge: ResourceOrNonFungible);
-        fn try_authorized_deposit_or_refund(&mut self, bucket: Bucket, badge: ResourceOrNonFungible) -> Option<Bucket>;
+        fn try_deposit_batch_or_abort(&mut self, buckets: Vec<Bucket>, authorized_depositor_badge: Option<ResourceOrNonFungible>);
+        fn try_deposit_batch_or_refund(&mut self, buckets: Vec<Bucket>, authorized_depositor_badge: Option<ResourceOrNonFungible>) -> Vec<Bucket>;
+        fn try_deposit_or_abort(&mut self, bucket: Bucket, authorized_depositor_badge: Option<ResourceOrNonFungible>);
+        fn try_deposit_or_refund(&mut self, bucket: Bucket, authorized_depositor_badge: Option<ResourceOrNonFungible>) -> Option<Bucket>;
         fn withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
         fn withdraw_non_fungibles(&mut self, resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>) -> Bucket;
         fn add_authorized_depositor(&mut self, badge: ResourceOrNonFungible);

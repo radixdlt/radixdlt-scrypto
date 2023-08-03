@@ -79,7 +79,7 @@ impl NewTokenFixed {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .new_token_fixed(OwnerRole::None, metadata, self.total_supply)
-            .try_deposit_batch_or_refund(default_account)
+            .try_deposit_batch_or_refund(default_account, None)
             .build();
         handle_manifest(
             manifest,

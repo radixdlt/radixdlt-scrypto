@@ -85,7 +85,7 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     let initial_balance = test_runner.get_component_balance(account0, XRD);
     let instructions = ManifestBuilder::new()
         .withdraw_from_account(account0, XRD, 10)
-        .try_deposit_batch_or_abort(account1)
+        .try_deposit_batch_or_abort(account1, None)
         .build()
         .instructions;
     let manifest_encoded_instructions = manifest_encode(&instructions).unwrap();
