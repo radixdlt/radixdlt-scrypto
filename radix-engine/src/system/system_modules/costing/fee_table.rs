@@ -424,6 +424,10 @@ impl FeeTable {
                 // The max number of entries is limited by limits module.
                 0
             }
+            StoreAccess::ReadFromHeap => {
+                // Handled in read_substate_cost function
+                0
+            }
         }
     }
 
