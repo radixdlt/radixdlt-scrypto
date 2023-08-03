@@ -7,11 +7,8 @@ use crate::utils::*;
 /// Transfer resource to another account
 #[derive(Parser, Debug)]
 pub struct Transfer {
-    /// The amount to transfer.
-    pub amount: Decimal,
-
-    /// The resource address.
-    pub resource_address: SimulatorResourceAddress,
+    /// The resource specifier.
+    pub resource_specifier: String,
 
     /// The recipient component address.
     pub recipient: SimulatorComponentAddress,
@@ -54,8 +51,20 @@ impl Transfer {
             )
             .map_err(Error::FailedToBuildArguments)?
         }
+
+        let resource_specifier =
+            parse_resource_specifier(&self.resource_specifier, &address_bech32_decoder)
+                .map_err(|_| Error::InvalidResourceSpecifier(self.resource_specifier.clone()))?;
+
+        builder = match resource_specifier {
+            ResourceSpecifier::Amount(amount, resource_address) => {
+                builder.withdraw_from_account(default_account, resource_address, amount)
+            }
+            ResourceSpecifier::Ids(ids, resource_address) => {
+                builder.withdraw_non_fungibles_from_account(default_account, resource_address, &ids)
+            }
+        };
         let manifest = builder
-            .withdraw_from_account(default_account, self.resource_address.0, self.amount)
             .try_deposit_batch_or_refund(self.recipient.0, None)
             .build();
         handle_manifest(
