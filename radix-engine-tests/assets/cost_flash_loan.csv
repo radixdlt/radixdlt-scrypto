@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,     0.13701818,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.13665818,     99.7%
+Total Cost (XRD)                                                           ,     0.13706147,    100.0%
++ Execution Cost (XRD)                                                     ,     0.13670147,     99.7%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00036,      0.3%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       13665818,    100.0%
+Total Cost Units Consumed                                                  ,       13670147,    100.0%
 AfterInvoke                                                                ,           1880,      0.0%
 AllocateNodeId                                                             ,          30500,      0.2%
 BeforeInvoke                                                               ,          34224,      0.3%
@@ -56,8 +56,8 @@ RunNativeCode::take_FungibleVault                                          ,    
 RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,      0.5%
 RunNativeCode::unlock_amount_FungibleVault                                 ,          47112,      0.3%
 RunNativeCode::withdraw                                                    ,          47564,      0.3%
-RunWasmCode::BasicFlashLoan_repay_loan                                     ,          68603,      0.5%
-RunWasmCode::BasicFlashLoan_take_loan                                      ,         117221,      0.9%
+RunWasmCode::BasicFlashLoan_repay_loan                                     ,          70268,      0.5%
+RunWasmCode::BasicFlashLoan_take_loan                                      ,         119885,      0.9%
 TxBaseCost                                                                 ,          50000,      0.4%
 TxPayloadCost                                                              ,          20560,      0.2%
 TxSignatureVerification                                                    ,           7000,      0.1%
