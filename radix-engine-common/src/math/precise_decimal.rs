@@ -447,8 +447,9 @@ macro_rules! impl_arith_ops {
         impl Add<PreciseDecimal> for $type {
             type Output = PreciseDecimal;
 
+            #[inline]
             fn add(self, other: PreciseDecimal) -> Self::Output {
-                PreciseDecimal::from(self) + other
+                other + self
             }
         }
 
@@ -463,8 +464,9 @@ macro_rules! impl_arith_ops {
         impl Mul<PreciseDecimal> for $type {
             type Output = PreciseDecimal;
 
+            #[inline]
             fn mul(self, other: PreciseDecimal) -> Self::Output {
-                PreciseDecimal::from(self) * other
+                other * self
             }
         }
 

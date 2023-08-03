@@ -432,8 +432,9 @@ macro_rules! impl_arith_ops {
         impl Add<Decimal> for $type {
             type Output = Decimal;
 
+            #[inline]
             fn add(self, other: Decimal) -> Self::Output {
-                Decimal::from(self) + other
+                other + self
             }
         }
 
@@ -448,8 +449,9 @@ macro_rules! impl_arith_ops {
         impl Mul<Decimal> for $type {
             type Output = Decimal;
 
+            #[inline]
             fn mul(self, other: Decimal) -> Self::Output {
-                Decimal::from(self) * other
+                other * self
             }
         }
 
