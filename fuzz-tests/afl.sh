@@ -173,7 +173,9 @@ elif [ $cmd = "watch" ] ; then
     echo "AFL sessions info:" | tee afl/sessions_info
     for f in $list ; do
         name=$(basename ${f%.status})
-        stats_file=afl/${target}/${name}/fuzzer_stats
+        # fuzzing session id does include target name
+        id=${name#${target}_}
+        stats_file=afl/${target}/${id}/fuzzer_stats
         stability="n/a"
         coverage="n/a"
         crashes="n/a"
