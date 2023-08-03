@@ -467,8 +467,8 @@ pub fn get_event_schema<S: SubstateDatabase>(
                 }
             }
         }
-        EventTypeIdentifier(Emitter::Function(node_id, ..), schema_pointer) => (
-            PackageAddress::new_or_panic(node_id.clone().into()),
+        EventTypeIdentifier(Emitter::Function(blueprint_id), schema_pointer) => (
+            blueprint_id.package_address,
             *schema_pointer,
         ),
     };

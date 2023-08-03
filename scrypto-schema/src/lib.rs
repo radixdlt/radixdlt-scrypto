@@ -128,15 +128,15 @@ pub enum TypeRef<T> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintKeyValueStoreSchema<T> {
+pub struct BlueprintKeyValueSchema<T> {
     pub key: T,
     pub value: T,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
-impl<T> BlueprintKeyValueStoreSchema<T> {
-    pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintKeyValueStoreSchema<U> {
-        BlueprintKeyValueStoreSchema {
+impl<T> BlueprintKeyValueSchema<T> {
+    pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintKeyValueSchema<U> {
+        BlueprintKeyValueSchema {
             key: f(self.key),
             value: f(self.value),
             can_own: self.can_own,
@@ -145,24 +145,20 @@ impl<T> BlueprintKeyValueStoreSchema<T> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintIndexSchema {}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintSortedIndexSchema {}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum BlueprintCollectionSchema<T> {
-    KeyValueStore(BlueprintKeyValueStoreSchema<T>),
-    Index(BlueprintIndexSchema),
-    SortedIndex(BlueprintSortedIndexSchema),
+    KeyValueStore(BlueprintKeyValueSchema<T>),
+    Index(BlueprintKeyValueSchema<T>),
+    SortedIndex(BlueprintKeyValueSchema<T>),
 }
 
 impl<T> BlueprintCollectionSchema<T> {
     pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintCollectionSchema<U> {
         match self {
-            BlueprintCollectionSchema::Index(schema) => BlueprintCollectionSchema::Index(schema),
+            BlueprintCollectionSchema::Index(schema) => {
+                BlueprintCollectionSchema::Index(schema.map(f))
+            }
             BlueprintCollectionSchema::SortedIndex(schema) => {
-                BlueprintCollectionSchema::SortedIndex(schema)
+                BlueprintCollectionSchema::SortedIndex(schema.map(f))
             }
             BlueprintCollectionSchema::KeyValueStore(schema) => {
                 BlueprintCollectionSchema::KeyValueStore(schema.map(f))

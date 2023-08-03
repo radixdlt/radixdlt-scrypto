@@ -50,7 +50,7 @@ impl ObjectModuleId {
 
     pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
-            ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,
+            ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
             ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
             ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
             ObjectModuleId::Main => MAIN_BASE_PARTITION,

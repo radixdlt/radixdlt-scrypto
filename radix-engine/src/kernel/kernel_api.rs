@@ -138,7 +138,7 @@ pub trait KernelSubstateApi<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
+    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, RuntimeError>;
 
     fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,

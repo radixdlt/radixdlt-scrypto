@@ -78,21 +78,22 @@ pub trait ClientActorSortedIndexApi<E> {
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         count: u32,
-    ) -> Result<Vec<Vec<u8>>, E>;
+    ) -> Result<Vec<(SortedKey, Vec<u8>)>, E>;
 
     /// Scans the first elements of count from a sorted index
-    fn actor_sorted_index_scan_typed<S: ScryptoDecode>(
+    fn actor_sorted_index_scan_typed<K: ScryptoDecode, V: ScryptoDecode>(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         count: u32,
-    ) -> Result<Vec<S>, E> {
+    ) -> Result<Vec<(K, V)>, E> {
         let entries = self
             .actor_sorted_index_scan(object_handle, collection_index, count)?
             .into_iter()
-            .map(|buf| {
-                let typed: S = scrypto_decode(&buf).unwrap();
-                typed
+            .map(|(key, buf)| {
+                let typed_key: K = scrypto_decode(&key.1).unwrap();
+                let typed_value: V = scrypto_decode(&buf).unwrap();
+                (typed_key, typed_value)
             })
             .collect();
 
