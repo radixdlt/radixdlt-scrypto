@@ -66,6 +66,9 @@ pub const MAX_METADATA_VALUE_SBOR_LEN: usize = 512;
 /// The max depth of an access rule, to protect unbounded native stack useage
 pub const MAX_ACCESS_RULE_DEPTH: usize = 8;
 
+/// The max number of access rule nodes in an access rule
+pub const MAX_ACCESS_RULE_NODES: usize = 64;
+
 //==========================
 // TO BE DEFINED
 //==========================
