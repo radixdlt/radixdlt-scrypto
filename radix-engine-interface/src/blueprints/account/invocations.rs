@@ -12,9 +12,6 @@ use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 pub enum ResourcePreference {
-    /// The resource is neither on the allow or deny list.
-    Neither,
-
     /// The resource is on the allow list.
     Allowed,
 
@@ -226,19 +223,32 @@ pub struct AccountChangeDefaultDepositRuleInput {
 
 pub type AccountChangeDefaultDepositRuleOutput = ();
 
-//============================
-// Configure Resource Preference
-//============================
+//=========================
+// Set Resource Preference
+//=========================
 
-pub const ACCOUNT_CONFIGURE_RESOURCE_PREFERENCE_IDENT: &str = "configure_resource_preference";
+pub const ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT: &str = "set_resource_preference";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountConfigureResourcePreferenceInput {
+pub struct AccountSetResourcePreferenceInput {
     pub resource_address: ResourceAddress,
     pub resource_deposit_configuration: ResourcePreference,
 }
 
-pub type AccountConfigureResourcePreferenceOutput = ();
+pub type AccountSetResourcePreferenceOutput = ();
+
+//============================
+// Remove Resource Preference
+//============================
+
+pub const ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT: &str = "remove_resource_preference";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountRemoveResourcePreferenceInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AccountRemoveResourcePreferenceOutput = ();
 
 //===============================
 // Account Try Deposit Or Refund

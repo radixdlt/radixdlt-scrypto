@@ -16,37 +16,36 @@ CALL_METHOD
 CALL_METHOD 
     Address("${account_address}") 
     "set_default_deposit_rule" 
-    Enum<AccountDefaultDepositRule::Accept>();
+    Enum<DefaultDepositRule::Accept>();
 
 # Example 2: Deny All deposits mode
 CALL_METHOD 
     Address("${account_address}") 
     "set_default_deposit_rule" 
-    Enum<AccountDefaultDepositRule::Reject>();
+    Enum<DefaultDepositRule::Reject>();
 
 # Example 3: Allow existing deposits mode
 CALL_METHOD 
     Address("${account_address}") 
     "set_default_deposit_rule" 
-    Enum<AccountDefaultDepositRule::AllowExisting>();
+    Enum<DefaultDepositRule::AllowExisting>();
 
 # Example 4a: Adding a resource to the allow list
 CALL_METHOD
     Address("${account_address}")
-    "configure_resource_preference"
+    "set_resource_preference"
     Address("${second_resource_address}")
     Enum<ResourcePreference::Allowed>();
 
 # Example 4a: Adding a resource to the deny list
 CALL_METHOD
     Address("${account_address}")
-    "configure_resource_preference"
+    "set_resource_preference"
     Address("${second_resource_address}")
     Enum<ResourcePreference::Disallowed>();
 
 # Example 4a: Removing a resource from the allow and deny lists
 CALL_METHOD
     Address("${account_address}")
-    "configure_resource_preference"
-    Address("${second_resource_address}")
-    Enum<ResourcePreference::Neither>();
+    "remove_resource_preference"
+    Address("${second_resource_address}");

@@ -676,7 +676,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn configure_resource_preference<Y>(
+    pub fn set_resource_preference<Y>(
         resource_address: ResourceAddress,
         resource_deposit_configuration: ResourcePreference,
         api: &mut Y,
@@ -685,31 +685,30 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+            &encoded_key,
+            LockFlags::MUTABLE,
+        )?;
+        api.key_value_entry_set_typed(kv_store_entry_lock_handle, &resource_deposit_configuration)?;
+        api.key_value_entry_close(kv_store_entry_lock_handle)?;
+        Ok(())
+    }
 
-        match resource_deposit_configuration {
-            ResourcePreference::Allowed | ResourcePreference::Disallowed => {
-                let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
-                    OBJECT_HANDLE_SELF,
-                    ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
-                    &encoded_key,
-                    LockFlags::MUTABLE,
-                )?;
-
-                api.key_value_entry_set_typed(
-                    kv_store_entry_lock_handle,
-                    &resource_deposit_configuration,
-                )?;
-
-                api.key_value_entry_close(kv_store_entry_lock_handle)?;
-            }
-            ResourcePreference::Neither => {
-                api.actor_remove_key_value_entry(
-                    OBJECT_HANDLE_SELF,
-                    ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
-                    &encoded_key,
-                )?;
-            }
-        };
+    pub fn remove_resource_preference<Y>(
+        resource_address: ResourceAddress,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+        api.actor_remove_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+            &encoded_key,
+        )?;
         Ok(())
     }
 
@@ -832,25 +831,21 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_preference =
-            Self::get_resource_deposit_configuration(resource_address, api)?;
-
-        let is_deposit_allowed = match resource_preference {
-            ResourcePreference::Allowed => true,
-            ResourcePreference::Disallowed => false,
-            ResourcePreference::Neither => {
+        match Self::get_resource_deposit_configuration(resource_address, api)? {
+            Some(ResourcePreference::Allowed) => Ok(true),
+            Some(ResourcePreference::Disallowed) => Ok(false),
+            None => {
                 let default = Self::get_default_deposit_rule(api)?;
                 match default {
-                    DefaultDepositRule::Accept => true,
-                    DefaultDepositRule::Reject => false,
+                    DefaultDepositRule::Accept => Ok(true),
+                    DefaultDepositRule::Reject => Ok(false),
                     DefaultDepositRule::AllowExisting => {
-                        *resource_address == XRD || Self::does_vault_exist(resource_address, api)?
+                        Ok(*resource_address == XRD
+                            || Self::does_vault_exist(resource_address, api)?)
                     }
                 }
             }
-        };
-
-        Ok(is_deposit_allowed)
+        }
     }
 
     fn does_vault_exist<Y>(
@@ -887,7 +882,7 @@ impl AccountBlueprint {
     fn get_resource_deposit_configuration<Y>(
         resource_address: &ResourceAddress,
         api: &mut Y,
-    ) -> Result<ResourcePreference, RuntimeError>
+    ) -> Result<Option<ResourcePreference>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -900,19 +895,10 @@ impl AccountBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let resource_deposit_configuration = {
-            let entry =
-                api.key_value_entry_get_typed::<ResourcePreference>(kv_store_entry_lock_handle)?;
-
-            match entry {
-                Option::Some(resource_deposit_configuration) => resource_deposit_configuration,
-                Option::None => ResourcePreference::Neither,
-            }
-        };
-
+        let entry =
+            api.key_value_entry_get_typed::<ResourcePreference>(kv_store_entry_lock_handle)?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
-
-        Ok(resource_deposit_configuration)
+        Ok(entry)
     }
 }
 

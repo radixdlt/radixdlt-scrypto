@@ -293,14 +293,34 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CONFIGURE_RESOURCE_PREFERENCE_IDENT.to_string(),
+            ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
-                input: TypeRef::Static(aggregator
-                    .add_child_type_and_descendents::<AccountConfigureResourcePreferenceInput>()),
-                output: TypeRef::Static(aggregator
-                    .add_child_type_and_descendents::<AccountConfigureResourcePreferenceOutput>()),
-                export: ACCOUNT_CONFIGURE_RESOURCE_PREFERENCE_IDENT.to_string(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountSetResourcePreferenceInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountSetResourcePreferenceOutput>(),
+                ),
+                export: ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveResourcePreferenceInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveResourcePreferenceOutput>(),
+                ),
+                export: ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT.to_string(),
             },
         );
 
@@ -498,7 +518,8 @@ impl AccountNativePackage {
                             ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
 
                             ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
-                            ACCOUNT_CONFIGURE_RESOURCE_PREFERENCE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT => [OWNER_ROLE];
                             ACCOUNT_WITHDRAW_IDENT => [OWNER_ROLE];
                             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
                             ACCOUNT_LOCK_FEE_IDENT => [OWNER_ROLE];
@@ -782,18 +803,26 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::set_default_deposit_rule(default, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CONFIGURE_RESOURCE_PREFERENCE_IDENT => {
-                let AccountConfigureResourcePreferenceInput {
+            ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT => {
+                let AccountSetResourcePreferenceInput {
                     resource_address,
                     resource_deposit_configuration,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::configure_resource_preference(
+                let rtn = AccountBlueprint::set_resource_preference(
                     resource_address,
                     resource_deposit_configuration,
                     api,
                 )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT => {
+                let AccountRemoveResourcePreferenceInput { resource_address } =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = AccountBlueprint::remove_resource_preference(resource_address, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_ADD_AUTHORIZED_DEPOSITOR => {
