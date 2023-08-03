@@ -191,15 +191,21 @@ impl NodeVisibility {
     }
 }
 
-pub trait CallFrameEventHandler<C, L, E> {
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
-
+pub trait StoreAccessHandler<C, L, E> {
     fn on_store_access(
         &mut self,
         current_frame: &CallFrame<C, L>,
         heap: &Heap,
         store_access: StoreAccess,
     ) -> Result<(), E>;
+}
+
+pub trait PersistNodeHandler<E> {
+    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
+}
+
+pub trait SubstateKeyInputHandler<E> {
+    fn on_substate_key_input(&mut self, substate_key: &SubstateKey) -> Result<(), E>;
 }
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
@@ -520,7 +526,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn open_substate<
         S: SubstateStore,
         E,
-        F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>,
+        H: StoreAccessHandler<C, L, E>,
     >(
         &mut self,
         heap: &mut Heap,
@@ -529,7 +535,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        on_store_access: &mut F,
+        handler: &mut H,
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
     ) -> Result<(LockHandle, usize), CallbackError<OpenSubstateError, E>> {
@@ -576,7 +582,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                     partition_num,
                     substate_key,
                     flags,
-                    &mut |store_access| on_store_access(self, heap, store_access),
+                    &mut |store_access| handler.on_store_access(self, heap, store_access),
                     || default.map(|f| f()),
                 )
                 .map_err(|x| x.map(|e| OpenSubstateError::TrackError(Box::new(e))))?;
@@ -654,7 +660,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         &mut self,
         heap: &mut Heap,
         store: &mut S,
-        handler: &mut impl CallFrameEventHandler<C, L, E>,
+        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
         lock_handle: LockHandle,
     ) -> Result<(), CallbackError<CloseSubstateError, E>> {
         let substate_lock = self
@@ -868,7 +874,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         node_substates: NodeSubstates,
         heap: &mut Heap,
         store: &'f mut S,
-        handler: &mut impl CallFrameEventHandler<C, L, E>,
+        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
         // TODO: We need to protect transient blueprints from being globalized directly
         // into store. This isn't a problem for now since only native objects are allowed
@@ -996,7 +1002,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         dest_partition_number: PartitionNumber,
         heap: &'f mut Heap,
         store: &'f mut S,
-        handler: &mut impl CallFrameEventHandler<C, L, E>,
+        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
     ) -> Result<(), CallbackError<MoveModuleError, E>> {
         // Check ownership (and visibility)
         if self.owned_root_nodes.get(src_node_id) != Some(&0) {
@@ -1285,7 +1291,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         &mut self,
         heap: &mut Heap,
         store: &mut S,
-        handler: &mut impl CallFrameEventHandler<C, L, E>,
+        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
     ) -> Result<(), CallbackError<CloseSubstateError, E>> {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
@@ -1319,7 +1325,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         &self,
         heap: &mut Heap,
         store: &mut S,
-        handler: &mut impl CallFrameEventHandler<C, L, E>,
+        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
         node_id: &NodeId,
     ) -> Result<(), CallbackError<PersistNodeError, E>> {
         let mut queue = LinkedList::new();

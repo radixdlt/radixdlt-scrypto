@@ -9,7 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::{CallFrameEventHandler, CallFrameMessage};
+use crate::kernel::call_frame::{CallFrameMessage, PersistNodeHandler, StoreAccessHandler};
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
@@ -217,22 +217,25 @@ struct KernelHandler<
     on_store_access: F,
 }
 
+
 impl<
         M: KernelCallbackObject,
         F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
-    > CallFrameEventHandler<M::CallFrameData, M::LockData, RuntimeError>
+    > PersistNodeHandler<RuntimeError>
     for KernelHandler<'_, M, F>
 {
     fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError> {
         self.callback.on_persist_node(heap, node_id)
     }
+}
 
-    fn on_store_access(
-        &mut self,
-        current_frame: &CallFrame<M::CallFrameData, M::LockData>,
-        heap: &Heap,
-        store_access: StoreAccess,
-    ) -> Result<(), RuntimeError> {
+impl<
+    M: KernelCallbackObject,
+    F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+> StoreAccessHandler<M::CallFrameData, M::LockData, RuntimeError>
+for KernelHandler<'_, M, F>
+{
+    fn on_store_access(&mut self, current_frame: &CallFrame<M::CallFrameData, M::LockData>, heap: &Heap, store_access: StoreAccess) -> Result<(), RuntimeError> {
         let mut read_only = KernelReadOnly {
             current_frame,
             prev_frame: self.prev_frame,
@@ -615,6 +618,17 @@ where
             },
         )?;
 
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                M::on_open_substate(
+                    api,
+                    OpenSubstateEvent::StoreAccess(&store_access),
+                )
+            },
+        };
+
         let maybe_lock_handle = self.current_frame.open_substate(
             &mut self.heap,
             self.store,
@@ -622,19 +636,7 @@ where
             partition_num,
             substate_key,
             flags,
-            &mut |current_frame, heap, store_access| {
-                let mut read_only = KernelReadOnly {
-                    current_frame,
-                    prev_frame: self.prev_frame_stack.last(),
-                    heap,
-                    callback: self.callback,
-                };
-
-                M::on_open_substate(
-                    &mut read_only,
-                    OpenSubstateEvent::StoreAccess(&store_access),
-                )
-            },
+            &mut handler,
             default,
             data,
         );
@@ -648,6 +650,17 @@ where
                         M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
 
                     if retry {
+                        let mut handler = KernelHandler {
+                            callback: self.callback,
+                            prev_frame: self.prev_frame_stack.last(),
+                            on_store_access: |api, store_access| {
+                                M::on_open_substate(
+                                    api,
+                                    OpenSubstateEvent::StoreAccess(&store_access),
+                                )
+                            },
+                        };
+
                         self.current_frame
                             .open_substate(
                                 &mut self.heap,
@@ -656,19 +669,7 @@ where
                                 partition_num,
                                 &substate_key,
                                 flags,
-                                &mut |current_frame, heap, store_access| {
-                                    let mut read_only = KernelReadOnly {
-                                        current_frame,
-                                        prev_frame: self.prev_frame_stack.last(),
-                                        heap,
-                                        callback: self.callback,
-                                    };
-
-                                    M::on_open_substate(
-                                        &mut read_only,
-                                        OpenSubstateEvent::StoreAccess(&store_access),
-                                    )
-                                },
+                                &mut handler,
                                 None,
                                 M::LockData::default(),
                             )
