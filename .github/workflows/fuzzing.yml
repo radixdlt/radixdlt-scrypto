@@ -1,5 +1,5 @@
 name: Fuzzing
-run-name: Fuzzing input=${{ github.event.inputs.fuzz_input_mode }} duration=${{ github.event.inputs.duration_hours }}h branch=${{ github.ref_name }}
+run-name: Fuzzing target=${{ github.event.inputs.fuzz_target }} input=${{ github.event.inputs.fuzz_input_mode }} duration=${{ github.event.inputs.duration_hours }}h branch=${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -37,8 +37,8 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  transaction:
-    name: Fuzz transaction (AFL)
+  fuzz_afl:
+    name: Fuzz ${{ github.event.inputs.fuzz_target }} (AFL)
     runs-on: fuzzing
     # set timeout to 7days
     timeout-minutes: 10080
