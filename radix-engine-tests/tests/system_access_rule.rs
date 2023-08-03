@@ -5,38 +5,76 @@ use radix_engine::system::node_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{
-    ClientApi, ObjectModuleId,
-};
+use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn creating_an_owner_access_rule_which_is_beyond_the_depth_limit_should_error() {
+    let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
         AccessRuleCreation::OwnerCreation,
+        access_rule,
+        |e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                    RoleAssignmentError::ExceededMaxAccessRuleDepth
+                ))
+            )
+        },
     );
 }
 
 #[test]
 fn creating_a_regular_access_rule_which_is_beyond_the_depth_limit_should_error() {
+    let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
         AccessRuleCreation::RoleCreation,
+        access_rule,
+        |e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                    RoleAssignmentError::ExceededMaxAccessRuleDepth
+                ))
+            )
+        },
     );
 }
 
 #[test]
 fn setting_an_owner_access_rule_which_is_beyond_the_depth_limit_should_error() {
+    let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
         AccessRuleCreation::OwnerSet,
+        access_rule,
+        |e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                    RoleAssignmentError::ExceededMaxAccessRuleDepth
+                ))
+            )
+        },
     );
 }
 
 #[test]
 fn setting_a_role_access_rule_which_is_beyond_the_depth_limit_should_error() {
+    let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
         AccessRuleCreation::RoleSet,
+        access_rule,
+        |e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                    RoleAssignmentError::ExceededMaxAccessRuleDepth
+                ))
+            )
+        },
     );
 }
 
@@ -49,6 +87,14 @@ fn create_access_rule_of_depth(depth: usize) -> AccessRule {
     AccessRule::Protected(rule_node)
 }
 
+fn create_access_rule_of_length(size: usize) -> AccessRule {
+    let mut nodes = vec![];
+    for _ in 0..size {
+        nodes.push(AccessRuleNode::AnyOf(vec![]));
+    }
+    AccessRule::Protected(AccessRuleNode::AllOf(nodes))
+}
+
 #[derive(Copy, Clone)]
 enum AccessRuleCreation {
     OwnerCreation,
@@ -57,14 +103,18 @@ enum AccessRuleCreation {
     RoleSet,
 }
 
-fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
+fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
     access_rule_creation: AccessRuleCreation,
-) {
+    access_rule: AccessRule,
+    check_result: F,
+) where
+    F: Fn(&RuntimeError) -> bool,
+{
     // Arrange
     const BLUEPRINT_NAME: &str = "MyBlueprint";
     const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
     #[derive(Clone)]
-    struct TestInvoke(AccessRuleCreation);
+    struct TestInvoke(AccessRuleCreation, AccessRule);
     impl VmInvoke for TestInvoke {
         fn invoke<Y>(
             &mut self,
@@ -78,14 +128,12 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
             match export_name {
                 "create_access_rule" => match self.0 {
                     AccessRuleCreation::OwnerCreation => {
-                        let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
-                        RoleAssignment::create(OwnerRole::Fixed(access_rule), btreemap!(), api)?;
+                        RoleAssignment::create(OwnerRole::Fixed(self.1.clone()), btreemap!(), api)?;
                     }
                     AccessRuleCreation::RoleCreation => {
-                        let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
                         RoleAssignment::create(
                             OwnerRole::None,
-                            btreemap!(ObjectModuleId::Main => roles2!("test" => access_rule;)),
+                            btreemap!(ObjectModuleId::Main => roles2!("test" => self.1.clone();)),
                             api,
                         )?;
                     }
@@ -95,8 +143,7 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
                             btreemap!(),
                             api,
                         )?;
-                        let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
-                        role_assignment.set_owner_role(access_rule, api)?;
+                        role_assignment.set_owner_role(self.1.clone(), api)?;
                     }
                     AccessRuleCreation::RoleSet => {
                         let role_assignment = RoleAssignment::create(
@@ -104,11 +151,10 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
                             btreemap!(),
                             api,
                         )?;
-                        let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
                         role_assignment.set_role(
                             ObjectModuleId::Main,
                             RoleKey::new("test"),
-                            access_rule,
+                            self.1.clone(),
                             api,
                         )?;
                     }
@@ -122,7 +168,7 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
     let mut test_runner = TestRunnerBuilder::new()
         .with_custom_extension(OverridePackageCode::new(
             CUSTOM_PACKAGE_CODE_ID,
-            TestInvoke(access_rule_creation),
+            TestInvoke(access_rule_creation, access_rule),
         ))
         .build();
     let package_address = test_runner.publish_native_package(
@@ -146,12 +192,5 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                RoleAssignmentError::ExceededMaxAccessRuleDepth
-            ))
-        )
-    });
+    receipt.expect_specific_failure(check_result);
 }
