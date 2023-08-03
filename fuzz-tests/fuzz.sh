@@ -182,32 +182,30 @@ function generate_input() {
     # available modes: raw, unique, minimize
     local mode=${1:-minimize}
     local timeout=${2:-$DFLT_TIMEOUT}
+    local curr_path=$(pwd)
+    local cmin_dir=fuzz_input/${target}_cmin
+    local raw_dir=fuzz_input/${target}_raw
+    local final_dir=fuzz_input/${target}
 
-    if [ $target = "transaction" ] ; then
+    if [ $target = "transaction" -o $target = "wasm_instrument" ] ; then
         if [ ! -f target-afl/release/${target} ] ; then
             echo "target binary 'target-afl/release/${target}' not built. Call below command to build it"
             echo "$THIS_SCRIPT afl build"
             exit 1
         fi
-        local curr_path=$(pwd)
-        local cmin_dir=fuzz_input/${target}_cmin
-        local raw_dir=fuzz_input/${target}_raw
-        local final_dir=fuzz_input/${target}
 
         mkdir -p $raw_dir $cmin_dir $final_dir
-
-        pushd ..
         if [ "$(ls -A ${curr_path}/${raw_dir})" ] ; then
             echo "raw dir is not empty, skipping generation"
-            popd
             if [ $mode = "raw" ] ; then
                 find ${curr_path}/${raw_dir} -type f -name "*" | xargs  -I {} mv {} ${curr_path}/${final_dir}
                 return
             fi
+        fi
 
-        else
+
+        if [ $target = "transaction" ] ; then
             # Collect input data
-            popd
 
             cargo nextest run test_generate_fuzz_input_data  --release
 
@@ -220,9 +218,18 @@ function generate_input() {
             #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
             mv manifest_*.raw ${curr_path}/${raw_dir}
 
-            # do not minimize big files, move them directly to input
-            find ${curr_path}/${raw_dir} -type f -size +100k | xargs -I {} mv "{}" ${curr_path}/${final_dir}
+        elif [ $target = "wasm_instrument" ] ; then
+            # TODO generate more wasm inputs. and maybe smaller
+            if [ $mode = "raw" ] ; then
+                find .. -name   "*.wasm" | while read f ; do cp $f $final_dir ; done
+                return
+            else
+                find .. -name   "*.wasm" | while read f ; do cp $f $raw_dir ; done
+            fi
         fi
+
+        # do not minimize big files, move them directly to input
+        find ${curr_path}/${raw_dir} -type f -size +100k | xargs -I {} mv "{}" ${curr_path}/${final_dir}
 
         # Make the input corpus unique
         cargo afl cmin -t $timeout -i $raw_dir -o $cmin_dir -- target-afl/release/${target} 2>&1 | tee afl_cmin.log
