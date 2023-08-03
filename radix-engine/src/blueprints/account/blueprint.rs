@@ -32,8 +32,6 @@ pub struct AccountSubstate {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
     VaultDoesNotExist { resource_address: ResourceAddress },
-    AccountIsNotInAllowListDepositsMode { default: DefaultDepositRule },
-    AccountIsNotInDisallowListDepositsMode { default: DefaultDepositRule },
     DepositIsDisallowed { resource_address: ResourceAddress },
     NotAllBucketsCouldBeDeposited,
     NotAnAuthorizedDepositor { depositor: ResourceOrNonFungible },
