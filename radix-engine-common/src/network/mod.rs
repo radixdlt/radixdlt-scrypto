@@ -21,6 +21,7 @@ impl NetworkDefinition {
         }
     }
 
+    /// The network definition for Alphanet
     pub fn adapanet() -> NetworkDefinition {
         NetworkDefinition {
             id: 0x0a,
@@ -29,6 +30,7 @@ impl NetworkDefinition {
         }
     }
 
+    /// The network definition for Betanet
     pub fn nebunet() -> NetworkDefinition {
         NetworkDefinition {
             id: 0x0b,
@@ -37,11 +39,30 @@ impl NetworkDefinition {
         }
     }
 
+    /// The network definition for RCnet v1
     pub fn kisharnet() -> NetworkDefinition {
         NetworkDefinition {
             id: 0x0c,
             logical_name: String::from("kisharnet"),
             hrp_suffix: String::from("tdx_c_"),
+        }
+    }
+
+    /// The network definition for RCnet v2
+    pub fn ansharnet() -> NetworkDefinition {
+        NetworkDefinition {
+            id: 0x0d,
+            logical_name: String::from("ansharnet"),
+            hrp_suffix: String::from("tdx_d_"),
+        }
+    }
+
+    /// The network definition for RCnet v3
+    pub fn zabanet() -> NetworkDefinition {
+        NetworkDefinition {
+            id: 0x0e,
+            logical_name: String::from("zabanet"),
+            hrp_suffix: String::from("tdx_e_"),
         }
     }
 
@@ -62,6 +83,9 @@ impl FromStr for NetworkDefinition {
             "simulator" => Ok(NetworkDefinition::simulator()),
             "adapanet" => Ok(NetworkDefinition::adapanet()),
             "nebunet" => Ok(NetworkDefinition::nebunet()),
+            "kisharnet" => Ok(NetworkDefinition::kisharnet()),
+            "ansharnet" => Ok(NetworkDefinition::ansharnet()),
+            "zabanet" => Ok(NetworkDefinition::zabanet()),
             "mainnet" => Ok(NetworkDefinition::mainnet()),
             _ => Err(ParseNetworkError::InvalidNetworkString),
         }

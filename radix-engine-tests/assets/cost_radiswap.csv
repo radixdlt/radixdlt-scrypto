@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,     0.08222601,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.07989601,     97.2%
+Total Cost (XRD)                                                           ,     0.08224599,    100.0%
++ Execution Cost (XRD)                                                     ,     0.07991599,     97.2%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00233,      2.8%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        7989601,    100.0%
+Total Cost Units Consumed                                                  ,        7991599,    100.0%
 AfterInvoke                                                                ,           4670,      0.1%
 AllocateNodeId                                                             ,           3224,      0.0%
 BeforeInvoke                                                               ,           4220,      0.1%
@@ -43,7 +43,7 @@ RunNativeCode::take_FungibleVault                                          ,    
 RunNativeCode::take_advanced_FungibleVault                                 ,          41881,      0.5%
 RunNativeCode::try_deposit_batch_or_abort                                  ,          76963,      1.0%
 RunNativeCode::withdraw                                                    ,          30320,      0.4%
-RunWasmCode::Radiswap_swap                                                 ,          97907,      1.2%
+RunWasmCode::Radiswap_swap                                                 ,          99905,      1.3%
 TxBaseCost                                                                 ,          50000,      0.6%
 TxPayloadCost                                                              ,          14120,      0.2%
 TxSignatureVerification                                                    ,           7000,      0.1%
