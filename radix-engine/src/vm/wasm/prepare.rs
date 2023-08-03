@@ -866,7 +866,6 @@ impl WasmModule {
             let local_reader = func_body
                 .get_locals_reader()
                 .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
-            let cnt = local_reader.get_count();
             let mut locals_count = 0;
 
             // According to the documentation local_reader.get_count() would do the job here
