@@ -660,10 +660,10 @@ impl ConsensusManagerBlueprint {
         let mut statistic: CurrentProposalStatisticSubstate =
             api.field_read_typed(statistic_handle)?;
         for gap_round_leader in proposal_history.gap_round_leaders {
-            let mut gap_round_statistic = statistic.get_mut_proposal_statistic(gap_round_leader)?;
+            let gap_round_statistic = statistic.get_mut_proposal_statistic(gap_round_leader)?;
             gap_round_statistic.missed += 1;
         }
-        let mut current_round_statistic =
+        let current_round_statistic =
             statistic.get_mut_proposal_statistic(proposal_history.current_leader)?;
         if proposal_history.is_fallback {
             current_round_statistic.missed += 1;
