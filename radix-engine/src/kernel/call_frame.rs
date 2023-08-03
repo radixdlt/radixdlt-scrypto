@@ -204,10 +204,6 @@ pub trait PersistNodeHandler<E> {
     fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
 }
 
-pub trait SubstateKeyInputHandler<E> {
-    fn on_substate_key_input(&mut self, substate_key: &SubstateKey) -> Result<(), E>;
-}
-
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects and references by this function.
 pub struct CallFrame<C, L> {

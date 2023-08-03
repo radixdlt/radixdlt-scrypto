@@ -1,9 +1,6 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent,
-    ScanKeysEvent, ScanSortedSubstatesEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -59,6 +56,10 @@ impl LimitsModule {
         &self.config
     }
 
+    pub fn process_substate_key(&mut self, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
     pub fn process_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError> {
         match store_access {
             StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
@@ -112,26 +113,27 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api: &mut Y,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
-        let limits = &mut api.kernel_get_system().modules.limits.config;
+        let limits = &mut api.kernel_get_system().modules.limits;
 
         match event {
             CreateNodeEvent::Start(_node_id, node_substates) => {
+                let max_substate_size = limits.config.max_substate_size;
                 for partitions in node_substates.values() {
-                    for (_, value) in partitions {
-                        if value.len() > limits.max_substate_size {
+                    for (key, value) in partitions {
+                        if value.len() > max_substate_size {
                             return Err(RuntimeError::SystemModuleError(
                                 SystemModuleError::TransactionLimitsError(
                                     TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
                                 ),
                             ));
                         }
+
+                        limits.process_substate_key(key)?;
                     }
                 }
             }
             CreateNodeEvent::StoreAccess(store_access) => {
-                api.kernel_get_system()
-                    .modules
-                    .limits
+                limits
                     .process_store_access(store_access)?;
             }
             _ => {}
@@ -161,6 +163,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
+            OpenSubstateEvent::Start { substate_key, .. } => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_substate_key(substate_key)?;
+            }
             OpenSubstateEvent::StoreAccess(store_access) => {
                 api.kernel_get_system()
                     .modules
@@ -204,6 +212,34 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
                     .modules
                     .limits
                     .process_store_access(store_access)?;
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_set_substate(system: &mut SystemConfig<V>, event: &SetSubstateEvent) -> Result<(), RuntimeError> {
+        match event {
+            SetSubstateEvent::Start(_node_id, _partition_num, substate_key, ..) => {
+                system
+                    .modules
+                    .limits
+                    .process_substate_key(substate_key)?;
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_remove_substate(system: &mut SystemConfig<V>, event: &RemoveSubstateEvent) -> Result<(), RuntimeError> {
+        match event {
+            RemoveSubstateEvent::Start(_node_id, _partition_num, substate_key) => {
+                system
+                    .modules
+                    .limits
+                    .process_substate_key(substate_key)?;
             }
             _ => {}
         }

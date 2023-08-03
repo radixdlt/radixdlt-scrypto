@@ -271,7 +271,7 @@ impl FeeTable {
     #[inline]
     pub fn set_substate_cost(&self, event: &SetSubstateEvent) -> u32 {
         match event {
-            SetSubstateEvent::Start(value) => add(500, Self::data_processing_cost(value.len())),
+            SetSubstateEvent::Start(.., value) => add(500, Self::data_processing_cost(value.len())),
             SetSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
     }
@@ -279,7 +279,7 @@ impl FeeTable {
     #[inline]
     pub fn remove_substate_cost(&self, event: &RemoveSubstateEvent) -> u32 {
         match event {
-            RemoveSubstateEvent::Start => 500,
+            RemoveSubstateEvent::Start(..) => 500,
             RemoveSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
     }

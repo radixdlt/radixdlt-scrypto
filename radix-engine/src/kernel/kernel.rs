@@ -815,7 +815,7 @@ where
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.callback
-            .on_set_substate(SetSubstateEvent::Start(&value))?;
+            .on_set_substate(SetSubstateEvent::Start(node_id, &partition_num, &substate_key, &value))?;
 
         self.current_frame
             .set_substate(
@@ -848,7 +848,7 @@ where
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.callback
-            .on_remove_substate(RemoveSubstateEvent::Start)?;
+            .on_remove_substate(RemoveSubstateEvent::Start(node_id, &partition_num, substate_key))?;
 
         let substate = self
             .current_frame
