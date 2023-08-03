@@ -74,7 +74,12 @@ pub enum CloseSubstateEvent<'a> {
 
 #[derive(Debug)]
 pub enum SetSubstateEvent<'a> {
-    Start(&'a NodeId, &'a PartitionNumber, &'a SubstateKey, &'a IndexedScryptoValue),
+    Start(
+        &'a NodeId,
+        &'a PartitionNumber,
+        &'a SubstateKey,
+        &'a IndexedScryptoValue,
+    ),
     StoreAccess(&'a StoreAccess),
 }
 

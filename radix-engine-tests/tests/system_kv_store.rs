@@ -1,11 +1,10 @@
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
-use radix_engine::errors::RuntimeError;
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
+use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_OUTER_OBJECT, FieldValue};
+use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -24,14 +23,19 @@ fn opening_long_substate_key_should_fail() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-            where
-                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        where
+            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         {
             match export_name {
                 "test" => {
-                    let kv_store = api.key_value_store_new(KeyValueStoreSchema::new::<String, ()>(false))?;
-                    let long_key = "a".repeat(1024);
-                    api.key_value_store_open_entry(&kv_store, &scrypto_encode(&long_key).unwrap(), LockFlags::read_only())?;
+                    let kv_store =
+                        api.key_value_store_new(KeyValueStoreSchema::new::<String, ()>(false))?;
+                    let long_key = "a".repeat(MAX_SUBSTATE_KEY_SIZE + 1);
+                    api.key_value_store_open_entry(
+                        &kv_store,
+                        &scrypto_encode(&long_key).unwrap(),
+                        LockFlags::read_only(),
+                    )?;
                 }
                 _ => {}
             }
@@ -60,5 +64,12 @@ fn opening_long_substate_key_should_fail() {
     );
 
     // Assert
-    receipt.expect_commit_success();
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxSubstateKeySizeExceeded(..)
+            ))
+        )
+    });
 }

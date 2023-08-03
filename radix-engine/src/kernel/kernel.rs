@@ -217,12 +217,10 @@ struct KernelHandler<
     on_store_access: F,
 }
 
-
 impl<
         M: KernelCallbackObject,
         F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
-    > PersistNodeHandler<RuntimeError>
-    for KernelHandler<'_, M, F>
+    > PersistNodeHandler<RuntimeError> for KernelHandler<'_, M, F>
 {
     fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError> {
         self.callback.on_persist_node(heap, node_id)
@@ -230,12 +228,16 @@ impl<
 }
 
 impl<
-    M: KernelCallbackObject,
-    F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
-> StoreAccessHandler<M::CallFrameData, M::LockData, RuntimeError>
-for KernelHandler<'_, M, F>
+        M: KernelCallbackObject,
+        F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+    > StoreAccessHandler<M::CallFrameData, M::LockData, RuntimeError> for KernelHandler<'_, M, F>
 {
-    fn on_store_access(&mut self, current_frame: &CallFrame<M::CallFrameData, M::LockData>, heap: &Heap, store_access: StoreAccess) -> Result<(), RuntimeError> {
+    fn on_store_access(
+        &mut self,
+        current_frame: &CallFrame<M::CallFrameData, M::LockData>,
+        heap: &Heap,
+        store_access: StoreAccess,
+    ) -> Result<(), RuntimeError> {
         let mut read_only = KernelReadOnly {
             current_frame,
             prev_frame: self.prev_frame,
@@ -622,10 +624,7 @@ where
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_store_access: |api, store_access| {
-                M::on_open_substate(
-                    api,
-                    OpenSubstateEvent::StoreAccess(&store_access),
-                )
+                M::on_open_substate(api, OpenSubstateEvent::StoreAccess(&store_access))
             },
         };
 
@@ -814,8 +813,12 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        self.callback
-            .on_set_substate(SetSubstateEvent::Start(node_id, &partition_num, &substate_key, &value))?;
+        self.callback.on_set_substate(SetSubstateEvent::Start(
+            node_id,
+            &partition_num,
+            &substate_key,
+            &value,
+        ))?;
 
         self.current_frame
             .set_substate(
@@ -848,7 +851,11 @@ where
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.callback
-            .on_remove_substate(RemoveSubstateEvent::Start(node_id, &partition_num, substate_key))?;
+            .on_remove_substate(RemoveSubstateEvent::Start(
+                node_id,
+                &partition_num,
+                substate_key,
+            ))?;
 
         let substate = self
             .current_frame

@@ -519,11 +519,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
-    pub fn open_substate<
-        S: SubstateStore,
-        E,
-        H: StoreAccessHandler<C, L, E>,
-    >(
+    pub fn open_substate<S: SubstateStore, E, H: StoreAccessHandler<C, L, E>>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
