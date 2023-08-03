@@ -215,6 +215,27 @@ struct KernelHandler<
     callback: &'a mut M,
     prev_frame: Option<&'a CallFrame<M::CallFrameData, M::LockData>>,
     on_store_access: F,
+    read_from_heap: bool,
+}
+
+impl<
+        'a,
+        M: KernelCallbackObject,
+        F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+    > KernelHandler<'a, M, F>
+{
+    pub fn new(
+        callback: &'a mut M,
+        prev_frame: Option<&'a CallFrame<M::CallFrameData, M::LockData>>,
+        on_store_access: F,
+    ) -> Self {
+        Self {
+            callback,
+            prev_frame,
+            on_store_access,
+            read_from_heap: false,
+        }
+    }
 }
 
 impl<
@@ -241,6 +262,10 @@ impl<
         };
 
         (self.on_store_access)(&mut read_only, store_access)
+    }
+
+    fn on_read_from_heap(&mut self) {
+        self.read_from_heap = true;
     }
 }
 
@@ -279,13 +304,11 @@ where
             CreateNodeEvent::Start(&node_id, &node_substates),
         )?;
 
-        let mut handler = KernelHandler {
-            callback: self.callback,
-            prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
-                M::on_create_node(api, CreateNodeEvent::StoreAccess(&store_access))
-            },
-        };
+        let mut handler = KernelHandler::new(
+            self.callback,
+            self.prev_frame_stack.last(),
+            |api, store_access| M::on_create_node(api, CreateNodeEvent::StoreAccess(&store_access)),
+        );
 
         self.current_frame
             .create_node(
@@ -334,13 +357,11 @@ where
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        let mut handler = KernelHandler {
-            callback: self.callback,
-            prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
-                M::on_move_module(api, MoveModuleEvent::StoreAccess(&store_access))
-            },
-        };
+        let mut handler = KernelHandler::new(
+            self.callback,
+            self.prev_frame_stack.last(),
+            |api, store_access| M::on_move_module(api, MoveModuleEvent::StoreAccess(&store_access)),
+        );
 
         self.current_frame
             .move_module(
@@ -738,13 +759,13 @@ where
 
     #[trace_resources]
     fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        let mut handler = KernelHandler {
-            callback: self.callback,
-            prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
+        let mut handler = KernelHandler::new(
+            self.callback,
+            self.prev_frame_stack.last(),
+            |api, store_access| {
                 M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
             },
-        };
+        );
 
         self.current_frame
             .close_substate(&mut self.heap, self.store, &mut handler, lock_handle)
@@ -766,12 +787,19 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let (value, read_from_heap) = self
+        let mut handler = KernelHandler::new(
+            self.callback,
+            self.prev_frame_stack.last(),
+            |_api, _store_access| Ok(()),
+        );
+
+        let value = self
             .current_frame
-            .read_substate(&self.heap, self.store, lock_handle)
+            .read_substate(&self.heap, self.store, lock_handle, &mut handler)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
+        let read_from_heap = handler.read_from_heap;
         let mut read_only = as_read_only!(self);
         M::on_read_substate(
             &mut read_only,
@@ -991,7 +1019,6 @@ where
         let message = {
             let mut message = CallFrameMessage::from_input(&args, &callee);
             M::before_push_frame(&callee, &mut message, &args, self)?;
-
             message
         };
 
@@ -1009,13 +1036,13 @@ where
             // Handle execution start
             M::on_execution_start(self)?;
 
-            let mut handler = KernelHandler {
-                callback: self.callback,
-                prev_frame: self.prev_frame_stack.last(),
-                on_store_access: |api, store_access| {
+            let mut handler = KernelHandler::new(
+                self.callback,
+                self.prev_frame_stack.last(),
+                |api, store_access| {
                     M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
                 },
-            };
+            );
 
             // Auto drop locks
             self.current_frame
@@ -1033,13 +1060,13 @@ where
             let message = CallFrameMessage::from_output(&output);
 
             // Auto-drop locks again in case module forgot to drop
-            let mut handler = KernelHandler {
-                callback: self.callback,
-                prev_frame: self.prev_frame_stack.last(),
-                on_store_access: |api, store_access| {
+            let mut handler = KernelHandler::new(
+                self.callback,
+                self.prev_frame_stack.last(),
+                |api, store_access| {
                     M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
                 },
-            };
+            );
 
             self.current_frame
                 .close_all_substates(&mut self.heap, self.store, &mut handler)

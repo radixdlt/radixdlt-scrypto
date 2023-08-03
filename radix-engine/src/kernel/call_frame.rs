@@ -200,6 +200,8 @@ pub trait CallFrameEventHandler<C, L, E> {
         heap: &Heap,
         store_access: StoreAccess,
     ) -> Result<(), E>;
+
+    fn on_read_from_heap(&mut self);
 }
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
@@ -739,12 +741,13 @@ impl<C, L: Clone> CallFrame<C, L> {
         })
     }
 
-    pub fn read_substate<'f, S: SubstateStore>(
+    pub fn read_substate<'f, S: SubstateStore, E>(
         &mut self,
         heap: &'f Heap,
         store: &'f mut S,
         lock_handle: LockHandle,
-    ) -> Result<(&'f IndexedScryptoValue, bool), ReadSubstateError> {
+        handler: &mut impl CallFrameEventHandler<C, L, E>,
+    ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
         let SubstateLock {
             node_id,
             partition_num,
@@ -756,16 +759,15 @@ impl<C, L: Clone> CallFrame<C, L> {
             .get(&lock_handle)
             .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
 
-        let mut read_from_heap = false;
-        let substate = if let Some(store_handle) = store_handle {
+        let value = if let Some(store_handle) = store_handle {
             store.read_substate(*store_handle)
         } else {
-            read_from_heap = true;
+            handler.on_read_from_heap();
             heap.get_substate(node_id, *partition_num, substate_key)
                 .expect("Substate missing in heap")
         };
 
-        Ok((substate, read_from_heap))
+        Ok(value)
     }
 
     pub fn write_substate<'f, S: SubstateStore>(
