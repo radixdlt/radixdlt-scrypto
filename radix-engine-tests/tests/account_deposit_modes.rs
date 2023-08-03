@@ -127,16 +127,14 @@ fn account_try_deposit_batch_or_abort_method_is_callable_with_out_owner_signatur
 }
 
 #[test]
-fn changing_account_default_deposit_rule_is_callable_with_owner_signature() {
+fn changing_default_deposit_rule_is_callable_with_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
 
         // Act
-        let receipt = test_runner.transition_account_default_deposit_rule(
-            AccountDefaultDepositRule::AllowExisting,
-            true,
-        );
+        let receipt =
+            test_runner.transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true);
 
         // Assert
         receipt.expect_commit_success();
@@ -144,16 +142,14 @@ fn changing_account_default_deposit_rule_is_callable_with_owner_signature() {
 }
 
 #[test]
-fn changing_account_default_deposit_rule_is_not_callable_with_out_owner_signature() {
+fn changing_default_deposit_rule_is_not_callable_with_out_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
 
         // Act
-        let receipt = test_runner.transition_account_default_deposit_rule(
-            AccountDefaultDepositRule::AllowExisting,
-            false,
-        );
+        let receipt =
+            test_runner.transition_default_deposit_rule(DefaultDepositRule::AllowExisting, false);
 
         // Assert
         receipt.expect_specific_failure(is_auth_unauthorized_error);
@@ -245,7 +241,7 @@ fn allow_existing_disallows_deposit_of_resources_on_deny_list() {
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
         test_runner
             .add_to_deny_list(XRD, true)
@@ -266,7 +262,7 @@ fn allow_existing_allows_deposit_of_xrd_if_not_on_deny_list() {
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
 
         // Act
@@ -290,7 +286,7 @@ fn allow_existing_allows_deposit_of_an_existing_resource() {
             .expect_commit_success();
 
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
 
         // Act
@@ -315,7 +311,7 @@ fn allow_existing_allows_deposit_of_an_existing_resource_even_if_account_has_non
         test_runner.burn(resource_address);
 
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
 
         // Act
@@ -334,7 +330,7 @@ fn allow_existing_allows_deposit_of_a_resource_account_does_not_have_if_it_is_on
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         let resource_address = test_runner.freely_mintable_resource();
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
         test_runner
             .add_to_allow_list(resource_address, true)
@@ -356,7 +352,7 @@ fn removing_an_address_from_the_allow_list_removes_it() {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         let resource_address = test_runner.freely_mintable_resource();
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
         test_runner
             .add_to_allow_list(resource_address, true)
@@ -381,7 +377,7 @@ fn transitioning_an_address_to_deny_list_works_as_expected() {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         let resource_address = test_runner.freely_mintable_resource();
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
         test_runner
             .add_to_allow_list(resource_address, true)
@@ -405,7 +401,7 @@ fn disallow_all_does_not_permit_deposit_of_any_resource() {
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::Reject, true)
+            .transition_default_deposit_rule(DefaultDepositRule::Reject, true)
             .expect_commit_success();
 
         // Act
@@ -424,7 +420,7 @@ fn disallow_all_permits_deposit_of_resource_in_allow_list() {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         let resource_address = test_runner.freely_mintable_resource();
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::Reject, true)
+            .transition_default_deposit_rule(DefaultDepositRule::Reject, true)
             .expect_commit_success();
         test_runner
             .add_to_allow_list(resource_address, true)
@@ -529,18 +525,16 @@ impl AccountDepositModesTestRunner {
         self.execute_manifest(manifest, sign)
     }
 
-    pub fn transition_account_default_deposit_rule(
+    pub fn transition_default_deposit_rule(
         &mut self,
-        default_deposit_rule: AccountDefaultDepositRule,
+        default: DefaultDepositRule,
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.component_address,
-                ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
-                AccountChangeDefaultDepositRuleInput {
-                    default_deposit_rule,
-                },
+                ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                AccountChangeDefaultDepositRuleInput { default },
             )
             .build();
         self.execute_manifest(manifest, sign)

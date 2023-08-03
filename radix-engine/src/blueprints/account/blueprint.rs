@@ -26,27 +26,17 @@ pub const ACCOUNT_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
-    pub default_deposit_rule: AccountDefaultDepositRule,
+    pub default: DefaultDepositRule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
-    VaultDoesNotExist {
-        resource_address: ResourceAddress,
-    },
-    AccountIsNotInAllowListDepositsMode {
-        default_deposit_rule: AccountDefaultDepositRule,
-    },
-    AccountIsNotInDisallowListDepositsMode {
-        default_deposit_rule: AccountDefaultDepositRule,
-    },
-    DepositIsDisallowed {
-        resource_address: ResourceAddress,
-    },
+    VaultDoesNotExist { resource_address: ResourceAddress },
+    AccountIsNotInAllowListDepositsMode { default: DefaultDepositRule },
+    AccountIsNotInDisallowListDepositsMode { default: DefaultDepositRule },
+    DepositIsDisallowed { resource_address: ResourceAddress },
     NotAllBucketsCouldBeDeposited,
-    NotAnAuthorizedDepositor {
-        depositor: ResourceOrNonFungible,
-    },
+    NotAnAuthorizedDepositor { depositor: ResourceOrNonFungible },
 }
 
 impl From<AccountError> for RuntimeError {
@@ -250,7 +240,7 @@ impl AccountBlueprint {
             vec![],
             None,
             vec![FieldValue::new(&AccountSubstate {
-                default_deposit_rule: AccountDefaultDepositRule::Accept,
+                default: DefaultDepositRule::Accept,
             })],
             btreemap!(),
         )?;
@@ -669,8 +659,8 @@ impl AccountBlueprint {
         Ok(proof)
     }
 
-    pub fn change_account_default_deposit_rule<Y>(
-        default_deposit_rule: AccountDefaultDepositRule,
+    pub fn set_default_deposit_rule<Y>(
+        default: DefaultDepositRule,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -680,7 +670,7 @@ impl AccountBlueprint {
         let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
         let mut account = api.field_read_typed::<AccountSubstate>(handle)?;
 
-        account.default_deposit_rule = default_deposit_rule;
+        account.default = default;
 
         api.field_write_typed(handle, account)?;
         api.field_close(handle)?;
@@ -762,9 +752,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    fn get_account_default_deposit_rule<Y>(
-        api: &mut Y,
-    ) -> Result<AccountDefaultDepositRule, RuntimeError>
+    fn get_default_deposit_rule<Y>(api: &mut Y) -> Result<DefaultDepositRule, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -772,10 +760,10 @@ impl AccountBlueprint {
         let handle =
             api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
         let account = api.field_read_typed::<AccountSubstate>(handle)?;
-        let default_deposit_rule = account.default_deposit_rule;
+        let default = account.default;
         api.field_close(handle)?;
 
-        Ok(default_deposit_rule)
+        Ok(default)
     }
 
     fn get_vault<F, Y, R>(
@@ -853,11 +841,11 @@ impl AccountBlueprint {
             ResourceDepositRule::Allowed => true,
             ResourceDepositRule::Disallowed => false,
             ResourceDepositRule::Neither => {
-                let default_deposit_rule = Self::get_account_default_deposit_rule(api)?;
-                match default_deposit_rule {
-                    AccountDefaultDepositRule::Accept => true,
-                    AccountDefaultDepositRule::Reject => false,
-                    AccountDefaultDepositRule::AllowExisting => {
+                let default = Self::get_default_deposit_rule(api)?;
+                match default {
+                    DefaultDepositRule::Accept => true,
+                    DefaultDepositRule::Reject => false,
+                    DefaultDepositRule::AllowExisting => {
                         *resource_address == XRD || Self::does_vault_exist(resource_address, api)?
                     }
                 }

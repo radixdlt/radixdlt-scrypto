@@ -52,16 +52,16 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                             builder
                                 .call_method(
                                     source_account.address,
-                                    ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
+                                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
                                     AccountChangeDefaultDepositRuleInput {
-                                        default_deposit_rule: AccountDefaultDepositRule::Reject,
+                                        default: DefaultDepositRule::Reject,
                                     },
                                 )
                                 .call_method(
                                     destination_account.address,
-                                    ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
+                                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
                                     AccountChangeDefaultDepositRuleInput {
-                                        default_deposit_rule: AccountDefaultDepositRule::Reject,
+                                        default: DefaultDepositRule::Reject,
                                     },
                                 )
                                 .allocate_global_address(

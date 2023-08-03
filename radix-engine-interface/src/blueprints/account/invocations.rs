@@ -23,7 +23,7 @@ pub enum ResourceDepositRule {
 }
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor, Clone)]
-pub enum AccountDefaultDepositRule {
+pub enum DefaultDepositRule {
     /// Allows the deposit of all resources - the deny list is honored in this state.o
     Accept,
 
@@ -217,11 +217,11 @@ pub type AccountCreateProofOfNonFungiblesOutput = Proof;
 // Account Transition Deposit Mode
 //=================================
 
-pub const ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT: &str = "change_account_default_deposit_rule";
+pub const ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT: &str = "set_default_deposit_rule";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountChangeDefaultDepositRuleInput {
-    pub default_deposit_rule: AccountDefaultDepositRule,
+    pub default: DefaultDepositRule,
 }
 
 pub type AccountChangeDefaultDepositRuleOutput = ();

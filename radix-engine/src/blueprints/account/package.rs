@@ -277,7 +277,7 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
+            ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: TypeRef::Static(
@@ -288,7 +288,7 @@ impl AccountNativePackage {
                     aggregator
                         .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleOutput>(),
                 ),
-                export: ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
+                export: ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             },
         );
 
@@ -497,7 +497,7 @@ impl AccountNativePackage {
                         methods {
                             ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
 
-                            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
                             ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
                             ACCOUNT_WITHDRAW_IDENT => [OWNER_ROLE];
                             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
@@ -774,16 +774,12 @@ impl AccountNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => {
-                let AccountChangeDefaultDepositRuleInput {
-                    default_deposit_rule,
-                } = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = AccountBlueprint::change_account_default_deposit_rule(
-                    default_deposit_rule,
-                    api,
-                )?;
+            ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT => {
+                let AccountChangeDefaultDepositRuleInput { default } =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = AccountBlueprint::set_default_deposit_rule(default, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => {
