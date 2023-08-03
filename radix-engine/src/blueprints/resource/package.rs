@@ -2662,11 +2662,11 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
-                let _input: NonFungibleVaultGetNonFungibleLocalIdsInput =
+                let input: NonFungibleVaultGetNonFungibleLocalIdsInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(api)?;
+                let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(input.limit, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {

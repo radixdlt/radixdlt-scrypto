@@ -7,6 +7,8 @@ pub struct WasmValidator {
     pub max_initial_table_size: u32,
     pub max_number_of_br_table_targets: u32,
     pub max_number_of_functions: u32,
+    pub max_number_of_function_params: u32,
+    pub max_number_of_function_locals: u32,
     pub max_number_of_globals: u32,
     pub instrumenter_config: WasmValidatorConfigV1,
 }
@@ -18,6 +20,8 @@ impl Default for WasmValidator {
             max_initial_table_size: MAX_INITIAL_TABLE_SIZE,
             max_number_of_br_table_targets: MAX_NUMBER_OF_BR_TABLE_TARGETS,
             max_number_of_functions: MAX_NUMBER_OF_FUNCTIONS,
+            max_number_of_function_params: MAX_NUMBER_OF_FUNCTION_PARAMS,
+            max_number_of_function_locals: MAX_NUMBER_OF_FUNCTION_LOCALS,
             max_number_of_globals: MAX_NUMBER_OF_GLOBALS,
             instrumenter_config: WasmValidatorConfigV1::new(),
         }
@@ -31,13 +35,16 @@ impl WasmValidator {
         blueprints: I,
     ) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         WasmModule::init(code)?
-            .enforce_no_floating_point()?
             .enforce_no_start_function()?
             .enforce_import_limit()?
             .enforce_memory_limit_and_inject_max(self.max_memory_size_in_pages)?
             .enforce_table_limit(self.max_initial_table_size)?
             .enforce_br_table_limit(self.max_number_of_br_table_targets)?
-            .enforce_function_limit(self.max_number_of_functions)?
+            .enforce_function_limit(
+                self.max_number_of_functions,
+                self.max_number_of_function_params,
+                self.max_number_of_function_locals,
+            )?
             .enforce_global_limit(self.max_number_of_globals)?
             .enforce_export_constraints(blueprints)?
             .inject_instruction_metering(&self.instrumenter_config)?
@@ -67,7 +74,7 @@ mod tests {
               (drop
                 (memory.grow (i32.const 1000000))
               )
-          
+
               ;; Encode () in SBOR at address 0x0
               (i32.const 0)
               (i32.const 92)  ;; prefix
@@ -78,11 +85,11 @@ mod tests {
               (i32.const 2)
               (i32.const 0)  ;; tuple length
               (i32.store8)
-          
+
               ;; Return slice (ptr = 0, len = 3)
               (i64.const 3)
             )
-          
+
             (memory $0 1)
             (export "memory" (memory $0))
             (export "Test_f" (func $Test_f))
@@ -102,14 +109,15 @@ mod tests {
                 .0,
         )
         .unwrap();
+
         assert_eq!(
             instrumented_code,
             r#"(module
   (type (;0;) (func (param i64) (result i64)))
-  (type (;1;) (func (param i32)))
+  (type (;1;) (func (param i64)))
   (import "env" "gas" (func (;0;) (type 1)))
   (func (;1;) (type 0) (param i64) (result i64)
-    i32.const 14788284
+    i64.const 14788284
     call 0
     i32.const 1000000
     memory.grow

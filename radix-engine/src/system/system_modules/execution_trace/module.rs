@@ -1,13 +1,12 @@
 use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
-use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::KernelApi;
-use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::kernel::call_frame::CallFrameMessage;
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent, KernelCallbackObject};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -254,7 +253,7 @@ impl ResourceSummary {
 
     pub fn from_message<Y: KernelApi<M>, M: KernelCallbackObject>(
         api: &mut Y,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
@@ -269,7 +268,7 @@ impl ResourceSummary {
         Self { buckets, proofs }
     }
 
-    pub fn from_node_id<Y: KernelApi<M>, M: KernelCallbackObject>(
+    pub fn from_node_id<Y: KernelInternalApi<M>, M: KernelCallbackObject>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Self {
@@ -286,67 +285,69 @@ impl ResourceSummary {
 }
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceModule {
-    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        _node_id: &NodeId,
-        _node_substates: &NodeSubstates,
+        event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system_state()
-            .system
-            .modules
-            .execution_trace
-            .handle_before_create_node();
+        match event {
+            CreateNodeEvent::Start(..) => {
+                api.kernel_get_system_state()
+                    .system
+                    .modules
+                    .execution_trace
+                    .handle_before_create_node();
+            }
+            CreateNodeEvent::StoreAccess(..) => {}
+            CreateNodeEvent::End(node_id) => {
+                let current_depth = api.kernel_get_current_depth();
+                let resource_summary = ResourceSummary::from_node_id(api, node_id);
+                let system_state = api.kernel_get_system_state();
+                system_state
+                    .system
+                    .modules
+                    .execution_trace
+                    .handle_after_create_node(
+                        system_state.current_call_frame,
+                        current_depth,
+                        resource_summary,
+                    );
+            }
+        }
+
         Ok(())
     }
 
-    fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
-        _total_substate_size: usize,
-        _store_access: &StoreAccessInfo,
+        event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
-        let current_depth = api.kernel_get_current_depth();
-        let resource_summary = ResourceSummary::from_node_id(api, node_id);
-        let system_state = api.kernel_get_system_state();
-        system_state
-            .system
-            .modules
-            .execution_trace
-            .handle_after_create_node(system_state.current_actor, current_depth, resource_summary);
-        Ok(())
-    }
+        match event {
+            DropNodeEvent::Start(node_id) => {
+                let resource_summary = ResourceSummary::from_node_id(api, node_id);
+                api.kernel_get_system_state()
+                    .system
+                    .modules
+                    .execution_trace
+                    .handle_before_drop_node(resource_summary);
+            }
+            DropNodeEvent::End(..) => {
+                let current_depth = api.kernel_get_current_depth();
+                let system_state = api.kernel_get_system_state();
+                system_state
+                    .system
+                    .modules
+                    .execution_trace
+                    .handle_after_drop_node(system_state.current_call_frame, current_depth);
+            }
+        }
 
-    fn before_drop_node<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        node_id: &NodeId,
-    ) -> Result<(), RuntimeError> {
-        let resource_summary = ResourceSummary::from_node_id(api, node_id);
-        api.kernel_get_system_state()
-            .system
-            .modules
-            .execution_trace
-            .handle_before_drop_node(resource_summary);
-        Ok(())
-    }
-
-    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _total_substate_size: usize,
-    ) -> Result<(), RuntimeError> {
-        let current_depth = api.kernel_get_current_depth();
-        let system_state = api.kernel_get_system_state();
-        system_state
-            .system
-            .modules
-            .execution_trace
-            .handle_after_drop_node(system_state.current_actor, current_depth);
         Ok(())
     }
 
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let resource_summary = ResourceSummary::from_message(api, message);
@@ -355,27 +356,32 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
             .system
             .modules
             .execution_trace
-            .handle_before_push_frame(system_state.current_actor, callee, resource_summary, args);
+            .handle_before_push_frame(
+                system_state.current_call_frame,
+                callee,
+                resource_summary,
+                args,
+            );
         Ok(())
     }
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_message(api, message);
 
         let system_state = api.kernel_get_system_state();
 
-        let caller = TraceActor::from_actor(system_state.caller_actor);
+        let caller = TraceActor::from_actor(system_state.caller_call_frame);
 
         system_state
             .system
             .modules
             .execution_trace
             .handle_on_execution_finish(
-                system_state.current_actor,
+                system_state.current_call_frame,
                 current_depth,
                 &caller,
                 resource_summary,

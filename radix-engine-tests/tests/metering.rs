@@ -354,7 +354,7 @@ fn run_radiswap(mode: Mode) {
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
         .expect_commit_success();
-    assert_eq!(test_runner.account_balance(account3, btc), btc_amount);
+    assert_eq!(test_runner.get_component_balance(account3, btc), btc_amount);
 
     // Swap 2,000 BTC into ETH
     let btc_to_swap = Decimal::from(2000);
@@ -371,8 +371,8 @@ fn run_radiswap(mode: Mode) {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
-    let remaining_btc = test_runner.account_balance(account3, btc);
-    let eth_received = test_runner.account_balance(account3, eth);
+    let remaining_btc = test_runner.get_component_balance(account3, btc);
+    let eth_received = test_runner.get_component_balance(account3, eth);
     assert_eq!(remaining_btc, btc_amount - btc_to_swap);
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
     let commit_result = receipt.expect_commit(true);
@@ -424,7 +424,7 @@ fn run_flash_loan(mode: Mode) {
     // Take loan
     let loan_amount = Decimal::from(50);
     let repay_amount = loan_amount * dec!("1.001");
-    let old_balance = test_runner.account_balance(account3, XRD);
+    let old_balance = test_runner.get_component_balance(account3, XRD);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account3, 500)
@@ -444,9 +444,9 @@ fn run_flash_loan(mode: Mode) {
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
     let commit_result = receipt.expect_commit(true);
-    let new_balance = test_runner.account_balance(account3, XRD);
+    let new_balance = test_runner.get_component_balance(account3, XRD);
     assert!(test_runner
-        .account_balance(account3, promise_token_address)
+        .get_component_balance(account3, promise_token_address)
         .is_zero());
     assert_eq!(
         old_balance - new_balance,
@@ -696,26 +696,24 @@ impl NonFungibleData for TestNonFungibleData {
     const MUTABLE_FIELDS: &'static [&'static str] = &["metadata"];
 }
 
-// FIXME: Need to update large_package.wasm as it is is no longer the correct size
-#[test]
-/// The large_package blueprint combines toogether two other packages just to provide meaningful content for
-/// a large package of size as close as possible to current limit: 1,048,576 bytes minus the size of
-/// SCRYPTO_SBOR_V1_PAYLOAD_PREFIX and the actor size.
-/// If this test fails with an error TransactionLimitsError::MaxInvokePayloadSizeExceeded,
-/// go to `blueprints/large_package/Cargo.toml` file and change `package2` reference package name and path
-/// some other blueprint, but verify transaction payload size if it is close enough to the limit (it can be
-/// done by checking TxPayloadCost from cost breakdown table divided by payload byte cost, which can be taken
-/// from fee_table.rs tx_payload_cost() function). List of blueprints and its size can be displayed using command
+/// This test verified that we can publish a large package of size as close as possible to current
+/// limit: 1,048,576 bytes minus SBOR overhead.
+///
+/// If it fails, update `radix-engine-tests/blueprints/large_package/` by adding or removing blueprints
+/// to make sure the size is close to 1MB. This is often needed when the WASM interface or compiler
+/// changes.
+///
+/// List of blueprints and its size can be displayed using command
 /// `ls -lSk ./radix-engine-tests/tests/blueprints/target/wasm32-unknown-unknown/release/*.wasm`
+///
+#[test]
 fn publish_package_1mib() {
     let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, definition) = Compile::compile("./tests/blueprints/large_package");
+    println!("Code size: {}", code.len());
+    assert!(code.len() <= 1000 * 1024);
+    assert!(code.len() >= 900 * 1024);
+
     // internally validates if publish succeeded
-    test_runner.publish_package(
-        include_bytes!("./assets/large_package.wasm").to_vec(),
-        PackageDefinition {
-            blueprints: btreemap!(),
-        },
-        btreemap!(),
-        OwnerRole::None,
-    );
+    test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 }

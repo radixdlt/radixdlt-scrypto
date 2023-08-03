@@ -127,7 +127,7 @@ fn scrypto_can_emit_registered_events() {
         let name = test_runner.event_name(&event.0);
         println!("{:?} - {}", event.0, name);
     }
-    assert_eq!(events.len(), 3);
+    assert_eq!(events.len(), 3); // Three events: lock fee, registered event and burn fee
     assert!(match events.get(0) {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -236,7 +236,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 2);
+        assert_eq!(events.len(), 2); // Two events: lock fee and burn fee
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -522,7 +522,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 4);
+        assert_eq!(events.len(), 4); // Four events: vault lock fee, resource manager mint fungible, resource manager burn fungible, burn fee
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -613,7 +613,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 4);
+        assert_eq!(events.len(), 4); // Four events: vault lock fee, resource manager mint non-fungible, resource manager burn non-fungible, burn fee
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -832,7 +832,7 @@ fn consensus_manager_round_update_emits_correct_event() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 2);
+        assert_eq!(events.len(), 2); // Two events: round change event, burn fee
         assert!(match events.get(0) {
             Some((
                 event_identifier

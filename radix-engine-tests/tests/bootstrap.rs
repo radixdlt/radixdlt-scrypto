@@ -444,6 +444,7 @@ fn should_not_be_able_to_call_genesis_helper() {
 
 #[test]
 fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx() {
+    // Arrange
     // Data migrated from Olympia
     let validator_0_key = Secp256k1PrivateKey::from_u64(10).unwrap().public_key();
     let validator_1_key = Secp256k1PrivateKey::from_u64(11).unwrap().public_key();
@@ -495,7 +496,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
         })
         .build();
 
-    // Run transaction
+    // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .drop_auth_zone_proofs()

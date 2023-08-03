@@ -322,12 +322,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         let trace = self.trace;
         #[cfg(feature = "resource_tracker")]
         let trace = false;
-
-        let mut collected_events = if self.collect_events {
-            Some(Vec::new())
-        } else {
-            None
-        };
         //----------------------------------------------------------------
 
         let scrypto_vm = ScryptoVm {
@@ -355,7 +349,10 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),
         };
-        if let Some(events) = &mut collected_events {
+
+        let collected_events = if self.collect_events {
+            let mut events = Vec::new();
+
             events.push(
                 system_bootstrap_receipt
                     .expect_commit_success()
@@ -371,7 +368,10 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
                     .application_events
                     .clone(),
             );
-        }
+            Some(events)
+        } else {
+            None
+        };
 
         // Note that 0 is not a valid private key
         let next_private_key = 100;
@@ -686,15 +686,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             sum += self.inspect_vault_balance(vault).unwrap();
         }
         sum
-    }
-
-    /// Alias to `get_component_balance`
-    pub fn account_balance(
-        &mut self,
-        account_address: ComponentAddress,
-        resource_address: ResourceAddress,
-    ) -> Decimal {
-        self.get_component_balance(account_address, resource_address)
     }
 
     pub fn inspect_vault_balance(&mut self, vault_id: NodeId) -> Option<Decimal> {

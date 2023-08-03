@@ -723,18 +723,10 @@ mod tests {
         };
         let payload = basic_encode(&value).unwrap();
 
-        let (type_index, schema) =
-            generate_full_schema_from_single_type::<(MyEnum,), NoCustomSchema>();
-
-        let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
-            &payload,
-            &schema,
-            type_index,
-            &mut()
-        ) else {
-            panic!("Validation did not error with too short a payload");
-        };
-        let path_message = error.location.path_to_string(&schema);
-        assert_eq!(path_message, "Tuple.[0]->MyEnum::{2}");
+        check_location_path::<(MyEnum,)>(
+            payload,
+            "Tuple.[0]->MyEnum::{2}",
+            "{ unknown_variant_id: 2 }",
+        );
     }
 }

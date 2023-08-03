@@ -920,7 +920,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.account_balance(account, resource_address),
+        test_runner.get_component_balance(account, resource_address),
         dec!("50")
     )
 }
@@ -966,7 +966,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.account_balance(account, resource_address),
+        test_runner.get_component_balance(account, resource_address),
         dec!(1)
     )
 }
@@ -1016,7 +1016,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.account_balance(account, resource_address),
+        test_runner.get_component_balance(account, resource_address),
         dec!(1)
     )
 }

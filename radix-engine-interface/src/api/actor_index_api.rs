@@ -59,7 +59,7 @@ pub trait ClientActorIndexApi<E> {
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<Vec<u8>>, E>;
 
     /// Scans arbitrary elements of count from an index
@@ -67,10 +67,10 @@ pub trait ClientActorIndexApi<E> {
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<K>, E> {
         let entries = self
-            .actor_index_scan_keys(object_handle, collection_index, count)?
+            .actor_index_scan_keys(object_handle, collection_index, limit)?
             .into_iter()
             .map(|key| {
                 let key: K = scrypto_decode(&key).unwrap();
@@ -86,7 +86,7 @@ pub trait ClientActorIndexApi<E> {
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, E>;
 
     /// Removes and returns arbitrary elements of count from an index
@@ -94,10 +94,10 @@ pub trait ClientActorIndexApi<E> {
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<(K, V)>, E> {
         let entries = self
-            .actor_index_drain(object_handle, collection_index, count)?
+            .actor_index_drain(object_handle, collection_index, limit)?
             .into_iter()
             .map(|(key, value)| {
                 let key: K = scrypto_decode(&key).unwrap();

@@ -107,7 +107,16 @@ mod vec_of_u8_underflow {
             unsafe {
                 vec.set_len(1 * 1024 * 1024);
             }
-            (&mut vec[0..7]).copy_from_slice(&[92, 32, 7, 249, 193, 215, 47]);
+            (&mut vec[0..7]).copy_from_slice(&[
+                // 92 = Scrypto SBOR
+                92, // 32 = VALUE_KIND_ARRAY
+                32, // 7 = U8 in the array
+                7,
+                // Length of 99999993 expressed as VLQ.
+                // NOTE: This is longer than the buffer length of 1048576
+                // Essentially to the engine this looks like this SBOR payload has been truncated, ie underflow
+                249, 193, 215, 47,
+            ]);
 
             // Create a KVStore
             let kv_store = KeyValueStore::<u32, Vec<u8>>::new();

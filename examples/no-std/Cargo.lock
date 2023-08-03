@@ -264,17 +264,12 @@ dependencies = [
  "num-integer",
  "num-traits",
  "paste",
- "radix-engine-constants",
  "radix-engine-derive",
  "sbor",
  "serde",
  "strum",
  "utils",
 ]
-
-[[package]]
-name = "radix-engine-constants"
-version = "0.11.0"
 
 [[package]]
 name = "radix-engine-derive"
