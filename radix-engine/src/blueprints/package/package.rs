@@ -25,6 +25,7 @@ use radix_engine_interface::schema::{
     FunctionSchemaInit, TypeRef,
 };
 use sbor::LocalTypeIndex;
+use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
@@ -60,6 +61,7 @@ pub enum PackageError {
     InvalidEventSchema,
     InvalidSystemFunction,
     InvalidTypeParent,
+    InvalidName(String),
     MissingOuterBlueprint,
     WasmUnsupported(String),
     InvalidGenericId(u8),
@@ -405,6 +407,43 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                         });
                     }
                 }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
+    // All names should follow Rust Identifier specification
+    let condition = |name| {
+        syn::parse_str::<Ident>(name).map_err(|_| PackageError::InvalidName(name.to_string()))
+    };
+
+    for (bp_name, bp_init) in definition.blueprints.iter() {
+        condition(bp_name)?;
+
+        for (name, _) in bp_init.schema.events.event_schema.iter() {
+            condition(name)?;
+        }
+
+        for (name, _) in bp_init.schema.functions.functions.iter() {
+            condition(name)?;
+        }
+
+        for (_, name) in bp_init.schema.hooks.hooks.iter() {
+            condition(name)?;
+        }
+
+        if let PackageRoyaltyConfig::Enabled(list) = &bp_init.royalty_config {
+            for (name, _) in list.iter() {
+                condition(name)?;
+            }
+        }
+
+        if let FunctionAuth::AccessRules(list) = &bp_init.auth_config.function_auth {
+            for (name, _) in list.iter() {
+                condition(name)?;
             }
         }
     }
@@ -1053,6 +1092,8 @@ impl PackageNativePackage {
         validate_package_event_schema(definition.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_auth(&definition)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_names(&definition)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Validate VM specific properties
