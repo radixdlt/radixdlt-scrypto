@@ -342,7 +342,7 @@ impl AccountBlueprint {
     pub fn try_deposit_batch_or_refund<Y>(
         buckets: Vec<Bucket>,
         api: &mut Y,
-    ) -> Result<Vec<Bucket>, RuntimeError>
+    ) -> Result<Option<Vec<Bucket>>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -357,9 +357,9 @@ impl AccountBlueprint {
 
         if can_all_be_deposited {
             Self::deposit_batch(buckets, api)?;
-            Ok(vec![])
+            Ok(None)
         } else {
-            Ok(buckets)
+            Ok(Some(buckets))
         }
     }
 
@@ -386,7 +386,7 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let buckets = Self::try_deposit_batch_or_refund(buckets, api)?;
-        if buckets.len() != 0 {
+        if let Some(_) = buckets {
             Err(AccountError::NotAllBucketsCouldBeDeposited.into())
         } else {
             Ok(())
@@ -419,21 +419,21 @@ impl AccountBlueprint {
         buckets: Vec<Bucket>,
         badge: ResourceOrNonFungible,
         api: &mut Y,
-    ) -> Result<Vec<Bucket>, RuntimeError>
+    ) -> Result<Option<Vec<Bucket>>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         // Check whether the passed badge is in the authorized depositors list, if not, return all
         // of the passed resources back to the caller.
         if Self::validate_badge_is_authorized_depositor(&badge, api)?.is_err() {
-            return Ok(buckets);
+            return Ok(Some(buckets));
         } else {
             // Validate that the badge is actually present in the auth zone.
             Self::validate_badge_is_present(badge, api)?;
 
             // Perform the deposit.
             Self::deposit_batch(buckets, api)?;
-            Ok(vec![])
+            Ok(None)
         }
     }
 

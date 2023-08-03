@@ -139,7 +139,7 @@ extern_blueprint_internal! {
         fn lock_fee_and_withdraw_non_fungibles(&mut self, amount_to_lock: Decimal, resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>) -> Bucket;
         fn securify(&mut self) -> Bucket;
         fn try_deposit_batch_or_abort(&mut self, buckets: Vec<Bucket>, authorized_depositor_badge: Option<ResourceOrNonFungible>);
-        fn try_deposit_batch_or_refund(&mut self, buckets: Vec<Bucket>, authorized_depositor_badge: Option<ResourceOrNonFungible>) -> Vec<Bucket>;
+        fn try_deposit_batch_or_refund(&mut self, buckets: Vec<Bucket>, authorized_depositor_badge: Option<ResourceOrNonFungible>) -> Option<Vec<Bucket>>;
         fn try_deposit_or_abort(&mut self, bucket: Bucket, authorized_depositor_badge: Option<ResourceOrNonFungible>);
         fn try_deposit_or_refund(&mut self, bucket: Bucket, authorized_depositor_badge: Option<ResourceOrNonFungible>) -> Option<Bucket>;
         fn withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket;

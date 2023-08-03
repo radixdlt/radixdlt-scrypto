@@ -298,7 +298,7 @@ pub struct AccountTryDepositBatchOrRefundManifestInput {
     pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
 }
 
-pub type AccountTryDepositBatchOrRefundOutput = Vec<Bucket>;
+pub type AccountTryDepositBatchOrRefundOutput = Option<Vec<Bucket>>;
 
 //==============================
 // Account Try Deposit Or Abort
