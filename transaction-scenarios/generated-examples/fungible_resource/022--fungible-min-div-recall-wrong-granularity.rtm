@@ -4,11 +4,12 @@ CALL_METHOD
     Decimal("5000")
 ;
 RECALL_FROM_VAULT
-    Address("internal_vault_sim1tqty36u9p39mplze6pvlpfv8jmc63nmqeyj7wcrkcraqn9twrycm38")
+    Address("internal_vault_sim1tz7e7327jv8dd2ft3efhl4hp8s2uxld38295yj23dsnvzq9jdde2wn")
     Decimal("123.12321")
 ;
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "try_deposit_batch_or_abort"
     Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
 ;

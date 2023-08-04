@@ -435,7 +435,7 @@ fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_
             .withdraw_from_account(account, XRD, amount)
             .take_all_from_worktop(XRD, "creation_fee")
             .create_validator(public_key, Decimal::ONE, "creation_fee")
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -700,7 +700,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
                 builder.call_method(validator_address, "stake", manifest_args!(bucket))
             }
         })
-        .try_deposit_batch_or_abort(validator_account_address)
+        .try_deposit_batch_or_abort(validator_account_address, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1083,7 +1083,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
 
 macro_rules! assert_close_to {
     ($a:expr, $b:expr) => {
-        if ($a - $b).abs() > dec!("0.0001") {
+        if Decimal::from($a - $b).abs() > dec!("0.0001") {
             panic!("{} is not close to {}", $a, $b);
         }
     };
@@ -1475,7 +1475,7 @@ impl RegisterAndStakeTransactionType {
                     .register_validator(validator_address)
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
-                    .try_deposit_batch_or_abort(account_address)
+                    .try_deposit_batch_or_abort(account_address, None)
                     .build();
                 vec![manifest]
             }
@@ -1493,7 +1493,7 @@ impl RegisterAndStakeTransactionType {
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
                     .register_validator(validator_address)
-                    .try_deposit_batch_or_abort(account_address)
+                    .try_deposit_batch_or_abort(account_address, None)
                     .build();
                 vec![manifest]
             }
@@ -1522,7 +1522,7 @@ impl RegisterAndStakeTransactionType {
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
-                    .try_deposit_batch_or_abort(account_address)
+                    .try_deposit_batch_or_abort(account_address, None)
                     .build();
 
                 vec![register_manifest, stake_manifest]
@@ -1552,7 +1552,7 @@ impl RegisterAndStakeTransactionType {
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
-                    .try_deposit_batch_or_abort(account_address)
+                    .try_deposit_batch_or_abort(account_address, None)
                     .build();
 
                 vec![stake_manifest, register_manifest]
@@ -1913,7 +1913,7 @@ fn cannot_claim_unstake_immediately() {
         .unstake_validator(validator_address, "stake_units")
         .take_all_from_worktop(validator_substate.unstake_nft, "unstake_nft")
         .claim_xrd(validator_address, "unstake_nft")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_batch_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1957,7 +1957,7 @@ fn can_claim_unstake_after_epochs() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_batch_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1972,7 +1972,7 @@ fn can_claim_unstake_after_epochs() {
         .withdraw_from_account(account_with_su, validator_substate.unstake_nft, 1)
         .take_all_from_worktop(validator_substate.unstake_nft, "unstake_receipt")
         .claim_xrd(validator_address, "unstake_receipt")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_batch_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -2625,7 +2625,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_batch_or_abort(account_with_su, None)
         .build();
     let receipt1 = test_runner.execute_manifest(
         manifest,

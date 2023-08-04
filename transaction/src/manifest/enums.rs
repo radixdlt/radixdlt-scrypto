@@ -122,7 +122,7 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum AccountDefaultDepositRule {
+            enum DefaultDepositRule {
                 Accept = 0;
                 Reject = 1;
                 AllowExisting = 2;
@@ -131,10 +131,9 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum ResourceDepositRule {
-                Neither = 0;
-                Allowed = 1;
-                Disallowed = 2;
+            enum ResourcePreference {
+                Allowed = 0;
+                Disallowed = 1;
             }
         );
 

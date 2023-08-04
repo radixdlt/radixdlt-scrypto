@@ -140,11 +140,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
                 "recall_on_direct_access_ref_method",
                 manifest_args!(InternalAddress::new_or_panic(vault_id.into())),
             )
-            .call_method(
-                account,
-                "try_deposit_batch_or_abort",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

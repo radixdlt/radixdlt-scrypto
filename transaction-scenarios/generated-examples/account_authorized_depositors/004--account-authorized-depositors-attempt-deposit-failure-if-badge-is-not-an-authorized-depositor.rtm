@@ -13,9 +13,11 @@ TAKE_ALL_FROM_WORKTOP
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
-    "try_authorized_deposit_or_refund"
+    "try_deposit_or_refund"
     Bucket("bucket")
     Enum<1u8>(
-        Address("resource_sim1nfxxxxxxxxxxaccwnrxxxxxxxxx006664022062xxxxxxxxxrn80rl")
+        Enum<1u8>(
+            Address("resource_sim1nfxxxxxxxxxxaccwnrxxxxxxxxx006664022062xxxxxxxxxrn80rl")
+        )
     )
 ;

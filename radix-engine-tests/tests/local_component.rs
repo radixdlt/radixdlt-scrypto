@@ -92,7 +92,7 @@ fn recursion_bomb() {
                 manifest_args!(lookup.bucket("xrd")),
             )
         })
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -123,7 +123,7 @@ fn recursion_bomb_to_failure() {
                 manifest_args!(lookup.bucket("bucket")),
             )
         })
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -162,7 +162,7 @@ fn recursion_bomb_2() {
                 manifest_args!(lookup.bucket("bucket")),
             )
         })
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -193,7 +193,7 @@ fn recursion_bomb_2_to_failure() {
                 manifest_args!(lookup.bucket("bucket")),
             )
         })
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

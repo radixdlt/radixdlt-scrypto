@@ -345,75 +345,168 @@ impl From<bool> for Decimal {
     }
 }
 
-impl<T: TryInto<Decimal>> Add<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
+impl Add<Decimal> for Decimal {
     type Output = Decimal;
 
-    fn add(self, other: T) -> Self::Output {
+    #[inline]
+    fn add(self, other: Decimal) -> Self::Output {
         let a = self.0;
-        let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: BnumI256 = b_dec.0;
-        let c = a + b;
-        Decimal(c)
+        let b = other.0;
+        Decimal(a + b)
     }
 }
 
-impl<T: TryInto<Decimal>> Sub<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
+impl Sub<Decimal> for Decimal {
     type Output = Decimal;
 
-    fn sub(self, other: T) -> Self::Output {
+    #[inline]
+    fn sub(self, other: Decimal) -> Self::Output {
         let a = self.0;
-        let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: BnumI256 = b_dec.0;
-        let c: BnumI256 = a - b;
-        Decimal(c)
+        let b = other.0;
+        Decimal(a - b)
     }
 }
 
-impl<T: TryInto<Decimal>> Mul<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
+impl Mul<Decimal> for Decimal {
     type Output = Decimal;
 
-    fn mul(self, other: T) -> Self::Output {
+    #[inline]
+    fn mul(self, other: Decimal) -> Self::Output {
         // Use BnumI384 (BInt<6>) to not overflow.
         let a = BnumI384::from(self.0);
-        let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b = BnumI384::from(b_dec.0);
+        let b = BnumI384::from(other.0);
         let c = a * b / BnumI384::from(Self::ONE.0);
         let c_256 = BnumI256::try_from(c).expect("Overflow");
         Decimal(c_256)
     }
 }
 
-impl<T: TryInto<Decimal>> Div<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
+impl Div<Decimal> for Decimal {
     type Output = Decimal;
 
-    fn div(self, other: T) -> Self::Output {
+    #[inline]
+    fn div(self, other: Decimal) -> Self::Output {
         // Use BnumI384 (BInt<6>) to not overflow.
         let a = BnumI384::from(self.0);
-        let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b = BnumI384::from(b_dec.0);
+        let b = BnumI384::from(other.0);
         let c = a * BnumI384::from(Self::ONE.0) / b;
         let c_256 = BnumI256::try_from(c).expect("Overflow");
         Decimal(c_256)
     }
 }
 
-impl Neg for Decimal {
-    type Output = Decimal;
+macro_rules! impl_arith_ops {
+    ($type:ident) => {
+        impl Add<$type> for Decimal {
+            type Output = Decimal;
 
-    fn neg(self) -> Self::Output {
-        Decimal(-self.0)
+            fn add(self, other: $type) -> Self::Output {
+                self + Decimal::from(other)
+            }
+        }
+
+        impl Sub<$type> for Decimal {
+            type Output = Decimal;
+
+            fn sub(self, other: $type) -> Self::Output {
+                self - Decimal::from(other)
+            }
+        }
+
+        impl Mul<$type> for Decimal {
+            type Output = Decimal;
+
+            fn mul(self, other: $type) -> Self::Output {
+                self * Decimal::from(other)
+            }
+        }
+
+        impl Div<$type> for Decimal {
+            type Output = Decimal;
+
+            fn div(self, other: $type) -> Self::Output {
+                self / Decimal::from(other)
+            }
+        }
+
+        impl Add<Decimal> for $type {
+            type Output = Decimal;
+
+            #[inline]
+            fn add(self, other: Decimal) -> Self::Output {
+                other + self
+            }
+        }
+
+        impl Sub<Decimal> for $type {
+            type Output = Decimal;
+
+            fn sub(self, other: Decimal) -> Self::Output {
+                Decimal::from(self) - other
+            }
+        }
+
+        impl Mul<Decimal> for $type {
+            type Output = Decimal;
+
+            #[inline]
+            fn mul(self, other: Decimal) -> Self::Output {
+                other * self
+            }
+        }
+
+        impl Div<Decimal> for $type {
+            type Output = Decimal;
+
+            fn div(self, other: Decimal) -> Self::Output {
+                Decimal::from(self) / other
+            }
+        }
+    };
+}
+impl_arith_ops!(u8);
+impl_arith_ops!(u16);
+impl_arith_ops!(u32);
+impl_arith_ops!(u64);
+impl_arith_ops!(u128);
+impl_arith_ops!(usize);
+impl_arith_ops!(i8);
+impl_arith_ops!(i16);
+impl_arith_ops!(i32);
+impl_arith_ops!(i64);
+impl_arith_ops!(i128);
+impl_arith_ops!(isize);
+
+// Arithmetic ops with PreciseDecimal, they shall produce PreciseDecimal
+impl Add<PreciseDecimal> for Decimal {
+    type Output = PreciseDecimal;
+
+    fn add(self, other: PreciseDecimal) -> Self::Output {
+        PreciseDecimal::from(self) + other
+    }
+}
+
+impl Sub<PreciseDecimal> for Decimal {
+    type Output = PreciseDecimal;
+
+    fn sub(self, other: PreciseDecimal) -> Self::Output {
+        PreciseDecimal::from(self) - other
+    }
+}
+
+impl Mul<PreciseDecimal> for Decimal {
+    type Output = PreciseDecimal;
+
+    fn mul(self, other: PreciseDecimal) -> Self::Output {
+        PreciseDecimal::from(self) * other
+    }
+}
+
+impl Div<PreciseDecimal> for Decimal {
+    type Output = PreciseDecimal;
+
+    fn div(self, other: PreciseDecimal) -> Self::Output {
+        PreciseDecimal::from(self) / other
     }
 }
 
@@ -454,6 +547,14 @@ where
     fn div_assign(&mut self, other: T) {
         let other: Decimal = other.try_into().expect("Overflow");
         self.0 /= other.0;
+    }
+}
+
+impl Neg for Decimal {
+    type Output = Decimal;
+
+    fn neg(self) -> Self::Output {
+        Decimal(-self.0)
     }
 }
 
@@ -1377,4 +1478,59 @@ mod tests {
             Err(ParseDecimalError::UnsupportedDecimalPlace)
         ))
     }
+
+    // These tests make sure that any basic arithmetic operation
+    // between primitive type and Decimal produces a Decimal, no matter the order.
+    // Additionally result of such operation shall be equal, if operands are derived from the same
+    // value
+    // Example:
+    //   Decimal(10) * 10_u32 -> Decimal(100)
+    //   10_u32 * Decimal(10) -> Decimal(100)
+    macro_rules! test_arith_decimal_primitive {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_arith_decimal_$type>]() {
+                    let d1 = Decimal::ONE;
+                    let u1 = 2 as $type;
+                    let u2 = 1 as $type;
+                    let d2 = Decimal::from(2);
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+
+                    let d1 = dec!("2");
+                    let u1 = $type::MAX;
+                    let u2 = 2 as $type;
+                    let d2 = Decimal::from($type::MAX);
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+
+                    let d1 = Decimal::from($type::MIN);
+                    let u1 = 2 as $type;
+                    let u2 = $type::MIN;
+                    let d2 = dec!("2");
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+                }
+            }
+        };
+    }
+    test_arith_decimal_primitive!(u8);
+    test_arith_decimal_primitive!(u16);
+    test_arith_decimal_primitive!(u32);
+    test_arith_decimal_primitive!(u64);
+    test_arith_decimal_primitive!(u128);
+    test_arith_decimal_primitive!(usize);
+    test_arith_decimal_primitive!(i8);
+    test_arith_decimal_primitive!(i16);
+    test_arith_decimal_primitive!(i32);
+    test_arith_decimal_primitive!(i64);
+    test_arith_decimal_primitive!(i128);
+    test_arith_decimal_primitive!(isize);
 }

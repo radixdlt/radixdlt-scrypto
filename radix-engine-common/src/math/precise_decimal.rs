@@ -360,75 +360,168 @@ impl From<bool> for PreciseDecimal {
     }
 }
 
-impl<T: TryInto<PreciseDecimal>> Add<T> for PreciseDecimal
-where
-    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
-{
+impl Add<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
-    fn add(self, other: T) -> Self::Output {
+    #[inline]
+    fn add(self, other: PreciseDecimal) -> Self::Output {
         let a = self.0;
-        let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b: BnumI512 = b_dec.0;
-        let c = a + b;
-        PreciseDecimal(c)
+        let b = other.0;
+        PreciseDecimal(a + b)
     }
 }
 
-impl<T: TryInto<PreciseDecimal>> Sub<T> for PreciseDecimal
-where
-    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
-{
+impl Sub<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
-    fn sub(self, other: T) -> Self::Output {
+    #[inline]
+    fn sub(self, other: PreciseDecimal) -> Self::Output {
         let a = self.0;
-        let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b: BnumI512 = b_dec.0;
-        let c: BnumI512 = a - b;
-        PreciseDecimal(c)
+        let b = other.0;
+        PreciseDecimal(a - b)
     }
 }
 
-impl<T: TryInto<PreciseDecimal>> Mul<T> for PreciseDecimal
-where
-    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
-{
+impl Mul<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
-    fn mul(self, other: T) -> Self::Output {
+    #[inline]
+    fn mul(self, other: PreciseDecimal) -> Self::Output {
         // Use BnumI768 to not overflow.
         let a = BnumI768::from(self.0);
-        let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b = BnumI768::from(b_dec.0);
+        let b = BnumI768::from(other.0);
         let c = a * b / BnumI768::from(Self::ONE.0);
         let c_512 = BnumI512::try_from(c).expect("Overflow");
         PreciseDecimal(c_512)
     }
 }
 
-impl<T: TryInto<PreciseDecimal>> Div<T> for PreciseDecimal
-where
-    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
-{
+impl Div<PreciseDecimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
-    fn div(self, other: T) -> Self::Output {
+    #[inline]
+    fn div(self, other: PreciseDecimal) -> Self::Output {
         // Use BnumI768 to not overflow.
         let a = BnumI768::from(self.0);
-        let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b = BnumI768::from(b_dec.0);
+        let b = BnumI768::from(other.0);
         let c = a * BnumI768::from(Self::ONE.0) / b;
         let c_512 = BnumI512::try_from(c).expect("Overflow");
         PreciseDecimal(c_512)
     }
 }
 
-impl Neg for PreciseDecimal {
+macro_rules! impl_arith_ops {
+    ($type:ident) => {
+        impl Add<$type> for PreciseDecimal {
+            type Output = PreciseDecimal;
+
+            fn add(self, other: $type) -> Self::Output {
+                self + PreciseDecimal::from(other)
+            }
+        }
+
+        impl Sub<$type> for PreciseDecimal {
+            type Output = PreciseDecimal;
+
+            fn sub(self, other: $type) -> Self::Output {
+                self - PreciseDecimal::from(other)
+            }
+        }
+
+        impl Mul<$type> for PreciseDecimal {
+            type Output = PreciseDecimal;
+
+            fn mul(self, other: $type) -> Self::Output {
+                self * PreciseDecimal::from(other)
+            }
+        }
+
+        impl Div<$type> for PreciseDecimal {
+            type Output = PreciseDecimal;
+
+            fn div(self, other: $type) -> Self::Output {
+                self / PreciseDecimal::from(other)
+            }
+        }
+
+        impl Add<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            #[inline]
+            fn add(self, other: PreciseDecimal) -> Self::Output {
+                other + self
+            }
+        }
+
+        impl Sub<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            fn sub(self, other: PreciseDecimal) -> Self::Output {
+                PreciseDecimal::from(self) - other
+            }
+        }
+
+        impl Mul<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            #[inline]
+            fn mul(self, other: PreciseDecimal) -> Self::Output {
+                other * self
+            }
+        }
+
+        impl Div<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            fn div(self, other: PreciseDecimal) -> Self::Output {
+                PreciseDecimal::from(self) / other
+            }
+        }
+    };
+}
+impl_arith_ops!(u8);
+impl_arith_ops!(u16);
+impl_arith_ops!(u32);
+impl_arith_ops!(u64);
+impl_arith_ops!(u128);
+impl_arith_ops!(usize);
+impl_arith_ops!(i8);
+impl_arith_ops!(i16);
+impl_arith_ops!(i32);
+impl_arith_ops!(i64);
+impl_arith_ops!(i128);
+impl_arith_ops!(isize);
+
+// Arithmetic ops with Decimal, they shall produce PreciseDecimal
+impl Add<Decimal> for PreciseDecimal {
     type Output = PreciseDecimal;
 
-    fn neg(self) -> Self::Output {
-        PreciseDecimal(-self.0)
+    fn add(self, other: Decimal) -> Self::Output {
+        self + PreciseDecimal::from(other)
+    }
+}
+
+impl Sub<Decimal> for PreciseDecimal {
+    type Output = PreciseDecimal;
+
+    fn sub(self, other: Decimal) -> Self::Output {
+        self - PreciseDecimal::from(other)
+    }
+}
+
+impl Mul<Decimal> for PreciseDecimal {
+    type Output = PreciseDecimal;
+
+    fn mul(self, other: Decimal) -> Self::Output {
+        self * PreciseDecimal::from(other)
+    }
+}
+
+impl Div<Decimal> for PreciseDecimal {
+    type Output = PreciseDecimal;
+
+    fn div(self, other: Decimal) -> Self::Output {
+        self / PreciseDecimal::from(other)
     }
 }
 
@@ -469,6 +562,14 @@ where
     fn div_assign(&mut self, other: T) {
         let other: PreciseDecimal = other.try_into().expect("Overflow");
         self.0 /= other.0;
+    }
+}
+
+impl Neg for PreciseDecimal {
+    type Output = PreciseDecimal;
+
+    fn neg(self) -> Self::Output {
+        PreciseDecimal(-self.0)
     }
 }
 
@@ -1471,4 +1572,114 @@ mod tests {
             Err(ParsePreciseDecimalError::UnsupportedDecimalPlace)
         ))
     }
+
+    // These tests make sure that any basic arithmetic operation
+    // between Decimal and PreciseDecimal produces a PreciseDecimal, no matter the order.
+    // Additionally result of such operation shall be equal, if operands are derived from the same
+    // value
+    // Example:
+    //   Decimal(10) * PreciseDecimal(10) -> PreciseDecimal(100)
+    //   PreciseDecimal(10) * Decimal(10) -> PreciseDecimal(100)
+    #[test]
+    fn test_arith_precise_decimal_decimal() {
+        let p1 = PreciseDecimal::from(Decimal::MAX);
+        let d1 = Decimal::from(2);
+        let d2 = Decimal::MAX;
+        let p2 = PreciseDecimal::from(2);
+        assert_eq!(p1 * d1, d2 * p2);
+        assert_eq!(p1 / d1, d2 / p2);
+        assert_eq!(p1 + d1, d2 + p2);
+        assert_eq!(p1 - d1, d2 - p2);
+
+        let p1 = PreciseDecimal::from(Decimal::MIN);
+        let d1 = Decimal::from(2);
+        let d2 = Decimal::MIN;
+        let p2 = PreciseDecimal::from(2);
+        assert_eq!(p1 * d1, d2 * p2);
+        assert_eq!(p1 / d1, d2 / p2);
+        assert_eq!(p1 + d1, d2 + p2);
+        assert_eq!(p1 - d1, d2 - p2);
+
+        let p1 = pdec!("0.000001");
+        let d1 = dec!("0.001");
+        let d2 = dec!("0.000001");
+        let p2 = pdec!("0.001");
+        assert_eq!(p1 * d1, d2 * p2);
+        assert_eq!(p1 / d1, d2 / p2);
+        assert_eq!(p1 + d1, d2 + p2);
+        assert_eq!(p1 - d1, d2 - p2);
+
+        let p1 = pdec!("0.000000000000000001");
+        let d1 = Decimal::MIN;
+        let d2 = dec!("0.000000000000000001");
+        let p2 = PreciseDecimal::from(Decimal::MIN);
+        assert_eq!(p1 * d1, d2 * p2);
+        assert_eq!(p1 / d1, d2 / p2);
+        assert_eq!(p1 + d1, d2 + p2);
+        assert_eq!(p1 - d1, d2 - p2);
+
+        let p1 = PreciseDecimal::ZERO;
+        let d1 = Decimal::ONE;
+        let d2 = Decimal::ZERO;
+        let p2 = PreciseDecimal::ONE;
+        assert_eq!(p1 * d1, d2 * p2);
+        assert_eq!(p1 / d1, d2 / p2);
+        assert_eq!(p1 + d1, d2 + p2);
+        assert_eq!(p1 - d1, d2 - p2);
+    }
+
+    // These tests make sure that any basic arithmetic operation
+    // between primitive type and PreciseDecimal produces a PreciseDecimal, no matter the order.
+    // Additionally result of such operation shall be equal, if operands are derived from the same
+    // value
+    // Example:
+    //   PreciseDecimal(10) * 10_u32 -> PreciseDecimal(100)
+    //   10_u32 * PreciseDecimal(10) -> PreciseDecimal(100)
+    macro_rules! test_arith_precise_decimal_primitive {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_arith_precise_decimal_$type>]() {
+                    let d1 = PreciseDecimal::ONE;
+                    let u1 = 2 as $type;
+                    let u2 = 1 as $type;
+                    let d2 = PreciseDecimal::from(2);
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+
+                    let d1 = pdec!("2");
+                    let u1 = $type::MAX;
+                    let u2 = 2 as $type;
+                    let d2 = PreciseDecimal::from($type::MAX);
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+
+                    let d1 = PreciseDecimal::from($type::MIN);
+                    let u1 = 2 as $type;
+                    let u2 = $type::MIN;
+                    let d2 = pdec!("2");
+                    assert_eq!(d1 * u1, u2 * d2);
+                    assert_eq!(d1 / u1, u2 / d2);
+                    assert_eq!(d1 + u1, u2 + d2);
+                    assert_eq!(d1 - u1, u2 - d2);
+                }
+            }
+        };
+    }
+    test_arith_precise_decimal_primitive!(u8);
+    test_arith_precise_decimal_primitive!(u16);
+    test_arith_precise_decimal_primitive!(u32);
+    test_arith_precise_decimal_primitive!(u64);
+    test_arith_precise_decimal_primitive!(u128);
+    test_arith_precise_decimal_primitive!(usize);
+    test_arith_precise_decimal_primitive!(i8);
+    test_arith_precise_decimal_primitive!(i16);
+    test_arith_precise_decimal_primitive!(i32);
+    test_arith_precise_decimal_primitive!(i64);
+    test_arith_precise_decimal_primitive!(i128);
+    test_arith_precise_decimal_primitive!(isize);
 }

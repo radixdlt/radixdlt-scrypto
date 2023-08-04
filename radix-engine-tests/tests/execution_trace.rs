@@ -414,7 +414,7 @@ fn test_worktop_changes() {
             "bucket5",
         )
         .return_to_worktop("bucket5")
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.preview_manifest(
         manifest,
