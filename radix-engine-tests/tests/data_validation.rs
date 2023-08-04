@@ -1,5 +1,5 @@
 use radix_engine::{
-    errors::{CallFrameError, KernelError, RuntimeError},
+    errors::{CallFrameError, KernelError, RuntimeError, SystemError},
     kernel::call_frame::PassMessageError,
     types::*,
 };
@@ -341,4 +341,28 @@ fn test_receive_reference_not_of_specific_blueprint() {
         .expect_failure()
         .to_string();
     assert!(error_message.contains("DataValidation"))
+}
+
+#[test]
+fn vec_of_u8_underflow_should_not_cause_panic() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("tests/blueprints/data_validation");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "VecOfU8Underflow",
+            "write_vec_u8_underflow_to_key_value_store",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::SystemError(SystemError::InvalidSubstateWrite(e))
+            if e.eq("[ERROR] byte offset: 7-7, value path: Array, cause: DecodeError(BufferUnderflow { required: 99999993, remaining: 1048569 })") => true,
+        _ => false,
+    })
 }

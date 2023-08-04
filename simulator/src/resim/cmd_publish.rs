@@ -1,7 +1,6 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedStateSchema, PackageExport,
     TypePointer, VmType, *,
@@ -152,7 +151,7 @@ impl Publish {
                 let mut function_exports = BTreeMap::new();
 
                 let blueprint_schema = s.schema.clone();
-                let schema_hash = blueprint_schema.generate_schema_hash();
+                let schema_hash = blueprint_schema.schema.generate_schema_hash();
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(
                     &scrypto_encode(&schema_hash).unwrap(),
                 );

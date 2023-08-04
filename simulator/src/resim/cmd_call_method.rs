@@ -118,7 +118,7 @@ impl CallMethod {
                     }
                     Some(instance_schema) => {
                         let index = instance_schema
-                            .type_index
+                            .instance_type_lookup
                             .get(instance_index as usize)
                             .ok_or_else(|| {
                                 Error::InstanceSchemaNot(component_address, instance_index)

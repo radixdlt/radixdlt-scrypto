@@ -156,12 +156,14 @@ pub trait ClientObjectApi<E> {
         address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, E>;
 
-    fn globalize_with_address_and_create_inner_object(
+    fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<FieldValue>,
+        event_name: String,
+        event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), E>;
 
     /// Calls a method on an object
