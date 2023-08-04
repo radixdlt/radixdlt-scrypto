@@ -9,7 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::{CallFrameEventHandler, CallFrameMessage};
+use crate::kernel::call_frame::{CallFrameEventHandler, CallFrameMessage, SubstateReadHandler};
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
@@ -241,6 +241,38 @@ impl<
         };
 
         (self.on_store_access)(&mut read_only, store_access)
+    }
+}
+
+impl<
+        M: KernelCallbackObject,
+        F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+    > SubstateReadHandler<M::CallFrameData, M::LockData> for KernelHandler<'_, M, F>
+{
+    type Error = RuntimeError;
+    fn on_read_substate(
+        &mut self,
+        current_frame: &CallFrame<M::CallFrameData, M::LockData>,
+        heap: &Heap,
+        handle: LockHandle,
+        value: &IndexedScryptoValue,
+        is_from_heap: bool,
+    ) -> Result<(), Self::Error> {
+        let mut read_only = KernelReadOnly {
+            current_frame,
+            prev_frame: self.prev_frame,
+            heap,
+            callback: self.callback,
+        };
+
+        M::on_read_substate(
+            &mut read_only,
+            ReadSubstateEvent::OnRead {
+                handle,
+                value,
+                read_from_heap: is_from_heap,
+            },
+        )
     }
 }
 
@@ -766,31 +798,24 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let mut read_from_heap = false;
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |_, store_access| {
-                read_from_heap = matches!(store_access, StoreAccess::ReadFromHeap);
-                Ok(())
+            on_store_access: |_, _| {
+                // TODO: Clean this up
+                panic!("Should not call this");
             },
         };
 
         let value = self
             .current_frame
             .read_substate(&self.heap, self.store, lock_handle, &mut handler)
-            .map_err(CallFrameError::ReadSubstateError)
-            .map_err(KernelError::CallFrameError)?;
-
-        let mut read_only = as_read_only!(self);
-        M::on_read_substate(
-            &mut read_only,
-            ReadSubstateEvent::End {
-                handle: lock_handle,
-                value,
-                read_from_heap,
-            },
-        )?;
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::ReadSubstateError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
 
         Ok(value)
     }

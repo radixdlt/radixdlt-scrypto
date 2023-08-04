@@ -202,6 +202,19 @@ pub trait CallFrameEventHandler<C, L, E> {
     ) -> Result<(), E>;
 }
 
+pub trait SubstateReadHandler<C, L> {
+    type Error;
+
+    fn on_read_substate(
+        &mut self,
+        current_frame: &CallFrame<C, L>,
+        heap: &Heap,
+        handle: LockHandle,
+        value: &IndexedScryptoValue,
+        is_from_heap: bool,
+    ) -> Result<(), Self::Error>;
+}
+
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects and references by this function.
 pub struct CallFrame<C, L> {
@@ -739,32 +752,41 @@ impl<C, L: Clone> CallFrame<C, L> {
         })
     }
 
-    pub fn read_substate<'f, S: SubstateStore, E>(
+    pub fn read_substate<'f, S: SubstateStore, H: SubstateReadHandler<C, L>>(
         &mut self,
         heap: &'f Heap,
         store: &'f mut S,
         lock_handle: LockHandle,
-        handler: &mut impl CallFrameEventHandler<C, L, E>,
-    ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
+        handler: &mut H,
+    ) -> Result<&'f IndexedScryptoValue, CallbackError<ReadSubstateError, H::Error>> {
         let SubstateLock {
             node_id,
             partition_num,
             substate_key,
             store_handle,
             ..
-        } = self
-            .locks
-            .get(&lock_handle)
-            .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
+        } = self.locks.get(&lock_handle).ok_or(CallbackError::Error(
+            ReadSubstateError::LockNotFound(lock_handle),
+        ))?;
 
         let value = if let Some(store_handle) = store_handle {
-            store.read_substate(*store_handle)
-        } else {
+            let value = store.read_substate(*store_handle);
+
             handler
-                .on_store_access(self, heap, StoreAccess::ReadFromHeap)
-                .map_err(|_| ReadSubstateError::LockNotFound(1))?;
-            heap.get_substate(node_id, *partition_num, substate_key)
-                .expect("Substate missing in heap")
+                .on_read_substate(self, heap, lock_handle, value, false)
+                .map_err(|e| CallbackError::CallbackError(e))?;
+
+            value
+        } else {
+            let value = heap
+                .get_substate(node_id, *partition_num, substate_key)
+                .expect("Substate missing in heap");
+
+            handler
+                .on_read_substate(self, heap, lock_handle, value, true)
+                .map_err(|e| CallbackError::CallbackError(e))?;
+
+            value
         };
 
         Ok(value)

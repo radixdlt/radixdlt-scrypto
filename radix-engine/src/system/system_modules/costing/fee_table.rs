@@ -325,7 +325,7 @@ impl FeeTable {
     #[inline]
     pub fn read_substate_cost(&self, event: &ReadSubstateEvent) -> u32 {
         match event {
-            ReadSubstateEvent::End {
+            ReadSubstateEvent::OnRead {
                 value,
                 read_from_heap,
                 ..
@@ -422,10 +422,6 @@ impl FeeTable {
             }
             StoreAccess::NewEntryInTrack => {
                 // The max number of entries is limited by limits module.
-                0
-            }
-            StoreAccess::ReadFromHeap => {
-                // Handled in read_substate_cost function
                 0
             }
         }
