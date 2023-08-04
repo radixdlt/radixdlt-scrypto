@@ -435,6 +435,10 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
             condition(name)?;
         }
 
+        for name in bp_init.feature_set.iter() {
+            condition(name)?;
+        }
+
         if let PackageRoyaltyConfig::Enabled(list) = &bp_init.royalty_config {
             for (name, _) in list.iter() {
                 condition(name)?;
@@ -444,6 +448,22 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
         if let FunctionAuth::AccessRules(list) = &bp_init.auth_config.function_auth {
             for (name, _) in list.iter() {
                 condition(name)?;
+            }
+        }
+
+        if let MethodAuthTemplate::StaticRoles(static_roles) = &bp_init.auth_config.method_auth {
+            if let RoleSpecification::Normal(list) = &static_roles.roles {
+                for (role_key, _) in list.iter() {
+                    condition(&role_key.key)?;
+                }
+            }
+            for (key, accessibility) in static_roles.methods.iter() {
+                condition(&key.ident)?;
+                if let MethodAccessibility::RoleProtected(role_list) = accessibility {
+                    for role_key in &role_list.list {
+                        condition(&role_key.key)?;
+                    }
+                }
             }
         }
     }
