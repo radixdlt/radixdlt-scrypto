@@ -10,7 +10,7 @@ env:
 
 jobs:
   cpu-instructions:
-    name: Run CPU instruction
+    name: QEMU costing - CPU instructions
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -41,14 +41,23 @@ jobs:
              cd radix-engine-profiling/resources-tracker-macro/scripts
              sed -i 's/^qemu_app.*/qemu_app=\/home\/runner\/work\/radixdlt-scrypto\/qemu-8.0.3\/build\/qemu-x86_64/' ./run_tests.sh
              sed -i 's/^qemu_plugin.*/qemu_plugin=\/home\/runner\/work\/radixdlt-scrypto\/radixdlt-scrypto\/radix-engine-profiling\/qemu-plugin\/build\/libscrypto-qemu-plugin.so/' ./run_tests.sh
-             cat ./run_tests.sh
-      - name: Build tests
+      - name: Build radix-engine-tests
         run: |
-             cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-common
-             rm ./target/release/deps/transaction_multi_threaded-*
-      - name: Run tests using QEMU and generate results
+             cd radix-engine-tests
+             cargo test --release --no-run --features resource_tracker
+             rm -f ../target/release/deps/transaction_multi_threaded-*
+      - name: Run radix-engine-tests using QEMU
         run: |
-             bash ./radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ./target/release/deps/
+             cd radix-engine-tests
+             bash ../radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ../target/release/deps/
+      - name: Build other tests
+        run: |
+             rm ./target/release/deps/*
+             cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-common --exclude radix-engine-tests
+      - name: Run other tests using QEMU
+        run: bash ./radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ./target/release/deps/
+      - name: Generate results
+        run: python3 ./radix-engine-profiling/resources-tracker-macro/scripts/convert.py /tmp/scrypto-resources-usage
       - name: Results - table summary
         run: cat /tmp/_out_table.txt
       - name: Results - detailed table summary
