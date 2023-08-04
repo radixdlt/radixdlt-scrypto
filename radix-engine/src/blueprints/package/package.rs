@@ -1087,7 +1087,7 @@ impl PackageNativePackage {
                 auth_configs.insert(blueprint.clone(), definition_init.auth_config);
 
                 let blueprint_schema = definition_init.schema.schema.clone();
-                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
+                let schema_hash = blueprint_schema.generate_schema_hash();
                 schemas.insert(schema_hash, blueprint_schema);
 
                 let mut functions = BTreeMap::new();

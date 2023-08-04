@@ -281,46 +281,6 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn get_type_pointer(
-        &self,
-        partition_offset: &PartitionOffset,
-        key: &SubstateKey,
-    ) -> Option<TypePointer> {
-        if partition_offset.0 >= self.num_partitions {
-            return None;
-        }
-
-        if let Some((offset, fields)) = &self.fields {
-            if offset.eq(partition_offset) {
-                if let SubstateKey::Field(field_index) = key {
-                    return fields.get(*field_index as usize).map(|field| field.field);
-                } else {
-                    return None;
-                }
-            }
-        }
-
-        for (offset, collection_schema) in &self.collections {
-            if offset.eq(partition_offset) {
-                match (collection_schema, key) {
-                    (BlueprintCollectionSchema::KeyValueStore(kv_schema), SubstateKey::Map(..)) => {
-                        return Some(kv_schema.value)
-                    }
-                    (BlueprintCollectionSchema::Index(kv_schema), SubstateKey::Map(..)) => {
-                        return Some(kv_schema.value)
-                    }
-                    (
-                        BlueprintCollectionSchema::SortedIndex(kv_schema),
-                        SubstateKey::Sorted(..),
-                    ) => return Some(kv_schema.value),
-                    _ => return None,
-                }
-            }
-        }
-
-        None
-    }
-
     pub fn get_field_type_pointer(&self, field_index: u8) -> Option<TypePointer> {
         let (_partition, fields) = self.fields.clone()?;
         let field_schema = fields.get(field_index.clone() as usize)?;
@@ -405,7 +365,7 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchema>) -> bool {
+    pub fn validate_instance_schema(&self, instance_schema: &Option<NewInstanceSchema>) -> bool {
         for (_, partition) in &self.collections {
             match partition {
                 BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
@@ -413,7 +373,9 @@ impl IndexedStateSchema {
                         TypePointer::Package(..) => {}
                         TypePointer::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
-                                if instance_schema.type_index.len() < (*type_index as usize) {
+                                if instance_schema.instance_type_lookup.len()
+                                    < (*type_index as usize)
+                                {
                                     return false;
                                 }
                             } else {
@@ -426,7 +388,9 @@ impl IndexedStateSchema {
                         TypePointer::Package(..) => {}
                         TypePointer::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
-                                if instance_schema.type_index.len() < (*type_index as usize) {
+                                if instance_schema.instance_type_lookup.len()
+                                    < (*type_index as usize)
+                                {
                                     return false;
                                 }
                             } else {

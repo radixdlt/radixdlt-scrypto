@@ -212,7 +212,7 @@ where
                     }
                 };
                 let index = instance_schema
-                    .type_index
+                    .instance_type_lookup
                     .get(instance_index as usize)
                     .unwrap()
                     .clone();
@@ -260,26 +260,32 @@ where
         blueprint_interface: &BlueprintInterface,
         blueprint_features: &BTreeSet<String>,
         outer_blueprint_features: &BTreeSet<String>,
-        instance_schema: &Option<InstanceSchema>,
+        new_instance_schema: Option<NewInstanceSchema>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
-    ) -> Result<BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>, RuntimeError>
-    {
+    ) -> Result<
+        (
+            Option<InstanceSchema>,
+            BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        ),
+        RuntimeError,
+    > {
         // Validate instance schema
-        {
-            if let Some(instance_schema) = instance_schema {
+        let instance_schema = {
+            if let Some(instance_schema) = &new_instance_schema {
                 validate_schema(&instance_schema.schema)
                     .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
             }
             if !blueprint_interface
                 .state
-                .validate_instance_schema(instance_schema)
+                .validate_instance_schema(&new_instance_schema)
             {
                 return Err(RuntimeError::SystemError(
                     SystemError::InvalidInstanceSchema,
                 ));
             }
-        }
+            new_instance_schema.map(InstanceSchema::from)
+        };
 
         let mut partitions = BTreeMap::new();
 
@@ -332,7 +338,7 @@ where
 
                 self.validate_payload_against_blueprint_schema(
                     &blueprint_id,
-                    instance_schema,
+                    &instance_schema,
                     &fields_to_check,
                 )?;
 
@@ -403,7 +409,7 @@ where
 
                         self.validate_payload_against_blueprint_schema(
                             &blueprint_id,
-                            instance_schema,
+                            &instance_schema,
                             &[(&key, key_type_pointer), (&value, value_type_pointer)],
                         )?;
 
@@ -457,7 +463,7 @@ where
             }
         }
 
-        Ok(partitions)
+        Ok((instance_schema, partitions))
     }
 
     pub fn get_schema(
@@ -627,7 +633,7 @@ where
         blueprint_id: &BlueprintId,
         features: Vec<&str>,
         instance_context: Option<InstanceContext>,
-        instance_schema: Option<InstanceSchema>,
+        new_instance_schema: Option<NewInstanceSchema>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
@@ -680,12 +686,12 @@ where
                 (OuterObjectInfo::None, BTreeSet::new())
             };
 
-        let user_substates = self.validate_instance_schema_and_state(
+        let (instance_schema, user_substates) = self.validate_instance_schema_and_state(
             blueprint_id,
             &blueprint_interface,
             &object_features,
             &outer_object_features,
-            &instance_schema,
+            new_instance_schema,
             fields,
             kv_entries,
         )?;
@@ -1330,7 +1336,7 @@ where
         &mut self,
         blueprint_ident: &str,
         features: Vec<&str>,
-        schema: Option<InstanceSchema>,
+        schema: Option<NewInstanceSchema>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {

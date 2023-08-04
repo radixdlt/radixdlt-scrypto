@@ -152,7 +152,7 @@ impl Publish {
                 let mut function_exports = BTreeMap::new();
 
                 let blueprint_schema = s.schema.clone();
-                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
+                let schema_hash = blueprint_schema.generate_schema_hash();
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(
                     &scrypto_encode(&schema_hash).unwrap(),
                 );

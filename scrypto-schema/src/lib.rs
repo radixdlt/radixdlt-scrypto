@@ -6,16 +6,13 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 use bitflags::bitflags;
-use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
-use radix_engine_common::prelude::replace_self_package_address;
-use radix_engine_common::types::PackageAddress;
-use radix_engine_common::{ManifestSbor, ScryptoSbor};
-use sbor::rust::prelude::*;
+use radix_engine_common::prelude::*;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreSchema {
     pub schema: ScryptoSchema,
+    pub schema_hash: Hash,
     pub key: LocalTypeIndex,
     pub value: LocalTypeIndex,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
@@ -27,8 +24,10 @@ impl KeyValueStoreSchema {
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
         let value_type_index = aggregator.add_child_type_and_descendents::<V>();
         let schema = generate_full_schema(aggregator);
+        let schema_hash = schema.generate_schema_hash();
         Self {
             schema,
+            schema_hash,
             key: key_type_index,
             value: value_type_index,
             can_own,
@@ -240,7 +239,30 @@ pub enum Receiver {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct NewInstanceSchema {
+    pub schema: ScryptoSchema,
+    pub instance_type_lookup: Vec<LocalTypeIndex>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceSchema {
     pub schema: ScryptoSchema,
-    pub type_index: Vec<LocalTypeIndex>,
+    pub schema_hash: Hash,
+    pub instance_type_lookup: Vec<LocalTypeIndex>,
+}
+
+impl From<NewInstanceSchema> for InstanceSchema {
+    fn from(
+        NewInstanceSchema {
+            schema,
+            instance_type_lookup,
+        }: NewInstanceSchema,
+    ) -> Self {
+        let schema_hash = schema.generate_schema_hash();
+        Self {
+            schema,
+            schema_hash,
+            instance_type_lookup,
+        }
+    }
 }

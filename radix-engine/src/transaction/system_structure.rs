@@ -1,0 +1,401 @@
+use crate::types::*;
+use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::types::*;
+use radix_engine_interface::*;
+use radix_engine_store_interface::interface::SubstateDatabase;
+use sbor::rust::prelude::*;
+
+use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::track::TrackedNode;
+use crate::transaction::{SystemPartitionDescription, SystemReader};
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub enum SubstateSystemStructure {
+    SystemField(SystemFieldStructure),
+    // KeyValueStore substates
+    KeyValueStoreEntry(KeyValueStoreEntryStructure),
+    // Object substates
+    ObjectField(FieldStructure),
+    ObjectKeyValuePartitionEntry(KeyValuePartitionEntryStructure),
+    ObjectIndexPartitionEntry(IndexPartitionEntryStructure),
+    ObjectSortedIndexPartitionEntry(SortedIndexPartitionEntryStructure),
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct SystemFieldStructure {
+    field_kind: SystemFieldKind,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub enum SystemFieldKind {
+    TypeInfo,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct KeyValueStoreEntryStructure {
+    key_value_store_address: InternalAddress,
+    schema_hash: Hash,
+    key_local_type_index: LocalTypeIndex,
+    value_local_type_index: LocalTypeIndex,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct FieldStructure {
+    value_schema: ObjectSubstateTypeReference,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct KeyValuePartitionEntryStructure {
+    key_schema: ObjectSubstateTypeReference,
+    value_schema: ObjectSubstateTypeReference,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct IndexPartitionEntryStructure {
+    key_schema: ObjectSubstateTypeReference,
+    value_schema: ObjectSubstateTypeReference,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct SortedIndexPartitionEntryStructure {
+    key_schema: ObjectSubstateTypeReference,
+    value_schema: ObjectSubstateTypeReference,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub enum ObjectSubstateTypeReference {
+    Package(PackageTypeReference),
+    ObjectInstance(ObjectInstanceTypeReference),
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct PackageTypeReference {
+    package_address: PackageAddress,
+    schema_hash: Hash,
+    local_type_index: LocalTypeIndex,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct ObjectInstanceTypeReference {
+    entity_address: NodeId,
+    schema_hash: Hash,
+    instance_type_index: u8,
+    local_type_index: LocalTypeIndex,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct KeyValueTypeReference {
+    key_value_store_address: InternalAddress,
+    schema_hash: Hash,
+    key_local_type_index: LocalTypeIndex,
+    value_local_type_index: LocalTypeIndex,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct EventSystemStructure {
+    package_type_reference: PackageTypeReference,
+}
+
+#[derive(Default, Debug, Clone, ScryptoSbor)]
+pub struct SystemStructure {
+    pub substate_system_structures:
+        IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, SubstateSystemStructure>>>,
+    pub event_system_structures: IndexMap<EventTypeIdentifier, EventSystemStructure>,
+}
+
+impl SystemStructure {
+    pub fn resolve<S: SubstateDatabase>(
+        substate_db: &S,
+        updates: &IndexMap<NodeId, TrackedNode>,
+        application_events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
+    ) -> Self {
+        let substate_system_structures = SubstateSchemaMapper::new(substate_db, &updates).run();
+        let event_system_structures =
+            EventSchemaMapper::new(substate_db, &updates, application_events).run();
+
+        SystemStructure {
+            substate_system_structures,
+            event_system_structures,
+        }
+    }
+}
+
+/// Note that the implementation below assumes that substate owned objects can not be
+/// detached. If this changes, we will have to account for objects that are removed
+/// from a substate.
+pub struct SubstateSchemaMapper<'a, S: SubstateDatabase> {
+    system_reader: SystemReader<'a, S>,
+    tracked: &'a IndexMap<NodeId, TrackedNode>,
+}
+
+impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
+    pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
+        Self {
+            system_reader: SystemReader::new(substate_db, tracked),
+            tracked,
+        }
+    }
+
+    pub fn run(
+        &self,
+    ) -> IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, SubstateSystemStructure>>>
+    {
+        let mut substate_structures = index_map_new();
+        for (node_id, tracked_node) in self.tracked {
+            for (partition_num, tracked_partition) in &tracked_node.tracked_partitions {
+                for (_, tracked_substate) in &tracked_partition.substates {
+                    let partition_description =
+                        self.system_reader.partition_description(partition_num);
+                    let system_substate_structure = self.resolve_substate_structure(
+                        node_id,
+                        partition_description,
+                        &tracked_substate.substate_key,
+                    );
+
+                    substate_structures
+                        .entry(node_id.clone())
+                        .or_insert(index_map_new())
+                        .entry(partition_num.clone())
+                        .or_insert(index_map_new())
+                        .insert(
+                            tracked_substate.substate_key.clone(),
+                            system_substate_structure,
+                        );
+                }
+            }
+        }
+
+        substate_structures
+    }
+
+    pub fn resolve_substate_structure(
+        &self,
+        node_id: &NodeId,
+        partition_description: SystemPartitionDescription,
+        key: &SubstateKey,
+    ) -> SubstateSystemStructure {
+        match partition_description {
+            SystemPartitionDescription::TypeInfo => {
+                SubstateSystemStructure::SystemField(SystemFieldStructure {
+                    field_kind: SystemFieldKind::TypeInfo,
+                })
+            }
+            SystemPartitionDescription::Module(module_id, partition_offset) => {
+                let (blueprint_id, instance_schema) = if let ObjectModuleId::Main = module_id {
+                    let main_type_info =
+                        self.system_reader
+                            .get_type_info(node_id)
+                            .unwrap_or_else(|| {
+                                panic!("Could not read type info substate for node {node_id:?}")
+                            });
+                    match main_type_info {
+                        TypeInfoSubstate::Object(info) => (
+                            info.blueprint_info.blueprint_id,
+                            info.blueprint_info.instance_schema,
+                        ),
+                        TypeInfoSubstate::KeyValueStore(info) => {
+                            return SubstateSystemStructure::KeyValueStoreEntry(
+                                KeyValueStoreEntryStructure {
+                                    key_value_store_address: (*node_id).try_into().unwrap(),
+                                    schema_hash: info.schema.schema_hash,
+                                    key_local_type_index: info.schema.key,
+                                    value_local_type_index: info.schema.value,
+                                },
+                            )
+                        }
+                        TypeInfoSubstate::GlobalAddressPhantom(_)
+                        | TypeInfoSubstate::GlobalAddressReservation(_) => {
+                            panic!("Unexpected Type Info {:?}", main_type_info)
+                        }
+                    }
+                } else {
+                    (module_id.static_blueprint().unwrap(), None)
+                };
+
+                let blueprint_definition = self
+                    .system_reader
+                    .get_blueprint_definition(&blueprint_id)
+                    .unwrap();
+                let resolver = ObjectSubstateTypeReferenceResolver::new(
+                    &node_id,
+                    instance_schema.as_ref(),
+                    &blueprint_id,
+                );
+                self.resolve_object_substate_structure(
+                    &resolver,
+                    &blueprint_definition.interface.state,
+                    partition_offset,
+                    key,
+                )
+            }
+        }
+    }
+
+    pub fn resolve_object_substate_structure(
+        &self,
+        resolver: &ObjectSubstateTypeReferenceResolver,
+        state_schema: &IndexedStateSchema,
+        partition_offset: PartitionOffset,
+        key: &SubstateKey,
+    ) -> SubstateSystemStructure {
+        if partition_offset.0 >= state_schema.num_partitions {
+            panic!("Partition offset larger than partition count");
+        }
+
+        if let Some((offset, fields)) = &state_schema.fields {
+            if offset.eq(&partition_offset) {
+                if let SubstateKey::Field(field_index) = key {
+                    let field = fields
+                        .get(*field_index as usize)
+                        .expect("Field index was not valid");
+                    return SubstateSystemStructure::ObjectField(FieldStructure {
+                        value_schema: resolver.resolve(field.field),
+                    });
+                } else {
+                    panic!("Expected a field substate key");
+                }
+            }
+        }
+
+        for (offset, collection_schema) in &state_schema.collections {
+            if offset.eq(&partition_offset) {
+                match collection_schema {
+                    BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
+                        return SubstateSystemStructure::ObjectKeyValuePartitionEntry(
+                            KeyValuePartitionEntryStructure {
+                                key_schema: resolver.resolve(kv_schema.key),
+                                value_schema: resolver.resolve(kv_schema.value),
+                            },
+                        )
+                    }
+                    BlueprintCollectionSchema::Index(kv_schema) => {
+                        return SubstateSystemStructure::ObjectIndexPartitionEntry(
+                            IndexPartitionEntryStructure {
+                                key_schema: resolver.resolve(kv_schema.key),
+                                value_schema: resolver.resolve(kv_schema.value),
+                            },
+                        )
+                    }
+                    BlueprintCollectionSchema::SortedIndex(kv_schema) => {
+                        return SubstateSystemStructure::ObjectSortedIndexPartitionEntry(
+                            SortedIndexPartitionEntryStructure {
+                                key_schema: resolver.resolve(kv_schema.key),
+                                value_schema: resolver.resolve(kv_schema.value),
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        panic!("Partition offset did not match any partitions on the blueprint definition")
+    }
+}
+
+pub struct ObjectSubstateTypeReferenceResolver<'a> {
+    node_id: &'a NodeId,
+    instance_schema: Option<&'a InstanceSchema>,
+    blueprint_id: &'a BlueprintId,
+}
+
+impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
+    pub fn new(
+        node_id: &'a NodeId,
+        instance_schema: Option<&'a InstanceSchema>,
+        blueprint_id: &'a BlueprintId,
+    ) -> Self {
+        Self {
+            node_id,
+            instance_schema,
+            blueprint_id,
+        }
+    }
+
+    pub fn resolve(&self, type_pointer: TypePointer) -> ObjectSubstateTypeReference {
+        match type_pointer {
+            TypePointer::Package(schema_hash, local_type_index) => {
+                ObjectSubstateTypeReference::Package(PackageTypeReference {
+                    package_address: self.blueprint_id.package_address,
+                    schema_hash,
+                    local_type_index,
+                })
+            }
+            TypePointer::Instance(instance_type_index) => {
+                let instance_schema = self
+                    .instance_schema
+                    .expect("Instance type pointer to no instance schema");
+                let local_type_index = *instance_schema
+                    .instance_type_lookup
+                    .get(instance_type_index as usize)
+                    .expect("Instance type index not valid");
+                ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {
+                    entity_address: (*self.node_id).try_into().unwrap(),
+                    instance_type_index,
+                    schema_hash: instance_schema.schema_hash,
+                    local_type_index,
+                })
+            }
+        }
+    }
+}
+
+/// Note that the implementation below assumes that substate owned objects can not be
+/// detached. If this changes, we will have to account for objects that are removed
+/// from a substate.
+pub struct EventSchemaMapper<'a, S: SubstateDatabase> {
+    system_reader: SystemReader<'a, S>,
+    application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
+}
+
+impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
+    pub fn new(
+        substate_db: &'a S,
+        tracked: &'a IndexMap<NodeId, TrackedNode>,
+        application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
+    ) -> Self {
+        Self {
+            system_reader: SystemReader::new(substate_db, tracked),
+            application_events,
+        }
+    }
+
+    pub fn run(&self) -> IndexMap<EventTypeIdentifier, EventSystemStructure> {
+        let mut event_system_structures = index_map_new();
+        for (event_type_identifier, _) in self.application_events {
+            if !event_system_structures.contains_key(event_type_identifier) {
+                continue;
+            }
+            let blueprint_id = match &event_type_identifier.0 {
+                Emitter::Function(blueprint_id) => blueprint_id.clone(),
+                Emitter::Method(node_id, module_id) => {
+                    if let ObjectModuleId::Main = module_id {
+                        let main_type_info = self.system_reader.get_type_info(node_id).unwrap();
+                        match main_type_info {
+                            TypeInfoSubstate::Object(info) => info.blueprint_info.blueprint_id,
+                            _ => panic!("Unexpected Type Info {:?}", main_type_info),
+                        }
+                    } else {
+                        module_id.static_blueprint().unwrap()
+                    }
+                }
+            };
+
+            let TypePointer::Package(schema_hash, local_type_index) = event_type_identifier.1 else {
+                panic!("Event identifier type pointer cannot be an instance type pointer");
+            };
+
+            let event_system_structure = EventSystemStructure {
+                package_type_reference: PackageTypeReference {
+                    package_address: blueprint_id.package_address,
+                    schema_hash,
+                    local_type_index,
+                },
+            };
+
+            event_system_structures.insert(event_type_identifier.clone(), event_system_structure);
+        }
+
+        event_system_structures
+    }
+}

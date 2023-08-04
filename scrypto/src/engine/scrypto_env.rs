@@ -22,7 +22,7 @@ use radix_engine_interface::types::{Level, LockHandle, NodeId};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
+use scrypto_schema::{KeyValueStoreSchema, NewInstanceSchema};
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -100,7 +100,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         _blueprint_ident: &str,
         _features: Vec<&str>,
-        _schema: Option<InstanceSchema>,
+        _schema: Option<NewInstanceSchema>,
         _fields: Vec<FieldValue>,
         _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, ClientApiError> {
