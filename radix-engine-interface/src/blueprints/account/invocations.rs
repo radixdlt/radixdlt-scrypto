@@ -227,11 +227,11 @@ pub type AccountCreateProofOfNonFungiblesOutput = Proof;
 pub const ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT: &str = "set_default_deposit_rule";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountChangeDefaultDepositRuleInput {
+pub struct AccountSetDefaultDepositRuleInput {
     pub default: DefaultDepositRule,
 }
 
-pub type AccountChangeDefaultDepositRuleOutput = ();
+pub type AccountSetDefaultDepositRuleOutput = ();
 
 //=========================
 // Set Resource Preference
@@ -242,7 +242,7 @@ pub const ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT: &str = "set_resource_preference
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountSetResourcePreferenceInput {
     pub resource_address: ResourceAddress,
-    pub resource_deposit_configuration: ResourcePreference,
+    pub resource_preference: ResourcePreference,
 }
 
 pub type AccountSetResourcePreferenceOutput = ();

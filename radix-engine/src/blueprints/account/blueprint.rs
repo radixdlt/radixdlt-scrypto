@@ -58,7 +58,7 @@ impl PresecurifiedRoleAssignment for SecurifiedAccount {}
 pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;
 
-pub const ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX: CollectionIndex = 1u8;
+pub const ACCOUNT_RESOURCE_PREFERENCE_INDEX: CollectionIndex = 1u8;
 pub type AccountResourcePreferenceEntry = Option<ResourcePreference>;
 
 pub const ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX: CollectionIndex = 2u8;
@@ -678,7 +678,7 @@ impl AccountBlueprint {
 
     pub fn set_resource_preference<Y>(
         resource_address: ResourceAddress,
-        resource_deposit_configuration: ResourcePreference,
+        resource_preference: ResourcePreference,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -687,11 +687,11 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+            ACCOUNT_RESOURCE_PREFERENCE_INDEX,
             &encoded_key,
             LockFlags::MUTABLE,
         )?;
-        api.key_value_entry_set_typed(kv_store_entry_lock_handle, &resource_deposit_configuration)?;
+        api.key_value_entry_set_typed(kv_store_entry_lock_handle, &resource_preference)?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
         Ok(())
     }
@@ -706,7 +706,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
         api.actor_remove_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+            ACCOUNT_RESOURCE_PREFERENCE_INDEX,
             &encoded_key,
         )?;
         Ok(())
@@ -831,7 +831,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        match Self::get_resource_deposit_configuration(resource_address, api)? {
+        match Self::get_resource_preference(resource_address, api)? {
             Some(ResourcePreference::Allowed) => Ok(true),
             Some(ResourcePreference::Disallowed) => Ok(false),
             None => {
@@ -879,7 +879,7 @@ impl AccountBlueprint {
         Ok(does_vault_exist)
     }
 
-    fn get_resource_deposit_configuration<Y>(
+    fn get_resource_preference<Y>(
         resource_address: &ResourceAddress,
         api: &mut Y,
     ) -> Result<Option<ResourcePreference>, RuntimeError>
@@ -890,7 +890,7 @@ impl AccountBlueprint {
 
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+            ACCOUNT_RESOURCE_PREFERENCE_INDEX,
             &encoded_key,
             LockFlags::read_only(),
         )?;

@@ -493,7 +493,7 @@ impl AccountDepositModesTestRunner {
             .call_method(
                 self.component_address,
                 ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
-                AccountChangeDefaultDepositRuleInput { default },
+                AccountSetDefaultDepositRuleInput { default },
             )
             .build();
         self.execute_manifest(manifest, sign)
@@ -502,7 +502,7 @@ impl AccountDepositModesTestRunner {
     fn set_resource_preference(
         &mut self,
         resource_address: ResourceAddress,
-        resource_deposit_configuration: ResourcePreference,
+        resource_preference: ResourcePreference,
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
@@ -511,7 +511,7 @@ impl AccountDepositModesTestRunner {
                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                 AccountSetResourcePreferenceInput {
                     resource_address,
-                    resource_deposit_configuration,
+                    resource_preference,
                 },
             )
             .build();
