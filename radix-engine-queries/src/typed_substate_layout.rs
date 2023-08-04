@@ -139,7 +139,7 @@ pub enum TypedMainModuleSubstateKey {
     AccessControllerField(AccessControllerField),
     AccountField(AccountField),
     AccountVaultIndexKey(ResourceAddress),
-    AccountResourceDepositRuleIndexKey(ResourceAddress),
+    AccountResourcePreferenceIndexKey(ResourceAddress),
     AccountAllowedDepositorsByResourceOrNonFungible(ResourceOrNonFungible),
     OneResourcePoolField(OneResourcePoolField),
     TwoResourcePoolField(TwoResourcePoolField),
@@ -374,9 +374,9 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
-                AccountPartitionOffset::AccountResourceDepositRuleByAddress => {
+                AccountPartitionOffset::AccountResourcePreferenceByAddress => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(
+                    TypedMainModuleSubstateKey::AccountResourcePreferenceIndexKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -503,7 +503,7 @@ pub enum TypedMainModuleSubstateValue {
     AccessController(TypedAccessControllerFieldValue),
     Account(TypedAccountFieldValue),
     AccountVaultIndex(KeyValueEntrySubstate<Own>),
-    AccountResourceDepositRuleIndex(KeyValueEntrySubstate<AccountResourceDepositRuleEntry>),
+    AccountResourcePreferenceIndex(KeyValueEntrySubstate<AccountResourcePreferenceEntry>),
     AccountAllowedDepositorsByResourceOrNonFungible(KeyValueEntrySubstate<()>),
     OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
@@ -794,8 +794,8 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
             TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_) => {
-            TypedMainModuleSubstateValue::AccountResourceDepositRuleIndex(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::AccountResourcePreferenceIndexKey(_) => {
+            TypedMainModuleSubstateValue::AccountResourcePreferenceIndex(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::AccountAllowedDepositorsByResourceOrNonFungible(_) => {
             TypedMainModuleSubstateValue::AccountAllowedDepositorsByResourceOrNonFungible(

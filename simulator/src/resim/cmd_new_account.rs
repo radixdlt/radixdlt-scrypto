@@ -78,7 +78,7 @@ impl NewAccount {
                         NonFungibleLocalId::integer(1) => (),
                     )),
                 )
-                .try_deposit_batch_or_refund(account)
+                .try_deposit_batch_or_refund(account, None)
                 .build();
             let receipt = handle_manifest(
                 manifest,

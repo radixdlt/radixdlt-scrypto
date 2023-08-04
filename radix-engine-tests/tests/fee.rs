@@ -238,7 +238,7 @@ fn test_fee_accounting_success() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 500)
         .withdraw_from_account(account1, XRD, 66)
-        .try_deposit_batch_or_abort(account2)
+        .try_deposit_batch_or_abort(account2, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -290,7 +290,7 @@ fn test_fee_accounting_failure() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 500)
         .withdraw_from_account(account1, XRD, 66)
-        .try_deposit_batch_or_abort(account2)
+        .try_deposit_batch_or_abort(account2, None)
         .assert_worktop_contains(XRD, 1)
         .build();
     let receipt = test_runner.execute_manifest(

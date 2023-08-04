@@ -240,7 +240,7 @@ pub enum AuthZoneField {
 pub enum AccountPartitionOffset {
     Account,
     AccountVaultsByResourceAddress,
-    AccountResourceDepositRuleByAddress,
+    AccountResourcePreferenceByAddress,
     /// Map<ResourceOrNonFungible, ()> - A map of a [`ResourceOrNonFungible`] to Unit that stores
     /// the badges of allowed depositors into accounts
     AccountAllowedDepositorsByResourceOrNonFungible,

@@ -992,7 +992,7 @@ impl TestEnvironment {
                     },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -1013,7 +1013,7 @@ impl TestEnvironment {
                     TwoResourcePoolRedeemManifestInput { bucket },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -1057,7 +1057,7 @@ impl TestEnvironment {
                     withdraw_strategy,
                 },
             )
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }

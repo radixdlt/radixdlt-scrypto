@@ -106,7 +106,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 500)
         .withdraw_from_account(account, XRD, 1)
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_batch_or_abort(other_account, None)
         .build();
 
     let (_, preview_intent) = prepare_matching_test_tx_and_preview_intent(

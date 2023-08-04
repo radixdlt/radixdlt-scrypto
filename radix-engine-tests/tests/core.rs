@@ -29,7 +29,7 @@ fn test_call() {
         .lock_fee_from_faucet()
         .call_function(package_address, "MoveTest", "move_bucket", manifest_args![])
         .call_function(package_address, "MoveTest", "move_proof", manifest_args![])
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

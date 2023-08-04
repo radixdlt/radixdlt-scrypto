@@ -194,7 +194,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         NonFungibleLocalId("#1#") => Tuple(
             Tuple(
                 100u64,
-                NonFungibleGlobalId("resource_sim1n2xsys57yk6kuw6xpjv7ecxhsl82vwzw4k2hx4ss5uh207uptm3lmk:#8#"),
+                NonFungibleGlobalId("resource_sim1nf5l7xhdel0ufl43ushjznmzgcmt4a8nkvnagw7dqh22wgve8l44jm:#8#"),
                 "Some string which could be made long for test cases",
                 Tuple(
                     42u8,
@@ -232,4 +232,5 @@ CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "try_deposit_batch_or_abort"
     Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
 ;

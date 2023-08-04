@@ -63,7 +63,7 @@ fn bench_transfer(c: &mut Criterion) {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .try_deposit_batch_or_abort(account1)
+        .try_deposit_batch_or_abort(account1, None)
         .build();
     for nonce in 0..1000 {
         execute_and_commit_transaction(
@@ -83,7 +83,7 @@ fn bench_transfer(c: &mut Criterion) {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
         .withdraw_from_account(account1, XRD, dec!("0.000001"))
-        .try_deposit_batch_or_abort(account2)
+        .try_deposit_batch_or_abort(account2, None)
         .build();
 
     // Loop
