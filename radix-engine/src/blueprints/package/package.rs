@@ -42,7 +42,7 @@ pub use radix_engine_interface::blueprints::package::{
     PackageInstrumentedCodeSubstate, PackageOriginalCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
 
-pub const PACKAGE_ROYALTY_FEATURE: &str = "package-royalty";
+pub const PACKAGE_ROYALTY_FEATURE: &str = "package_royalty";
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
