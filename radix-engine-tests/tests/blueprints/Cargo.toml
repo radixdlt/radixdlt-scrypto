@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "address",
+    "address_reservation",
     "allocated_address",
     "arguments",
     "balance_changes",

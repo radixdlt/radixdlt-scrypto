@@ -65,6 +65,13 @@ impl Runtime {
         NonFungibleGlobalId::package_of_direct_caller_badge(Runtime::package_address())
     }
 
+    /// Get the global address an address reservation is associated with
+    pub fn get_reservation_address(reservation: &GlobalAddressReservation) -> GlobalAddress {
+        ScryptoEnv
+            .get_reservation_address(reservation.0.as_node_id())
+            .unwrap()
+    }
+
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
         ScryptoEnv.get_transaction_hash().unwrap()

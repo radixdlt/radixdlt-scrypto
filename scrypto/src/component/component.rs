@@ -38,6 +38,11 @@ pub trait HasTypeInfo {
     const BLUEPRINT_NAME: &'static str;
     const OWNED_TYPE_NAME: &'static str;
     const GLOBAL_TYPE_NAME: &'static str;
+
+    fn blueprint_id() -> BlueprintId {
+        let package_address = Self::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
+        BlueprintId::new(&package_address, Self::BLUEPRINT_NAME)
+    }
 }
 
 pub struct Blueprint<C: HasTypeInfo>(PhantomData<C>);
