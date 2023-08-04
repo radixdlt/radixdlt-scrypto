@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 MINT_NON_FUNGIBLE
-    Address("resource_sim1nftpvfauql53qkzxjzxtw9e28lxymhvfq8sg673dz9p562ldk60rg2")
+    Address("resource_sim1nteknadvccj7w4z578t85yaq2xx7jraammxzy2vm499n8tyshm9hws")
     Map<NonFungibleLocalId, Tuple>(
         NonFungibleLocalId("#100#") => Tuple(
             Tuple(
@@ -364,4 +364,5 @@ CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "try_deposit_batch_or_abort"
     Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
 ;

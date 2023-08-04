@@ -85,28 +85,28 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     builder = match action {
         Action::Mint => builder
             .mint_fungible(token_address, dec!("1.0"))
-            .try_deposit_batch_or_abort(account),
+            .try_deposit_batch_or_abort(account, None),
         Action::Burn => builder
             .create_proof_from_account_of_amount(account, withdraw_auth, dec!(1))
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .burn_from_worktop(dec!("1.0"), token_address)
-            .try_deposit_batch_or_abort(account),
+            .try_deposit_batch_or_abort(account, None),
         Action::Withdraw => builder
             .withdraw_from_account(account, token_address, dec!("1.0"))
-            .try_deposit_batch_or_abort(account),
+            .try_deposit_batch_or_abort(account, None),
         Action::Deposit => builder
             .create_proof_from_account_of_amount(account, withdraw_auth, dec!(1))
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .take_all_from_worktop(token_address, "withdrawn")
-            .try_deposit_or_abort(account, "withdrawn")
-            .try_deposit_batch_or_abort(account),
+            .try_deposit_or_abort(account, None, "withdrawn")
+            .try_deposit_batch_or_abort(account, None),
         Action::Recall => {
             let vaults = test_runner.get_component_vaults(account, token_address);
             let vault_id = vaults[0];
 
             builder
                 .recall(InternalAddress::new_or_panic(vault_id.into()), Decimal::ONE)
-                .try_deposit_batch_or_abort(account)
+                .try_deposit_batch_or_abort(account, None)
         }
         Action::Freeze => {
             let vaults = test_runner.get_component_vaults(account, token_address);

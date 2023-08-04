@@ -4,11 +4,12 @@ CALL_METHOD
     Decimal("5000")
 ;
 MINT_FUNGIBLE
-    Address("resource_sim1t5wccx8sntwr05wl64pl5l7vc8yn4p2dzwdun4hek2ah4q726ezjlf")
+    Address("resource_sim1t5yagxkeefxce00kvtc3ptg9np25s38yywut3ccs4mrx0jqtvp6u9v")
     Decimal("100")
 ;
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "try_deposit_batch_or_abort"
     Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
 ;

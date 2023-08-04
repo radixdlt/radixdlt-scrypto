@@ -25,7 +25,7 @@ fn cannot_securify_in_advanced_mode() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -56,7 +56,7 @@ fn can_securify_from_virtual_identity() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -78,7 +78,7 @@ fn cannot_securify_twice() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -92,7 +92,7 @@ fn cannot_securify_twice() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -121,7 +121,7 @@ fn can_set_metadata_after_securify() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -206,7 +206,7 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_refund(account)
+        .try_deposit_batch_or_refund(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);

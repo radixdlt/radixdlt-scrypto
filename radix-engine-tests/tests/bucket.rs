@@ -18,7 +18,7 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .call_function_raw(package_address, "BucketTest", method_name, args)
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -113,7 +113,7 @@ fn test_bucket_of_badges() {
         .call_function(package_address, "BadgeTest", "split", manifest_args!())
         .call_function(package_address, "BadgeTest", "borrow", manifest_args!())
         .call_function(package_address, "BadgeTest", "query", manifest_args!())
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -245,7 +245,7 @@ fn test_drop_locked_fungible_bucket() {
             "drop_locked_fungible_bucket",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -280,7 +280,7 @@ fn test_drop_locked_non_fungible_bucket() {
             "drop_locked_non_fungible_bucket",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
