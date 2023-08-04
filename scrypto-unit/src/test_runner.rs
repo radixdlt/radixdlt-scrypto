@@ -263,7 +263,7 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_database: InMemorySubstateDatabase::standard(),
             trace: true,
             state_hashing: false,
-            collect_events: true,
+            collect_events: false,
         }
     }
 }
@@ -1648,6 +1648,43 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
+    pub fn create_freely_mintable_and_burnable_non_fungible_resource<T, V>(
+        &mut self,
+        owner_role: OwnerRole,
+        id_type: NonFungibleIdType,
+        initial_supply: Option<T>,
+        account: ComponentAddress,
+    ) -> ResourceAddress
+    where
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
+        V: ManifestEncode + NonFungibleData,
+    {
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_non_fungible_resource(
+                owner_role,
+                id_type,
+                true,
+                NonFungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(deny_all);
+                    },
+                    burn_roles: burn_roles! {
+                        burner => rule!(allow_all);
+                        burner_updater => rule!(deny_all);
+                    },
+                    ..Default::default()
+                },
+                metadata!(),
+                initial_supply,
+            )
+            .try_deposit_batch_or_abort(account, None)
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit(true).new_resource_addresses()[0]
+    }
+
     pub fn new_component<F>(
         &mut self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
@@ -2060,7 +2097,7 @@ pub fn single_function_package_definition(
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
-struct EmptyNonFungibleData {}
+pub struct EmptyNonFungibleData {}
 
 pub struct TransactionParams {
     pub start_epoch_inclusive: Epoch,

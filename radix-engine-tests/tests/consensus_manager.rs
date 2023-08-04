@@ -1083,7 +1083,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
 
 macro_rules! assert_close_to {
     ($a:expr, $b:expr) => {
-        if ($a - $b).abs() > dec!("0.0001") {
+        if Decimal::from($a - $b).abs() > dec!("0.0001") {
             panic!("{} is not close to {}", $a, $b);
         }
     };

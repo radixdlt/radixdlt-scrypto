@@ -9,6 +9,8 @@ use radix_engine_interface::api::{ClientApi, FieldValue};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
+use super::{MintFungibleResourceEvent, MintNonFungibleResourceEvent};
+
 pub fn globalize_resource_manager<Y>(
     owner_role: OwnerRole,
     object_id: NodeId,
@@ -66,7 +68,7 @@ where
         ObjectModuleId::Metadata => metadata.0,
     );
 
-    let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
+    let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
         modules,
         resource_address_reservation,
         FUNGIBLE_BUCKET_BLUEPRINT,
@@ -74,6 +76,11 @@ where
             FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
             FieldValue::new(&LockedFungibleResource::default()),
         ],
+        MintFungibleResourceEvent::event_name().to_string(),
+        scrypto_encode(&MintFungibleResourceEvent {
+            amount: initial_supply,
+        })
+        .unwrap(),
     )?;
 
     Ok((
@@ -102,7 +109,7 @@ where
 
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
-    let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
+    let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
         btreemap!(
             ObjectModuleId::Main => object_id,
             ObjectModuleId::RoleAssignment => role_assignment.0,
@@ -111,9 +118,11 @@ where
         resource_address_reservation,
         NON_FUNGIBLE_BUCKET_BLUEPRINT,
         vec![
-            FieldValue::new(&LiquidNonFungibleResource::new(ids)),
+            FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
             FieldValue::new(&LockedNonFungibleResource::default()),
         ],
+        MintNonFungibleResourceEvent::event_name().to_string(),
+        scrypto_encode(&MintNonFungibleResourceEvent { ids }).unwrap(),
     )?;
 
     Ok((
