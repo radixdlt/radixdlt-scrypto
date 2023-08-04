@@ -47,18 +47,13 @@ impl Runtime {
         ComponentAddress::new_or_panic(address.into())
     }
 
-    /// Returns the running entity.
-    pub fn blueprint_id() -> BlueprintId {
-        ScryptoEnv.actor_get_blueprint_id().unwrap()
-    }
-
     pub fn node_id() -> NodeId {
         ScryptoEnv.actor_get_node_id().unwrap()
     }
 
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
-        Self::blueprint_id().package_address
+        ScryptoEnv.actor_get_blueprint_id().unwrap().package_address
     }
 
     pub fn package_token() -> NonFungibleGlobalId {
