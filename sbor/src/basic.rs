@@ -86,7 +86,7 @@ impl CustomValueKind for NoCustomValueKind {
     }
 
     fn from_u8(_id: u8) -> Option<Self> {
-        panic!("No custom type")
+        None
     }
 }
 
