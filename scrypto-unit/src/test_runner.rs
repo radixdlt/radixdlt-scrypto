@@ -1930,7 +1930,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         };
 
         match schema_pointer {
-            TypePointer::Package(schema_hash, index) => {
+            TypePointer::Package(type_identifier) => {
                 let schema = self
                     .substate_db()
                     .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
@@ -1938,13 +1938,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                         MAIN_BASE_PARTITION
                             .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
                             .unwrap(),
-                        &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
+                        &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
                     )
                     .unwrap()
                     .value
                     .unwrap();
 
-                (index, schema)
+                (type_identifier.1, schema)
             }
             TypePointer::Instance(_instance_index) => {
                 todo!()

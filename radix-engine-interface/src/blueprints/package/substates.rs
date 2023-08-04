@@ -7,7 +7,6 @@ use radix_engine_interface::blueprints::resource::Vault;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
-use sbor::LocalTypeIndex;
 
 pub const PACKAGE_CODE_ID: u64 = 0u64;
 pub const RESOURCE_CODE_ID: u64 = 1u64;
@@ -86,8 +85,8 @@ impl Clone for PackageRoyaltyAccumulatorSubstate {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum TypePointer {
-    Package(Hash, LocalTypeIndex), // For static types
-    Instance(u8),                  // For generics
+    Package(TypeIdentifier), // For static types
+    Instance(u8),            // For generics
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -239,7 +238,7 @@ impl IndexedStateSchema {
                     // FIXME: Verify that these are checked to be consistent
                     let pointer = match field_schema.field {
                         TypeRef::Static(type_index) => {
-                            TypePointer::Package(schema_hash, type_index)
+                            TypePointer::Package(TypeIdentifier(schema_hash, type_index))
                         }
                         TypeRef::Generic(instance_index) => TypePointer::Instance(instance_index),
                     };
@@ -256,7 +255,9 @@ impl IndexedStateSchema {
         let mut collections = Vec::new();
         for collection_schema in schema.collections {
             let schema = collection_schema.map(|type_ref| match type_ref {
-                TypeRef::Static(type_index) => TypePointer::Package(schema_hash, type_index),
+                TypeRef::Static(type_index) => {
+                    TypePointer::Package(TypeIdentifier(schema_hash, type_index))
+                }
                 TypeRef::Generic(instance_index) => TypePointer::Instance(instance_index),
             });
             collections.push((PartitionOffset(partition_offset), schema));
@@ -365,7 +366,7 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn validate_instance_schema(&self, instance_schema: &Option<NewInstanceSchema>) -> bool {
+    pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchemaInit>) -> bool {
         for (_, partition) in &self.collections {
             match partition {
                 BlueprintCollectionSchema::KeyValueStore(kv_schema) => {

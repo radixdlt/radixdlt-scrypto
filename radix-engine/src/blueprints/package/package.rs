@@ -1117,8 +1117,8 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: function_schema_init.receiver,
-                            input: TypePointer::Package(schema_hash, input),
-                            output: TypePointer::Package(schema_hash, output),
+                            input: TypePointer::Package(TypeIdentifier(schema_hash, input)),
+                            output: TypePointer::Package(TypeIdentifier(schema_hash, output)),
                         },
                     );
                     let export = PackageExport {
@@ -1131,7 +1131,9 @@ impl PackageNativePackage {
                 let mut events = BTreeMap::new();
                 for (key, type_ref) in definition_init.schema.events.event_schema {
                     let index = match type_ref {
-                        TypeRef::Static(index) => TypePointer::Package(schema_hash, index),
+                        TypeRef::Static(index) => {
+                            TypePointer::Package(TypeIdentifier(schema_hash, index))
+                        }
                         TypeRef::Generic(index) => TypePointer::Instance(index),
                     };
                     events.insert(key, index);

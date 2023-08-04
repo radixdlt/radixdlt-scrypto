@@ -239,7 +239,7 @@ pub enum Receiver {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct NewInstanceSchema {
+pub struct InstanceSchemaInit {
     pub schema: ScryptoSchema,
     pub instance_type_lookup: Vec<LocalTypeIndex>,
 }
@@ -247,21 +247,24 @@ pub struct NewInstanceSchema {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceSchema {
     pub schema: ScryptoSchema,
-    pub schema_hash: Hash,
-    pub instance_type_lookup: Vec<LocalTypeIndex>,
+    pub instance_type_lookup: Vec<TypeIdentifier>,
 }
 
-impl From<NewInstanceSchema> for InstanceSchema {
+impl From<InstanceSchemaInit> for InstanceSchema {
     fn from(
-        NewInstanceSchema {
+        InstanceSchemaInit {
             schema,
             instance_type_lookup,
-        }: NewInstanceSchema,
+        }: InstanceSchemaInit,
     ) -> Self {
         let schema_hash = schema.generate_schema_hash();
+        let instance_type_lookup = instance_type_lookup
+            .into_iter()
+            .map(|t| TypeIdentifier(schema_hash, t))
+            .collect();
+
         Self {
             schema,
-            schema_hash,
             instance_type_lookup,
         }
     }

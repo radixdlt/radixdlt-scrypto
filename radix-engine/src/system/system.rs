@@ -183,13 +183,13 @@ where
         payload: &[u8],
     ) -> Result<(), RuntimeError> {
         match type_pointer {
-            TypePointer::Package(hash, index) => {
-                let schema = self.get_schema(blueprint_id.package_address, &hash)?;
+            TypePointer::Package(type_identifier) => {
+                let schema = self.get_schema(blueprint_id.package_address, &type_identifier.0)?;
 
                 self.validate_payload(
                     payload,
                     &schema,
-                    index,
+                    type_identifier.1,
                     SchemaOrigin::Blueprint(blueprint_id.clone()),
                 )
                 .map_err(|err| {
@@ -211,7 +211,7 @@ where
                         ));
                     }
                 };
-                let index = instance_schema
+                let type_identifier = instance_schema
                     .instance_type_lookup
                     .get(instance_index as usize)
                     .unwrap()
@@ -220,7 +220,7 @@ where
                 self.validate_payload(
                     payload,
                     &instance_schema.schema,
-                    index,
+                    type_identifier.1,
                     SchemaOrigin::Instance,
                 )
                 .map_err(|err| {
@@ -260,7 +260,7 @@ where
         blueprint_interface: &BlueprintInterface,
         blueprint_features: &BTreeSet<String>,
         outer_blueprint_features: &BTreeSet<String>,
-        new_instance_schema: Option<NewInstanceSchema>,
+        new_instance_schema: Option<InstanceSchemaInit>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<
@@ -633,7 +633,7 @@ where
         blueprint_id: &BlueprintId,
         features: Vec<&str>,
         instance_context: Option<InstanceContext>,
-        new_instance_schema: Option<NewInstanceSchema>,
+        new_instance_schema: Option<InstanceSchemaInit>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
@@ -1418,7 +1418,7 @@ where
         &mut self,
         blueprint_ident: &str,
         features: Vec<&str>,
-        schema: Option<NewInstanceSchema>,
+        schema: Option<InstanceSchemaInit>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {

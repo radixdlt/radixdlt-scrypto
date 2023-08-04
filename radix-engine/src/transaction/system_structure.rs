@@ -337,26 +337,26 @@ impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
 
     pub fn resolve(&self, type_pointer: TypePointer) -> ObjectSubstateTypeReference {
         match type_pointer {
-            TypePointer::Package(schema_hash, local_type_index) => {
+            TypePointer::Package(type_identifier) => {
                 ObjectSubstateTypeReference::Package(PackageTypeReference {
                     package_address: self.blueprint_id.package_address,
-                    schema_hash,
-                    local_type_index,
+                    schema_hash: type_identifier.0,
+                    local_type_index: type_identifier.1,
                 })
             }
             TypePointer::Instance(instance_type_index) => {
                 let instance_schema = self
                     .instance_schema
                     .expect("Instance type pointer to no instance schema");
-                let local_type_index = *instance_schema
+                let type_identifier = *instance_schema
                     .instance_type_lookup
                     .get(instance_type_index as usize)
                     .expect("Instance type index not valid");
                 ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {
                     entity_address: (*self.node_id).try_into().unwrap(),
                     instance_type_index,
-                    schema_hash: instance_schema.schema_hash,
-                    local_type_index,
+                    schema_hash: type_identifier.0,
+                    local_type_index: type_identifier.1,
                 })
             }
         }
@@ -404,15 +404,15 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
                 }
             };
 
-            let TypePointer::Package(schema_hash, local_type_index) = event_type_identifier.1 else {
+            let TypePointer::Package(type_identifier) = event_type_identifier.1 else {
                 panic!("Event identifier type pointer cannot be an instance type pointer");
             };
 
             let event_system_structure = EventSystemStructure {
                 package_type_reference: PackageTypeReference {
                     package_address: blueprint_id.package_address,
-                    schema_hash,
-                    local_type_index,
+                    schema_hash: type_identifier.0,
+                    local_type_index: type_identifier.1,
                 },
             };
 

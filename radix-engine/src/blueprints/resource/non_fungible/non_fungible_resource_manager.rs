@@ -223,7 +223,7 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_field_index,
         };
 
-        let instance_schema = NewInstanceSchema {
+        let instance_schema = InstanceSchemaInit {
             schema: non_fungible_schema.schema,
             instance_type_lookup: vec![non_fungible_schema.non_fungible],
         };
@@ -327,7 +327,7 @@ impl NonFungibleResourceManagerBlueprint {
             non_fungibles.insert(scrypto_encode(&id).unwrap(), kv_entry);
         }
 
-        let instance_schema = NewInstanceSchema {
+        let instance_schema = InstanceSchemaInit {
             schema: non_fungible_schema.schema,
             instance_type_lookup: vec![non_fungible_schema.non_fungible],
         };
@@ -412,7 +412,7 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_field_index,
         };
 
-        let instance_schema = NewInstanceSchema {
+        let instance_schema = InstanceSchemaInit {
             schema: non_fungible_schema.schema,
             instance_type_lookup: vec![non_fungible_schema.non_fungible],
         };
