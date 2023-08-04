@@ -191,10 +191,13 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn get_reservation_address(
         &mut self,
-        _node_id: &NodeId,
+        node_id: &NodeId,
     ) -> Result<GlobalAddress, ClientApiError> {
-        // FIXME: Implement this for Scrypto
-        todo!()
+        let bytes = copy_buffer(unsafe {
+            get_reservation_address(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
+
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, ClientApiError> {
