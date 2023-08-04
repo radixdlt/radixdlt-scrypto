@@ -7,7 +7,7 @@ use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::TrackedNode;
+use crate::track::{ReadOnly, TrackedNode, TrackedSubstateValue};
 use crate::transaction::{SystemPartitionDescription, SystemReader};
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -145,8 +145,31 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         for (node_id, tracked_node) in self.tracked {
             for (partition_num, tracked_partition) in &tracked_node.tracked_partitions {
                 for (_, tracked_substate) in &tracked_partition.substates {
+                    match &tracked_substate.substate_value {
+                        TrackedSubstateValue::New(_)
+                        | TrackedSubstateValue::ReadExistAndWrite(_, _)
+                        | TrackedSubstateValue::ReadNonExistAndWrite(_)
+                        | TrackedSubstateValue::WriteOnly(_) => {
+                            // The substate has been written - so process this substate structure
+                        }
+                        TrackedSubstateValue::ReadOnly(ReadOnly::Existent(_))
+                        | TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent)
+                        | TrackedSubstateValue::Garbage => {
+                            // We don't process substates which were only read
+                            // NOTE:
+                            //   If in future we want to enable this for reads too, it should be possible to
+                            //     enable this for TrackedSubstateValue::ReadOnly(ReadOnly::Existent(_))
+                            //     but it is not possible for NonExistent reads.
+                            //   If a transaction fails, it's possible to get reads of non-existent substates
+                            //     where the type info can't be resolved below. For example, if boostrap fails,
+                            //     consensus manager substates are read but the type info is not written.
+                            continue;
+                        }
+                    }
+
                     let partition_description =
                         self.system_reader.partition_description(partition_num);
+
                     let system_substate_structure = self.resolve_substate_structure(
                         node_id,
                         partition_description,
