@@ -282,11 +282,11 @@ impl AccountNativePackage {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: TypeRef::Static(
                     aggregator
-                        .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleInput>(),
+                        .add_child_type_and_descendents::<AccountSetDefaultDepositRuleInput>(),
                 ),
                 output: TypeRef::Static(
                     aggregator
-                        .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleOutput>(),
+                        .add_child_type_and_descendents::<AccountSetDefaultDepositRuleOutput>(),
                 ),
                 export: ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             },
@@ -708,7 +708,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT => {
-                let AccountChangeDefaultDepositRuleInput { default } =
+                let AccountSetDefaultDepositRuleInput { default } =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
@@ -718,13 +718,13 @@ impl AccountNativePackage {
             ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT => {
                 let AccountSetResourcePreferenceInput {
                     resource_address,
-                    resource_deposit_configuration,
+                    resource_preference,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = AccountBlueprint::set_resource_preference(
                     resource_address,
-                    resource_deposit_configuration,
+                    resource_preference,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
