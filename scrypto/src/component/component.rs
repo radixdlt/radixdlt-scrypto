@@ -463,19 +463,13 @@ where
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
-pub enum ComponentCastError {
-    CannotCast {
-        to: BlueprintId,
-        actual: BlueprintId,
-    },
+trait TypeCheckable {
+    fn check(node_id: &NodeId) -> Result<(), ComponentCastError>;
 }
 
-impl<O: HasStub + HasTypeInfo> TryFrom<ComponentAddress> for Global<O> {
-    type Error = ComponentCastError;
-
-    fn try_from(value: ComponentAddress) -> Result<Self, Self::Error> {
-        let blueprint_id = ScryptoEnv.get_blueprint_id(value.as_node_id()).unwrap();
+impl<O: HasTypeInfo> TypeCheckable for O {
+    fn check(node_id: &NodeId) -> Result<(), ComponentCastError> {
+        let blueprint_id = ScryptoEnv.get_blueprint_id(node_id).unwrap();
         let to = O::blueprint_id();
         if !blueprint_id.eq(&to) {
             return Err(ComponentCastError::CannotCast {
@@ -484,30 +478,30 @@ impl<O: HasStub + HasTypeInfo> TryFrom<ComponentAddress> for Global<O> {
             });
         }
 
-        Ok(Global(ObjectStub::new(ObjectStubHandle::Global(value.into()))))
+        Ok(())
     }
 }
 
-/*
-impl From<ComponentAddress> for Global<AnyComponent> {
+impl TypeCheckable for AnyComponent {
+    fn check(_node_id: &NodeId) -> Result<(), ComponentCastError> {
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
+pub enum ComponentCastError {
+    CannotCast {
+        to: BlueprintId,
+        actual: BlueprintId,
+    },
+}
+
+impl<O: HasStub + TypeCheckable> From<ComponentAddress> for Global<O> {
     fn from(value: ComponentAddress) -> Self {
+        O::check(value.as_node_id()).unwrap();
         Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
     }
 }
-
-
-impl<O: HasStub> From<ComponentAddress> for Global<O> {
-    fn from(value: ComponentAddress) -> Self {
-        Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
-    }
-}
-
-impl<O: HasStub> From<PackageAddress> for Global<O> {
-    fn from(value: PackageAddress) -> Self {
-        Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
-    }
-}
- */
 
 impl<O: HasStub> Categorize<ScryptoCustomValueKind> for Global<O> {
     #[inline]
