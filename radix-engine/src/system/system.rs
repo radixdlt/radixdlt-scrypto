@@ -1804,7 +1804,10 @@ where
 {
     // Costing through kernel
     #[trace_resources]
-    fn key_value_store_new(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
+    fn key_value_store_new(
+        &mut self,
+        schema: KeyValueStoreSchemaInit,
+    ) -> Result<NodeId, RuntimeError> {
         schema
             .schema
             .validate()
@@ -1820,7 +1823,7 @@ where
                 MAIN_BASE_PARTITION => btreemap!(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::KeyValueStore(KeyValueStoreInfo {
-                        schema,
+                        schema: schema.into(),
                     })
                 ),
             ),
@@ -1865,7 +1868,7 @@ where
         self.validate_payload(
             key,
             &info.schema.schema,
-            info.schema.key,
+            info.schema.key.1,
             SchemaOrigin::KeyValueStore {},
         )
         .map_err(|e| {
@@ -1877,7 +1880,7 @@ where
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
                 schema: info.schema.schema,
-                index: info.schema.value,
+                index: info.schema.value.1,
                 can_own: info.schema.can_own,
             })
         } else {

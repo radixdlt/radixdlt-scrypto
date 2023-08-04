@@ -106,7 +106,7 @@ impl CallMethod {
         })?;
 
         let (schema, index) = match function_schema.input {
-            TypePointer::Package(schema_hash, index) => {
+            TypePointer::Package(TypeIdentifier(schema_hash, index)) => {
                 let schema = export_schema(bp_id.package_address, schema_hash)?;
                 (schema, index)
             }
@@ -117,14 +117,14 @@ impl CallMethod {
                         return Err(Error::InstanceSchemaNot(component_address, instance_index))
                     }
                     Some(instance_schema) => {
-                        let index = instance_schema
+                        let type_identifier = instance_schema
                             .instance_type_lookup
                             .get(instance_index as usize)
                             .ok_or_else(|| {
                                 Error::InstanceSchemaNot(component_address, instance_index)
                             })?
                             .clone();
-                        (instance_schema.schema, index)
+                        (instance_schema.schema, type_identifier.1)
                     }
                 }
             }

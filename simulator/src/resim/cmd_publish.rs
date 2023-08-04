@@ -165,13 +165,13 @@ impl Publish {
                             receiver: setup.receiver,
                             input: match setup.input {
                                 TypeRef::Static(type_index) => {
-                                    TypePointer::Package(schema_hash, type_index)
+                                    TypePointer::Package(TypeIdentifier(schema_hash, type_index))
                                 }
                                 TypeRef::Generic(index) => TypePointer::Instance(index),
                             },
                             output: match setup.output {
                                 TypeRef::Static(type_index) => {
-                                    TypePointer::Package(schema_hash, type_index)
+                                    TypePointer::Package(TypeIdentifier(schema_hash, type_index))
                                 }
                                 TypeRef::Generic(index) => TypePointer::Instance(index),
                             },
@@ -193,7 +193,9 @@ impl Publish {
                         (
                             key,
                             match index {
-                                TypeRef::Static(index) => TypePointer::Package(schema_hash, index),
+                                TypeRef::Static(index) => {
+                                    TypePointer::Package(TypeIdentifier(schema_hash, index))
+                                }
                                 TypeRef::Generic(index) => TypePointer::Instance(index),
                             },
                         )

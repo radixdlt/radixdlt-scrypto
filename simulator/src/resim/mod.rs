@@ -473,7 +473,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     };
 
     match schema_pointer {
-        TypePointer::Package(schema_hash, index) => {
+        TypePointer::Package(TypeIdentifier(schema_hash, index)) => {
             let schema = substate_db
                 .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
                     package_address.as_node_id(),

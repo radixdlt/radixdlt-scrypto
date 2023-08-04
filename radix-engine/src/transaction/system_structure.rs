@@ -35,8 +35,9 @@ pub enum SystemFieldKind {
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct KeyValueStoreEntryStructure {
     key_value_store_address: InternalAddress,
-    schema_hash: Hash,
+    key_schema_hash: Hash,
     key_local_type_index: LocalTypeIndex,
+    value_schema_hash: Hash,
     value_local_type_index: LocalTypeIndex,
 }
 
@@ -221,9 +222,10 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                             return SubstateSystemStructure::KeyValueStoreEntry(
                                 KeyValueStoreEntryStructure {
                                     key_value_store_address: (*node_id).try_into().unwrap(),
-                                    schema_hash: info.schema.schema_hash,
-                                    key_local_type_index: info.schema.key,
-                                    value_local_type_index: info.schema.value,
+                                    key_schema_hash: info.schema.key.0,
+                                    key_local_type_index: info.schema.key.1,
+                                    value_schema_hash: info.schema.value.0,
+                                    value_local_type_index: info.schema.value.1,
                                 },
                             )
                         }

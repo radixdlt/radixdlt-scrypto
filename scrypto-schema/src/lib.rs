@@ -12,22 +12,27 @@ use sbor::*;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreSchema {
     pub schema: ScryptoSchema,
-    pub schema_hash: Hash,
+    pub key: TypeIdentifier,
+    pub value: TypeIdentifier,
+    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct KeyValueStoreSchemaInit {
+    pub schema: ScryptoSchema,
     pub key: LocalTypeIndex,
     pub value: LocalTypeIndex,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
-impl KeyValueStoreSchema {
+impl KeyValueStoreSchemaInit {
     pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
         let value_type_index = aggregator.add_child_type_and_descendents::<V>();
         let schema = generate_full_schema(aggregator);
-        let schema_hash = schema.generate_schema_hash();
         Self {
             schema,
-            schema_hash,
             key: key_type_index,
             value: value_type_index,
             can_own,
@@ -36,6 +41,18 @@ impl KeyValueStoreSchema {
 
     pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
         replace_self_package_address(&mut self.schema, package_address);
+    }
+}
+
+impl From<KeyValueStoreSchemaInit> for KeyValueStoreSchema {
+    fn from(schema: KeyValueStoreSchemaInit) -> Self {
+        let schema_hash = schema.schema.generate_schema_hash();
+        KeyValueStoreSchema {
+            schema: schema.schema,
+            key: TypeIdentifier(schema_hash, schema.key),
+            value: TypeIdentifier(schema_hash, schema.value),
+            can_own: schema.can_own,
+        }
     }
 }
 
