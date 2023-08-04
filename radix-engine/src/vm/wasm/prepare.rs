@@ -1,6 +1,7 @@
 use crate::types::*;
 use crate::vm::wasm::{constants::*, errors::*, PrepareError};
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
+use syn::Ident;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -885,6 +886,16 @@ impl WasmModule {
             if locals_count > max_number_of_function_locals {
                 return Err(PrepareError::TooManyFunctionLocals);
             }
+        }
+
+        Ok(self)
+    }
+
+    pub fn enforce_export_names(self) -> Result<Self, PrepareError> {
+        // Any exported name should follow Rust Identifier specification
+        for name in &self.module.export_names {
+            syn::parse_str::<Ident>(name)
+                .map_err(|_| PrepareError::InvalidExportName(name.to_string()))?;
         }
 
         Ok(self)
