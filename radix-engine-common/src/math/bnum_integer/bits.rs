@@ -208,7 +208,8 @@ macro_rules! impl_bits {
 
                     #[inline]
                     fn shl(self, other: Self) -> Self {
-                        Self(self.0 << other.0)
+                        let shift_by = u32::try_from(other).expect("Overflow");
+                        Self(self.0.checked_shl(shift_by).expect("Overflow"))
                     }
                 }
 
@@ -216,7 +217,8 @@ macro_rules! impl_bits {
                 impl ShlAssign for $t {
                     #[inline]
                     fn shl_assign(&mut self, other: Self) {
-                        self.0 <<= other.0;
+                        let shift_by = u32::try_from(other).expect("Overflow");
+                        self.0 = self.0.checked_shl(shift_by).expect("Overflow");
                     }
                 }
 
@@ -225,14 +227,16 @@ macro_rules! impl_bits {
 
                     #[inline]
                     fn shr(self, other: Self) -> $t {
-                        Self(self.0 >> other.0)
+                        let shift_by = u32::try_from(other).expect("Overflow");
+                        Self(self.0.checked_shr(shift_by).expect("Overflow"))
                     }
                 }
 
                 impl ShrAssign for $t {
                     #[inline]
                     fn shr_assign(&mut self, other: Self) {
-                        self.0 >>= other.0;
+                        let shift_by = u32::try_from(other).expect("Overflow");
+                        self.0 = self.0.checked_shr(shift_by).expect("Overflow");
                     }
                 }
             }
