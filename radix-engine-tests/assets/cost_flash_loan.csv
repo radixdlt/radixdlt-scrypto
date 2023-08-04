@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,     0.13732287,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.13696287,     99.7%
+Total Cost (XRD)                                                           ,     0.13748505,    100.0%
++ Execution Cost (XRD)                                                     ,     0.13712505,     99.7%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00036,      0.3%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       13696287,    100.0%
+Total Cost Units Consumed                                                  ,       13712505,    100.0%
 AfterInvoke                                                                ,           1880,      0.0%
 AllocateNodeId                                                             ,          30500,      0.2%
 BeforeInvoke                                                               ,          34230,      0.2%
@@ -17,7 +17,7 @@ DropNode                                                                   ,    
 EmitEvent                                                                  ,           4548,      0.0%
 GenerateRuid                                                               ,            500,      0.0%
 LockFee                                                                    ,            500,      0.0%
-OpenSubstate                                                               ,        3845572,     28.1%
+OpenSubstate                                                               ,        3845572,     28.0%
 OpenSubstate::GlobalAccount                                                ,          15452,      0.1%
 OpenSubstate::GlobalFungibleResourceManager                                ,          25562,      0.2%
 OpenSubstate::GlobalGenericComponent                                       ,           5924,      0.0%
@@ -45,7 +45,7 @@ RunNativeCode::get_amount_NonFungibleBucket                                ,    
 RunNativeCode::get_non_fungible                                            ,          55036,      0.4%
 RunNativeCode::get_non_fungible_local_ids_NonFungibleBucket                ,           7932,      0.1%
 RunNativeCode::get_resource_address_NonFungibleBucket                      ,         100360,      0.7%
-RunNativeCode::lock_fee                                                    ,         116624,      0.9%
+RunNativeCode::lock_fee                                                    ,         131708,      1.0%
 RunNativeCode::mint_ruid_NonFungibleResourceManager                        ,         164432,      1.2%
 RunNativeCode::on_drop_FungibleProof                                       ,          58758,      0.4%
 RunNativeCode::on_move_FungibleProof                                       ,         235032,      1.7%
@@ -53,9 +53,9 @@ RunNativeCode::put_FungibleBucket                                          ,    
 RunNativeCode::put_FungibleVault                                           ,          42716,      0.3%
 RunNativeCode::take_FungibleBucket                                         ,          15767,      0.1%
 RunNativeCode::take_FungibleVault                                          ,         106982,      0.8%
-RunNativeCode::try_deposit_batch_or_abort                                  ,          78584,      0.6%
+RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,      0.5%
 RunNativeCode::unlock_amount_FungibleVault                                 ,          47112,      0.3%
-RunNativeCode::withdraw                                                    ,          31552,      0.2%
+RunNativeCode::withdraw                                                    ,          47564,      0.3%
 RunWasmCode::BasicFlashLoan_repay_loan                                     ,          70268,      0.5%
 RunWasmCode::BasicFlashLoan_take_loan                                      ,         119885,      0.9%
 TxBaseCost                                                                 ,          50000,      0.4%

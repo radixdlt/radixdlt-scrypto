@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,     0.55832317,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.51335317,     91.9%
+Total Cost (XRD)                                                           ,     0.55817439,    100.0%
++ Execution Cost (XRD)                                                     ,     0.51320439,     91.9%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.04497,      8.1%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       51335317,    100.0%
+Total Cost Units Consumed                                                  ,       51320439,    100.0%
 AfterInvoke                                                                ,            494,      0.0%
 AllocateNodeId                                                             ,          10500,      0.0%
 BeforeInvoke                                                               ,          15414,      0.0%
@@ -18,7 +18,7 @@ DropNode                                                                   ,    
 EmitEvent                                                                  ,          17324,      0.0%
 LockFee                                                                    ,            500,      0.0%
 MoveModule                                                                 ,              0,      0.0%
-OpenSubstate                                                               ,        3157117,      6.1%
+OpenSubstate                                                               ,        3157117,      6.2%
 OpenSubstate::GlobalAccount                                                ,           7310,      0.0%
 OpenSubstate::GlobalFungibleResourceManager                                ,           2624,      0.0%
 OpenSubstate::GlobalGenericComponent                                       ,           2852,      0.0%
@@ -41,7 +41,7 @@ RunNativeCode::create_with_initial_supply_NonFungibleResourceManager       ,    
 RunNativeCode::get_amount_NonFungibleBucket                                ,          30064,      0.1%
 RunNativeCode::lock_fee                                                    ,          61733,      0.1%
 RunNativeCode::put_NonFungibleVault                                        ,          17297,      0.0%
-RunNativeCode::try_deposit_batch_or_abort                                  ,          78584,      0.2%
+RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,      0.1%
 RunWasmCode::Faucet_lock_fee                                               ,          18320,      0.0%
 SetSubstate                                                                ,         105248,      0.2%
 TxBaseCost                                                                 ,          50000,      0.1%
