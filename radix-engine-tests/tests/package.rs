@@ -369,14 +369,14 @@ fn name_validation_blueprint() {
     let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
 
     definition.blueprints = BTreeMap::from([(
-            String::from("wrong_bluepint_name_*"),
-            definition
-                .blueprints
-                .first_entry()
-                .unwrap()
-                .get()
-                .to_owned(),
-        )]);
+        String::from("wrong_bluepint_name_*"),
+        definition
+            .blueprints
+            .first_entry()
+            .unwrap()
+            .get()
+            .to_owned(),
+    )]);
 
     // Act
     let manifest = ManifestBuilder::new()
