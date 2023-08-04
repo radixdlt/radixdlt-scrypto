@@ -361,3 +361,77 @@ fn should_not_be_able_to_publish_native_packages_in_scrypto() {
         )
     });
 }
+
+#[test]
+fn package_definition_names_validation() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    for i in 1..=3 {
+        // Arrange
+        let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
+
+        match i {
+            // Validate wrong blueprint name
+            1 => {
+                definition.blueprints = BTreeMap::from([(
+                    String::from("wrong_bluepint_name_*"),
+                    definition
+                        .blueprints
+                        .first_entry()
+                        .unwrap()
+                        .get()
+                        .to_owned(),
+                )]);
+            }
+            // Validate wrong feature name
+            2 => {
+                definition
+                    .blueprints
+                    .first_entry()
+                    .unwrap()
+                    .get_mut()
+                    .feature_set
+                    .insert(String::from("wrong-feature"));
+            }
+            // Validate wrong feature name
+            3 => {
+                definition
+                    .blueprints
+                    .first_entry()
+                    .unwrap()
+                    .get_mut()
+                    .schema
+                    .functions
+                    .functions
+                    .insert(
+                        String::from("self"),
+                        FunctionSchemaInit {
+                            receiver: None,
+                            input: TypeRef::Static(LocalTypeIndex::WellKnown(0)),
+                            output: TypeRef::Static(LocalTypeIndex::WellKnown(0)),
+                            export: String::from("self"),
+                        },
+                    );
+            }
+            _ => break,
+        }
+
+        // Act
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+            .build();
+
+        let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+        // Assert
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidName(..)
+                ))
+            )
+        });
+    }
+}
