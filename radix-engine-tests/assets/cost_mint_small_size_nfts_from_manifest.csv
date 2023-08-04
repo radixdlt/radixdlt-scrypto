@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,     0.55804159,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.51307159,     91.9%
+Total Cost (XRD)                                                           ,     0.55819037,    100.0%
++ Execution Cost (XRD)                                                     ,     0.51322037,     91.9%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.04497,      8.1%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       51307159,    100.0%
+Total Cost Units Consumed                                                  ,       51322037,    100.0%
 AfterInvoke                                                                ,            494,      0.0%
 AllocateNodeId                                                             ,          10500,      0.0%
 BeforeInvoke                                                               ,          15414,      0.0%
@@ -41,7 +41,7 @@ RunNativeCode::create_with_initial_supply_NonFungibleResourceManager       ,    
 RunNativeCode::get_amount_NonFungibleBucket                                ,          30064,      0.1%
 RunNativeCode::lock_fee                                                    ,          61733,      0.1%
 RunNativeCode::put_NonFungibleVault                                        ,          17297,      0.0%
-RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,      0.1%
+RunNativeCode::try_deposit_batch_or_abort                                  ,          78584,      0.2%
 RunWasmCode::Faucet_lock_fee                                               ,          18320,      0.0%
 SetSubstate                                                                ,         105248,      0.2%
 TxBaseCost                                                                 ,          50000,      0.1%

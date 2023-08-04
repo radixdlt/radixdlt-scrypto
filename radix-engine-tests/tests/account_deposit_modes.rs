@@ -459,33 +459,11 @@ impl AccountDepositModesTestRunner {
         deposit_method: DepositMethod,
         sign: bool,
     ) -> TransactionReceipt {
-        let (method, is_vec, insert_badge) = match deposit_method {
-            DepositMethod::Deposit => (ACCOUNT_DEPOSIT_IDENT, false, false),
-            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT, false, true),
-            DepositMethod::TryDepositOrAbort => (ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, false, true),
-            DepositMethod::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true, false),
-            DepositMethod::TryDepositBatchOrRefund => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT, true, true)
-            }
-            DepositMethod::TryDepositBatchOrAbort => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT, true, true)
-            }
-        };
-
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 1)
             .take_all_from_worktop(resource_address, "bucket")
-            .with_name_lookup(|builder, lookup| {
-                let bucket = lookup.bucket("bucket");
-                let args = match (is_vec, insert_badge) {
-                    (true, true) => {
-                        manifest_args!(vec![bucket], Option::<ResourceOrNonFungible>::None)
-                    }
-                    (true, false) => manifest_args!(vec![bucket]),
-                    (false, true) => manifest_args!(bucket, Option::<ResourceOrNonFungible>::None),
-                    (false, false) => manifest_args!(bucket),
-                };
-                builder.call_method(self.component_address, method, args)
+            .with_bucket("bucket", |builder, bucket| {
+                deposit_method.call(builder, self.component_address, bucket)
             })
             .build();
         self.execute_manifest(manifest, sign)
@@ -496,38 +474,11 @@ impl AccountDepositModesTestRunner {
         deposit_method: DepositMethod,
         sign: bool,
     ) -> TransactionReceipt {
-        let (method, is_vec, insert_badge) = match deposit_method {
-            DepositMethod::Deposit => (ACCOUNT_DEPOSIT_IDENT, false, false),
-            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT, false, true),
-            DepositMethod::TryDepositOrAbort => (ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, false, true),
-            DepositMethod::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true, false),
-            DepositMethod::TryDepositBatchOrRefund => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT, true, true)
-            }
-            DepositMethod::TryDepositBatchOrAbort => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT, true, true)
-            }
-        };
-
         let manifest = ManifestBuilder::new()
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "free_tokens")
-            .then(|builder| {
-                let bucket = builder.bucket("free_tokens");
-                builder.call_method(
-                    self.component_address,
-                    method,
-                    match (is_vec, insert_badge) {
-                        (true, true) => {
-                            manifest_args!(vec![bucket], Option::<ResourceOrNonFungible>::None)
-                        }
-                        (true, false) => manifest_args!(vec![bucket]),
-                        (false, true) => {
-                            manifest_args!(bucket, Option::<ResourceOrNonFungible>::None)
-                        }
-                        (false, false) => manifest_args!(bucket),
-                    },
-                )
+            .with_bucket("free_tokens", |builder, bucket| {
+                deposit_method.call(builder, self.component_address, bucket)
             })
             .build();
         self.execute_manifest(manifest, sign)
@@ -653,6 +604,37 @@ enum DepositMethod {
     DepositBatch,
     TryDepositBatchOrRefund,
     TryDepositBatchOrAbort,
+}
+
+impl DepositMethod {
+    pub fn call(
+        &self,
+        manifest_builder: ManifestBuilder,
+        account: ComponentAddress,
+        bucket: ManifestBucket,
+    ) -> ManifestBuilder {
+        let (method, is_vec, insert_badge) = match self {
+            Self::Deposit => (ACCOUNT_DEPOSIT_IDENT, false, false),
+            Self::TryDeposit => (ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT, false, true),
+            Self::TryDepositOrAbort => (ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, false, true),
+            Self::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true, false),
+            Self::TryDepositBatchOrRefund => {
+                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT, true, true)
+            }
+            Self::TryDepositBatchOrAbort => (ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT, true, true),
+        };
+
+        let args = match (is_vec, insert_badge) {
+            (true, true) => {
+                manifest_args!(vec![bucket], Option::<ResourceOrNonFungible>::None)
+            }
+            (true, false) => manifest_args!(vec![bucket]),
+            (false, true) => manifest_args!(bucket, Option::<ResourceOrNonFungible>::None),
+            (false, false) => manifest_args!(bucket),
+        };
+
+        manifest_builder.call_method(account, method, args)
+    }
 }
 
 fn is_auth_unauthorized_error(runtime_error: &RuntimeError) -> bool {

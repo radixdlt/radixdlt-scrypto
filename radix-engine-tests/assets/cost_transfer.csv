@@ -1,20 +1,20 @@
-Total Cost (XRD)                                                           ,     0.03316712,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.03307712,     99.7%
+Total Cost (XRD)                                                           ,     0.03300494,    100.0%
++ Execution Cost (XRD)                                                     ,     0.03291494,     99.7%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00009,      0.3%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        3307712,    100.0%
+Total Cost Units Consumed                                                  ,        3291494,    100.0%
 AfterInvoke                                                                ,            300,      0.0%
 AllocateNodeId                                                             ,           6500,      0.2%
 BeforeInvoke                                                               ,           6468,      0.2%
 CloseSubstate                                                              ,         105500,      3.2%
 Commit::GlobalAccount                                                      ,         100002,      3.0%
-Commit::InternalFungibleVault                                              ,         200020,      6.0%
+Commit::InternalFungibleVault                                              ,         200020,      6.1%
 CreateNode                                                                 ,          12848,      0.4%
 DropNode                                                                   ,          12708,      0.4%
 EmitEvent                                                                  ,           1940,      0.1%
 LockFee                                                                    ,            500,      0.0%
-OpenSubstate                                                               ,        2002677,     60.5%
+OpenSubstate                                                               ,        2002677,     60.8%
 OpenSubstate::GlobalAccount                                                ,          15452,      0.5%
 OpenSubstate::GlobalFungibleResourceManager                                ,          12092,      0.4%
 OpenSubstate::GlobalPackage                                                ,          87018,      2.6%
@@ -26,11 +26,11 @@ RunNativeCode::Worktop_drain                                               ,    
 RunNativeCode::Worktop_drop                                                ,          16371,      0.5%
 RunNativeCode::Worktop_put                                                 ,          24411,      0.7%
 RunNativeCode::get_amount_FungibleBucket                                   ,           7453,      0.2%
-RunNativeCode::lock_fee                                                    ,         131708,      4.0%
+RunNativeCode::lock_fee                                                    ,         116624,      3.5%
 RunNativeCode::put_FungibleVault                                           ,          21358,      0.6%
 RunNativeCode::take_FungibleVault                                          ,          53491,      1.6%
-RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,      1.9%
-RunNativeCode::withdraw                                                    ,          47564,      1.4%
+RunNativeCode::try_deposit_batch_or_abort                                  ,          78584,      2.4%
+RunNativeCode::withdraw                                                    ,          31552,      1.0%
 TxBaseCost                                                                 ,          50000,      1.5%
 TxPayloadCost                                                              ,          10880,      0.3%
 TxSignatureVerification                                                    ,           7000,      0.2%

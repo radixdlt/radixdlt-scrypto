@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,      0.0887529,    100.0%
-+ Execution Cost (XRD)                                                     ,      0.0864229,     97.4%
+Total Cost (XRD)                                                           ,     0.08859072,    100.0%
++ Execution Cost (XRD)                                                     ,     0.08626072,     97.4%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00233,      2.6%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        8642290,    100.0%
+Total Cost Units Consumed                                                  ,        8626072,    100.0%
 AfterInvoke                                                                ,           1368,      0.0%
 AllocateNodeId                                                             ,          15500,      0.2%
 BeforeInvoke                                                               ,          16446,      0.2%
@@ -35,14 +35,14 @@ RunNativeCode::get_amount_FungibleBucket                                   ,    
 RunNativeCode::get_amount_FungibleVault                                    ,          20068,      0.2%
 RunNativeCode::get_resource_address_FungibleBucket                         ,           5709,      0.1%
 RunNativeCode::get_vault_amounts_two_resource_pool                         ,          58187,      0.7%
-RunNativeCode::lock_fee                                                    ,         131708,      1.5%
+RunNativeCode::lock_fee                                                    ,         116624,      1.4%
 RunNativeCode::protected_deposit_two_resource_pool                         ,          41388,      0.5%
 RunNativeCode::protected_withdraw_two_resource_pool                        ,          44707,      0.5%
 RunNativeCode::put_FungibleVault                                           ,          42716,      0.5%
 RunNativeCode::take_FungibleVault                                          ,          53491,      0.6%
 RunNativeCode::take_advanced_FungibleVault                                 ,          53491,      0.6%
-RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,      0.7%
-RunNativeCode::withdraw                                                    ,          47564,      0.6%
+RunNativeCode::try_deposit_batch_or_abort                                  ,          78584,      0.9%
+RunNativeCode::withdraw                                                    ,          31552,      0.4%
 RunWasmCode::Radiswap_swap                                                 ,          99905,      1.2%
 TxBaseCost                                                                 ,          50000,      0.6%
 TxPayloadCost                                                              ,          14240,      0.2%
