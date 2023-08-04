@@ -6,6 +6,7 @@ members = [
     "arguments",
     "balance_changes",
     "bucket",
+    "cast",
     "component",
     "core",
     "clock",
