@@ -40,6 +40,17 @@ pub trait SubstateIOHandler<E> {
     fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E>;
 }
 
+pub trait SubstateReadHandler {
+    type Error;
+
+    fn on_read_substate(
+        &mut self,
+        heap: &Heap,
+        value: &IndexedScryptoValue,
+        location: SubstateDevice,
+    ) -> Result<(), Self::Error>;
+}
+
 pub struct SubstateIO<'g, S: SubstateStore> {
     pub heap: Heap,
     pub store: &'g mut S,
@@ -287,7 +298,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok((global_lock_handle, substate_value, substate_location))
     }
 
-    pub fn read_substate(&mut self, global_lock_handle: u32) -> &IndexedScryptoValue {
+    pub fn read_substate<H: SubstateReadHandler>(
+        &mut self,
+        global_lock_handle: u32,
+        handler: &mut H,
+    ) -> Result<&IndexedScryptoValue, H::Error> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get(global_lock_handle);
 
@@ -302,7 +317,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 .expect("Getting substate on handled substate should not incur a store access."),
         };
 
-        substate
+        handler.on_read_substate(&self.heap, substate, lock_data.location)?;
+
+        Ok(substate)
     }
 
     pub fn write_substate<E>(

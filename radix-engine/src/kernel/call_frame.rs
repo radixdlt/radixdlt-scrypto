@@ -1,5 +1,7 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
-use crate::kernel::substate_io::{SubstateDevice, SubstateIO, SubstateIOHandler};
+use crate::kernel::substate_io::{
+    SubstateDevice, SubstateIO, SubstateIOHandler, SubstateReadHandler,
+};
 use crate::track::interface::{
     CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackGetSubstateError,
 };
@@ -198,6 +200,19 @@ pub trait CallFrameEventHandler<C, L, E> {
     ) -> Result<(), E>;
 }
 
+pub trait CallFrameSubstateReadHandler<C, L> {
+    type Error;
+
+    fn on_read_substate(
+        &mut self,
+        current_frame: &CallFrame<C, L>,
+        heap: &Heap,
+        handle: OpenSubstateHandle,
+        value: &IndexedScryptoValue,
+        device: SubstateDevice,
+    ) -> Result<(), Self::Error>;
+}
+
 struct WrapperHandler<'g, C, L, E, H: CallFrameEventHandler<C, L, E>> {
     handler: &'g mut H,
     call_frame: &'g CallFrame<C, L>,
@@ -214,6 +229,28 @@ impl<'g, C, L, E, H: CallFrameEventHandler<C, L, E>> SubstateIOHandler<E>
     fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E> {
         self.handler
             .on_store_access(self.call_frame, heap, store_access)
+    }
+}
+
+struct WrapperHandler2<'g, C, L, H: CallFrameSubstateReadHandler<C, L>> {
+    handler: &'g mut H,
+    call_frame: &'g CallFrame<C, L>,
+    handle: OpenSubstateHandle,
+}
+
+impl<'g, C, L, H: CallFrameSubstateReadHandler<C, L>> SubstateReadHandler
+    for WrapperHandler2<'g, C, L, H>
+{
+    type Error = H::Error;
+
+    fn on_read_substate(
+        &mut self,
+        heap: &Heap,
+        value: &IndexedScryptoValue,
+        location: SubstateDevice,
+    ) -> Result<(), Self::Error> {
+        self.handler
+            .on_read_substate(self.call_frame, heap, self.handle, value, location)
     }
 }
 
@@ -696,19 +733,31 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok((lock_handle, substate_value.len()))
     }
 
-    pub fn read_substate<'f, S: SubstateStore>(
+    pub fn read_substate<'f, S: SubstateStore, H: CallFrameSubstateReadHandler<C, L>>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         lock_handle: OpenSubstateHandle,
-    ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
+        handler: &mut H,
+    ) -> Result<&'f IndexedScryptoValue, CallbackError<ReadSubstateError, H::Error>> {
         let OpenedSubstate {
             global_lock_handle, ..
         } = self
             .open_substates
             .get(&lock_handle)
-            .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
+            .ok_or(CallbackError::Error(ReadSubstateError::LockNotFound(
+                lock_handle,
+            )))?;
 
-        let substate = substate_io.read_substate(*global_lock_handle);
+        let mut handler = WrapperHandler2 {
+            call_frame: self,
+            handler,
+            handle: *global_lock_handle,
+        };
+
+        let substate = substate_io
+            .read_substate(*global_lock_handle, &mut handler)
+            .map_err(|e| CallbackError::CallbackError(e))?;
+
         Ok(substate)
     }
 

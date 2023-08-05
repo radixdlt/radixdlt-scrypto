@@ -3,6 +3,7 @@ use crate::errors::*;
 use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
+use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -52,9 +53,10 @@ pub enum OpenSubstateEvent<'a> {
 
 #[derive(Debug)]
 pub enum ReadSubstateEvent<'a> {
-    End {
+    OnRead {
         handle: OpenSubstateHandle,
         value: &'a IndexedScryptoValue,
+        device: SubstateDevice,
     },
 }
 
@@ -92,7 +94,7 @@ pub enum ScanKeysEvent<'a> {
 
 #[derive(Debug)]
 pub enum DrainSubstatesEvent<'a> {
-    Start,
+    Start(u32),
     StoreAccess(&'a StoreAccess),
 }
 
