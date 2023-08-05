@@ -137,12 +137,14 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn globalize_with_address_and_create_inner_object(
+    fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         _modules: BTreeMap<ObjectModuleId, NodeId>,
         _address_reservation: GlobalAddressReservation,
         _inner_object_blueprint: &str,
         _inner_object_fields: Vec<FieldValue>,
+        _event_name: String,
+        _event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
