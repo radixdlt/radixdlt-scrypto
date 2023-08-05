@@ -10,7 +10,7 @@ use crate::track::interface::{
     CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo,
 };
 use radix_engine_common::prelude::{NodeId, PartitionNumber};
-use radix_engine_common::types::SubstateKey;
+use radix_engine_common::types::{SortedU16Key, SubstateKey};
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
@@ -248,6 +248,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             }
             SubstateDevice::Store
         };
+
 
         let substate_value = Self::get_substate_internal(
             &mut self.heap,
@@ -552,7 +553,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: &mut F,
-    ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
+    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
         let substates = if self.heap.contains_node(node_id) {
             // This should never be triggered because sorted index store is
             // used by consensus manager only.

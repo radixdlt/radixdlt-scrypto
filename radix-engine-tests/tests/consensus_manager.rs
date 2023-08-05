@@ -2749,7 +2749,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
 
 fn extract_emitter_node_id(event_type_id: &EventTypeIdentifier) -> NodeId {
     match &event_type_id.0 {
-        Emitter::Function(node_id, _, _) => node_id,
+        Emitter::Function(blueprint_id) => blueprint_id.package_address.as_node_id(),
         Emitter::Method(node_id, _) => node_id,
     }
     .clone()

@@ -163,7 +163,10 @@ fn check_type_pointer(
     type_pointer: &TypePointer,
 ) -> CheckResult {
     match type_pointer {
-        TypePointer::Package(hash, index) => check_type(schemas_by_hash.get(hash).unwrap(), *index),
+        TypePointer::Package(type_identifier) => check_type(
+            schemas_by_hash.get(&type_identifier.0).unwrap(),
+            type_identifier.1,
+        ),
         TypePointer::Instance(_) => CheckResult::Safe,
     }
 }

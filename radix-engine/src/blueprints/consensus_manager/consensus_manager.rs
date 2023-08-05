@@ -207,12 +207,6 @@ pub enum ConsensusManagerError {
 
 pub const CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX: CollectionIndex = 0u8;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct EpochRegisteredValidatorByStakeEntry {
-    pub component_address: ComponentAddress,
-    pub validator: Validator,
-}
-
 pub struct ConsensusManagerBlueprint;
 
 impl ConsensusManagerBlueprint {
@@ -734,7 +728,7 @@ impl ConsensusManagerBlueprint {
         let num_validators_to_read_from_store =
             config.max_validators + (config.max_validators / 10) + 10;
 
-        let mut top_registered_validators: Vec<EpochRegisteredValidatorByStakeEntry> = api
+        let mut top_registered_validators: Vec<(ComponentAddress, Validator)> = api
             .actor_sorted_index_scan_typed(
                 OBJECT_HANDLE_SELF,
                 CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
@@ -744,19 +738,15 @@ impl ConsensusManagerBlueprint {
         // The index scan should already pull the validators out in stake DESC, but if multiple validators are on the same u16 stake,
         // then let's be even more accurate here. This sort is stable, so if two validators tie, then the resultant order will be
         // decided on sort key DESC.
-        top_registered_validators.sort_by(|validator_1, validator_2| {
-            validator_1
-                .validator
-                .stake
-                .cmp(&validator_2.validator.stake)
-                .reverse()
+        top_registered_validators.sort_by(|(_, validator_1), (_, validator_2)| {
+            validator_1.stake.cmp(&validator_2.stake).reverse()
         });
 
         let next_active_validator_set = ActiveValidatorSet {
             validators_by_stake_desc: top_registered_validators
                 .into_iter()
                 .take(config.max_validators as usize)
-                .map(|entry| (entry.component_address, entry.validator))
+                .map(|(component_address, validator)| (component_address, validator))
                 .collect(),
         };
 

@@ -639,10 +639,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -667,10 +664,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
