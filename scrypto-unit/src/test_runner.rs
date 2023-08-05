@@ -516,7 +516,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .database
             .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
                 address.as_node_id(),
-                METADATA_KV_STORE_PARTITION,
+                METADATA_BASE_PARTITION,
                 &SubstateKey::Map(key),
             )?
             .value;
@@ -1929,14 +1929,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     }
                 }
             }
-            EventTypeIdentifier(Emitter::Function(node_id, ..), schema_pointer) => (
-                PackageAddress::new_or_panic(node_id.0),
-                schema_pointer.clone(),
-            ),
+            EventTypeIdentifier(Emitter::Function(blueprint_id), schema_pointer) => {
+                (blueprint_id.package_address, schema_pointer.clone())
+            }
         };
 
         match schema_pointer {
-            TypePointer::Package(schema_hash, index) => {
+            TypePointer::Package(type_identifier) => {
                 let schema = self
                     .substate_db()
                     .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
@@ -1944,13 +1943,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                         MAIN_BASE_PARTITION
                             .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
                             .unwrap(),
-                        &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
+                        &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
                     )
                     .unwrap()
                     .value
                     .unwrap();
 
-                (index, schema)
+                (type_identifier.1, schema)
             }
             TypePointer::Instance(_instance_index) => {
                 todo!()

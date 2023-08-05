@@ -467,14 +467,13 @@ pub fn get_event_schema<S: SubstateDatabase>(
                 }
             }
         }
-        EventTypeIdentifier(Emitter::Function(node_id, ..), schema_pointer) => (
-            PackageAddress::new_or_panic(node_id.clone().into()),
-            *schema_pointer,
-        ),
+        EventTypeIdentifier(Emitter::Function(blueprint_id), schema_pointer) => {
+            (blueprint_id.package_address, *schema_pointer)
+        }
     };
 
     match schema_pointer {
-        TypePointer::Package(schema_hash, index) => {
+        TypePointer::Package(TypeIdentifier(schema_hash, index)) => {
             let schema = substate_db
                 .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
                     package_address.as_node_id(),

@@ -1,4 +1,3 @@
-use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_common::prelude::scrypto_decode;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::data::scrypto::model::*;
@@ -6,8 +5,7 @@ use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_store_interface::{
-    db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
-    interface::SubstateDatabase,
+    db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
 };
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
@@ -16,13 +14,14 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::FieldSubstate;
 use crate::track::TrackedSubstateValue;
 use crate::track::{TrackedNode, Write};
+use crate::transaction::SystemReader;
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
-    pub new_packages: Vec<PackageAddress>,
-    pub new_components: Vec<ComponentAddress>,
-    pub new_resources: Vec<ResourceAddress>,
-    pub new_vaults: Vec<InternalAddress>,
+    pub new_packages: IndexSet<PackageAddress>,
+    pub new_components: IndexSet<ComponentAddress>,
+    pub new_resources: IndexSet<ResourceAddress>,
+    pub new_vaults: IndexSet<InternalAddress>,
     pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
     /// This field accounts for Direct vault recalls (and the owner is not loaded during the transaction);
     pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
@@ -59,10 +58,10 @@ impl StateUpdateSummary {
             BalanceAccounter::new(substate_db, &updates).run();
 
         StateUpdateSummary {
-            new_packages: new_packages.into_iter().collect(),
-            new_components: new_components.into_iter().collect(),
-            new_resources: new_resources.into_iter().collect(),
-            new_vaults: new_vaults.into_iter().collect(),
+            new_packages,
+            new_components,
+            new_resources,
+            new_vaults,
             balance_changes,
             direct_vault_updates,
         }
@@ -103,14 +102,14 @@ impl BalanceChange {
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
 pub struct BalanceAccounter<'a, S: SubstateDatabase> {
-    substate_db: &'a S,
+    system_reader: SystemReader<'a, S>,
     tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
 impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
-            substate_db,
+            system_reader: SystemReader::new(substate_db, tracked),
             tracked,
         }
     }
@@ -263,6 +262,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         node_id: &NodeId,
     ) -> Option<(ResourceAddress, BalanceChange)> {
         let type_info: TypeInfoSubstate = self
+            .system_reader
             .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 node_id,
                 TYPE_INFO_FIELD_PARTITION,
@@ -283,6 +283,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         {
             // If there is an update to the liquid resource
             if let Some(substate) = self
+                .system_reader
                 .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                     node_id,
                     MAIN_BASE_PARTITION,
@@ -290,6 +291,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 )
             {
                 let old_substate = self
+                    .system_reader
                     .fetch_substate_from_database::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                         node_id,
                         MAIN_BASE_PARTITION,
@@ -351,47 +353,5 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             }
         }
         .map(|x| (resource_address, x))
-    }
-
-    fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        key: &SubstateKey,
-    ) -> Option<D> {
-        // FIXME: explore if we can avoid loading from substate database
-        // - Part of the engine still reads/writes substates without touching the TypeInfo;
-        // - Track does not store the initial value of substate.
-
-        self.fetch_substate_from_state_updates::<M, D>(node_id, partition_num, key)
-            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, partition_num, key))
-    }
-
-    fn fetch_substate_from_database<M: DatabaseKeyMapper, D: ScryptoDecode>(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        key: &SubstateKey,
-    ) -> Option<D> {
-        self.substate_db
-            .get_mapped::<M, D>(node_id, partition_num, key)
-    }
-
-    fn fetch_substate_from_state_updates<M: DatabaseKeyMapper, D: ScryptoDecode>(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        key: &SubstateKey,
-    ) -> Option<D> {
-        self.tracked
-            .get(node_id)
-            .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
-            .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
-            .and_then(|tracked_key| {
-                tracked_key
-                    .substate_value
-                    .get()
-                    .map(|e| e.as_typed().unwrap())
-            })
     }
 }
