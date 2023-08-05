@@ -249,7 +249,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             SubstateDevice::Store
         };
 
-
         let substate_value = Self::get_substate_internal(
             &mut self.heap,
             &mut self.store,
@@ -553,7 +552,10 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: &mut F,
-    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
+    ) -> Result<
+        Vec<(SortedU16Key, IndexedScryptoValue)>,
+        CallbackError<CallFrameScanSortedSubstatesError, E>,
+    > {
         let substates = if self.heap.contains_node(node_id) {
             // This should never be triggered because sorted index store is
             // used by consensus manager only.
