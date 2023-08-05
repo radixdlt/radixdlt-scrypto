@@ -17,8 +17,8 @@ use crate::system::system::KeyValueEntrySubstate;
 use crate::track::TrackedNode;
 
 pub enum SystemPartitionDescription {
-    Module(ObjectModuleId, PartitionOffset),
     TypeInfo,
+    Module(ObjectModuleId, PartitionOffset),
 }
 
 pub struct SystemReader<'a, S: SubstateDatabase> {
@@ -59,14 +59,11 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
     }
 
     pub fn get_type_info(&self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
-        let type_info: TypeInfoSubstate = self
-            .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                node_id,
-                TYPE_INFO_FIELD_PARTITION,
-                &TypeInfoField::TypeInfo.into(),
-            )?;
-
-        Some(type_info)
+        self.fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+            node_id,
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+        )
     }
 
     pub fn get_blueprint_definition(

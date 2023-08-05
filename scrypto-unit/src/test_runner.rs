@@ -263,7 +263,7 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_database: InMemorySubstateDatabase::standard(),
             trace: true,
             state_hashing: false,
-            collect_events: true,
+            collect_events: false,
         }
     }
 }
@@ -749,7 +749,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "free_xrd")
-            .try_deposit_or_abort(account_address, "free_xrd")
+            .try_deposit_or_abort(account_address, None, "free_xrd")
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -767,7 +767,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         let manifest = ManifestBuilder::new()
             .get_free_xrd_from_faucet()
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -864,7 +864,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_identity()
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -883,7 +883,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .get_free_xrd_from_faucet()
             .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
             .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let address = receipt.expect_commit(true).new_component_addresses()[0];
@@ -1283,7 +1283,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 Some(5.into()),
             )
-            .try_deposit_batch_or_abort(to)
+            .try_deposit_batch_or_abort(to, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1525,7 +1525,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 Some(entries),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1547,7 +1547,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 Some(amount),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1579,7 +1579,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 None,
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
@@ -1609,7 +1609,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 amount,
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1642,7 +1642,44 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 amount,
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit(true).new_resource_addresses()[0]
+    }
+
+    pub fn create_freely_mintable_and_burnable_non_fungible_resource<T, V>(
+        &mut self,
+        owner_role: OwnerRole,
+        id_type: NonFungibleIdType,
+        initial_supply: Option<T>,
+        account: ComponentAddress,
+    ) -> ResourceAddress
+    where
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
+        V: ManifestEncode + NonFungibleData,
+    {
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_non_fungible_resource(
+                owner_role,
+                id_type,
+                true,
+                NonFungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(deny_all);
+                    },
+                    burn_roles: burn_roles! {
+                        burner => rule!(allow_all);
+                        burner_updater => rule!(deny_all);
+                    },
+                    ..Default::default()
+                },
+                metadata!(),
+                initial_supply,
+            )
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1893,7 +1930,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         };
 
         match schema_pointer {
-            TypePointer::Package(schema_hash, index) => {
+            TypePointer::Package(type_identifier) => {
                 let schema = self
                     .substate_db()
                     .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
@@ -1901,13 +1938,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                         MAIN_BASE_PARTITION
                             .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
                             .unwrap(),
-                        &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
+                        &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
                     )
                     .unwrap()
                     .value
                     .unwrap();
 
-                (index, schema)
+                (type_identifier.1, schema)
             }
             TypePointer::Instance(_instance_index) => {
                 todo!()
@@ -2059,7 +2096,7 @@ pub fn single_function_package_definition(
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
-struct EmptyNonFungibleData {}
+pub struct EmptyNonFungibleData {}
 
 pub struct TransactionParams {
     pub start_epoch_inclusive: Epoch,

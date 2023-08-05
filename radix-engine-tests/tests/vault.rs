@@ -575,7 +575,7 @@ fn withdraw_with_over_specified_divisibility_should_result_in_error() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, dec!("5.55555"))
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -669,7 +669,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
             "take_ids",
             manifest_args!(btreeset![NonFungibleLocalId::integer(1)]),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 

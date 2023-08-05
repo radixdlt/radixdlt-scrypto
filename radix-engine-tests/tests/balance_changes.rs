@@ -163,7 +163,7 @@ fn test_balance_changes_when_recall() {
             InternalAddress::new_or_panic(vault_id.into()),
             Decimal::one(),
         )
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_batch_or_abort(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -206,7 +206,7 @@ fn test_balance_changes_when_transferring_non_fungibles() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, dec!("1.0"))
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_batch_or_abort(other_account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);

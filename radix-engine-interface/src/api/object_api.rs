@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPR
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
-use scrypto_schema::InstanceSchema;
+use scrypto_schema::InstanceSchemaInit;
 
 #[repr(u8)]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -120,7 +120,7 @@ pub trait ClientObjectApi<E> {
         &mut self,
         blueprint_ident: &str,
         features: Vec<&str>,
-        schema: Option<InstanceSchema>,
+        schema: Option<InstanceSchemaInit>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;
@@ -156,12 +156,14 @@ pub trait ClientObjectApi<E> {
         address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, E>;
 
-    fn globalize_with_address_and_create_inner_object(
+    fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<FieldValue>,
+        event_name: String,
+        event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), E>;
 
     /// Calls a method on an object

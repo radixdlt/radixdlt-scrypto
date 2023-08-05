@@ -35,7 +35,7 @@ fn resolve_typed_event_key_from_event_type_identifier(
     event_type_identifier: &EventTypeIdentifier,
 ) -> Result<TypedNativeEventKey, TypedNativeEventError> {
     let local_type_index = match event_type_identifier.1 {
-        TypePointer::Package(_, x) => x,
+        TypePointer::Package(type_identifier) => type_identifier.1,
         TypePointer::Instance(..) => panic!("An event can not be generic"),
     };
 

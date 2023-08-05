@@ -73,7 +73,7 @@ mod multi_threaded_test {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .try_deposit_batch_or_abort(account1)
+            .try_deposit_batch_or_abort(account1, None)
             .build();
         for nonce in 0..10 {
             execute_and_commit_transaction(
@@ -93,7 +93,7 @@ mod multi_threaded_test {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .withdraw_from_account(account1, XRD, dec!("0.000001"))
-            .try_deposit_batch_or_abort(account2)
+            .try_deposit_batch_or_abort(account2, None)
             .build();
 
         // Spawning threads that will attempt to withdraw some XRD amount from account1 and deposit to

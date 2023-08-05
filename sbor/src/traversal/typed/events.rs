@@ -1,3 +1,4 @@
+use crate::rust::fmt;
 use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
@@ -22,10 +23,6 @@ impl<'t, 's, 'de, E: CustomExtension> TypedLocatedTraversalEvent<'t, 's, 'de, E>
                 .zip(self.location.typed_ancestor_path.iter().cloned())
                 .collect(),
             current_value_info: self.event.current_value_info(),
-            error: match &self.event {
-                TypedTraversalEvent::Error(error) => Some(error.clone()),
-                _ => None,
-            },
         }
     }
 
@@ -216,4 +213,92 @@ pub enum TypeMismatchError<E: CustomExtension> {
         type_index: LocalTypeIndex,
         variant: u8,
     },
+}
+
+impl<E: CustomExtension> fmt::Display for TypedTraversalError<E> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TypedTraversalError::ValueMismatchWithType(TypeMismatchError::MismatchingType {
+                expected_type_kind,
+                actual_value_kind,
+                ..
+            }) => {
+                write!(
+                    f,
+                    "{{ expected_type: {:?}, found: {:?} }}",
+                    expected_type_kind, actual_value_kind
+                )
+            }
+            TypedTraversalError::ValueMismatchWithType(
+                TypeMismatchError::MismatchingChildElementType {
+                    expected_type_kind,
+                    actual_value_kind,
+                    ..
+                },
+            ) => {
+                write!(
+                    f,
+                    "{{ expected_child_type: {:?}, found: {:?} }}",
+                    expected_type_kind, actual_value_kind
+                )
+            }
+            TypedTraversalError::ValueMismatchWithType(
+                TypeMismatchError::MismatchingChildKeyType {
+                    expected_type_kind,
+                    actual_value_kind,
+                    ..
+                },
+            ) => {
+                write!(
+                    f,
+                    "{{ expected_key_type: {:?}, found: {:?} }}",
+                    expected_type_kind, actual_value_kind
+                )
+            }
+            TypedTraversalError::ValueMismatchWithType(
+                TypeMismatchError::MismatchingChildValueType {
+                    expected_type_kind,
+                    actual_value_kind,
+                    ..
+                },
+            ) => {
+                write!(
+                    f,
+                    "{{ expected_value_type: {:?}, found: {:?} }}",
+                    expected_type_kind, actual_value_kind
+                )
+            }
+            TypedTraversalError::ValueMismatchWithType(
+                TypeMismatchError::MismatchingTupleLength {
+                    expected, actual, ..
+                },
+            ) => {
+                write!(
+                    f,
+                    "{{ expected_field_count: {:?}, found: {:?} }}",
+                    expected, actual
+                )
+            }
+            TypedTraversalError::ValueMismatchWithType(
+                TypeMismatchError::MismatchingEnumVariantLength {
+                    expected, actual, ..
+                },
+            ) => {
+                write!(
+                    f,
+                    "{{ expected_field_count: {:?}, found: {:?} }}",
+                    expected, actual
+                )
+            }
+            TypedTraversalError::ValueMismatchWithType(TypeMismatchError::UnknownEnumVariant {
+                variant,
+                ..
+            }) => {
+                write!(f, "{{ unknown_variant_id: {:?} }}", variant)
+            }
+            TypedTraversalError::TypeIndexNotFound(_) | TypedTraversalError::DecodeError(_) => {
+                write!(f, "{:?}", self)
+            }
+        }
+    }
 }

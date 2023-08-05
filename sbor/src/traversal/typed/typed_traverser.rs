@@ -493,16 +493,16 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
 
     fn get_type_index(&self, location: &Location<E::CustomTraversal>) -> LocalTypeIndex {
         match location.ancestor_path.last() {
-            Some(container_child) => {
-                let current_child_index = container_child.next_child_index - 1;
-                match container_child.container_header {
+            Some(container_state) => {
+                let child_index = container_state.current_child_index.expect("Callers should ensure `current_child_index.is_some()`");
+                match container_state.container_header {
                     ContainerHeader::Tuple(_)
                     | ContainerHeader::EnumVariant(_)
                     | ContainerHeader::Array(_) =>  {
-                        self.container_stack.last().unwrap().get_child_type_for_element(current_child_index)
+                        self.container_stack.last().unwrap().get_child_type_for_element(child_index)
                     }
                     ContainerHeader::Map(_) =>  {
-                        if current_child_index % 2 == 0 {
+                        if child_index % 2 == 0 {
                             self.container_stack.last().unwrap().get_child_type_for_map_key()
                         } else {
                             self.container_stack.last().unwrap().get_child_type_for_map_value()

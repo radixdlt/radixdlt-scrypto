@@ -212,27 +212,6 @@ fn test_default_invoke_payload_size_limit() {
     })
 }
 
-// FIXME: THIS CAUSES OVERFLOW. INVESTIGATE AND FIX IT!
-#[test]
-#[ignore]
-fn reproduce_crash() {
-    // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_function(
-            package_address,
-            "SborOverflow",
-            "write_large_value",
-            manifest_args!(),
-        )
-        .build();
-    test_runner.execute_manifest(manifest, vec![]);
-}
-
 #[test]
 fn verify_log_size_limit() {
     let mut test_runner = TestRunnerBuilder::new().build();

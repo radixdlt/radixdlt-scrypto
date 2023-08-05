@@ -6,7 +6,7 @@ use crate::system::system_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
 };
 use crate::track::StateUpdates;
-use crate::transaction::SchemaPointers;
+use crate::transaction::SystemStructure;
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::AddressDisplayContext;
@@ -72,7 +72,7 @@ pub struct CommitResult {
     pub fee_summary: FeeSummary,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
-    pub schema_pointers: SchemaPointers,
+    pub system_structure: SystemStructure,
     /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
     /// Mainly for transaction preview.
     pub execution_trace: TransactionExecutionTrace,
@@ -87,7 +87,7 @@ impl CommitResult {
             fee_summary: Default::default(),
             application_events: Default::default(),
             application_logs: Default::default(),
-            schema_pointers: Default::default(),
+            system_structure: Default::default(),
             execution_trace: Default::default(),
         }
     }

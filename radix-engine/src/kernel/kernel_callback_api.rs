@@ -52,9 +52,10 @@ pub enum OpenSubstateEvent<'a> {
 
 #[derive(Debug)]
 pub enum ReadSubstateEvent<'a> {
-    End {
+    OnRead {
         handle: LockHandle,
         value: &'a IndexedScryptoValue,
+        read_from_heap: bool,
     },
 }
 
@@ -97,7 +98,7 @@ pub enum ScanKeysEvent<'a> {
 
 #[derive(Debug)]
 pub enum DrainSubstatesEvent<'a> {
-    Start,
+    Start(u32),
     StoreAccess(&'a StoreAccess),
 }
 

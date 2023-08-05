@@ -351,7 +351,7 @@ where
                         // Finalize track
                         let (tracked_nodes, deleted_partitions) = track.finalize();
 
-                        let schema_pointers = SchemaPointers::new(
+                        let system_structure = SystemStructure::resolve(
                             self.substate_db,
                             &tracked_nodes,
                             &application_events,
@@ -374,7 +374,7 @@ where
                             fee_summary,
                             application_events,
                             application_logs,
-                            schema_pointers,
+                            system_structure,
                             execution_trace,
                         })
                     }

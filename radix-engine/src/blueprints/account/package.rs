@@ -47,7 +47,7 @@ impl AccountNativePackage {
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
                 value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<ResourceDepositRule>(),
+                    aggregator.add_child_type_and_descendents::<ResourcePreference>(),
                 ),
                 can_own: false,
             },
@@ -277,30 +277,50 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
+            ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: TypeRef::Static(
                     aggregator
-                        .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleInput>(),
+                        .add_child_type_and_descendents::<AccountSetDefaultDepositRuleInput>(),
                 ),
                 output: TypeRef::Static(
                     aggregator
-                        .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleOutput>(),
+                        .add_child_type_and_descendents::<AccountSetDefaultDepositRuleOutput>(),
                 ),
-                export: ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
+                export: ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             },
         );
 
         functions.insert(
-            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT.to_string(),
+            ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
-                input: TypeRef::Static(aggregator
-                    .add_child_type_and_descendents::<AccountConfigureResourceDepositRuleInput>()),
-                output: TypeRef::Static(aggregator
-                    .add_child_type_and_descendents::<AccountConfigureResourceDepositRuleOutput>()),
-                export: ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT.to_string(),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountSetResourcePreferenceInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountSetResourcePreferenceOutput>(),
+                ),
+                export: ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveResourcePreferenceInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveResourcePreferenceOutput>(),
+                ),
+                export: ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT.to_string(),
             },
         );
 
@@ -361,70 +381,6 @@ impl AccountNativePackage {
                         .add_child_type_and_descendents::<AccountTryDepositBatchOrAbortOutput>(),
                 ),
                 export: ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<AccountTryAuthorizedDepositOrRefundInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<AccountTryAuthorizedDepositOrRefundOutput>(),
-                ),
-                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrRefundInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrRefundOutput>(),
-                ),
-                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositOrAbortInput>(
-                        ),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositOrAbortOutput>(
-                        ),
-                ),
-                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrAbortInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrAbortOutput>(),
-                ),
-                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
             },
         );
 
@@ -497,8 +453,9 @@ impl AccountNativePackage {
                         methods {
                             ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
 
-                            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
-                            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT => [OWNER_ROLE];
+                            ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT => [OWNER_ROLE];
                             ACCOUNT_WITHDRAW_IDENT => [OWNER_ROLE];
                             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
                             ACCOUNT_LOCK_FEE_IDENT => [OWNER_ROLE];
@@ -518,10 +475,6 @@ impl AccountNativePackage {
                             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodAccessibility::Public;
                             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodAccessibility::Public;
                             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodAccessibility::Public;
-                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT => MethodAccessibility::Public;
-                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodAccessibility::Public;
-                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT => MethodAccessibility::Public;
-                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodAccessibility::Public;
                         }
                     )),
                 },
@@ -608,87 +561,67 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => {
-                let input: AccountTryDepositOrRefundInput = input.as_typed().map_err(|e| {
+                let AccountTryDepositOrRefundInput {
+                    bucket,
+                    authorized_depositor_badge,
+                } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::try_deposit_or_refund(input.bucket, api)?;
+                let rtn = match authorized_depositor_badge {
+                    Some(badge) => {
+                        AccountBlueprint::try_authorized_deposit_or_refund(bucket, badge, api)?
+                    }
+                    None => AccountBlueprint::try_deposit_or_refund(bucket, api)?,
+                };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
-                let input: AccountTryDepositBatchOrRefundInput = input.as_typed().map_err(|e| {
+                let AccountTryDepositBatchOrRefundInput {
+                    buckets,
+                    authorized_depositor_badge,
+                } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::try_deposit_batch_or_refund(input.buckets, api)?;
+                let rtn = match authorized_depositor_badge {
+                    Some(badge) => AccountBlueprint::try_authorized_deposit_batch_or_refund(
+                        buckets, badge, api,
+                    )?,
+                    None => AccountBlueprint::try_deposit_batch_or_refund(buckets, api)?,
+                };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => {
-                let input: AccountTryDepositOrAbortInput = input.as_typed().map_err(|e| {
+                let AccountTryDepositOrAbortInput {
+                    bucket,
+                    authorized_depositor_badge,
+                } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::try_deposit_or_abort(input.bucket, api)?;
+                let rtn = match authorized_depositor_badge {
+                    Some(badge) => {
+                        AccountBlueprint::try_authorized_deposit_or_abort(bucket, badge, api)?
+                    }
+                    None => AccountBlueprint::try_deposit_or_abort(bucket, api)?,
+                };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => {
-                let input: AccountTryDepositBatchOrAbortInput = input.as_typed().map_err(|e| {
+                let AccountTryDepositBatchOrAbortInput {
+                    buckets,
+                    authorized_depositor_badge,
+                } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::try_deposit_batch_or_abort(input.buckets, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT => {
-                let input: AccountTryAuthorizedDepositOrRefundInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                    })?;
-
-                let rtn = AccountBlueprint::try_authorized_deposit_or_refund(
-                    input.bucket,
-                    input.badge,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT => {
-                let input: AccountTryAuthorizedDepositBatchOrRefundInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                    })?;
-
-                let rtn = AccountBlueprint::try_authorized_deposit_batch_or_refund(
-                    input.buckets,
-                    input.badge,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT => {
-                let input: AccountTryAuthorizedDepositOrAbortInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                    })?;
-
-                let rtn = AccountBlueprint::try_authorized_deposit_or_abort(
-                    input.bucket,
-                    input.badge,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT => {
-                let input: AccountTryAuthorizedDepositBatchOrAbortInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                    })?;
-
-                let rtn = AccountBlueprint::try_authorized_deposit_batch_or_abort(
-                    input.buckets,
-                    input.badge,
-                    api,
-                )?;
+                let rtn = match authorized_depositor_badge {
+                    Some(badge) => AccountBlueprint::try_authorized_deposit_batch_or_abort(
+                        buckets, badge, api,
+                    )?,
+                    None => AccountBlueprint::try_deposit_batch_or_abort(buckets, api)?,
+                };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {
@@ -774,30 +707,34 @@ impl AccountNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => {
-                let AccountChangeDefaultDepositRuleInput {
-                    default_deposit_rule,
+            ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT => {
+                let AccountSetDefaultDepositRuleInput { default } =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = AccountBlueprint::set_default_deposit_rule(default, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT => {
+                let AccountSetResourcePreferenceInput {
+                    resource_address,
+                    resource_preference,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::change_account_default_deposit_rule(
-                    default_deposit_rule,
+                let rtn = AccountBlueprint::set_resource_preference(
+                    resource_address,
+                    resource_preference,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => {
-                let AccountConfigureResourceDepositRuleInput {
-                    resource_address,
-                    resource_deposit_configuration,
-                } = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = AccountBlueprint::configure_resource_deposit_rule(
-                    resource_address,
-                    resource_deposit_configuration,
-                    api,
-                )?;
+            ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT => {
+                let AccountRemoveResourcePreferenceInput { resource_address } =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = AccountBlueprint::remove_resource_preference(resource_address, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_ADD_AUTHORIZED_DEPOSITOR => {

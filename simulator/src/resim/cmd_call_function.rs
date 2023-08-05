@@ -69,7 +69,7 @@ impl CallFunction {
                 self.arguments.clone(),
                 Some(default_account),
             )?
-            .try_deposit_batch_or_refund(default_account)
+            .try_deposit_batch_or_refund(default_account, None)
             .build();
         handle_manifest(
             manifest,
@@ -111,7 +111,7 @@ impl CallFunction {
             })?;
 
         let (schema, index) = match function_schema.input {
-            TypePointer::Package(hash, index) => {
+            TypePointer::Package(TypeIdentifier(hash, index)) => {
                 let schema = export_schema(package_address, hash)?;
                 (schema, index)
             }

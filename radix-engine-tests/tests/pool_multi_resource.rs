@@ -821,7 +821,7 @@ impl<const N: usize> TestEnvironment<N> {
                 MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -843,7 +843,7 @@ impl<const N: usize> TestEnvironment<N> {
                     },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -886,7 +886,7 @@ impl<const N: usize> TestEnvironment<N> {
                     withdraw_strategy,
                 },
             )
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }

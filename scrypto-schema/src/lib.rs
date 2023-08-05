@@ -6,22 +6,26 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 use bitflags::bitflags;
-use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
-use radix_engine_common::prelude::replace_self_package_address;
-use radix_engine_common::types::PackageAddress;
-use radix_engine_common::{ManifestSbor, ScryptoSbor};
-use sbor::rust::prelude::*;
+use radix_engine_common::prelude::*;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreSchema {
+    pub schema: ScryptoSchema,
+    pub key: TypeIdentifier,
+    pub value: TypeIdentifier,
+    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct KeyValueStoreSchemaInit {
     pub schema: ScryptoSchema,
     pub key: LocalTypeIndex,
     pub value: LocalTypeIndex,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
-impl KeyValueStoreSchema {
+impl KeyValueStoreSchemaInit {
     pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
@@ -37,6 +41,18 @@ impl KeyValueStoreSchema {
 
     pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
         replace_self_package_address(&mut self.schema, package_address);
+    }
+}
+
+impl From<KeyValueStoreSchemaInit> for KeyValueStoreSchema {
+    fn from(schema: KeyValueStoreSchemaInit) -> Self {
+        let schema_hash = schema.schema.generate_schema_hash();
+        KeyValueStoreSchema {
+            schema: schema.schema,
+            key: TypeIdentifier(schema_hash, schema.key),
+            value: TypeIdentifier(schema_hash, schema.value),
+            can_own: schema.can_own,
+        }
     }
 }
 
@@ -240,7 +256,33 @@ pub enum Receiver {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InstanceSchemaInit {
+    pub schema: ScryptoSchema,
+    pub instance_type_lookup: Vec<LocalTypeIndex>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceSchema {
     pub schema: ScryptoSchema,
-    pub type_index: Vec<LocalTypeIndex>,
+    pub instance_type_lookup: Vec<TypeIdentifier>,
+}
+
+impl From<InstanceSchemaInit> for InstanceSchema {
+    fn from(
+        InstanceSchemaInit {
+            schema,
+            instance_type_lookup,
+        }: InstanceSchemaInit,
+    ) -> Self {
+        let schema_hash = schema.generate_schema_hash();
+        let instance_type_lookup = instance_type_lookup
+            .into_iter()
+            .map(|t| TypeIdentifier(schema_hash, t))
+            .collect();
+
+        Self {
+            schema,
+            instance_type_lookup,
+        }
+    }
 }
