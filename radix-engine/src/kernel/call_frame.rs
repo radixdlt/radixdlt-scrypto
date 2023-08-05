@@ -2,9 +2,7 @@ use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
     SubstateDevice, SubstateIO, SubstateIOHandler, SubstateReadHandler,
 };
-use crate::track::interface::{
-    CallbackError, NodeSubstates, StoreAccess, SubstateStore,
-};
+use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, OpenSubstateHandle, SubstateKey};
@@ -1097,7 +1095,10 @@ impl<C, L: Clone> CallFrame<C, L> {
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: &mut F,
-    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
+    ) -> Result<
+        Vec<(SortedU16Key, IndexedScryptoValue)>,
+        CallbackError<CallFrameScanSortedSubstatesError, E>,
+    > {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(
