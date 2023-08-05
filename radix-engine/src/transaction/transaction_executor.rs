@@ -348,6 +348,13 @@ where
 
                         // Finalize track
                         let (tracked_nodes, deleted_partitions) = track.finalize();
+
+                        let system_structure = SystemStructure::resolve(
+                            self.substate_db,
+                            &tracked_nodes,
+                            &application_events,
+                        );
+
                         let state_update_summary =
                             StateUpdateSummary::new(self.substate_db, &tracked_nodes);
                         let state_updates = to_state_updates::<SpreadPrefixKeyMapper>(
@@ -365,6 +372,7 @@ where
                             fee_summary,
                             application_events,
                             application_logs,
+                            system_structure,
                             execution_trace,
                         })
                     }

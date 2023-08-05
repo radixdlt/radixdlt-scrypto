@@ -6,6 +6,7 @@ use crate::system::system_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
 };
 use crate::track::StateUpdates;
+use crate::transaction::SystemStructure;
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::AddressDisplayContext;
@@ -71,6 +72,7 @@ pub struct CommitResult {
     pub fee_summary: FeeSummary,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
+    pub system_structure: SystemStructure,
     /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
     /// Mainly for transaction preview.
     pub execution_trace: TransactionExecutionTrace,
@@ -85,6 +87,7 @@ impl CommitResult {
             fee_summary: Default::default(),
             application_events: Default::default(),
             application_logs: Default::default(),
+            system_structure: Default::default(),
             execution_trace: Default::default(),
         }
     }
@@ -92,38 +95,42 @@ impl CommitResult {
     pub fn next_epoch(&self) -> Option<EpochChangeEvent> {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
-            if let EventTypeIdentifier(
-                Emitter::Function(node_id, ObjectModuleId::Main, ..)
-                | Emitter::Method(node_id, ObjectModuleId::Main),
-                ..,
-            ) = event_type_id
-            {
-                if node_id == CONSENSUS_MANAGER_PACKAGE.as_node_id()
-                    || node_id.entity_type() == Some(EntityType::GlobalConsensusManager)
+            let is_consensus_manager = match &event_type_id.0 {
+                Emitter::Method(node_id, ObjectModuleId::Main)
+                    if node_id.entity_type() == Some(EntityType::GlobalConsensusManager) =>
                 {
-                    if let Ok(epoch_change_event) = scrypto_decode::<EpochChangeEvent>(&event_data)
-                    {
-                        return Some(epoch_change_event);
-                    }
+                    true
+                }
+                Emitter::Function(blueprint_id)
+                    if blueprint_id.package_address.eq(&CONSENSUS_MANAGER_PACKAGE) =>
+                {
+                    true
+                }
+                _ => false,
+            };
+
+            if is_consensus_manager {
+                if let Ok(epoch_change_event) = scrypto_decode::<EpochChangeEvent>(&event_data) {
+                    return Some(epoch_change_event);
                 }
             }
         }
         None
     }
 
-    pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
+    pub fn new_package_addresses(&self) -> &IndexSet<PackageAddress> {
         &self.state_update_summary.new_packages
     }
 
-    pub fn new_component_addresses(&self) -> &Vec<ComponentAddress> {
+    pub fn new_component_addresses(&self) -> &IndexSet<ComponentAddress> {
         &self.state_update_summary.new_components
     }
 
-    pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
+    pub fn new_resource_addresses(&self) -> &IndexSet<ResourceAddress> {
         &self.state_update_summary.new_resources
     }
 
-    pub fn new_vault_addresses(&self) -> &Vec<InternalAddress> {
+    pub fn new_vault_addresses(&self) -> &IndexSet<InternalAddress> {
         &self.state_update_summary.new_vaults
     }
 

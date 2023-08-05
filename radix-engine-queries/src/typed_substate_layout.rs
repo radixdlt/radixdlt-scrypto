@@ -185,7 +185,7 @@ pub fn to_typed_substate_key(
                 TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
             ))
         }
-        METADATA_KV_STORE_PARTITION => {
+        METADATA_BASE_PARTITION => {
             TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(
                 scrypto_decode(
                     substate_key
@@ -498,7 +498,7 @@ pub enum TypedMainModuleSubstateValue {
     NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
     NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
     ConsensusManagerField(TypedConsensusManagerFieldValue),
-    ConsensusManagerRegisteredValidatorsByStakeIndexEntry(EpochRegisteredValidatorByStakeEntry),
+    ConsensusManagerRegisteredValidatorsByStakeIndexEntry(Validator),
     Validator(TypedValidatorFieldValue),
     AccessController(TypedAccessControllerFieldValue),
     Account(TypedAccountFieldValue),

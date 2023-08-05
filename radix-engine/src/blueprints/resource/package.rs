@@ -19,12 +19,9 @@ use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema, Generic,
 };
 use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintIndexSchema,
-    FunctionSchemaInit,
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit,
 };
-use radix_engine_interface::schema::{
-    BlueprintKeyValueStoreSchema, BlueprintStateSchemaInit, TypeRef,
-};
+use radix_engine_interface::schema::{BlueprintKeyValueSchema, BlueprintStateSchemaInit, TypeRef};
 use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
 
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";
@@ -426,7 +423,7 @@ impl ResourceNativePackage {
 
             let mut collections = Vec::new();
             collections.push(BlueprintCollectionSchema::KeyValueStore(
-                BlueprintKeyValueStoreSchema {
+                BlueprintKeyValueSchema {
                     key: TypeRef::Static(
                         aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
                     ),
@@ -998,7 +995,13 @@ impl ResourceNativePackage {
             ));
 
             let mut collections = Vec::new();
-            collections.push(BlueprintCollectionSchema::Index(BlueprintIndexSchema {}));
+            collections.push(BlueprintCollectionSchema::Index(BlueprintKeyValueSchema {
+                key: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
+                ),
+                value: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
+                can_own: false,
+            }));
 
             let mut functions = BTreeMap::new();
             functions.insert(

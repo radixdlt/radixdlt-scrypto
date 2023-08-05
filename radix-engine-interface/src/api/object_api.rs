@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPR
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
-use scrypto_schema::InstanceSchema;
+use scrypto_schema::InstanceSchemaInit;
 
 #[repr(u8)]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -50,7 +50,7 @@ impl ObjectModuleId {
 
     pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
-            ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,
+            ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
             ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
             ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
             ObjectModuleId::Main => MAIN_BASE_PARTITION,
@@ -120,7 +120,7 @@ pub trait ClientObjectApi<E> {
         &mut self,
         blueprint_ident: &str,
         features: Vec<&str>,
-        schema: Option<InstanceSchema>,
+        schema: Option<InstanceSchemaInit>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;

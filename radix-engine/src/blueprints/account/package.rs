@@ -14,7 +14,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
-    BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
+    BlueprintKeyValueSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 
@@ -33,7 +33,7 @@ impl AccountNativePackage {
 
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
@@ -42,7 +42,7 @@ impl AccountNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
@@ -53,7 +53,7 @@ impl AccountNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ResourceOrNonFungible>(),
                 ),

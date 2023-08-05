@@ -443,7 +443,6 @@ impl ValidatorBlueprint {
                 Some(UpdateSecondaryIndex::Create {
                     index_key: new_index_key.clone(),
                     stake: new_stake_amount,
-                    primary: validator_address,
                     key: validator.key,
                 })
             } else {
@@ -965,7 +964,6 @@ impl ValidatorBlueprint {
         match update {
             UpdateSecondaryIndex::Create {
                 index_key,
-                primary: address,
                 key,
                 stake,
             } => {
@@ -973,15 +971,12 @@ impl ValidatorBlueprint {
                     OBJECT_HANDLE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
-                    EpochRegisteredValidatorByStakeEntry {
-                        component_address: address,
-                        validator: Validator { key, stake },
-                    },
+                    Validator { key, stake },
                 )?;
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
-                let (address, mut validator) = api
-                    .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
+                let mut validator = api
+                    .actor_sorted_index_remove_typed::<Validator>(
                         OBJECT_HANDLE_OUTER_OBJECT,
                         CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
@@ -992,10 +987,7 @@ impl ValidatorBlueprint {
                     OBJECT_HANDLE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
-                    EpochRegisteredValidatorByStakeEntry {
-                        component_address: address,
-                        validator,
-                    },
+                    validator,
                 )?;
             }
             UpdateSecondaryIndex::UpdateStake {
@@ -1003,8 +995,8 @@ impl ValidatorBlueprint {
                 new_index_key,
                 new_stake_amount,
             } => {
-                let (address, mut validator) = api
-                    .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
+                let mut validator = api
+                    .actor_sorted_index_remove_typed::<Validator>(
                         OBJECT_HANDLE_OUTER_OBJECT,
                         CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
@@ -1015,10 +1007,7 @@ impl ValidatorBlueprint {
                     OBJECT_HANDLE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     new_index_key,
-                    EpochRegisteredValidatorByStakeEntry {
-                        component_address: address,
-                        validator,
-                    },
+                    validator,
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
