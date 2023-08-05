@@ -35,7 +35,7 @@ fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(account, ACCOUNT_SECURIFY_IDENT, AccountSecurifyInput {})
-        .try_deposit_batch_or_refund(storing_account)
+        .try_deposit_batch_or_refund(storing_account, None)
         .build();
     let initial_proofs = if use_key {
         vec![NonFungibleGlobalId::from_public_key(&key)]
@@ -87,7 +87,7 @@ where
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 500, XRD, 1)
-        .try_deposit_batch_or_refund(other_account)
+        .try_deposit_batch_or_refund(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -121,7 +121,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 500, resource_address, 1)
-        .try_deposit_batch_or_refund(other_account)
+        .try_deposit_batch_or_refund(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -150,7 +150,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 500u32)
         .withdraw_from_account(other_account, XRD, 1)
-        .try_deposit_batch_or_refund(account)
+        .try_deposit_batch_or_refund(account, None)
         .build();
 
     // Act
@@ -198,7 +198,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 500u32, XRD, 1)
         .take_all_from_worktop(XRD, "xrd")
-        .try_deposit_or_abort(account, "xrd")
+        .try_deposit_or_abort(account, None, "xrd")
         .build();
 
     // Act
@@ -278,7 +278,7 @@ fn securified_account_is_owned_by_correct_owner_badge() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(account, ACCOUNT_SECURIFY_IDENT, AccountSecurifyInput {})
-        .try_deposit_batch_or_refund(account)
+        .try_deposit_batch_or_refund(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);

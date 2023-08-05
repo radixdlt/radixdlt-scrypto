@@ -20,7 +20,7 @@ fn test_auth_rule(
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, 1)
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_batch_or_abort(other_account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, AuthAddresses::signer_set(signer_public_keys));
@@ -231,7 +231,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
         .pop_from_auth_zone("second_proof")
         .drop_proof("second_proof")
         .return_to_worktop("free_xrd")
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_batch_or_abort(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -258,7 +258,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
         .pop_from_auth_zone("proof2")
         .drop_proof("proof2")
         .return_to_worktop("free_xrd")
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_batch_or_abort(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -285,7 +285,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
         .pop_from_auth_zone("proof2")
         .drop_proof("proof2")
         .return_to_worktop("bucket")
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_batch_or_abort(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -311,7 +311,7 @@ fn can_update_updatable_owner_role_account() {
         .pop_from_auth_zone("proof2")
         .drop_proof("proof2")
         .return_to_worktop("bucket")
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

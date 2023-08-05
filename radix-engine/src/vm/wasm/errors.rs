@@ -22,6 +22,8 @@ pub enum PrepareError {
     InvalidMemory(InvalidMemory),
     /// Invalid table section
     InvalidTable(InvalidTable),
+    /// Invalid export symbol name
+    InvalidExportName(String),
     /// Too many targets in the `br_table` instruction
     TooManyTargetsInBrTable,
     /// Too many functions

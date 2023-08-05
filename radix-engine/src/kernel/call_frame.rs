@@ -1,6 +1,10 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
-use crate::kernel::substate_io::{SubstateDevice, SubstateIO, SubstateIOHandler};
-use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore};
+use crate::kernel::substate_io::{
+    SubstateDevice, SubstateIO, SubstateIOHandler, SubstateReadHandler,
+};
+use crate::track::interface::{
+    CallbackError, NodeSubstates, StoreAccess, SubstateStore,
+};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, OpenSubstateHandle, SubstateKey};
@@ -196,6 +200,19 @@ pub trait CallFrameEventHandler<C, L, E> {
     ) -> Result<(), E>;
 }
 
+pub trait CallFrameSubstateReadHandler<C, L> {
+    type Error;
+
+    fn on_read_substate(
+        &mut self,
+        current_frame: &CallFrame<C, L>,
+        heap: &Heap,
+        handle: OpenSubstateHandle,
+        value: &IndexedScryptoValue,
+        device: SubstateDevice,
+    ) -> Result<(), Self::Error>;
+}
+
 struct WrapperHandler<'g, C, L, E, H: CallFrameEventHandler<C, L, E>> {
     handler: &'g mut H,
     call_frame: &'g CallFrame<C, L>,
@@ -212,6 +229,28 @@ impl<'g, C, L, E, H: CallFrameEventHandler<C, L, E>> SubstateIOHandler<E>
     fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E> {
         self.handler
             .on_store_access(self.call_frame, heap, store_access)
+    }
+}
+
+struct WrapperHandler2<'g, C, L, H: CallFrameSubstateReadHandler<C, L>> {
+    handler: &'g mut H,
+    call_frame: &'g CallFrame<C, L>,
+    handle: OpenSubstateHandle,
+}
+
+impl<'g, C, L, H: CallFrameSubstateReadHandler<C, L>> SubstateReadHandler
+    for WrapperHandler2<'g, C, L, H>
+{
+    type Error = H::Error;
+
+    fn on_read_substate(
+        &mut self,
+        heap: &Heap,
+        value: &IndexedScryptoValue,
+        location: SubstateDevice,
+    ) -> Result<(), Self::Error> {
+        self.handler
+            .on_read_substate(self.call_frame, heap, self.handle, value, location)
     }
 }
 
@@ -261,6 +300,7 @@ pub enum CreateNodeError {
     ProcessSubstateError(ProcessSubstateError),
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
+    ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
 /// Represents an error when dropping a node.
@@ -308,6 +348,7 @@ pub enum OpenSubstateError {
     NodeNotVisible(NodeId),
     SubstateFault,
     InvalidDefaultValue,
+    ProcessSubstateKeyError(ProcessSubstateKeyError),
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
     LockUnmodifiedBaseOnHeapNode,
     LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
@@ -341,29 +382,42 @@ pub enum CloseSubstateError {
 pub enum CallFrameSetSubstateError {
     NodeNotVisible(NodeId),
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
+    ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameRemoveSubstateError {
     NodeNotVisible(NodeId),
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
+    ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameScanKeysError {
     NodeNotVisible(NodeId),
+    OwnedNodeNotSupported(NodeId),
+    ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameDrainSubstatesError {
     NodeNotVisible(NodeId),
     OwnedNodeNotSupported(NodeId),
+    ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameScanSortedSubstatesError {
     NodeNotVisible(NodeId),
     OwnedNodeNotSupported(NodeId),
+    ProcessSubstateKeyError(ProcessSubstateKeyError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ProcessSubstateKeyError {
+    DecodeError(DecodeError),
+    NodeNotVisible(NodeId),
+    OwnedNodeNotSupported,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -495,9 +549,13 @@ impl<C, L: Clone> CallFrame<C, L> {
         };
 
         for (_partition_number, module) in &node_substates {
-            for (_substate_key, substate_value) in module {
+            for (substate_key, substate_value) in module {
                 self.process_substate(substate_value, destination_device, None)
                     .map_err(|e| CallbackError::Error(CreateNodeError::ProcessSubstateError(e)))?;
+
+                self.process_input_substate_key(substate_key).map_err(|e| {
+                    CallbackError::Error(CreateNodeError::ProcessSubstateKeyError(e))
+                })?;
             }
         }
 
@@ -601,6 +659,52 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
+    fn process_input_substate_key(
+        &self,
+        substate_key: &SubstateKey,
+    ) -> Result<(), ProcessSubstateKeyError> {
+        match substate_key {
+            SubstateKey::Sorted((_, map_key)) | SubstateKey::Map(map_key) => {
+                let key_value = IndexedScryptoValue::from_slice(map_key)
+                    .map_err(|e| ProcessSubstateKeyError::DecodeError(e))?;
+                if !key_value.owned_nodes().is_empty() {
+                    return Err(ProcessSubstateKeyError::OwnedNodeNotSupported);
+                }
+
+                for reference in key_value.references() {
+                    if !self.get_node_visibility(reference).is_global() {
+                        return Err(ProcessSubstateKeyError::NodeNotVisible(reference.clone()));
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    fn process_output_substate_key(
+        &mut self,
+        substate_key: &SubstateKey,
+    ) -> Result<(), ProcessSubstateKeyError> {
+        match substate_key {
+            SubstateKey::Sorted((_, map_key)) | SubstateKey::Map(map_key) => {
+                let key = IndexedScryptoValue::from_slice(map_key).unwrap();
+                for reference in key.references() {
+                    if reference.is_global() {
+                        self.stable_references
+                            .insert(reference.clone(), StableReferenceType::Global);
+                    } else {
+                        return Err(ProcessSubstateKeyError::OwnedNodeNotSupported);
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
     pub fn open_substate<
         S: SubstateStore,
         E,
@@ -625,6 +729,9 @@ impl<C, L: Clone> CallFrame<C, L> {
                 node_id.clone(),
             )));
         };
+
+        self.process_input_substate_key(substate_key)
+            .map_err(|e| CallbackError::Error(OpenSubstateError::ProcessSubstateKeyError(e)))?;
 
         let (global_lock_handle, substate_value, substate_location) = substate_io.open_substate(
             node_id,
@@ -694,19 +801,31 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok((lock_handle, substate_value.len()))
     }
 
-    pub fn read_substate<'f, S: SubstateStore>(
+    pub fn read_substate<'f, S: SubstateStore, H: CallFrameSubstateReadHandler<C, L>>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         lock_handle: OpenSubstateHandle,
-    ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
+        handler: &mut H,
+    ) -> Result<&'f IndexedScryptoValue, CallbackError<ReadSubstateError, H::Error>> {
         let OpenedSubstate {
             global_lock_handle, ..
         } = self
             .open_substates
             .get(&lock_handle)
-            .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
+            .ok_or(CallbackError::Error(ReadSubstateError::LockNotFound(
+                lock_handle,
+            )))?;
 
-        let substate = substate_io.read_substate(*global_lock_handle);
+        let mut handler = WrapperHandler2 {
+            call_frame: self,
+            handler,
+            handle: *global_lock_handle,
+        };
+
+        let substate = substate_io
+            .read_substate(*global_lock_handle, &mut handler)
+            .map_err(|e| CallbackError::CallbackError(e))?;
+
         Ok(substate)
     }
 
@@ -852,6 +971,10 @@ impl<C, L: Clone> CallFrame<C, L> {
             ));
         }
 
+        self.process_input_substate_key(&key).map_err(|e| {
+            CallbackError::Error(CallFrameSetSubstateError::ProcessSubstateKeyError(e))
+        })?;
+
         substate_io.set_substate(node_id, partition_num, key, value, on_store_access)?;
 
         Ok(())
@@ -871,6 +994,10 @@ impl<C, L: Clone> CallFrame<C, L> {
                 CallFrameRemoveSubstateError::NodeNotVisible(node_id.clone()),
             ));
         }
+
+        self.process_input_substate_key(&key).map_err(|e| {
+            CallbackError::Error(CallFrameRemoveSubstateError::ProcessSubstateKeyError(e))
+        })?;
 
         let removed = substate_io.remove_substate(node_id, partition_num, key, on_store_access)?;
 
@@ -900,6 +1027,12 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         let keys =
             substate_io.scan_keys::<K, E, F>(node_id, partition_num, limit, on_store_access)?;
+
+        for key in &keys {
+            self.process_output_substate_key(key).map_err(|e| {
+                CallbackError::Error(CallFrameScanKeysError::ProcessSubstateKeyError(e))
+            })?;
+        }
 
         Ok(keys)
     }
@@ -935,7 +1068,11 @@ impl<C, L: Clone> CallFrame<C, L> {
             on_store_access,
         )?;
 
-        for (_key, substate) in &substates {
+        for (key, substate) in &substates {
+            self.process_output_substate_key(key).map_err(|e| {
+                CallbackError::Error(CallFrameDrainSubstatesError::ProcessSubstateKeyError(e))
+            })?;
+
             for reference in substate.references() {
                 if reference.is_global() {
                     self.stable_references
@@ -960,7 +1097,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: &mut F,
-    ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
+    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(
@@ -970,7 +1107,14 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         let substates = substate_io.scan_sorted(node_id, partition_num, count, on_store_access)?;
 
-        for substate in &substates {
+        for (key, substate) in &substates {
+            self.process_output_substate_key(&SubstateKey::Sorted(key.clone()))
+                .map_err(|e| {
+                    CallbackError::Error(
+                        CallFrameScanSortedSubstatesError::ProcessSubstateKeyError(e),
+                    )
+                })?;
+
             for reference in substate.references() {
                 if reference.is_global() {
                     self.stable_references

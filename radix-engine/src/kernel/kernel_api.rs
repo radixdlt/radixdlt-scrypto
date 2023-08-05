@@ -88,7 +88,7 @@ pub trait KernelSubstateApi<L> {
     fn kernel_read_substate(
         &mut self,
         lock_handle: OpenSubstateHandle,
-    ) -> Result<IndexedScryptoValue, RuntimeError>;
+    ) -> Result<&IndexedScryptoValue, RuntimeError>;
 
     /// Writes a value to the substate locked by the given lock handle
     fn kernel_write_substate(
@@ -129,7 +129,7 @@ pub trait KernelSubstateApi<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
+    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, RuntimeError>;
 
     fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,

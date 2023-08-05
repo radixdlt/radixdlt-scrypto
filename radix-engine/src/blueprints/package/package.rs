@@ -21,10 +21,11 @@ pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
-    BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
+    BlueprintKeyValueSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, TypeRef,
 };
 use sbor::LocalTypeIndex;
+use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
@@ -41,7 +42,7 @@ pub use radix_engine_interface::blueprints::package::{
     PackageInstrumentedCodeSubstate, PackageOriginalCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
 
-pub const PACKAGE_ROYALTY_FEATURE: &str = "package-royalty";
+pub const PACKAGE_ROYALTY_FEATURE: &str = "package_royalty";
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -60,6 +61,7 @@ pub enum PackageError {
     InvalidEventSchema,
     InvalidSystemFunction,
     InvalidTypeParent,
+    InvalidName(String),
     MissingOuterBlueprint,
     WasmUnsupported(String),
     InvalidGenericId(u8),
@@ -412,6 +414,63 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
     Ok(())
 }
 
+fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
+    // All names should follow Rust Identifier specification
+    let condition = |name| {
+        syn::parse_str::<Ident>(name).map_err(|_| PackageError::InvalidName(name.to_string()))
+    };
+
+    for (bp_name, bp_init) in definition.blueprints.iter() {
+        condition(bp_name)?;
+
+        for (name, _) in bp_init.schema.events.event_schema.iter() {
+            condition(name)?;
+        }
+
+        for (name, _) in bp_init.schema.functions.functions.iter() {
+            condition(name)?;
+        }
+
+        for (_, name) in bp_init.schema.hooks.hooks.iter() {
+            condition(name)?;
+        }
+
+        for name in bp_init.feature_set.iter() {
+            condition(name)?;
+        }
+
+        if let PackageRoyaltyConfig::Enabled(list) = &bp_init.royalty_config {
+            for (name, _) in list.iter() {
+                condition(name)?;
+            }
+        }
+
+        if let FunctionAuth::AccessRules(list) = &bp_init.auth_config.function_auth {
+            for (name, _) in list.iter() {
+                condition(name)?;
+            }
+        }
+
+        if let MethodAuthTemplate::StaticRoles(static_roles) = &bp_init.auth_config.method_auth {
+            if let RoleSpecification::Normal(list) = &static_roles.roles {
+                for (role_key, _) in list.iter() {
+                    condition(&role_key.key)?;
+                }
+            }
+            for (key, accessibility) in static_roles.methods.iter() {
+                condition(&key.ident)?;
+                if let MethodAccessibility::RoleProtected(role_list) = accessibility {
+                    for role_key in &role_list.list {
+                        condition(&role_key.key)?;
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
 const SECURIFY_OWNER_ROLE: &str = "securify_owner";
 
 struct SecurifiedPackage;
@@ -606,7 +665,7 @@ pub fn create_bootstrap_package_partitions(
                 IndexedScryptoValue::from_typed(&value),
             );
         }
-        partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
+        partitions.insert(METADATA_BASE_PARTITION, metadata_partition);
     }
 
     {
@@ -795,7 +854,7 @@ impl PackageNativePackage {
 
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
@@ -806,7 +865,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
@@ -817,7 +876,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
@@ -826,7 +885,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
@@ -837,7 +896,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
@@ -846,7 +905,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageVmTypeSubstate>(),
@@ -855,7 +914,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageOriginalCodeSubstate>(),
@@ -864,7 +923,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageInstrumentedCodeSubstate>(),
@@ -1054,6 +1113,8 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_auth(&definition)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_names(&definition)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Validate VM specific properties
         let instrumented_code =
@@ -1087,7 +1148,7 @@ impl PackageNativePackage {
                 auth_configs.insert(blueprint.clone(), definition_init.auth_config);
 
                 let blueprint_schema = definition_init.schema.schema.clone();
-                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
+                let schema_hash = blueprint_schema.generate_schema_hash();
                 schemas.insert(schema_hash, blueprint_schema);
 
                 let mut functions = BTreeMap::new();
@@ -1117,8 +1178,8 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: function_schema_init.receiver,
-                            input: TypePointer::Package(schema_hash, input),
-                            output: TypePointer::Package(schema_hash, output),
+                            input: TypePointer::Package(TypeIdentifier(schema_hash, input)),
+                            output: TypePointer::Package(TypeIdentifier(schema_hash, output)),
                         },
                     );
                     let export = PackageExport {
@@ -1131,7 +1192,9 @@ impl PackageNativePackage {
                 let mut events = BTreeMap::new();
                 for (key, type_ref) in definition_init.schema.events.event_schema {
                     let index = match type_ref {
-                        TypeRef::Static(index) => TypePointer::Package(schema_hash, index),
+                        TypeRef::Static(index) => {
+                            TypePointer::Package(TypeIdentifier(schema_hash, index))
+                        }
                         TypeRef::Generic(index) => TypePointer::Instance(index),
                     };
                     events.insert(key, index);

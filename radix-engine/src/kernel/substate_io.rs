@@ -10,7 +10,7 @@ use crate::track::interface::{
     CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo,
 };
 use radix_engine_common::prelude::{NodeId, PartitionNumber};
-use radix_engine_common::types::SubstateKey;
+use radix_engine_common::types::{SortedU16Key, SubstateKey};
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
@@ -38,6 +38,17 @@ pub trait SubstateIOHandler<E> {
     fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
 
     fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E>;
+}
+
+pub trait SubstateReadHandler {
+    type Error;
+
+    fn on_read_substate(
+        &mut self,
+        heap: &Heap,
+        value: &IndexedScryptoValue,
+        location: SubstateDevice,
+    ) -> Result<(), Self::Error>;
 }
 
 pub struct SubstateIO<'g, S: SubstateStore> {
@@ -238,6 +249,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             SubstateDevice::Store
         };
 
+
         let substate_value = Self::get_substate_internal(
             &mut self.heap,
             &mut self.store,
@@ -320,13 +332,18 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok((global_lock_handle, substate_value, substate_location))
     }
 
-    pub fn read_substate(&mut self, global_lock_handle: u32) -> &IndexedScryptoValue {
+    pub fn read_substate<H: SubstateReadHandler>(
+        &mut self,
+        global_lock_handle: u32,
+        handler: &mut H,
+    ) -> Result<&IndexedScryptoValue, H::Error> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get(global_lock_handle);
 
         // If substate is current virtualized, just return it
         if let Some(virtualized) = &lock_data.virtualized {
-            return virtualized;
+            // TODO: Should we callback for costing in this case?
+            return Ok(virtualized);
         }
 
         let substate = match lock_data.location {
@@ -341,7 +358,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 .unwrap(),
         };
 
-        substate
+        handler.on_read_substate(&self.heap, substate, lock_data.location)?;
+
+        Ok(substate)
     }
 
     pub fn write_substate<E>(
@@ -577,7 +596,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: &mut F,
-    ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
+    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
         let substates = if self.heap.contains_node(node_id) {
             // This should never be triggered because sorted index store is
             // used by consensus manager only.

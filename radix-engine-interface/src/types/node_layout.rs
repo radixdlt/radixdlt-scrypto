@@ -7,7 +7,9 @@ use sbor::rust::prelude::*;
 //=========================================================================
 
 pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
-pub const METADATA_KV_STORE_PARTITION: PartitionNumber = PartitionNumber(1u8);
+
+pub const METADATA_BASE_PARTITION: PartitionNumber = PartitionNumber(1u8);
+pub const METADATA_KV_STORE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 
 pub const ROYALTY_BASE_PARTITION: PartitionNumber = PartitionNumber(2u8);
 pub const ROYALTY_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
@@ -238,7 +240,7 @@ pub enum AuthZoneField {
 pub enum AccountPartitionOffset {
     Account,
     AccountVaultsByResourceAddress,
-    AccountResourceDepositRuleByAddress,
+    AccountResourcePreferenceByAddress,
     /// Map<ResourceOrNonFungible, ()> - A map of a [`ResourceOrNonFungible`] to Unit that stores
     /// the badges of allowed depositors into accounts
     AccountAllowedDepositorsByResourceOrNonFungible,

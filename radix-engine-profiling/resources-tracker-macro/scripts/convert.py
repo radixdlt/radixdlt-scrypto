@@ -27,8 +27,8 @@ if not os.path.exists(os.path.dirname(input_folder)):
 api_functions_ins = {}
 api_functions_info_data = {}
 
-# Define functions which should be used for linear regression based on size
-kernel_invoke_divide_by_size = [ "publish_native", "publish_wasm_advanced" ]
+# Define functions which should be used for linear regression based on defined parameter (size, count, etc.)
+kernel_invoke_divide_by_param = [ "publish_native", "publish_wasm_advanced", "kernel_drain_substates" ]
 
 use_max_instead_of_median = ["kernel_create_wasm_instance"] # due to use of caching
 
@@ -56,7 +56,7 @@ for path in file_list:
         continue
 
     # Look for all "kernel..." calls
-    root = tree.xpath(".//*[starts-with(local-name(), 'kernel')]")
+    root = tree.xpath(".//*[starts-with(local-name(), 'kernel') or starts-with(local-name(), 'before_invoke') or starts-with(local-name(), 'after_invoke')]")
     for child in root:
 
         key = child.tag
@@ -88,18 +88,13 @@ for path in file_list:
                 native = "native"
             pkg = resolve[0].attrib["arg1"].replace('"','')
             fcn_name = resolve[0].attrib["export_name"]
-            if fcn_name in kernel_invoke_divide_by_size:
+            if fcn_name in kernel_invoke_divide_by_param:
                 key += "::" + native + "::" + pkg + "::" + fcn_name + "::" + invoke_size
             else:
                 key += "::" + native + "::" + pkg + "::" + fcn_name
 
         # handle kernel_create_node
         param = child.xpath("./self::kernel_create_node/@arg0")
-        if param:
-            key += "::" + param[0]
-
-        # handle kernel_drop_node
-        param = child.xpath("./self::kernel_drop_node/@arg0")
         if param:
             key += "::" + param[0]
 
@@ -114,6 +109,61 @@ for path in file_list:
             module_id = param[0].attrib["module_id"]
             node_id = param[0].attrib["arg0"]
             key += "::" + module_id + "::" + node_id
+
+        # handle kernel_allocate_node_id - not using this rule
+        # param = child.xpath("./self::kernel_allocate_node_id/@entity_type")
+        # if param:
+        #     key += "::" + param[0]
+
+        # handle kernel_drain_substates
+        param = child.xpath("./self::kernel_drain_substates/@limit")
+        if param:
+            key += "::" + param[0]
+
+        # handle before_invoke
+#        param = child.xpath("./self::before_invoke/@arg0")
+#        if param:
+#            key += "::" + param[0]
+
+        # handle after_invoke
+        param = child.xpath("./self::after_invoke/@arg0")
+        if param:
+            key += "::" + param[0]
+
+        # handle kernel_open_substate_with_default
+        param = child.xpath("./self::kernel_open_substate_with_default/@arg0")
+        if param:
+            key += "::" + param[0]
+
+        # handle kernel_read_substate
+        resolve_heap_or_track = child.xpath("./self::kernel_read_substate/on_read_substate")
+        if resolve_heap_or_track:
+            read_from_heap = resolve_heap_or_track[0].attrib["arg0"]
+            if read_from_heap == "true":
+                key += "::heap"
+            else:
+                key += "::store"
+
+        # handle kernel_scan_keys
+#        param = child.xpath("./self::kernel_scan_keys[@arg0 | @count]")
+#        if param:
+#            entity_type = param[0].attrib["arg0"]
+#            count = param[0].attrib["count"]
+#            key += "::" + entity_type + "::" + count
+
+        # handle kernel_scan_sorted_substates
+#        param = child.xpath("./self::kernel_scan_sorted_substates[@arg0 | @count]")
+#        if param:
+#            entity_type = param[0].attrib["arg0"]
+#            count = param[0].attrib["count"]
+#            key += "::" + entity_type + "::" + count
+
+        # handle kernel_set_substate
+#        param = child.xpath("./self::kernel_set_substate[@arg0 | @arg1]")
+#        if param:
+#            entity_type = param[0].attrib["arg0"]
+#            value_len = param[0].attrib["arg1"]
+#            key += "::" + entity_type + "::" + value_len
 
         # correcting parenthesis
         c1 = key.count('(')
@@ -177,11 +227,11 @@ for idx, item in enumerate(output_tab):
 
 # calculate linear approximation coefficients for selected functions and write to file
 f = open("/tmp/_out_linear_regression_coeff.txt", "w")
-for s in kernel_invoke_divide_by_size:
+for s in kernel_invoke_divide_by_param:
     values_size = []
     values_instructions = []
     for row in output_tab:
-        if row[1].find("::" + s + "::") != -1:
+        if row[1].find("::" + s + "::") != -1 or row[1].find(s + "::") == 0:
             # extracting size from 2nd table column
             last_token_idx = row[1].rfind("::") + 2
             size = row[1][last_token_idx:]
@@ -194,10 +244,10 @@ for s in kernel_invoke_divide_by_size:
         r_sq = model.score(x, y)
         intercept = model.intercept_
         slope = model.coef_[0]
-        out_str = s + ": " + "instructions(size) = " + str(slope) + " * size + " + str(intercept) + "\n"
+        out_str = s + ": " + "instructions(param) = " + str(slope) + " * param + " + str(intercept) + "\n"
         f.write(out_str)
     else:
-        print("Linear regression size not found for '",s,"' function.")
+        print("Linear regression param not found for '",s,"' function.")
 f.close()
 
 

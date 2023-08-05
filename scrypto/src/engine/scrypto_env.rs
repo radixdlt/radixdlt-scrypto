@@ -22,7 +22,7 @@ use radix_engine_interface::types::{Level, NodeId, OpenSubstateHandle};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
+use scrypto_schema::{InstanceSchemaInit, KeyValueStoreSchema, KeyValueStoreSchemaInit};
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -100,7 +100,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         _blueprint_ident: &str,
         _features: Vec<&str>,
-        _schema: Option<InstanceSchema>,
+        _schema: Option<InstanceSchemaInit>,
         _fields: Vec<FieldValue>,
         _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, ClientApiError> {
@@ -137,12 +137,14 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn globalize_with_address_and_create_inner_object(
+    fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         _modules: BTreeMap<ObjectModuleId, NodeId>,
         _address_reservation: GlobalAddressReservation,
         _inner_object_blueprint: &str,
         _inner_object_fields: Vec<FieldValue>,
+        _event_name: String,
+        _event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
@@ -252,7 +254,7 @@ impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
 impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
     fn key_value_store_new(
         &mut self,
-        schema: KeyValueStoreSchema,
+        schema: KeyValueStoreSchemaInit,
     ) -> Result<NodeId, ClientApiError> {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { kv_store_new(schema.as_ptr(), schema.len()) });
