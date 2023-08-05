@@ -32,7 +32,7 @@ use radix_engine_interface::blueprints::resource::*;
 ///     .lock_fee_from_faucet()
 ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
 ///     .take_from_worktop(XRD, dec!(1), "xrd")
-///     .try_deposit_or_abort(to_account_address, "xrd")
+///     .try_deposit_or_abort(to_account_address, None, "xrd")
 ///     .build();
 /// ```
 ///
@@ -76,7 +76,7 @@ use radix_engine_interface::blueprints::resource::*;
 ///     let bucket_name = builder.generate_bucket_name("transfer");
 ///     builder = builder
 ///         .take_from_worktop(XRD, "0.001", &bucket_name)
-///         .try_deposit_or_abort(to_account_address, bucket_name);
+///         .try_deposit_or_abort(to_account_address, None, bucket_name);
 /// }
 /// let manifest = builder.build();
 /// ```
@@ -678,6 +678,26 @@ impl ManifestBuilder {
         };
 
         self.add_instruction(instruction)
+    }
+
+    pub fn update_non_fungible_data(
+        self,
+        resource_address: impl ResolvableResourceAddress,
+        id: NonFungibleLocalId,
+        field_name: impl Into<String>,
+        data: impl ManifestEncode,
+    ) -> Self {
+        let address = resource_address.resolve(&self.registrar);
+        let data = manifest_decode(&manifest_encode(&data).unwrap()).unwrap();
+        self.call_method(
+            address,
+            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
+            NonFungibleResourceManagerUpdateDataManifestInput {
+                id,
+                field_name: field_name.into(),
+                data,
+            },
+        )
     }
 
     pub fn create_identity_advanced(self, owner_role: OwnerRole) -> Self {
@@ -1715,6 +1735,7 @@ impl ManifestBuilder {
     pub fn try_deposit_or_abort(
         self,
         account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
@@ -1724,13 +1745,14 @@ impl ManifestBuilder {
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-            manifest_args!(bucket),
+            manifest_args!(bucket, authorized_depositor_badge),
         )
     }
 
     pub fn try_deposit_batch_or_abort(
         self,
         account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
 
@@ -1739,13 +1761,17 @@ impl ManifestBuilder {
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
+            manifest_args!(
+                ManifestExpression::EntireWorktop,
+                authorized_depositor_badge
+            ),
         )
     }
 
     pub fn try_deposit_or_refund(
         self,
         account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
@@ -1755,13 +1781,14 @@ impl ManifestBuilder {
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
-            manifest_args!(bucket),
+            manifest_args!(bucket, authorized_depositor_badge),
         )
     }
 
     pub fn try_deposit_batch_or_refund(
         self,
         account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
 
@@ -1770,7 +1797,10 @@ impl ManifestBuilder {
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
+            manifest_args!(
+                ManifestExpression::EntireWorktop,
+                authorized_depositor_badge
+            ),
         )
     }
 
@@ -1821,5 +1851,11 @@ impl ManifestBuilder {
         network_definition: &NetworkDefinition,
     ) -> Result<String, DecompileError> {
         decompile_with_known_naming(&self.instructions, network_definition, self.object_names())
+    }
+}
+
+impl Default for ManifestBuilder {
+    fn default() -> Self {
+        ManifestBuilder::new()
     }
 }

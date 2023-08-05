@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 
 [dependencies]
@@ -25,6 +25,7 @@ paste = { version = "1.0.13" }
 
 # WASM validation
 wasmparser = { version = "0.107.0", default-features = false }
+syn = { version = "2.0.28", default-features = false, features = ["parsing"] }
 
 # WASM instrumentation
 wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument", branch = "radix-master", default-features = false,  features = ["ignore_custom_section"]}

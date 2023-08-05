@@ -86,10 +86,12 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT,
-                AccountTryAuthorizedDepositOrRefundManifestInput {
+                ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+                AccountTryDepositOrRefundManifestInput {
                     bucket,
-                    badge: ResourceOrNonFungible::Resource(VALIDATOR_OWNER_BADGE),
+                    authorized_depositor_badge: Some(ResourceOrNonFungible::Resource(
+                        VALIDATOR_OWNER_BADGE,
+                    )),
                 },
             )
         })
@@ -132,8 +134,11 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT,
-                AccountTryAuthorizedDepositOrRefundManifestInput { bucket, badge },
+                ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+                AccountTryDepositOrRefundManifestInput {
+                    bucket,
+                    authorized_depositor_badge: Some(badge),
+                },
             )
         })
         .build();
@@ -176,8 +181,11 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT,
-                AccountTryAuthorizedDepositOrRefundManifestInput { bucket, badge },
+                ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+                AccountTryDepositOrRefundManifestInput {
+                    bucket,
+                    authorized_depositor_badge: Some(badge),
+                },
             )
         })
         .build();
@@ -219,10 +227,10 @@ fn authorized_depositor_can_be_removed_later() {
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT,
-                AccountTryAuthorizedDepositOrRefundManifestInput {
+                ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+                AccountTryDepositOrRefundManifestInput {
                     bucket,
-                    badge: badge.clone(),
+                    authorized_depositor_badge: Some(badge.clone()),
                 },
             )
         })
@@ -254,10 +262,10 @@ fn authorized_depositor_can_be_removed_later() {
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT,
-                AccountTryAuthorizedDepositOrRefundManifestInput {
+                ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+                AccountTryDepositOrRefundManifestInput {
                     bucket,
-                    badge: badge,
+                    authorized_depositor_badge: Some(badge),
                 },
             )
         })
@@ -299,10 +307,12 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT,
-                AccountTryAuthorizedDepositBatchOrRefundManifestInput {
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
+                AccountTryDepositBatchOrRefundManifestInput {
                     buckets: vec![bucket],
-                    badge: ResourceOrNonFungible::Resource(VALIDATOR_OWNER_BADGE),
+                    authorized_depositor_badge: Some(ResourceOrNonFungible::Resource(
+                        VALIDATOR_OWNER_BADGE,
+                    )),
                 },
             )
         })
@@ -345,10 +355,10 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT,
-                AccountTryAuthorizedDepositBatchOrRefundManifestInput {
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
+                AccountTryDepositBatchOrRefundManifestInput {
                     buckets: vec![bucket],
-                    badge,
+                    authorized_depositor_badge: Some(badge),
                 },
             )
         })
@@ -392,10 +402,10 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT,
-                AccountTryAuthorizedDepositBatchOrRefundManifestInput {
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
+                AccountTryDepositBatchOrRefundManifestInput {
                     buckets: vec![bucket],
-                    badge,
+                    authorized_depositor_badge: Some(badge),
                 },
             )
         })
@@ -437,10 +447,12 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT,
-                AccountTryAuthorizedDepositOrAbortManifestInput {
+                ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
+                AccountTryDepositOrAbortManifestInput {
                     bucket,
-                    badge: ResourceOrNonFungible::Resource(VALIDATOR_OWNER_BADGE),
+                    authorized_depositor_badge: Some(ResourceOrNonFungible::Resource(
+                        VALIDATOR_OWNER_BADGE,
+                    )),
                 },
             )
         })
@@ -483,8 +495,11 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT,
-                AccountTryAuthorizedDepositOrAbortManifestInput { bucket, badge },
+                ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
+                AccountTryDepositOrAbortManifestInput {
+                    bucket,
+                    authorized_depositor_badge: Some(badge),
+                },
             )
         })
         .build();
@@ -527,8 +542,11 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT,
-                AccountTryAuthorizedDepositOrAbortManifestInput { bucket, badge },
+                ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
+                AccountTryDepositOrAbortManifestInput {
+                    bucket,
+                    authorized_depositor_badge: Some(badge),
+                },
             )
         })
         .build();
@@ -569,10 +587,12 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                AccountTryAuthorizedDepositBatchOrAbortManifestInput {
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
+                AccountTryDepositBatchOrAbortManifestInput {
                     buckets: vec![bucket],
-                    badge: ResourceOrNonFungible::Resource(VALIDATOR_OWNER_BADGE),
+                    authorized_depositor_badge: Some(ResourceOrNonFungible::Resource(
+                        VALIDATOR_OWNER_BADGE,
+                    )),
                 },
             )
         })
@@ -615,10 +635,10 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                AccountTryAuthorizedDepositBatchOrAbortManifestInput {
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
+                AccountTryDepositBatchOrAbortManifestInput {
                     buckets: vec![bucket],
-                    badge,
+                    authorized_depositor_badge: Some(badge),
                 },
             )
         })
@@ -662,10 +682,10 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
-                ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                AccountTryAuthorizedDepositBatchOrAbortManifestInput {
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
+                AccountTryDepositBatchOrAbortManifestInput {
                     buckets: vec![bucket],
-                    badge,
+                    authorized_depositor_badge: Some(badge),
                 },
             )
         })

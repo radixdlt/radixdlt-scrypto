@@ -30,4 +30,4 @@ DROP_PROOF Proof("proof4");
 RETURN_TO_WORKTOP Bucket("xrd");
 
 # Clean up - deposit resources
-CALL_METHOD Address("${account}") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP");
+CALL_METHOD Address("${account}") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP") None;

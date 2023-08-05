@@ -138,7 +138,7 @@ impl ScenarioCore {
                 builder
                     .get_free_xrd_from_faucet()
                     .take_all_from_worktop(XRD, "free_xrd")
-                    .try_deposit_or_abort(to_account, "free_xrd")
+                    .try_deposit_or_abort(to_account, None, "free_xrd")
             },
             vec![],
         )

@@ -27,6 +27,11 @@ macro_rules! log {
 
 #[allow(unused_variables)] // for no_std
 impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModule {
+    #[cfg(feature = "resource_tracker")]
+    fn on_init<Y: KernelApi<SystemConfig<V>>>(_api: &mut Y) -> Result<(), RuntimeError> {
+        panic!("KernelTraceModule should be disabled for feature resource_tracker!")
+    }
+
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
@@ -157,12 +162,17 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModul
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
-            ReadSubstateEvent::End { handle, value } => {
+            ReadSubstateEvent::OnRead {
+                handle,
+                value,
+                read_from_heap,
+            } => {
                 log!(
                     api,
-                    "Reading substate: handle = {}, size = {}",
+                    "Reading substate: handle = {}, size = {}, read_from_heap = {}",
                     handle,
-                    value.len()
+                    value.len(),
+                    read_from_heap
                 );
             }
         }

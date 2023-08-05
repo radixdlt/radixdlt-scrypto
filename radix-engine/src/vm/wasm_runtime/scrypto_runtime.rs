@@ -5,7 +5,6 @@ use crate::vm::wasm::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, FieldValue};
-use radix_engine_interface::schema::KeyValueStoreSchema;
 use radix_engine_interface::types::ClientCostingEntry;
 use radix_engine_interface::types::Level;
 use sbor::rust::vec::Vec;
@@ -214,7 +213,7 @@ where
         &mut self,
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let schema = scrypto_decode::<KeyValueStoreSchema>(&schema)
+        let schema = scrypto_decode::<KeyValueStoreSchemaInit>(&schema)
             .map_err(WasmRuntimeError::InvalidKeyValueStoreSchema)?;
 
         let key_value_store_id = self.api.key_value_store_new(schema)?;

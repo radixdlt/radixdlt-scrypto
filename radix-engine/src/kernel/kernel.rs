@@ -9,7 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::{CallFrameEventHandler, CallFrameMessage};
+use crate::kernel::call_frame::{CallFrameEventHandler, CallFrameMessage, SubstateReadHandler};
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
@@ -210,7 +210,7 @@ pub struct Kernel<
 struct KernelHandler<
     'a,
     M: KernelCallbackObject,
-    F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+    F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
 > {
     callback: &'a mut M,
     prev_frame: Option<&'a CallFrame<M::CallFrameData, M::LockData>>,
@@ -219,7 +219,7 @@ struct KernelHandler<
 
 impl<
         M: KernelCallbackObject,
-        F: Fn(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+        F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
     > CallFrameEventHandler<M::CallFrameData, M::LockData, RuntimeError>
     for KernelHandler<'_, M, F>
 {
@@ -241,6 +241,38 @@ impl<
         };
 
         (self.on_store_access)(&mut read_only, store_access)
+    }
+}
+
+impl<
+        M: KernelCallbackObject,
+        F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+    > SubstateReadHandler<M::CallFrameData, M::LockData> for KernelHandler<'_, M, F>
+{
+    type Error = RuntimeError;
+    fn on_read_substate(
+        &mut self,
+        current_frame: &CallFrame<M::CallFrameData, M::LockData>,
+        heap: &Heap,
+        handle: LockHandle,
+        value: &IndexedScryptoValue,
+        is_from_heap: bool,
+    ) -> Result<(), Self::Error> {
+        let mut read_only = KernelReadOnly {
+            current_frame,
+            prev_frame: self.prev_frame,
+            heap,
+            callback: self.callback,
+        };
+
+        M::on_read_substate(
+            &mut read_only,
+            ReadSubstateEvent::OnRead {
+                handle,
+                value,
+                read_from_heap: is_from_heap,
+            },
+        )
     }
 }
 
@@ -594,7 +626,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=node_id.entity_type(), log=partition_num)]
+    #[trace_resources(log=node_id.entity_type())]
     fn kernel_open_substate_with_default(
         &mut self,
         node_id: &NodeId,
@@ -766,25 +798,29 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |_, _| {
+                // TODO: Clean this up
+                panic!("Should not call this");
+            },
+        };
+
         let value = self
             .current_frame
-            .read_substate(&self.heap, self.store, lock_handle)
-            .map_err(CallFrameError::ReadSubstateError)
-            .map_err(KernelError::CallFrameError)?;
-
-        let mut read_only = as_read_only!(self);
-        M::on_read_substate(
-            &mut read_only,
-            ReadSubstateEvent::End {
-                handle: lock_handle,
-                value,
-            },
-        )?;
+            .read_substate(&self.heap, self.store, lock_handle, &mut handler)
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::ReadSubstateError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
 
         Ok(value)
     }
 
-    #[trace_resources]
+    #[trace_resources(log=value.len())]
     fn kernel_write_substate(
         &mut self,
         lock_handle: LockHandle,
@@ -904,7 +940,7 @@ where
         Ok(keys)
     }
 
-    #[trace_resources]
+    #[trace_resources(log=limit)]
     fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
@@ -912,7 +948,7 @@ where
         limit: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.callback
-            .on_drain_substates(DrainSubstatesEvent::Start)?;
+            .on_drain_substates(DrainSubstatesEvent::Start(limit))?;
 
         let substates = self
             .current_frame
@@ -943,7 +979,7 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, RuntimeError> {
         self.callback
             .on_scan_sorted_substates(ScanSortedSubstatesEvent::Start)?;
 

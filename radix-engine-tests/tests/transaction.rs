@@ -23,7 +23,7 @@ fn test_manifest_with_non_existent_resource() {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .take_all_from_worktop(non_existent_resource, "non_existent")
-        .try_deposit_or_abort(account, "non_existent")
+        .try_deposit_or_abort(account, None, "non_existent")
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -53,13 +53,13 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .create_proof_from_auth_zone_of_all(XRD, "proof1")
         .push_to_auth_zone("proof1")
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .create_proof_from_auth_zone_of_all(XRD, "proof2")
         .push_to_auth_zone("proof2")
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .create_proof_from_auth_zone_of_all(XRD, "proof3")
         .push_to_auth_zone("proof3")
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -187,7 +187,7 @@ fn test_faucet_drain_attempt_should_fail() {
         .lock_standard_test_fee(account)
         .get_free_xrd_from_faucet()
         .get_free_xrd_from_faucet()
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

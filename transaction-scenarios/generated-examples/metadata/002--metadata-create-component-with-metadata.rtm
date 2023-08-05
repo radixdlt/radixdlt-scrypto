@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 ALLOCATE_GLOBAL_ADDRESS
-    Address("package_sim1p4ph2mq3uaxnup3yaguxtp3zx3kkz3rpgpny6578l66clvm4wf6hwr")
+    Address("package_sim1p40vmn9m4znm7cuw787wwaj0c6sevqj50s46ztyjpwnqrgc8xm6p3c")
     "MetadataTest"
     AddressReservation("metadata_component_address_reservation")
     NamedAddress("metadata_component_address")
@@ -14,7 +14,7 @@ CALL_METHOD
     "free"
 ;
 CALL_FUNCTION
-    Address("package_sim1p4ph2mq3uaxnup3yaguxtp3zx3kkz3rpgpny6578l66clvm4wf6hwr")
+    Address("package_sim1p40vmn9m4znm7cuw787wwaj0c6sevqj50s46ztyjpwnqrgc8xm6p3c")
     "MetadataTest"
     "new_with_address"
     AddressReservation("metadata_component_address_reservation")
@@ -301,4 +301,5 @@ CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "try_deposit_batch_or_abort"
     Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
 ;
