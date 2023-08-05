@@ -205,7 +205,7 @@ mod recursive_test {
     impl RecursiveTest {
         pub fn create_own_at_depth(depth: u32) {
             // Can be further optimized by pre-computation
-            let schema = scrypto_encode(&KeyValueStoreSchema::new::<u32, Own>(true)).unwrap();
+            let schema = scrypto_encode(&KeyValueStoreSchemaInit::new::<u32, Own>(true)).unwrap();
             let key_payload = scrypto_encode(&0u32).unwrap();
             let mut value_payload = scrypto_encode(&Own(NodeId([0u8; NodeId::LENGTH]))).unwrap();
 

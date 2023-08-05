@@ -1,7 +1,7 @@
 // In order to distinguish payloads, all of these should be distinct!
 // This is particularly important for payloads which will be signed (Transaction / ROLA)
 
-/// 0x5c for [5c]rypto - (91 in decimal)
+/// 0x5c for [5c]rypto - (92 in decimal)
 pub const SCRYPTO_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5c;
 
 /// 0x4d = M in ASCII for Manifest - (77 in decimal)

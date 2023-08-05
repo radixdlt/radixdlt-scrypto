@@ -113,7 +113,7 @@ impl ScenarioInstance for MetadataScenario {
                                     )
                                 ))),
                             )
-                            .try_deposit_batch_or_abort(user_account_1.address)
+                            .try_deposit_batch_or_abort(user_account_1.address, None)
                     },
                     vec![],
                 )
@@ -147,7 +147,7 @@ impl ScenarioInstance for MetadataScenario {
                         for (k, v) in create_metadata() {
                             builder = builder.set_metadata(address, k, v);
                         }
-                        builder.try_deposit_batch_or_abort(user_account_1.address)
+                        builder.try_deposit_batch_or_abort(user_account_1.address, None)
                     },
                     vec![],
                 )
@@ -182,7 +182,7 @@ impl ScenarioInstance for MetadataScenario {
                                 },
                                 Some(100_000_000_000u64.into()),
                             )
-                            .try_deposit_batch_or_abort(user_account_1.address)
+                            .try_deposit_batch_or_abort(user_account_1.address, None)
                     },
                     vec![],
                 )
@@ -223,7 +223,7 @@ impl ScenarioInstance for MetadataScenario {
                                 },
                                 Some(100_000_000_000u64.into()),
                             )
-                            .try_deposit_batch_or_abort(user_account_1.address)
+                            .try_deposit_batch_or_abort(user_account_1.address, None)
                     },
                     vec![],
                 )

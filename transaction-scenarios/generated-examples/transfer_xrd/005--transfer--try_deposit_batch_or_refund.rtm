@@ -13,4 +13,5 @@ CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "try_deposit_batch_or_refund"
     Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
 ;

@@ -12,7 +12,6 @@ use radix_engine_interface::api::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::schema::InstanceSchema;
 use radix_engine_interface::*;
 
 /// Represents an error when accessing a bucket.
@@ -224,9 +223,9 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_field_index,
         };
 
-        let instance_schema = InstanceSchema {
+        let instance_schema = InstanceSchemaInit {
             schema: non_fungible_schema.schema,
-            type_index: vec![non_fungible_schema.non_fungible],
+            instance_type_lookup: vec![non_fungible_schema.non_fungible],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
@@ -328,9 +327,9 @@ impl NonFungibleResourceManagerBlueprint {
             non_fungibles.insert(scrypto_encode(&id).unwrap(), kv_entry);
         }
 
-        let instance_schema = InstanceSchema {
+        let instance_schema = InstanceSchemaInit {
             schema: non_fungible_schema.schema,
-            type_index: vec![non_fungible_schema.non_fungible],
+            instance_type_lookup: vec![non_fungible_schema.non_fungible],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
@@ -413,9 +412,9 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_field_index,
         };
 
-        let instance_schema = InstanceSchema {
+        let instance_schema = InstanceSchemaInit {
             schema: non_fungible_schema.schema,
-            type_index: vec![non_fungible_schema.non_fungible],
+            instance_type_lookup: vec![non_fungible_schema.non_fungible],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();

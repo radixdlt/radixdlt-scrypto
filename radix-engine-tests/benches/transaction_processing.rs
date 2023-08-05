@@ -87,7 +87,7 @@ fn compiled_notarized_transaction() -> Vec<u8> {
                         .collect::<BTreeMap<NonFungibleLocalId, EmptyStruct>>(),
                 ),
             )
-            .try_deposit_batch_or_abort(component_address)
+            .try_deposit_batch_or_abort(component_address, None)
             .build()
     };
     let header = TransactionHeaderV1 {
