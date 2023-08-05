@@ -1,12 +1,12 @@
-Total Cost (XRD)                                                           ,     1.01264097,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.93005097,     91.8%
+Total Cost (XRD)                                                           ,     1.01259873,    100.0%
++ Execution Cost (XRD)                                                     ,     0.93000873,     91.8%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.08259,      8.2%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       93005097,    100.0%
+Total Cost Units Consumed                                                  ,       93000873,    100.0%
 AfterInvoke                                                                ,           2018,      0.0%
 AllocateNodeId                                                             ,           2184,      0.0%
-BeforeInvoke                                                               ,          16456,      0.0%
+BeforeInvoke                                                               ,          16462,      0.0%
 CloseSubstate                                                              ,          68985,      0.1%
 Commit::GlobalAccount                                                      ,         200012,      0.2%
 Commit::GlobalGenericComponent                                             ,         100018,      0.1%
@@ -18,19 +18,19 @@ DropNode                                                                   ,    
 EmitEvent                                                                  ,          32372,      0.0%
 LockFee                                                                    ,            500,      0.0%
 MoveModule                                                                 ,          36022,      0.0%
-OpenSubstate                                                               ,        3156931,      3.4%
+OpenSubstate                                                               ,        3156825,      3.4%
 OpenSubstate::GlobalAccount                                                ,           4769,      0.0%
 OpenSubstate::GlobalFungibleResourceManager                                ,           1452,      0.0%
 OpenSubstate::GlobalGenericComponent                                       ,           1892,      0.0%
 OpenSubstate::GlobalNonFungibleResourceManager                             ,          12258,      0.0%
-OpenSubstate::GlobalPackage                                                ,         773790,      0.8%
+OpenSubstate::GlobalPackage                                                ,         771668,      0.8%
 OpenSubstate::InternalFungibleVault                                        ,           4352,      0.0%
 OpenSubstate::InternalGenericComponent                                     ,          46420,      0.0%
 OpenSubstate::InternalKeyValueStore                                        ,            729,      0.0%
 OpenSubstate::InternalNonFungibleVault                                     ,         224752,      0.2%
 PrepareWasmCode                                                            ,         619310,      0.7%
 QueryActor                                                                 ,           2000,      0.0%
-ReadSubstate                                                               ,         949286,      1.0%
+ReadSubstate                                                               ,         947164,      1.0%
 RunNativeCode::Worktop_drain                                               ,          13505,      0.0%
 RunNativeCode::Worktop_drop                                                ,          15385,      0.0%
 RunNativeCode::Worktop_put                                                 ,          18262,      0.0%
@@ -45,6 +45,6 @@ RunNativeCode::try_deposit_batch_or_abort                                  ,    
 RunWasmCode::Faucet_lock_fee                                               ,          18320,      0.0%
 SetSubstate                                                                ,         100914,      0.1%
 TxBaseCost                                                                 ,          50000,      0.1%
-TxPayloadCost                                                              ,         287520,      0.3%
+TxPayloadCost                                                              ,         287640,      0.3%
 TxSignatureVerification                                                    ,              0,      0.0%
 WriteSubstate                                                              ,           6332,      0.0%

@@ -895,7 +895,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
                 metadata!(),
                 Some(100.into()),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
@@ -945,7 +945,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 )),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
@@ -991,7 +991,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 )),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])

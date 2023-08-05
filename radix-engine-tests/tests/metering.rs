@@ -242,7 +242,7 @@ fn run_basic_transfer(mode: Mode) {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
         .withdraw_from_account(account1, XRD, 100)
-        .try_deposit_batch_or_abort(account2)
+        .try_deposit_batch_or_abort(account2, None)
         .build();
 
     let (receipt, _) = execute_with_time_logging(
@@ -267,7 +267,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
         .withdraw_from_account(account1, XRD, 100)
-        .try_deposit_batch_or_abort(account2)
+        .try_deposit_batch_or_abort(account2, None)
         .build();
 
     let (receipt, _) = execute_with_time_logging(
@@ -311,7 +311,7 @@ fn run_radiswap(mode: Mode) {
                     "new",
                     manifest_args!(OwnerRole::None, btc, eth),
                 )
-                .try_deposit_batch_or_abort(account2)
+                .try_deposit_batch_or_abort(account2, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
@@ -336,7 +336,7 @@ fn run_radiswap(mode: Mode) {
                         manifest_args!(lookup.bucket("btc"), lookup.bucket("eth")),
                     )
                 })
-                .try_deposit_batch_or_abort(account2)
+                .try_deposit_batch_or_abort(account2, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
@@ -349,7 +349,7 @@ fn run_radiswap(mode: Mode) {
             ManifestBuilder::new()
                 .lock_fee(account2, 500)
                 .withdraw_from_account(account2, btc, btc_amount)
-                .try_deposit_batch_or_abort(account3)
+                .try_deposit_batch_or_abort(account3, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
@@ -367,7 +367,7 @@ fn run_radiswap(mode: Mode) {
                 let bucket = lookup.bucket("to_trade");
                 builder.call_method(component_address, "swap", manifest_args!(bucket))
             })
-            .try_deposit_batch_or_abort(account3)
+            .try_deposit_batch_or_abort(account3, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
@@ -414,7 +414,7 @@ fn run_flash_loan(mode: Mode) {
                         manifest_args!(lookup.bucket("bucket")),
                     )
                 })
-                .try_deposit_batch_or_abort(account2)
+                .try_deposit_batch_or_abort(account2, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
@@ -439,7 +439,7 @@ fn run_flash_loan(mode: Mode) {
                     manifest_args!(lookup.bucket("repayment"), lookup.bucket("promise")),
                 )
             })
-            .try_deposit_batch_or_abort(account3)
+            .try_deposit_batch_or_abort(account3, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
@@ -546,7 +546,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
                 metadata! {},
                 Some(entries),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let transaction = create_notarized_transaction(
             TransactionParams {
@@ -601,7 +601,7 @@ fn can_run_large_manifest() {
             .take_from_worktop(XRD, 1, &bucket)
             .return_to_worktop(bucket);
     }
-    let manifest = builder.try_deposit_batch_or_abort(account).build();
+    let manifest = builder.try_deposit_batch_or_abort(account, None).build();
 
     let (receipt, _) = execute_with_time_logging(
         &mut test_runner,
