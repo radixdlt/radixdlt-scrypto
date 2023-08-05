@@ -791,16 +791,8 @@ impl<const N: usize> TestEnvironment<N> {
             let commit_result = receipt.expect_commit_success();
 
             (
-                commit_result
-                    .new_component_addresses()
-                    .get(0)
-                    .unwrap()
-                    .clone(),
-                commit_result
-                    .new_resource_addresses()
-                    .get(0)
-                    .unwrap()
-                    .clone(),
+                commit_result.new_component_addresses()[0],
+                commit_result.new_resource_addresses()[0],
             )
         };
 
@@ -829,7 +821,7 @@ impl<const N: usize> TestEnvironment<N> {
                 MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -851,7 +843,7 @@ impl<const N: usize> TestEnvironment<N> {
                     },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -894,7 +886,7 @@ impl<const N: usize> TestEnvironment<N> {
                     withdraw_strategy,
                 },
             )
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }

@@ -950,16 +950,8 @@ impl TestEnvironment {
             let commit_result = receipt.expect_commit_success();
 
             (
-                commit_result
-                    .new_component_addresses()
-                    .get(0)
-                    .unwrap()
-                    .clone(),
-                commit_result
-                    .new_resource_addresses()
-                    .get(0)
-                    .unwrap()
-                    .clone(),
+                commit_result.new_component_addresses()[0],
+                commit_result.new_resource_addresses()[0],
             )
         };
 
@@ -1000,7 +992,7 @@ impl TestEnvironment {
                     },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -1021,7 +1013,7 @@ impl TestEnvironment {
                     TwoResourcePoolRedeemManifestInput { bucket },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -1065,7 +1057,7 @@ impl TestEnvironment {
                     withdraw_strategy,
                 },
             )
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }

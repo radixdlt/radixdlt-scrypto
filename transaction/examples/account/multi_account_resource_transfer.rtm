@@ -31,7 +31,8 @@ TAKE_FROM_WORKTOP
 CALL_METHOD
     Address("${account_a_component_address}")
     "try_deposit_or_abort"
-    Bucket("account_a_bucket");
+    Bucket("account_a_bucket")
+    None;
 
 # Taking 130 XRD from the worktop and depositing them into Account B
 TAKE_FROM_WORKTOP
@@ -41,7 +42,8 @@ TAKE_FROM_WORKTOP
 CALL_METHOD
     Address("${account_b_component_address}")
     "try_deposit_or_abort"
-    Bucket("account_b_bucket");
+    Bucket("account_b_bucket")
+    None;
 
 # Taking 50 XRD from the worktop and depositing them into Account C
 TAKE_FROM_WORKTOP
@@ -51,4 +53,5 @@ TAKE_FROM_WORKTOP
 CALL_METHOD
     Address("${account_c_component_address}")
     "try_deposit_or_abort"
-    Bucket("account_c_bucket");
+    Bucket("account_c_bucket")
+    None;

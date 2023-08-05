@@ -52,16 +52,16 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                             builder
                                 .call_method(
                                     source_account.address,
-                                    ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
-                                    AccountChangeDefaultDepositRuleInput {
-                                        default_deposit_rule: AccountDefaultDepositRule::Reject,
+                                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                                    AccountSetDefaultDepositRuleInput {
+                                        default: DefaultDepositRule::Reject,
                                     },
                                 )
                                 .call_method(
                                     destination_account.address,
-                                    ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
-                                    AccountChangeDefaultDepositRuleInput {
-                                        default_deposit_rule: AccountDefaultDepositRule::Reject,
+                                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                                    AccountSetDefaultDepositRuleInput {
+                                        default: DefaultDepositRule::Reject,
                                     },
                                 )
                                 .allocate_global_address(
@@ -102,7 +102,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                     )
                 },
                 |_, _, state, result| {
-                    let resource_address = *result.new_resource_addresses().get(0).unwrap();
+                    let resource_address = result.new_resource_addresses()[0];
                     state.badge = Some(resource_address);
                     Ok(())
                 },
@@ -120,9 +120,9 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
                                     config.destination_account.address,
-                                    ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT,
-                                    AccountTryAuthorizedDepositOrRefundManifestInput {
-                                        badge,
+                                    ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+                                    AccountTryDepositOrRefundManifestInput {
+                                        authorized_depositor_badge: Some(badge),
                                         bucket
                                     }
                                 )
@@ -146,9 +146,9 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                                 .with_bucket("bucket", |builder, bucket| {
                                     builder.call_method(
                                         config.destination_account.address,
-                                        ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT,
-                                        AccountTryAuthorizedDepositOrRefundManifestInput {
-                                            badge,
+                                        ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+                                        AccountTryDepositOrRefundManifestInput {
+                                            authorized_depositor_badge: Some(badge),
                                             bucket
                                         }
                                     )
@@ -172,9 +172,9 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                                 .with_bucket("bucket", |builder, bucket| {
                                     builder.call_method(
                                         config.destination_account.address,
-                                        ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT,
-                                        AccountTryAuthorizedDepositOrRefundManifestInput {
-                                            badge: ResourceOrNonFungible::Resource(ACCOUNT_OWNER_BADGE),
+                                        ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+                                        AccountTryDepositOrRefundManifestInput {
+                                            authorized_depositor_badge: Some(ResourceOrNonFungible::Resource(ACCOUNT_OWNER_BADGE)),
                                             bucket
                                         }
                                     )

@@ -27,7 +27,7 @@ fn can_create_clone_and_drop_bucket_proof() {
                 manifest_args!(lookup.bucket("bucket"), dec!(1)),
             )
         })
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -159,7 +159,7 @@ fn can_use_bucket_for_authorization() {
                 manifest_args!(auth_bucket, burnable_bucket),
             )
         })
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -418,7 +418,7 @@ fn can_move_locked_bucket() {
                 manifest_args!(lookup.bucket("bucket")),
             )
         })
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

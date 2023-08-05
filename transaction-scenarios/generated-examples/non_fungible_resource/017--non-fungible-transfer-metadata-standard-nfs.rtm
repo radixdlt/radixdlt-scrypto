@@ -6,7 +6,7 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "withdraw_non_fungibles"
-    Address("resource_sim1n2xsys57yk6kuw6xpjv7ecxhsl82vwzw4k2hx4ss5uh207uptm3lmk")
+    Address("resource_sim1nf5l7xhdel0ufl43ushjznmzgcmt4a8nkvnagw7dqh22wgve8l44jm")
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#4#"),
         NonFungibleLocalId("#8#")
@@ -16,4 +16,5 @@ CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "try_deposit_batch_or_abort"
     Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
 ;
