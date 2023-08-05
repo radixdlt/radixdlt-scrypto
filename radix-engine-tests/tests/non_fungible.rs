@@ -357,7 +357,7 @@ fn can_update_and_get_non_fungible_reference() {
 }
 
 #[test]
-fn can_check_if_contains_non_fungible() {
+fn can_check_if_contains_non_fungible_in_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -368,6 +368,33 @@ fn can_check_if_contains_non_fungible() {
             package_address,
             "NonFungibleTest",
             "contains_non_fungible_vault",
+            manifest_args!(),
+        )
+        .try_deposit_batch_or_abort(account, None)
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn can_check_if_contains_non_fungible_in_bucket() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "contains_non_fungible_bucket",
             manifest_args!(),
         )
         .try_deposit_batch_or_abort(account, None)
