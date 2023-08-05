@@ -80,7 +80,11 @@ fn can_burn_non_fungible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
     let vault_id = test_runner.get_component_vaults(account, resource_address)[0];
-    let (_, first_id) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    let first_id = test_runner
+        .inspect_non_fungible_vault(vault_id)
+        .unwrap()
+        .1
+        .next();
 
     let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, first_id.unwrap());
 
