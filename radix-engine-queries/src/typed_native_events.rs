@@ -35,14 +35,13 @@ fn resolve_typed_event_key_from_event_type_identifier(
     event_type_identifier: &EventTypeIdentifier,
 ) -> Result<TypedNativeEventKey, TypedNativeEventError> {
     let local_type_index = match event_type_identifier.1 {
-        TypePointer::Package(_, x) => x,
+        TypePointer::Package(type_identifier) => type_identifier.1,
         TypePointer::Instance(..) => panic!("An event can not be generic"),
     };
 
     match &event_type_identifier.0 {
         /* Method or Function emitter on a known node module */
-        Emitter::Method(_, ObjectModuleId::RoleAssignment)
-        | Emitter::Function(_, ObjectModuleId::RoleAssignment, ..) => {
+        Emitter::Method(_, ObjectModuleId::RoleAssignment) => {
             TypedRoleAssignmentBlueprintEventKey::new(
                 &ROLE_ASSIGNMENT_PACKAGE_DEFINITION,
                 ROLE_ASSIGNMENT_BLUEPRINT,
@@ -50,108 +49,97 @@ fn resolve_typed_event_key_from_event_type_identifier(
             )
             .map(TypedNativeEventKey::from)
         }
-        Emitter::Method(_, ObjectModuleId::Metadata)
-        | Emitter::Function(_, ObjectModuleId::Metadata, ..) => {
-            TypedMetadataBlueprintEventKey::new(
-                &METADATA_PACKAGE_DEFINITION,
-                METADATA_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from)
-        }
-        Emitter::Method(_, ObjectModuleId::Royalty)
-        | Emitter::Function(_, ObjectModuleId::Royalty, ..) => {
-            TypedComponentRoyaltyBlueprintEventKey::new(
-                &ROYALTY_PACKAGE_DEFINITION,
-                COMPONENT_ROYALTY_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from)
-        }
+        Emitter::Method(_, ObjectModuleId::Metadata) => TypedMetadataBlueprintEventKey::new(
+            &METADATA_PACKAGE_DEFINITION,
+            METADATA_BLUEPRINT,
+            &local_type_index,
+        )
+        .map(TypedNativeEventKey::from),
+        Emitter::Method(_, ObjectModuleId::Royalty) => TypedComponentRoyaltyBlueprintEventKey::new(
+            &ROYALTY_PACKAGE_DEFINITION,
+            COMPONENT_ROYALTY_BLUEPRINT,
+            &local_type_index,
+        )
+        .map(TypedNativeEventKey::from),
 
         /* Functions on well-known packages */
-        Emitter::Function(node_id, ObjectModuleId::Main, blueprint_name) => {
-            let package_address = PackageAddress::try_from(node_id.as_bytes())
-                .expect("Function emitter's NodeId is not a valid package address!");
-
-            match package_address {
-                PACKAGE_PACKAGE => TypedPackagePackageEventKey::new(
-                    &PACKAGE_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                RESOURCE_PACKAGE => TypedResourcePackageEventKey::new(
-                    &RESOURCE_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                ACCOUNT_PACKAGE => TypedAccountPackageEventKey::new(
-                    &ACCOUNT_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                IDENTITY_PACKAGE => TypedIdentityPackageEventKey::new(
-                    &IDENTITY_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                CONSENSUS_MANAGER_PACKAGE => TypedConsensusManagerPackageEventKey::new(
-                    &CONSENSUS_MANAGER_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                ACCESS_CONTROLLER_PACKAGE => TypedAccessControllerPackageEventKey::new(
-                    &ACCESS_CONTROLLER_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                POOL_PACKAGE => TypedPoolPackageEventKey::new(
-                    &POOL_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                TRANSACTION_PROCESSOR_PACKAGE => TypedTransactionProcessorPackageEventKey::new(
-                    &TRANSACTION_PROCESSOR_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                METADATA_MODULE_PACKAGE => TypedMetadataPackageEventKey::new(
-                    &METADATA_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                ROYALTY_MODULE_PACKAGE => TypedRoyaltyPackageEventKey::new(
-                    &ROYALTY_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                ROLE_ASSIGNMENT_MODULE_PACKAGE => TypedRoleAssignmentPackageEventKey::new(
-                    &ROLE_ASSIGNMENT_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                TRANSACTION_TRACKER_PACKAGE => TypedTransactionTrackerPackageEventKey::new(
-                    &TRANSACTION_TRACKER_PACKAGE_DEFINITION,
-                    &blueprint_name,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from),
-                _ => Err(TypedNativeEventError::NotANativeBlueprint(
-                    event_type_identifier.clone(),
-                )),
-            }
-        }
+        Emitter::Function(blueprint_id) => match blueprint_id.package_address {
+            PACKAGE_PACKAGE => TypedPackagePackageEventKey::new(
+                &PACKAGE_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            RESOURCE_PACKAGE => TypedResourcePackageEventKey::new(
+                &RESOURCE_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            ACCOUNT_PACKAGE => TypedAccountPackageEventKey::new(
+                &ACCOUNT_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            IDENTITY_PACKAGE => TypedIdentityPackageEventKey::new(
+                &IDENTITY_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            CONSENSUS_MANAGER_PACKAGE => TypedConsensusManagerPackageEventKey::new(
+                &CONSENSUS_MANAGER_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            ACCESS_CONTROLLER_PACKAGE => TypedAccessControllerPackageEventKey::new(
+                &ACCESS_CONTROLLER_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            POOL_PACKAGE => TypedPoolPackageEventKey::new(
+                &POOL_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            TRANSACTION_PROCESSOR_PACKAGE => TypedTransactionProcessorPackageEventKey::new(
+                &TRANSACTION_PROCESSOR_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            METADATA_MODULE_PACKAGE => TypedMetadataPackageEventKey::new(
+                &METADATA_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            ROYALTY_MODULE_PACKAGE => TypedRoyaltyPackageEventKey::new(
+                &ROYALTY_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            ROLE_ASSIGNMENT_MODULE_PACKAGE => TypedRoleAssignmentPackageEventKey::new(
+                &ROLE_ASSIGNMENT_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            TRANSACTION_TRACKER_PACKAGE => TypedTransactionTrackerPackageEventKey::new(
+                &TRANSACTION_TRACKER_PACKAGE_DEFINITION,
+                &blueprint_id.blueprint_name,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from),
+            _ => Err(TypedNativeEventError::NotANativeBlueprint(
+                event_type_identifier.clone(),
+            )),
+        },
 
         /* Methods on non-generic components */
         Emitter::Method(node_id, ObjectModuleId::Main) => match node_id.entity_type().unwrap() {

@@ -311,7 +311,6 @@ pub const CONSENSUS_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 pub enum UpdateSecondaryIndex {
     Create {
         index_key: SortedKey,
-        primary: ComponentAddress,
         key: Secp256k1PublicKey,
         stake: Decimal,
     },

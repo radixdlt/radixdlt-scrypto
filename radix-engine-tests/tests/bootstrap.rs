@@ -166,7 +166,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let entry = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
             &resource_address.as_node_id(),
-            METADATA_KV_STORE_PARTITION,
+            METADATA_BASE_PARTITION,
             &SubstateKey::Map(key),
         )
         .unwrap()
@@ -342,7 +342,7 @@ fn test_genesis_stake_allocation() {
             let validator_url_entry = substate_db
                 .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
                     &new_validators[index].as_node_id(),
-                    METADATA_KV_STORE_PARTITION,
+                    METADATA_BASE_PARTITION,
                     &SubstateKey::Map(scrypto_encode("url").unwrap()),
                 )
                 .unwrap();

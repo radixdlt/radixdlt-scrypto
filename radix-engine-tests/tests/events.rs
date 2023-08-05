@@ -139,15 +139,12 @@ fn scrypto_can_emit_registered_events() {
     });
     assert!(match events.get(1) {
         Some((
-            event_identifier @ EventTypeIdentifier(
-                Emitter::Function(node_id, ObjectModuleId::Main, blueprint_name),
-                ..,
-            ),
+            event_identifier @ EventTypeIdentifier(Emitter::Function(blueprint_id), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<RegisteredEvent>(event_identifier)
             && is_decoded_equal(&RegisteredEvent { number: 12 }, event_data)
-            && node_id == package_address.as_node_id()
-            && blueprint_name == "ScryptoEvents" =>
+            && blueprint_id.package_address == package_address
+            && blueprint_id.blueprint_name.eq("ScryptoEvents") =>
             true,
         _ => false,
     });
@@ -261,7 +258,7 @@ fn vault_fungible_recall_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1)
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
 
     // Act
@@ -332,7 +329,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 metadata!(),
                 Some([(id.clone(), EmptyStruct {})]),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         (receipt.expect_commit(true).new_resource_addresses()[0], id)
@@ -342,7 +339,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1)
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
 
     // Act
@@ -415,7 +412,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             metadata!(),
             Some(1.into()),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
 
     // Act
@@ -428,7 +425,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 4);
+        assert_eq!(events.len(), 5);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -446,10 +443,22 @@ fn resource_manager_new_vault_emits_correct_events() {
                     ..,
                 ),
                 ..,
-            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
+            )) if test_runner
+                .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) =>
+                true,
             _ => false,
         });
         assert!(match events.get(2) {
+            Some((
+                event_identifier @ EventTypeIdentifier(
+                    Emitter::Method(_node_id, ObjectModuleId::Main),
+                    ..,
+                ),
+                ..,
+            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
+            _ => false,
+        });
+        assert!(match events.get(3) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -488,7 +497,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
                 metadata!(),
                 None,
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -578,7 +587,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                 metadata!(),
                 None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -672,7 +681,10 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
+                manifest_args!(
+                    ManifestExpression::EntireWorktop,
+                    Option::<ResourceOrNonFungible>::None
+                ),
             )
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -687,9 +699,9 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             resource_address,
             [(id.clone(), EmptyStruct {}), (id2.clone(), EmptyStruct {})],
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .withdraw_from_account(account, resource_address, dec!("2"))
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
 
     // Act
@@ -1114,7 +1126,7 @@ fn validator_staking_emits_correct_event() {
         .withdraw_from_account(account, XRD, 100)
         .take_all_from_worktop(XRD, "stake")
         .stake_validator_as_owner(validator_address, "stake")
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1233,7 +1245,7 @@ fn validator_unstake_emits_correct_events() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_batch_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1369,7 +1381,7 @@ fn validator_claim_xrd_emits_correct_events() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_batch_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1384,7 +1396,7 @@ fn validator_claim_xrd_emits_correct_events() {
         .withdraw_from_account(account_with_su, validator_substate.claim_nft, 1)
         .take_all_from_worktop(validator_substate.claim_nft, "unstake_nft")
         .claim_xrd(validator_address, "unstake_nft")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_batch_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1668,9 +1680,200 @@ fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceA
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-    *receipt
-        .expect_commit(true)
-        .new_resource_addresses()
-        .get(0)
-        .unwrap()
+    receipt.expect_commit(true).new_resource_addresses()[0]
+}
+
+#[test]
+fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
+    let mut test_runner = TestRunnerBuilder::new()
+        .without_trace()
+        .collect_events()
+        .build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+
+    // Create
+    let resource_address = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+        OwnerRole::None,
+        Some(dec!(100)),
+        18,
+        account,
+    );
+
+    // Mint
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .mint_fungible(resource_address, dec!(30))
+        .deposit_batch(account)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Burn
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, resource_address, dec!(10))
+        .burn_all_from_worktop(resource_address)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Assert
+    let mut total_supply = Decimal::ZERO;
+    let mut total_mint_amount = Decimal::ZERO;
+    let mut total_burn_amount = Decimal::ZERO;
+    for component in test_runner.find_all_components() {
+        let balance = test_runner.get_component_balance(component, resource_address);
+        total_supply += balance;
+        println!("{:?}, {}", component, balance);
+    }
+    for tx_events in test_runner.collected_events() {
+        for event in tx_events {
+            match &event.0 .0 {
+                Emitter::Method(x, _) if x.eq(resource_address.as_node_id()) => {}
+                _ => {
+                    continue;
+                }
+            }
+            let actual_type_name = test_runner.event_name(&event.0);
+            match actual_type_name.as_str() {
+                "MintFungibleResourceEvent" => {
+                    total_mint_amount += scrypto_decode::<MintFungibleResourceEvent>(&event.1)
+                        .unwrap()
+                        .amount;
+                }
+                "BurnFungibleResourceEvent" => {
+                    total_burn_amount += scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
+                        .unwrap()
+                        .amount;
+                }
+                _ => {}
+            }
+        }
+    }
+    println!("Total supply: {}", total_supply);
+    println!("Total mint amount: {}", total_mint_amount);
+    println!("Total burn amount: {}", total_burn_amount);
+    assert_eq!(total_supply, total_mint_amount - total_burn_amount);
+
+    // Query total supply from the resource manager
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(resource_address, "get_total_supply", manifest_args!())
+            .build(),
+        vec![],
+    );
+    assert_eq!(
+        Some(total_supply),
+        receipt.expect_commit_success().output::<Option<Decimal>>(1)
+    );
+}
+
+#[test]
+fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
+    let mut test_runner = TestRunnerBuilder::new()
+        .without_trace()
+        .collect_events()
+        .build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+
+    // Create
+    let resource_address = test_runner.create_freely_mintable_and_burnable_non_fungible_resource(
+        OwnerRole::None,
+        NonFungibleIdType::Integer,
+        Some(vec![
+            (NonFungibleLocalId::integer(1), EmptyNonFungibleData {}),
+            (NonFungibleLocalId::integer(2), EmptyNonFungibleData {}),
+            (NonFungibleLocalId::integer(3), EmptyNonFungibleData {}),
+        ]),
+        account,
+    );
+
+    // Mint
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .mint_non_fungible(
+            resource_address,
+            vec![
+                (NonFungibleLocalId::integer(4), EmptyNonFungibleData {}),
+                (NonFungibleLocalId::integer(5), EmptyNonFungibleData {}),
+            ],
+        )
+        .deposit_batch(account)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Burn
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_non_fungibles_from_account(
+            account,
+            resource_address,
+            &btreeset!(NonFungibleLocalId::integer(4)),
+        )
+        .burn_all_from_worktop(resource_address)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Assert
+    let mut total_supply = Decimal::ZERO;
+    let mut total_mint_non_fungibles = BTreeSet::new();
+    let mut total_burn_non_fungibles = BTreeSet::new();
+    for component in test_runner.find_all_components() {
+        let balance = test_runner.get_component_balance(component, resource_address);
+        total_supply += balance;
+        println!("{:?}, {}", component, balance);
+    }
+    for tx_events in test_runner.collected_events() {
+        for event in tx_events {
+            match &event.0 .0 {
+                Emitter::Method(x, _) if x.eq(resource_address.as_node_id()) => {}
+                _ => {
+                    continue;
+                }
+            }
+            let actual_type_name = test_runner.event_name(&event.0);
+            match actual_type_name.as_str() {
+                "MintNonFungibleResourceEvent" => {
+                    total_mint_non_fungibles.extend(
+                        scrypto_decode::<MintNonFungibleResourceEvent>(&event.1)
+                            .unwrap()
+                            .ids,
+                    );
+                }
+                "BurnNonFungibleResourceEvent" => {
+                    total_burn_non_fungibles.extend(
+                        scrypto_decode::<BurnNonFungibleResourceEvent>(&event.1)
+                            .unwrap()
+                            .ids,
+                    );
+                }
+                _ => {}
+            }
+        }
+    }
+    println!("Total supply: {}", total_supply);
+    println!("Total mint: {:?}", total_mint_non_fungibles);
+    println!("Total burn: {:?}", total_burn_non_fungibles);
+    total_mint_non_fungibles.retain(|x| !total_burn_non_fungibles.contains(x));
+    assert_eq!(total_supply, total_mint_non_fungibles.len().into());
+
+    // Query total supply from the resource manager
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(resource_address, "get_total_supply", manifest_args!())
+            .build(),
+        vec![],
+    );
+    assert_eq!(
+        Some(total_supply),
+        receipt.expect_commit_success().output::<Option<Decimal>>(1)
+    );
 }

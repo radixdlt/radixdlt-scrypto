@@ -21,7 +21,7 @@ fn non_existing_vault_should_cause_error() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .recall(non_existing_address, Decimal::one())
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -52,7 +52,7 @@ fn cannot_take_on_non_recallable_vault() {
             InternalAddress::new_or_panic(vault_id.into()),
             Decimal::one(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -85,7 +85,7 @@ fn can_take_on_recallable_vault() {
             InternalAddress::new_or_panic(vault_id.into()),
             Decimal::one(),
         )
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_batch_or_abort(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -138,7 +138,7 @@ fn test_recall_on_internal_vault() {
                 "recall_on_internal_vault",
                 manifest_args!(),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -173,7 +173,7 @@ fn test_recall_on_received_direct_access_reference() {
                 "recall_on_direct_access_ref",
                 manifest_args!(InternalAddress::new_or_panic(vault_id.into())),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -212,7 +212,10 @@ fn test_recall_on_received_direct_access_reference_which_is_same_as_self() {
             .call_method(
                 account,
                 "try_deposit_batch_or_abort",
-                manifest_args!(ManifestExpression::EntireWorktop),
+                manifest_args!(
+                    ManifestExpression::EntireWorktop,
+                    Option::<ResourceOrNonFungible>::None
+                ),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

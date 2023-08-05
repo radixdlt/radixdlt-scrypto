@@ -23,7 +23,7 @@ fn can_mint_non_fungible_with_global() {
             "create_non_fungible_with_global",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -50,7 +50,7 @@ fn create_non_fungible_mutable() {
             "create_non_fungible_mutable",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -75,7 +75,7 @@ fn can_burn_non_fungible() {
             "create_burnable_non_fungible",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
@@ -95,7 +95,7 @@ fn can_burn_non_fungible() {
             "verify_does_not_exist",
             manifest_args!(non_fungible_global_id),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .assert_worktop_contains(resource_address, 0)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -123,7 +123,7 @@ fn test_take_non_fungible() {
             "take_non_fungible_and_put_bucket",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -147,7 +147,7 @@ fn test_take_non_fungibles() {
             "take_non_fungibles_and_put_bucket",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -168,7 +168,7 @@ fn can_update_non_fungible_when_mutable() {
             "update_non_fungible",
             manifest_args!("available".to_string(), true),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -190,7 +190,7 @@ fn cannot_update_non_fungible_when_not_mutable() {
             "update_non_fungible",
             manifest_args!("tastes_great".to_string(), false),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -219,7 +219,7 @@ fn cannot_update_non_fungible_when_does_not_exist() {
             "update_non_fungible",
             manifest_args!("does_not_exist".to_string(), false),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -255,7 +255,7 @@ fn can_call_non_fungible_data_reference() {
             "create_non_fungible_reference",
             manifest_args!(account),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -294,7 +294,7 @@ fn cannot_have_non_fungible_data_ownership() {
             "update_non_fungible_with_ownership",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -321,7 +321,7 @@ fn can_update_and_get_non_fungible() {
             "update_and_get_non_fungible",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -343,7 +343,7 @@ fn can_update_and_get_non_fungible_reference() {
             "update_and_get_non_fungible_reference",
             manifest_args!(account),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -384,7 +384,7 @@ fn test_non_fungible_part_1() {
             "take_and_put_bucket",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -419,7 +419,7 @@ fn test_non_fungible_part_2() {
             "get_non_fungible_local_ids_vault",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -442,7 +442,7 @@ fn test_singleton_non_fungible() {
             "singleton_non_fungible",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -468,7 +468,7 @@ fn test_mint_update_and_withdraw() {
             "create_non_fungible_mutable",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -494,7 +494,7 @@ fn test_mint_update_and_withdraw() {
             "update_nft",
             |lookup| (lookup.bucket("badge"), lookup.proof("proof")),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -512,7 +512,7 @@ fn test_mint_update_and_withdraw() {
         .assert_worktop_contains_any(nft_resource_address)
         .assert_worktop_contains(nft_resource_address, 1)
         .assert_worktop_contains_non_fungibles(nft_resource_address, &nfid_list)
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -537,7 +537,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
             "create_wrong_non_fungible_local_id_type",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -564,7 +564,7 @@ fn create_bytes_non_fungible() {
             "create_bytes_non_fungible",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -588,7 +588,7 @@ fn create_string_non_fungible() {
             "create_string_non_fungible",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -612,7 +612,7 @@ fn create_ruid_non_fungible() {
             "create_ruid_non_fungible",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -662,7 +662,7 @@ fn can_mint_ruid_non_fungible_in_scrypto() {
             "create_ruid_non_fungible_and_mint",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -717,7 +717,7 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
             }],
         )
         .assert_worktop_contains_any(resource_address)
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -757,7 +757,7 @@ fn can_mint_ruid_non_fungible_in_manifest() {
             }],
         )
         .assert_worktop_contains_any(resource_address)
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -779,7 +779,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
             "create_burnable_non_fungible",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];

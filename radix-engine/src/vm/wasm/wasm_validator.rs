@@ -37,6 +37,7 @@ impl WasmValidator {
         WasmModule::init(code)?
             .enforce_no_start_function()?
             .enforce_import_limit()?
+            .enforce_export_names()?
             .enforce_memory_limit_and_inject_max(self.max_memory_size_in_pages)?
             .enforce_table_limit(self.max_initial_table_size)?
             .enforce_br_table_limit(self.max_number_of_br_table_targets)?

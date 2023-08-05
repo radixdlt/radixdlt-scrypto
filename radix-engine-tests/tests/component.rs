@@ -37,7 +37,7 @@ fn test_component() {
         )
         .call_method(component, "get_component_state", manifest_args!())
         .call_method(component, "put_component_state", manifest_args!())
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt2 = test_runner.execute_manifest(
         manifest2,
