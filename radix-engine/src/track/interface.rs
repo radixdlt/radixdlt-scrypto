@@ -135,7 +135,7 @@ pub trait SubstateStore {
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: &mut F,
-    ) -> Result<Vec<IndexedScryptoValue>, E>;
+    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, E>;
 
     /// Acquires a lock over a substate.
     /// Returns tuple of lock handle id and information if particular substate

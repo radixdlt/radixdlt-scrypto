@@ -246,10 +246,7 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
 
     // Act

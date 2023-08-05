@@ -201,6 +201,16 @@ impl CustomSchema for ScryptoCustomSchema {
     }
 }
 
+pub trait HasSchemaHash {
+    fn generate_schema_hash(&self) -> Hash;
+}
+
+impl HasSchemaHash for Schema<ScryptoCustomSchema> {
+    fn generate_schema_hash(&self) -> Hash {
+        hash(scrypto_encode(self).unwrap())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct ScryptoCustomExtension {}
 

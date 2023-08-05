@@ -496,10 +496,10 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
     let substate_flash = create_system_bootstrap_flash();
     let mut database_updates = index_map_new();
     let mut system_updates = SystemUpdates::default();
-    let mut new_packages = Vec::new();
-    let mut new_components = Vec::new();
-    let mut new_resources = Vec::new();
-    let mut new_vaults = Vec::new();
+    let mut new_packages = index_set_new();
+    let mut new_components = index_set_new();
+    let mut new_resources = index_set_new();
+    let mut new_vaults = index_set_new();
 
     for ((node_id, partition_num), substates) in substate_flash {
         let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_num);
@@ -515,16 +515,16 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
         database_updates.insert(partition_key, partition_updates);
         system_updates.insert((node_id, partition_num), substate_updates);
         if node_id.is_global_package() {
-            new_packages.push(PackageAddress::new_or_panic(node_id.0));
+            new_packages.insert(PackageAddress::new_or_panic(node_id.0));
         }
         if node_id.is_global_component() {
-            new_components.push(ComponentAddress::new_or_panic(node_id.0));
+            new_components.insert(ComponentAddress::new_or_panic(node_id.0));
         }
         if node_id.is_global_resource_manager() {
-            new_resources.push(ResourceAddress::new_or_panic(node_id.0));
+            new_resources.insert(ResourceAddress::new_or_panic(node_id.0));
         }
         if node_id.is_internal_vault() {
-            new_vaults.push(InternalAddress::new_or_panic(node_id.0));
+            new_vaults.insert(InternalAddress::new_or_panic(node_id.0));
         }
     }
 
