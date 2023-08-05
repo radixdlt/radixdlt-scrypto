@@ -111,7 +111,7 @@ impl CallFunction {
             })?;
 
         let (schema, index) = match function_schema.input {
-            TypePointer::Package(hash, index) => {
+            TypePointer::Package(TypeIdentifier(hash, index)) => {
                 let schema = export_schema(package_address, hash)?;
                 (schema, index)
             }

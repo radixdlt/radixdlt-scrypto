@@ -74,18 +74,17 @@ impl TransactionRuntimeModule {
             }
 
             // Apply replacements
-            let (node_id, module_id) = match &mut type_identifier {
-                EventTypeIdentifier(Emitter::Method(node_id, module_id), _) => (node_id, module_id),
-                EventTypeIdentifier(Emitter::Function(node_id, module_id, _), _) => {
-                    (node_id, module_id)
+            match &mut type_identifier {
+                EventTypeIdentifier(Emitter::Method(node_id, module_id), _) => {
+                    if let Some((new_node_id, new_module_id)) =
+                        self.replacements.get(&(*node_id, *module_id))
+                    {
+                        *node_id = *new_node_id;
+                        *module_id = *new_module_id;
+                    }
                 }
+                _ => {}
             };
-            if let Some((new_node_id, new_module_id)) =
-                self.replacements.get(&(*node_id, *module_id))
-            {
-                *node_id = *new_node_id;
-                *module_id = *new_module_id;
-            }
 
             // Add to results
             results.push((type_identifier, payload))

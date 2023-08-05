@@ -21,7 +21,7 @@ pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
-    BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
+    BlueprintKeyValueSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, TypeRef,
 };
 use sbor::LocalTypeIndex;
@@ -665,7 +665,7 @@ pub fn create_bootstrap_package_partitions(
                 IndexedScryptoValue::from_typed(&value),
             );
         }
-        partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
+        partitions.insert(METADATA_BASE_PARTITION, metadata_partition);
     }
 
     {
@@ -854,7 +854,7 @@ impl PackageNativePackage {
 
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
@@ -865,7 +865,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
@@ -876,7 +876,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
@@ -885,7 +885,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
@@ -896,7 +896,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
@@ -905,7 +905,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageVmTypeSubstate>(),
@@ -914,7 +914,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageOriginalCodeSubstate>(),
@@ -923,7 +923,7 @@ impl PackageNativePackage {
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
+            BlueprintKeyValueSchema {
                 key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageInstrumentedCodeSubstate>(),
@@ -1148,7 +1148,7 @@ impl PackageNativePackage {
                 auth_configs.insert(blueprint.clone(), definition_init.auth_config);
 
                 let blueprint_schema = definition_init.schema.schema.clone();
-                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
+                let schema_hash = blueprint_schema.generate_schema_hash();
                 schemas.insert(schema_hash, blueprint_schema);
 
                 let mut functions = BTreeMap::new();
@@ -1178,8 +1178,8 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: function_schema_init.receiver,
-                            input: TypePointer::Package(schema_hash, input),
-                            output: TypePointer::Package(schema_hash, output),
+                            input: TypePointer::Package(TypeIdentifier(schema_hash, input)),
+                            output: TypePointer::Package(TypeIdentifier(schema_hash, output)),
                         },
                     );
                     let export = PackageExport {
@@ -1192,7 +1192,9 @@ impl PackageNativePackage {
                 let mut events = BTreeMap::new();
                 for (key, type_ref) in definition_init.schema.events.event_schema {
                     let index = match type_ref {
-                        TypeRef::Static(index) => TypePointer::Package(schema_hash, index),
+                        TypeRef::Static(index) => {
+                            TypePointer::Package(TypeIdentifier(schema_hash, index))
+                        }
                         TypeRef::Generic(index) => TypePointer::Instance(index),
                     };
                     events.insert(key, index);
