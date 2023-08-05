@@ -111,6 +111,38 @@ impl NonFungibleVaultBlueprint {
         Ok(amount)
     }
 
+    pub fn contains_non_fungible<Y>(
+        id: NonFungibleLocalId,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let ids = Self::locked_non_fungible_local_ids(u32::MAX, api)?;
+        if ids.contains(&id) {
+            return Ok(true);
+        }
+
+        // TODO: Replace with better index api
+        let key = scrypto_encode(&id).unwrap();
+        let removed = api.actor_index_remove(
+            OBJECT_HANDLE_SELF,
+            NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
+            key.clone(),
+        )?;
+        let exists = removed.is_some();
+        if let Some(removed) = removed {
+            api.actor_index_insert(
+                OBJECT_HANDLE_SELF,
+                NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
+                key,
+                removed,
+            )?;
+        }
+
+        Ok(exists)
+    }
+
     pub fn get_non_fungible_local_ids<Y>(
         limit: u32,
         api: &mut Y,

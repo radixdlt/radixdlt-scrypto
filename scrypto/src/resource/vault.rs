@@ -65,6 +65,8 @@ pub trait ScryptoFungibleVault {
 pub trait ScryptoNonFungibleVault {
     fn non_fungible_local_ids(&self, limit: u32) -> BTreeSet<NonFungibleLocalId>;
 
+    fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool;
+
     fn non_fungibles<T: NonFungibleData>(&self, limit: u32) -> Vec<NonFungible<T>>;
 
     fn non_fungible_local_id(&self) -> NonFungibleLocalId;
@@ -430,6 +432,19 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
                 self.0 .0.as_node_id(),
                 NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit: limit })
+                    .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0 .0.as_node_id(),
+                NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT,
+                scrypto_encode(&NonFungibleVaultContainsNonFungibleInput { id: id.clone() })
                     .unwrap(),
             )
             .unwrap();
