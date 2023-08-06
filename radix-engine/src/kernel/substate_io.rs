@@ -55,7 +55,7 @@ pub trait SubstateReadHandler {
 pub struct SubstateIO<'g, S: SubstateStore> {
     pub heap: Heap,
     pub store: &'g mut S,
-    pub node_locks: NonIterMap<NodeId, usize>,
+    pub node_refs: NonIterMap<NodeId, usize>,
     pub substate_locks: SubstateLocks<LockData>,
 }
 
@@ -64,7 +64,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Self {
             heap: Heap::new(),
             store,
-            node_locks: NonIterMap::new(),
+            node_refs: NonIterMap::new(),
             substate_locks: SubstateLocks::new(),
         }
     }
@@ -97,7 +97,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             for (_substate_key, substate_value) in module {
                 for own in substate_value.owned_nodes() {
                     if substate_device.eq(&SubstateDevice::Store) {
-                        Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_locks, own)
+                        Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_refs, own)
                             .map_err(|e| e.map(CreateNodeError::PersistNodeError))?
                     }
                 }
@@ -108,10 +108,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                         ));
                     }
 
-                    if self.heap.contains_node(reference) {
-                        Self::increase_node_borrow_count(&mut self.node_locks, reference);
-                        //self.heap.increase_borrow_count(reference);
-                    }
+                    Self::increase_node_borrow_count(&mut self.node_refs, reference);
                 }
             }
         }
@@ -137,7 +134,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             return Err(DropNodeError::SubstateBorrowed(*node_id));
         }
 
-        if Self::node_is_locked(&self.node_locks, node_id) {
+        if Self::node_is_locked(&self.node_refs, node_id) {
             return Err(DropNodeError::NodeBorrowed(*node_id));
         }
 
@@ -151,10 +148,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             for (_, substate_value) in module {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        if self.heap.contains_node(reference) {
-                            Self::decrease_node_borrow_count(&mut self.node_locks, reference);
-                            //self.heap.decrease_borrow_count(reference);
-                        }
+                        Self::decrease_node_borrow_count(&mut self.node_refs, reference);
                     }
                 }
             }
@@ -194,7 +188,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_locks, own)
+                    Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_refs, own)
                         .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                 }
 
@@ -381,7 +375,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 if !lock_data.owned_nodes.contains(own) {
                     // Move the node to store, if its owner is already in store
                     if lock_data.location.eq(&SubstateDevice::Store) {
-                        Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_locks, own)
+                        Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_refs, own)
                             .map_err(|e| e.map(WriteSubstateError::PersistNodeError))?;
                     }
                 }
@@ -400,19 +394,13 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                         ));
                     }
 
-                    if self.heap.contains_node(reference) {
-                        Self::increase_node_borrow_count(&mut self.node_locks, reference);
-                        //self.heap.increase_borrow_count(reference);
-                    }
+                    Self::increase_node_borrow_count(&mut self.node_refs, reference);
                 }
             }
             for reference in &lock_data.non_global_references {
                 if !new_references.contains(reference) {
                     // handle removed references
-                    if self.heap.contains_node(reference) {
-                        Self::decrease_node_borrow_count(&mut self.node_locks, reference);
-                        //self.heap.decrease_borrow_count(reference);
-                    }
+                    Self::decrease_node_borrow_count(&mut self.node_refs, reference);
                 }
             }
 
