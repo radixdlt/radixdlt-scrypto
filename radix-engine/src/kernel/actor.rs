@@ -284,7 +284,7 @@ impl Actor {
             Actor::Method(actor) => {
                 let node_visibility = api.kernel_get_node_visibility(&actor.node_id);
                 match node_visibility.reference_origin(actor.node_id).unwrap() {
-                    ReferenceOrigin::Heap | ReferenceOrigin::DirectlyAccessed => None,
+                    ReferenceOrigin::LocalNonGlobalReference | ReferenceOrigin::Heap | ReferenceOrigin::DirectlyAccessed => None,
                     ReferenceOrigin::Global(address) => Some(address.into()),
                 }
             }

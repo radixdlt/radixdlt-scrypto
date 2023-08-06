@@ -39,7 +39,7 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
-use crate::kernel::node_refs::NodeRefs;
+use crate::kernel::node_refs::NonGlobalNodeRefs;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
@@ -54,7 +54,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             substate_io: SubstateIO {
                 heap: Heap::new(),
                 store: self.store,
-                node_refs: NodeRefs::new(),
+                non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
             },
             id_allocator: self.id_allocator,
@@ -81,7 +81,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             substate_io: SubstateIO {
                 heap: Heap::new(),
                 store: self.store,
-                node_refs: NodeRefs::new(),
+                non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
             },
             id_allocator: self.id_allocator,

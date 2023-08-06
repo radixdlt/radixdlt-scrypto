@@ -108,6 +108,7 @@ pub enum ReferenceOrigin {
     Heap,
     Global(GlobalAddress),
     DirectlyAccessed,
+    LocalNonGlobalReference,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -730,6 +731,14 @@ impl<C, L: Clone> CallFrame<C, L> {
             )));
         };
 
+        /*
+        match ref_origin {
+            ReferenceOrigin::Heap => SubstateDevice::Heap,
+            ReferenceOrigin::Global(..) | ReferenceOrigin::DirectlyAccessed => SubstateDevice::Store,
+            ReferenceOrigin::LocalNonGlobalReference => substate_io.non_global_node_refs.get_device(node_id),
+        }
+         */
+
         self.process_input_substate_key(substate_key)
             .map_err(|e| CallbackError::Error(OpenSubstateError::ProcessSubstateKeyError(e)))?;
 
@@ -766,7 +775,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 .entry(reference.clone())
                 .or_insert(TransientReference {
                     ref_count: 0usize,
-                    ref_origin,
+                    ref_origin: ReferenceOrigin::LocalNonGlobalReference,
                 })
                 .ref_count
                 .add_assign(1);
@@ -871,7 +880,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                     .entry(new_non_global_reference.clone())
                     .or_insert(TransientReference {
                         ref_count: 0usize,
-                        ref_origin: opened_substate.ref_origin,
+                        ref_origin: ReferenceOrigin::LocalNonGlobalReference,
                     })
                     .ref_count
                     .add_assign(1);

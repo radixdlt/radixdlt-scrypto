@@ -19,7 +19,7 @@ use sbor::prelude::Vec;
 use sbor::rust::collections::LinkedList;
 use utils::prelude::index_set_new;
 use utils::rust::prelude::IndexSet;
-use crate::kernel::node_refs::NodeRefs;
+use crate::kernel::node_refs::NonGlobalNodeRefs;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubstateDevice {
@@ -41,6 +41,7 @@ pub trait SubstateIOHandler<E> {
     fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E>;
 }
 
+
 pub trait SubstateReadHandler {
     type Error;
 
@@ -55,7 +56,7 @@ pub trait SubstateReadHandler {
 pub struct SubstateIO<'g, S: SubstateStore> {
     pub heap: Heap,
     pub store: &'g mut S,
-    pub node_refs: NodeRefs,
+    pub non_global_node_refs: NonGlobalNodeRefs,
     pub substate_locks: SubstateLocks<LockData>,
 }
 
@@ -64,7 +65,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Self {
             heap: Heap::new(),
             store,
-            node_refs: NodeRefs::new(),
+            non_global_node_refs: NonGlobalNodeRefs::new(),
             substate_locks: SubstateLocks::new(),
         }
     }
@@ -80,7 +81,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             for (_substate_key, substate_value) in module {
                 for own in substate_value.owned_nodes() {
                     if substate_device.eq(&SubstateDevice::Store) {
-                        Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_refs, own)
+                        Self::move_node_to_store(&mut self.heap, self.store, handler, &self.non_global_node_refs, own)
                             .map_err(|e| e.map(CreateNodeError::PersistNodeError))?
                     }
                 }
@@ -91,7 +92,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                         ));
                     }
 
-                    self.node_refs.add_borrow(reference);
+                    if !reference.is_global() {
+                        self.non_global_node_refs.increment_ref_count(reference);
+                    }
                 }
             }
         }
@@ -117,7 +120,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             return Err(DropNodeError::SubstateBorrowed(*node_id));
         }
 
-        if self.node_refs.node_is_referenced(node_id) {
+        if self.non_global_node_refs.node_is_referenced(node_id) {
             return Err(DropNodeError::NodeBorrowed(*node_id));
         }
 
@@ -131,7 +134,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             for (_, substate_value) in module {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        self.node_refs.release_borrow(reference);
+                        self.non_global_node_refs.decrement_ref_count(reference);
                     }
                 }
             }
@@ -171,7 +174,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_refs, own)
+                    Self::move_node_to_store(&mut self.heap, self.store, handler, &self.non_global_node_refs, own)
                         .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                 }
 
@@ -337,11 +340,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             }
         }
         let mut new_non_global_references = index_set_new();
-        let mut new_references = index_set_new();
         for own in substate.references() {
-            // Deduplicate
-            new_references.insert(own.clone());
             if !own.is_global() {
+                // Deduplicate
                 new_non_global_references.insert(own.clone());
             }
         }
@@ -358,7 +359,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 if !lock_data.owned_nodes.contains(own) {
                     // Move the node to store, if its owner is already in store
                     if lock_data.location.eq(&SubstateDevice::Store) {
-                        Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_refs, own)
+                        Self::move_node_to_store(&mut self.heap, self.store, handler, &self.non_global_node_refs, own)
                             .map_err(|e| e.map(WriteSubstateError::PersistNodeError))?;
                     }
                 }
@@ -369,21 +370,22 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
 
         // Process references
         {
-            for reference in &new_references {
-                if !lock_data.non_global_references.contains(reference) {
-                    if lock_data.location.eq(&SubstateDevice::Store) && !reference.is_global() {
-                        return Err(CallbackError::Error(
-                            WriteSubstateError::NonGlobalRefNotAllowed(*reference),
-                        ));
-                    }
+            if lock_data.location.eq(&SubstateDevice::Store) && !new_non_global_references.is_empty() {
+                return Err(CallbackError::Error(
+                    WriteSubstateError::NonGlobalRefNotAllowed(new_non_global_references.into_iter().next().unwrap()),
+                ));
+            }
 
-                    self.node_refs.add_borrow(reference);
+            for reference in &new_non_global_references {
+                if !lock_data.non_global_references.contains(reference) {
+                    self.non_global_node_refs.increment_ref_count(reference);
                 }
             }
+
             for reference in &lock_data.non_global_references {
-                if !new_references.contains(reference) {
+                if !new_non_global_references.contains(reference) {
                     // handle removed references
-                    self.node_refs.release_borrow(reference);
+                    self.non_global_node_refs.decrement_ref_count(reference);
                 }
             }
 
@@ -571,7 +573,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         heap: &mut Heap,
         store: &mut S,
         handler: &mut impl SubstateIOHandler<E>,
-        node_refs: &NodeRefs,
+        node_refs: &NonGlobalNodeRefs,
         node_id: &NodeId,
     ) -> Result<(), CallbackError<PersistNodeError, E>> {
         // TODO: Add locked substate checks, though this is not required since
