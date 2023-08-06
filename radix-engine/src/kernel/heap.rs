@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::resource::{
 #[derive(Debug, Default)]
 pub struct HeapNode {
     substates: NodeSubstates,
-    borrow_count: usize,
+    //borrow_count: usize,
 }
 
 pub struct Heap {
@@ -25,7 +25,6 @@ pub enum HeapRemoveModuleError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum HeapRemoveNodeError {
     NodeNotFound(NodeId),
-    NodeBorrowed(NodeId, usize),
 }
 
 impl Heap {
@@ -38,12 +37,6 @@ impl Heap {
     /// Checks if the given node is in this heap.
     pub fn contains_node(&self, node_id: &NodeId) -> bool {
         self.nodes.contains_key(node_id)
-    }
-
-    pub fn list_modules(&self, node_id: &NodeId) -> Option<BTreeSet<PartitionNumber>> {
-        self.nodes
-            .get(node_id)
-            .map(|node| node.substates.keys().cloned().collect())
     }
 
     pub fn remove_module(
@@ -162,48 +155,15 @@ impl Heap {
 
     /// Inserts a new node to heap.
     pub fn create_node(&mut self, node_id: NodeId, substates: NodeSubstates) {
-        self.nodes.insert(
-            node_id,
-            HeapNode {
-                substates,
-                borrow_count: 0,
-            },
-        );
+        self.nodes.insert(node_id, HeapNode { substates });
     }
 
     /// Removes node.
     pub fn remove_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, HeapRemoveNodeError> {
-        match self
-            .nodes
-            .get(node_id)
-            .map(|node| node.borrow_count.clone())
-        {
-            Some(n) => {
-                if n != 0 {
-                    return Err(HeapRemoveNodeError::NodeBorrowed(node_id.clone(), n));
-                } else {
-                }
-            }
-            None => return Err(HeapRemoveNodeError::NodeNotFound(node_id.clone())),
+        match self.nodes.remove(node_id) {
+            Some(heap_node) => Ok(heap_node.substates),
+            None => Err(HeapRemoveNodeError::NodeNotFound(node_id.clone())),
         }
-
-        Ok(self.nodes.remove(node_id).unwrap().substates)
-    }
-
-    pub fn increase_borrow_count(&mut self, node_id: &NodeId) {
-        self.nodes
-            .get_mut(node_id)
-            .unwrap_or_else(|| panic!("Node {:?} not found", node_id))
-            .borrow_count
-            .add_assign(1);
-    }
-
-    pub fn decrease_borrow_count(&mut self, node_id: &NodeId) {
-        self.nodes
-            .get_mut(node_id)
-            .unwrap_or_else(|| panic!("Node {:?} not found", node_id))
-            .borrow_count
-            .sub_assign(1);
     }
 }
 
