@@ -243,7 +243,7 @@ pub enum AccountPartitionOffset {
     AccountResourcePreferenceByAddress,
     /// Map<ResourceOrNonFungible, ()> - A map of a [`ResourceOrNonFungible`] to Unit that stores
     /// the badges of allowed depositors into accounts
-    AccountAuthorizedDepositorsByResourceOrNonFungible,
+    AccountAuthorizedDepositorByResourceOrNonFungible,
 }
 
 impl From<AccountPartitionOffset> for PartitionOffset {

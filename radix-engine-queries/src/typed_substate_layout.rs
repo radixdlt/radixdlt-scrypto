@@ -140,7 +140,7 @@ pub enum TypedMainModuleSubstateKey {
     AccountField(AccountField),
     AccountVaultKey(ResourceAddress),
     AccountResourcePreferenceKey(ResourceAddress),
-    AccountAuthorizedDepositorsKey(ResourceOrNonFungible),
+    AccountAuthorizedDepositorKey(ResourceOrNonFungible),
     OneResourcePoolField(OneResourcePoolField),
     TwoResourcePoolField(TwoResourcePoolField),
     MultiResourcePoolField(MultiResourcePoolField),
@@ -380,9 +380,9 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
-                AccountPartitionOffset::AccountAuthorizedDepositorsByResourceOrNonFungible => {
+                AccountPartitionOffset::AccountAuthorizedDepositorByResourceOrNonFungible => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountAuthorizedDepositorsKey(
+                    TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -504,9 +504,7 @@ pub enum TypedMainModuleSubstateValue {
     Account(TypedAccountFieldValue),
     AccountVaultEntry(KeyValueEntrySubstate<AccountVaultEntryContents>),
     AccountResourcePreferenceEntry(KeyValueEntrySubstate<AccountResourcePreferenceEntryContents>),
-    AccountAuthorizedDepositorsEntry(
-        KeyValueEntrySubstate<AccountAuthorizedDepositorsEntryContents>,
-    ),
+    AccountAuthorizedDepositorEntry(KeyValueEntrySubstate<AccountAuthorizedDepositorEntryContents>),
     OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
@@ -799,8 +797,8 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::AccountResourcePreferenceKey(_) => {
             TypedMainModuleSubstateValue::AccountResourcePreferenceEntry(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::AccountAuthorizedDepositorsKey(_) => {
-            TypedMainModuleSubstateValue::AccountAuthorizedDepositorsEntry(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(_) => {
+            TypedMainModuleSubstateValue::AccountAuthorizedDepositorEntry(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::AccessControllerField(offset) => {
             TypedMainModuleSubstateValue::AccessController(match offset {

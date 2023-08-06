@@ -62,7 +62,7 @@ pub const ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX: CollectionIndex = 1u8;
 pub type AccountResourcePreferenceEntryContents = ResourcePreference;
 
 pub const ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX: CollectionIndex = 2u8;
-pub type AccountAuthorizedDepositorsEntryContents = ();
+pub type AccountAuthorizedDepositorEntryContents = ();
 
 pub struct AccountBlueprint;
 
@@ -485,7 +485,7 @@ impl AccountBlueprint {
             &encoded_key,
             LockFlags::read_only(),
         )?;
-        let entry = api.key_value_entry_get_typed::<AccountAuthorizedDepositorsEntryContents>(
+        let entry = api.key_value_entry_get_typed::<AccountAuthorizedDepositorEntryContents>(
             kv_store_entry_lock_handle,
         )?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
