@@ -81,17 +81,17 @@ pub fn decimal_pow_batch(x: i64, exp: i64, cnt: i32) -> i64 {
 }
 
 #[no_mangle]
-fn fib(n: Decimal) -> Decimal {
+fn dec_fib(n: Decimal) -> Decimal {
     let n = Decimal::from(n);
     if n == Decimal::ONE || n == Decimal::ZERO {
         Decimal::ONE
     } else {
-        fib(n - 1) + fib(n - 2)
+        dec_fib(n - 1) + dec_fib(n - 2)
     }
 }
 
 #[no_mangle]
 pub fn decimal_fib(n: i64) {
     let n = Decimal::from(n);
-    fib(n);
+    dec_fib(n);
 }
