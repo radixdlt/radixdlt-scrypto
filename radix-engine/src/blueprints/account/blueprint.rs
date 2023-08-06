@@ -487,6 +487,7 @@ impl AccountBlueprint {
         )?;
         let entry: AccountAuthorizedDepositorsEntry =
             api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
+        api.key_value_entry_close(kv_store_entry_lock_handle)?;
         if entry.is_none() {
             Ok(Err(AccountError::NotAnAuthorizedDepositor {
                 depositor: badge.clone(),
