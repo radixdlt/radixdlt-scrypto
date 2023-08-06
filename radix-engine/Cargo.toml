@@ -46,6 +46,9 @@ wabt = { version = "0.10.0" }
 criterion = { version = "0.3", features = ["html_reports"] }
 wasm-benchmarks = { path = "./wasm-benchmarks", default-features = false }
 
+wasmer = { version = "2.2.1"}
+wasmer-compiler-singlepass = { version = "2.2.1" }
+
 [[bench]]
 name = "wasm_benchmarks"
 harness = false

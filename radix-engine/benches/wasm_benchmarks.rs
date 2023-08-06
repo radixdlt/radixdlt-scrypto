@@ -1,6 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::process::Command;
 use wasm_benchmarks::primitive;
+use wasmer;
+use wasmer_compiler_singlepass;
 use wasmi::{self, AsContextMut};
 
 type HostState = u32;
@@ -42,6 +44,16 @@ fn get_wasmi_instance(
         .unwrap()
 }
 
+fn get_wasmer_instance(code: &[u8]) -> wasmer::Instance {
+    let compiler = wasmer_compiler_singlepass::Singlepass::new();
+    let store = wasmer::Store::new(&wasmer::Universal::new(compiler).engine());
+    let module = wasmer::Module::new(&store, code).unwrap();
+    let import_object = wasmer::imports! {};
+
+    // instantiate
+    wasmer::Instance::new(&module, &import_object).expect("Failed to instantiate module")
+}
+
 fn add_benchmark(c: &mut Criterion) {
     let cnt = 100_u32;
     let mut group = c.benchmark_group(format!("primitive_add_{:?}x", cnt));
@@ -72,11 +84,24 @@ fn add_benchmark(c: &mut Criterion) {
         }))
     });
 
+    // wasmer
+    group.bench_function("wasmer", |b| {
+        let instance = get_wasmer_instance(&wasm_code[..]);
+        let func = instance.exports.get_function("add").unwrap();
+
+        black_box(b.iter(|| {
+            for _ in 0..cnt {
+                func.call(&[wasmer::Value::I64(1), wasmer::Value::I64(2)])
+                    .unwrap();
+            }
+        }))
+    });
+
     group.finish();
 }
 
 fn add_batch_benchmark(c: &mut Criterion) {
-    let batch_len = 100_u32;
+    let batch_len = 100_i32;
     let mut group = c.benchmark_group(format!("primitive_add_batch_{:?}x", batch_len));
 
     // native Rust
@@ -92,7 +117,7 @@ fn add_batch_benchmark(c: &mut Criterion) {
         let instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
 
         let func = instance
-            .get_typed_func::<(u64, u64, u32), u64>(store.as_context_mut(), "add_batch")
+            .get_typed_func::<(u64, u64, i32), u64>(store.as_context_mut(), "add_batch")
             .unwrap();
 
         black_box(b.iter(|| {
@@ -100,16 +125,64 @@ fn add_batch_benchmark(c: &mut Criterion) {
                 .unwrap()
         }))
     });
+    // wasmer
+    group.bench_function("wasmer", |b| {
+        let instance = get_wasmer_instance(&wasm_code[..]);
+        let func = instance.exports.get_function("add_batch").unwrap();
+
+        black_box(b.iter(|| {
+            func.call(&[
+                wasmer::Value::I64(1),
+                wasmer::Value::I64(2),
+                wasmer::Value::I32(batch_len),
+            ])
+            .unwrap();
+        }))
+    });
 
     group.finish();
 }
 
 fn pow_benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("primitive_pow");
+    let cnt = 100_u32;
+    let mut group = c.benchmark_group(format!("primitive_pow_{:?}x", cnt));
+
+    // native Rust
     group.bench_function("rust-native", |b| {
         black_box(b.iter(|| {
-            for _ in 0..100 {
+            for _ in 0..cnt {
                 primitive::pow(2, 20);
+            }
+        }))
+    });
+
+    let wasm_code = get_wasm_file();
+    // wasmi
+    group.bench_function("wasmi", |b| {
+        let engine = wasmi::Engine::default();
+        let mut store = wasmi::Store::new(&engine, 42);
+        let instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
+
+        let func = instance
+            .get_typed_func::<(i64, u32), i64>(store.as_context_mut(), "pow")
+            .unwrap();
+
+        black_box(b.iter(|| {
+            for _ in 0..cnt {
+                func.call(store.as_context_mut(), (2, 20)).unwrap();
+            }
+        }))
+    });
+
+    // wasmer
+    group.bench_function("wasmer", |b| {
+        let instance = get_wasmer_instance(&wasm_code[..]);
+        let func = instance.exports.get_function("pow").unwrap();
+
+        black_box(b.iter(|| {
+            for _ in 0..cnt {
+                func.call(&[wasmer::Value::I64(2), wasmer::Value::I32(20)])
+                    .unwrap();
             }
         }))
     });
@@ -118,9 +191,43 @@ fn pow_benchmark(c: &mut Criterion) {
 }
 
 fn pow_batch_benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("primitive_pow_batch");
+    let batch_len = 100_i32;
+    let mut group = c.benchmark_group(format!("primitive_pow_batch_{:?}x", batch_len));
+
+    // native Rust
     group.bench_function("rust-native", |b| {
-        black_box(b.iter(|| primitive::pow_batch(2, 20, 100)))
+        black_box(b.iter(|| primitive::pow_batch(2, 20, batch_len)))
+    });
+
+    let wasm_code = get_wasm_file();
+    // wasmi
+    group.bench_function("wasmi", |b| {
+        let engine = wasmi::Engine::default();
+        let mut store = wasmi::Store::new(&engine, 42);
+        let instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
+
+        let func = instance
+            .get_typed_func::<(i64, u32, i32), i64>(store.as_context_mut(), "pow_batch")
+            .unwrap();
+
+        black_box(b.iter(|| {
+            func.call(store.as_context_mut(), (2, 20, batch_len))
+                .unwrap()
+        }))
+    });
+    // wasmer
+    group.bench_function("wasmer", |b| {
+        let instance = get_wasmer_instance(&wasm_code[..]);
+        let func = instance.exports.get_function("pow_batch").unwrap();
+
+        black_box(b.iter(|| {
+            func.call(&[
+                wasmer::Value::I64(2),
+                wasmer::Value::I32(20),
+                wasmer::Value::I32(batch_len),
+            ])
+            .unwrap();
+        }))
     });
 
     group.finish();
