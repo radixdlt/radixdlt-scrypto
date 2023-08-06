@@ -43,6 +43,12 @@ lazy_static = { version = "1.4.0" }
 
 [dev-dependencies]
 wabt = { version = "0.10.0" }
+criterion = { version = "0.3", features = ["html_reports"] }
+wasm-benchmarks = { path = "./wasm-benchmarks", default-features = false }
+
+[[bench]]
+name = "wasm_benchmarks"
+harness = false
 
 [features]
 # You should enable either `std` or `alloc`
