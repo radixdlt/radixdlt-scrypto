@@ -55,13 +55,13 @@ impl SecurifiedRoleAssignment for SecurifiedAccount {
 
 impl PresecurifiedRoleAssignment for SecurifiedAccount {}
 
-pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
+pub const ACCOUNT_VAULT_COLLECTION_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;
 
-pub const ACCOUNT_RESOURCE_PREFERENCE_INDEX: CollectionIndex = 1u8;
+pub const ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX: CollectionIndex = 1u8;
 pub type AccountResourcePreferenceEntry = Option<ResourcePreference>;
 
-pub const ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX: CollectionIndex = 2u8;
+pub const ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX: CollectionIndex = 2u8;
 pub type AccountAuthorizedDepositorsEntry = Option<()>;
 
 pub struct AccountBlueprint;
@@ -481,7 +481,7 @@ impl AccountBlueprint {
             scrypto_encode(badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX,
+            ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::read_only(),
         )?;
@@ -687,7 +687,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_RESOURCE_PREFERENCE_INDEX,
+            ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::MUTABLE,
         )?;
@@ -706,7 +706,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
         api.actor_remove_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_RESOURCE_PREFERENCE_INDEX,
+            ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX,
             &encoded_key,
         )?;
         Ok(())
@@ -723,7 +723,7 @@ impl AccountBlueprint {
             scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX,
+            ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::MUTABLE,
         )?;
@@ -743,7 +743,7 @@ impl AccountBlueprint {
             scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         api.actor_remove_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX,
+            ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX,
             &encoded_key,
         )?;
         Ok(())
@@ -777,7 +777,7 @@ impl AccountBlueprint {
 
         let mut kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_VAULT_INDEX,
+            ACCOUNT_VAULT_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::read_only(),
         )?;
@@ -795,7 +795,7 @@ impl AccountBlueprint {
                         api.key_value_entry_close(kv_store_entry_lock_handle)?;
                         kv_store_entry_lock_handle = api.actor_open_key_value_entry(
                             OBJECT_HANDLE_SELF,
-                            ACCOUNT_VAULT_INDEX,
+                            ACCOUNT_VAULT_COLLECTION_INDEX,
                             &encoded_key,
                             LockFlags::MUTABLE,
                         )?;
@@ -859,7 +859,7 @@ impl AccountBlueprint {
 
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_VAULT_INDEX,
+            ACCOUNT_VAULT_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::read_only(),
         )?;
@@ -890,13 +890,13 @@ impl AccountBlueprint {
 
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_RESOURCE_PREFERENCE_INDEX,
+            ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::read_only(),
         )?;
 
-        let entry =
-            api.key_value_entry_get_typed::<ResourcePreference>(kv_store_entry_lock_handle)?;
+        let entry: AccountResourcePreferenceEntry =
+            api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
         Ok(entry)
     }

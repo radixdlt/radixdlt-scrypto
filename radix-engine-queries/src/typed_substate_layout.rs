@@ -138,9 +138,9 @@ pub enum TypedMainModuleSubstateKey {
     ValidatorField(ValidatorField),
     AccessControllerField(AccessControllerField),
     AccountField(AccountField),
-    AccountVaultIndexKey(ResourceAddress),
-    AccountResourcePreferenceIndexKey(ResourceAddress),
-    AccountAllowedDepositorsByResourceOrNonFungible(ResourceOrNonFungible),
+    AccountVaultKey(ResourceAddress),
+    AccountResourcePreferenceKey(ResourceAddress),
+    AccountAllowedDepositorsByResourceOrNonFungibleKey(ResourceOrNonFungible),
     OneResourcePoolField(OneResourcePoolField),
     TwoResourcePoolField(TwoResourcePoolField),
     MultiResourcePoolField(MultiResourcePoolField),
@@ -370,19 +370,19 @@ fn to_typed_object_substate_key_internal(
             match partition_offset {
                 AccountPartitionOffset::AccountVaultsByResourceAddress => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountVaultIndexKey(
+                    TypedMainModuleSubstateKey::AccountVaultKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
                 AccountPartitionOffset::AccountResourcePreferenceByAddress => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountResourcePreferenceIndexKey(
+                    TypedMainModuleSubstateKey::AccountResourcePreferenceKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
                 AccountPartitionOffset::AccountAllowedDepositorsByResourceOrNonFungible => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountAllowedDepositorsByResourceOrNonFungible(
+                    TypedMainModuleSubstateKey::AccountAllowedDepositorsByResourceOrNonFungibleKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -502,9 +502,9 @@ pub enum TypedMainModuleSubstateValue {
     Validator(TypedValidatorFieldValue),
     AccessController(TypedAccessControllerFieldValue),
     Account(TypedAccountFieldValue),
-    AccountVaultIndex(KeyValueEntrySubstate<Own>),
-    AccountResourcePreferenceIndex(KeyValueEntrySubstate<AccountResourcePreferenceEntry>),
-    AccountAllowedDepositorsByResourceOrNonFungible(KeyValueEntrySubstate<()>),
+    AccountVaultEntry(KeyValueEntrySubstate<Own>),
+    AccountResourcePreferenceEntry(KeyValueEntrySubstate<AccountResourcePreferenceEntry>),
+    AccountAllowedDepositorsByResourceOrNonFungibleEntry(KeyValueEntrySubstate<()>),
     OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
@@ -512,7 +512,7 @@ pub enum TypedMainModuleSubstateValue {
     TransactionTrackerCollectionEntry(KeyValueEntrySubstate<TransactionStatusSubstateContents>),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
-    GenericKeyValueStore(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
+    GenericKeyValueStoreEntry(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
 }
 
 #[derive(Debug, Clone)]
@@ -791,14 +791,14 @@ fn to_typed_object_substate_value(
                 AccountField::Account => TypedAccountFieldValue::Account(scrypto_decode(data)?),
             })
         }
-        TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
-            TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::AccountVaultKey(_) => {
+            TypedMainModuleSubstateValue::AccountVaultEntry(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::AccountResourcePreferenceIndexKey(_) => {
-            TypedMainModuleSubstateValue::AccountResourcePreferenceIndex(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::AccountResourcePreferenceKey(_) => {
+            TypedMainModuleSubstateValue::AccountResourcePreferenceEntry(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::AccountAllowedDepositorsByResourceOrNonFungible(_) => {
-            TypedMainModuleSubstateValue::AccountAllowedDepositorsByResourceOrNonFungible(
+        TypedMainModuleSubstateKey::AccountAllowedDepositorsByResourceOrNonFungibleKey(_) => {
+            TypedMainModuleSubstateValue::AccountAllowedDepositorsByResourceOrNonFungibleEntry(
                 scrypto_decode(data)?,
             )
         }
@@ -817,7 +817,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
-            TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
+            TypedMainModuleSubstateValue::GenericKeyValueStoreEntry(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::OneResourcePoolField(offset) => {
             TypedMainModuleSubstateValue::OneResourcePool(match offset {
