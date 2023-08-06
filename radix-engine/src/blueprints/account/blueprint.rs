@@ -26,7 +26,7 @@ pub const ACCOUNT_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
-    pub default: DefaultDepositRule,
+    pub default_deposit_rule: DefaultDepositRule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -56,13 +56,13 @@ impl SecurifiedRoleAssignment for SecurifiedAccount {
 impl PresecurifiedRoleAssignment for SecurifiedAccount {}
 
 pub const ACCOUNT_VAULT_COLLECTION_INDEX: CollectionIndex = 0u8;
-pub type AccountVaultIndexEntry = Option<Own>;
+pub type AccountVaultEntryContents = Vault;
 
 pub const ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX: CollectionIndex = 1u8;
-pub type AccountResourcePreferenceEntry = Option<ResourcePreference>;
+pub type AccountResourcePreferenceEntryContents = ResourcePreference;
 
 pub const ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX: CollectionIndex = 2u8;
-pub type AccountAuthorizedDepositorsEntry = Option<()>;
+pub type AccountAuthorizedDepositorsEntryContents = ();
 
 pub struct AccountBlueprint;
 
@@ -238,7 +238,7 @@ impl AccountBlueprint {
             vec![],
             None,
             vec![FieldValue::new(&AccountSubstate {
-                default: DefaultDepositRule::Accept,
+                default_deposit_rule: DefaultDepositRule::Accept,
             })],
             btreemap!(),
         )?;
@@ -485,8 +485,9 @@ impl AccountBlueprint {
             &encoded_key,
             LockFlags::read_only(),
         )?;
-        let entry: AccountAuthorizedDepositorsEntry =
-            api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
+        let entry = api.key_value_entry_get_typed::<AccountAuthorizedDepositorsEntryContents>(
+            kv_store_entry_lock_handle,
+        )?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
         if entry.is_none() {
             Ok(Err(AccountError::NotAnAuthorizedDepositor {
@@ -669,7 +670,7 @@ impl AccountBlueprint {
         let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
         let mut account = api.field_read_typed::<AccountSubstate>(handle)?;
 
-        account.default = default;
+        account.default_deposit_rule = default;
 
         api.field_write_typed(handle, account)?;
         api.field_close(handle)?;
@@ -758,7 +759,7 @@ impl AccountBlueprint {
         let handle =
             api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
         let account = api.field_read_typed::<AccountSubstate>(handle)?;
-        let default = account.default;
+        let default = account.default_deposit_rule;
         api.field_close(handle)?;
 
         Ok(default)
@@ -786,11 +787,12 @@ impl AccountBlueprint {
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it if
         // instructed to.
         let vault = {
-            let entry: AccountVaultIndexEntry =
-                api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
+            let entry = api.key_value_entry_get_typed::<AccountVaultEntryContents>(
+                kv_store_entry_lock_handle,
+            )?;
 
             match entry {
-                Option::Some(own) => Ok(Vault(own)),
+                Option::Some(vault) => Ok(vault),
                 Option::None => {
                     if create {
                         api.key_value_entry_close(kv_store_entry_lock_handle)?;
@@ -866,8 +868,9 @@ impl AccountBlueprint {
         )?;
 
         let does_vault_exist = {
-            let entry: AccountVaultIndexEntry =
-                api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
+            let entry = api.key_value_entry_get_typed::<AccountVaultEntryContents>(
+                kv_store_entry_lock_handle,
+            )?;
 
             match entry {
                 Option::Some(_) => true,
@@ -896,8 +899,9 @@ impl AccountBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let entry: AccountResourcePreferenceEntry =
-            api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
+        let entry = api.key_value_entry_get_typed::<AccountResourcePreferenceEntryContents>(
+            kv_store_entry_lock_handle,
+        )?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
         Ok(entry)
     }
