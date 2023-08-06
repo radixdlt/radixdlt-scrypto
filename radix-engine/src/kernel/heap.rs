@@ -45,12 +45,6 @@ impl Heap {
         self.nodes.contains_key(node_id)
     }
 
-    pub fn list_modules(&self, node_id: &NodeId) -> Option<BTreeSet<PartitionNumber>> {
-        self.nodes
-            .get(node_id)
-            .map(|node| node.substates.keys().cloned().collect())
-    }
-
     pub fn remove_module(
         &mut self,
         node_id: &NodeId,
@@ -201,13 +195,7 @@ impl Heap {
 
     /// Inserts a new node to heap.
     pub fn create_node(&mut self, node_id: NodeId, substates: NodeSubstates) {
-        self.nodes.insert(
-            node_id,
-            HeapNode {
-                substates,
-                //borrow_count: 0,
-            },
-        );
+        self.nodes.insert(node_id, HeapNode { substates });
     }
 
     /// Removes node.
@@ -216,46 +204,7 @@ impl Heap {
             Some(heap_node) => Ok(heap_node.substates),
             None => Err(HeapRemoveNodeError::NodeNotFound(node_id.clone())),
         }
-        /*
-        match self
-            .nodes
-            .get(node_id)
-            .map(|node| node.borrow_count.clone())
-        {
-            Some(n) => {
-                /*
-                if n != 0 {
-                    return Err(HeapRemoveNodeError::NodeBorrowed(node_id.clone(), n));
-                } else {
-                }
-                 */
-            }
-            None => return Err(HeapRemoveNodeError::NodeNotFound(node_id.clone())),
-        }
-
-        Ok(self.nodes.remove(node_id).unwrap().substates)
-         */
     }
-
-    /*
-    pub fn increase_borrow_count(&mut self, node_id: &NodeId) {
-        self.nodes
-            .get_mut(node_id)
-            .unwrap_or_else(|| panic!("Node {:?} not found", node_id))
-            .borrow_count
-            .add_assign(1);
-    }
-     */
-
-    /*
-    pub fn decrease_borrow_count(&mut self, node_id: &NodeId) {
-        self.nodes
-            .get_mut(node_id)
-            .unwrap_or_else(|| panic!("Node {:?} not found", node_id))
-            .borrow_count
-            .sub_assign(1);
-    }
-     */
 }
 
 #[derive(Debug)]

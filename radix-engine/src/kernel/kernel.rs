@@ -18,6 +18,7 @@ use crate::kernel::kernel_callback_api::{
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
+use crate::kernel::node_refs::NonGlobalNodeRefs;
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -39,7 +40,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
-use crate::kernel::node_refs::NonGlobalNodeRefs;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
