@@ -1,4 +1,3 @@
-use std::ops::{AddAssign, SubAssign};
 use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
     CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
@@ -18,8 +17,9 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Box;
 use sbor::prelude::Vec;
 use sbor::rust::collections::LinkedList;
-use utils::prelude::{index_set_new, NonIterMap};
+use utils::prelude::index_set_new;
 use utils::rust::prelude::IndexSet;
+use crate::kernel::node_refs::NodeRefs;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubstateDevice {
@@ -55,7 +55,7 @@ pub trait SubstateReadHandler {
 pub struct SubstateIO<'g, S: SubstateStore> {
     pub heap: Heap,
     pub store: &'g mut S,
-    pub node_refs: NonIterMap<NodeId, usize>,
+    pub node_refs: NodeRefs,
     pub substate_locks: SubstateLocks<LockData>,
 }
 
@@ -64,26 +64,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Self {
             heap: Heap::new(),
             store,
-            node_refs: NonIterMap::new(),
+            node_refs: NodeRefs::new(),
             substate_locks: SubstateLocks::new(),
         }
-    }
-
-    fn increase_node_borrow_count(node_locks: &mut NonIterMap<NodeId, usize>, node_id: &NodeId) {
-        node_locks.entry(*node_id)
-            .or_insert(0)
-            .add_assign(1);
-    }
-
-    fn decrease_node_borrow_count(node_locks: &mut NonIterMap<NodeId, usize>, node_id: &NodeId) {
-        node_locks
-            .get_mut(node_id)
-            .unwrap_or_else(|| panic!("Node {:?} not found", node_id))
-            .sub_assign(1);
-    }
-
-    fn node_is_locked(node_locks: &NonIterMap<NodeId, usize>, node_id: &NodeId) -> bool {
-        node_locks.get(node_id).map(|count| count.gt(&0)).unwrap_or(false)
     }
 
     pub fn create_node<'f, E>(
@@ -108,7 +91,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                         ));
                     }
 
-                    Self::increase_node_borrow_count(&mut self.node_refs, reference);
+                    self.node_refs.add_borrow(reference);
                 }
             }
         }
@@ -134,7 +117,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             return Err(DropNodeError::SubstateBorrowed(*node_id));
         }
 
-        if Self::node_is_locked(&self.node_refs, node_id) {
+        if self.node_refs.node_is_referenced(node_id) {
             return Err(DropNodeError::NodeBorrowed(*node_id));
         }
 
@@ -148,7 +131,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             for (_, substate_value) in module {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        Self::decrease_node_borrow_count(&mut self.node_refs, reference);
+                        self.node_refs.release_borrow(reference);
                     }
                 }
             }
@@ -394,13 +377,13 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                         ));
                     }
 
-                    Self::increase_node_borrow_count(&mut self.node_refs, reference);
+                    self.node_refs.add_borrow(reference);
                 }
             }
             for reference in &lock_data.non_global_references {
                 if !new_references.contains(reference) {
                     // handle removed references
-                    Self::decrease_node_borrow_count(&mut self.node_refs, reference);
+                    self.node_refs.release_borrow(reference);
                 }
             }
 
@@ -588,7 +571,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         heap: &mut Heap,
         store: &mut S,
         handler: &mut impl SubstateIOHandler<E>,
-        node_locks: &NonIterMap<NodeId, usize>,
+        node_refs: &NodeRefs,
         node_id: &NodeId,
     ) -> Result<(), CallbackError<PersistNodeError, E>> {
         // TODO: Add locked substate checks, though this is not required since
@@ -604,7 +587,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 .map_err(CallbackError::CallbackError)?;
 
 
-            if Self::node_is_locked(node_locks, &node_id) {
+            if node_refs.node_is_referenced(&node_id) {
                 return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(node_id)));
             }
 
