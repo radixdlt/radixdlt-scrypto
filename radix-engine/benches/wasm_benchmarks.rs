@@ -54,7 +54,7 @@ fn get_wasmer_instance(code: &[u8]) -> wasmer::Instance {
     wasmer::Instance::new(&module, &import_object).expect("Failed to instantiate module")
 }
 
-fn add_benchmark(c: &mut Criterion) {
+fn primitive_add_benchmark(c: &mut Criterion) {
     let cnt = 100_u32;
     let mut group = c.benchmark_group(format!("primitive_add_{:?}x", cnt));
 
@@ -100,7 +100,7 @@ fn add_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
-fn add_batch_benchmark(c: &mut Criterion) {
+fn primitive_add_batch_benchmark(c: &mut Criterion) {
     let batch_len = 100_i32;
     let mut group = c.benchmark_group(format!("primitive_add_batch_{:?}x", batch_len));
 
@@ -143,7 +143,7 @@ fn add_batch_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
-fn mul_benchmark(c: &mut Criterion) {
+fn primitive_mul_benchmark(c: &mut Criterion) {
     let cnt = 100_u32;
     let mut group = c.benchmark_group(format!("primitive_mul_{:?}x", cnt));
 
@@ -189,7 +189,7 @@ fn mul_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
-fn mul_batch_benchmark(c: &mut Criterion) {
+fn primitive_mul_batch_benchmark(c: &mut Criterion) {
     let batch_len = 100_i32;
     let mut group = c.benchmark_group(format!("primitive_mul_batch_{:?}x", batch_len));
 
@@ -232,7 +232,7 @@ fn mul_batch_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
-fn pow_benchmark(c: &mut Criterion) {
+fn primitive_pow_benchmark(c: &mut Criterion) {
     let cnt = 100_u32;
     let mut group = c.benchmark_group(format!("primitive_pow_{:?}x", cnt));
 
@@ -279,7 +279,7 @@ fn pow_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
-fn pow_batch_benchmark(c: &mut Criterion) {
+fn primitive_pow_batch_benchmark(c: &mut Criterion) {
     let batch_len = 100_i32;
     let mut group = c.benchmark_group(format!("primitive_pow_batch_{:?}x", batch_len));
 
@@ -323,8 +323,12 @@ fn pow_batch_benchmark(c: &mut Criterion) {
 }
 
 criterion_group! {
-    name = benches;
-    config = Criterion::default();
-    targets = add_benchmark, add_batch_benchmark, mul_benchmark, mul_batch_benchmark, pow_benchmark, pow_batch_benchmark
+    primitive_benches,
+    primitive_add_benchmark,
+    primitive_add_batch_benchmark,
+    primitive_mul_benchmark,
+    primitive_mul_batch_benchmark,
+    primitive_pow_benchmark,
+    primitive_pow_batch_benchmark
 }
-criterion_main!(benches);
+criterion_main!(primitive_benches);
