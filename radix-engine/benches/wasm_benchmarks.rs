@@ -143,6 +143,95 @@ fn add_batch_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
+fn mul_benchmark(c: &mut Criterion) {
+    let cnt = 100_u32;
+    let mut group = c.benchmark_group(format!("primitive_mul_{:?}x", cnt));
+
+    group.bench_function("rust-native", |b| {
+        black_box(b.iter(|| {
+            for _ in 0..cnt {
+                primitive::mul(1, 2);
+            }
+        }))
+    });
+
+    let wasm_code = get_wasm_file();
+    // wasmi
+    group.bench_function("wasmi", |b| {
+        let engine = wasmi::Engine::default();
+        let mut store = wasmi::Store::new(&engine, 42);
+        let instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
+
+        let func = instance
+            .get_typed_func::<(u64, u64), u64>(store.as_context_mut(), "mul")
+            .unwrap();
+
+        black_box(b.iter(|| {
+            for _ in 0..cnt {
+                func.call(store.as_context_mut(), (1, 2)).unwrap();
+            }
+        }))
+    });
+
+    // wasmer
+    group.bench_function("wasmer", |b| {
+        let instance = get_wasmer_instance(&wasm_code[..]);
+        let func = instance.exports.get_function("mul").unwrap();
+
+        black_box(b.iter(|| {
+            for _ in 0..cnt {
+                func.call(&[wasmer::Value::I64(1), wasmer::Value::I64(2)])
+                    .unwrap();
+            }
+        }))
+    });
+
+    group.finish();
+}
+
+fn mul_batch_benchmark(c: &mut Criterion) {
+    let batch_len = 100_i32;
+    let mut group = c.benchmark_group(format!("primitive_mul_batch_{:?}x", batch_len));
+
+    // native Rust
+    group.bench_function("rust-native", |b| {
+        black_box(b.iter(|| primitive::mul_batch(1, 2, batch_len)))
+    });
+
+    let wasm_code = get_wasm_file();
+    // wasmi
+    group.bench_function("wasmi", |b| {
+        let engine = wasmi::Engine::default();
+        let mut store = wasmi::Store::new(&engine, 42);
+        let instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
+
+        let func = instance
+            .get_typed_func::<(u64, u64, i32), u64>(store.as_context_mut(), "mul_batch")
+            .unwrap();
+
+        black_box(b.iter(|| {
+            func.call(store.as_context_mut(), (1, 2, batch_len))
+                .unwrap()
+        }))
+    });
+    // wasmer
+    group.bench_function("wasmer", |b| {
+        let instance = get_wasmer_instance(&wasm_code[..]);
+        let func = instance.exports.get_function("mul_batch").unwrap();
+
+        black_box(b.iter(|| {
+            func.call(&[
+                wasmer::Value::I64(1),
+                wasmer::Value::I64(2),
+                wasmer::Value::I32(batch_len),
+            ])
+            .unwrap();
+        }))
+    });
+
+    group.finish();
+}
+
 fn pow_benchmark(c: &mut Criterion) {
     let cnt = 100_u32;
     let mut group = c.benchmark_group(format!("primitive_pow_{:?}x", cnt));
@@ -236,6 +325,6 @@ fn pow_batch_benchmark(c: &mut Criterion) {
 criterion_group! {
     name = benches;
     config = Criterion::default();
-    targets = add_benchmark, add_batch_benchmark, pow_benchmark, pow_batch_benchmark
+    targets = add_benchmark, add_batch_benchmark, mul_benchmark, mul_batch_benchmark, pow_benchmark, pow_batch_benchmark
 }
 criterion_main!(benches);
