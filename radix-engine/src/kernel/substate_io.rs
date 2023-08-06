@@ -18,10 +18,10 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Box;
 use sbor::prelude::Vec;
 use sbor::rust::collections::LinkedList;
-use utils::prelude::index_set_new;
+use utils::prelude::IndexMap;
 use utils::rust::prelude::IndexSet;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SubstateDevice {
     Heap,
     Store,
@@ -31,8 +31,6 @@ pub enum SubstateDevice {
 pub struct LockData {
     flags: LockFlags,
     device: SubstateDevice,
-    owned_nodes: IndexSet<NodeId>,
-    non_global_references: IndexSet<NodeId>,
 }
 
 pub trait SubstateIOHandler<E> {
@@ -75,45 +73,52 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         device: SubstateDevice,
         node_id: NodeId,
         node_substates: NodeSubstates,
+        move_nodes_from_heap: IndexSet<NodeId>,
+        new_non_global_references: IndexMap<NodeId, SubstateDevice>,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
-        for (_partition_number, module) in &node_substates {
-            for (_substate_key, substate_value) in module {
-                for own in substate_value.owned_nodes() {
-                    if device.eq(&SubstateDevice::Store) {
-                        Self::move_node_from_heap_to_store(
-                            &mut self.heap,
-                            self.store,
-                            handler,
-                            &self.non_global_node_refs,
-                            own,
-                        )
-                        .map_err(|e| e.map(CreateNodeError::PersistNodeError))?
-                    }
+        match device {
+            SubstateDevice::Heap => {
+                for (reference, ref_device) in new_non_global_references {
+                    self.non_global_node_refs
+                        .increment_ref_count(reference, ref_device);
                 }
-                for reference in substate_value.references() {
-                    if device.eq(&SubstateDevice::Store) && !reference.is_global() {
-                        return Err(CallbackError::Error(
-                            CreateNodeError::NonGlobalRefNotAllowed(*reference),
-                        ));
-                    }
+            }
+            SubstateDevice::Store => {
+                for own in move_nodes_from_heap {
+                    Self::move_node_from_heap_to_store(
+                        &mut self.heap,
+                        self.store,
+                        handler,
+                        &self.non_global_node_refs,
+                        &own,
+                    )
+                    .map_err(|e| e.map(CreateNodeError::PersistNodeError))?
+                }
 
-                    if !reference.is_global() {
-                        self.non_global_node_refs.increment_ref_count(reference);
-                    }
+                if !new_non_global_references.is_empty() {
+                    return Err(CallbackError::Error(
+                        CreateNodeError::NonGlobalRefNotAllowed(
+                            new_non_global_references
+                                .into_iter()
+                                .map(|(node_id, _)| node_id)
+                                .next()
+                                .unwrap(),
+                        ),
+                    ));
                 }
             }
         }
 
         match device {
+            SubstateDevice::Heap => {
+                self.heap.create_node(node_id, node_substates);
+            }
             SubstateDevice::Store => {
                 self.store
                     .create_node(node_id, node_substates, &mut |store_access| {
                         handler.on_store_access(&self.heap, store_access)
                     })
                     .map_err(CallbackError::CallbackError)?;
-            }
-            SubstateDevice::Heap => {
-                self.heap.create_node(node_id, node_substates);
             }
         }
 
@@ -294,23 +299,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             default,
         )?;
 
-        let mut owned_nodes = index_set_new();
-        for node_id in substate_value.owned_nodes() {
-            owned_nodes.insert(*node_id);
-        }
-        let mut non_global_references = index_set_new(); // du-duplicated
-        for node_id in substate_value.references() {
-            if !node_id.is_global() {
-                non_global_references.insert(*node_id);
-            }
-        }
-
-        let lock_data = LockData {
-            flags,
-            device: device,
-            owned_nodes,
-            non_global_references,
-        };
+        let lock_data = LockData { flags, device };
 
         let global_lock_handle = match self.substate_locks.lock(
             node_id,
@@ -361,75 +350,54 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         handler: &mut impl SubstateIOHandler<E>,
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
+        move_nodes_from_heap: IndexSet<NodeId>,
+        add_non_global_references: IndexMap<NodeId, SubstateDevice>,
+        remove_non_global_references: IndexSet<NodeId>,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
-        let mut new_owned_nodes = index_set_new();
-        for own in substate.owned_nodes() {
-            if !new_owned_nodes.insert(own.clone()) {
-                return Err(CallbackError::Error(
-                    WriteSubstateError::ContainsDuplicatedOwns,
-                ));
-            }
-        }
-        let mut new_non_global_references = index_set_new();
-        for own in substate.references() {
-            if !own.is_global() {
-                // Deduplicate
-                new_non_global_references.insert(own.clone());
-            }
-        }
-
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get_mut(global_lock_handle);
         if !lock_data.flags.contains(LockFlags::MUTABLE) {
             return Err(CallbackError::Error(WriteSubstateError::NoWritePermission));
         }
 
-        // Process owned
-        {
-            for own in &new_owned_nodes {
-                if !lock_data.owned_nodes.contains(own) {
-                    // Move the node to store, if its owner is already in store
-                    if lock_data.device.eq(&SubstateDevice::Store) {
-                        Self::move_node_from_heap_to_store(
-                            &mut self.heap,
-                            self.store,
-                            handler,
-                            &self.non_global_node_refs,
-                            own,
-                        )
-                        .map_err(|e| e.map(WriteSubstateError::PersistNodeError))?;
-                    }
+        match lock_data.device {
+            SubstateDevice::Heap => {
+                for (reference, device) in add_non_global_references {
+                    self.non_global_node_refs
+                        .increment_ref_count(reference, device);
                 }
-            }
 
-            lock_data.owned_nodes = new_owned_nodes;
-        }
-
-        // Process references
-        {
-            if lock_data.device.eq(&SubstateDevice::Store) && !new_non_global_references.is_empty()
-            {
-                return Err(CallbackError::Error(
-                    WriteSubstateError::NonGlobalRefNotAllowed(
-                        new_non_global_references.into_iter().next().unwrap(),
-                    ),
-                ));
-            }
-
-            for reference in &new_non_global_references {
-                if !lock_data.non_global_references.contains(reference) {
-                    self.non_global_node_refs.increment_ref_count(reference);
-                }
-            }
-
-            for reference in &lock_data.non_global_references {
-                if !new_non_global_references.contains(reference) {
+                for reference in &remove_non_global_references {
                     // handle removed references
                     self.non_global_node_refs.decrement_ref_count(reference);
                 }
             }
+            SubstateDevice::Store => {
+                for own in &move_nodes_from_heap {
+                    // Move the node to store, if its owner is already in store
+                    Self::move_node_from_heap_to_store(
+                        &mut self.heap,
+                        self.store,
+                        handler,
+                        &self.non_global_node_refs,
+                        own,
+                    )
+                    .map_err(|e| e.map(WriteSubstateError::PersistNodeError))?;
+                }
 
-            lock_data.non_global_references = new_non_global_references;
+                if !add_non_global_references.is_empty() || !remove_non_global_references.is_empty()
+                {
+                    return Err(CallbackError::Error(
+                        WriteSubstateError::NonGlobalRefNotAllowed(
+                            add_non_global_references
+                                .into_iter()
+                                .map(|(node_id, _)| node_id)
+                                .next()
+                                .unwrap(),
+                        ),
+                    ));
+                }
+            }
         }
 
         match lock_data.device {

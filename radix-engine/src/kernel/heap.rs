@@ -7,14 +7,8 @@ use radix_engine_interface::blueprints::resource::{
 };
 use sbor::rust::collections::btree_map::Entry;
 
-#[derive(Debug, Default)]
-pub struct HeapNode {
-    substates: NodeSubstates,
-    //borrow_count: usize,
-}
-
 pub struct Heap {
-    nodes: NonIterMap<NodeId, HeapNode>,
+    nodes: NonIterMap<NodeId, NodeSubstates>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -70,7 +64,7 @@ impl Heap {
         let entry = self
             .nodes
             .entry(*node_id)
-            .or_insert(HeapNode::default())
+            .or_insert(NodeSubstates::default())
             .substates
             .entry(partition_num)
             .or_insert(BTreeMap::new())
@@ -117,7 +111,7 @@ impl Heap {
     ) {
         self.nodes
             .entry(node_id)
-            .or_insert_with(|| HeapNode::default())
+            .or_insert_with(|| NodeSubstates::default())
             .substates
             .entry(partition_num)
             .or_default()
@@ -195,7 +189,7 @@ impl Heap {
 
     /// Inserts a new node to heap.
     pub fn create_node(&mut self, node_id: NodeId, substates: NodeSubstates) {
-        self.nodes.insert(node_id, HeapNode { substates });
+        self.nodes.insert(node_id, substates);
     }
 
     /// Removes node.

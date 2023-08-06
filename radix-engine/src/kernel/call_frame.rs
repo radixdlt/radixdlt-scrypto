@@ -108,7 +108,7 @@ pub enum ReferenceOrigin {
     Heap,
     Global(GlobalAddress),
     DirectlyAccessed,
-    SubstateNonGlobalReference,
+    SubstateNonGlobalReference(SubstateDevice),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -423,6 +423,7 @@ pub enum ProcessSubstateKeyError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProcessSubstateError {
+    ContainsDuplicateOwns,
     TakeNodeError(TakeNodeError),
     CantDropNodeInStore(NodeId),
     RefNotFound(NodeId),
@@ -549,10 +550,22 @@ impl<C, L: Clone> CallFrame<C, L> {
             SubstateDevice::Heap
         };
 
+        let mut new_owned_nodes = index_set_new();
+        let mut new_non_global_references = index_map_new();
+
+        // FIXME: Should process all owns before all references to ensure owns don't clash with references
         for (_partition_number, module) in &node_substates {
             for (substate_key, substate_value) in module {
-                self.process_substate(substate_value, destination_device, None)
+                let (
+                    substate_new_owned_nodes,
+                    new_non_global_references_with_device,
+                    _removed_non_global_refs,
+                ) = self
+                    .process_substate(destination_device, substate_value, None)
                     .map_err(|e| CallbackError::Error(CreateNodeError::ProcessSubstateError(e)))?;
+
+                new_owned_nodes.extend(substate_new_owned_nodes);
+                new_non_global_references.extend(new_non_global_references_with_device);
 
                 self.process_input_substate_key(substate_key).map_err(|e| {
                     CallbackError::Error(CreateNodeError::ProcessSubstateKeyError(e))
@@ -576,7 +589,14 @@ impl<C, L: Clone> CallFrame<C, L> {
             phantom: PhantomData::default(),
         };
 
-        substate_io.create_node(&mut handler, destination_device, node_id, node_substates)?;
+        substate_io.create_node(
+            &mut handler,
+            destination_device,
+            node_id,
+            node_substates,
+            new_owned_nodes,
+            new_non_global_references,
+        )?;
 
         Ok(())
     }
@@ -629,17 +649,14 @@ impl<C, L: Clone> CallFrame<C, L> {
         dest_partition_number: PartitionNumber,
     ) -> Result<(), CallbackError<MoveModuleError, E>> {
         // Check src visibility
-        let (_ref_origin, src_device) =
-            self.get_node_ref(substate_io, src_node_id).ok_or_else(|| {
-                CallbackError::Error(MoveModuleError::NodeNotAvailable(src_node_id.clone()))
-            })?;
+        let (_ref_origin, src_device) = self.get_node_ref(src_node_id).ok_or_else(|| {
+            CallbackError::Error(MoveModuleError::NodeNotAvailable(src_node_id.clone()))
+        })?;
 
         // Check dest visibility
-        let (_ref_origin, dest_device) =
-            self.get_node_ref(substate_io, dest_node_id)
-                .ok_or_else(|| {
-                    CallbackError::Error(MoveModuleError::NodeNotAvailable(dest_node_id.clone()))
-                })?;
+        let (_ref_origin, dest_device) = self.get_node_ref(dest_node_id).ok_or_else(|| {
+            CallbackError::Error(MoveModuleError::NodeNotAvailable(dest_node_id.clone()))
+        })?;
 
         let mut handler = WrapperHandler {
             call_frame: self,
@@ -722,7 +739,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
     ) -> Result<(OpenSubstateHandle, usize), CallbackError<OpenSubstateError, E>> {
-        let (ref_origin, device) = self.get_node_ref(substate_io, node_id).ok_or_else(|| {
+        let (ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(OpenSubstateError::NodeNotVisible(node_id.clone()))
         })?;
 
@@ -757,13 +774,16 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
+        let value_len = substate_value.len();
+
         // Expand transient reference set
         for reference in &non_global_references {
+            let ref_device = substate_io.non_global_node_refs.get_ref_device(reference);
             self.transient_references
                 .entry(reference.clone())
                 .or_insert(TransientReference {
                     ref_count: 0usize,
-                    ref_origin: ReferenceOrigin::SubstateNonGlobalReference,
+                    ref_origin: ReferenceOrigin::SubstateNonGlobalReference(ref_device),
                 })
                 .ref_count
                 .add_assign(1);
@@ -795,7 +815,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         );
         self.next_handle = self.next_handle + 1;
 
-        Ok((lock_handle, substate_value.len()))
+        Ok((lock_handle, value_len))
     }
 
     pub fn read_substate<'f, S: SubstateStore, H: CallFrameSubstateReadHandler<C, L>>(
@@ -840,19 +860,19 @@ impl<C, L: Clone> CallFrame<C, L> {
                     lock_handle,
                 )))?;
 
-        {
-            let (new_owned_nodes, new_non_global_references) = self
-                .process_substate(
-                    &substate,
-                    opened_substate.device,
-                    Some((
-                        &opened_substate.owned_nodes,
-                        &opened_substate.non_global_references,
-                    )),
-                )
-                .map_err(|e| CallbackError::Error(WriteSubstateError::ProcessSubstateError(e)))?;
+        let (move_nodes_from_heap, new_non_global_references_with_device, removed_non_global_refs) =
+            self.process_substate(
+                opened_substate.device,
+                &substate,
+                Some((
+                    &opened_substate.owned_nodes,
+                    &opened_substate.non_global_references,
+                )),
+            )
+            .map_err(|e| CallbackError::Error(WriteSubstateError::ProcessSubstateError(e)))?;
 
-            for new_owned_node in &new_owned_nodes {
+        {
+            for new_owned_node in &move_nodes_from_heap {
                 self.transient_references
                     .entry(new_owned_node.clone())
                     .or_insert(TransientReference {
@@ -863,18 +883,23 @@ impl<C, L: Clone> CallFrame<C, L> {
                     .add_assign(1);
             }
 
-            for new_non_global_reference in &new_non_global_references {
+            let mut new_non_global_references = index_set_new();
+            for (new_non_global_reference, device) in &new_non_global_references_with_device {
                 self.transient_references
                     .entry(new_non_global_reference.clone())
                     .or_insert(TransientReference {
                         ref_count: 0usize,
-                        ref_origin: ReferenceOrigin::SubstateNonGlobalReference,
+                        ref_origin: ReferenceOrigin::SubstateNonGlobalReference(*device),
                     })
                     .ref_count
                     .add_assign(1);
+
+                new_non_global_references.insert(*new_non_global_reference);
             }
 
-            opened_substate.owned_nodes.extend(new_owned_nodes);
+            opened_substate
+                .owned_nodes
+                .extend(move_nodes_from_heap.clone());
             opened_substate
                 .non_global_references
                 .extend(new_non_global_references);
@@ -886,7 +911,14 @@ impl<C, L: Clone> CallFrame<C, L> {
             phantom: PhantomData::default(),
         };
 
-        substate_io.write_substate(&mut handler, opened_substate.global_lock_handle, substate)?;
+        substate_io.write_substate(
+            &mut handler,
+            opened_substate.global_lock_handle,
+            substate,
+            move_nodes_from_heap,
+            new_non_global_references_with_device,
+            removed_non_global_refs,
+        )?;
 
         self.open_substates.insert(lock_handle, opened_substate);
 
@@ -961,13 +993,16 @@ impl<C, L: Clone> CallFrame<C, L> {
         value: IndexedScryptoValue,
         on_store_access: &mut F,
     ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
-        let (_ref_origin, device) = self.get_node_ref(substate_io, node_id).ok_or_else(|| {
+        let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameSetSubstateError::NodeNotVisible(node_id.clone()))
         })?;
 
         self.process_input_substate_key(&key).map_err(|e| {
             CallbackError::Error(CallFrameSetSubstateError::ProcessSubstateKeyError(e))
         })?;
+
+        // TODO: Should process value here (For example, not allow owned objects or references) but
+        // this isn't a problem for now since only native objects are allowed to use set_substate
 
         substate_io.set_substate(device, node_id, partition_num, key, value, on_store_access)?;
 
@@ -982,7 +1017,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         key: &SubstateKey,
         on_store_access: &mut F,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
-        let (_ref_origin, device) = self.get_node_ref(substate_io, node_id).ok_or_else(|| {
+        let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameRemoveSubstateError::NodeNotVisible(
                 node_id.clone(),
             ))
@@ -1013,7 +1048,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         on_store_access: &mut F,
     ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
         // Check node visibility
-        let (_ref_origin, device) = self.get_node_ref(substate_io, node_id).ok_or_else(|| {
+        let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameScanKeysError::NodeNotVisible(node_id.clone()))
         })?;
 
@@ -1052,7 +1087,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         CallbackError<CallFrameDrainSubstatesError, E>,
     > {
         // Check node visibility
-        let (_ref_origin, device) = self.get_node_ref(substate_io, node_id).ok_or_else(|| {
+        let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameDrainSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ))
@@ -1100,7 +1135,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         CallbackError<CallFrameScanSortedSubstatesError, E>,
     > {
         // Check node visibility
-        let (_ref_origin, device) = self.get_node_ref(substate_io, node_id).ok_or_else(|| {
+        let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameScanSortedSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ))
@@ -1149,9 +1184,8 @@ impl<C, L: Clone> CallFrame<C, L> {
         self.owned_root_nodes.clone().into_iter().collect()
     }
 
-    pub fn get_node_ref<S: SubstateStore>(
+    fn get_node_ref(
         &self,
-        substate_io: &SubstateIO<S>,
         node_id: &NodeId,
     ) -> Option<(ReferenceOrigin, SubstateDevice)> {
         let node_visibility = self.get_node_visibility(node_id);
@@ -1162,13 +1196,8 @@ impl<C, L: Clone> CallFrame<C, L> {
             ReferenceOrigin::Global(..) | ReferenceOrigin::DirectlyAccessed => {
                 SubstateDevice::Store
             }
-            ReferenceOrigin::SubstateNonGlobalReference => {
-                // TODO: Instead of checking heap, keep track of this instead
-                if substate_io.heap.contains_node(node_id) {
-                    SubstateDevice::Heap
-                } else {
-                    SubstateDevice::Store
-                }
+            ReferenceOrigin::SubstateNonGlobalReference(device) => {
+                device
             }
         };
 
@@ -1201,10 +1230,17 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     fn process_substate(
         &mut self,
-        updated_substate: &IndexedScryptoValue,
         device: SubstateDevice,
+        updated_substate: &IndexedScryptoValue,
         prev: Option<(&IndexSet<NodeId>, &IndexSet<NodeId>)>,
-    ) -> Result<(IndexSet<NodeId>, IndexSet<NodeId>), ProcessSubstateError> {
+    ) -> Result<
+        (
+            IndexSet<NodeId>,
+            IndexMap<NodeId, SubstateDevice>,
+            IndexSet<NodeId>,
+        ),
+        ProcessSubstateError,
+    > {
         // Process owned nodes
         let new_owned_nodes = {
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
@@ -1222,7 +1258,10 @@ impl<C, L: Clone> CallFrame<C, L> {
                         .map_err(ProcessSubstateError::TakeNodeError)?;
                     new_owned_nodes.insert(*own);
                 }
-                updated_owned_nodes.insert(*own);
+
+                if !updated_owned_nodes.insert(own.clone()) {
+                    return Err(ProcessSubstateError::ContainsDuplicateOwns);
+                }
             }
 
             if let Some((old_owned_nodes, _)) = prev {
@@ -1245,9 +1284,9 @@ impl<C, L: Clone> CallFrame<C, L> {
         //====================
         // Process references
         //====================
-        let new_non_global_references = {
+        let (new_non_global_references, removed_non_global_refs) = {
             let mut updated_references: IndexSet<NodeId> = index_set_new();
-            let mut new_non_global_references: IndexSet<NodeId> = index_set_new();
+            let mut new_non_global_references: IndexMap<NodeId, SubstateDevice> = index_map_new();
             for node_id in updated_substate.references() {
                 // Deduplicate
                 updated_references.insert(node_id.clone());
@@ -1262,23 +1301,35 @@ impl<C, L: Clone> CallFrame<C, L> {
 
                 if reference_is_new {
                     // handle added references
-                    if !self
-                        .get_node_visibility(reference)
-                        .can_be_referenced_in_substate()
-                    {
+                    let node_visibility = self.get_node_visibility(reference);
+                    if !node_visibility.can_be_referenced_in_substate() {
                         return Err(ProcessSubstateError::RefNotFound(reference.clone()));
                     }
 
                     if !reference.is_global() {
-                        new_non_global_references.insert(reference.clone());
+                        let (_, device) = self.get_node_ref(reference).unwrap();
+                        new_non_global_references.insert(reference.clone(), device);
                     }
                 }
             }
 
-            new_non_global_references
+            let mut removed_non_global_refs: IndexSet<NodeId> = index_set_new();
+            if let Some((_, old_references)) = &prev {
+                for old_ref in *old_references {
+                    if !updated_references.contains(old_ref) {
+                        removed_non_global_refs.insert(*old_ref);
+                    }
+                }
+            }
+
+            (new_non_global_references, removed_non_global_refs)
         };
 
-        Ok((new_owned_nodes, new_non_global_references))
+        Ok((
+            new_owned_nodes,
+            new_non_global_references,
+            removed_non_global_refs,
+        ))
     }
 
     fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
