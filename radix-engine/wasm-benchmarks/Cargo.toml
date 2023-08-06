@@ -7,4 +7,10 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+radix-engine-common = { path = "../../radix-engine-common", default-features = false }
 
+[features]
+# You should enable either `std` or `alloc`
+default = ["std"]
+std = ["radix-engine-common/std"]
+alloc = ["radix-engine-common/alloc"]
