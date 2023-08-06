@@ -10,7 +10,7 @@ use sbor::rust::collections::btree_map::Entry;
 #[derive(Debug, Default)]
 pub struct HeapNode {
     substates: NodeSubstates,
-    borrow_count: usize,
+    //borrow_count: usize,
 }
 
 pub struct Heap {
@@ -26,7 +26,6 @@ pub enum HeapRemoveModuleError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum HeapRemoveNodeError {
     NodeNotFound(NodeId),
-    NodeBorrowed(NodeId, usize),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -206,30 +205,39 @@ impl Heap {
             node_id,
             HeapNode {
                 substates,
-                borrow_count: 0,
+                //borrow_count: 0,
             },
         );
     }
 
     /// Removes node.
     pub fn remove_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, HeapRemoveNodeError> {
+        match self.nodes.remove(node_id) {
+            Some(heap_node) => Ok(heap_node.substates),
+            None => Err(HeapRemoveNodeError::NodeNotFound(node_id.clone())),
+        }
+        /*
         match self
             .nodes
             .get(node_id)
             .map(|node| node.borrow_count.clone())
         {
             Some(n) => {
+                /*
                 if n != 0 {
                     return Err(HeapRemoveNodeError::NodeBorrowed(node_id.clone(), n));
                 } else {
                 }
+                 */
             }
             None => return Err(HeapRemoveNodeError::NodeNotFound(node_id.clone())),
         }
 
         Ok(self.nodes.remove(node_id).unwrap().substates)
+         */
     }
 
+    /*
     pub fn increase_borrow_count(&mut self, node_id: &NodeId) {
         self.nodes
             .get_mut(node_id)
@@ -237,7 +245,9 @@ impl Heap {
             .borrow_count
             .add_assign(1);
     }
+     */
 
+    /*
     pub fn decrease_borrow_count(&mut self, node_id: &NodeId) {
         self.nodes
             .get_mut(node_id)
@@ -245,6 +255,7 @@ impl Heap {
             .borrow_count
             .sub_assign(1);
     }
+     */
 }
 
 #[derive(Debug)]

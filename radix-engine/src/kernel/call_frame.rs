@@ -307,7 +307,7 @@ pub enum CreateNodeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum DropNodeError {
     TakeNodeError(TakeNodeError),
-    NodeBorrowed(NodeId, usize),
+    NodeBorrowed(NodeId),
     SubstateBorrowed(NodeId),
 }
 
@@ -315,7 +315,7 @@ pub enum DropNodeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistNodeError {
     ContainsNonGlobalRef(NodeId),
-    NodeBorrowed(NodeId, usize),
+    NodeBorrowed(NodeId),
 }
 
 /// Represents an error when taking a node from current frame.

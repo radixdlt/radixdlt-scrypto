@@ -1,3 +1,4 @@
+use std::ops::{AddAssign, SubAssign};
 use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
     CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
@@ -17,7 +18,7 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Box;
 use sbor::prelude::Vec;
 use sbor::rust::collections::LinkedList;
-use utils::prelude::index_set_new;
+use utils::prelude::{index_set_new, NonIterMap};
 use utils::rust::prelude::IndexSet;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -54,6 +55,7 @@ pub trait SubstateReadHandler {
 pub struct SubstateIO<'g, S: SubstateStore> {
     pub heap: Heap,
     pub store: &'g mut S,
+    pub node_locks: NonIterMap<NodeId, usize>,
     pub substate_locks: SubstateLocks<LockData>,
 }
 
@@ -62,8 +64,26 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Self {
             heap: Heap::new(),
             store,
+            node_locks: NonIterMap::new(),
             substate_locks: SubstateLocks::new(),
         }
+    }
+
+    fn increase_node_borrow_count(node_locks: &mut NonIterMap<NodeId, usize>, node_id: &NodeId) {
+        node_locks.entry(*node_id)
+            .or_insert(0)
+            .add_assign(1);
+    }
+
+    fn decrease_node_borrow_count(node_locks: &mut NonIterMap<NodeId, usize>, node_id: &NodeId) {
+        node_locks
+            .get_mut(node_id)
+            .unwrap_or_else(|| panic!("Node {:?} not found", node_id))
+            .sub_assign(1);
+    }
+
+    fn node_is_locked(node_locks: &NonIterMap<NodeId, usize>, node_id: &NodeId) -> bool {
+        node_locks.get(node_id).map(|count| count.gt(&0)).unwrap_or(false)
     }
 
     pub fn create_node<'f, E>(
@@ -77,7 +97,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             for (_substate_key, substate_value) in module {
                 for own in substate_value.owned_nodes() {
                     if substate_device.eq(&SubstateDevice::Store) {
-                        Self::move_node_to_store(&mut self.heap, self.store, handler, own)
+                        Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_locks, own)
                             .map_err(|e| e.map(CreateNodeError::PersistNodeError))?
                     }
                 }
@@ -89,7 +109,8 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     }
 
                     if self.heap.contains_node(reference) {
-                        self.heap.increase_borrow_count(reference);
+                        Self::increase_node_borrow_count(&mut self.node_locks, reference);
+                        //self.heap.increase_borrow_count(reference);
                     }
                 }
             }
@@ -116,13 +137,14 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             return Err(DropNodeError::SubstateBorrowed(*node_id));
         }
 
+        if Self::node_is_locked(&self.node_locks, node_id) {
+            return Err(DropNodeError::NodeBorrowed(*node_id));
+        }
+
         let node_substates = match self.heap.remove_node(node_id) {
             Ok(substates) => substates,
             Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
                 panic!("Frame owned node {:?} not found in heap", node_id)
-            }
-            Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
-                return Err(DropNodeError::NodeBorrowed(node_id, count));
             }
         };
         for (_, module) in &node_substates {
@@ -130,7 +152,8 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
                         if self.heap.contains_node(reference) {
-                            self.heap.decrease_borrow_count(reference);
+                            Self::decrease_node_borrow_count(&mut self.node_locks, reference);
+                            //self.heap.decrease_borrow_count(reference);
                         }
                     }
                 }
@@ -171,7 +194,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(&mut self.heap, self.store, handler, own)
+                    Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_locks, own)
                         .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                 }
 
@@ -358,7 +381,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 if !lock_data.owned_nodes.contains(own) {
                     // Move the node to store, if its owner is already in store
                     if lock_data.location.eq(&SubstateDevice::Store) {
-                        Self::move_node_to_store(&mut self.heap, self.store, handler, own)
+                        Self::move_node_to_store(&mut self.heap, self.store, handler, &self.node_locks, own)
                             .map_err(|e| e.map(WriteSubstateError::PersistNodeError))?;
                     }
                 }
@@ -378,7 +401,8 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     }
 
                     if self.heap.contains_node(reference) {
-                        self.heap.increase_borrow_count(reference);
+                        Self::increase_node_borrow_count(&mut self.node_locks, reference);
+                        //self.heap.increase_borrow_count(reference);
                     }
                 }
             }
@@ -386,7 +410,8 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 if !new_references.contains(reference) {
                     // handle removed references
                     if self.heap.contains_node(reference) {
-                        self.heap.decrease_borrow_count(reference);
+                        Self::decrease_node_borrow_count(&mut self.node_locks, reference);
+                        //self.heap.decrease_borrow_count(reference);
                     }
                 }
             }
@@ -571,10 +596,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(substates)
     }
 
-    pub fn move_node_to_store<E>(
+    fn move_node_to_store<E>(
         heap: &mut Heap,
         store: &mut S,
         handler: &mut impl SubstateIOHandler<E>,
+        node_locks: &NonIterMap<NodeId, usize>,
         node_id: &NodeId,
     ) -> Result<(), CallbackError<PersistNodeError, E>> {
         // TODO: Add locked substate checks, though this is not required since
@@ -589,15 +615,15 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 .on_persist_node(heap, &node_id)
                 .map_err(CallbackError::CallbackError)?;
 
+
+            if Self::node_is_locked(node_locks, &node_id) {
+                return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(node_id)));
+            }
+
             let node_substates = match heap.remove_node(&node_id) {
                 Ok(substates) => substates,
                 Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
                     panic!("Frame owned node {:?} not found in heap", node_id)
-                }
-                Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
-                    return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(
-                        node_id, count,
-                    )));
                 }
             };
             for (_partition_number, module_substates) in &node_substates {

@@ -53,6 +53,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             substate_io: SubstateIO {
                 heap: Heap::new(),
                 store: self.store,
+                node_locks: NonIterMap::new(),
                 substate_locks: SubstateLocks::new(),
             },
             id_allocator: self.id_allocator,
@@ -79,6 +80,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             substate_io: SubstateIO {
                 heap: Heap::new(),
                 store: self.store,
+                node_locks: NonIterMap::new(),
                 substate_locks: SubstateLocks::new(),
             },
             id_allocator: self.id_allocator,
