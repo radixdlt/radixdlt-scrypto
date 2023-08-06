@@ -49,7 +49,11 @@ pub fn decimal_mul_batch(x: i64, y: i64, cnt: i32) -> i64 {
     let y = Decimal::from(y);
     let mut z = x;
     for _ in 0..cnt {
-        z *= y;
+        if z < x {
+            z = z * y;
+        } else {
+            z = z * x;
+        }
     }
     z.is_positive().into()
 }
@@ -64,9 +68,14 @@ pub fn decimal_pow(x: i64, exp: i64) -> i64 {
 #[no_mangle]
 pub fn decimal_pow_batch(x: i64, exp: i64, cnt: i32) -> i64 {
     let x = Decimal::from(x);
-    let mut c = Decimal::ONE;
+    let mut c = x;
     for _ in 0..cnt {
         c = x.powi(exp);
+        if c.is_positive() {
+            c = -x;
+        } else {
+            c = x;
+        }
     }
     c.is_positive().into()
 }
