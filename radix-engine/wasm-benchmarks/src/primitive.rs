@@ -48,3 +48,17 @@ pub fn primitive_pow_batch(x: i64, exp: u32, cnt: i32) -> i64 {
     }
     c
 }
+
+#[no_mangle]
+fn prim_fib(n: i64) -> i64 {
+    if n == 1 || n == 0 {
+        1
+    } else {
+        prim_fib(n - 1) + prim_fib(n - 2)
+    }
+}
+
+#[no_mangle]
+pub fn primitive_fib(n: i64) {
+    prim_fib(n);
+}

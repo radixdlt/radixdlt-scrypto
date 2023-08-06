@@ -331,6 +331,40 @@ fn primitive_pow_batch_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
+fn primitive_fib_benchmark(c: &mut Criterion) {
+    let mut group = c.benchmark_group("primitive_fib");
+    let fibonacci = 20i64;
+
+    // native Rust
+    group.bench_function("rust-native", |b| {
+        black_box(b.iter(|| primitive_fib(fibonacci)))
+    });
+
+    let wasm_code = get_wasm_file();
+    // wasmi
+    group.bench_function("wasmi", |b| {
+        let engine = wasmi::Engine::default();
+        let mut store = wasmi::Store::new(&engine, 42);
+        let instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
+
+        let func = instance
+            .get_typed_func::<i64, ()>(store.as_context_mut(), "primitive_fib")
+            .unwrap();
+
+        black_box(b.iter(|| func.call(store.as_context_mut(), fibonacci).unwrap()))
+    });
+
+    // wasmer
+    group.bench_function("wasmer", |b| {
+        let instance = get_wasmer_instance(&wasm_code[..]);
+        let func = instance.exports.get_function("primitive_fib").unwrap();
+
+        black_box(b.iter(|| func.call(&[wasmer::Value::I64(fibonacci)]).unwrap()))
+    });
+
+    group.finish();
+}
+
 fn decimal_add_benchmark(c: &mut Criterion) {
     let cnt = 100_u32;
     let mut group = c.benchmark_group(format!("decimal_add_{:?}x", cnt));
@@ -694,6 +728,40 @@ fn decimal_pow_batch_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
+fn decimal_fib_benchmark(c: &mut Criterion) {
+    let mut group = c.benchmark_group("decimal_fib");
+    let fibonacci = 20i64;
+
+    // native Rust
+    group.bench_function("rust-native", |b| {
+        black_box(b.iter(|| decimal_fib(fibonacci)))
+    });
+
+    let wasm_code = get_wasm_file();
+    // wasmi
+    group.bench_function("wasmi", |b| {
+        let engine = wasmi::Engine::default();
+        let mut store = wasmi::Store::new(&engine, 42);
+        let instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
+
+        let func = instance
+            .get_typed_func::<i64, ()>(store.as_context_mut(), "decimal_fib")
+            .unwrap();
+
+        black_box(b.iter(|| func.call(store.as_context_mut(), fibonacci).unwrap()))
+    });
+
+    // wasmer
+    group.bench_function("wasmer", |b| {
+        let instance = get_wasmer_instance(&wasm_code[..]);
+        let func = instance.exports.get_function("decimal_fib").unwrap();
+
+        black_box(b.iter(|| func.call(&[wasmer::Value::I64(fibonacci)]).unwrap()))
+    });
+
+    group.finish();
+}
+
 criterion_group! {
     primitive_benches,
     primitive_add_benchmark,
@@ -702,6 +770,7 @@ criterion_group! {
     primitive_mul_batch_benchmark,
     primitive_pow_benchmark,
     primitive_pow_batch_benchmark,
+    primitive_fib_benchmark,
 }
 criterion_group! {
     decimal_benches,
@@ -713,5 +782,6 @@ criterion_group! {
     decimal_mul_batch_benchmark,
     decimal_pow_benchmark,
     decimal_pow_batch_benchmark,
+    decimal_fib_benchmark,
 }
 criterion_main!(primitive_benches, decimal_benches);

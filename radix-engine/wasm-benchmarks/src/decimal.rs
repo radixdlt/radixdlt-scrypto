@@ -79,3 +79,19 @@ pub fn decimal_pow_batch(x: i64, exp: i64, cnt: i32) -> i64 {
     }
     c.is_positive().into()
 }
+
+#[no_mangle]
+fn fib(n: Decimal) -> Decimal {
+    let n = Decimal::from(n);
+    if n == Decimal::ONE || n == Decimal::ZERO {
+        Decimal::ONE
+    } else {
+        fib(n - 1) + fib(n - 2)
+    }
+}
+
+#[no_mangle]
+pub fn decimal_fib(n: i64) {
+    let n = Decimal::from(n);
+    fib(n);
+}
