@@ -62,6 +62,18 @@ macro_rules! bench_ops {
                 let mut group = c.benchmark_group(func_name);
                 let wasm_code = get_wasm_file();
 
+                // wasmi stuff
+                let engine = wasmi::Engine::default();
+                let mut store = wasmi::Store::new(&engine, 42);
+                let wasmi_instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
+                let wasmi_func = wasmi_instance
+                    .get_typed_func::<(i64, i64, i64), i64>(store.as_context_mut(), func_name)
+                    .unwrap();
+
+                // wasmer stuff
+                let wasmer_instance = get_wasmer_instance(&wasm_code[..]);
+                let wasmer_func = wasmer_instance.exports.get_function(func_name).unwrap();
+
                 for i in $range {
                     // native
                     group.bench_with_input(BenchmarkId::new("rust-native", i), &i, |b, i| {
@@ -74,29 +86,18 @@ macro_rules! bench_ops {
                     });
                     // wasmi
                     group.bench_with_input(BenchmarkId::new("wasmi", i), &i, |b, i| {
-                        let engine = wasmi::Engine::default();
-                        let mut store = wasmi::Store::new(&engine, 42);
-                        let instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
-
-                        let func = instance
-                            .get_typed_func::<(i64, i64, i64), i64>(store.as_context_mut(), func_name)
-                            .unwrap();
-
                         black_box(b.iter(|| {
                             for _ in 0..*i {
-                                func.call(store.as_context_mut(), ($x, $y, 0)).unwrap();
+                                wasmi_func.call(store.as_context_mut(), ($x, $y, 0)).unwrap();
                             }
                         }))
                     });
 
                     // wasmer
                     group.bench_with_input(BenchmarkId::new("wasmer", i), &i, |b, i| {
-                        let instance = get_wasmer_instance(&wasm_code[..]);
-                        let func = instance.exports.get_function(func_name).unwrap();
-
                         black_box(b.iter(|| {
                             for _ in 0..*i {
-                                func.call(&[
+                                wasmer_func.call(&[
                                     wasmer::Value::I64($x),
                                     wasmer::Value::I64($y),
                                     wasmer::Value::I64(0)
@@ -121,6 +122,18 @@ macro_rules! bench_ops_batch {
                 let mut group = c.benchmark_group(func_name);
                 let wasm_code = get_wasm_file();
 
+                // wasmi stuff
+                let engine = wasmi::Engine::default();
+                let mut store = wasmi::Store::new(&engine, 42);
+                let wasmi_instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
+                let wasmi_func = wasmi_instance
+                    .get_typed_func::<(i64, i64, i64), i64>(store.as_context_mut(), func_name)
+                    .unwrap();
+
+                // wasmer stuff
+                let wasmer_instance = get_wasmer_instance(&wasm_code[..]);
+                let wasmer_func = wasmer_instance.exports.get_function(func_name).unwrap();
+
                 for i in $range {
                     // native
                     group.bench_with_input(BenchmarkId::new("rust-native", i), &i, |b, i| {
@@ -131,26 +144,15 @@ macro_rules! bench_ops_batch {
                     });
                     // wasmi
                     group.bench_with_input(BenchmarkId::new("wasmi", i), &i, |b, i| {
-                        let engine = wasmi::Engine::default();
-                        let mut store = wasmi::Store::new(&engine, 42);
-                        let instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
-
-                        let func = instance
-                            .get_typed_func::<(i64, i64, i64), i64>(store.as_context_mut(), func_name)
-                            .unwrap();
-
                         black_box(b.iter(|| {
-                            func.call(store.as_context_mut(), ($x, $y, *i)).unwrap();
+                            wasmi_func.call(store.as_context_mut(), ($x, $y, *i)).unwrap();
                         }))
                     });
 
                     // wasmer
                     group.bench_with_input(BenchmarkId::new("wasmer", i), &i, |b, i| {
-                        let instance = get_wasmer_instance(&wasm_code[..]);
-                        let func = instance.exports.get_function(func_name).unwrap();
-
                         black_box(b.iter(|| {
-                            func.call(&[
+                            wasmer_func.call(&[
                                     wasmer::Value::I64($x),
                                     wasmer::Value::I64($y),
                                     wasmer::Value::I64(*i)
