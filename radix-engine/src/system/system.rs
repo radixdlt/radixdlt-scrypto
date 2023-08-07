@@ -146,6 +146,14 @@ pub enum FunctionSchemaIdent {
     Output,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ValidatingObject {
+    Existing(NodeId),
+    //New(&'a NonIterMap<Hash, ScryptoSchema>),
+    New,
+    None,
+}
+
 impl<'a, Y, V> SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -177,6 +185,7 @@ where
 
     pub fn validate_payload_of_object(
         &mut self,
+        object: &ValidatingObject,
         blueprint_id: &BlueprintId,
         type_instances: &Vec<TypeIdentifier>,
         additional_schemas: &NonIterMap<Hash, ScryptoSchema>,
@@ -231,6 +240,7 @@ where
 
     pub fn validate_payloads_of_object<'s>(
         &'s mut self,
+        object: &ValidatingObject,
         blueprint_id: &BlueprintId,
         type_instances: &'s Vec<TypeIdentifier>,
         additional_schemas: &'s NonIterMap<Hash, ScryptoSchema>,
@@ -238,6 +248,7 @@ where
     ) -> Result<(), RuntimeError> {
         for (payload, type_pointer) in payloads {
             self.validate_payload_of_object(
+                object,
                 blueprint_id,
                 type_instances,
                 additional_schemas,
@@ -347,6 +358,7 @@ where
                 }
 
                 self.validate_payloads_of_object(
+                    &ValidatingObject::New,
                     &blueprint_id,
                     &type_instances,
                     &non_iter_additional_schemas,
@@ -419,6 +431,7 @@ where
                             })?;
 
                         self.validate_payloads_of_object(
+                            &ValidatingObject::New,
                             &blueprint_id,
                             &type_instances,
                             &non_iter_additional_schemas,
@@ -764,19 +777,22 @@ where
         // Locking the package info substate associated with the emitter's package
         let type_pointer = {
             // Getting the package address and blueprint name associated with the actor
-            let (blueprint_id, type_instances, additional_schemas) = match &actor {
+            let (validating_obj, blueprint_id, type_instances, additional_schemas) = match &actor {
                 Actor::Method(MethodActor {
                     node_id, module_id, ..
                 }) => {
                     let blueprint_obj_info = self.get_blueprint_info(node_id, *module_id)?;
+
                     (
+                        ValidatingObject::Existing(*node_id),
                         blueprint_obj_info.blueprint_id,
                         blueprint_obj_info.type_instances,
                         blueprint_obj_info.additional_schemas,
                     )
                 }
                 Actor::Function(FunctionActor { blueprint_id, .. }) => {
-                    (blueprint_id.clone(), vec![], btreemap!())
+
+                    (ValidatingObject::None, blueprint_id.clone(), vec![], btreemap!())
                 }
                 _ => {
                     return Err(RuntimeError::SystemError(SystemError::EventError(
@@ -797,11 +813,13 @@ where
                 })?;
 
             self.validate_payloads_of_object(
+                &validating_obj,
                 &blueprint_id,
                 &type_instances,
                 &additional_schemas,
                 &[(&event_data, type_pointer.clone())],
             )?;
+
 
             type_pointer
         };
@@ -1369,7 +1387,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let LockInfo { node_id, data, .. } = self.api.kernel_get_lock_info(handle)?;
 
         match data {
             SystemLockData::Field(FieldLockData::Write {
@@ -1377,6 +1395,7 @@ where
                 type_pointer,
             }) => {
                 self.validate_payload_of_object(
+                    &ValidatingObject::Existing(node_id),
                     &blueprint_id,
                     &vec![], // TODO: Change to Some, once support for generic fields is implemented
                     &NonIterMap::new(),
@@ -1753,7 +1772,7 @@ where
         handle: KeyValueEntryHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let LockInfo { node_id, data, .. } = self.api.kernel_get_lock_info(handle)?;
 
         let can_own = match data {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
@@ -1764,6 +1783,7 @@ where
                 can_own,
             }) => {
                 self.validate_payload_of_object(
+                    &ValidatingObject::Existing(node_id),
                     &blueprint_id,
                     &type_instances,
                     &additional_schemas,
@@ -1974,6 +1994,7 @@ where
             self.get_actor_index(actor_object_type, collection_index)?;
 
         self.validate_payloads_of_object(
+            &ValidatingObject::Existing(node_id),
             &blueprint_id,
             &type_instances,
             &additional_schemas,
@@ -2078,6 +2099,7 @@ where
             self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
         self.validate_payloads_of_object(
+            &ValidatingObject::Existing(node_id),
             &blueprint_id,
             &type_instances,
             &additional_schemas,
@@ -2508,6 +2530,7 @@ where
             self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
         self.validate_payloads_of_object(
+            &ValidatingObject::Existing(node_id),
             &blueprint_id,
             &type_instances,
             &additional_schemas,

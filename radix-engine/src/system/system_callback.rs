@@ -20,7 +20,7 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::module::SystemModule;
-use crate::system::system::FieldSubstate;
+use crate::system::system::{FieldSubstate, ValidatingObject};
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -334,7 +334,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                             ident.to_string(),
                         ))
                     })?;
+
+                let validating_object = if let Actor::Method(method) = actor {
+                    ValidatingObject::Existing(method.node_id)
+                } else {
+                    ValidatingObject::None
+                };
+
                 system.validate_payloads_of_object(
+                    &validating_object,
                     &blueprint_id,
                     &vec![],
                     &NonIterMap::new(),
@@ -380,6 +388,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     .get_function_output_type_pointer(ident.as_str())
                     .expect("Schema verification should enforce that this exists.");
                 system.validate_payloads_of_object(
+                    &validating_object,
                     &blueprint_id,
                     &vec![],
                     &NonIterMap::new(),
