@@ -20,7 +20,7 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::module::SystemModule;
-use crate::system::system::{FieldSubstate, ValidatingObject};
+use crate::system::system::{FieldSubstate, ValidationTarget};
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -336,16 +336,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     })?;
 
                 let validating_object = if let Actor::Method(method) = actor {
-                    ValidatingObject::Existing(method.node_id)
+                    ValidationTarget::ExistingObject(method.node_id, NonIterMap::new())
                 } else {
-                    ValidatingObject::None
+                    ValidationTarget::Blueprint
                 };
 
                 system.validate_payloads_of_object(
                     &validating_object,
                     &blueprint_id,
                     &vec![],
-                    &NonIterMap::new(),
                     &[(input.as_vec_ref(), input_type_pointer)],
                 )?;
 
@@ -391,7 +390,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     &validating_object,
                     &blueprint_id,
                     &vec![],
-                    &NonIterMap::new(),
                     &[(output.as_vec_ref(), output_type_pointer)],
                 )?;
                 Ok(output)

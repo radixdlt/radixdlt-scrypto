@@ -146,12 +146,11 @@ pub enum FunctionSchemaIdent {
     Output,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ValidatingObject {
-    Existing(NodeId),
-    //New(&'a NonIterMap<Hash, ScryptoSchema>),
-    New,
-    None,
+#[derive(Debug, Clone)]
+pub enum ValidationTarget<'a> {
+    ExistingObject(NodeId, NonIterMap<Hash, ScryptoSchema>),
+    NewObject(&'a NonIterMap<Hash, ScryptoSchema>),
+    Blueprint,
 }
 
 impl<'a, Y, V> SystemService<'a, Y, V>
@@ -185,10 +184,9 @@ where
 
     pub fn validate_payload_of_object(
         &mut self,
-        object: &ValidatingObject,
+        object: &ValidationTarget,
         blueprint_id: &BlueprintId,
         type_instances: &Vec<TypeIdentifier>,
-        additional_schemas: &NonIterMap<Hash, ScryptoSchema>,
         type_pointer: TypePointer,
         payload: &[u8],
     ) -> Result<(), RuntimeError> {
@@ -218,11 +216,27 @@ where
                         ))
                     })?;
 
-                let schema = additional_schemas.get(&type_identifier.0).ok_or_else(|| {
-                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                        PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                    ))
-                })?;
+                let schema = match object {
+                    ValidationTarget::ExistingObject(_, schema) => {
+                        schema.get(&type_identifier.0).ok_or_else(|| {
+                            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                                PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
+                            ))
+                        })?
+                    }
+                    ValidationTarget::NewObject(schema) => {
+                        schema.get(&type_identifier.0).ok_or_else(|| {
+                            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                                PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
+                            ))
+                        })?
+                    }
+                    ValidationTarget::Blueprint => {
+                        return Err(RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                            PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
+                        )));
+                    }
+                };
 
                 self.validate_payload(payload, schema, type_identifier.1, SchemaOrigin::Instance)
                     .map_err(|err| {
@@ -240,10 +254,9 @@ where
 
     pub fn validate_payloads_of_object<'s>(
         &'s mut self,
-        object: &ValidatingObject,
+        object: &ValidationTarget,
         blueprint_id: &BlueprintId,
         type_instances: &'s Vec<TypeIdentifier>,
-        additional_schemas: &'s NonIterMap<Hash, ScryptoSchema>,
         payloads: &[(&Vec<u8>, TypePointer)],
     ) -> Result<(), RuntimeError> {
         for (payload, type_pointer) in payloads {
@@ -251,7 +264,6 @@ where
                 object,
                 blueprint_id,
                 type_instances,
-                additional_schemas,
                 type_pointer.clone(),
                 payload,
             )?;
@@ -358,10 +370,9 @@ where
                 }
 
                 self.validate_payloads_of_object(
-                    &ValidatingObject::New,
+                    &ValidationTarget::NewObject(&non_iter_additional_schemas),
                     &blueprint_id,
                     &type_instances,
-                    &non_iter_additional_schemas,
                     &fields_to_check,
                 )?;
 
@@ -431,10 +442,9 @@ where
                             })?;
 
                         self.validate_payloads_of_object(
-                            &ValidatingObject::New,
+                            &ValidationTarget::NewObject(&non_iter_additional_schemas),
                             &blueprint_id,
                             &type_instances,
-                            &non_iter_additional_schemas,
                             &[(&key, key_type_pointer), (&value, value_type_pointer)],
                         )?;
 
@@ -777,22 +787,22 @@ where
         // Locking the package info substate associated with the emitter's package
         let type_pointer = {
             // Getting the package address and blueprint name associated with the actor
-            let (validating_obj, blueprint_id, type_instances, additional_schemas) = match &actor {
+            let (validating_obj, blueprint_id, type_instances) = match &actor {
                 Actor::Method(MethodActor {
                     node_id, module_id, ..
                 }) => {
                     let blueprint_obj_info = self.get_blueprint_info(node_id, *module_id)?;
+                    let additional_schemas = blueprint_obj_info.additional_schemas.into_iter().collect();
 
                     (
-                        ValidatingObject::Existing(*node_id),
+                        ValidationTarget::ExistingObject(*node_id, additional_schemas),
                         blueprint_obj_info.blueprint_id,
                         blueprint_obj_info.type_instances,
-                        blueprint_obj_info.additional_schemas,
                     )
                 }
                 Actor::Function(FunctionActor { blueprint_id, .. }) => {
 
-                    (ValidatingObject::None, blueprint_id.clone(), vec![], btreemap!())
+                    (ValidationTarget::Blueprint, blueprint_id.clone(), vec![])
                 }
                 _ => {
                     return Err(RuntimeError::SystemError(SystemError::EventError(
@@ -800,7 +810,6 @@ where
                     )))
                 }
             };
-            let additional_schemas = additional_schemas.into_iter().collect();
 
             let blueprint_interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
 
@@ -816,7 +825,6 @@ where
                 &validating_obj,
                 &blueprint_id,
                 &type_instances,
-                &additional_schemas,
                 &[(&event_data, type_pointer.clone())],
             )?;
 
@@ -1395,10 +1403,9 @@ where
                 type_pointer,
             }) => {
                 self.validate_payload_of_object(
-                    &ValidatingObject::Existing(node_id),
+                    &ValidationTarget::ExistingObject(node_id, NonIterMap::new()),
                     &blueprint_id,
                     &vec![], // TODO: Change to Some, once support for generic fields is implemented
-                    &NonIterMap::new(),
                     type_pointer,
                     &buffer,
                 )?;
@@ -1783,10 +1790,9 @@ where
                 can_own,
             }) => {
                 self.validate_payload_of_object(
-                    &ValidatingObject::Existing(node_id),
+                    &ValidationTarget::ExistingObject(node_id, additional_schemas),
                     &blueprint_id,
                     &type_instances,
-                    &additional_schemas,
                     type_pointer,
                     &buffer,
                 )?;
@@ -1994,10 +2000,9 @@ where
             self.get_actor_index(actor_object_type, collection_index)?;
 
         self.validate_payloads_of_object(
-            &ValidatingObject::Existing(node_id),
+            &ValidationTarget::ExistingObject(node_id, additional_schemas),
             &blueprint_id,
             &type_instances,
-            &additional_schemas,
             &[(&key, schema.key), (&buffer, schema.value)],
         )?;
 
@@ -2099,10 +2104,9 @@ where
             self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
         self.validate_payloads_of_object(
-            &ValidatingObject::Existing(node_id),
+            &ValidationTarget::ExistingObject(node_id, additional_schemas),
             &blueprint_id,
             &type_instances,
-            &additional_schemas,
             &[(&sorted_key.1, schema.key), (&buffer, schema.value)],
         )?;
 
@@ -2530,10 +2534,9 @@ where
             self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
         self.validate_payloads_of_object(
-            &ValidatingObject::Existing(node_id),
+            &ValidationTarget::ExistingObject(node_id, additional_schemas.clone()),
             &blueprint_id,
             &type_instances,
-            &additional_schemas,
             &[(key, kv_schema.key)],
         )?;
 
