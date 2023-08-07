@@ -100,7 +100,8 @@ impl AuthZoneBlueprint {
                                     outer_object: resource_address.into(),
                                 },
                                 features: btreeset!(),
-                                instance_schema: None,
+                                type_instances: vec![],
+                                additional_schemas: btreemap!(),
                             }
                         })),
                     ),
@@ -124,7 +125,8 @@ impl AuthZoneBlueprint {
                                 outer_object: resource_address.into(),
                             },
                             features: btreeset!(),
-                            instance_schema: None,
+                            type_instances: vec![],
+                            additional_schemas: btreemap!(),
                         }
                     }))),
                 )?;
@@ -172,7 +174,8 @@ impl AuthZoneBlueprint {
                             outer_object: resource_address.into(),
                         },
                         features: btreeset!(),
-                        instance_schema: None,
+                        type_instances: vec![],
+                        additional_schemas: btreemap!(),
                     }
                 }))
             ),
@@ -222,7 +225,8 @@ impl AuthZoneBlueprint {
                             outer_object: resource_address.into(),
                         },
                         features: btreeset!(),
-                        instance_schema: None,
+                        type_instances: vec![],
+                        additional_schemas: btreemap!(),
                     },
                 }))
             ),

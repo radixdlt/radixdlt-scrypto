@@ -3,12 +3,14 @@ use crate::ScryptoSbor;
 use core::fmt;
 use core::fmt::Formatter;
 use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
+use radix_engine_common::crypto::Hash;
+use radix_engine_common::prelude::{ScryptoSchema, TypeIdentifier};
 use radix_engine_common::types::GlobalAddress;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_derive::ManifestSbor;
 use radix_engine_interface::api::ObjectModuleId;
 use sbor::rust::prelude::*;
-use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
+use scrypto_schema::KeyValueStoreSchema;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -29,7 +31,8 @@ pub struct BlueprintInfo {
     pub blueprint_id: BlueprintId,
     pub outer_obj_info: OuterObjectInfo,
     pub features: BTreeSet<String>,
-    pub instance_schema: Option<InstanceSchema>,
+    pub type_instances: Vec<TypeIdentifier>,
+    pub additional_schemas: BTreeMap<Hash, ScryptoSchema>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

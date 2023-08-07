@@ -206,7 +206,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                 })
             }
             SystemPartitionDescription::Module(module_id, partition_offset) => {
-                let (blueprint_id, instance_schema) = if let ObjectModuleId::Main = module_id {
+                let (blueprint_id, type_instances) = if let ObjectModuleId::Main = module_id {
                     let main_type_info =
                         self.system_reader
                             .get_type_info(node_id)
@@ -216,7 +216,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     match main_type_info {
                         TypeInfoSubstate::Object(info) => (
                             info.blueprint_info.blueprint_id,
-                            info.blueprint_info.instance_schema,
+                            info.blueprint_info.type_instances,
                         ),
                         TypeInfoSubstate::KeyValueStore(info) => {
                             return SubstateSystemStructure::KeyValueStoreEntry(
@@ -235,7 +235,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                         }
                     }
                 } else {
-                    (module_id.static_blueprint().unwrap(), None)
+                    (module_id.static_blueprint().unwrap(), vec![])
                 };
 
                 let blueprint_definition = self
@@ -244,8 +244,8 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     .unwrap();
                 let resolver = ObjectSubstateTypeReferenceResolver::new(
                     &node_id,
-                    instance_schema.as_ref(),
                     &blueprint_id,
+                    &type_instances,
                 );
                 self.resolve_object_substate_structure(
                     &resolver,
@@ -320,20 +320,20 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
 
 pub struct ObjectSubstateTypeReferenceResolver<'a> {
     node_id: &'a NodeId,
-    instance_schema: Option<&'a InstanceSchema>,
     blueprint_id: &'a BlueprintId,
+    type_instances: &'a Vec<TypeIdentifier>,
 }
 
 impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
     pub fn new(
         node_id: &'a NodeId,
-        instance_schema: Option<&'a InstanceSchema>,
         blueprint_id: &'a BlueprintId,
+        type_instances: &'a Vec<TypeIdentifier>,
     ) -> Self {
         Self {
             node_id,
-            instance_schema,
             blueprint_id,
+            type_instances,
         }
     }
 
@@ -347,11 +347,8 @@ impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
                 })
             }
             TypePointer::Instance(instance_type_index) => {
-                let instance_schema = self
-                    .instance_schema
-                    .expect("Instance type pointer to no instance schema");
-                let type_identifier = *instance_schema
-                    .instance_type_lookup
+                let type_identifier = *self
+                    .type_instances
                     .get(instance_type_index as usize)
                     .expect("Instance type index not valid");
                 ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {

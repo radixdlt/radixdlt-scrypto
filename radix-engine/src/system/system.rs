@@ -202,38 +202,27 @@ where
                 })?;
             }
             TypePointer::Instance(instance_index) => {
-
-                let type_identifier = type_instances
-                    .get(instance_index as usize)
-                    .ok_or_else(|| {
-                        RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                            ),
-                        )
+                let type_identifier =
+                    type_instances.get(instance_index as usize).ok_or_else(|| {
+                        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                            PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
+                        ))
                     })?;
 
                 let schema = additional_schemas.get(&type_identifier.0).ok_or_else(|| {
-                    RuntimeError::SystemError(
-                        SystemError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                        ),
-                    )
-                })?;
-
-                self.validate_payload(
-                    payload,
-                    schema,
-                    type_identifier.1,
-                    SchemaOrigin::Instance,
-                )
-                .map_err(|err| {
                     RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                        PayloadValidationAgainstSchemaError::PayloadValidationError(
-                            err.error_message(schema),
-                        ),
+                        PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
                     ))
                 })?;
+
+                self.validate_payload(payload, schema, type_identifier.1, SchemaOrigin::Instance)
+                    .map_err(|err| {
+                        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                            PayloadValidationAgainstSchemaError::PayloadValidationError(
+                                err.error_message(schema),
+                            ),
+                        ))
+                    })?;
             }
         }
 
@@ -271,13 +260,14 @@ where
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<
         (
-            Option<InstanceSchema>,
+            Vec<TypeIdentifier>,
+            BTreeMap<Hash, ScryptoSchema>,
             BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         ),
         RuntimeError,
     > {
         // Validate instance schema
-        let instance_schema = {
+        let (type_instances, additional_schemas) = {
             if let Some(instance_schema) = &new_instance_schema {
                 validate_schema(&instance_schema.schema)
                     .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
@@ -290,11 +280,22 @@ where
                     SystemError::InvalidInstanceSchema,
                 ));
             }
-            new_instance_schema.map(InstanceSchema::from)
+
+            new_instance_schema
+                .map(|schema_init| {
+                    let schema_hash = schema_init.schema.generate_schema_hash();
+                    let type_instances = schema_init
+                        .instance_type_lookup
+                        .into_iter()
+                        .map(|t| TypeIdentifier(schema_hash, t))
+                        .collect();
+                    let additional_schemas = btreemap!(schema_hash => schema_init.schema);
+                    (type_instances, additional_schemas)
+                })
+                .unwrap_or_default()
         };
 
-        let type_instances = instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default();
-        let additional_schemas = instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), s.schema.clone())).collect();
+        let non_iter_additional_schemas = additional_schemas.clone().into_iter().collect();
 
         let mut partitions = BTreeMap::new();
 
@@ -348,7 +349,7 @@ where
                 self.validate_payloads_of_object(
                     &blueprint_id,
                     &type_instances,
-                    &additional_schemas,
+                    &non_iter_additional_schemas,
                     &fields_to_check,
                 )?;
 
@@ -420,7 +421,7 @@ where
                         self.validate_payloads_of_object(
                             &blueprint_id,
                             &type_instances,
-                            &additional_schemas,
+                            &non_iter_additional_schemas,
                             &[(&key, key_type_pointer), (&value, value_type_pointer)],
                         )?;
 
@@ -474,7 +475,7 @@ where
             }
         }
 
-        Ok((instance_schema, partitions))
+        Ok((type_instances, additional_schemas, partitions))
     }
 
     pub fn get_schema(
@@ -697,15 +698,16 @@ where
                 (OuterObjectInfo::None, BTreeSet::new())
             };
 
-        let (instance_schema, user_substates) = self.validate_instance_schema_and_state(
-            blueprint_id,
-            &blueprint_interface,
-            &object_features,
-            &outer_object_features,
-            new_instance_schema,
-            fields,
-            kv_entries,
-        )?;
+        let (type_instances, additional_schemas, user_substates) = self
+            .validate_instance_schema_and_state(
+                blueprint_id,
+                &blueprint_interface,
+                &object_features,
+                &outer_object_features,
+                new_instance_schema,
+                fields,
+                kv_entries,
+            )?;
 
         let node_id = self.api.kernel_allocate_node_id(
             IDAllocation::Object {
@@ -727,7 +729,8 @@ where
                         blueprint_id: blueprint_id.clone(),
                         outer_obj_info,
                         features: object_features,
-                        instance_schema,
+                        type_instances,
+                        additional_schemas,
                     }
                 })
             ),
@@ -761,25 +764,27 @@ where
         // Locking the package info substate associated with the emitter's package
         let type_pointer = {
             // Getting the package address and blueprint name associated with the actor
-            let (instance_schema, blueprint_id) = match &actor {
+            let (blueprint_id, type_instances, additional_schemas) = match &actor {
                 Actor::Method(MethodActor {
                     node_id, module_id, ..
                 }) => {
                     let blueprint_obj_info = self.get_blueprint_info(node_id, *module_id)?;
                     (
-                        blueprint_obj_info.instance_schema,
                         blueprint_obj_info.blueprint_id,
+                        blueprint_obj_info.type_instances,
+                        blueprint_obj_info.additional_schemas,
                     )
                 }
-                Actor::Function(FunctionActor { blueprint_id, .. }) => (None, blueprint_id.clone()),
+                Actor::Function(FunctionActor { blueprint_id, .. }) => {
+                    (blueprint_id.clone(), vec![], btreemap!())
+                }
                 _ => {
                     return Err(RuntimeError::SystemError(SystemError::EventError(
                         EventError::InvalidActor,
                     )))
                 }
             };
-            let type_instances = instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default();
-            let additional_schemas = instance_schema.into_iter().map(|s| (s.schema.generate_schema_hash(), s.schema)).collect();
+            let additional_schemas = additional_schemas.into_iter().collect();
 
             let blueprint_interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
 
@@ -863,7 +868,8 @@ where
                 blueprint_id: module_id.static_blueprint().unwrap(),
                 outer_obj_info: OuterObjectInfo::None,
                 features: BTreeSet::default(),
-                instance_schema: None,
+                type_instances: vec![],
+                additional_schemas: btreemap!(),
             },
         };
 
@@ -1000,16 +1006,13 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        let type_instances = info.instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default();
-        let additional_schemas = info.instance_schema.into_iter().map(|s| (s.schema.generate_schema_hash(), s.schema)).collect();
-
         Ok((
             node_id,
             partition_num,
             kv_schema,
             info.blueprint_id,
-            type_instances,
-            additional_schemas,
+            info.type_instances,
+            info.additional_schemas.into_iter().collect(),
         ))
     }
 
@@ -1045,17 +1048,13 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-
-        let type_instances = info.instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default();
-        let additional_schemas = info.instance_schema.into_iter().map(|s| (s.schema.generate_schema_hash(), s.schema)).collect();
-
         Ok((
             node_id,
             partition_num,
             kv_schema,
             info.blueprint_id,
-            type_instances,
-            additional_schemas,
+            info.type_instances,
+            info.additional_schemas.into_iter().collect(),
         ))
     }
 
@@ -1091,16 +1090,13 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        let type_instances = info.instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default();
-        let additional_schemas = info.instance_schema.into_iter().map(|s| (s.schema.generate_schema_hash(), s.schema)).collect();
-
         Ok((
             node_id,
             partition_num,
             kv_schema,
             info.blueprint_id,
-            type_instances,
-            additional_schemas,
+            info.type_instances,
+            info.additional_schemas.into_iter().collect(),
         ))
     }
 
