@@ -106,6 +106,8 @@ macro_rules! bench_ops {
                         }))
                     });
                 }
+
+                group.finish();
             }
         }
     };
@@ -157,6 +159,8 @@ macro_rules! bench_ops_batch {
                         }))
                     });
                 }
+
+                group.finish();
             }
         }
     };
@@ -203,37 +207,46 @@ bench_ops_batch!("precise_decimal", "pow", 2, 20, [1, 10, 20, 50, 100]);
 bench_ops!("precise_decimal", "fib", 1, 0, [1, 5, 10, 20]);
 
 criterion_group! {
-    primitive_benches,
-    primitive_add_benchmark,
-    primitive_add_batch_benchmark,
-    primitive_mul_benchmark,
-    primitive_mul_batch_benchmark,
-    primitive_pow_benchmark,
-    primitive_pow_batch_benchmark,
-    primitive_fib_benchmark,
+    name = primitive_benches;
+    config = Criterion::default()
+                .sample_size(10)
+                .warm_up_time(core::time::Duration::from_secs(1));
+    targets = primitive_add_benchmark,
+        primitive_add_batch_benchmark,
+        primitive_mul_benchmark,
+        primitive_mul_batch_benchmark,
+        primitive_pow_benchmark,
+        primitive_pow_batch_benchmark,
+        primitive_fib_benchmark
 }
 criterion_group! {
-    decimal_benches,
-    decimal_add_benchmark,
-    decimal_add_no_conversion_benchmark,
-    decimal_add_batch_benchmark,
-    decimal_mul_benchmark,
-    decimal_mul_no_conversion_benchmark,
-    decimal_mul_batch_benchmark,
-    decimal_pow_benchmark,
-    decimal_pow_batch_benchmark,
-    decimal_fib_benchmark,
+    name = decimal_benches;
+    config = Criterion::default()
+                .sample_size(10)
+                .warm_up_time(core::time::Duration::from_secs(1));
+    targets = decimal_add_benchmark,
+        decimal_add_no_conversion_benchmark,
+        decimal_add_batch_benchmark,
+        decimal_mul_benchmark,
+        decimal_mul_no_conversion_benchmark,
+        decimal_mul_batch_benchmark,
+        decimal_pow_benchmark,
+        decimal_pow_batch_benchmark,
+        decimal_fib_benchmark
 }
 criterion_group! {
-    precise_decimal_benches,
-    precise_decimal_add_benchmark,
-    precise_decimal_add_no_conversion_benchmark,
-    precise_decimal_add_batch_benchmark,
-    precise_decimal_mul_benchmark,
-    precise_decimal_mul_no_conversion_benchmark,
-    precise_decimal_mul_batch_benchmark,
-    precise_decimal_pow_benchmark,
-    precise_decimal_pow_batch_benchmark,
-    precise_decimal_fib_benchmark,
+    name = precise_decimal_benches;
+    config = Criterion::default()
+                .sample_size(10)
+                .warm_up_time(core::time::Duration::from_secs(1));
+    targets = precise_decimal_add_benchmark,
+        precise_decimal_add_no_conversion_benchmark,
+        precise_decimal_add_batch_benchmark,
+        precise_decimal_mul_benchmark,
+        precise_decimal_mul_no_conversion_benchmark,
+        precise_decimal_mul_batch_benchmark,
+        precise_decimal_pow_benchmark,
+        precise_decimal_pow_batch_benchmark,
+        precise_decimal_fib_benchmark
 }
 criterion_main!(primitive_benches, decimal_benches, precise_decimal_benches);
