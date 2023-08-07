@@ -1,6 +1,6 @@
 use crate::kernel::substate_io::SubstateDevice;
 use radix_engine_common::types::NodeId;
-use std::ops::{AddAssign, SubAssign};
+use sbor::rust::ops::{AddAssign, SubAssign};
 use utils::prelude::NonIterMap;
 
 pub struct NonGlobalNodeRefs {
