@@ -38,6 +38,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
             logical_name: "account_authorized_depositors",
         };
 
+        #[allow(unused_variables)]
         ScenarioBuilder::new(core, metadata, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, _| {
@@ -187,9 +188,12 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                 },
                 |_, _, _, _| Ok(()),
             )
-            .finalize(|_, _, _| {
+            .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
-                    interesting_addresses: DescribedAddresses::new(),
+                    interesting_addresses: DescribedAddresses::new()
+                        .add("source_account", config.source_account.address)
+                        .add("destination_account", config.destination_account.address)
+                        .add("authorized_deposit_badge", state.badge.unwrap()),
                 })
             })
     }
