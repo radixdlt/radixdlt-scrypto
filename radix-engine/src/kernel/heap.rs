@@ -44,7 +44,7 @@ impl Heap {
         node_id: &NodeId,
         partition_number: PartitionNumber,
     ) -> Result<BTreeMap<SubstateKey, IndexedScryptoValue>, HeapRemoveModuleError> {
-        if let Some(modules) = self.nodes.get_mut(node_id).map(|node| &mut node.substates) {
+        if let Some(modules) = self.nodes.get_mut(node_id) {
             let module = modules
                 .remove(&partition_number)
                 .ok_or(HeapRemoveModuleError::ModuleNotFound(partition_number))?;
@@ -65,7 +65,6 @@ impl Heap {
             .nodes
             .entry(*node_id)
             .or_insert(NodeSubstates::default())
-            .substates
             .entry(partition_num)
             .or_insert(BTreeMap::new())
             .entry(substate_key.clone());
@@ -97,7 +96,7 @@ impl Heap {
     ) -> Option<&IndexedScryptoValue> {
         self.nodes
             .get(node_id)
-            .and_then(|node| node.substates.get(&partition_num))
+            .and_then(|node| node.get(&partition_num))
             .and_then(|module_substates| module_substates.get(substate_key))
     }
 
@@ -112,7 +111,6 @@ impl Heap {
         self.nodes
             .entry(node_id)
             .or_insert_with(|| NodeSubstates::default())
-            .substates
             .entry(partition_num)
             .or_default()
             .insert(substate_key, substate_value);
@@ -126,7 +124,7 @@ impl Heap {
     ) -> Option<IndexedScryptoValue> {
         self.nodes
             .get_mut(node_id)
-            .and_then(|n| n.substates.get_mut(&partition_num))
+            .and_then(|n| n.get_mut(&partition_num))
             .and_then(|s| s.remove(substate_key))
     }
 
@@ -141,7 +139,7 @@ impl Heap {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.substates.get_mut(&partition_num));
+            .and_then(|n| n.get_mut(&partition_num));
         if let Some(substates) = node_substates {
             let substates: Vec<SubstateKey> = substates
                 .iter()
@@ -166,7 +164,7 @@ impl Heap {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.substates.get_mut(&partition_num));
+            .and_then(|n| n.get_mut(&partition_num));
         if let Some(substates) = node_substates {
             let keys: Vec<SubstateKey> = substates
                 .iter()
@@ -195,7 +193,7 @@ impl Heap {
     /// Removes node.
     pub fn remove_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, HeapRemoveNodeError> {
         match self.nodes.remove(node_id) {
-            Some(heap_node) => Ok(heap_node.substates),
+            Some(heap_node) => Ok(heap_node),
             None => Err(HeapRemoveNodeError::NodeNotFound(node_id.clone())),
         }
     }
