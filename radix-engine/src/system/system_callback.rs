@@ -63,7 +63,8 @@ pub enum KeyValueEntryLockData {
     },
     BlueprintWrite {
         blueprint_id: BlueprintId,
-        instance_schema: Option<InstanceSchema>,
+        type_instances: Vec<TypeIdentifier>,
+        additional_schemas: NonIterMap<Hash, ScryptoSchema>,
         type_pointer: TypePointer,
         can_own: bool,
     },
@@ -333,10 +334,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                             ident.to_string(),
                         ))
                     })?;
-                system.validate_payloads_against_blueprint_schema(
+                system.validate_payloads_of_object(
                     &blueprint_id,
-                    vec![],
-                    NonIterMap::new(),
+                    &vec![],
+                    &NonIterMap::new(),
                     &[(input.as_vec_ref(), input_type_pointer)],
                 )?;
 
@@ -378,10 +379,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     .interface
                     .get_function_output_type_pointer(ident.as_str())
                     .expect("Schema verification should enforce that this exists.");
-                system.validate_payloads_against_blueprint_schema(
+                system.validate_payloads_of_object(
                     &blueprint_id,
-                    vec![],
-                    NonIterMap::new(),
+                    &vec![],
+                    &NonIterMap::new(),
                     &[(output.as_vec_ref(), output_type_pointer)],
                 )?;
                 Ok(output)

@@ -175,11 +175,11 @@ where
         )
     }
 
-    pub fn validate_payload_at_type_pointer(
+    pub fn validate_payload_of_object(
         &mut self,
         blueprint_id: &BlueprintId,
         type_instances: &Vec<TypeIdentifier>,
-        additional_schemas: &NonIterMap<Hash, &ScryptoSchema>,
+        additional_schemas: &NonIterMap<Hash, ScryptoSchema>,
         type_pointer: TypePointer,
         payload: &[u8],
     ) -> Result<(), RuntimeError> {
@@ -213,7 +213,7 @@ where
                         )
                     })?;
 
-                let schema = *additional_schemas.get(&type_identifier.0).ok_or_else(|| {
+                let schema = additional_schemas.get(&type_identifier.0).ok_or_else(|| {
                     RuntimeError::SystemError(
                         SystemError::PayloadValidationAgainstSchemaError(
                             PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
@@ -240,18 +240,18 @@ where
         Ok(())
     }
 
-    pub fn validate_payloads_against_blueprint_schema<'s>(
+    pub fn validate_payloads_of_object<'s>(
         &'s mut self,
         blueprint_id: &BlueprintId,
-        type_instances: Vec<TypeIdentifier>,
-        additional_schemas: NonIterMap<Hash, &'s ScryptoSchema>,
+        type_instances: &'s Vec<TypeIdentifier>,
+        additional_schemas: &'s NonIterMap<Hash, ScryptoSchema>,
         payloads: &[(&Vec<u8>, TypePointer)],
     ) -> Result<(), RuntimeError> {
         for (payload, type_pointer) in payloads {
-            self.validate_payload_at_type_pointer(
+            self.validate_payload_of_object(
                 blueprint_id,
-                &type_instances,
-                &additional_schemas,
+                type_instances,
+                additional_schemas,
                 type_pointer.clone(),
                 payload,
             )?;
@@ -292,6 +292,9 @@ where
             }
             new_instance_schema.map(InstanceSchema::from)
         };
+
+        let type_instances = instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default();
+        let additional_schemas = instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), s.schema.clone())).collect();
 
         let mut partitions = BTreeMap::new();
 
@@ -342,10 +345,10 @@ where
                     fields_to_check.push((&field.value, pointer));
                 }
 
-                self.validate_payloads_against_blueprint_schema(
+                self.validate_payloads_of_object(
                     &blueprint_id,
-                    instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
-                    instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
+                    &type_instances,
+                    &additional_schemas,
                     &fields_to_check,
                 )?;
 
@@ -414,10 +417,10 @@ where
                                 )
                             })?;
 
-                        self.validate_payloads_against_blueprint_schema(
+                        self.validate_payloads_of_object(
                             &blueprint_id,
-                            instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
-                            instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
+                            &type_instances,
+                            &additional_schemas,
                             &[(&key, key_type_pointer), (&value, value_type_pointer)],
                         )?;
 
@@ -775,6 +778,8 @@ where
                     )))
                 }
             };
+            let type_instances = instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default();
+            let additional_schemas = instance_schema.into_iter().map(|s| (s.schema.generate_schema_hash(), s.schema)).collect();
 
             let blueprint_interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
 
@@ -786,10 +791,10 @@ where
                     ))
                 })?;
 
-            self.validate_payloads_against_blueprint_schema(
+            self.validate_payloads_of_object(
                 &blueprint_id,
-                instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
-                instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
+                &type_instances,
+                &additional_schemas,
                 &[(&event_data, type_pointer.clone())],
             )?;
 
@@ -972,8 +977,9 @@ where
             NodeId,
             PartitionNumber,
             BlueprintKeyValueSchema<TypePointer>,
-            Option<InstanceSchema>,
             BlueprintId,
+            Vec<TypeIdentifier>,
+            NonIterMap<Hash, ScryptoSchema>,
         ),
         RuntimeError,
     > {
@@ -994,12 +1000,16 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
+        let type_instances = info.instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default();
+        let additional_schemas = info.instance_schema.into_iter().map(|s| (s.schema.generate_schema_hash(), s.schema)).collect();
+
         Ok((
             node_id,
             partition_num,
             kv_schema,
-            info.instance_schema,
             info.blueprint_id,
+            type_instances,
+            additional_schemas,
         ))
     }
 
@@ -1012,8 +1022,9 @@ where
             NodeId,
             PartitionNumber,
             BlueprintKeyValueSchema<TypePointer>,
-            Option<InstanceSchema>,
             BlueprintId,
+            Vec<TypeIdentifier>,
+            NonIterMap<Hash, ScryptoSchema>,
         ),
         RuntimeError,
     > {
@@ -1034,12 +1045,17 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
+
+        let type_instances = info.instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default();
+        let additional_schemas = info.instance_schema.into_iter().map(|s| (s.schema.generate_schema_hash(), s.schema)).collect();
+
         Ok((
             node_id,
             partition_num,
             kv_schema,
-            info.instance_schema,
             info.blueprint_id,
+            type_instances,
+            additional_schemas,
         ))
     }
 
@@ -1052,8 +1068,9 @@ where
             NodeId,
             PartitionNumber,
             BlueprintKeyValueSchema<TypePointer>,
-            Option<InstanceSchema>,
             BlueprintId,
+            Vec<TypeIdentifier>,
+            NonIterMap<Hash, ScryptoSchema>,
         ),
         RuntimeError,
     > {
@@ -1074,12 +1091,16 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
+        let type_instances = info.instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default();
+        let additional_schemas = info.instance_schema.into_iter().map(|s| (s.schema.generate_schema_hash(), s.schema)).collect();
+
         Ok((
             node_id,
             partition_num,
             kv_schema,
-            info.instance_schema,
             info.blueprint_id,
+            type_instances,
+            additional_schemas,
         ))
     }
 
@@ -1359,7 +1380,7 @@ where
                 blueprint_id,
                 type_pointer,
             }) => {
-                self.validate_payload_at_type_pointer(
+                self.validate_payload_of_object(
                     &blueprint_id,
                     &vec![], // TODO: Change to Some, once support for generic fields is implemented
                     &NonIterMap::new(),
@@ -1741,14 +1762,15 @@ where
         let can_own = match data {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
                 blueprint_id,
-                instance_schema,
+                type_instances,
+                additional_schemas,
                 type_pointer,
                 can_own,
             }) => {
-                self.validate_payload_at_type_pointer(
+                self.validate_payload_of_object(
                     &blueprint_id,
-                    &instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
-                    &instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
+                    &type_instances,
+                    &additional_schemas,
                     type_pointer,
                     &buffer,
                 )?;
@@ -1952,13 +1974,13 @@ where
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, schema, instance_schema, blueprint_id) =
+        let (node_id, partition_num, schema, blueprint_id, type_instances, additional_schemas) =
             self.get_actor_index(actor_object_type, collection_index)?;
 
-        self.validate_payloads_against_blueprint_schema(
+        self.validate_payloads_of_object(
             &blueprint_id,
-            instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
-            instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
+            &type_instances,
+            &additional_schemas,
             &[(&key, schema.key), (&buffer, schema.value)],
         )?;
 
@@ -2056,13 +2078,13 @@ where
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, schema, instance_schema, blueprint_id) =
+        let (node_id, partition_num, schema, blueprint_id, type_instances, additional_schemas) =
             self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
-        self.validate_payloads_against_blueprint_schema(
+        self.validate_payloads_of_object(
             &blueprint_id,
-            instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
-            instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
+            &type_instances,
+            &additional_schemas,
             &[(&sorted_key.1, schema.key), (&buffer, schema.value)],
         )?;
 
@@ -2486,20 +2508,21 @@ where
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, kv_schema, instance_schema, blueprint_id) =
+        let (node_id, partition_num, kv_schema, blueprint_id, type_instances, additional_schemas) =
             self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
-        self.validate_payloads_against_blueprint_schema(
+        self.validate_payloads_of_object(
             &blueprint_id,
-            instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
-            instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
+            &type_instances,
+            &additional_schemas,
             &[(key, kv_schema.key)],
         )?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             KeyValueEntryLockData::BlueprintWrite {
                 blueprint_id,
-                instance_schema,
+                type_instances,
+                additional_schemas,
                 type_pointer: kv_schema.value,
                 can_own: kv_schema.can_own,
             }
