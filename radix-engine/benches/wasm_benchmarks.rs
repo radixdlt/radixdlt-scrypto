@@ -54,6 +54,34 @@ fn get_wasmer_instance(code: &[u8]) -> wasmer::Instance {
     wasmer::Instance::new(&module, &import_object).expect("Failed to instantiate module")
 }
 
+fn get_wasmi_call_host_instance(
+    engine: &wasmi::Engine,
+    mut store: wasmi::StoreContextMut<HostState>,
+    code: &[u8],
+    func: fn(i64, i64, i64) -> i64,
+) -> wasmi::Instance {
+    let module = wasmi::Module::new(&engine, code).unwrap();
+    let mut linker = <wasmi::Linker<HostState>>::new();
+    let host_func = wasmi::Func::wrap(
+        &mut store,
+        move |_caller: wasmi::Caller<'_, HostState>,
+              x: i64,
+              y: i64,
+              cnt: i64|
+              -> Result<i64, wasmi::core::Trap> {
+            let x = func(x, y, cnt);
+            Ok(x)
+        },
+    );
+    linker.define("host", "host_func", host_func).unwrap();
+
+    linker
+        .instantiate(store.as_context_mut(), &module)
+        .unwrap()
+        .ensure_no_start(store.as_context_mut())
+        .unwrap()
+}
+
 macro_rules! bench_ops {
     ($t:literal, $ops:literal, $x:expr, $y:expr, $range:expr) => {
         paste::item! {
@@ -61,6 +89,7 @@ macro_rules! bench_ops {
                 let func_name = concat!($t, "_", $ops);
                 let mut group = c.benchmark_group(func_name);
                 let wasm_code = get_wasm_file();
+                let wasm_call_host_code = wabt::wat2wasm(&WAT_CALL_HOST).unwrap();
 
                 // wasmi stuff
                 let engine = wasmi::Engine::default();
@@ -68,6 +97,13 @@ macro_rules! bench_ops {
                 let wasmi_instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
                 let wasmi_func = wasmi_instance
                     .get_typed_func::<(i64, i64, i64), i64>(store.as_context_mut(), func_name)
+                    .unwrap();
+
+                // wasmi stuff that calls native method
+                let mut store_call_host = wasmi::Store::new(&engine, 42);
+                let wasmi_call_host_instance = get_wasmi_call_host_instance(&engine, store_call_host.as_context_mut(), &wasm_call_host_code[..], [< $t _ $ops >]);
+                let wasmi_call_host_func = wasmi_call_host_instance
+                    .get_typed_func::<(i64, i64, i64), i64>(store_call_host.as_context_mut(), "local_call_host_func")
                     .unwrap();
 
                 // wasmer stuff
@@ -83,6 +119,14 @@ macro_rules! bench_ops {
                             }
                         }))
 
+                    });
+                    // wasmi call native
+                    group.bench_with_input(BenchmarkId::new("wasmi-call-native", i), &i, |b, i| {
+                        black_box(b.iter(|| {
+                            for _ in 0..*i {
+                                wasmi_call_host_func.call(store_call_host.as_context_mut(), ($x, $y, 0)).unwrap();
+                            }
+                        }))
                     });
                     // wasmi
                     group.bench_with_input(BenchmarkId::new("wasmi", i), &i, |b, i| {
@@ -121,6 +165,7 @@ macro_rules! bench_ops_batch {
                 let func_name = concat!($t, "_", $ops, "_batch");
                 let mut group = c.benchmark_group(func_name);
                 let wasm_code = get_wasm_file();
+                let wasm_call_host_code = wabt::wat2wasm(&WAT_CALL_HOST).unwrap();
 
                 // wasmi stuff
                 let engine = wasmi::Engine::default();
@@ -128,6 +173,13 @@ macro_rules! bench_ops_batch {
                 let wasmi_instance = get_wasmi_instance(&engine, store.as_context_mut(), &wasm_code[..]);
                 let wasmi_func = wasmi_instance
                     .get_typed_func::<(i64, i64, i64), i64>(store.as_context_mut(), func_name)
+                    .unwrap();
+
+                // wasmi stuff that calls native method
+                let mut store_call_host = wasmi::Store::new(&engine, 42);
+                let wasmi_call_host_instance = get_wasmi_call_host_instance(&engine, store_call_host.as_context_mut(), &wasm_call_host_code[..], [< $t _ $ops >]);
+                let wasmi_call_host_func = wasmi_call_host_instance
+                    .get_typed_func::<(i64, i64, i64), i64>(store_call_host.as_context_mut(), "local_call_host_func")
                     .unwrap();
 
                 // wasmer stuff
@@ -140,7 +192,12 @@ macro_rules! bench_ops_batch {
                         black_box(b.iter(|| {
                             [< $t _ $ops _batch >] ($x, $y, *i);
                         }))
-
+                    });
+                    // wasmi call native
+                    group.bench_with_input(BenchmarkId::new("wasmi-call-native", i), &i, |b, i| {
+                        black_box(b.iter(|| {
+                            wasmi_call_host_func.call(store_call_host.as_context_mut(), ($x, $y, *i)).unwrap();
+                        }))
                     });
                     // wasmi
                     group.bench_with_input(BenchmarkId::new("wasmi", i), &i, |b, i| {
