@@ -84,7 +84,7 @@ fn test_add_local_ref_to_stored_substate() {
         RuntimeError::KernelError(KernelError::CallFrameError(
             CallFrameError::WriteSubstateError(x),
         )) => {
-            matches!(x, WriteSubstateError::NonGlobalRefNotAllowed(_))
+            matches!(x, WriteSubstateError::ProcessSubstateIOWriteError(_))
         }
         _ => false,
     });

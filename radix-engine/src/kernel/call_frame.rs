@@ -1,6 +1,7 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
-    SubstateDevice, SubstateIO, SubstateIOHandler, SubstateReadHandler,
+    ProcessSubstateIOWriteError, SubstateDevice, SubstateIO, SubstateIOHandler, SubstateIOWrite,
+    SubstateReadHandler,
 };
 use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore};
 use crate::types::*;
@@ -297,6 +298,7 @@ pub enum PassMessageError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateNodeError {
     ProcessSubstateError(ProcessSubstateError),
+    ProcessSubstateIOWriteError(ProcessSubstateIOWriteError),
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
@@ -364,6 +366,7 @@ pub enum ReadSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WriteSubstateError {
     LockNotFound(OpenSubstateHandle),
+    ProcessSubstateIOWriteError(ProcessSubstateIOWriteError),
     ProcessSubstateError(ProcessSubstateError),
     NoWritePermission,
     PersistNodeError(PersistNodeError),
@@ -548,22 +551,18 @@ impl<C, L: Clone> CallFrame<C, L> {
             SubstateDevice::Heap
         };
 
-        let mut new_owned_nodes = index_set_new();
-        let mut new_non_global_references = index_map_new();
+        let mut move_nodes_from_heap = index_set_new();
+        let mut add_non_global_refs = index_map_new();
 
         // FIXME: Should process all owns before all references to ensure owns don't clash with references
         for (_partition_number, module) in &node_substates {
             for (substate_key, substate_value) in module {
-                let (
-                    substate_new_owned_nodes,
-                    new_non_global_references_with_device,
-                    _removed_non_global_refs,
-                ) = self
+                let io_write = self
                     .process_substate(destination_device, substate_value, None)
                     .map_err(|e| CallbackError::Error(CreateNodeError::ProcessSubstateError(e)))?;
 
-                new_owned_nodes.extend(substate_new_owned_nodes);
-                new_non_global_references.extend(new_non_global_references_with_device);
+                move_nodes_from_heap.extend(io_write.move_nodes_from_heap);
+                add_non_global_refs.extend(io_write.add_non_global_refs);
 
                 self.process_input_substate_key(substate_key).map_err(|e| {
                     CallbackError::Error(CreateNodeError::ProcessSubstateKeyError(e))
@@ -592,8 +591,11 @@ impl<C, L: Clone> CallFrame<C, L> {
             destination_device,
             node_id,
             node_substates,
-            new_owned_nodes,
-            new_non_global_references,
+            SubstateIOWrite {
+                move_nodes_from_heap,
+                add_non_global_refs,
+                remove_non_global_refs: index_set_new(),
+            },
         )?;
 
         Ok(())
@@ -858,8 +860,8 @@ impl<C, L: Clone> CallFrame<C, L> {
                     lock_handle,
                 )))?;
 
-        let (move_nodes_from_heap, new_non_global_references_with_device, removed_non_global_refs) =
-            self.process_substate(
+        let io_write = self
+            .process_substate(
                 opened_substate.device,
                 &substate,
                 Some((
@@ -870,7 +872,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             .map_err(|e| CallbackError::Error(WriteSubstateError::ProcessSubstateError(e)))?;
 
         {
-            for new_owned_node in &move_nodes_from_heap {
+            for new_owned_node in &io_write.move_nodes_from_heap {
                 self.transient_references
                     .entry(new_owned_node.clone())
                     .or_insert(TransientReference {
@@ -882,7 +884,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
 
             let mut new_non_global_references = index_set_new();
-            for (new_non_global_reference, device) in &new_non_global_references_with_device {
+            for (new_non_global_reference, device) in &io_write.add_non_global_refs {
                 self.transient_references
                     .entry(new_non_global_reference.clone())
                     .or_insert(TransientReference {
@@ -897,7 +899,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
             opened_substate
                 .owned_nodes
-                .extend(move_nodes_from_heap.clone());
+                .extend(io_write.move_nodes_from_heap.clone());
             opened_substate
                 .non_global_references
                 .extend(new_non_global_references);
@@ -913,9 +915,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             &mut handler,
             opened_substate.global_lock_handle,
             substate,
-            move_nodes_from_heap,
-            new_non_global_references_with_device,
-            removed_non_global_refs,
+            io_write,
         )?;
 
         self.open_substates.insert(lock_handle, opened_substate);
@@ -1226,14 +1226,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         device: SubstateDevice,
         updated_substate: &IndexedScryptoValue,
         prev: Option<(&IndexSet<NodeId>, &IndexSet<NodeId>)>,
-    ) -> Result<
-        (
-            IndexSet<NodeId>,
-            IndexMap<NodeId, SubstateDevice>,
-            IndexSet<NodeId>,
-        ),
-        ProcessSubstateError,
-    > {
+    ) -> Result<SubstateIOWrite, ProcessSubstateError> {
         // Process owned nodes
         let new_owned_nodes = {
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
@@ -1318,11 +1311,11 @@ impl<C, L: Clone> CallFrame<C, L> {
             (new_non_global_references, removed_non_global_refs)
         };
 
-        Ok((
-            new_owned_nodes,
-            new_non_global_references,
-            removed_non_global_refs,
-        ))
+        Ok(SubstateIOWrite {
+            move_nodes_from_heap: new_owned_nodes,
+            add_non_global_refs: new_non_global_references,
+            remove_non_global_refs: removed_non_global_refs,
+        })
     }
 
     fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {

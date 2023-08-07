@@ -12,6 +12,7 @@ use crate::track::interface::{
 };
 use radix_engine_common::prelude::{NodeId, PartitionNumber};
 use radix_engine_common::types::{SortedU16Key, SubstateKey};
+use radix_engine_common::ScryptoSbor;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
@@ -50,6 +51,18 @@ pub trait SubstateReadHandler {
     ) -> Result<(), Self::Error>;
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ProcessSubstateIOWriteError {
+    NonGlobalRefNotAllowed(NodeId),
+    PersistNodeError(PersistNodeError),
+}
+
+pub struct SubstateIOWrite {
+    pub move_nodes_from_heap: IndexSet<NodeId>,
+    pub add_non_global_refs: IndexMap<NodeId, SubstateDevice>,
+    pub remove_non_global_refs: IndexSet<NodeId>,
+}
+
 pub struct SubstateIO<'g, S: SubstateStore> {
     pub heap: Heap,
     pub store: &'g mut S,
@@ -67,47 +80,23 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         }
     }
 
-    pub fn create_node<'f, E>(
+    pub fn create_node<E>(
         &mut self,
         handler: &mut impl SubstateIOHandler<E>,
         device: SubstateDevice,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        move_nodes_from_heap: IndexSet<NodeId>,
-        new_non_global_references: IndexMap<NodeId, SubstateDevice>,
+        io_write: SubstateIOWrite,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
-        match device {
-            SubstateDevice::Heap => {
-                for (reference, ref_device) in new_non_global_references {
-                    self.non_global_node_refs
-                        .increment_ref_count(reference, ref_device);
-                }
-            }
-            SubstateDevice::Store => {
-                for own in move_nodes_from_heap {
-                    Self::move_node_from_heap_to_store(
-                        &mut self.heap,
-                        self.store,
-                        handler,
-                        &self.non_global_node_refs,
-                        &own,
-                    )
-                    .map_err(|e| e.map(CreateNodeError::PersistNodeError))?
-                }
-
-                if !new_non_global_references.is_empty() {
-                    return Err(CallbackError::Error(
-                        CreateNodeError::NonGlobalRefNotAllowed(
-                            new_non_global_references
-                                .into_iter()
-                                .map(|(node_id, _)| node_id)
-                                .next()
-                                .unwrap(),
-                        ),
-                    ));
-                }
-            }
-        }
+        Self::process_substate_io_write(
+            &mut self.heap,
+            self.store,
+            &mut self.non_global_node_refs,
+            handler,
+            device,
+            io_write,
+        )
+        .map_err(|e| e.map(CreateNodeError::ProcessSubstateIOWriteError))?;
 
         match device {
             SubstateDevice::Heap => {
@@ -384,9 +373,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         handler: &mut impl SubstateIOHandler<E>,
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
-        move_nodes_from_heap: IndexSet<NodeId>,
-        add_non_global_references: IndexMap<NodeId, SubstateDevice>,
-        remove_non_global_references: IndexSet<NodeId>,
+        io_write: SubstateIOWrite,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get_mut(global_lock_handle);
@@ -397,64 +384,30 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         // Remove any virtualized state if it exists
         let _ = lock_data.virtualized.take();
 
-        match lock_data.device {
-            SubstateDevice::Heap => {
-                for (reference, device) in add_non_global_references {
-                    self.non_global_node_refs
-                        .increment_ref_count(reference, device);
-                }
+        Self::process_substate_io_write(
+            &mut self.heap,
+            self.store,
+            &mut self.non_global_node_refs,
+            handler,
+            lock_data.device,
+            io_write,
+        )
+        .map_err(|e| e.map(WriteSubstateError::ProcessSubstateIOWriteError))?;
 
-                for reference in &remove_non_global_references {
-                    // handle removed references
-                    self.non_global_node_refs.decrement_ref_count(reference);
-                }
-            }
-            SubstateDevice::Store => {
-                for own in &move_nodes_from_heap {
-                    // Move the node to store, if its owner is already in store
-                    Self::move_node_from_heap_to_store(
-                        &mut self.heap,
-                        self.store,
-                        handler,
-                        &self.non_global_node_refs,
-                        own,
-                    )
-                    .map_err(|e| e.map(WriteSubstateError::PersistNodeError))?;
-                }
-
-                if !add_non_global_references.is_empty() || !remove_non_global_references.is_empty()
-                {
-                    return Err(CallbackError::Error(
-                        WriteSubstateError::NonGlobalRefNotAllowed(
-                            add_non_global_references
-                                .into_iter()
-                                .map(|(node_id, _)| node_id)
-                                .next()
-                                .unwrap(),
-                        ),
-                    ));
-                }
-            }
-        }
+        let node_id = node_id.clone();
+        let partition_num = partition_num.clone();
+        let substate_key = substate_key.clone();
 
         match lock_data.device {
             SubstateDevice::Heap => {
-                self.heap.set_substate(
-                    node_id.clone(),
-                    partition_num.clone(),
-                    substate_key.clone(),
-                    substate,
-                );
+                self.heap
+                    .set_substate(node_id, partition_num, substate_key, substate);
             }
             SubstateDevice::Store => {
                 self.store
-                    .set_substate(
-                        node_id.clone(),
-                        partition_num.clone(),
-                        substate_key.clone(),
-                        substate,
-                        &mut |_| Err(()),
-                    )
+                    .set_substate(node_id, partition_num, substate_key, substate, &mut |_| {
+                        Err(())
+                    })
                     .expect(
                         "Setting substate on handled substate should not incur a store access.",
                     );
@@ -699,5 +652,55 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         };
 
         Ok(value)
+    }
+
+    fn process_substate_io_write<E>(
+        heap: &mut Heap,
+        store: &mut S,
+        non_global_node_refs: &mut NonGlobalNodeRefs,
+        handler: &mut impl SubstateIOHandler<E>,
+        device: SubstateDevice,
+        io_write: SubstateIOWrite,
+    ) -> Result<(), CallbackError<ProcessSubstateIOWriteError, E>> {
+        match device {
+            SubstateDevice::Heap => {
+                for (reference, ref_device) in io_write.add_non_global_refs {
+                    non_global_node_refs.increment_ref_count(reference, ref_device);
+                }
+                for reference in &io_write.remove_non_global_refs {
+                    // handle removed references
+                    non_global_node_refs.decrement_ref_count(reference);
+                }
+            }
+            SubstateDevice::Store => {
+                for own in io_write.move_nodes_from_heap {
+                    Self::move_node_from_heap_to_store(
+                        heap,
+                        store,
+                        handler,
+                        non_global_node_refs,
+                        &own,
+                    )
+                    .map_err(|e| e.map(ProcessSubstateIOWriteError::PersistNodeError))?
+                }
+
+                if !io_write.add_non_global_refs.is_empty()
+                    || !io_write.remove_non_global_refs.is_empty()
+                {
+                    return Err(CallbackError::Error(
+                        ProcessSubstateIOWriteError::NonGlobalRefNotAllowed(
+                            io_write
+                                .add_non_global_refs
+                                .into_iter()
+                                .map(|(node_id, _)| node_id)
+                                .next()
+                                .unwrap(),
+                        ),
+                    ));
+                }
+            }
+        }
+
+        Ok(())
     }
 }
