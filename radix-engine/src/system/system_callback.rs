@@ -333,9 +333,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                             ident.to_string(),
                         ))
                     })?;
-                system.validate_payload_against_blueprint_schema(
+                system.validate_payloads_against_blueprint_schema(
                     &blueprint_id,
-                    &None,
+                    vec![],
+                    NonIterMap::new(),
                     &[(input.as_vec_ref(), input_type_pointer)],
                 )?;
 
@@ -377,9 +378,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     .interface
                     .get_function_output_type_pointer(ident.as_str())
                     .expect("Schema verification should enforce that this exists.");
-                system.validate_payload_against_blueprint_schema(
+                system.validate_payloads_against_blueprint_schema(
                     &blueprint_id,
-                    &None,
+                    vec![],
+                    NonIterMap::new(),
                     &[(output.as_vec_ref(), output_type_pointer)],
                 )?;
                 Ok(output)

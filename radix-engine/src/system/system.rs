@@ -178,7 +178,8 @@ where
     pub fn validate_payload_at_type_pointer(
         &mut self,
         blueprint_id: &BlueprintId,
-        instance_schema: &Option<InstanceSchema>,
+        type_instances: &Vec<TypeIdentifier>,
+        additional_schemas: &NonIterMap<Hash, &ScryptoSchema>,
         type_pointer: TypePointer,
         payload: &[u8],
     ) -> Result<(), RuntimeError> {
@@ -201,32 +202,35 @@ where
                 })?;
             }
             TypePointer::Instance(instance_index) => {
-                let instance_schema = match instance_schema.as_ref() {
-                    Some(instance_schema) => instance_schema,
-                    None => {
-                        return Err(RuntimeError::SystemError(
+
+                let type_identifier = type_instances
+                    .get(instance_index as usize)
+                    .ok_or_else(|| {
+                        RuntimeError::SystemError(
                             SystemError::PayloadValidationAgainstSchemaError(
                                 PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
                             ),
-                        ));
-                    }
-                };
-                let type_identifier = instance_schema
-                    .instance_type_lookup
-                    .get(instance_index as usize)
-                    .unwrap()
-                    .clone();
+                        )
+                    })?;
+
+                let schema = *additional_schemas.get(&type_identifier.0).ok_or_else(|| {
+                    RuntimeError::SystemError(
+                        SystemError::PayloadValidationAgainstSchemaError(
+                            PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
+                        ),
+                    )
+                })?;
 
                 self.validate_payload(
                     payload,
-                    &instance_schema.schema,
+                    schema,
                     type_identifier.1,
                     SchemaOrigin::Instance,
                 )
                 .map_err(|err| {
                     RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
                         PayloadValidationAgainstSchemaError::PayloadValidationError(
-                            err.error_message(&instance_schema.schema),
+                            err.error_message(schema),
                         ),
                     ))
                 })?;
@@ -236,16 +240,18 @@ where
         Ok(())
     }
 
-    pub fn validate_payload_against_blueprint_schema<'s>(
+    pub fn validate_payloads_against_blueprint_schema<'s>(
         &'s mut self,
         blueprint_id: &BlueprintId,
-        instance_schema: &'s Option<InstanceSchema>,
+        type_instances: Vec<TypeIdentifier>,
+        additional_schemas: NonIterMap<Hash, &'s ScryptoSchema>,
         payloads: &[(&Vec<u8>, TypePointer)],
     ) -> Result<(), RuntimeError> {
         for (payload, type_pointer) in payloads {
             self.validate_payload_at_type_pointer(
                 blueprint_id,
-                instance_schema,
+                &type_instances,
+                &additional_schemas,
                 type_pointer.clone(),
                 payload,
             )?;
@@ -336,9 +342,10 @@ where
                     fields_to_check.push((&field.value, pointer));
                 }
 
-                self.validate_payload_against_blueprint_schema(
+                self.validate_payloads_against_blueprint_schema(
                     &blueprint_id,
-                    &instance_schema,
+                    instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
+                    instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
                     &fields_to_check,
                 )?;
 
@@ -407,9 +414,10 @@ where
                                 )
                             })?;
 
-                        self.validate_payload_against_blueprint_schema(
+                        self.validate_payloads_against_blueprint_schema(
                             &blueprint_id,
-                            &instance_schema,
+                            instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
+                            instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
                             &[(&key, key_type_pointer), (&value, value_type_pointer)],
                         )?;
 
@@ -778,9 +786,10 @@ where
                     ))
                 })?;
 
-            self.validate_payload_against_blueprint_schema(
+            self.validate_payloads_against_blueprint_schema(
                 &blueprint_id,
-                &instance_schema,
+                instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
+                instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
                 &[(&event_data, type_pointer.clone())],
             )?;
 
@@ -1352,7 +1361,8 @@ where
             }) => {
                 self.validate_payload_at_type_pointer(
                     &blueprint_id,
-                    &None, // TODO: Change to Some, once support for generic fields is implemented
+                    &vec![], // TODO: Change to Some, once support for generic fields is implemented
+                    &NonIterMap::new(),
                     type_pointer,
                     &buffer,
                 )?;
@@ -1732,13 +1742,14 @@ where
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
                 blueprint_id,
                 instance_schema,
-                type_pointer: schema_pointer,
+                type_pointer,
                 can_own,
             }) => {
                 self.validate_payload_at_type_pointer(
                     &blueprint_id,
-                    &instance_schema,
-                    schema_pointer,
+                    &instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
+                    &instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
+                    type_pointer,
                     &buffer,
                 )?;
 
@@ -1944,9 +1955,10 @@ where
         let (node_id, partition_num, schema, instance_schema, blueprint_id) =
             self.get_actor_index(actor_object_type, collection_index)?;
 
-        self.validate_payload_against_blueprint_schema(
+        self.validate_payloads_against_blueprint_schema(
             &blueprint_id,
-            &instance_schema,
+            instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
+            instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
             &[(&key, schema.key), (&buffer, schema.value)],
         )?;
 
@@ -2047,9 +2059,10 @@ where
         let (node_id, partition_num, schema, instance_schema, blueprint_id) =
             self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
-        self.validate_payload_against_blueprint_schema(
+        self.validate_payloads_against_blueprint_schema(
             &blueprint_id,
-            &instance_schema,
+            instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
+            instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
             &[(&sorted_key.1, schema.key), (&buffer, schema.value)],
         )?;
 
@@ -2476,9 +2489,10 @@ where
         let (node_id, partition_num, kv_schema, instance_schema, blueprint_id) =
             self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
-        self.validate_payload_against_blueprint_schema(
+        self.validate_payloads_against_blueprint_schema(
             &blueprint_id,
-            &instance_schema,
+            instance_schema.as_ref().map(|s| s.instance_type_lookup.clone()).unwrap_or_default(),
+            instance_schema.as_ref().into_iter().map(|s| (s.schema.generate_schema_hash(), &s.schema)).collect(),
             &[(key, kv_schema.key)],
         )?;
 
