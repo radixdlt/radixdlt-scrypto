@@ -101,7 +101,6 @@ impl AuthZoneBlueprint {
                                 },
                                 features: btreeset!(),
                                 type_instances: vec![],
-                                additional_schemas: btreemap!(),
                             }
                         })),
                     ),
@@ -126,7 +125,6 @@ impl AuthZoneBlueprint {
                             },
                             features: btreeset!(),
                             type_instances: vec![],
-                            additional_schemas: btreemap!(),
                         }
                     }))),
                 )?;
@@ -175,7 +173,6 @@ impl AuthZoneBlueprint {
                         },
                         features: btreeset!(),
                         type_instances: vec![],
-                        additional_schemas: btreemap!(),
                     }
                 }))
             ),
@@ -226,7 +223,6 @@ impl AuthZoneBlueprint {
                         },
                         features: btreeset!(),
                         type_instances: vec![],
-                        additional_schemas: btreemap!(),
                     },
                 }))
             ),

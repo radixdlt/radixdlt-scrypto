@@ -32,7 +32,7 @@ pub struct BlueprintInfo {
     pub outer_obj_info: OuterObjectInfo,
     pub features: BTreeSet<String>,
     pub type_instances: Vec<TypeIdentifier>,
-    pub additional_schemas: BTreeMap<Hash, ScryptoSchema>,
+    //pub additional_schemas: BTreeMap<Hash, ScryptoSchema>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

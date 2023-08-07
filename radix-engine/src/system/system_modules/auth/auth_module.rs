@@ -356,7 +356,6 @@ impl AuthModule {
                         outer_obj_info: OuterObjectInfo::default(),
                         features: btreeset!(),
                         type_instances: vec![],
-                        additional_schemas: btreemap!(),
                     }
                 }))
             ),

@@ -13,6 +13,7 @@ use crate::transaction::{SystemPartitionDescription, SystemReader};
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SubstateSystemStructure {
     SystemField(SystemFieldStructure),
+    SystemType,
     // KeyValueStore substates
     KeyValueStoreEntry(KeyValueStoreEntryStructure),
     // Object substates
@@ -200,6 +201,9 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         key: &SubstateKey,
     ) -> SubstateSystemStructure {
         match partition_description {
+            SystemPartitionDescription::InstanceSchemas => {
+                SubstateSystemStructure::SystemType
+            }
             SystemPartitionDescription::TypeInfo => {
                 SubstateSystemStructure::SystemField(SystemFieldStructure {
                     field_kind: SystemFieldKind::TypeInfo,

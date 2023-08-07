@@ -64,7 +64,6 @@ pub enum KeyValueEntryLockData {
     BlueprintWrite {
         blueprint_id: BlueprintId,
         type_instances: Vec<TypeIdentifier>,
-        additional_schemas: NonIterMap<Hash, ScryptoSchema>,
         type_pointer: TypePointer,
         can_own: bool,
     },
@@ -336,7 +335,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     })?;
 
                 let validating_object = if let Actor::Method(method) = actor {
-                    ValidationTarget::ExistingObject(method.node_id, NonIterMap::new())
+                    ValidationTarget::ExistingObject(method.node_id)
                 } else {
                     ValidationTarget::Blueprint
                 };

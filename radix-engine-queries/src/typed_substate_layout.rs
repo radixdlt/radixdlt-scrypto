@@ -67,6 +67,7 @@ use transaction::prelude::IntentHash;
 
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
+    Schema,
     TypeInfoModule(TypedTypeInfoModuleSubstateKey),
     RoleAssignmentModule(TypedRoleAssignmentSubstateKey),
     RoyaltyModule(TypedRoyaltyModuleSubstateKey),
@@ -184,6 +185,9 @@ pub fn to_typed_substate_key(
             TypedSubstateKey::TypeInfoModule(TypedTypeInfoModuleSubstateKey::TypeInfoField(
                 TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
             ))
+        }
+        INSTANCE_SCHEMAS_PARTITION => {
+            TypedSubstateKey::Schema
         }
         METADATA_BASE_PARTITION => {
             TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(
@@ -450,6 +454,7 @@ fn to_typed_object_substate_key_internal(
 #[derive(Debug)]
 pub enum TypedSubstateValue {
     TypeInfoModule(TypedTypeInfoModuleSubstateValue),
+    Schema,
     RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue),
     RoyaltyModule(TypedRoyaltyModuleSubstateValue),
     MetadataModule(TypedMetadataModuleSubstateValue),
@@ -620,6 +625,9 @@ fn to_typed_substate_value_internal(
                     TypedTypeInfoModuleSubstateValue::TypeInfo(scrypto_decode(data)?)
                 }
             })
+        }
+        TypedSubstateKey::Schema => {
+            TypedSubstateValue::Schema
         }
         TypedSubstateKey::RoleAssignmentModule(role_assignment_key) => match role_assignment_key {
             TypedRoleAssignmentSubstateKey::RoleAssignmentField(role_assignment_field_offset) => {

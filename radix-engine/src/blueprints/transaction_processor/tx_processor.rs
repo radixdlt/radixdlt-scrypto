@@ -114,7 +114,6 @@ impl TransactionProcessorBlueprint {
                         blueprint_info: BlueprintInfo {
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                             type_instances: Vec::new(),
-                            additional_schemas: BTreeMap::new(),
                             outer_obj_info: OuterObjectInfo::default(),
                             features: btreeset!(),
                         }

@@ -684,7 +684,6 @@ pub fn create_bootstrap_package_partitions(
                     outer_obj_info: OuterObjectInfo::default(),
                     features: btreeset!(),
                     type_instances: vec![],
-                    additional_schemas: btreemap!(),
                 },
             })),
         );
