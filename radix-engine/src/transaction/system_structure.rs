@@ -220,7 +220,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     match main_type_info {
                         TypeInfoSubstate::Object(info) => (
                             info.blueprint_info.blueprint_id,
-                            info.blueprint_info.type_instances,
+                            info.blueprint_info.type_substitutions,
                         ),
                         TypeInfoSubstate::KeyValueStore(info) => {
                             return SubstateSystemStructure::KeyValueStoreEntry(

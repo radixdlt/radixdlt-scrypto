@@ -20,7 +20,7 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::module::SystemModule;
-use crate::system::system::{FieldSubstate, ValidationTarget};
+use crate::system::system::{FieldSubstate, ValidationTarget, SchemaValidationMeta};
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -63,7 +63,7 @@ pub enum KeyValueEntryLockData {
     },
     BlueprintWrite {
         blueprint_id: BlueprintId,
-        type_instances: Vec<TypeIdentifier>,
+        type_substitutions: Vec<TypeIdentifier>,
         type_pointer: TypePointer,
         can_own: bool,
     },
@@ -336,14 +336,24 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
                 let validating_object = if let Actor::Method(method) = actor {
                     // TODO: Change to non empty identifiers
-                    ValidationTarget::ExistingObject(method.node_id, vec![])
+                    ValidationTarget {
+                        blueprint_id: blueprint_id.clone(),
+                        type_substitutions: vec![],
+                        meta: SchemaValidationMeta::ExistingObject {
+                            additional_schemas: method.node_id,
+                        }
+                    }
+
                 } else {
-                    ValidationTarget::Blueprint
+                    ValidationTarget {
+                        blueprint_id: blueprint_id.clone(),
+                        type_substitutions: vec![],
+                        meta: SchemaValidationMeta::Blueprint,
+                    }
                 };
 
-                system.validate_payloads_of_object(
+                system.validate_blueprint_payloads(
                     &validating_object,
-                    &blueprint_id,
                     &[(input.as_vec_ref(), input_type_pointer)],
                 )?;
 
@@ -385,9 +395,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     .interface
                     .get_function_output_type_pointer(ident.as_str())
                     .expect("Schema verification should enforce that this exists.");
-                system.validate_payloads_of_object(
+                system.validate_blueprint_payloads(
                     &validating_object,
-                    &blueprint_id,
                     &[(output.as_vec_ref(), output_type_pointer)],
                 )?;
                 Ok(output)

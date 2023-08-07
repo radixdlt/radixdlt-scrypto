@@ -683,7 +683,7 @@ pub fn create_bootstrap_package_partitions(
                     blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
                     outer_obj_info: OuterObjectInfo::default(),
                     features: btreeset!(),
-                    type_instances: vec![],
+                    type_substitutions: vec![],
                 },
             })),
         );
