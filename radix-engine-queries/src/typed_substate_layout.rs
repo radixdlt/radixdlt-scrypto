@@ -138,9 +138,9 @@ pub enum TypedMainModuleSubstateKey {
     ValidatorField(ValidatorField),
     AccessControllerField(AccessControllerField),
     AccountField(AccountField),
-    AccountVaultIndexKey(ResourceAddress),
-    AccountResourcePreferenceIndexKey(ResourceAddress),
-    AccountAllowedDepositorsByResourceOrNonFungible(ResourceOrNonFungible),
+    AccountVaultKey(ResourceAddress),
+    AccountResourcePreferenceKey(ResourceAddress),
+    AccountAuthorizedDepositorKey(ResourceOrNonFungible),
     OneResourcePoolField(OneResourcePoolField),
     TwoResourcePoolField(TwoResourcePoolField),
     MultiResourcePoolField(MultiResourcePoolField),
@@ -370,19 +370,19 @@ fn to_typed_object_substate_key_internal(
             match partition_offset {
                 AccountPartitionOffset::AccountVaultsByResourceAddress => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountVaultIndexKey(
+                    TypedMainModuleSubstateKey::AccountVaultKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
                 AccountPartitionOffset::AccountResourcePreferenceByAddress => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountResourcePreferenceIndexKey(
+                    TypedMainModuleSubstateKey::AccountResourcePreferenceKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
-                AccountPartitionOffset::AccountAllowedDepositorsByResourceOrNonFungible => {
+                AccountPartitionOffset::AccountAuthorizedDepositorByResourceOrNonFungible => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountAllowedDepositorsByResourceOrNonFungible(
+                    TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
@@ -447,7 +447,7 @@ fn to_typed_object_substate_key_internal(
     Ok(substate_type)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedSubstateValue {
     TypeInfoModule(TypedTypeInfoModuleSubstateValue),
     RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue),
@@ -456,30 +456,30 @@ pub enum TypedSubstateValue {
     MainModule(TypedMainModuleSubstateValue),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedTypeInfoModuleSubstateValue {
     TypeInfo(TypeInfoSubstate),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedRoleAssignmentModuleSubstateValue {
     OwnerRole(FieldSubstate<OwnerRoleSubstate>),
     Rule(KeyValueEntrySubstate<AccessRule>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedRoyaltyModuleSubstateValue {
     ComponentRoyalty(FieldSubstate<ComponentRoyaltySubstate>),
     ComponentMethodRoyalty(ComponentMethodRoyaltySubstate),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedMetadataModuleSubstateValue {
     MetadataEntry(MetadataEntrySubstate),
 }
 
 /// Contains all the main module substate values, by each known partition layout
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedMainModuleSubstateValue {
     // Objects
     Package(TypedPackageFieldValue),
@@ -502,9 +502,9 @@ pub enum TypedMainModuleSubstateValue {
     Validator(TypedValidatorFieldValue),
     AccessController(TypedAccessControllerFieldValue),
     Account(TypedAccountFieldValue),
-    AccountVaultIndex(KeyValueEntrySubstate<Own>),
-    AccountResourcePreferenceIndex(KeyValueEntrySubstate<AccountResourcePreferenceEntry>),
-    AccountAllowedDepositorsByResourceOrNonFungible(KeyValueEntrySubstate<()>),
+    AccountVaultEntry(KeyValueEntrySubstate<AccountVaultEntryContents>),
+    AccountResourcePreferenceEntry(KeyValueEntrySubstate<AccountResourcePreferenceEntryContents>),
+    AccountAuthorizedDepositorEntry(KeyValueEntrySubstate<AccountAuthorizedDepositorEntryContents>),
     OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
@@ -512,40 +512,40 @@ pub enum TypedMainModuleSubstateValue {
     TransactionTrackerCollectionEntry(KeyValueEntrySubstate<TransactionStatusSubstateContents>),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
-    GenericKeyValueStore(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
+    GenericKeyValueStoreEntry(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedPackageFieldValue {
     Royalty(FieldSubstate<PackageRoyaltyAccumulatorSubstate>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedFungibleResourceManagerFieldValue {
     Divisibility(FieldSubstate<FungibleResourceManagerDivisibilitySubstate>),
     TotalSupply(FieldSubstate<FungibleResourceManagerTotalSupplySubstate>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedNonFungibleResourceManagerFieldValue {
     IdType(FieldSubstate<NonFungibleResourceManagerIdTypeSubstate>),
     MutableFields(FieldSubstate<NonFungibleResourceManagerMutableFieldsSubstate>),
     TotalSupply(FieldSubstate<NonFungibleResourceManagerTotalSupplySubstate>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedFungibleVaultFieldValue {
     Balance(FieldSubstate<FungibleVaultBalanceSubstate>),
     VaultFrozenFlag(FieldSubstate<VaultFrozenFlag>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedNonFungibleVaultFieldValue {
     Balance(FieldSubstate<NonFungibleVaultBalanceSubstate>),
     VaultFrozenFlag(FieldSubstate<VaultFrozenFlag>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedConsensusManagerFieldValue {
     Config(FieldSubstate<ConsensusManagerConfigSubstate>),
     ConsensusManager(FieldSubstate<ConsensusManagerSubstate>),
@@ -556,43 +556,43 @@ pub enum TypedConsensusManagerFieldValue {
     CurrentTime(FieldSubstate<ProposerMilliTimestampSubstate>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedValidatorFieldValue {
     Validator(FieldSubstate<ValidatorSubstate>),
     ProtocolUpdateReadinessSignal(FieldSubstate<ValidatorProtocolUpdateReadinessSignalSubstate>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedAccessControllerFieldValue {
     AccessController(FieldSubstate<AccessControllerSubstate>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum GenericScryptoComponentFieldValue {
     State(FieldSubstate<ScryptoValue>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedAccountFieldValue {
     Account(FieldSubstate<AccountSubstate>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedOneResourcePoolFieldValue {
     OneResourcePool(FieldSubstate<one_resource_pool::OneResourcePoolSubstate>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedTwoResourcePoolFieldValue {
     TwoResourcePool(FieldSubstate<two_resource_pool::TwoResourcePoolSubstate>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedMultiResourcePoolFieldValue {
     MultiResourcePool(FieldSubstate<multi_resource_pool::MultiResourcePoolSubstate>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TypedTransactionTrackerFieldValue {
     TransactionTracker(FieldSubstate<TransactionTrackerSubstate>),
 }
@@ -791,16 +791,14 @@ fn to_typed_object_substate_value(
                 AccountField::Account => TypedAccountFieldValue::Account(scrypto_decode(data)?),
             })
         }
-        TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
-            TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::AccountVaultKey(_) => {
+            TypedMainModuleSubstateValue::AccountVaultEntry(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::AccountResourcePreferenceIndexKey(_) => {
-            TypedMainModuleSubstateValue::AccountResourcePreferenceIndex(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::AccountResourcePreferenceKey(_) => {
+            TypedMainModuleSubstateValue::AccountResourcePreferenceEntry(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::AccountAllowedDepositorsByResourceOrNonFungible(_) => {
-            TypedMainModuleSubstateValue::AccountAllowedDepositorsByResourceOrNonFungible(
-                scrypto_decode(data)?,
-            )
+        TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(_) => {
+            TypedMainModuleSubstateValue::AccountAuthorizedDepositorEntry(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::AccessControllerField(offset) => {
             TypedMainModuleSubstateValue::AccessController(match offset {
@@ -817,7 +815,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
-            TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
+            TypedMainModuleSubstateValue::GenericKeyValueStoreEntry(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::OneResourcePoolField(offset) => {
             TypedMainModuleSubstateValue::OneResourcePool(match offset {
