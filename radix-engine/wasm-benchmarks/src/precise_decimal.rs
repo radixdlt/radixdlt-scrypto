@@ -1,7 +1,7 @@
 use radix_engine_common::math::PreciseDecimal;
 
 #[no_mangle]
-pub fn precise_decimal_add(x: i64, y: i64) -> i64 {
+pub fn precise_decimal_add(x: i64, y: i64, _cnt: i64) -> i64 {
     let x = PreciseDecimal::from(x);
     let y = PreciseDecimal::from(y);
     let z = x + y;
@@ -9,7 +9,7 @@ pub fn precise_decimal_add(x: i64, y: i64) -> i64 {
 }
 
 #[no_mangle]
-pub fn precise_decimal_add_internal() -> i64 {
+pub fn precise_decimal_add_no_conversion(_x: i64, _y: i64, _cnt: i64) -> i64 {
     let x = -PreciseDecimal::ONE;
     let y = PreciseDecimal::MAX;
     let z = x + y;
@@ -17,7 +17,7 @@ pub fn precise_decimal_add_internal() -> i64 {
 }
 
 #[no_mangle]
-pub fn precise_decimal_add_batch(x: i64, y: i64, cnt: i32) -> i64 {
+pub fn precise_decimal_add_batch(x: i64, y: i64, cnt: i64) -> i64 {
     let x = PreciseDecimal::from(x);
     let y = PreciseDecimal::from(y);
     let mut z = x;
@@ -28,7 +28,7 @@ pub fn precise_decimal_add_batch(x: i64, y: i64, cnt: i32) -> i64 {
 }
 
 #[no_mangle]
-pub fn precise_decimal_mul(x: i64, y: i64) -> i64 {
+pub fn precise_decimal_mul(x: i64, y: i64, _cnt: i64) -> i64 {
     let x = PreciseDecimal::from(x);
     let y = PreciseDecimal::from(y);
     let z = x * y;
@@ -36,7 +36,7 @@ pub fn precise_decimal_mul(x: i64, y: i64) -> i64 {
 }
 
 #[no_mangle]
-pub fn precise_decimal_mul_internal() -> i64 {
+pub fn precise_decimal_mul_no_conversion(_x: i64, _y: i64, _cnt: i64) -> i64 {
     let x = -PreciseDecimal::ONE;
     let y = PreciseDecimal::MAX;
     let z = x * y;
@@ -44,7 +44,7 @@ pub fn precise_decimal_mul_internal() -> i64 {
 }
 
 #[no_mangle]
-pub fn precise_decimal_mul_batch(x: i64, y: i64, cnt: i32) -> i64 {
+pub fn precise_decimal_mul_batch(x: i64, y: i64, cnt: i64) -> i64 {
     let x = PreciseDecimal::from(x);
     let y = PreciseDecimal::from(y);
     let mut z = x;
@@ -59,14 +59,14 @@ pub fn precise_decimal_mul_batch(x: i64, y: i64, cnt: i32) -> i64 {
 }
 
 #[no_mangle]
-pub fn precise_decimal_pow(x: i64, exp: i64) -> i64 {
+pub fn precise_decimal_pow(x: i64, exp: i64, _cnt: i64) -> i64 {
     let x = PreciseDecimal::from(x);
     let z = x.powi(exp);
     z.is_positive().into()
 }
 
 #[no_mangle]
-pub fn precise_decimal_pow_batch(x: i64, exp: i64, cnt: i32) -> i64 {
+pub fn precise_decimal_pow_batch(x: i64, exp: i64, cnt: i64) -> i64 {
     let x = PreciseDecimal::from(x);
     let mut c = x;
     for _ in 0..cnt {
@@ -91,7 +91,8 @@ fn prec_dec_fib(n: PreciseDecimal) -> PreciseDecimal {
 }
 
 #[no_mangle]
-pub fn precise_decimal_fib(n: i64) {
+pub fn precise_decimal_fib(n: i64, _: i64, _: i64) -> i64 {
     let n = PreciseDecimal::from(n);
     prec_dec_fib(n);
+    0
 }

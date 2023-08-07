@@ -1,10 +1,10 @@
 #[no_mangle]
-pub fn primitive_add(x: i64, y: i64) -> i64 {
+pub fn primitive_add(x: i64, y: i64, _cnt: i64) -> i64 {
     x + y
 }
 
 #[no_mangle]
-pub fn primitive_add_batch(x: i64, y: i64, cnt: i32) -> i64 {
+pub fn primitive_add_batch(x: i64, y: i64, cnt: i64) -> i64 {
     let mut c = x;
     for _ in 0..cnt {
         c += y;
@@ -13,12 +13,12 @@ pub fn primitive_add_batch(x: i64, y: i64, cnt: i32) -> i64 {
 }
 
 #[no_mangle]
-pub fn primitive_mul(x: i64, y: i64) -> i64 {
+pub fn primitive_mul(x: i64, y: i64, _cnt: i64) -> i64 {
     x * y
 }
 
 #[no_mangle]
-pub fn primitive_mul_batch(x: i64, y: i64, cnt: i32) -> i64 {
+pub fn primitive_mul_batch(x: i64, y: i64, cnt: i64) -> i64 {
     let mut z = x;
     for _ in 0..cnt {
         if z < x {
@@ -31,13 +31,15 @@ pub fn primitive_mul_batch(x: i64, y: i64, cnt: i32) -> i64 {
 }
 
 #[no_mangle]
-pub fn primitive_pow(x: i64, exp: u32) -> i64 {
+pub fn primitive_pow(x: i64, exp: i64, _cnt: i64) -> i64 {
+    let exp: u32 = exp.try_into().unwrap();
     x.pow(exp)
 }
 
 #[no_mangle]
-pub fn primitive_pow_batch(x: i64, exp: u32, cnt: i32) -> i64 {
+pub fn primitive_pow_batch(x: i64, exp: i64, cnt: i64) -> i64 {
     let mut c = x;
+    let exp: u32 = exp.try_into().unwrap();
     for _ in 0..cnt {
         c = c.pow(exp);
         if c > 0 {
@@ -59,6 +61,6 @@ fn prim_fib(n: i64) -> i64 {
 }
 
 #[no_mangle]
-pub fn primitive_fib(n: i64) {
-    prim_fib(n);
+pub fn primitive_fib(n: i64, _: i64, _: i64) -> i64 {
+    prim_fib(n)
 }
