@@ -203,40 +203,36 @@ macro_rules! impl_bits {
                     }
                 }
 
-                impl Shl for $t {
+                impl Shl<u32> for $t {
                     type Output = Self;
 
                     #[inline]
-                    fn shl(self, other: Self) -> Self {
-                        let shift_by = u32::try_from(other).expect("Overflow");
-                        Self(self.0.checked_shl(shift_by).expect("Overflow"))
+                    fn shl(self, other: u32) -> Self {
+                        Self(self.0.checked_shl(other).expect("Overflow"))
                     }
                 }
 
 
-                impl ShlAssign for $t {
+                impl ShlAssign<u32> for $t {
                     #[inline]
-                    fn shl_assign(&mut self, other: Self) {
-                        let shift_by = u32::try_from(other).expect("Overflow");
-                        self.0 = self.0.checked_shl(shift_by).expect("Overflow");
+                    fn shl_assign(&mut self, other: u32) {
+                        self.0 = self.0.checked_shl(other).expect("Overflow");
                     }
                 }
 
-                impl Shr for $t {
+                impl Shr<u32> for $t {
                     type Output = Self;
 
                     #[inline]
-                    fn shr(self, other: Self) -> $t {
-                        let shift_by = u32::try_from(other).expect("Overflow");
-                        Self(self.0.checked_shr(shift_by).expect("Overflow"))
+                    fn shr(self, other: u32) -> $t {
+                        Self(self.0.checked_shr(other).expect("Overflow"))
                     }
                 }
 
-                impl ShrAssign for $t {
+                impl ShrAssign<u32> for $t {
                     #[inline]
-                    fn shr_assign(&mut self, other: Self) {
-                        let shift_by = u32::try_from(other).expect("Overflow");
-                        self.0 = self.0.checked_shr(shift_by).expect("Overflow");
+                    fn shr_assign(&mut self, other: u32) {
+                        self.0 = self.0.checked_shr(other).expect("Overflow");
                     }
                 }
             }
