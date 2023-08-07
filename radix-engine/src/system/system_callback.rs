@@ -335,7 +335,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     })?;
 
                 let validating_object = if let Actor::Method(method) = actor {
-                    ValidationTarget::ExistingObject(method.node_id)
+                    // TODO: Change to non empty identifiers
+                    ValidationTarget::ExistingObject(method.node_id, vec![])
                 } else {
                     ValidationTarget::Blueprint
                 };
@@ -343,7 +344,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 system.validate_payloads_of_object(
                     &validating_object,
                     &blueprint_id,
-                    &vec![],
                     &[(input.as_vec_ref(), input_type_pointer)],
                 )?;
 
@@ -388,7 +388,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 system.validate_payloads_of_object(
                     &validating_object,
                     &blueprint_id,
-                    &vec![],
                     &[(output.as_vec_ref(), output_type_pointer)],
                 )?;
                 Ok(output)
