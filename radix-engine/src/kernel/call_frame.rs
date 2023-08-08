@@ -105,7 +105,7 @@ pub struct TransientReference {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ReferenceOrigin {
-    Heap,
+    FrameOwned,
     Global(GlobalAddress),
     DirectlyAccessed,
     SubstateNonGlobalReference(SubstateDevice),
@@ -177,7 +177,7 @@ impl NodeVisibility {
                 }
                 Visibility::Borrowed(ref_origin) => return Some(ref_origin.clone()),
                 Visibility::FrameOwned => {
-                    return Some(ReferenceOrigin::Heap);
+                    return Some(ReferenceOrigin::FrameOwned);
                 }
             }
         }
@@ -1186,7 +1186,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         let node_visibility = self.get_node_visibility(node_id);
         let ref_origin = node_visibility.reference_origin(node_id.clone())?;
         let device = match ref_origin {
-            ReferenceOrigin::Heap => SubstateDevice::Heap,
+            ReferenceOrigin::FrameOwned => SubstateDevice::Heap,
             ReferenceOrigin::Global(..) | ReferenceOrigin::DirectlyAccessed => {
                 SubstateDevice::Store
             }

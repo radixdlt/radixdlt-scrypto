@@ -285,7 +285,7 @@ impl Actor {
                 let node_visibility = api.kernel_get_node_visibility(&actor.node_id);
                 match node_visibility.reference_origin(actor.node_id).unwrap() {
                     ReferenceOrigin::SubstateNonGlobalReference(..)
-                    | ReferenceOrigin::Heap
+                    | ReferenceOrigin::FrameOwned
                     | ReferenceOrigin::DirectlyAccessed => None,
                     ReferenceOrigin::Global(address) => Some(address.into()),
                 }
