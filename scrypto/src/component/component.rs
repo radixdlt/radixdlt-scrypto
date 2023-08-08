@@ -9,6 +9,7 @@ use radix_engine_common::prelude::well_known_scrypto_custom_types::{
 use radix_engine_common::prelude::{
     scrypto_decode, OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
+use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
     METADATA_SET_IDENT,
@@ -462,14 +463,42 @@ where
     }
 }
 
-impl<O: HasStub> From<ComponentAddress> for Global<O> {
-    fn from(value: ComponentAddress) -> Self {
-        Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
+trait TypeCheckable {
+    fn check(node_id: &NodeId) -> Result<(), ComponentCastError>;
+}
+
+impl<O: HasTypeInfo> TypeCheckable for O {
+    fn check(node_id: &NodeId) -> Result<(), ComponentCastError> {
+        let blueprint_id = ScryptoEnv.get_blueprint_id(node_id).unwrap();
+        let to = O::blueprint_id();
+        if !blueprint_id.eq(&to) {
+            return Err(ComponentCastError::CannotCast {
+                actual: blueprint_id,
+                to,
+            });
+        }
+
+        Ok(())
     }
 }
 
-impl<O: HasStub> From<PackageAddress> for Global<O> {
-    fn from(value: PackageAddress) -> Self {
+impl TypeCheckable for AnyComponent {
+    fn check(_node_id: &NodeId) -> Result<(), ComponentCastError> {
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
+pub enum ComponentCastError {
+    CannotCast {
+        to: BlueprintId,
+        actual: BlueprintId,
+    },
+}
+
+impl<O: HasStub + TypeCheckable> From<ComponentAddress> for Global<O> {
+    fn from(value: ComponentAddress) -> Self {
+        O::check(value.as_node_id()).unwrap();
         Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
     }
 }
