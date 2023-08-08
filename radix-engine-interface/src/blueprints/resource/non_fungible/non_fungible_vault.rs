@@ -25,6 +25,15 @@ pub struct NonFungibleVaultGetNonFungibleLocalIdsInput {
 
 pub type NonFungibleVaultGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
 
+pub const NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT: &str = "contains_non_fungible";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleVaultContainsNonFungibleInput {
+    pub id: NonFungibleLocalId,
+}
+
+pub type NonFungibleVaultContainsNonFungibleOutput = bool;
+
 pub const NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT: &str = "recall_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
