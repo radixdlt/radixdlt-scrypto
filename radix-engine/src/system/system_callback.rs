@@ -20,14 +20,14 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::module::SystemModule;
-use crate::system::system::{FieldSubstate, ValidationTarget, SchemaValidationMeta};
+use crate::system::system::{FieldSubstate, ValidationTarget, SchemaValidationMeta, BlueprintPayloadIdentifier, InputOrOutput};
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::ClientBlueprintApi;
+use radix_engine_interface::api::{ClientBlueprintApi, CollectionIndex};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
@@ -62,9 +62,9 @@ pub enum KeyValueEntryLockData {
         can_own: bool,
     },
     BlueprintWrite {
+        collection_index: CollectionIndex,
         blueprint_id: BlueprintId,
         type_substitutions: Vec<TypeIdentifier>,
-        type_pointer: TypePointer,
         can_own: bool,
     },
 }
@@ -325,14 +325,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     blueprint_id.package_address,
                     &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
                 )?;
-                let input_type_pointer = definition
-                    .interface
-                    .get_function_input_type_pointer(ident.as_str())
-                    .ok_or_else(|| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(
-                            ident.to_string(),
-                        ))
-                    })?;
 
                 let validating_object = if let Actor::Method(method) = actor {
                     // TODO: Change to non empty identifiers
@@ -352,9 +344,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     }
                 };
 
-                system.validate_blueprint_payloads(
+                // Validate input
+                system.validate_blueprint_payload2(
                     &validating_object,
-                    &[(input.as_vec_ref(), input_type_pointer)],
+                    BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Input),
+                    input.as_vec_ref()
                 )?;
 
                 // Validate receiver type
@@ -391,14 +385,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
 
                 // Validate output
-                let output_type_pointer = definition
-                    .interface
-                    .get_function_output_type_pointer(ident.as_str())
-                    .expect("Schema verification should enforce that this exists.");
-                system.validate_blueprint_payloads(
+                system.validate_blueprint_payload2(
                     &validating_object,
-                    &[(output.as_vec_ref(), output_type_pointer)],
+                    BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Output),
+                    output.as_vec_ref()
                 )?;
+
                 Ok(output)
             }
             Actor::BlueprintHook(BlueprintHookActor {

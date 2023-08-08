@@ -169,10 +169,17 @@ pub enum KeyOrValue {
     Value,
 }
 
+pub enum InputOrOutput {
+    Input,
+    Output,
+}
+
 pub enum BlueprintPayloadIdentifier {
+    Function(String, InputOrOutput),
     Field(u8),
     KeyValueCollection(u8, KeyOrValue),
     IndexCollection(u8, KeyOrValue),
+    SortedIndexCollection(u8, KeyOrValue),
     Event(String),
 }
 
@@ -302,6 +309,26 @@ where
         let blueprint_interface = self.get_blueprint_default_interface(target.blueprint_id.clone())?;
 
         let (type_pointer, can_own) = match payload_identifier {
+            BlueprintPayloadIdentifier::Function(function_ident, InputOrOutput::Input) => {
+                let type_pointer = blueprint_interface
+                    .get_function_input_type_pointer(function_ident.as_str())
+                    .ok_or_else(|| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(
+                            function_ident,
+                        ))
+                    })?;
+                (type_pointer, true)
+            }
+            BlueprintPayloadIdentifier::Function(function_ident, InputOrOutput::Output) => {
+                let type_pointer = blueprint_interface
+                    .get_function_output_type_pointer(function_ident.as_str())
+                    .ok_or_else(|| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(
+                            function_ident,
+                        ))
+                    })?;
+                (type_pointer, true)
+            }
             BlueprintPayloadIdentifier::Field(field_index) => {
                 let type_pointer = blueprint_interface
                     .get_field_type_pointer(field_index)
@@ -354,6 +381,32 @@ where
                 let type_pointer = blueprint_interface
                     .state
                     .get_index_type_pointer_value(collection_index)
+                    .ok_or_else(|| {
+                        RuntimeError::SystemError(
+                            SystemError::PayloadValidationAgainstSchemaError(
+                                PayloadValidationAgainstSchemaError::KeyValueStoreValueDoesNotExist
+                            ),
+                        )
+                    })?;
+                (type_pointer, false)
+            }
+            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Key) => {
+                let type_pointer = blueprint_interface
+                    .state
+                    .get_sorted_index_type_pointer_key(collection_index)
+                    .ok_or_else(|| {
+                        RuntimeError::SystemError(
+                            SystemError::PayloadValidationAgainstSchemaError(
+                                PayloadValidationAgainstSchemaError::KeyValueStoreKeyDoesNotExist
+                            ),
+                        )
+                    })?;
+                (type_pointer, false)
+            }
+            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Value) => {
+                let type_pointer = blueprint_interface
+                    .state
+                    .get_sorted_index_type_pointer_value(collection_index)
                     .ok_or_else(|| {
                         RuntimeError::SystemError(
                             SystemError::PayloadValidationAgainstSchemaError(
@@ -453,23 +506,6 @@ where
         }
 
         Ok(can_own)
-    }
-
-
-    pub fn validate_blueprint_payloads<'s>(
-        &'s mut self,
-        target: &ValidationTarget,
-        payloads: &[(&Vec<u8>, TypePointer)],
-    ) -> Result<(), RuntimeError> {
-        for (payload, type_pointer) in payloads {
-            self.validate_blueprint_payload(
-                target,
-                type_pointer.clone(),
-                payload,
-            )?;
-        }
-
-        Ok(())
     }
 
     fn validate_instance_schema_and_state(
@@ -1931,12 +1967,12 @@ where
 
         let can_own = match data {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
+                collection_index,
                 blueprint_id,
                 type_substitutions,
-                type_pointer,
                 can_own,
             }) => {
-                self.validate_blueprint_payload(
+                self.validate_blueprint_payload2(
                     &ValidationTarget {
                         blueprint_id,
                         type_substitutions,
@@ -1944,7 +1980,7 @@ where
                             additional_schemas: node_id,
                         }
                     },
-                    type_pointer,
+                    BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value),
                     &buffer,
                 )?;
 
@@ -2267,15 +2303,24 @@ where
         let (node_id, partition_num, schema, blueprint_id, type_substitutions) =
             self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
-        self.validate_blueprint_payloads(
-            &ValidationTarget {
-                blueprint_id,
-                type_substitutions,
-                meta: SchemaValidationMeta::ExistingObject {
-                    additional_schemas: node_id,
-                }
-            },
-            &[(&sorted_key.1, schema.key), (&buffer, schema.value)],
+        let target = ValidationTarget {
+            blueprint_id,
+            type_substitutions,
+            meta: SchemaValidationMeta::ExistingObject {
+                additional_schemas: node_id,
+            }
+        };
+
+        self.validate_blueprint_payload2(
+            &target,
+            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Key),
+            &sorted_key.1,
+        )?;
+
+        self.validate_blueprint_payload2(
+            &target,
+            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Value),
+            &buffer,
         )?;
 
         let value = IndexedScryptoValue::from_vec(buffer)
@@ -2701,22 +2746,25 @@ where
         let (node_id, partition_num, kv_schema, blueprint_id, type_substitutions) =
             self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
-        self.validate_blueprint_payloads(
-            &ValidationTarget {
-                blueprint_id: blueprint_id.clone(),
-                type_substitutions: type_substitutions.clone(),
-                meta: SchemaValidationMeta::ExistingObject {
-                    additional_schemas: node_id,
-                }
-            },
-            &[(key, kv_schema.key)],
+        let target = ValidationTarget {
+            blueprint_id: blueprint_id.clone(),
+            type_substitutions: type_substitutions.clone(),
+            meta: SchemaValidationMeta::ExistingObject {
+                additional_schemas: node_id,
+            }
+        };
+
+        self.validate_blueprint_payload2(
+            &target,
+            BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Key),
+            &key,
         )?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             KeyValueEntryLockData::BlueprintWrite {
+                collection_index,
                 blueprint_id,
                 type_substitutions,
-                type_pointer: kv_schema.value,
                 can_own: kv_schema.can_own,
             }
         } else {
