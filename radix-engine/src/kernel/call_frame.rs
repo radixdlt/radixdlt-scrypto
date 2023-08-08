@@ -554,9 +554,6 @@ impl<C, L: Clone> CallFrame<C, L> {
             SubstateDevice::Heap
         };
 
-        let mut move_nodes_from_heap = index_set_new();
-        let mut add_non_global_refs = index_map_new();
-
         // FIXME: Should process all owns before all references to ensure owns don't clash with references
         for (_partition_number, module) in &node_substates {
             for (substate_key, substate_value) in module {
@@ -564,8 +561,33 @@ impl<C, L: Clone> CallFrame<C, L> {
                     .process_substate(destination_device, substate_value, None)
                     .map_err(|e| CallbackError::Error(CreateNodeError::ProcessSubstateError(e)))?;
 
-                move_nodes_from_heap.extend(io_write.move_nodes_from_heap);
-                add_non_global_refs.extend(io_write.add_non_global_refs);
+                match destination_device {
+                    SubstateDevice::Heap => {
+                        for (reference, ref_device) in io_write.add_non_global_refs {
+                            substate_io.non_global_node_refs.increment_ref_count(reference, ref_device);
+                        }
+                        for reference in &io_write.remove_non_global_refs {
+                            // handle removed references
+                            substate_io.non_global_node_refs.decrement_ref_count(reference);
+                        }
+                    }
+                    SubstateDevice::Store => {
+                        if !io_write.add_non_global_refs.is_empty()
+                            || !io_write.remove_non_global_refs.is_empty()
+                        {
+                            return Err(CallbackError::Error(
+                                CreateNodeError::NonGlobalRefNotAllowed(
+                                    io_write
+                                        .add_non_global_refs
+                                        .into_iter()
+                                        .map(|(node_id, _)| node_id)
+                                        .next()
+                                        .unwrap(),
+                                ),
+                            ));
+                        }
+                    }
+                }
 
                 self.process_input_substate_key(substate_key).map_err(|e| {
                     CallbackError::Error(CreateNodeError::ProcessSubstateKeyError(e))
@@ -594,11 +616,6 @@ impl<C, L: Clone> CallFrame<C, L> {
             destination_device,
             node_id,
             node_substates,
-            SubstateIOWrite {
-                move_nodes_from_heap,
-                add_non_global_refs,
-                remove_non_global_refs: index_set_new(),
-            },
         )?;
 
         Ok(())

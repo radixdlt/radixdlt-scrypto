@@ -86,23 +86,27 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         device: SubstateDevice,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        io_write: SubstateIOWrite,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
-        Self::process_substate_io_write(
-            &mut self.heap,
-            self.store,
-            &mut self.non_global_node_refs,
-            handler,
-            device,
-            io_write,
-        )
-        .map_err(|e| e.map(CreateNodeError::ProcessSubstateIOWriteError))?;
-
         match device {
             SubstateDevice::Heap => {
                 self.heap.create_node(node_id, node_substates);
             }
             SubstateDevice::Store => {
+                for (_partition_number, module) in &node_substates {
+                    for (substate_key, substate_value) in module {
+                        for own in substate_value.owned_nodes() {
+                            Self::move_node_from_heap_to_store(
+                                &mut self.heap,
+                                self.store,
+                                handler,
+                                &self.non_global_node_refs,
+                                own,
+                            )
+                                .map_err(|e| e.map(CreateNodeError::PersistNodeError))?
+                        }
+                    }
+                }
+
                 self.store
                     .create_node(node_id, node_substates, &mut |store_access| {
                         handler.on_store_access(&self.heap, store_access)
