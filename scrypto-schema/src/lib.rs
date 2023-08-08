@@ -137,7 +137,7 @@ impl BlueprintSchemaInit {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum TypeRef<T> {
     Static(T),   // Type is defined by blueprint
     Generic(u8), // Type bounds is defined by blueprint, the type itself is defined by the instance

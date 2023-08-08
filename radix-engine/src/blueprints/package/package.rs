@@ -64,7 +64,9 @@ pub enum PackageError {
     InvalidName(String),
     MissingOuterBlueprint,
     WasmUnsupported(String),
+    InvalidLocalTypeIndex(LocalTypeIndex),
     InvalidGenericId(u8),
+    EventGenericTypeNotSupported,
 
     InvalidAuthSetup,
     DefiningReservedRoleKey(String, RoleKey),
@@ -118,107 +120,102 @@ fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
             return Err(PackageError::TooManySubstateSchemas);
         }
 
-        // FIXME: Add validation for valid local_type_index of all schema'd things
-
-        let num_generics = bp_init.generics.len() as u8;
+        // FIXME: Also add validation for local_type_index in Instance and KVStore schema type references
 
         for field in &bp_init.state.fields {
-            match field.field {
-                TypeRef::Static(..) => {}
-                TypeRef::Generic(generic_id) => {
-                    if generic_id >= num_generics {
-                        return Err(PackageError::InvalidGenericId(generic_id));
-                    }
-                }
-            }
+            validate_package_schema_type_ref(bp_init, field.field)?;
         }
 
         for collection in &bp_init.state.collections {
             match collection {
                 BlueprintCollectionSchema::KeyValueStore(kv_store_schema) => {
-                    match kv_store_schema.key {
-                        TypeRef::Static(..) => {}
-                        TypeRef::Generic(generic_id) => {
-                            if generic_id >= num_generics {
-                                return Err(PackageError::InvalidGenericId(generic_id));
-                            }
-                        }
-                    }
-
-                    match kv_store_schema.value {
-                        TypeRef::Static(..) => {}
-                        TypeRef::Generic(generic_id) => {
-                            if generic_id >= num_generics {
-                                return Err(PackageError::InvalidGenericId(generic_id));
-                            }
-                        }
-                    }
+                    validate_package_schema_type_ref(bp_init, kv_store_schema.key)?;
+                    validate_package_schema_type_ref(bp_init, kv_store_schema.value)?;
                 }
-                BlueprintCollectionSchema::SortedIndex(..) => {}
-                BlueprintCollectionSchema::Index(..) => {}
+                BlueprintCollectionSchema::SortedIndex(kv_store_schema) => {
+                    validate_package_schema_type_ref(bp_init, kv_store_schema.key)?;
+                    validate_package_schema_type_ref(bp_init, kv_store_schema.value)?;
+                }
+                BlueprintCollectionSchema::Index(kv_store_schema) => {
+                    validate_package_schema_type_ref(bp_init, kv_store_schema.key)?;
+                    validate_package_schema_type_ref(bp_init, kv_store_schema.value)?;
+                }
             }
         }
 
         for (_name, event) in &bp_init.events.event_schema {
-            match event {
-                TypeRef::Static(..) => {}
-                TypeRef::Generic(generic_id) => {
-                    if *generic_id >= num_generics {
-                        return Err(PackageError::InvalidGenericId(*generic_id));
-                    }
-                }
-            }
+            validate_package_schema_type_ref(bp_init, *event)?;
         }
 
         for (_name, function) in &bp_init.functions.functions {
-            match function.input {
-                TypeRef::Static(..) => {}
-                TypeRef::Generic(generic_id) => {
-                    if generic_id >= num_generics {
-                        return Err(PackageError::InvalidGenericId(generic_id));
-                    }
-                }
-            }
-            match function.output {
-                TypeRef::Static(..) => {}
-                TypeRef::Generic(generic_id) => {
-                    if generic_id >= num_generics {
-                        return Err(PackageError::InvalidGenericId(generic_id));
-                    }
-                }
-            }
+            validate_package_schema_type_ref(bp_init, function.input)?;
+            validate_package_schema_type_ref(bp_init, function.output)?;
         }
     }
 
     Ok(())
 }
 
+fn validate_package_schema_type_ref(
+    blueprint_schema_init: &BlueprintSchemaInit,
+    type_ref: TypeRef<LocalTypeIndex>,
+) -> Result<(), PackageError> {
+    match type_ref {
+        TypeRef::Static(local_type_index) => {
+            if blueprint_schema_init
+                .schema
+                .resolve_type_kind(local_type_index)
+                .is_some()
+            {
+                Ok(())
+            } else {
+                Err(PackageError::InvalidLocalTypeIndex(local_type_index))
+            }
+        }
+        TypeRef::Generic(generic_id) => {
+            if (generic_id as usize) < blueprint_schema_init.generics.len() {
+                Ok(())
+            } else {
+                Err(PackageError::InvalidGenericId(generic_id))
+            }
+        }
+    }
+}
+
+fn extract_package_event_static_type_index(
+    blueprint_init: &BlueprintSchemaInit,
+    type_ref: TypeRef<LocalTypeIndex>,
+) -> Result<LocalTypeIndex, PackageError> {
+    match type_ref {
+        TypeRef::Static(local_type_index) => {
+            if blueprint_init
+                .schema
+                .resolve_type_kind(local_type_index)
+                .is_some()
+            {
+                Ok(local_type_index)
+            } else {
+                Err(PackageError::InvalidLocalTypeIndex(local_type_index))
+            }
+        }
+        TypeRef::Generic(_) => Err(PackageError::EventGenericTypeNotSupported),
+    }
+}
+
 fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
-    for BlueprintDefinitionInit {
-        schema: BlueprintSchemaInit { schema, events, .. },
-        ..
-    } in blueprints
-    {
-        // Package schema validation happens when the package is published. No need to redo
-        // it here again.
+    for blueprint_init in blueprints {
+        let blueprint_schema_init = &blueprint_init.schema;
+        let BlueprintSchemaInit { schema, events, .. } = blueprint_schema_init;
 
-        for (expected_event_name, local_type_index) in events.event_schema.iter() {
-            let local_type_index = match local_type_index {
-                TypeRef::Static(type_index) => type_index,
-                TypeRef::Generic(..) => {
-                    return Err(PackageError::WasmUnsupported(
-                        "Generics not supported".to_string(),
-                    ));
-                }
-            };
+        for (expected_event_name, type_ref) in events.event_schema.iter() {
+            let local_type_index =
+                extract_package_event_static_type_index(blueprint_schema_init, *type_ref)?;
 
             // Checking that the event is either a struct or an enum
-            let type_kind = schema.resolve_type_kind(*local_type_index).map_or(
-                Err(PackageError::FailedToResolveLocalSchema {
-                    local_type_index: *local_type_index,
-                }),
+            let type_kind = schema.resolve_type_kind(local_type_index).map_or(
+                Err(PackageError::FailedToResolveLocalSchema { local_type_index }),
                 Ok,
             )?;
             match type_kind {
@@ -228,9 +225,9 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
             }?;
 
             // Checking that the event name is indeed what the user claims it to be
-            let actual_event_name = schema.resolve_type_metadata(*local_type_index).map_or(
+            let actual_event_name = schema.resolve_type_metadata(local_type_index).map_or(
                 Err(PackageError::FailedToResolveLocalSchema {
-                    local_type_index: *local_type_index,
+                    local_type_index: local_type_index,
                 }),
                 |metadata| Ok(metadata.get_name_string()),
             )?;

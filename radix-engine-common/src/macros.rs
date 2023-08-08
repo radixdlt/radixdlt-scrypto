@@ -73,7 +73,7 @@ macro_rules! pdec {
 #[macro_export]
 macro_rules! well_known_scrypto_custom_type {
     // with describe
-    ($t:ty, $value_kind:expr, $schema_type:expr, $size:expr, $well_known_id:ident, $well_known_type_data_method:ident) => {
+    ($t:ty, $value_kind:expr, $schema_type:expr, $size:expr, $well_known_type:ident, $well_known_type_data_method:ident) => {
         impl sbor::Categorize<$crate::data::scrypto::ScryptoCustomValueKind> for $t {
             #[inline]
             fn value_kind() -> sbor::ValueKind<$crate::data::scrypto::ScryptoCustomValueKind> {
@@ -109,8 +109,8 @@ macro_rules! well_known_scrypto_custom_type {
         }
 
         impl sbor::Describe<$crate::data::scrypto::ScryptoCustomTypeKind> for $t {
-            const TYPE_ID: sbor::GlobalTypeId = sbor::GlobalTypeId::well_known(
-                $crate::data::scrypto::well_known_scrypto_custom_types::$well_known_id,
+            const TYPE_ID: sbor::GlobalTypeId = sbor::GlobalTypeId::WellKnown(
+                $crate::data::scrypto::well_known_scrypto_custom_types::$well_known_type,
             );
 
             fn type_data() -> sbor::TypeData<$crate::data::scrypto::ScryptoCustomTypeKind, sbor::GlobalTypeId> {

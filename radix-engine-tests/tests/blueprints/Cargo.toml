@@ -28,6 +28,7 @@ members = [
     "module",
     "non_fungible",
     "package",
+    "package_invalid",
     "package_schema",
     "package_token",
     "proof",

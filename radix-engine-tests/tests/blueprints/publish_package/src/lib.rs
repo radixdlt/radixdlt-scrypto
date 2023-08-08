@@ -49,5 +49,9 @@ mod publish_package {
         pub fn publish_native() {
             Blueprint::<FiFi>::publish_native(None, 0u8, PackageDefinition::default(), btreemap!());
         }
+
+        pub fn some_method() -> u8 {
+            0u8
+        }
     }
 }
