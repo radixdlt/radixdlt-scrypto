@@ -855,46 +855,14 @@ impl<C, L: Clone> CallFrame<C, L> {
                 substate_io,
                 opened_substate.device,
                 &substate,
-                Some(&opened_substate),
+                Some(&mut opened_substate),
             )
             .map_err(|e| CallbackError::Error(WriteSubstateError::ProcessSubstateError(e)))?;
 
         {
-            for new_owned_node in &io_write.move_nodes_from_heap {
-                self.transient_references
-                    .entry(new_owned_node.clone())
-                    .or_insert(TransientReference {
-                        ref_count: 0usize,
-                        ref_origin: opened_substate.ref_origin,
-                    })
-                    .ref_count
-                    .add_assign(1);
-            }
-            opened_substate.owned_nodes = substate.owned_nodes().clone().into_iter().collect();
 
-            match opened_substate.device {
-                SubstateDevice::Heap => {
-                    for (new_non_global_reference, device) in &io_write.add_non_global_refs {
-                        self.transient_references
-                            .entry(new_non_global_reference.clone())
-                            .or_insert(TransientReference {
-                                ref_count: 0usize,
-                                ref_origin: ReferenceOrigin::SubstateNonGlobalReference(*device),
-                            })
-                            .ref_count
-                            .add_assign(1);
 
-                        opened_substate.non_global_references.insert(*new_non_global_reference);
-                    }
 
-                    for reference in &io_write.remove_non_global_refs {
-                        // handle removed references
-                        opened_substate.non_global_references.remove(reference);
-                    }
-                }
-                SubstateDevice::Store => {
-                }
-            }
         }
 
         let mut handler = WrapperHandler {
@@ -1217,14 +1185,14 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_io: &mut SubstateIO<S>,
         device: SubstateDevice,
         updated_value: &IndexedScryptoValue,
-        open_substate: Option<&OpenedSubstate<L>>,
+        mut open_substate: Option<&mut OpenedSubstate<L>>,
     ) -> Result<SubstateIOWrite, ProcessSubstateError> {
         // Process owned nodes
         let new_owned_nodes = {
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
             let mut updated_owned_nodes: IndexSet<NodeId> = index_set_new();
             for own in updated_value.owned_nodes() {
-                let node_is_new = if let Some(open_substate) = open_substate {
+                let node_is_new = if let Some(open_substate) = open_substate.as_ref() {
                     !open_substate.owned_nodes.contains(own)
                 } else {
                     true
@@ -1242,7 +1210,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 }
             }
 
-            if let Some(open_substate) = open_substate {
+            if let Some(open_substate) = open_substate.as_mut() {
                 for own in &open_substate.owned_nodes {
                     if !updated_owned_nodes.contains(own) {
                         // Node detached
@@ -1305,13 +1273,48 @@ impl<C, L: Clone> CallFrame<C, L> {
             (new_non_global_references, removed_non_global_refs)
         };
 
+        if let Some(open_substate) = open_substate.as_mut() {
+            for new_owned_node in &new_owned_nodes {
+                self.transient_references
+                    .entry(new_owned_node.clone())
+                    .or_insert(TransientReference {
+                        ref_count: 0usize,
+                        ref_origin: open_substate.ref_origin,
+                    })
+                    .ref_count
+                    .add_assign(1);
+            }
+            open_substate.owned_nodes = updated_value.owned_nodes().clone().into_iter().collect();
+        }
+
         match device {
             SubstateDevice::Heap => {
                 for (reference, device) in &new_non_global_references {
                     substate_io.non_global_node_refs.increment_ref_count(*reference, *device);
+
+                    if let Some(open_substate) = open_substate.as_mut() {
+                        self.transient_references
+                            .entry(reference.clone())
+                            .or_insert(TransientReference {
+                                ref_count: 0usize,
+                                ref_origin: ReferenceOrigin::SubstateNonGlobalReference(*device),
+                            })
+                            .ref_count
+                            .add_assign(1);
+                        open_substate.non_global_references.insert(*reference);
+                    }
                 }
                 for reference in &removed_non_global_refs {
                     substate_io.non_global_node_refs.decrement_ref_count(reference);
+
+                    if let Some(open_substate) = open_substate.as_mut() {
+                        open_substate.non_global_references.remove(reference);
+                        let mut transient_ref = self.transient_references.remove(&reference).unwrap();
+                        if transient_ref.ref_count > 1 {
+                            transient_ref.ref_count -= 1;
+                            self.transient_references.insert(*reference, transient_ref);
+                        }
+                    }
                 }
             }
             SubstateDevice::Store => {
