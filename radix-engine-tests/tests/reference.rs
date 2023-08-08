@@ -1,4 +1,4 @@
-use radix_engine::kernel::call_frame::WriteSubstateError;
+use radix_engine::kernel::call_frame::{ProcessSubstateError, WriteSubstateError};
 use radix_engine::kernel::substate_io::ProcessSubstateIOWriteError;
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError},
@@ -87,7 +87,7 @@ fn test_add_local_ref_to_stored_substate() {
         )) => {
             matches!(
                 x,
-                WriteSubstateError::NonGlobalRefNotAllowed(..)
+                WriteSubstateError::ProcessSubstateError(ProcessSubstateError::NonGlobalRefNotAllowed(..))
             )
         }
         _ => false,

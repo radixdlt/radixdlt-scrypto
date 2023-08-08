@@ -855,10 +855,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 substate_io,
                 opened_substate.device,
                 &substate,
-                Some((
-                    &opened_substate.owned_nodes,
-                    &opened_substate.non_global_references,
-                )),
+                Some(&opened_substate),
             )
             .map_err(|e| CallbackError::Error(WriteSubstateError::ProcessSubstateError(e)))?;
 
@@ -1219,16 +1216,16 @@ impl<C, L: Clone> CallFrame<C, L> {
         &mut self,
         substate_io: &mut SubstateIO<S>,
         device: SubstateDevice,
-        updated_substate: &IndexedScryptoValue,
-        prev: Option<(&IndexSet<NodeId>, &IndexSet<NodeId>)>,
+        updated_value: &IndexedScryptoValue,
+        open_substate: Option<&OpenedSubstate<L>>,
     ) -> Result<SubstateIOWrite, ProcessSubstateError> {
         // Process owned nodes
         let new_owned_nodes = {
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
             let mut updated_owned_nodes: IndexSet<NodeId> = index_set_new();
-            for own in updated_substate.owned_nodes() {
-                let node_is_new = if let Some((old_owned_nodes, _)) = prev {
-                    !old_owned_nodes.contains(own)
+            for own in updated_value.owned_nodes() {
+                let node_is_new = if let Some(open_substate) = open_substate {
+                    !open_substate.owned_nodes.contains(own)
                 } else {
                     true
                 };
@@ -1245,8 +1242,8 @@ impl<C, L: Clone> CallFrame<C, L> {
                 }
             }
 
-            if let Some((old_owned_nodes, _)) = prev {
-                for own in old_owned_nodes {
+            if let Some(open_substate) = open_substate {
+                for own in &open_substate.owned_nodes {
                     if !updated_owned_nodes.contains(own) {
                         // Node detached
                         if device.eq(&SubstateDevice::Store) {
@@ -1269,26 +1266,27 @@ impl<C, L: Clone> CallFrame<C, L> {
         let (new_non_global_references, removed_non_global_refs) = {
             let mut updated_references: IndexSet<NodeId> = index_set_new();
             let mut new_non_global_references: IndexMap<NodeId, SubstateDevice> = index_map_new();
-            for node_id in updated_substate.references() {
+            for node_id in updated_value.references() {
                 // Deduplicate
                 updated_references.insert(node_id.clone());
             }
 
             for reference in &updated_references {
-                let reference_is_new = if let Some((_, old_references)) = &prev {
-                    !old_references.contains(reference)
-                } else {
-                    true
-                };
+                // FIXME: only check visibility if reference is new
+                // handle added references
+                let node_visibility = self.get_node_visibility(reference);
+                if !node_visibility.can_be_referenced_in_substate() {
+                    return Err(ProcessSubstateError::RefNotFound(reference.clone()));
+                }
 
-                if reference_is_new {
-                    // handle added references
-                    let node_visibility = self.get_node_visibility(reference);
-                    if !node_visibility.can_be_referenced_in_substate() {
-                        return Err(ProcessSubstateError::RefNotFound(reference.clone()));
-                    }
+                if !reference.is_global() {
+                    let reference_is_new = if let Some(open_substate) = &open_substate {
+                        !open_substate.non_global_references.contains(reference)
+                    } else {
+                        true
+                    };
 
-                    if !reference.is_global() {
+                    if reference_is_new {
                         let (_, device) = self.get_node_ref(reference).unwrap();
                         new_non_global_references.insert(reference.clone(), device);
                     }
@@ -1296,8 +1294,8 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
 
             let mut removed_non_global_refs: IndexSet<NodeId> = index_set_new();
-            if let Some((_, old_references)) = &prev {
-                for old_ref in *old_references {
+            if let Some(open_substate) = &open_substate {
+                for old_ref in &open_substate.non_global_references {
                     if !updated_references.contains(old_ref) {
                         removed_non_global_refs.insert(*old_ref);
                     }
@@ -1322,7 +1320,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 }
 
                 if !removed_non_global_refs.is_empty() {
-                    panic!("Should never have contains a non global reference");
+                    panic!("Should never have contained a non global reference");
                 }
             }
         }
