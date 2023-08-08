@@ -1,16 +1,16 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::process::Command;
-use wasm_benchmarks::*;
+use wasm_benchmarks_lib::*;
 use wasmer;
 use wasmer_compiler_singlepass;
 use wasmi::{self, AsContextMut};
 
 type HostState = u32;
 
-const WASM_BENCHMARKS_DIR: &str = "./wasm-benchmarks";
+const WASM_BENCHMARKS_DIR: &str = "./wasm-benchmarks-lib";
 
 const WASM_BENCHMARKS_WASM_FILE: &str =
-    "../target/wasm32-unknown-unknown/release/wasm_benchmarks.wasm";
+    "../target/wasm32-unknown-unknown/release/wasm_benchmarks_lib.wasm";
 
 // Compile wasm-benchmarks to WASM and return WASM code
 // (in fact it would be enough to compile it just once before starting this benchmark,

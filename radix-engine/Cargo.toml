@@ -44,7 +44,7 @@ lazy_static = { version = "1.4.0" }
 [dev-dependencies]
 wabt = { version = "0.10.0" }
 criterion = { version = "0.3", features = ["html_reports"] }
-wasm-benchmarks = { path = "./wasm-benchmarks", default-features = false }
+wasm-benchmarks-lib = { path = "./wasm-benchmarks-lib", default-features = false }
 
 wasmer = { version = "2.2.1"}
 wasmer-compiler-singlepass = { version = "2.2.1" }
