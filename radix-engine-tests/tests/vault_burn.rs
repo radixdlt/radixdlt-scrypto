@@ -158,10 +158,8 @@ fn can_burn_by_amount_from_non_fungible_vault() {
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!(1)
-    )
+    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    assert_eq!(amount, dec!(1))
 }
 
 #[test]
@@ -350,10 +348,8 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!(1)
-    )
+    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    assert_eq!(amount, dec!(1))
 }
 
 #[test]
@@ -544,10 +540,8 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
 
     // Assert
     receipt.expect_specific_failure(is_auth_unauthorized_error);
-    assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("2")
-    )
+    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    assert_eq!(amount, dec!("2"))
 }
 
 #[test]
@@ -731,10 +725,8 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!(1)
-    )
+    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    assert_eq!(amount, dec!(1))
 }
 
 #[test]

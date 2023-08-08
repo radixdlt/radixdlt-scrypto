@@ -64,6 +64,8 @@ pub trait ScryptoFungibleBucket {
 pub trait ScryptoNonFungibleBucket {
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
 
+    fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool;
+
     fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>>;
 
     fn non_fungible_local_id(&self) -> NonFungibleLocalId;
@@ -412,6 +414,19 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
                 self.0 .0.as_node_id(),
                 NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&BucketGetNonFungibleLocalIdsInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0 .0.as_node_id(),
+                NON_FUNGIBLE_BUCKET_CONTAINS_NON_FUNGIBLE_IDENT,
+                scrypto_encode(&NonFungibleBucketContainsNonFungibleInput { id: id.clone() })
+                    .unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

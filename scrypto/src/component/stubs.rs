@@ -226,15 +226,19 @@ extern_blueprint_internal! {
     ValidatorFunctions
     {},
     {
+        fn accepts_delegated_stake(&self) -> bool;
         fn apply_emission(&mut self, xrd_bucket: Bucket, epoch: Epoch, proposals_made: u64, proposals_missed: u64);
         fn apply_reward(&mut self, xrd_bucket: Bucket, epoch: Epoch);
         fn claim_xrd(&mut self, bucket: Bucket) -> Bucket;
         fn finish_unlock_owner_stake_units(&mut self) -> Bucket;
+        fn get_redemption_value(&self, amount_of_stake_units: Decimal) -> Decimal;
         fn lock_owner_stake_units(&mut self, stake_unit_bucket: Bucket);
         fn register(&mut self);
         fn stake(&mut self, stake: Bucket) -> Bucket;
         fn stake_as_owner(&mut self, stake: Bucket) -> Bucket;
         fn start_unlock_owner_stake_units(&mut self, requested_stake_unit_amount: Decimal);
+        fn total_stake_unit_supply(&self) -> Decimal;
+        fn total_stake_xrd_amount(&self) -> Decimal;
         fn unregister(&mut self);
         fn unstake(&mut self, stake_unit_bucket: Bucket) -> Bucket;
         fn update_accept_delegated_stake(&mut self, accept_delegated_stake: bool);
