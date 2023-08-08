@@ -899,27 +899,48 @@ impl<C, L: Clone> CallFrame<C, L> {
                     .ref_count
                     .add_assign(1);
             }
+            opened_substate.owned_nodes = substate.owned_nodes().clone().into_iter().collect();
 
-            let mut new_non_global_references = index_set_new();
-            for (new_non_global_reference, device) in &io_write.add_non_global_refs {
-                self.transient_references
-                    .entry(new_non_global_reference.clone())
-                    .or_insert(TransientReference {
-                        ref_count: 0usize,
-                        ref_origin: ReferenceOrigin::SubstateNonGlobalReference(*device),
-                    })
-                    .ref_count
-                    .add_assign(1);
+            match opened_substate.device {
+                SubstateDevice::Heap => {
+                    for (new_non_global_reference, device) in &io_write.add_non_global_refs {
+                        self.transient_references
+                            .entry(new_non_global_reference.clone())
+                            .or_insert(TransientReference {
+                                ref_count: 0usize,
+                                ref_origin: ReferenceOrigin::SubstateNonGlobalReference(*device),
+                            })
+                            .ref_count
+                            .add_assign(1);
 
-                new_non_global_references.insert(*new_non_global_reference);
+                        opened_substate.non_global_references.insert(*new_non_global_reference);
+                        substate_io.non_global_node_refs.increment_ref_count(*new_non_global_reference, *device);
+                    }
+
+                    for reference in &io_write.remove_non_global_refs {
+                        // handle removed references
+                        opened_substate.non_global_references.remove(reference);
+                        substate_io.non_global_node_refs.decrement_ref_count(reference);
+                    }
+                }
+                SubstateDevice::Store => {
+                    if !io_write.add_non_global_refs.is_empty()
+                        || !io_write.remove_non_global_refs.is_empty()
+                    {
+                        return Err(CallbackError::Error(
+                            WriteSubstateError::NonGlobalRefNotAllowed(
+                                io_write
+                                    .add_non_global_refs
+                                    .into_iter()
+                                    .map(|(node_id, _)| node_id)
+                                    .next()
+                                    .unwrap(),
+                            ),
+                        ));
+                    }
+                }
+
             }
-
-            opened_substate
-                .owned_nodes
-                .extend(io_write.move_nodes_from_heap.clone());
-            opened_substate
-                .non_global_references
-                .extend(new_non_global_references);
         }
 
         let mut handler = WrapperHandler {

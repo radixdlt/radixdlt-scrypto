@@ -87,9 +87,7 @@ fn test_add_local_ref_to_stored_substate() {
         )) => {
             matches!(
                 x,
-                WriteSubstateError::ProcessSubstateIOWriteError(
-                    ProcessSubstateIOWriteError::NonGlobalRefNotAllowed(..)
-                )
+                WriteSubstateError::NonGlobalRefNotAllowed(..)
             )
         }
         _ => false,
