@@ -186,14 +186,13 @@ pub enum BlueprintPayloadIdentifier {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BlueprintPartitionIdentifier {
-    Field,
     Collection(u8),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BlueprintPartitionType {
-    Field,
     IndexCollection,
+    SortedIndexCollection,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -380,14 +379,12 @@ impl IndexedStateSchema {
 
     pub fn get_partition(&self, blueprint_partition_identifier: BlueprintPartitionIdentifier) -> Option<(PartitionOffset, BlueprintPartitionType)> {
         match blueprint_partition_identifier {
-            BlueprintPartitionIdentifier::Field => {
-                self.fields.as_ref().map(|(partition, ..)| (*partition, BlueprintPartitionType::Field))
-            }
             BlueprintPartitionIdentifier::Collection(collection_index) => {
                 self.collections.get(collection_index as usize)
                     .map(|(partition, schema)| {
                         let partition_type = match schema {
                             BlueprintCollectionSchema::Index(..) => BlueprintPartitionType::IndexCollection,
+                            BlueprintCollectionSchema::SortedIndex(..) => BlueprintPartitionType::SortedIndexCollection,
                             _ => todo!(),
                         };
                         (*partition, partition_type)

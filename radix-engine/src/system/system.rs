@@ -1023,46 +1023,6 @@ where
         ))
     }
 
-    fn get_actor_sorted_index(
-        &mut self,
-        actor_object_type: ActorObjectType,
-        collection_index: CollectionIndex,
-    ) -> Result<
-        (
-            NodeId,
-            PartitionNumber,
-            BlueprintKeyValueSchema<TypePointer>,
-            BlueprintId,
-            Vec<TypeIdentifier>,
-        ),
-        RuntimeError,
-    > {
-        let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
-
-        let (partition_offset, kv_schema) = interface
-            .state
-            .into_sorted_index_partition(collection_index)
-            .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
-                    info.blueprint_id.clone(),
-                    collection_index,
-                ))
-            })?;
-
-        let partition_num = module_id
-            .base_partition_num()
-            .at_offset(partition_offset)
-            .expect("Module number overflow");
-
-        Ok((
-            node_id,
-            partition_num,
-            kv_schema,
-            info.blueprint_id,
-            info.type_substitutions,
-        ))
-    }
-
     fn resolve_blueprint_from_modules(
         &mut self,
         modules: &BTreeMap<ObjectModuleId, NodeId>,
@@ -2079,12 +2039,15 @@ where
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, schema, blueprint_id, type_substitutions) =
-            self.get_actor_sorted_index(actor_object_type, collection_index)?;
+        let (node_id, info, partition_num) = self.get_actor_partition_info(
+            actor_object_type,
+            BlueprintPartitionIdentifier::Collection(collection_index),
+            &BlueprintPartitionType::SortedIndexCollection,
+        )?;
 
         let target = ValidationTarget {
-            blueprint_id,
-            type_substitutions,
+            blueprint_id: info.blueprint_id,
+            type_substitutions: info.type_substitutions,
             meta: SchemaValidationMeta::ExistingObject {
                 additional_schemas: node_id,
             }
@@ -2129,8 +2092,11 @@ where
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, ..) =
-            self.get_actor_sorted_index(actor_object_type, collection_index)?;
+        let (node_id, _info, partition_num) = self.get_actor_partition_info(
+            actor_object_type,
+            BlueprintPartitionIdentifier::Collection(collection_index),
+            &BlueprintPartitionType::SortedIndexCollection,
+        )?;
 
         let rtn = self
             .api
@@ -2154,8 +2120,12 @@ where
     ) -> Result<Vec<(SortedKey, Vec<u8>)>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, ..) =
-            self.get_actor_sorted_index(actor_object_type, collection_index)?;
+        let (node_id, _info, partition_num) = self.get_actor_partition_info(
+            actor_object_type,
+            BlueprintPartitionIdentifier::Collection(collection_index),
+            &BlueprintPartitionType::SortedIndexCollection,
+        )?;
+
 
         let substates = self
             .api
