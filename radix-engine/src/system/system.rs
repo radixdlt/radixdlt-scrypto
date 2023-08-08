@@ -930,7 +930,7 @@ where
         Ok((node_id, module_id, blueprint_interface, blueprint_info))
     }
 
-    fn get_actor_field(
+    fn get_actor_field_info(
         &mut self,
         actor_object_type: ActorObjectType,
         field_index: u8,
@@ -981,46 +981,6 @@ where
             .expect("Module number overflow");
 
         Ok((node_id, partition_num, pointer, info.blueprint_id))
-    }
-
-    fn get_actor_kv_partition(
-        &mut self,
-        actor_object_type: ActorObjectType,
-        collection_index: CollectionIndex,
-    ) -> Result<
-        (
-            NodeId,
-            PartitionNumber,
-            BlueprintKeyValueSchema<TypePointer>,
-            BlueprintId,
-            Vec<TypeIdentifier>,
-        ),
-        RuntimeError,
-    > {
-        let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
-
-        let (partition_offset, kv_schema) = interface
-            .state
-            .into_key_value_store_partition(collection_index)
-            .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
-                    info.blueprint_id.clone(),
-                    collection_index,
-                ))
-            })?;
-
-        let partition_num = module_id
-            .base_partition_num()
-            .at_offset(partition_offset)
-            .expect("Module number overflow");
-
-        Ok((
-            node_id,
-            partition_num,
-            kv_schema,
-            info.blueprint_id,
-            info.type_substitutions,
-        ))
     }
 
     fn resolve_blueprint_from_modules(
@@ -1695,7 +1655,6 @@ where
                 collection_index,
                 blueprint_id,
                 type_substitutions,
-                can_own,
             }) => {
                 self.validate_blueprint_payload(
                     &ValidationTarget {
@@ -1707,9 +1666,7 @@ where
                     },
                     BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value),
                     &buffer,
-                )?;
-
-                can_own
+                )?
             }
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
                 schema,
@@ -2337,7 +2294,7 @@ where
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num, schema_pointer, blueprint_id) =
-            self.get_actor_field(actor_object_type, field_index)?;
+            self.get_actor_field_info(actor_object_type, field_index)?;
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
@@ -2492,12 +2449,15 @@ where
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, kv_schema, blueprint_id, type_substitutions) =
-            self.get_actor_kv_partition(actor_object_type, collection_index)?;
+        let (node_id, info, partition_num) = self.get_actor_partition_info(
+            actor_object_type,
+            BlueprintPartitionIdentifier::Collection(collection_index),
+            &BlueprintPartitionType::KeyValueCollection,
+        )?;
 
         let target = ValidationTarget {
-            blueprint_id: blueprint_id.clone(),
-            type_substitutions: type_substitutions.clone(),
+            blueprint_id: info.blueprint_id.clone(),
+            type_substitutions: info.type_substitutions.clone(),
             meta: SchemaValidationMeta::ExistingObject {
                 additional_schemas: node_id,
             }
@@ -2512,9 +2472,8 @@ where
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             KeyValueEntryLockData::BlueprintWrite {
                 collection_index,
-                blueprint_id,
-                type_substitutions,
-                can_own: kv_schema.can_own,
+                blueprint_id: info.blueprint_id,
+                type_substitutions: info.type_substitutions,
             }
         } else {
             KeyValueEntryLockData::Read

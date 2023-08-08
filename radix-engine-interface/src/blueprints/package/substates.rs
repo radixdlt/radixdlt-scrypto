@@ -191,6 +191,7 @@ pub enum BlueprintPartitionIdentifier {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BlueprintPartitionType {
+    KeyValueCollection,
     IndexCollection,
     SortedIndexCollection,
 }
@@ -383,9 +384,9 @@ impl IndexedStateSchema {
                 self.collections.get(collection_index as usize)
                     .map(|(partition, schema)| {
                         let partition_type = match schema {
+                            BlueprintCollectionSchema::KeyValueStore(..) => BlueprintPartitionType::KeyValueCollection,
                             BlueprintCollectionSchema::Index(..) => BlueprintPartitionType::IndexCollection,
                             BlueprintCollectionSchema::SortedIndex(..) => BlueprintPartitionType::SortedIndexCollection,
-                            _ => todo!(),
                         };
                         (*partition, partition_type)
                     })

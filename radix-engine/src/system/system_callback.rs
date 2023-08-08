@@ -65,7 +65,6 @@ pub enum KeyValueEntryLockData {
         collection_index: CollectionIndex,
         blueprint_id: BlueprintId,
         type_substitutions: Vec<TypeIdentifier>,
-        can_own: bool,
     },
 }
 
