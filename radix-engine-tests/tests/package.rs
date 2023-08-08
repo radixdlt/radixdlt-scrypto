@@ -1,7 +1,5 @@
 use radix_engine::blueprints::package::PackageError;
-use radix_engine::errors::{
-    ApplicationError, RuntimeError, SystemError, SystemModuleError, VmError,
-};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError, VmError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::PrepareError;
@@ -15,7 +13,7 @@ use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit, TypeRef,
 };
-use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
+use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -168,7 +166,7 @@ fn test_basic_package_missing_export() {
                 },
                 state: BlueprintStateSchemaInit {
                     fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
-                        UNIT_ID,
+                        UNIT_TYPE,
                     ))],
                     collections: vec![],
                 },
@@ -177,8 +175,8 @@ fn test_basic_package_missing_export() {
                     functions: btreemap!(
                         "f".to_string() => FunctionSchemaInit {
                             receiver: Option::None,
-                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
                             export: "not_exist".to_string(),
                         }
                     ),
@@ -215,17 +213,16 @@ fn test_basic_package_missing_export() {
     });
 }
 
-// FIXME: Change test to check that schema type_index is viable
 #[test]
 fn bad_function_schema_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
+    let (code, definition) = Compile::compile("./tests/blueprints/package_invalid");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_function(package, "BadFunctionSchema", "f", manifest_args!())
+        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -234,7 +231,9 @@ fn bad_function_schema_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidLocalTypeIndex(_)
+            ))
         )
     });
 }
@@ -449,8 +448,8 @@ fn name_validation_function() {
             String::from("self"),
             FunctionSchemaInit {
                 receiver: None,
-                input: TypeRef::Static(LocalTypeIndex::WellKnown(0)),
-                output: TypeRef::Static(LocalTypeIndex::WellKnown(0)),
+                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
                 export: String::from("self"),
             },
         );
@@ -469,6 +468,44 @@ fn name_validation_function() {
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidName(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn well_known_types_in_schema_are_validated() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
+
+    let mut blueprint = definition.blueprints.first_entry().unwrap();
+    let method_definition = blueprint
+        .get_mut()
+        .schema
+        .functions
+        .functions
+        .get_mut("some_method".into())
+        .unwrap();
+
+    // Invalid well known type
+    method_definition.input = TypeRef::Static(LocalTypeIndex::WellKnown(WellKnownTypeIndex::of(0)));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidLocalTypeIndex(..)
             ))
         )
     });

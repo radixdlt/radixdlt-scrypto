@@ -386,7 +386,7 @@ macro_rules! op_impl_unsigned {
                     }
 
                     pub fn next_power_of_two(self) -> Self {
-                        Self(self.0.next_power_of_two())
+                        Self(self.0.checked_next_power_of_two().expect("Overflow"))
                     }
                 }
             )*

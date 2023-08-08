@@ -22,7 +22,7 @@ pub trait CustomSchema: Debug + Clone + Copy + PartialEq + Eq + 'static {
 
     // Note - each custom type extension should have its own cache
     fn resolve_well_known_type(
-        well_known_index: u8,
+        well_known_index: WellKnownTypeIndex,
     ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>;
 
     /// Used when validating schemas are self-consistent.

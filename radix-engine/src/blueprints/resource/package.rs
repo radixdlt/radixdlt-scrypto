@@ -121,6 +121,8 @@ const NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
     "unlock_non_fungibles_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME: &str =
     "get_non_fungible_local_ids_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_CONTAINS_NON_FUNGIBLE_EXPORT_NAME: &str =
+    "contains_non_fungible_NonFungibleBucket";
 
 const FUNGIBLE_PROOF_CLONE_EXPORT_NAME: &str = "clone_FungibleProof";
 const FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleProof";
@@ -1143,6 +1145,17 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
+                NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref()),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultContainsNonFungibleInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultContainsNonFungibleOutput>()),
+                    export: NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT.to_string(),
+                },
+            );
+            functions.insert(
                 NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -1242,6 +1255,7 @@ impl ResourceNativePackage {
                         methods: method_auth_template! {
                             VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
                             VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
@@ -1579,6 +1593,21 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
+                NON_FUNGIBLE_BUCKET_CONTAINS_NON_FUNGIBLE_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<NonFungibleBucketContainsNonFungibleInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<NonFungibleBucketContainsNonFungibleOutput>(),
+                    ),
+                    export: NON_FUNGIBLE_BUCKET_CONTAINS_NON_FUNGIBLE_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -1637,6 +1666,7 @@ impl ResourceNativePackage {
                             BUCKET_TAKE_ADVANCED_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_BUCKET_CONTAINS_NON_FUNGIBLE_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
                             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT => MethodAccessibility::OwnPackageOnly;
@@ -2672,6 +2702,14 @@ impl ResourceNativePackage {
                 let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(input.limit, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT => {
+                let input: NonFungibleVaultContainsNonFungibleInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleVaultBlueprint::contains_non_fungible(input.id, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
                 let receiver = Runtime::get_node_id(api)?;
                 let input: NonFungibleVaultCreateProofOfNonFungiblesInput =
@@ -2969,6 +3007,14 @@ impl ResourceNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleBucketBlueprint::get_non_fungible_local_ids(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_BUCKET_CONTAINS_NON_FUNGIBLE_EXPORT_NAME => {
+                let input: NonFungibleVaultContainsNonFungibleInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleBucketBlueprint::contains_non_fungible(input.id, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME => {

@@ -49,6 +49,11 @@ pub trait WasmRuntime {
         blueprint_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
+    fn get_reservation_address(
+        &mut self,
+        node_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn globalize_object(
         &mut self,
         modules: Vec<u8>,

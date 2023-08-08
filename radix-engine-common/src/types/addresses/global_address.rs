@@ -176,7 +176,7 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::Address,
     NodeId::LENGTH,
-    GLOBAL_ADDRESS_ID,
+    GLOBAL_ADDRESS_TYPE,
     global_address_type_data
 );
 

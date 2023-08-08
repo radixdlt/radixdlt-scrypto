@@ -7,7 +7,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::resource_address_type_data;
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::RESOURCE_ADDRESS_ID;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::RESOURCE_ADDRESS_TYPE;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
 use radix_engine_interface::math::Decimal;
@@ -25,13 +25,11 @@ use scrypto::component::HasStub;
 pub struct ResourceManager(Global<ResourceManagerStub>);
 
 impl Describe<ScryptoCustomTypeKind> for ResourceManager {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([RESOURCE_ADDRESS_ID]);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(RESOURCE_ADDRESS_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         resource_address_type_data()
     }
-
-    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }
 
 impl From<ResourceAddress> for ResourceManager {

@@ -95,7 +95,9 @@ pub fn resolve_local_type_index(
     type_index: &GlobalTypeId,
 ) -> LocalTypeIndex {
     match type_index {
-        GlobalTypeId::WellKnown([well_known_index]) => LocalTypeIndex::WellKnown(*well_known_index),
+        GlobalTypeId::WellKnown(well_known_type_index) => {
+            LocalTypeIndex::WellKnown(*well_known_type_index)
+        }
         GlobalTypeId::Novel(type_hash) => {
             LocalTypeIndex::SchemaLocalIndex(resolve_index(type_indices, type_hash))
         }
@@ -148,7 +150,7 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
         get_type_data: impl FnOnce() -> TypeData<C, GlobalTypeId>,
     ) -> LocalTypeIndex {
         let complex_type_hash = match type_index {
-            GlobalTypeId::WellKnown([well_known_type_index]) => {
+            GlobalTypeId::WellKnown(well_known_type_index) => {
                 return LocalTypeIndex::WellKnown(well_known_type_index);
             }
             GlobalTypeId::Novel(complex_type_hash) => complex_type_hash,

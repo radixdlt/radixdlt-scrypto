@@ -1,10 +1,12 @@
 [workspace]
 members = [
     "address",
+    "address_reservation",
     "allocated_address",
     "arguments",
     "balance_changes",
     "bucket",
+    "cast",
     "component",
     "core",
     "clock",
@@ -26,6 +28,7 @@ members = [
     "module",
     "non_fungible",
     "package",
+    "package_invalid",
     "package_schema",
     "package_token",
     "proof",
@@ -52,6 +55,7 @@ members = [
     "events",
     "events_invalid",
     "logger",
+    "validator",
     "wasm_non_mvp"
 ]
 
