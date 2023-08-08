@@ -134,18 +134,6 @@ impl TryFrom<ObjectHandle> for ActorObjectType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum KeyValueStoreSchemaIdent {
-    Key,
-    Value,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum FunctionSchemaIdent {
-    Input,
-    Output,
-}
-
 #[derive(Debug, Clone)]
 pub enum SchemaValidationMeta<'a> {
     ExistingObject {
@@ -193,7 +181,7 @@ where
         )
     }
 
-    pub fn validate_blueprint_payload2(
+    pub fn validate_blueprint_payload(
         &mut self,
         target: &ValidationTarget,
         payload_identifier: BlueprintPayloadIdentifier,
@@ -378,7 +366,7 @@ where
                         Condition::Always => {}
                     }
 
-                    self.validate_blueprint_payload2(&validation_target, BlueprintPayloadIdentifier::Field(i as u8), &field.value)?;
+                    self.validate_blueprint_payload(&validation_target, BlueprintPayloadIdentifier::Field(i as u8), &field.value)?;
 
                     let value: ScryptoValue =
                         scrypto_decode(&field.value).expect("Checked by payload-schema validation");
@@ -409,11 +397,11 @@ where
 
                 for (key, kv_entry) in entries {
                     let (kv_entry, value_can_own) = if let Some(value) = kv_entry.value {
-                        self.validate_blueprint_payload2(
+                        self.validate_blueprint_payload(
                             &validation_target,
                             BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Key), &key)?;
 
-                        let value_can_own = self.validate_blueprint_payload2(
+                        let value_can_own = self.validate_blueprint_payload(
                             &validation_target,
                             BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value), &value)?;
 
@@ -788,7 +776,7 @@ where
             }
         };
 
-        self.validate_blueprint_payload2(&validation_target, BlueprintPayloadIdentifier::Event(event_name.clone()), &event_data)?;
+        self.validate_blueprint_payload(&validation_target, BlueprintPayloadIdentifier::Event(event_name.clone()), &event_data)?;
 
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
@@ -1360,7 +1348,7 @@ where
                 blueprint_id,
                 field_index,
             }) => {
-                self.validate_blueprint_payload2(
+                self.validate_blueprint_payload(
                     &ValidationTarget {
                         blueprint_id,
                         // TODO: Change to empty vector, once support for generic fields is implemented
@@ -1751,7 +1739,7 @@ where
                 type_substitutions,
                 can_own,
             }) => {
-                self.validate_blueprint_payload2(
+                self.validate_blueprint_payload(
                     &ValidationTarget {
                         blueprint_id,
                         type_substitutions,
@@ -1973,13 +1961,13 @@ where
             }
         };
 
-        self.validate_blueprint_payload2(
+        self.validate_blueprint_payload(
             &target,
             BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Key),
             &key,
         )?;
 
-        self.validate_blueprint_payload2(
+        self.validate_blueprint_payload(
             &target,
             BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Value),
             &buffer,
@@ -2090,13 +2078,13 @@ where
             }
         };
 
-        self.validate_blueprint_payload2(
+        self.validate_blueprint_payload(
             &target,
             BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Key),
             &sorted_key.1,
         )?;
 
-        self.validate_blueprint_payload2(
+        self.validate_blueprint_payload(
             &target,
             BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Value),
             &buffer,
@@ -2533,7 +2521,7 @@ where
             }
         };
 
-        self.validate_blueprint_payload2(
+        self.validate_blueprint_payload(
             &target,
             BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Key),
             &key,

@@ -345,7 +345,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 };
 
                 // Validate input
-                system.validate_blueprint_payload2(
+                system.validate_blueprint_payload(
                     &validating_object,
                     BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Input),
                     input.as_vec_ref()
@@ -385,7 +385,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
 
                 // Validate output
-                system.validate_blueprint_payload2(
+                system.validate_blueprint_payload(
                     &validating_object,
                     BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Output),
                     output.as_vec_ref()
