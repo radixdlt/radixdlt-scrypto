@@ -5,16 +5,21 @@ pub enum UpdateResult<T> {
 
 /// A marker trait to indicate that the type is versioned.
 /// This can be used for type bounds for requiring that types are versioned.
-pub trait IsVersioned {}
+pub trait HasLatestVersion {
+    type Latest;
+    fn into_latest(self) -> Self::Latest;
+}
 
 /// This macro is intended for creating a data model which supports versioning.
 /// This is useful for creating an SBOR data model which can be updated in future.
 /// In future, enum variants can be added, and automatically mapped to.
+/// 
+/// NOTE: A circular version update chain will be an infinite loop at runtime. Be careful.
 ///
 /// In the future, this may become a programmatic macro to support better error handling /
-/// edge case detection, and opting into SBOR handling.
+/// edge case detection, and opting into more explicit SBOR handling.
 #[macro_export]
-macro_rules! versioned {
+macro_rules! define_versioned {
     (
         $(#[$attributes:meta])*
         $vis:vis enum $name:ident {
@@ -63,7 +68,16 @@ macro_rules! versioned {
                 }
             }
 
-            impl crate::IsVersioned for $name {}
+            impl crate::HasLatestVersion for $name {
+                type Latest = $latest_version_ident;
+
+                fn into_latest(self) -> Self::Latest {
+                    let Self::[<V $latest_version>](latest) = self.update_to_latest() else {
+                        panic!("Invalid resolved latest version not equal to latest type")
+                    };
+                    return latest;
+                }
+            }
 
             $(
                 impl From<$version_ident> for $name {
@@ -87,7 +101,7 @@ mod tests {
     use super::*;
     use crate::*;
 
-    crate::versioned!(
+    crate::define_versioned!(
         #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
         enum VersionedExample {
             previous_versions: [
@@ -141,26 +155,29 @@ mod tests {
 
     #[test]
     pub fn updates_to_latest_work() {
-        let expected_latest = VersionedExample::V4(ExampleV4::of(5));
+        let expected_latest = ExampleV4::of(5);
         let v1: ExampleV1 = 5;
-        assert_eq!(
-            VersionedExample::from(v1).update_to_latest(),
-            expected_latest.clone(),
-        );
+        validate_latest(v1, expected_latest.clone());
         let v2: ExampleV2 = 5;
-        assert_eq!(
-            VersionedExample::from(v2).update_to_latest(),
-            expected_latest.clone(),
-        );
+        validate_latest(v2, expected_latest.clone());
         let v3 = ExampleV3(5);
-        assert_eq!(
-            VersionedExample::from(v3).update_to_latest(),
-            expected_latest.clone(),
-        );
+        validate_latest(v3, expected_latest.clone());
         let v4 = ExampleV4::of(5);
+        validate_latest(v4, expected_latest.clone());
+    }
+
+    fn validate_latest(actual: impl Into<VersionedExample>, expected: <VersionedExample as HasLatestVersion>::Latest) {
+        let versioned_actual = actual.into();
+        let versioned_expected = VersionedExample::from(expected.clone());
+        // Check update_to_latest (which returns a VersionedExample)
         assert_eq!(
-            VersionedExample::from(v4).update_to_latest(),
-            expected_latest.clone(),
+            versioned_actual.clone().update_to_latest(),
+            versioned_expected,
+        );
+        // Check into_latest (which returns an ExampleV4)
+        assert_eq!(
+            versioned_actual.into_latest(),
+            expected,
         );
     }
 }
