@@ -1322,7 +1322,7 @@ fn validator_unstake_emits_correct_events() {
                 ..,
             )) if test_runner
                 .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
-                && node_id == validator_substate.unstake_nft.as_node_id() =>
+                && node_id == validator_substate.claim_nft.as_node_id() =>
                 true,
             _ => false,
         });
@@ -1393,8 +1393,8 @@ fn validator_claim_xrd_emits_correct_events() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .withdraw_from_account(account_with_su, validator_substate.unstake_nft, 1)
-        .take_all_from_worktop(validator_substate.unstake_nft, "unstake_nft")
+        .withdraw_from_account(account_with_su, validator_substate.claim_nft, 1)
+        .take_all_from_worktop(validator_substate.claim_nft, "unstake_nft")
         .claim_xrd(validator_address, "unstake_nft")
         .try_deposit_batch_or_abort(account_with_su, None)
         .build();

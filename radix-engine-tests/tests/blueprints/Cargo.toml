@@ -53,6 +53,7 @@ members = [
     "events",
     "events_invalid",
     "logger",
+    "validator",
     "wasm_non_mvp"
 ]
 
