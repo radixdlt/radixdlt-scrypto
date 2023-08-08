@@ -1,7 +1,5 @@
 use radix_engine::blueprints::package::PackageError;
-use radix_engine::errors::{
-    ApplicationError, RuntimeError, SystemError, SystemModuleError, VmError,
-};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError, VmError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::PrepareError;
@@ -215,17 +213,16 @@ fn test_basic_package_missing_export() {
     });
 }
 
-// FIXME: Change test to check that schema type_index is viable
 #[test]
 fn bad_function_schema_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
+    let (code, definition) = Compile::compile("./tests/blueprints/package_invalid");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_function(package, "BadFunctionSchema", "f", manifest_args!())
+        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -234,7 +231,9 @@ fn bad_function_schema_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidLocalTypeIndex(_)
+            ))
         )
     });
 }
