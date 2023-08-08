@@ -325,16 +325,10 @@ where
                         let substate: KeyValueEntrySubstate<BlueprintDefinition> =
                             track.read_substate(handle).as_typed().unwrap();
                         track.close_substate(handle);
-                        let type_pointer = substate
-                            .value
-                            .unwrap()
-                            .interface
-                            .get_event_type_pointer("BurnFungibleResourceEvent")
-                            .unwrap();
                         application_events.push((
                             EventTypeIdentifier(
                                 Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
-                                type_pointer,
+                                "BurnFungibleResourceEvent".to_string(),
                             ),
                             scrypto_encode(&BurnFungibleResourceEvent {
                                 amount: fee_summary.to_burn_amount(),

@@ -34,10 +34,13 @@ pub fn to_typed_native_event(
 fn resolve_typed_event_key_from_event_type_identifier(
     event_type_identifier: &EventTypeIdentifier,
 ) -> Result<TypedNativeEventKey, TypedNativeEventError> {
+    let local_type_index = &event_type_identifier.1;
+    /*
     let local_type_index = match event_type_identifier.1 {
         TypePointer::Package(type_identifier) => type_identifier.1,
         TypePointer::Instance(..) => panic!("An event can not be generic"),
     };
+     */
 
     match &event_type_identifier.0 {
         /* Method or Function emitter on a known node module */
@@ -500,8 +503,9 @@ macro_rules! define_structure {
                         pub fn new(
                             package_definition: &PackageDefinition,
                             blueprint_ident: &str,
-                            local_type_index: &LocalTypeIndex,
+                            name: &String,
                         ) -> Result<Self, TypedNativeEventError> {
+                            /*
                             let blueprint_schema = package_definition.blueprints.get(blueprint_ident).ok_or(
                                 TypedNativeEventError::BlueprintNotFound {
                                     package_definition: package_definition.clone(),
@@ -517,6 +521,7 @@ macro_rules! define_structure {
                                     blueprint_name: blueprint_ident.to_owned(),
                                     local_type_index: local_type_index.clone(),
                                 })?;
+                             */
                             Self::from_str(name)
                         }
 
@@ -543,7 +548,7 @@ macro_rules! define_structure {
                     pub fn new(
                         package_definition: &PackageDefinition,
                         blueprint_ident: &str,
-                        local_type_index: &LocalTypeIndex,
+                        local_type_index: &String,
                     ) -> Result<Self, TypedNativeEventError> {
                         match blueprint_ident {
                             $(

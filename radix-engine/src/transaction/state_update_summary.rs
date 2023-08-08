@@ -109,7 +109,7 @@ pub struct BalanceAccounter<'a, S: SubstateDatabase> {
 impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
-            system_reader: SystemReader::new(substate_db, tracked),
+            system_reader: SystemReader::new_with_overlay(substate_db, tracked),
             tracked,
         }
     }

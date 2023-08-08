@@ -8,10 +8,7 @@ use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
-use radix_engine::transaction::{
-    execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
-    PreviewError, TransactionReceipt, TransactionResult,
-};
+use radix_engine::transaction::{execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, PreviewError, TransactionReceipt, TransactionResult, SystemReader};
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
@@ -1894,14 +1891,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         &self,
         event_type_identifier: &EventTypeIdentifier,
     ) -> (LocalTypeIndex, ScryptoSchema) {
-        let (package_address, schema_pointer) = match event_type_identifier {
-            EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
-                match node_module {
-                    ObjectModuleId::RoleAssignment => {
-                        (ROLE_ASSIGNMENT_MODULE_PACKAGE, schema_pointer.clone())
-                    }
-                    ObjectModuleId::Royalty => (ROYALTY_MODULE_PACKAGE, schema_pointer.clone()),
-                    ObjectModuleId::Metadata => (METADATA_MODULE_PACKAGE, schema_pointer.clone()),
+        let (blueprint_id, name) = match event_type_identifier {
+            EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
+                let blueprint_id = match node_module {
                     ObjectModuleId::Main => {
                         let type_info = self
                             .substate_db()
@@ -1916,25 +1908,31 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                             TypeInfoSubstate::Object(ObjectInfo {
                                 blueprint_info: BlueprintInfo { blueprint_id, .. },
                                 ..
-                            }) => (blueprint_id.package_address, *schema_pointer),
+                            }) => blueprint_id,
                             _ => {
                                 panic!("No event schema.")
                             }
                         }
                     }
-                }
+                    module @ _ => module.static_blueprint().unwrap()
+                };
+                (blueprint_id, event_name.clone())
             }
-            EventTypeIdentifier(Emitter::Function(blueprint_id), schema_pointer) => {
-                (blueprint_id.package_address, schema_pointer.clone())
+            EventTypeIdentifier(Emitter::Function(blueprint_id), event_name) => {
+                (blueprint_id.clone(), event_name.clone())
             }
         };
+
+        let system_reader = SystemReader::new(self.substate_db());
+        let definition = system_reader.get_blueprint_definition(&blueprint_id).unwrap();
+        let schema_pointer = definition.interface.get_event_type_pointer(name.as_str()).unwrap();
 
         match schema_pointer {
             TypePointer::Package(type_identifier) => {
                 let schema = self
                     .substate_db()
                     .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
-                        package_address.as_node_id(),
+                        blueprint_id.package_address.as_node_id(),
                         MAIN_BASE_PARTITION
                             .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
                             .unwrap(),

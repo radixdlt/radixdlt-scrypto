@@ -16,7 +16,7 @@ use utils::ContextualDisplay;
 /// It is important to note that application events are always emitted by an RENode, meaning that
 /// there is always an emitter of some [`NodeId`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
-pub struct EventTypeIdentifier(pub Emitter, pub TypePointer);
+pub struct EventTypeIdentifier(pub Emitter, pub String);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum Emitter {

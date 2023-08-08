@@ -24,14 +24,21 @@ pub enum SystemPartitionDescription {
 
 pub struct SystemReader<'a, S: SubstateDatabase> {
     substate_db: &'a S,
-    tracked: &'a IndexMap<NodeId, TrackedNode>,
+    tracked: Option<&'a IndexMap<NodeId, TrackedNode>>,
 }
 
 impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
-    pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
+    pub fn new_with_overlay(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
             substate_db,
-            tracked,
+            tracked: Some(tracked),
+        }
+    }
+
+    pub fn new(substate_db: &'a S) -> Self {
+        Self {
+            substate_db,
+            tracked: None,
         }
     }
 
@@ -116,15 +123,19 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
         partition_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
-        self.tracked
-            .get(node_id)
-            .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
-            .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
-            .and_then(|tracked_key| {
-                tracked_key
-                    .substate_value
-                    .get()
-                    .map(|e| e.as_typed().unwrap())
-            })
+        if let Some(tracked) = self.tracked {
+            tracked
+                .get(node_id)
+                .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
+                .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
+                .and_then(|tracked_key| {
+                    tracked_key
+                        .substate_value
+                        .get()
+                        .map(|e| e.as_typed().unwrap())
+                })
+        } else {
+            None
+        }
     }
 }

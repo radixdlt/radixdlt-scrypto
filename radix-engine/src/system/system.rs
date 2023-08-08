@@ -172,6 +172,7 @@ pub enum KeyOrValue {
 pub enum BlueprintPayloadIdentifier {
     Field(u8),
     KeyValueCollection(u8, KeyOrValue),
+    Event(String),
 }
 
 impl<'a, Y, V> SystemService<'a, Y, V>
@@ -334,6 +335,16 @@ where
                             ),
                         )
                     })?
+            }
+            BlueprintPayloadIdentifier::Event(event_name) => {
+                let type_pointer = blueprint_interface
+                    .get_event_type_pointer(event_name.as_str())
+                    .ok_or_else(|| {
+                        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                            PayloadValidationAgainstSchemaError::EventDoesNotExist(event_name.clone()),
+                        ))
+                    })?;
+                (type_pointer, false)
             }
         };
 
@@ -923,61 +934,35 @@ where
             })?;
 
         // Locking the package info substate associated with the emitter's package
-        let type_pointer = {
-            // Getting the package address and blueprint name associated with the actor
-            let (validation_target, blueprint_id) = match &actor {
-                Actor::Method(MethodActor {
-                    node_id, module_id, ..
-                }) => {
-                    let blueprint_obj_info = self.get_blueprint_info(node_id, *module_id)?;
-
-                    (
-                        ValidationTarget {
-                            blueprint_id: blueprint_obj_info.blueprint_id.clone(),
-                            type_substitutions: blueprint_obj_info.type_substitutions,
-                            meta: SchemaValidationMeta::ExistingObject {
-                                additional_schemas: *node_id,
-                            }
-                        },
-                        blueprint_obj_info.blueprint_id,
-                    )
+        // Getting the package address and blueprint name associated with the actor
+        let validation_target = match &actor {
+            Actor::Method(MethodActor {
+                node_id, module_id, ..
+            }) => {
+                let blueprint_obj_info = self.get_blueprint_info(node_id, *module_id)?;
+                ValidationTarget {
+                    blueprint_id: blueprint_obj_info.blueprint_id.clone(),
+                    type_substitutions: blueprint_obj_info.type_substitutions,
+                    meta: SchemaValidationMeta::ExistingObject {
+                        additional_schemas: *node_id,
+                    }
                 }
-                Actor::Function(FunctionActor { blueprint_id, .. }) => {
-
-                    (
-                        ValidationTarget {
-                            blueprint_id: blueprint_id.clone(),
-                            type_substitutions: vec![],
-                            meta: SchemaValidationMeta::Blueprint,
-                        },
-                        blueprint_id.clone()
-                    )
+            }
+            Actor::Function(FunctionActor { blueprint_id, .. }) => {
+                ValidationTarget {
+                    blueprint_id: blueprint_id.clone(),
+                    type_substitutions: vec![],
+                    meta: SchemaValidationMeta::Blueprint,
                 }
-                _ => {
-                    return Err(RuntimeError::SystemError(SystemError::EventError(
-                        EventError::InvalidActor,
-                    )))
-                }
-            };
-
-            let blueprint_interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
-
-            let type_pointer = blueprint_interface
-                .get_event_type_pointer(event_name.as_str())
-                .ok_or_else(|| {
-                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                        PayloadValidationAgainstSchemaError::EventDoesNotExist(event_name.clone()),
-                    ))
-                })?;
-
-            self.validate_blueprint_payloads(
-                &validation_target,
-                &[(&event_data, type_pointer.clone())],
-            )?;
-
-
-            type_pointer
+            }
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::EventError(
+                    EventError::InvalidActor,
+                )))
+            }
         };
+
+        self.validate_blueprint_payload2(&validation_target, BlueprintPayloadIdentifier::Event(event_name.clone()), &event_data)?;
 
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
@@ -985,11 +970,11 @@ where
                 node_id, module_id, ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id, module_id),
-                type_pointer,
+                event_name,
             )),
             Actor::Function(FunctionActor { blueprint_id, .. }) => Ok(EventTypeIdentifier(
                 Emitter::Function(blueprint_id.clone()),
-                type_pointer,
+                event_name,
             )),
             _ => Err(RuntimeError::SystemModuleError(
                 SystemModuleError::EventError(Box::new(EventError::InvalidActor)),

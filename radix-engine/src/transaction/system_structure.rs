@@ -134,7 +134,7 @@ pub struct SubstateSchemaMapper<'a, S: SubstateDatabase> {
 impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
     pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
-            system_reader: SystemReader::new(substate_db, tracked),
+            system_reader: SystemReader::new_with_overlay(substate_db, tracked),
             tracked,
         }
     }
@@ -381,7 +381,7 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
         application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
     ) -> Self {
         Self {
-            system_reader: SystemReader::new(substate_db, tracked),
+            system_reader: SystemReader::new_with_overlay(substate_db, tracked),
             application_events,
         }
     }
@@ -407,7 +407,14 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
                 }
             };
 
-            let TypePointer::Package(type_identifier) = event_type_identifier.1 else {
+            let blueprint_definition = self
+                .system_reader
+                .get_blueprint_definition(&blueprint_id)
+                .unwrap();
+
+            let type_pointer = blueprint_definition.interface.get_event_type_pointer(event_type_identifier.1.as_str()).unwrap();
+
+            let TypePointer::Package(type_identifier) = type_pointer else {
                 panic!("Event identifier type pointer cannot be an instance type pointer");
             };
 
