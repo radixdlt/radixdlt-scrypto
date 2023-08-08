@@ -18,7 +18,7 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::PackageAddress;
 use radix_engine_interface::types::{BlueprintId, GlobalAddress};
-use radix_engine_interface::types::{Level, NodeId, OpenSubstateHandle};
+use radix_engine_interface::types::{Level, NodeId, SubstateHandle};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -191,10 +191,13 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn get_reservation_address(
         &mut self,
-        _node_id: &NodeId,
+        node_id: &NodeId,
     ) -> Result<GlobalAddress, ClientApiError> {
-        // FIXME: Implement this for Scrypto
-        todo!()
+        let bytes = copy_buffer(unsafe {
+            get_reservation_address(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
+
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, ClientApiError> {
@@ -336,7 +339,7 @@ impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientFieldApi<ClientApiError> for ScryptoEnv {
-    fn field_read(&mut self, lock_handle: OpenSubstateHandle) -> Result<Vec<u8>, ClientApiError> {
+    fn field_read(&mut self, lock_handle: SubstateHandle) -> Result<Vec<u8>, ClientApiError> {
         let substate = copy_buffer(unsafe { field_lock_read(lock_handle) });
 
         Ok(substate)
@@ -344,7 +347,7 @@ impl ClientFieldApi<ClientApiError> for ScryptoEnv {
 
     fn field_write(
         &mut self,
-        lock_handle: OpenSubstateHandle,
+        lock_handle: SubstateHandle,
         buffer: Vec<u8>,
     ) -> Result<(), ClientApiError> {
         unsafe { field_lock_write(lock_handle, buffer.as_ptr(), buffer.len()) };
@@ -356,7 +359,7 @@ impl ClientFieldApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not available for Scrypto")
     }
 
-    fn field_close(&mut self, lock_handle: OpenSubstateHandle) -> Result<(), ClientApiError> {
+    fn field_close(&mut self, lock_handle: SubstateHandle) -> Result<(), ClientApiError> {
         unsafe { field_lock_release(lock_handle) };
 
         Ok(())
@@ -369,7 +372,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         object_handle: u32,
         field: u8,
         flags: LockFlags,
-    ) -> Result<OpenSubstateHandle, ClientApiError> {
+    ) -> Result<SubstateHandle, ClientApiError> {
         let handle = unsafe { actor_open_field(object_handle, u32::from(field), flags.bits()) };
 
         Ok(handle)

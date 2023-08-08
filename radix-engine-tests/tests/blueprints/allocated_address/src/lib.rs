@@ -16,35 +16,41 @@ mod apa {
 
     impl AllocatedAddressTest {
         pub fn create_and_return() -> (GlobalAddressReservation, ComponentAddress) {
-            let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, address) =
+                Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
             (own, address)
         }
 
         pub fn create_and_drop() {
-            let (own, _address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, _address) =
+                Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
             ScryptoEnv.drop_object(own.0.as_node_id()).unwrap();
         }
 
         pub fn create_and_pass_address() {
-            let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, address) =
+                Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
             Blueprint::<AllocatedAddressTest>::receive_address(address);
             Self::globalize_with_preallocated_address(own);
         }
 
         pub fn create_and_call() {
-            let (_own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (_own, address) =
+                Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
             ScryptoEnv
                 .call_method(address.as_node_id(), "hi", scrypto_args!())
                 .unwrap();
         }
 
         pub fn create_and_consume_within_frame() {
-            let (own, _address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, _address) =
+                Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
             Self::globalize_with_preallocated_address(own);
         }
 
         pub fn create_and_consume_with_mismatching_blueprint() {
-            let (own, _address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, _address) =
+                Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
             crate::another::AnotherBlueprint {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
@@ -53,12 +59,14 @@ mod apa {
         }
 
         pub fn create_and_consume_in_another_frame() {
-            let (own, _address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, _address) =
+                Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
             Blueprint::<AllocatedAddressTest>::globalize_with_preallocated_address(own);
         }
 
         pub fn create_and_store_in_key_value_store() {
-            let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, address) =
+                Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
             let store = KeyValueStore::new();
             store.insert(1u32, address);
             Self { store: Some(store) }
@@ -69,7 +77,8 @@ mod apa {
         }
 
         pub fn create_and_store_in_metadata() {
-            let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let (own, address) =
+                Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
             Self { store: None }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)

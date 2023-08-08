@@ -13,7 +13,7 @@ mod radiswap {
             resource_address2: ResourceAddress,
         ) -> Global<Radiswap> {
             let (address_reservation, component_address) =
-                Runtime::allocate_component_address(Runtime::blueprint_id());
+                Runtime::allocate_component_address(Radiswap::blueprint_id());
             let global_component_caller_badge =
                 NonFungibleGlobalId::global_caller_badge(component_address);
 

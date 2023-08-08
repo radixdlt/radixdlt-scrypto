@@ -137,7 +137,7 @@ impl From<NonFungibleVault> for Vault {
 
 impl Describe<ScryptoCustomTypeKind> for Vault {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_VAULT_ID);
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_VAULT_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_vault_type_data()
@@ -146,7 +146,7 @@ impl Describe<ScryptoCustomTypeKind> for Vault {
 
 impl Describe<ScryptoCustomTypeKind> for FungibleVault {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_FUNGIBLE_VAULT_ID);
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_FUNGIBLE_VAULT_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_fungible_vault_type_data()
@@ -155,7 +155,7 @@ impl Describe<ScryptoCustomTypeKind> for FungibleVault {
 
 impl Describe<ScryptoCustomTypeKind> for NonFungibleVault {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_NON_FUNGIBLE_VAULT_ID);
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_NON_FUNGIBLE_VAULT_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_non_fungible_vault_type_data()

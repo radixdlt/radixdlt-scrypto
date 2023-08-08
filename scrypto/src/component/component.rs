@@ -4,11 +4,12 @@ use crate::prelude::{scrypto_encode, HasRoleAssignment, ObjectStub, ObjectStubHa
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
-    component_address_type_data, own_type_data, COMPONENT_ADDRESS_ID, OWN_ID,
+    component_address_type_data, own_type_data, COMPONENT_ADDRESS_TYPE, OWN_TYPE,
 };
 use radix_engine_common::prelude::{
     scrypto_decode, OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
+use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
     METADATA_SET_IDENT,
@@ -38,6 +39,11 @@ pub trait HasTypeInfo {
     const BLUEPRINT_NAME: &'static str;
     const OWNED_TYPE_NAME: &'static str;
     const GLOBAL_TYPE_NAME: &'static str;
+
+    fn blueprint_id() -> BlueprintId {
+        let package_address = Self::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
+        BlueprintId::new(&package_address, Self::BLUEPRINT_NAME)
+    }
 }
 
 pub struct Blueprint<C: HasTypeInfo>(PhantomData<C>);
@@ -457,14 +463,42 @@ where
     }
 }
 
-impl<O: HasStub> From<ComponentAddress> for Global<O> {
-    fn from(value: ComponentAddress) -> Self {
-        Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
+trait TypeCheckable {
+    fn check(node_id: &NodeId) -> Result<(), ComponentCastError>;
+}
+
+impl<O: HasTypeInfo> TypeCheckable for O {
+    fn check(node_id: &NodeId) -> Result<(), ComponentCastError> {
+        let blueprint_id = ScryptoEnv.get_blueprint_id(node_id).unwrap();
+        let to = O::blueprint_id();
+        if !blueprint_id.eq(&to) {
+            return Err(ComponentCastError::CannotCast {
+                actual: blueprint_id,
+                to,
+            });
+        }
+
+        Ok(())
     }
 }
 
-impl<O: HasStub> From<PackageAddress> for Global<O> {
-    fn from(value: PackageAddress) -> Self {
+impl TypeCheckable for AnyComponent {
+    fn check(_node_id: &NodeId) -> Result<(), ComponentCastError> {
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
+pub enum ComponentCastError {
+    CannotCast {
+        to: BlueprintId,
+        actual: BlueprintId,
+    },
+}
+
+impl<O: HasStub + TypeCheckable> From<ComponentAddress> for Global<O> {
+    fn from(value: ComponentAddress) -> Self {
+        O::check(value.as_node_id()).unwrap();
         Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
     }
 }
@@ -530,7 +564,7 @@ impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Global<T> {
 }
 
 impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([COMPONENT_ADDRESS_ID]);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(COMPONENT_ADDRESS_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         component_address_type_data()
@@ -540,7 +574,7 @@ impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
 }
 
 impl Describe<ScryptoCustomTypeKind> for Owned<AnyComponent> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_ID]);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(OWN_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         own_type_data()

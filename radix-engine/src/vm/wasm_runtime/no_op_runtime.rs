@@ -85,6 +85,13 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
+    fn get_reservation_address(
+        &mut self,
+        node_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
     fn globalize_object(
         &mut self,
         modules: Vec<u8>,
@@ -109,7 +116,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         node_id: Vec<u8>,
         offset: Vec<u8>,
         flags: u32,
-    ) -> Result<OpenSubstateHandle, InvokeError<WasmRuntimeError>> {
+    ) -> Result<SubstateHandle, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

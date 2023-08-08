@@ -10,7 +10,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorRunInputEffici
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::{
-    CallFrameEventHandler, CallFrameMessage, CallFrameSubstateReadHandler,
+    CallFrameMessage, CallFrameSubstateReadHandler, PersistNodeHandler, StoreAccessHandler,
 };
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::{
@@ -225,13 +225,18 @@ struct KernelHandler<
 impl<
         M: KernelCallbackObject,
         F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
-    > CallFrameEventHandler<M::CallFrameData, M::LockData, RuntimeError>
-    for KernelHandler<'_, M, F>
+    > PersistNodeHandler<RuntimeError> for KernelHandler<'_, M, F>
 {
     fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError> {
         self.callback.on_persist_node(heap, node_id)
     }
+}
 
+impl<
+        M: KernelCallbackObject,
+        F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+    > StoreAccessHandler<M::CallFrameData, M::LockData, RuntimeError> for KernelHandler<'_, M, F>
+{
     fn on_store_access(
         &mut self,
         current_frame: &CallFrame<M::CallFrameData, M::LockData>,
@@ -259,7 +264,7 @@ impl<
         &mut self,
         current_frame: &CallFrame<M::CallFrameData, M::LockData>,
         heap: &Heap,
-        handle: OpenSubstateHandle,
+        handle: SubstateHandle,
         value: &IndexedScryptoValue,
         device: SubstateDevice,
     ) -> Result<(), Self::Error> {
@@ -633,7 +638,7 @@ where
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: M::LockData,
-    ) -> Result<OpenSubstateHandle, RuntimeError> {
+    ) -> Result<SubstateHandle, RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_open_substate(
             &mut read_only,
@@ -645,25 +650,21 @@ where
             },
         )?;
 
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                M::on_open_substate(api, OpenSubstateEvent::StoreAccess(&store_access))
+            },
+        };
+
         let maybe_lock_handle = self.current_frame.open_substate(
             &mut self.substate_io,
             node_id,
             partition_num,
             substate_key,
             flags,
-            &mut |current_frame, heap, store_access| {
-                let mut read_only = KernelReadOnly {
-                    current_frame,
-                    prev_frame: self.prev_frame_stack.last(),
-                    heap,
-                    callback: self.callback,
-                };
-
-                M::on_open_substate(
-                    &mut read_only,
-                    OpenSubstateEvent::StoreAccess(&store_access),
-                )
-            },
+            &mut handler,
             default,
             data,
         );
@@ -676,6 +677,14 @@ where
                     M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
 
                 if retry {
+                    let mut handler = KernelHandler {
+                        callback: self.callback,
+                        prev_frame: self.prev_frame_stack.last(),
+                        on_store_access: |api, store_access| {
+                            M::on_open_substate(api, OpenSubstateEvent::StoreAccess(&store_access))
+                        },
+                    };
+
                     self.current_frame
                         .open_substate(
                             &mut self.substate_io,
@@ -683,19 +692,7 @@ where
                             partition_num,
                             &substate_key,
                             flags,
-                            &mut |current_frame, heap, store_access| {
-                                let mut read_only = KernelReadOnly {
-                                    current_frame,
-                                    prev_frame: self.prev_frame_stack.last(),
-                                    heap,
-                                    callback: self.callback,
-                                };
-
-                                M::on_open_substate(
-                                    &mut read_only,
-                                    OpenSubstateEvent::StoreAccess(&store_access),
-                                )
-                            },
+                            &mut handler,
                             None,
                             M::LockData::default(),
                         )
@@ -743,7 +740,7 @@ where
     #[trace_resources]
     fn kernel_get_lock_data(
         &mut self,
-        lock_handle: OpenSubstateHandle,
+        lock_handle: SubstateHandle,
     ) -> Result<M::LockData, RuntimeError> {
         self.current_frame
             .get_handle_info(lock_handle)
@@ -755,7 +752,7 @@ where
     #[trace_resources]
     fn kernel_read_substate(
         &mut self,
-        lock_handle: OpenSubstateHandle,
+        lock_handle: SubstateHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -782,7 +779,7 @@ where
     #[trace_resources(log=value.len())]
     fn kernel_write_substate(
         &mut self,
-        lock_handle: OpenSubstateHandle,
+        lock_handle: SubstateHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let mut read_only = as_read_only!(self);
@@ -815,10 +812,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_close_substate(
-        &mut self,
-        lock_handle: OpenSubstateHandle,
-    ) -> Result<(), RuntimeError> {
+    fn kernel_close_substate(&mut self, lock_handle: SubstateHandle) -> Result<(), RuntimeError> {
         self.current_frame
             .close_substate(&mut self.substate_io, lock_handle)
             .map_err(|e| {
@@ -841,8 +835,12 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        self.callback
-            .on_set_substate(SetSubstateEvent::Start(&value))?;
+        self.callback.on_set_substate(SetSubstateEvent::Start(
+            node_id,
+            &partition_num,
+            &substate_key,
+            &value,
+        ))?;
 
         self.current_frame
             .set_substate(
@@ -874,7 +872,11 @@ where
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.callback
-            .on_remove_substate(RemoveSubstateEvent::Start)?;
+            .on_remove_substate(RemoveSubstateEvent::Start(
+                node_id,
+                &partition_num,
+                substate_key,
+            ))?;
 
         let substate = self
             .current_frame

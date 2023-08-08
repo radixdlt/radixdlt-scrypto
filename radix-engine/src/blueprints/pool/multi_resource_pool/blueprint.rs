@@ -583,7 +583,7 @@ impl MultiResourcePoolBlueprint {
     fn lock_and_read<Y>(
         api: &mut Y,
         lock_flags: LockFlags,
-    ) -> Result<(MultiResourcePoolSubstate, OpenSubstateHandle), RuntimeError>
+    ) -> Result<(MultiResourcePoolSubstate, SubstateHandle), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

@@ -283,48 +283,48 @@ fn check_type_internal(
     };
 }
 
-fn is_safe_well_known_type(schema: &ScryptoSchema, type_id: u8) -> CheckResult {
+fn is_safe_well_known_type(schema: &ScryptoSchema, type_id: WellKnownTypeIndex) -> CheckResult {
     let is_safe = match type_id {
         // Basic SBOR
-        BOOL_ID => true,
-        I8_ID => true,
-        I16_ID => true,
-        I32_ID => true,
-        I64_ID => true,
-        I128_ID => true,
-        U8_ID => true,
-        U16_ID => true,
-        U32_ID => true,
-        U64_ID => true,
-        U128_ID => true,
-        STRING_ID => true,
-        ANY_ID => false,
-        BYTES_ID => true,
-        UNIT_ID => true,
+        BOOL_TYPE => true,
+        I8_TYPE => true,
+        I16_TYPE => true,
+        I32_TYPE => true,
+        I64_TYPE => true,
+        I128_TYPE => true,
+        U8_TYPE => true,
+        U16_TYPE => true,
+        U32_TYPE => true,
+        U64_TYPE => true,
+        U128_TYPE => true,
+        STRING_TYPE => true,
+        ANY_TYPE => false,
+        BYTES_TYPE => true,
+        UNIT_TYPE => true,
 
         // Scrypto SBOR
-        REFERENCE_ID => false,
-        GLOBAL_ADDRESS_ID => true, // TODO: maybe unsafe
-        INTERNAL_ADDRESS_ID => false,
-        PACKAGE_ADDRESS_ID => true,
-        COMPONENT_ADDRESS_ID => true,
-        RESOURCE_ADDRESS_ID => true,
-        OWN_ID => false,
-        OWN_BUCKET_ID => true, // TODO: maybe unsafe?
-        OWN_FUNGIBLE_BUCKET_ID => true,
-        OWN_NON_FUNGIBLE_BUCKET_ID => true,
-        OWN_PROOF_ID => true, // TODO: maybe unsafe?
-        OWN_FUNGIBLE_PROOF_ID => true,
-        OWN_NON_FUNGIBLE_PROOF_ID => true,
-        OWN_VAULT_ID => false,
-        OWN_FUNGIBLE_VAULT_ID => true,
-        OWN_NON_FUNGIBLE_VAULT_ID => true,
-        OWN_KEY_VALUE_STORE_ID => true, // TODO: maybe unsafe?
-        OWN_GLOBAL_ADDRESS_RESERVATION_ID => true,
-        DECIMAL_ID => true,
-        PRECISE_DECIMAL_ID => true,
-        NON_FUNGIBLE_LOCAL_ID_ID => true,
-        t => panic!("Unexpected well-known type id: {}", t),
+        REFERENCE_TYPE => false,
+        GLOBAL_ADDRESS_TYPE => true, // TODO: maybe unsafe
+        INTERNAL_ADDRESS_TYPE => false,
+        PACKAGE_ADDRESS_TYPE => true,
+        COMPONENT_ADDRESS_TYPE => true,
+        RESOURCE_ADDRESS_TYPE => true,
+        OWN_TYPE => false,
+        OWN_BUCKET_TYPE => true, // TODO: maybe unsafe?
+        OWN_FUNGIBLE_BUCKET_TYPE => true,
+        OWN_NON_FUNGIBLE_BUCKET_TYPE => true,
+        OWN_PROOF_TYPE => true, // TODO: maybe unsafe?
+        OWN_FUNGIBLE_PROOF_TYPE => true,
+        OWN_NON_FUNGIBLE_PROOF_TYPE => true,
+        OWN_VAULT_TYPE => false,
+        OWN_FUNGIBLE_VAULT_TYPE => true,
+        OWN_NON_FUNGIBLE_VAULT_TYPE => true,
+        OWN_KEY_VALUE_STORE_TYPE => true, // TODO: maybe unsafe?
+        OWN_GLOBAL_ADDRESS_RESERVATION_TYPE => true,
+        DECIMAL_TYPE => true,
+        PRECISE_DECIMAL_TYPE => true,
+        NON_FUNGIBLE_LOCAL_ID_TYPE => true,
+        t => panic!("Unexpected well-known type id: {:?}", t),
     };
 
     if is_safe {
@@ -376,7 +376,7 @@ pub fn test_fake_bucket() {
         .schema
         .state
         .fields[0]
-        .field = TypeRef::Static(LocalTypeIndex::WellKnown(DECIMAL_ID));
+        .field = TypeRef::Static(LocalTypeIndex::WellKnown(DECIMAL_TYPE));
     let package_address =
         test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 

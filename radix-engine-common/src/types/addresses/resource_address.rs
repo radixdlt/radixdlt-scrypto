@@ -183,7 +183,7 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::ResourceAddress,
     NodeId::LENGTH,
-    RESOURCE_ADDRESS_ID,
+    RESOURCE_ADDRESS_TYPE,
     resource_address_type_data
 );
 

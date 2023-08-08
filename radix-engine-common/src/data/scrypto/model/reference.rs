@@ -62,7 +62,7 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::Reference,
     NodeId::LENGTH,
-    REFERENCE_ID,
+    REFERENCE_TYPE,
     reference_type_data
 );
 

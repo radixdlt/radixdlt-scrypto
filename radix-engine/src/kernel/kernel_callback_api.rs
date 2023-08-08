@@ -45,7 +45,7 @@ pub enum OpenSubstateEvent<'a> {
     },
     StoreAccess(&'a StoreAccess),
     End {
-        handle: OpenSubstateHandle,
+        handle: SubstateHandle,
         node_id: &'a NodeId,
         size: usize,
     },
@@ -54,7 +54,7 @@ pub enum OpenSubstateEvent<'a> {
 #[derive(Debug)]
 pub enum ReadSubstateEvent<'a> {
     OnRead {
-        handle: OpenSubstateHandle,
+        handle: SubstateHandle,
         value: &'a IndexedScryptoValue,
         device: SubstateDevice,
     },
@@ -63,7 +63,7 @@ pub enum ReadSubstateEvent<'a> {
 #[derive(Debug)]
 pub enum WriteSubstateEvent<'a> {
     Start {
-        handle: OpenSubstateHandle,
+        handle: SubstateHandle,
         value: &'a IndexedScryptoValue,
     },
     StoreAccess(&'a StoreAccess),
@@ -71,18 +71,23 @@ pub enum WriteSubstateEvent<'a> {
 
 #[derive(Debug)]
 pub enum CloseSubstateEvent {
-    End(OpenSubstateHandle),
+    End(SubstateHandle),
 }
 
 #[derive(Debug)]
 pub enum SetSubstateEvent<'a> {
-    Start(&'a IndexedScryptoValue),
+    Start(
+        &'a NodeId,
+        &'a PartitionNumber,
+        &'a SubstateKey,
+        &'a IndexedScryptoValue,
+    ),
     StoreAccess(&'a StoreAccess),
 }
 
 #[derive(Debug)]
 pub enum RemoveSubstateEvent<'a> {
-    Start,
+    Start(&'a NodeId, &'a PartitionNumber, &'a SubstateKey),
     StoreAccess(&'a StoreAccess),
 }
 

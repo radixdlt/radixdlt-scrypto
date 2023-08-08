@@ -5,10 +5,10 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
-    own_key_value_store_type_data, OWN_KEY_VALUE_STORE_ID,
+    own_key_value_store_type_data, OWN_KEY_VALUE_STORE_TYPE,
 };
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::OpenSubstateHandle;
+use radix_engine_interface::types::SubstateHandle;
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
@@ -177,7 +177,7 @@ impl<
         V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
     > Describe<ScryptoCustomTypeKind> for KeyValueStore<K, V>
 {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(OWN_KEY_VALUE_STORE_ID);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(OWN_KEY_VALUE_STORE_TYPE);
 
     fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         own_key_value_store_type_data()
@@ -234,7 +234,7 @@ impl<V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRefMut<'_, V
 }
 
 impl<'a, V: ScryptoEncode> KeyValueEntryRefMut<'a, V> {
-    pub fn new(lock_handle: OpenSubstateHandle, value: V) -> KeyValueEntryRefMut<'a, V> {
+    pub fn new(lock_handle: SubstateHandle, value: V) -> KeyValueEntryRefMut<'a, V> {
         KeyValueEntryRefMut {
             handle: lock_handle,
             value,

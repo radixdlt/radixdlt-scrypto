@@ -188,6 +188,38 @@ jobs:
           -p radix-engine-tests
         ./check_stack_usage.sh
 
+  radix-engine-release:
+    # Run tests in release variant.
+    # We are particularly interested with the flags:
+    # - debug-assertions,
+    # - overflow-checks
+    # which are false for release variant
+    name: Run Radix Engine tests (release)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Run tests
+      run: |
+        cargo nextest run \
+          --release \
+          --features serde \
+          -p radix-engine-common \
+          -p radix-engine-derive \
+          -p radix-engine-interface \
+          -p radix-engine \
+          -p radix-engine-tests
+        ./check_stack_usage.sh
+
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
     runs-on: ${{ matrix.os }}

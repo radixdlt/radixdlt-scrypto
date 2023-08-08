@@ -1,3 +1,4 @@
+use const_sha1::ConstSlice;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 
@@ -10,16 +11,14 @@ pub trait SchemaTypeLink: Debug + Clone + PartialEq + Eq + From<WellKnownTypeInd
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
 pub enum GlobalTypeId {
     /// This takes a well_known type index.
-    ///
-    /// This wraps a `[u8; 1]` because it needs to be able to be turned into a `[u8]` in a const context.
-    WellKnown([u8; 1]),
+    WellKnown(WellKnownTypeIndex),
     /// The global type hash of a type - used for types which aren't well known.
     Novel(TypeHash),
 }
 
 impl From<WellKnownTypeIndex> for GlobalTypeId {
     fn from(value: WellKnownTypeIndex) -> Self {
-        GlobalTypeId::WellKnown([value.0])
+        GlobalTypeId::WellKnown(value)
     }
 }
 
@@ -44,14 +43,10 @@ impl GlobalTypeId {
         generate_type_hash(&[name], validations, dependencies)
     }
 
-    pub const fn well_known(well_known_type_id: u8) -> Self {
-        Self::WellKnown([well_known_type_id])
-    }
-
-    pub const fn as_slice(&self) -> &[u8] {
+    pub const fn to_const_slice(&self) -> ConstSlice {
         match &self {
-            GlobalTypeId::WellKnown(x) => x,
-            GlobalTypeId::Novel(hash) => hash,
+            GlobalTypeId::WellKnown(x) => ConstSlice::from_slice(&x.0.to_be_bytes()),
+            GlobalTypeId::Novel(hash) => ConstSlice::from_slice(hash),
         }
     }
 }
@@ -104,23 +99,22 @@ const fn capture_dependent_type_ids(
     if next == dependencies.len() {
         return buffer;
     }
-    let buffer = buffer.push_slice(dependencies[next].as_slice());
+    let buffer = buffer.push_other(dependencies[next].to_const_slice());
     capture_dependent_type_ids(buffer, next + 1, dependencies)
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// This is the [`SchemaTypeLink`] used in a linearized [`Schema`] to link [`TypeKind`]s.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
 pub enum LocalTypeIndex {
     /// This takes a well_known type index
-    WellKnown(u8),
+    WellKnown(WellKnownTypeIndex),
     /// For non-simple types
     SchemaLocalIndex(usize),
 }
 
 impl From<WellKnownTypeIndex> for LocalTypeIndex {
     fn from(value: WellKnownTypeIndex) -> Self {
-        LocalTypeIndex::WellKnown(value.0)
+        LocalTypeIndex::WellKnown(value)
     }
 }
 
@@ -128,8 +122,20 @@ impl SchemaTypeLink for LocalTypeIndex {}
 
 impl LocalTypeIndex {
     pub fn any() -> Self {
-        Self::WellKnown(basic_well_known_types::ANY_ID)
+        Self::WellKnown(basic_well_known_types::ANY_TYPE.into())
     }
 }
 
-pub struct WellKnownTypeIndex(pub u8);
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
+#[sbor(transparent)]
+pub struct WellKnownTypeIndex(u8);
+
+impl WellKnownTypeIndex {
+    pub const fn of(x: u8) -> Self {
+        Self(x as u8)
+    }
+
+    pub const fn as_index(&self) -> usize {
+        self.0 as usize
+    }
+}
