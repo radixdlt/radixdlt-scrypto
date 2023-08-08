@@ -308,6 +308,26 @@ impl IndexedStateSchema {
         }
     }
 
+    pub fn get_index_type_pointer_key(&self, collection_index: u8) -> Option<TypePointer> {
+        let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
+        match schema {
+            BlueprintCollectionSchema::Index(index) => {
+                Some(index.key.clone())
+            }
+            _ => None,
+        }
+    }
+
+    pub fn get_index_type_pointer_value(&self, collection_index: u8) -> Option<TypePointer> {
+        let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
+        match schema {
+            BlueprintCollectionSchema::Index(index) => {
+                Some(index.value.clone())
+            }
+            _ => None,
+        }
+    }
+
     pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, FieldSchema<TypePointer>)> {
         match &self.fields {
             Some((offset, fields)) => {

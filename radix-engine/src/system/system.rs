@@ -172,6 +172,7 @@ pub enum KeyOrValue {
 pub enum BlueprintPayloadIdentifier {
     Field(u8),
     KeyValueCollection(u8, KeyOrValue),
+    IndexCollection(u8, KeyOrValue),
     Event(String),
 }
 
@@ -323,7 +324,7 @@ where
                             ),
                         )
                     })?;
-                (type_pointer, true)
+                (type_pointer, false)
             }
             BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value) => {
                 blueprint_interface
@@ -335,6 +336,32 @@ where
                             ),
                         )
                     })?
+            }
+            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Key) => {
+                let type_pointer = blueprint_interface
+                    .state
+                    .get_index_type_pointer_key(collection_index)
+                    .ok_or_else(|| {
+                        RuntimeError::SystemError(
+                            SystemError::PayloadValidationAgainstSchemaError(
+                                PayloadValidationAgainstSchemaError::KeyValueStoreKeyDoesNotExist
+                            ),
+                        )
+                    })?;
+                (type_pointer, false)
+            }
+            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Value) => {
+                let type_pointer = blueprint_interface
+                    .state
+                    .get_index_type_pointer_value(collection_index)
+                    .ok_or_else(|| {
+                        RuntimeError::SystemError(
+                            SystemError::PayloadValidationAgainstSchemaError(
+                                PayloadValidationAgainstSchemaError::KeyValueStoreValueDoesNotExist
+                            ),
+                        )
+                    })?;
+                (type_pointer, false)
             }
             BlueprintPayloadIdentifier::Event(event_name) => {
                 let type_pointer = blueprint_interface
@@ -430,22 +457,6 @@ where
 
 
     pub fn validate_blueprint_payloads<'s>(
-        &'s mut self,
-        target: &ValidationTarget,
-        payloads: &[(&Vec<u8>, TypePointer)],
-    ) -> Result<(), RuntimeError> {
-        for (payload, type_pointer) in payloads {
-            self.validate_blueprint_payload(
-                target,
-                type_pointer.clone(),
-                payload,
-            )?;
-        }
-
-        Ok(())
-    }
-
-    pub fn validate_blueprint_payloads2<'s>(
         &'s mut self,
         target: &ValidationTarget,
         payloads: &[(&Vec<u8>, TypePointer)],
@@ -2136,18 +2147,27 @@ where
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, schema, blueprint_id, type_substitutions) =
+        let (node_id, partition_num, _schema, blueprint_id, type_substitutions) =
             self.get_actor_index(actor_object_type, collection_index)?;
 
-        self.validate_blueprint_payloads(
-            &ValidationTarget {
-                blueprint_id,
-                type_substitutions,
-                meta: SchemaValidationMeta::ExistingObject {
-                    additional_schemas: node_id,
-                }
-            },
-            &[(&key, schema.key), (&buffer, schema.value)],
+        let target = ValidationTarget {
+            blueprint_id,
+            type_substitutions,
+            meta: SchemaValidationMeta::ExistingObject {
+                additional_schemas: node_id,
+            }
+        };
+
+        self.validate_blueprint_payload2(
+            &target,
+            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Key),
+            &key,
+        )?;
+
+        self.validate_blueprint_payload2(
+            &target,
+            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Value),
+            &buffer,
         )?;
 
         let value = IndexedScryptoValue::from_vec(buffer)
