@@ -74,7 +74,7 @@ pub enum FieldLockData {
     Read,
     Write {
         blueprint_id: BlueprintId,
-        type_pointer: TypePointer,
+        field_index: u8,
     },
 }
 

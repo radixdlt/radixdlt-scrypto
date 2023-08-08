@@ -176,11 +176,11 @@ pub enum InputOrOutput {
 
 pub enum BlueprintPayloadIdentifier {
     Function(String, InputOrOutput),
+    Event(String),
     Field(u8),
     KeyValueCollection(u8, KeyOrValue),
     IndexCollection(u8, KeyOrValue),
     SortedIndexCollection(u8, KeyOrValue),
-    Event(String),
 }
 
 impl<'a, Y, V> SystemService<'a, Y, V>
@@ -210,92 +210,6 @@ where
             type_index,
             &validation_context,
         )
-    }
-
-    pub fn validate_blueprint_payload(
-        &mut self,
-        target: &ValidationTarget,
-        type_pointer: TypePointer,
-        payload: &[u8],
-    ) -> Result<(), RuntimeError> {
-        match type_pointer {
-            TypePointer::Package(type_identifier) => {
-                let schema = self.get_schema(target.blueprint_id.package_address, &type_identifier.0)?;
-
-                self.validate_payload(
-                    payload,
-                    &schema,
-                    type_identifier.1,
-                    SchemaOrigin::Blueprint(target.blueprint_id.clone()),
-                )
-                .map_err(|err| {
-                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                        PayloadValidationAgainstSchemaError::PayloadValidationError(
-                            err.error_message(&schema),
-                        ),
-                    ))
-                })?;
-            }
-            TypePointer::Instance(instance_index) => {
-                let (local_type_index, schema) = match &target.meta {
-                    SchemaValidationMeta::ExistingObject { additional_schemas } => {
-                        let type_identifier =
-                            target.type_substitutions.get(instance_index as usize).ok_or_else(|| {
-                                RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                                    PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                                ))
-                            })?;
-
-                        let handle = self.api.kernel_open_substate_with_default(
-                            additional_schemas,
-                            INSTANCE_SCHEMAS_PARTITION,
-                            &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
-                            LockFlags::read_only(),
-                            None,
-                            SystemLockData::default(),
-                        )?;
-
-                        let schema: ScryptoSchema =
-                            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-                        self.api.kernel_close_substate(handle)?;
-
-                        (type_identifier.1, schema)
-                    }
-                    SchemaValidationMeta::NewObject {additional_schemas } => {
-                        let type_identifier =
-                            target.type_substitutions.get(instance_index as usize).ok_or_else(|| {
-                                RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                                    PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                                ))
-                            })?;
-
-                        let schema = additional_schemas.get(&type_identifier.0).ok_or_else(|| {
-                            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                            ))
-                        })?.clone(); // TODO: Remove clone
-
-                        (type_identifier.1, schema)
-                    }
-                    SchemaValidationMeta::Blueprint => {
-                        return Err(RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                        )));
-                    }
-                };
-
-                self.validate_payload(payload, &schema, local_type_index, SchemaOrigin::Instance)
-                    .map_err(|err| {
-                        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::PayloadValidationError(
-                                err.error_message(&schema),
-                            ),
-                        ))
-                    })?;
-            }
-        }
-
-        Ok(())
     }
 
     pub fn validate_blueprint_payload2(
@@ -1579,9 +1493,9 @@ where
         match data {
             SystemLockData::Field(FieldLockData::Write {
                 blueprint_id,
-                type_pointer,
+                field_index,
             }) => {
-                self.validate_blueprint_payload(
+                self.validate_blueprint_payload2(
                     &ValidationTarget {
                         blueprint_id,
                         // TODO: Change to empty vector, once support for generic fields is implemented
@@ -1590,7 +1504,7 @@ where
                             additional_schemas: node_id,
                         },
                     },
-                    type_pointer,
+                    BlueprintPayloadIdentifier::Field(field_index),
                     &buffer,
                 )?;
             }
@@ -2603,7 +2517,7 @@ where
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
                 blueprint_id,
-                type_pointer: schema_pointer,
+                field_index,
             }
         } else {
             FieldLockData::Read
