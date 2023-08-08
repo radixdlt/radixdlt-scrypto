@@ -5,6 +5,8 @@ edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+# Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
+bench = false
 
 [dependencies]
 radix-engine-common = { path = "../../radix-engine-common", default-features = false }
