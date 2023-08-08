@@ -262,7 +262,7 @@ impl<
         &mut self,
         current_frame: &CallFrame<M::CallFrameData, M::LockData>,
         heap: &Heap,
-        handle: OpenSubstateHandle,
+        handle: SubstateHandle,
         value: &IndexedScryptoValue,
         device: SubstateDevice,
     ) -> Result<(), Self::Error> {
@@ -636,7 +636,7 @@ where
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: M::LockData,
-    ) -> Result<OpenSubstateHandle, RuntimeError> {
+    ) -> Result<SubstateHandle, RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_open_substate(
             &mut read_only,
@@ -758,7 +758,7 @@ where
     #[trace_resources]
     fn kernel_get_lock_data(
         &mut self,
-        lock_handle: OpenSubstateHandle,
+        lock_handle: SubstateHandle,
     ) -> Result<M::LockData, RuntimeError> {
         self.current_frame
             .get_handle_info(lock_handle)
@@ -770,7 +770,7 @@ where
     #[trace_resources]
     fn kernel_read_substate(
         &mut self,
-        lock_handle: OpenSubstateHandle,
+        lock_handle: SubstateHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -797,7 +797,7 @@ where
     #[trace_resources(log=value.len())]
     fn kernel_write_substate(
         &mut self,
-        lock_handle: OpenSubstateHandle,
+        lock_handle: SubstateHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let mut read_only = as_read_only!(self);
@@ -830,10 +830,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_close_substate(
-        &mut self,
-        lock_handle: OpenSubstateHandle,
-    ) -> Result<(), RuntimeError> {
+    fn kernel_close_substate(&mut self, lock_handle: SubstateHandle) -> Result<(), RuntimeError> {
         self.current_frame
             .close_substate(&mut self.substate_io, lock_handle)
             .map_err(|e| {
