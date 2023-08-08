@@ -473,3 +473,41 @@ fn name_validation_function() {
         )
     });
 }
+
+#[test]
+fn well_known_types_in_schema_are_validated() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
+
+    let mut blueprint = definition.blueprints.first_entry().unwrap();
+    let method_definition = blueprint
+        .get_mut()
+        .schema
+        .functions
+        .functions
+        .get_mut("some_method".into())
+        .unwrap();
+
+    // Invalid well known type
+    method_definition.input = TypeRef::Static(LocalTypeIndex::WellKnown(WellKnownTypeIndex::of(0)));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidLocalTypeIndex(..)
+            ))
+        )
+    });
+}
