@@ -1,5 +1,5 @@
 use super::*;
-use crate::basic_well_known_types::ANY_ID;
+use crate::basic_well_known_types::ANY_TYPE;
 use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
@@ -71,7 +71,7 @@ impl<'s> ContainerType<'s> {
             Self::Tuple(_, types) => (*types).get(index).copied(),
             Self::EnumVariant(_, types) => (*types).get(index).copied(),
             Self::Array(_, child_type) => Some(*child_type),
-            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_ID)),
+            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_TYPE)),
             _ => None,
         }
     }
@@ -79,7 +79,7 @@ impl<'s> ContainerType<'s> {
     pub fn get_child_type_for_map_key(&self) -> Option<LocalTypeIndex> {
         match self {
             Self::Map(_, key_type, _) => Some(*key_type),
-            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_ID)),
+            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_TYPE)),
             _ => None,
         }
     }
@@ -87,7 +87,7 @@ impl<'s> ContainerType<'s> {
     pub fn get_child_type_for_map_value(&self) -> Option<LocalTypeIndex> {
         match self {
             Self::Map(_, _, value_type) => Some(*value_type),
-            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_ID)),
+            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_TYPE)),
             _ => None,
         }
     }

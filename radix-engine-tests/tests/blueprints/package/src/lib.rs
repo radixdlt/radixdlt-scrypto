@@ -35,7 +35,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         "f".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
             output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "LargeReturnSize_f".to_string(),
         },
@@ -85,7 +85,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         "f".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
             output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "MaxReturnSize_f".to_string(),
         },
@@ -135,7 +135,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         "f".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
             output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "ZeroReturnSize_f".to_string(),
         },

@@ -143,7 +143,7 @@ mod schema {
         };
     }
 
-    describe_basic_well_known_type!((), UNIT_ID, unit_type_data);
+    describe_basic_well_known_type!((), UNIT_TYPE, unit_type_data);
     describe_tuple! { 1 0 T0 }
     describe_tuple! { 2 0 T0 1 T1 }
     describe_tuple! { 3 0 T0 1 T1 2 T2 }

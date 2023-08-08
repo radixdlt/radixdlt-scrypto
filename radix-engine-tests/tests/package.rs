@@ -15,7 +15,7 @@ use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit, TypeRef,
 };
-use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
+use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -168,7 +168,7 @@ fn test_basic_package_missing_export() {
                 },
                 state: BlueprintStateSchemaInit {
                     fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
-                        UNIT_ID,
+                        UNIT_TYPE,
                     ))],
                     collections: vec![],
                 },
@@ -177,8 +177,8 @@ fn test_basic_package_missing_export() {
                     functions: btreemap!(
                         "f".to_string() => FunctionSchemaInit {
                             receiver: Option::None,
-                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
                             export: "not_exist".to_string(),
                         }
                     ),
@@ -449,8 +449,8 @@ fn name_validation_function() {
             String::from("self"),
             FunctionSchemaInit {
                 receiver: None,
-                input: TypeRef::Static(LocalTypeIndex::WellKnown(0)),
-                output: TypeRef::Static(LocalTypeIndex::WellKnown(0)),
+                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
                 export: String::from("self"),
             },
         );

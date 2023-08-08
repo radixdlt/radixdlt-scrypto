@@ -4,7 +4,7 @@ use crate::prelude::{scrypto_encode, HasRoleAssignment, ObjectStub, ObjectStubHa
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
-    component_address_type_data, own_type_data, COMPONENT_ADDRESS_ID, OWN_ID,
+    component_address_type_data, own_type_data, COMPONENT_ADDRESS_TYPE, OWN_TYPE,
 };
 use radix_engine_common::prelude::{
     scrypto_decode, OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
@@ -535,7 +535,7 @@ impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Global<T> {
 }
 
 impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([COMPONENT_ADDRESS_ID]);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(COMPONENT_ADDRESS_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         component_address_type_data()
@@ -545,7 +545,7 @@ impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
 }
 
 impl Describe<ScryptoCustomTypeKind> for Owned<AnyComponent> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_ID]);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(OWN_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         own_type_data()

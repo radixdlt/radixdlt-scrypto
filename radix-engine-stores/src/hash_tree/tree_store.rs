@@ -180,7 +180,7 @@ impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for Nibble {
 }
 
 impl<T: CustomTypeKind<GlobalTypeId>> Describe<T> for Nibble {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::U8_ID);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(basic_well_known_types::U8_TYPE);
 
     fn type_data() -> TypeData<T, GlobalTypeId> {
         basic_well_known_types::u8_type_data()
