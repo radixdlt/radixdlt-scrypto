@@ -188,7 +188,6 @@ where
         payload: &[u8],
     ) -> Result<bool, RuntimeError> { // TODO: Remove bool return
 
-        // TODO: Use internment to store blueprint interface?
         let blueprint_interface = self.get_blueprint_default_interface(target.blueprint_id.clone())?;
 
         let (type_pointer, can_own) = blueprint_interface.get_type_pointer(&payload_identifier)
@@ -523,6 +522,7 @@ where
             version: bp_version_key.version.clone(),
         };
 
+        // TODO: Use internment to cache blueprint interface rather than object cache?
         let def = self
             .api
             .kernel_get_system_state()
@@ -880,6 +880,44 @@ where
         Ok(object_id)
     }
 
+    fn get_actor_partition_info(
+        &mut self,
+        actor_object_type: ActorObjectType,
+        blueprint_partition: BlueprintPartitionIdentifier,
+        expected_type: &BlueprintPartitionType,
+    ) -> Result<(NodeId, BlueprintInfo, PartitionNumber), RuntimeError> {
+        let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
+        let blueprint_info = self.get_blueprint_info(&node_id, module_id)?;
+        let blueprint_interface =
+            self.get_blueprint_default_interface(blueprint_info.blueprint_id.clone())?;
+
+        let partition_num = {
+            let (partition_offset, partition_type) = blueprint_interface.state
+                .get_partition(blueprint_partition.clone())
+                .ok_or_else(|| {
+                    RuntimeError::SystemError(SystemError::BlueprintPartitionDoesNotExist(
+                        blueprint_info.blueprint_id.clone(),
+                        blueprint_partition.clone(),
+                    ))
+                })?;
+
+            if !partition_type.eq(expected_type) {
+                // TODO: Implement different error
+                return Err(RuntimeError::SystemError(SystemError::BlueprintPartitionDoesNotExist(
+                    blueprint_info.blueprint_id.clone(),
+                    blueprint_partition,
+                )))
+            }
+
+            module_id
+                .base_partition_num()
+                .at_offset(partition_offset)
+                .expect("Module number overflow")
+        };
+
+        Ok((node_id, blueprint_info, partition_num))
+    }
+
     fn get_actor_info(
         &mut self,
         actor_object_type: ActorObjectType,
@@ -966,46 +1004,6 @@ where
             .into_key_value_store_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
-                    info.blueprint_id.clone(),
-                    collection_index,
-                ))
-            })?;
-
-        let partition_num = module_id
-            .base_partition_num()
-            .at_offset(partition_offset)
-            .expect("Module number overflow");
-
-        Ok((
-            node_id,
-            partition_num,
-            kv_schema,
-            info.blueprint_id,
-            info.type_substitutions,
-        ))
-    }
-
-    fn get_actor_index(
-        &mut self,
-        actor_object_type: ActorObjectType,
-        collection_index: CollectionIndex,
-    ) -> Result<
-        (
-            NodeId,
-            PartitionNumber,
-            BlueprintKeyValueSchema<TypePointer>,
-            BlueprintId,
-            Vec<TypeIdentifier>,
-        ),
-        RuntimeError,
-    > {
-        let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
-
-        let (partition_offset, kv_schema) = interface
-            .state
-            .into_index_partition(collection_index)
-            .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
                     info.blueprint_id.clone(),
                     collection_index,
                 ))
@@ -1950,12 +1948,15 @@ where
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, _schema, blueprint_id, type_substitutions) =
-            self.get_actor_index(actor_object_type, collection_index)?;
+        let (node_id, info, partition_num) = self.get_actor_partition_info(
+            actor_object_type,
+            BlueprintPartitionIdentifier::Collection(collection_index),
+            &BlueprintPartitionType::IndexCollection,
+        )?;
 
         let target = ValidationTarget {
-            blueprint_id,
-            type_substitutions,
+            blueprint_id: info.blueprint_id,
+            type_substitutions: info.type_substitutions,
             meta: SchemaValidationMeta::ExistingObject {
                 additional_schemas: node_id,
             }
@@ -1982,6 +1983,8 @@ where
             ));
         }
 
+
+
         self.api
             .kernel_set_substate(&node_id, partition_num, SubstateKey::Map(key), value)
     }
@@ -1995,8 +1998,11 @@ where
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, ..) =
-            self.get_actor_index(actor_object_type, collection_index)?;
+        let (node_id, _info, partition_num) = self.get_actor_partition_info(
+            actor_object_type,
+            BlueprintPartitionIdentifier::Collection(collection_index),
+            &BlueprintPartitionType::IndexCollection,
+        )?;
 
         let rtn = self
             .api
@@ -2015,8 +2021,11 @@ where
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, ..) =
-            self.get_actor_index(actor_object_type, collection_index)?;
+        let (node_id, _info, partition_num) = self.get_actor_partition_info(
+            actor_object_type,
+            BlueprintPartitionIdentifier::Collection(collection_index),
+            &BlueprintPartitionType::IndexCollection,
+        )?;
 
         let substates = self
             .api
@@ -2037,8 +2046,11 @@ where
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, ..) =
-            self.get_actor_index(actor_object_type, collection_index)?;
+        let (node_id, _info, partition_num) = self.get_actor_partition_info(
+            actor_object_type,
+            BlueprintPartitionIdentifier::Collection(collection_index),
+            &BlueprintPartitionType::IndexCollection,
+        )?;
 
         let substates = self
             .api
