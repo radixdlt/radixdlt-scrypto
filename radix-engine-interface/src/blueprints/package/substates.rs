@@ -162,6 +162,28 @@ pub struct BlueprintDefinition {
     pub hook_exports: BTreeMap<BlueprintHook, PackageExport>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum KeyOrValue {
+    Key,
+    Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum InputOrOutput {
+    Input,
+    Output,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum BlueprintPayloadIdentifier {
+    Function(String, InputOrOutput),
+    Event(String),
+    Field(u8),
+    KeyValueCollection(u8, KeyOrValue),
+    IndexCollection(u8, KeyOrValue),
+    SortedIndexCollection(u8, KeyOrValue),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintInterface {
     pub blueprint_type: BlueprintType,
@@ -215,6 +237,68 @@ impl BlueprintInterface {
 
     pub fn get_event_type_pointer(&self, event_name: &str) -> Option<TypePointer> {
         self.events.get(event_name).cloned()
+    }
+
+
+
+    pub fn get_type_pointer(
+        &self,
+       payload_identifier: &BlueprintPayloadIdentifier,
+    ) -> Option<(TypePointer, bool)> {
+        match payload_identifier {
+            BlueprintPayloadIdentifier::Function(function_ident, InputOrOutput::Input) => {
+                let type_pointer = self
+                    .get_function_input_type_pointer(function_ident.as_str())?;
+                Some((type_pointer, true))
+            }
+            BlueprintPayloadIdentifier::Function(function_ident, InputOrOutput::Output) => {
+                let type_pointer = self
+                    .get_function_output_type_pointer(function_ident.as_str())?;
+                Some((type_pointer, true))
+            }
+            BlueprintPayloadIdentifier::Field(field_index) => {
+                let type_pointer = self
+                    .get_field_type_pointer(*field_index)?;
+                Some((type_pointer, true))
+            }
+            BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Key) => {
+                let type_pointer = self
+                    .get_kv_key_type_pointer(*collection_index)?;
+                Some((type_pointer, false))
+            }
+            BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value) => {
+                self.get_kv_value_type_pointer(*collection_index)
+            }
+            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Key) => {
+                let type_pointer = self
+                    .state
+                    .get_index_type_pointer_key(*collection_index)?;
+                Some((type_pointer, false))
+            }
+            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Value) => {
+                let type_pointer = self
+                    .state
+                    .get_index_type_pointer_value(*collection_index)?;
+                Some((type_pointer, false))
+            }
+            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Key) => {
+                let type_pointer = self
+                    .state
+                    .get_sorted_index_type_pointer_key(*collection_index)?;
+                Some((type_pointer, false))
+            }
+            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Value) => {
+                let type_pointer = self
+                    .state
+                    .get_sorted_index_type_pointer_value(*collection_index)?;
+                Some((type_pointer, false))
+            }
+            BlueprintPayloadIdentifier::Event(event_name) => {
+                let type_pointer = self
+                    .get_event_type_pointer(event_name.as_str())?;
+                Some((type_pointer, false))
+            }
+        }
     }
 }
 

@@ -20,7 +20,7 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::module::SystemModule;
-use crate::system::system::{FieldSubstate, ValidationTarget, SchemaValidationMeta, BlueprintPayloadIdentifier, InputOrOutput};
+use crate::system::system::{FieldSubstate, ValidationTarget, SchemaValidationMeta};
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;

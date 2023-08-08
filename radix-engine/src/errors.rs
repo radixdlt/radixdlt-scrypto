@@ -28,7 +28,7 @@ use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ObjectHandle;
-use radix_engine_interface::blueprints::package::CanonicalBlueprintId;
+use radix_engine_interface::blueprints::package::{BlueprintPayloadIdentifier, CanonicalBlueprintId};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -312,15 +312,10 @@ pub enum SystemModuleError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PayloadValidationAgainstSchemaError {
-    BlueprintDoesNotExist(BlueprintId),
+    PayloadDoesNotExist(BlueprintPayloadIdentifier),
     CollectionDoesNotExist,
-    FieldDoesNotExist(u8),
-    KeyValueStoreKeyDoesNotExist,
-    KeyValueStoreValueDoesNotExist,
-    EventDoesNotExist(String),
     PayloadValidationError(String),
     InstanceSchemaDoesNotExist,
-    SchemaNotFound,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

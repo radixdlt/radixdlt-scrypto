@@ -19,6 +19,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
+use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
@@ -96,7 +97,7 @@ fn scrypto_cant_emit_unregistered_event() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-            PayloadValidationAgainstSchemaError::EventDoesNotExist(event),
+            PayloadValidationAgainstSchemaError::PayloadDoesNotExist(BlueprintPayloadIdentifier::Event(event)),
         )) if event.eq("UnregisteredEvent") => true,
         _ => false,
     });

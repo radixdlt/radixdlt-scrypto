@@ -164,25 +164,6 @@ pub struct ValidationTarget<'a> {
     pub meta: SchemaValidationMeta<'a>,
 }
 
-pub enum KeyOrValue {
-    Key,
-    Value,
-}
-
-pub enum InputOrOutput {
-    Input,
-    Output,
-}
-
-pub enum BlueprintPayloadIdentifier {
-    Function(String, InputOrOutput),
-    Event(String),
-    Field(u8),
-    KeyValueCollection(u8, KeyOrValue),
-    IndexCollection(u8, KeyOrValue),
-    SortedIndexCollection(u8, KeyOrValue),
-}
-
 impl<'a, Y, V> SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -222,125 +203,9 @@ where
         // TODO: Use internment to store blueprint interface?
         let blueprint_interface = self.get_blueprint_default_interface(target.blueprint_id.clone())?;
 
-        let (type_pointer, can_own) = match payload_identifier {
-            BlueprintPayloadIdentifier::Function(function_ident, InputOrOutput::Input) => {
-                let type_pointer = blueprint_interface
-                    .get_function_input_type_pointer(function_ident.as_str())
-                    .ok_or_else(|| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(
-                            function_ident,
-                        ))
-                    })?;
-                (type_pointer, true)
-            }
-            BlueprintPayloadIdentifier::Function(function_ident, InputOrOutput::Output) => {
-                let type_pointer = blueprint_interface
-                    .get_function_output_type_pointer(function_ident.as_str())
-                    .ok_or_else(|| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(
-                            function_ident,
-                        ))
-                    })?;
-                (type_pointer, true)
-            }
-            BlueprintPayloadIdentifier::Field(field_index) => {
-                let type_pointer = blueprint_interface
-                    .get_field_type_pointer(field_index)
-                    .ok_or_else(|| {
-                        RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::FieldDoesNotExist(field_index),
-                            ),
-                        )
-                    })?;
-                (type_pointer, true)
-            }
-            BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Key) => {
-                let type_pointer = blueprint_interface
-                    .get_kv_key_type_pointer(collection_index)
-                    .ok_or_else(|| {
-                        RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::KeyValueStoreKeyDoesNotExist
-                            ),
-                        )
-                    })?;
-                (type_pointer, false)
-            }
-            BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value) => {
-                blueprint_interface
-                    .get_kv_value_type_pointer(collection_index)
-                    .ok_or_else(|| {
-                        RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::KeyValueStoreValueDoesNotExist
-                            ),
-                        )
-                    })?
-            }
-            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Key) => {
-                let type_pointer = blueprint_interface
-                    .state
-                    .get_index_type_pointer_key(collection_index)
-                    .ok_or_else(|| {
-                        RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::KeyValueStoreKeyDoesNotExist
-                            ),
-                        )
-                    })?;
-                (type_pointer, false)
-            }
-            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Value) => {
-                let type_pointer = blueprint_interface
-                    .state
-                    .get_index_type_pointer_value(collection_index)
-                    .ok_or_else(|| {
-                        RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::KeyValueStoreValueDoesNotExist
-                            ),
-                        )
-                    })?;
-                (type_pointer, false)
-            }
-            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Key) => {
-                let type_pointer = blueprint_interface
-                    .state
-                    .get_sorted_index_type_pointer_key(collection_index)
-                    .ok_or_else(|| {
-                        RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::KeyValueStoreKeyDoesNotExist
-                            ),
-                        )
-                    })?;
-                (type_pointer, false)
-            }
-            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Value) => {
-                let type_pointer = blueprint_interface
-                    .state
-                    .get_sorted_index_type_pointer_value(collection_index)
-                    .ok_or_else(|| {
-                        RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::KeyValueStoreValueDoesNotExist
-                            ),
-                        )
-                    })?;
-                (type_pointer, false)
-            }
-            BlueprintPayloadIdentifier::Event(event_name) => {
-                let type_pointer = blueprint_interface
-                    .get_event_type_pointer(event_name.as_str())
-                    .ok_or_else(|| {
-                        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::EventDoesNotExist(event_name.clone()),
-                        ))
-                    })?;
-                (type_pointer, false)
-            }
-        };
+        let (type_pointer, can_own) = blueprint_interface.get_type_pointer(&payload_identifier)
+            .ok_or_else(|| RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError::PayloadDoesNotExist(payload_identifier))))?;
+
 
         match type_pointer {
             TypePointer::Package(type_identifier) => {
