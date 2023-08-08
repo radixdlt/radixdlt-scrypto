@@ -7,7 +7,7 @@ mod metadata {
     impl MetadataTest {
         pub fn new() -> Global<MetadataTest> {
             let (address_reservation, _) =
-                Runtime::allocate_component_address(Runtime::blueprint_id());
+                Runtime::allocate_component_address(MetadataTest::blueprint_id());
 
             Self::new_with_address(address_reservation)
         }

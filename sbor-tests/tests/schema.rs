@@ -97,7 +97,7 @@ fn create_basic_sample_schema_works_correctly() {
     );
     assert!(
         matches!(kind, TypeKind::Tuple { field_types } if matches!(field_types[..], [
-            LocalTypeIndex::WellKnown(basic_well_known_types::UNIT_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::UNIT_TYPE),
             LocalTypeIndex::SchemaLocalIndex(1),
         ]))
     );
@@ -152,14 +152,14 @@ fn create_advanced_sample_schema_works_correctly() {
     assert!(matches!(
         field_types[..],
         [
-            LocalTypeIndex::WellKnown(basic_well_known_types::UNIT_ID),
-            LocalTypeIndex::WellKnown(basic_well_known_types::U32_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::UNIT_TYPE),
+            LocalTypeIndex::WellKnown(basic_well_known_types::U32_TYPE),
             LocalTypeIndex::SchemaLocalIndex(1), // Registers (u8, Vec<T>) which also registers SchemaLocal(2) as Vec<T>
-            LocalTypeIndex::WellKnown(basic_well_known_types::STRING_ID),
-            LocalTypeIndex::WellKnown(basic_well_known_types::U128_ID),
-            LocalTypeIndex::WellKnown(basic_well_known_types::U128_ID), // S resolves to U128
-            LocalTypeIndex::SchemaLocalIndex(3),                        // T resolves to UnitStruct
-            LocalTypeIndex::WellKnown(basic_well_known_types::BYTES_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::STRING_TYPE),
+            LocalTypeIndex::WellKnown(basic_well_known_types::U128_TYPE),
+            LocalTypeIndex::WellKnown(basic_well_known_types::U128_TYPE), // S resolves to U128
+            LocalTypeIndex::SchemaLocalIndex(3), // T resolves to UnitStruct
+            LocalTypeIndex::WellKnown(basic_well_known_types::BYTES_TYPE),
             LocalTypeIndex::SchemaLocalIndex(4), // Vec<S> = Vec<u128>, a non-well-known type
             LocalTypeIndex::SchemaLocalIndex(3), // T resolves to UnitStruct - at the same schema index as before
             LocalTypeIndex::SchemaLocalIndex(5), // HashMap<[u8; 3], BTreeMap<i64, BTreeSet<i32>>>
@@ -188,7 +188,7 @@ fn creating_schema_from_multiple_types_works_correctly() {
     ));
     assert!(matches!(
         i64_type_index,
-        LocalTypeIndex::WellKnown(basic_well_known_types::I64_ID)
+        LocalTypeIndex::WellKnown(basic_well_known_types::I64_TYPE)
     ));
     assert!(matches!(
         unit_struct_type_index_2,

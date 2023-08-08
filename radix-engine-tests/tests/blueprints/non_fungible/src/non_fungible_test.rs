@@ -391,6 +391,38 @@ mod non_fungible_test {
             non_fungible_bucket
         }
 
+        pub fn contains_non_fungible_vault() {
+            let vault = Vault::with_bucket(Self::create_non_fungible_fixed());
+            let vault = vault.as_non_fungible();
+            assert!(vault.contains_non_fungible(&NonFungibleLocalId::integer(1)));
+            assert!(vault.contains_non_fungible(&NonFungibleLocalId::integer(2)));
+            assert!(vault.contains_non_fungible(&NonFungibleLocalId::integer(3)));
+            assert!(!vault.contains_non_fungible(&NonFungibleLocalId::integer(4)));
+
+            NonFungibleTest {
+                vault: vault.into(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+
+        pub fn contains_non_fungible_bucket() {
+            let bucket = Self::create_non_fungible_fixed();
+            let bucket = bucket.as_non_fungible();
+            assert!(bucket.contains_non_fungible(&NonFungibleLocalId::integer(1)));
+            assert!(bucket.contains_non_fungible(&NonFungibleLocalId::integer(2)));
+            assert!(bucket.contains_non_fungible(&NonFungibleLocalId::integer(3)));
+            assert!(!bucket.contains_non_fungible(&NonFungibleLocalId::integer(4)));
+
+            NonFungibleTest {
+                vault: Vault::with_bucket(bucket.into()),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+
         pub fn get_non_fungible_local_id_vault() -> Bucket {
             let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible_bucket = vault.take(1);

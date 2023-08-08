@@ -82,6 +82,26 @@ impl NonFungibleBucketBlueprint {
         Ok(ids)
     }
 
+    pub fn contains_non_fungible<Y>(
+        id: NonFungibleLocalId,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let ids = Self::liquid_non_fungible_local_ids(api)?;
+        if ids.contains(&id) {
+            return Ok(true);
+        }
+
+        let ids = Self::locked_non_fungible_local_ids(api)?;
+        if ids.contains(&id) {
+            return Ok(true);
+        }
+
+        Ok(false)
+    }
+
     pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,

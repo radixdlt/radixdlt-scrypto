@@ -707,7 +707,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn inspect_non_fungible_vault(
         &mut self,
         vault_id: NodeId,
-    ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
+    ) -> Option<(Decimal, Box<dyn Iterator<Item = NonFungibleLocalId> + '_>)> {
         let amount = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidNonFungibleVault>>(
@@ -717,18 +717,23 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             )
             .map(|vault| vault.value.0.amount);
 
-        let mut substate_iter = self
+        let substate_iter = self
             .substate_db()
             .list_mapped::<SpreadPrefixKeyMapper, (), MapKey>(
                 &vault_id,
                 MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
             );
-        let id = substate_iter.next().map(|(key, _value)| {
-            let id: NonFungibleLocalId = scrypto_decode(key.for_map().unwrap()).unwrap();
-            id
-        });
 
-        amount.map(|amount| (amount, id))
+        let iter: Box<dyn Iterator<Item = NonFungibleLocalId> + '_> = Box::new(
+            substate_iter
+                .map(|(key, _value)| {
+                    let id: NonFungibleLocalId = scrypto_decode(key.for_map().unwrap()).unwrap();
+                    id
+                })
+                .into_iter(),
+        );
+
+        amount.map(|amount| (amount, iter))
     }
 
     pub fn get_component_resources(

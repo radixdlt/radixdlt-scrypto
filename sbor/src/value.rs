@@ -342,7 +342,7 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D> + CustomValue<X>> Decode
 impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<GlobalTypeId>> Describe<C>
     for Value<X, Y>
 {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(basic_well_known_types::ANY_TYPE);
 
     fn type_data() -> TypeData<C, GlobalTypeId> {
         basic_well_known_types::any_type_data()
@@ -406,7 +406,7 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D> + CustomValue<X>> Decode
 impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<GlobalTypeId>> Describe<C>
     for EnumVariantValue<X, Y>
 {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(basic_well_known_types::ANY_TYPE);
 
     fn type_data() -> TypeData<C, GlobalTypeId> {
         basic_well_known_types::any_type_data()
