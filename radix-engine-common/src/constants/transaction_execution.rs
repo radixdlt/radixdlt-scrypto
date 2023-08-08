@@ -18,6 +18,9 @@ pub const MAX_NUMBER_OF_SUBSTATES_IN_TRACK: usize = 512;
 /// The max number of substates in heap.
 pub const MAX_NUMBER_OF_SUBSTATES_IN_HEAP: usize = 512;
 
+/// The maximum substate key read and write size
+pub const MAX_SUBSTATE_KEY_SIZE: usize = 1024;
+
 /// The maximum substate read and write size.
 pub const MAX_SUBSTATE_SIZE: usize = 2 * 1024 * 1024;
 

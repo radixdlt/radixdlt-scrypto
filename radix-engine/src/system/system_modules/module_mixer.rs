@@ -152,6 +152,7 @@ impl SystemModuleMixer {
             limits: LimitsModule::new(TransactionLimitsConfig {
                 max_number_of_substates_in_track: execution_config.max_number_of_substates_in_track,
                 max_number_of_substates_in_heap: execution_config.max_number_of_substates_in_heap,
+                max_substate_key_size: execution_config.max_substate_key_size,
                 max_substate_size: execution_config.max_substate_size,
                 max_invoke_payload_size: execution_config.max_invoke_input_size,
                 max_number_of_logs: execution_config.max_number_of_logs,
