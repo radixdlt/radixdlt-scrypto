@@ -113,42 +113,42 @@ macro_rules! bench_ops {
                 for i in $range {
                     // native
                     group.bench_with_input(BenchmarkId::new("rust-native", i), &i, |b, i| {
-                        black_box(b.iter(|| {
+                        b.iter(|| {
                             for _ in 0..*i {
-                                [< $t _ $ops >] ($x, $y, 0);
+                                black_box([< $t _ $ops >] ($x, $y, 0));
                             }
-                        }))
+                        })
 
                     });
                     // wasmi call native
                     group.bench_with_input(BenchmarkId::new("wasmi-call-native", i), &i, |b, i| {
-                        black_box(b.iter(|| {
+                        b.iter(|| {
                             for _ in 0..*i {
-                                wasmi_call_host_func.call(store_call_host.as_context_mut(), ($x, $y, 0)).unwrap();
+                                black_box(wasmi_call_host_func.call(store_call_host.as_context_mut(), ($x, $y, 0)).unwrap());
                             }
-                        }))
+                        })
                     });
                     // wasmi
                     group.bench_with_input(BenchmarkId::new("wasmi", i), &i, |b, i| {
-                        black_box(b.iter(|| {
+                        b.iter(|| {
                             for _ in 0..*i {
-                                wasmi_func.call(store.as_context_mut(), ($x, $y, 0)).unwrap();
+                                black_box(wasmi_func.call(store.as_context_mut(), ($x, $y, 0)).unwrap());
                             }
-                        }))
+                        })
                     });
 
                     // wasmer
                     group.bench_with_input(BenchmarkId::new("wasmer", i), &i, |b, i| {
-                        black_box(b.iter(|| {
+                        b.iter(|| {
                             for _ in 0..*i {
-                                wasmer_func.call(&[
+                                black_box(wasmer_func.call(&[
                                     wasmer::Value::I64($x),
                                     wasmer::Value::I64($y),
                                     wasmer::Value::I64(0)
                                 ])
-                                .unwrap();
+                                .unwrap());
                             }
-                        }))
+                        })
                     });
                 }
 
