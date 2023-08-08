@@ -81,6 +81,8 @@ radix_engine_fuzzing = []
 # when external crate is used for tests (eg. radix-engine-tests)
 radix_engine_tests = []
 
+full_wasm_benchmarks = []
+
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]
 bench = false

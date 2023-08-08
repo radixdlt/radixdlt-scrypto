@@ -225,87 +225,123 @@ macro_rules! bench_ops_batch {
     };
 }
 
-bench_ops!("primitive", "add", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops_batch!("primitive", "add", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops!("primitive", "mul", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops_batch!("primitive", "mul", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops!("primitive", "pow", 2, 20, [1, 10, 20, 50, 100]);
-bench_ops_batch!("primitive", "pow", 2, 20, [1, 10, 20, 50, 100]);
-bench_ops!("primitive", "fib", 1, 0, [1, 5, 10, 20]);
+#[cfg(feature = "full_wasm_benchmarks")]
+const BENCH_RANGE: [i64; 3] = [1, 10, 10];
+#[cfg(not(feature = "full_wasm_benchmarks"))]
+const BENCH_RANGE: [i64; 1] = [1];
 
-bench_ops!("decimal", "add", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops!("decimal", "add_no_conversion", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops_batch!("decimal", "add", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops!("decimal", "mul", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops_batch!("decimal", "mul", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops!("decimal", "mul_no_conversion", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops!("decimal", "pow", 2, 20, [1, 10, 20, 50, 100]);
-bench_ops_batch!("decimal", "pow", 2, 20, [1, 10, 20, 50, 100]);
-bench_ops!("decimal", "fib", 1, 0, [1, 5, 10, 20]);
+bench_ops!("primitive", "add", 1, 2, BENCH_RANGE);
+bench_ops_batch!("primitive", "add", 1, 2, BENCH_RANGE);
+bench_ops!("primitive", "mul", 1, 2, BENCH_RANGE);
+bench_ops_batch!("primitive", "mul", 1, 2, BENCH_RANGE);
+bench_ops!("primitive", "pow", 2, 20, BENCH_RANGE);
+bench_ops_batch!("primitive", "pow", 2, 20, BENCH_RANGE);
+bench_ops!("primitive", "fib", 1, 0, [1, 5, 20]);
 
-bench_ops!("precise_decimal", "add", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops!(
-    "precise_decimal",
-    "add_no_conversion",
-    1,
-    2,
-    [1, 10, 20, 50, 100]
+bench_ops!("decimal", "add", 1, 2, BENCH_RANGE);
+bench_ops!("decimal", "add_no_conversion", 1, 2, BENCH_RANGE);
+bench_ops_batch!("decimal", "add", 1, 2, BENCH_RANGE);
+bench_ops!("decimal", "mul", 1, 2, BENCH_RANGE);
+bench_ops_batch!("decimal", "mul", 1, 2, BENCH_RANGE);
+bench_ops!("decimal", "mul_no_conversion", 1, 2, BENCH_RANGE);
+bench_ops!("decimal", "pow", 2, 20, BENCH_RANGE);
+bench_ops_batch!("decimal", "pow", 2, 20, BENCH_RANGE);
+bench_ops!("decimal", "fib", 1, 0, [1, 5, 20]);
+
+bench_ops!("precise_decimal", "add", 1, 2, BENCH_RANGE);
+bench_ops!("precise_decimal", "add_no_conversion", 1, 2, BENCH_RANGE);
+bench_ops_batch!("precise_decimal", "add", 1, 2, BENCH_RANGE);
+bench_ops!("precise_decimal", "mul", 1, 2, BENCH_RANGE);
+bench_ops!("precise_decimal", "mul_no_conversion", 1, 2, BENCH_RANGE);
+bench_ops_batch!("precise_decimal", "mul", 1, 2, BENCH_RANGE);
+bench_ops!("precise_decimal", "pow", 2, 20, BENCH_RANGE);
+bench_ops_batch!("precise_decimal", "pow", 2, 20, BENCH_RANGE);
+bench_ops!("precise_decimal", "fib", 1, 0, [1, 5, 20]);
+
+#[cfg(feature = "full_wasm_benchmarks")]
+mod benches {
+    use super::*;
+
+    criterion_group! {
+        name = primitive_benches;
+        config = Criterion::default()
+                    .sample_size(10)
+                    .measurement_time(core::time::Duration::from_secs(2))
+                    .warm_up_time(core::time::Duration::from_millis(500));
+        targets = primitive_add_benchmark,
+            primitive_add_batch_benchmark,
+            primitive_mul_benchmark,
+            primitive_mul_batch_benchmark,
+            primitive_pow_benchmark,
+            primitive_pow_batch_benchmark,
+            primitive_fib_benchmark
+    }
+    criterion_group! {
+        name = decimal_benches;
+        config = Criterion::default()
+                    .sample_size(10)
+                    .measurement_time(core::time::Duration::from_secs(2))
+                    .warm_up_time(core::time::Duration::from_millis(500));
+        targets = decimal_add_benchmark,
+            decimal_add_no_conversion_benchmark,
+            decimal_add_batch_benchmark,
+            decimal_mul_benchmark,
+            decimal_mul_no_conversion_benchmark,
+            decimal_mul_batch_benchmark,
+            decimal_pow_benchmark,
+            decimal_pow_batch_benchmark,
+            decimal_fib_benchmark
+    }
+    criterion_group! {
+        name = precise_decimal_benches;
+        config = Criterion::default()
+                    .sample_size(10)
+                    .measurement_time(core::time::Duration::from_secs(2))
+                    .warm_up_time(core::time::Duration::from_millis(500));
+        targets = precise_decimal_add_benchmark,
+            precise_decimal_add_no_conversion_benchmark,
+            precise_decimal_add_batch_benchmark,
+            precise_decimal_mul_benchmark,
+            precise_decimal_mul_no_conversion_benchmark,
+            precise_decimal_mul_batch_benchmark,
+            precise_decimal_pow_benchmark,
+            precise_decimal_pow_batch_benchmark,
+            precise_decimal_fib_benchmark
+    }
+}
+#[cfg(not(feature = "full_wasm_benchmarks"))]
+mod benches {
+    use super::*;
+
+    criterion_group! {
+        name = primitive_benches;
+        config = Criterion::default()
+                    .sample_size(10)
+                    .measurement_time(core::time::Duration::from_secs(2))
+                    .warm_up_time(core::time::Duration::from_millis(500));
+        targets = primitive_mul_benchmark
+    }
+    criterion_group! {
+        name = decimal_benches;
+        config = Criterion::default()
+                    .sample_size(10)
+                    .measurement_time(core::time::Duration::from_secs(2))
+                    .warm_up_time(core::time::Duration::from_millis(500));
+        targets = decimal_mul_benchmark,
+            decimal_mul_no_conversion_benchmark
+    }
+    criterion_group! {
+        name = precise_decimal_benches;
+        config = Criterion::default()
+                    .sample_size(10)
+                    .measurement_time(core::time::Duration::from_secs(2))
+                    .warm_up_time(core::time::Duration::from_millis(500));
+        targets = precise_decimal_mul_benchmark,
+            precise_decimal_mul_no_conversion_benchmark
+    }
+}
+criterion_main!(
+    benches::primitive_benches,
+    benches::decimal_benches,
+    benches::precise_decimal_benches
 );
-bench_ops_batch!("precise_decimal", "add", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops!("precise_decimal", "mul", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops!(
-    "precise_decimal",
-    "mul_no_conversion",
-    1,
-    2,
-    [1, 10, 20, 50, 100]
-);
-bench_ops_batch!("precise_decimal", "mul", 1, 2, [1, 10, 20, 50, 100]);
-bench_ops!("precise_decimal", "pow", 2, 20, [1, 10, 20, 50, 100]);
-bench_ops_batch!("precise_decimal", "pow", 2, 20, [1, 10, 20, 50, 100]);
-bench_ops!("precise_decimal", "fib", 1, 0, [1, 5, 10, 20]);
-
-criterion_group! {
-    name = primitive_benches;
-    config = Criterion::default()
-                .sample_size(10)
-                .warm_up_time(core::time::Duration::from_secs(1));
-    targets = primitive_add_benchmark,
-        primitive_add_batch_benchmark,
-        primitive_mul_benchmark,
-        primitive_mul_batch_benchmark,
-        primitive_pow_benchmark,
-        primitive_pow_batch_benchmark,
-        primitive_fib_benchmark
-}
-criterion_group! {
-    name = decimal_benches;
-    config = Criterion::default()
-                .sample_size(10)
-                .warm_up_time(core::time::Duration::from_secs(1));
-    targets = decimal_add_benchmark,
-        decimal_add_no_conversion_benchmark,
-        decimal_add_batch_benchmark,
-        decimal_mul_benchmark,
-        decimal_mul_no_conversion_benchmark,
-        decimal_mul_batch_benchmark,
-        decimal_pow_benchmark,
-        decimal_pow_batch_benchmark,
-        decimal_fib_benchmark
-}
-criterion_group! {
-    name = precise_decimal_benches;
-    config = Criterion::default()
-                .sample_size(10)
-                .warm_up_time(core::time::Duration::from_secs(1));
-    targets = precise_decimal_add_benchmark,
-        precise_decimal_add_no_conversion_benchmark,
-        precise_decimal_add_batch_benchmark,
-        precise_decimal_mul_benchmark,
-        precise_decimal_mul_no_conversion_benchmark,
-        precise_decimal_mul_batch_benchmark,
-        precise_decimal_pow_benchmark,
-        precise_decimal_pow_batch_benchmark,
-        precise_decimal_fib_benchmark
-}
-criterion_main!(primitive_benches, decimal_benches, precise_decimal_benches);
