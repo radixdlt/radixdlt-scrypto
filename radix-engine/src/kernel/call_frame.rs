@@ -431,6 +431,7 @@ pub enum ProcessSubstateError {
     TakeNodeError(TakeNodeError),
     CantDropNodeInStore(NodeId),
     RefNotFound(NodeId),
+    NonGlobalRefNotAllowed(NodeId),
 }
 
 impl<C, L: Clone> CallFrame<C, L> {
@@ -557,37 +558,9 @@ impl<C, L: Clone> CallFrame<C, L> {
         // FIXME: Should process all owns before all references to ensure owns don't clash with references
         for (_partition_number, module) in &node_substates {
             for (substate_key, substate_value) in module {
-                let io_write = self
-                    .process_substate(destination_device, substate_value, None)
+                self
+                    .process_substate(substate_io, destination_device, substate_value, None)
                     .map_err(|e| CallbackError::Error(CreateNodeError::ProcessSubstateError(e)))?;
-
-                match destination_device {
-                    SubstateDevice::Heap => {
-                        for (reference, ref_device) in io_write.add_non_global_refs {
-                            substate_io.non_global_node_refs.increment_ref_count(reference, ref_device);
-                        }
-                        for reference in &io_write.remove_non_global_refs {
-                            // handle removed references
-                            substate_io.non_global_node_refs.decrement_ref_count(reference);
-                        }
-                    }
-                    SubstateDevice::Store => {
-                        if !io_write.add_non_global_refs.is_empty()
-                            || !io_write.remove_non_global_refs.is_empty()
-                        {
-                            return Err(CallbackError::Error(
-                                CreateNodeError::NonGlobalRefNotAllowed(
-                                    io_write
-                                        .add_non_global_refs
-                                        .into_iter()
-                                        .map(|(node_id, _)| node_id)
-                                        .next()
-                                        .unwrap(),
-                                ),
-                            ));
-                        }
-                    }
-                }
 
                 self.process_input_substate_key(substate_key).map_err(|e| {
                     CallbackError::Error(CreateNodeError::ProcessSubstateKeyError(e))
@@ -879,6 +852,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         let io_write = self
             .process_substate(
+                substate_io,
                 opened_substate.device,
                 &substate,
                 Some((
@@ -914,32 +888,15 @@ impl<C, L: Clone> CallFrame<C, L> {
                             .add_assign(1);
 
                         opened_substate.non_global_references.insert(*new_non_global_reference);
-                        substate_io.non_global_node_refs.increment_ref_count(*new_non_global_reference, *device);
                     }
 
                     for reference in &io_write.remove_non_global_refs {
                         // handle removed references
                         opened_substate.non_global_references.remove(reference);
-                        substate_io.non_global_node_refs.decrement_ref_count(reference);
                     }
                 }
                 SubstateDevice::Store => {
-                    if !io_write.add_non_global_refs.is_empty()
-                        || !io_write.remove_non_global_refs.is_empty()
-                    {
-                        return Err(CallbackError::Error(
-                            WriteSubstateError::NonGlobalRefNotAllowed(
-                                io_write
-                                    .add_non_global_refs
-                                    .into_iter()
-                                    .map(|(node_id, _)| node_id)
-                                    .next()
-                                    .unwrap(),
-                            ),
-                        ));
-                    }
                 }
-
             }
         }
 
@@ -1258,8 +1215,9 @@ impl<C, L: Clone> CallFrame<C, L> {
         NodeVisibility(visibilities)
     }
 
-    fn process_substate(
+    fn process_substate<S: SubstateStore>(
         &mut self,
+        substate_io: &mut SubstateIO<S>,
         device: SubstateDevice,
         updated_substate: &IndexedScryptoValue,
         prev: Option<(&IndexSet<NodeId>, &IndexSet<NodeId>)>,
@@ -1304,6 +1262,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             new_owned_nodes
         };
 
+
         //====================
         // Process references
         //====================
@@ -1347,6 +1306,26 @@ impl<C, L: Clone> CallFrame<C, L> {
 
             (new_non_global_references, removed_non_global_refs)
         };
+
+        match device {
+            SubstateDevice::Heap => {
+                for (reference, device) in &new_non_global_references {
+                    substate_io.non_global_node_refs.increment_ref_count(*reference, *device);
+                }
+                for reference in &removed_non_global_refs {
+                    substate_io.non_global_node_refs.decrement_ref_count(reference);
+                }
+            }
+            SubstateDevice::Store => {
+                if !new_non_global_references.is_empty() {
+                    return Err(ProcessSubstateError::NonGlobalRefNotAllowed(new_non_global_references.into_keys().next().unwrap()));
+                }
+
+                if !removed_non_global_refs.is_empty() {
+                    panic!("Should never have contains a non global reference");
+                }
+            }
+        }
 
         Ok(SubstateIOWrite {
             move_nodes_from_heap: new_owned_nodes,
