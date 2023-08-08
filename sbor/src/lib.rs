@@ -42,6 +42,8 @@ pub mod traversal;
 pub mod value;
 /// SBOR value kinds - ie the types of value that are supported.
 pub mod value_kind;
+/// Data model versioning helper macro
+pub mod versioned;
 
 pub use basic::*;
 pub(crate) use categorize::{categorize_generic, categorize_simple};
@@ -59,6 +61,7 @@ pub use payload_validation::*;
 pub use schema::*;
 pub use value::*;
 pub use value_kind::*;
+pub use versioned::*;
 
 // Re-export derives
 extern crate sbor_derive;
