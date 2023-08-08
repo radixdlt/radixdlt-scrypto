@@ -10,8 +10,8 @@ pub fn precise_decimal_add(x: i64, y: i64, _cnt: i64) -> i64 {
 
 #[no_mangle]
 pub fn precise_decimal_add_no_conversion(_x: i64, _y: i64, _cnt: i64) -> i64 {
-    let x = -PreciseDecimal::ONE;
-    let y = PreciseDecimal::MAX;
+    let x = PreciseDecimal::ONE;
+    let y = PreciseDecimal::ONE;
     let z = x + y;
     z.is_positive().into()
 }
@@ -37,8 +37,8 @@ pub fn precise_decimal_mul(x: i64, y: i64, _cnt: i64) -> i64 {
 
 #[no_mangle]
 pub fn precise_decimal_mul_no_conversion(_x: i64, _y: i64, _cnt: i64) -> i64 {
-    let x = -PreciseDecimal::ONE;
-    let y = PreciseDecimal::MAX;
+    let x = PreciseDecimal::ONE;
+    let y = PreciseDecimal::ONE;
     let z = x * y;
     z.is_positive().into()
 }

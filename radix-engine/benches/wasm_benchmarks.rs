@@ -230,30 +230,39 @@ const BENCH_RANGE: [i64; 3] = [1, 10, 10];
 #[cfg(not(feature = "full_wasm_benchmarks"))]
 const BENCH_RANGE: [i64; 1] = [1];
 
-bench_ops!("primitive", "add", 1, 2, BENCH_RANGE);
-bench_ops_batch!("primitive", "add", 1, 2, BENCH_RANGE);
-bench_ops!("primitive", "mul", 1, 2, BENCH_RANGE);
-bench_ops_batch!("primitive", "mul", 1, 2, BENCH_RANGE);
+bench_ops!("primitive", "add", 1, 1, BENCH_RANGE);
+bench_ops_batch!("primitive", "add", 1, 1, BENCH_RANGE);
+bench_ops!("primitive", "mul", 1, 1, BENCH_RANGE);
+bench_ops_batch!("primitive", "mul", 1, 1, BENCH_RANGE);
 bench_ops!("primitive", "pow", 2, 20, BENCH_RANGE);
 bench_ops_batch!("primitive", "pow", 2, 20, BENCH_RANGE);
 bench_ops!("primitive", "fib", 1, 0, [1, 5, 20]);
 
-bench_ops!("decimal", "add", 1, 2, BENCH_RANGE);
-bench_ops!("decimal", "add_no_conversion", 1, 2, BENCH_RANGE);
-bench_ops_batch!("decimal", "add", 1, 2, BENCH_RANGE);
-bench_ops!("decimal", "mul", 1, 2, BENCH_RANGE);
-bench_ops_batch!("decimal", "mul", 1, 2, BENCH_RANGE);
-bench_ops!("decimal", "mul_no_conversion", 1, 2, BENCH_RANGE);
+// "no_conversion" function in benchmarked lib has the Decimal/PreciseDecimal
+// operand hardcoded.
+// Remaining functions convert the incoming arguments to Decimal/PreciseDecimal
+// from i64, which impacts the benchmark time.
+// The expected correlation is:
+//  add = add_no_conversion + 2 x conversion time
+//  conversion time = (add - add_no_conversion) / 2
+//  mul = mul_no_conversion + 2 x conversion time
+//  conversion time = (mul - add_no_conversion) / 2
+bench_ops!("decimal", "add", 1, 1, BENCH_RANGE);
+bench_ops!("decimal", "add_no_conversion", 1, 1, BENCH_RANGE);
+bench_ops_batch!("decimal", "add", 1, 1, BENCH_RANGE);
+bench_ops!("decimal", "mul", 1, 1, BENCH_RANGE);
+bench_ops_batch!("decimal", "mul", 1, 1, BENCH_RANGE);
+bench_ops!("decimal", "mul_no_conversion", 1, 1, BENCH_RANGE);
 bench_ops!("decimal", "pow", 2, 20, BENCH_RANGE);
 bench_ops_batch!("decimal", "pow", 2, 20, BENCH_RANGE);
 bench_ops!("decimal", "fib", 1, 0, [1, 5, 20]);
 
-bench_ops!("precise_decimal", "add", 1, 2, BENCH_RANGE);
-bench_ops!("precise_decimal", "add_no_conversion", 1, 2, BENCH_RANGE);
-bench_ops_batch!("precise_decimal", "add", 1, 2, BENCH_RANGE);
-bench_ops!("precise_decimal", "mul", 1, 2, BENCH_RANGE);
-bench_ops!("precise_decimal", "mul_no_conversion", 1, 2, BENCH_RANGE);
-bench_ops_batch!("precise_decimal", "mul", 1, 2, BENCH_RANGE);
+bench_ops!("precise_decimal", "add", 1, 1, BENCH_RANGE);
+bench_ops!("precise_decimal", "add_no_conversion", 1, 1, BENCH_RANGE);
+bench_ops_batch!("precise_decimal", "add", 1, 1, BENCH_RANGE);
+bench_ops!("precise_decimal", "mul", 1, 1, BENCH_RANGE);
+bench_ops!("precise_decimal", "mul_no_conversion", 1, 1, BENCH_RANGE);
+bench_ops_batch!("precise_decimal", "mul", 1, 1, BENCH_RANGE);
 bench_ops!("precise_decimal", "pow", 2, 20, BENCH_RANGE);
 bench_ops_batch!("precise_decimal", "pow", 2, 20, BENCH_RANGE);
 bench_ops!("precise_decimal", "fib", 1, 0, [1, 5, 20]);
