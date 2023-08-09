@@ -398,18 +398,20 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
         let fee_summary = FeeSummary {
             execution_cost_unit_limit: self.cost_unit_limit,
             execution_cost_unit_price: transmute_u128_as_decimal(self.cost_unit_price),
-            finalization_cost_unit_limit: 0, // FIXME implement finalization cost
-            finalization_cost_unit_price: Decimal::ZERO,
+            finalization_cost_unit_limit: 0,  
+            finalization_cost_unit_price: Decimal::ZERO, 
             usd_price_in_xrd: transmute_u128_as_decimal(self.usd_price),
             storage_price_in_xrd: transmute_u128_as_decimal(self.storage_price),
             tip_percentage: self.tip_percentage,
             total_execution_cost_in_xrd: self.cost_unit_price() * self.execution_cost_committed,
+            total_execution_cost_units_consumed: self.execution_cost_committed,
+            total_finalization_cost_in_xrd: Decimal::ZERO,  
+            total_finalization_cost_units_consumed: 0,
             total_tipping_cost_in_xrd: self.tip_price() * self.execution_cost_committed,
             total_royalty_cost_in_xrd: transmute_u128_as_decimal(self.royalty_cost_committed),
             total_storage_cost_in_xrd: transmute_u128_as_decimal(self.storage_cost_committed),
             total_bad_debt_in_xrd: transmute_u128_as_decimal(self.xrd_owed),
             locked_fees: self.locked_fees,
-            total_execution_cost_units_consumed: self.execution_cost_committed,
             royalty_cost_breakdown: self
                 .royalty_cost_committed_breakdown
                 .clone()

@@ -138,13 +138,12 @@ pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject
     api: &mut Y,
     royalty_amount: RoyaltyAmount,
     recipient: RoyaltyRecipient,
-    recipient_vault_id: NodeId,
 ) -> Result<(), RuntimeError> {
     api.kernel_get_system()
         .modules
         .costing
         .fee_reserve
-        .consume_royalty(royalty_amount, recipient, recipient_vault_id)
+        .consume_royalty(royalty_amount, recipient)
         .map_err(|e| {
             RuntimeError::SystemModuleError(SystemModuleError::CostingError(
                 CostingError::FeeReserveError(e),

@@ -19,8 +19,14 @@ pub struct FeeSummary {
     pub storage_price_in_xrd: Decimal,
     /// The tip percentage
     pub tip_percentage: u16,
-    /// The total cost for execution, excluding tips
+    /// The total cost for execution
     pub total_execution_cost_in_xrd: Decimal,
+    /// The total execution cost units consumed
+    pub total_execution_cost_units_consumed: u32,
+    /// The total cost for finalization
+    pub total_finalization_cost_in_xrd: Decimal,
+    /// The total finalization cost units consumed
+    pub total_finalization_cost_units_consumed: u32,
     /// The total cost for tipping
     pub total_tipping_cost_in_xrd: Decimal,
     /// The total cost for state expansion
@@ -31,8 +37,6 @@ pub struct FeeSummary {
     pub total_bad_debt_in_xrd: Decimal,
     /// The vaults locked for XRD payment
     pub locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
-    /// The total number of cost units consumed (excluding royalties).
-    pub total_execution_cost_units_consumed: u32,
     /// The royalty cost breakdown
     pub royalty_cost_breakdown: IndexMap<RoyaltyRecipient, Decimal>,
 }
@@ -47,7 +51,9 @@ impl FeeSummary {
     }
 
     fn fees(&self) -> Decimal {
-        self.total_execution_cost_in_xrd + self.total_storage_cost_in_xrd
+        self.total_execution_cost_in_xrd
+            + self.total_finalization_cost_in_xrd
+            + self.total_storage_cost_in_xrd
     }
 
     pub fn to_proposer_amount(&self) -> Decimal {
@@ -67,13 +73,10 @@ impl FeeSummary {
 
     pub fn total_cost(&self) -> Decimal {
         self.total_execution_cost_in_xrd
+            + self.total_finalization_cost_in_xrd
             + self.total_tipping_cost_in_xrd
             + self.total_storage_cost_in_xrd
             + self.total_royalty_cost_in_xrd
-    }
-
-    pub fn used_free_credit(&self) -> Decimal {
-        self.total_cost() - self.total_payments()
     }
 
     //===================
