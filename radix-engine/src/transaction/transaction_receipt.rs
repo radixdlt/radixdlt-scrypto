@@ -131,11 +131,11 @@ pub struct TransactionFeeBreakdown {
     /// Execution cost breakdown
     ///
     /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
-    execution_breakdown_in_cost_units: BTreeMap<String, u32>,
+    pub execution_cost_units_breakdown: BTreeMap<String, u32>,
     /// Finalization cost breakdown
     ///
     /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
-    finalization_breakdown_in_cost_units: BTreeMap<String, u32>,
+    pub finalization_cost_units_breakdown: BTreeMap<String, u32>,
 }
 
 #[derive(Clone, ScryptoSbor)]

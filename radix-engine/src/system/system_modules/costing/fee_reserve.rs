@@ -73,6 +73,15 @@ pub enum RoyaltyRecipient {
     Component(ComponentAddress, NodeId),
 }
 
+impl RoyaltyRecipient {
+    pub fn vault_id(&self) -> NodeId {
+        match self {
+            RoyaltyRecipient::Package(_, v) => v,
+            RoyaltyRecipient::Component(_, v) => v,
+        }
+    }
+}
+
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct SystemLoanFeeReserve {
     /// The price of cost unit
@@ -104,11 +113,11 @@ pub struct SystemLoanFeeReserve {
     execution_cost_deferred: u32,
 
     /// Royalty costs
-    royalty_cost_committed: u128,
-    royalty_cost_committed_breakdown: BTreeMap<RoyaltyRecipient, u128>,
+    royalty_cost: u128,
+    royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, u128>,
 
     /// State expansion costs
-    storage_cost_committed: u128,
+    storage_cost: u128,
 
     /// Payments made during the execution of a transaction.
     locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
@@ -167,10 +176,10 @@ impl SystemLoanFeeReserve {
             execution_cost_committed: 0,
             execution_cost_deferred: 0,
 
-            royalty_cost_committed_breakdown: BTreeMap::new(),
-            royalty_cost_committed: 0,
+            royalty_cost_breakdown: BTreeMap::new(),
+            royalty_cost: 0,
 
-            storage_cost_committed: 0,
+            storage_cost: 0,
 
             locked_fees: Vec::new(),
         }
@@ -203,6 +212,14 @@ impl SystemLoanFeeReserve {
 
     pub fn fee_balance(&self) -> Decimal {
         transmute_u128_as_decimal(self.xrd_balance)
+    }
+
+    pub fn royalty_cost_breakdown(&self) -> BTreeMap<RoyaltyRecipient, Decimal> {
+        self.royalty_cost_breakdown
+            .clone()
+            .into_iter()
+            .map(|(k, v)| (k, transmute_u128_as_decimal(v)))
+            .collect()
     }
 
     fn check_cost_unit_limit(&self, cost_units: u32) -> Result<(), FeeReserveError> {
@@ -254,11 +271,11 @@ impl SystemLoanFeeReserve {
             });
         } else {
             self.xrd_balance -= amount;
-            self.royalty_cost_committed_breakdown
+            self.royalty_cost_breakdown
                 .entry(recipient)
                 .or_default()
                 .add_assign(amount);
-            self.royalty_cost_committed += amount;
+            self.royalty_cost += amount;
             Ok(())
         }
     }
@@ -288,9 +305,9 @@ impl SystemLoanFeeReserve {
     }
 
     pub fn revert_royalty(&mut self) {
-        self.xrd_balance += self.royalty_cost_committed_breakdown.values().sum::<u128>();
-        self.royalty_cost_committed_breakdown.clear();
-        self.royalty_cost_committed = 0;
+        self.xrd_balance += self.royalty_cost_breakdown.values().sum::<u128>();
+        self.royalty_cost_breakdown.clear();
+        self.royalty_cost = 0;
     }
 
     #[inline]
@@ -354,7 +371,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
             });
         } else {
             self.xrd_balance -= amount;
-            self.storage_cost_committed += amount;
+            self.storage_cost += amount;
             Ok(())
         }
     }
@@ -395,29 +412,26 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
     fn finalize(self) -> FeeSummary {
+        let royalty_cost_breakdown = self.royalty_cost_breakdown();
+
         let fee_summary = FeeSummary {
             execution_cost_unit_limit: self.cost_unit_limit,
             execution_cost_unit_price: transmute_u128_as_decimal(self.cost_unit_price),
-            finalization_cost_unit_limit: 0,  
-            finalization_cost_unit_price: Decimal::ZERO, 
+            finalization_cost_unit_limit: 0,
+            finalization_cost_unit_price: Decimal::ZERO,
             usd_price_in_xrd: transmute_u128_as_decimal(self.usd_price),
             storage_price_in_xrd: transmute_u128_as_decimal(self.storage_price),
             tip_percentage: self.tip_percentage,
             total_execution_cost_in_xrd: self.cost_unit_price() * self.execution_cost_committed,
             total_execution_cost_units_consumed: self.execution_cost_committed,
-            total_finalization_cost_in_xrd: Decimal::ZERO,  
+            total_finalization_cost_in_xrd: Decimal::ZERO,
             total_finalization_cost_units_consumed: 0,
             total_tipping_cost_in_xrd: self.tip_price() * self.execution_cost_committed,
-            total_royalty_cost_in_xrd: transmute_u128_as_decimal(self.royalty_cost_committed),
-            total_storage_cost_in_xrd: transmute_u128_as_decimal(self.storage_cost_committed),
+            total_royalty_cost_in_xrd: transmute_u128_as_decimal(self.royalty_cost),
+            total_storage_cost_in_xrd: transmute_u128_as_decimal(self.storage_cost),
             total_bad_debt_in_xrd: transmute_u128_as_decimal(self.xrd_owed),
             locked_fees: self.locked_fees,
-            royalty_cost_breakdown: self
-                .royalty_cost_committed_breakdown
-                .clone()
-                .into_iter()
-                .map(|(k, v)| (k, transmute_u128_as_decimal(v)))
-                .collect(),
+            royalty_cost_breakdown,
         };
 
         // Sanity check

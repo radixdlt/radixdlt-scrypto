@@ -283,7 +283,7 @@ where
                             is_success,
                             free_credit,
                         );
-                        fee_summary.execution_cost_breakdown = costing_module
+                        let execution_breakdown_in_cost_units = costing_module
                             .costing_traces
                             .into_iter()
                             .map(|(k, v)| (k.to_string(), v))
@@ -656,8 +656,8 @@ where
         free_credit: Decimal,
     ) -> (FeeSummary, IndexMap<NodeId, Decimal>) {
         // Distribute royalty
-        for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
-            let node_id = recipient_vault_id;
+        for (recipient, amount) in fee_reserve.royalty_cost_breakdown() {
+            let node_id = recipient.vault_id();
             let substate_key = FungibleVaultField::LiquidFungible.into();
             let handle = track
                 .open_substate(
@@ -679,10 +679,7 @@ where
         // Take fee payments
         let fee_summary = fee_reserve.finalize();
         let mut fee_payments: IndexMap<NodeId, Decimal> = index_map_new();
-        let mut required = fee_summary.total_execution_cost_in_xrd
-            + fee_summary.total_tipping_cost_in_xrd
-            + fee_summary.total_storage_cost_in_xrd
-            + fee_summary.total_royalty_cost_in_xrd;
+        let mut required = fee_summary.total_cost();
         let mut collected_fees = LiquidFungibleResource::new(Decimal::ZERO);
         for (vault_id, mut locked, contingent) in fee_summary.locked_fees.iter().cloned().rev() {
             let amount = if contingent {
@@ -920,50 +917,71 @@ where
 
     #[cfg(not(feature = "alloc"))]
     fn print_execution_summary(receipt: &TransactionReceipt) {
-        match &receipt.transaction_result {
+        // NB - we use "to_string" to ensure they align correctly
+
+        println!("{:-^100}", "Execution Cost Breakdown");
+        for (k, v) in &receipt.fee_breakdown.execution_cost_units_breakdown {
+            println!("{:<75}: {:>15}", k, v.to_string());
+        }
+
+        println!("{:-^100}", "Finalization Cost Breakdown");
+        for (k, v) in &receipt.fee_breakdown.finalization_cost_units_breakdown {
+            println!("{:<75}: {:>15}", k, v.to_string());
+        }
+
+        println!("{:-^100}", "Cost Totals");
+        println!(
+            "{:<30}: {:>15}",
+            "Execution Cost Unit Price",
+            receipt.parameters.execution_cost_unit_price.to_string()
+        );
+        println!(
+            "{:<30}: {:>15}",
+            "Execution Cost Unit Limit", receipt.parameters.execution_cost_unit_limit
+        );
+        println!(
+            "{:<30}: {:>15}",
+            "Execution Cost Unit Consumed",
+            receipt
+                .fee_summary
+                .total_execution_cost_in_cost_units
+                .to_string()
+        );
+        println!(
+            "{:<30}: {:>15}",
+            "Finalization Cost Unit Price",
+            receipt.parameters.finalization_cost_unit_price.to_string()
+        );
+        println!(
+            "{:<30}: {:>15}",
+            "Finalization Cost Unit Limit", receipt.parameters.finalization_cost_unit_limit
+        );
+        println!(
+            "{:<30}: {:>15}",
+            "Finalization Cost Unit Consumed",
+            receipt
+                .fee_summary
+                .total_finalization_cost_in_cost_units
+                .to_string()
+        );
+        println!(
+            "{:<30}: {:>15}",
+            "Tipping Cost in XRD",
+            receipt.fee_summary.total_tipping_cost_in_xrd.to_string()
+        );
+        println!(
+            "{:<30}: {:>15}",
+            "Storage Cost in XRD",
+            receipt.fee_summary.total_storage_cost_in_xrd.to_string()
+        );
+        println!(
+            "{:<30}: {:>15}",
+            "Royalty Costs in XRD",
+            receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
+        );
+
+        match &receipt.result {
             TransactionResult::Commit(commit) => {
-                // NB - we use "to_string" to ensure they align correctly
-
-                println!("{:-^100}", "Cost Breakdown");
-                for (k, v) in &commit.fee_summary.execution_cost_breakdown {
-                    println!("{:<75}: {:>15}", k, v.to_string());
-                }
-
-                println!("{:-^100}", "Cost Totals");
-                println!(
-                    "{:<30}: {:>15}",
-                    "Cost Unit Limit",
-                    commit.fee_summary.cost_unit_limit.to_string()
-                );
-                println!(
-                    "{:<30}: {:>15}",
-                    "Cost Units Consumed",
-                    commit.fee_summary.execution_cost_sum.to_string()
-                );
-                println!(
-                    "{:<30}: {:>15}",
-                    "Execution Costs in XRD",
-                    commit.fee_summary.total_execution_cost_xrd.to_string()
-                );
-                println!(
-                    "{:<30}: {:>15}",
-                    "Tipping Costs in XRD",
-                    commit.fee_summary.total_tipping_cost_xrd.to_string()
-                );
-                println!(
-                    "{:<30}: {:>15}",
-                    "State Expansion Costs in XRD",
-                    commit
-                        .fee_summary
-                        .total_state_expansion_cost_xrd
-                        .to_string()
-                );
-                println!(
-                    "{:<30}: {:>15}",
-                    "Royalty Costs in XRD",
-                    commit.fee_summary.total_royalty_cost_xrd.to_string()
-                );
-
                 println!("{:-^100}", "Application Logs");
                 for (level, message) in &commit.application_logs {
                     println!("[{}] {}", level, message);
