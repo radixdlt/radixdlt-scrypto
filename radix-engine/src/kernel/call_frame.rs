@@ -94,9 +94,8 @@ pub struct OpenedSubstate<L> {
 }
 
 impl<L> OpenedSubstate<L> {
-
     fn diff(
-        open_substate: &Option<&mut OpenedSubstate<L>>,
+        &self,
         updated_value: &IndexedScryptoValue,
     ) -> Result<SubstateDiff, SubstateDiffError> {
         // Process owned nodes
@@ -108,23 +107,15 @@ impl<L> OpenedSubstate<L> {
                     return Err(SubstateDiffError::ContainsDuplicateOwns);
                 }
 
-                let node_is_new = if let Some(open_substate) = open_substate {
-                    !open_substate.owned_nodes.contains(own)
-                } else {
-                    true
-                };
-
-                if node_is_new {
+                if !self.owned_nodes.contains(own) {
                     added_owned_nodes.insert(*own);
                 }
             }
 
             let mut removed_owned_nodes: IndexSet<NodeId> = index_set_new();
-            if let Some(open_substate) = open_substate {
-                for own in &open_substate.owned_nodes {
-                    if !new_owned_nodes.contains(own) {
-                        removed_owned_nodes.insert(*own);
-                    }
+            for own in &self.owned_nodes {
+                if !new_owned_nodes.contains(own) {
+                    removed_owned_nodes.insert(*own);
                 }
             }
 
@@ -140,11 +131,7 @@ impl<L> OpenedSubstate<L> {
 
             let mut added_references: IndexSet<NodeId> = index_set_new();
             for reference in &updated_references {
-                let reference_is_new = if let Some(open_substate) = &open_substate {
-                    !open_substate.references.contains(reference)
-                } else {
-                    true
-                };
+                let reference_is_new = !self.references.contains(reference);
 
                 if reference_is_new {
                     added_references.insert(reference.clone());
@@ -152,11 +139,9 @@ impl<L> OpenedSubstate<L> {
             }
 
             let mut removed_references: IndexSet<NodeId> = index_set_new();
-            if let Some(open_substate) = &open_substate {
-                for old_ref in &open_substate.references {
-                    if !updated_references.contains(old_ref) {
-                        removed_references.insert(*old_ref);
-                    }
+            for old_ref in &self.references {
+                if !updated_references.contains(old_ref) {
+                    removed_references.insert(*old_ref);
                 }
             }
 
@@ -178,6 +163,35 @@ struct SubstateDiff {
     removed_owns: IndexSet<NodeId>,
     added_refs: IndexSet<NodeId>,
     removed_refs: IndexSet<NodeId>,
+}
+
+impl SubstateDiff {
+    pub fn create(node_substates: &NodeSubstates) -> Result<Self, SubstateDiffError> {
+        let mut added_owns = index_set_new();
+        let mut added_refs = index_set_new();
+
+        // FIXME: Should process all owns before all references to ensure owns don't clash with references
+        for (_partition_number, module) in node_substates {
+            for (_substate_key, substate_value) in module {
+                for own in substate_value.owned_nodes() {
+                    if !added_owns.insert(own.clone()) {
+                        return Err(SubstateDiffError::ContainsDuplicateOwns);
+                    }
+                }
+
+                for reference in substate_value.references() {
+                    added_refs.insert(reference.clone());
+                }
+            }
+        }
+
+        Ok(Self {
+            added_owns,
+            added_refs,
+            removed_owns: index_set_new(),
+            removed_refs: index_set_new(),
+        })
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -394,6 +408,7 @@ pub enum CreateNodeError {
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
+    SubstateDiffError(SubstateDiffError),
 }
 
 /// Represents an error when dropping a node.
@@ -464,6 +479,7 @@ pub enum WriteSubstateError {
     PersistNodeError(PersistNodeError),
     NonGlobalRefNotAllowed(NodeId),
     ContainsDuplicatedOwns,
+    SubstateDiffError(SubstateDiffError),
 }
 
 /// Represents an error when dropping a substate lock.
@@ -521,7 +537,6 @@ pub enum ProcessSubstateError {
     RefNotFound(NodeId),
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
-    SubstateDiffError(SubstateDiffError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -644,24 +659,26 @@ impl<C, L: Clone> CallFrame<C, L> {
         // into store. This isn't a problem for now since only native objects are allowed
         // to be transient.
 
+        for (_partition_number, module) in &node_substates {
+            for (substate_key, _) in module {
+                self.process_input_substate_key(substate_key).map_err(|e| {
+                    CallbackError::Error(CreateNodeError::ProcessSubstateKeyError(e))
+                })?;
+            }
+        }
+
+        let diff = SubstateDiff::create(&node_substates)
+            .map_err(|e| CallbackError::Error(CreateNodeError::SubstateDiffError(e)))?;
+
         let destination_device = if node_id.is_global() {
             SubstateDevice::Store
         } else {
             SubstateDevice::Heap
         };
 
-        // FIXME: Should process all owns before all references to ensure owns don't clash with references
-        for (_partition_number, module) in &node_substates {
-            for (substate_key, substate_value) in module {
-                self
-                    .process_substate(substate_io, handler, destination_device, substate_value, None)
-                    .map_err(|e| e.map(CreateNodeError::ProcessSubstateError))?;
-
-                self.process_input_substate_key(substate_key).map_err(|e| {
-                    CallbackError::Error(CreateNodeError::ProcessSubstateKeyError(e))
-                })?;
-            }
-        }
+        self
+            .process_substate(substate_io, handler, destination_device, &diff, None)
+            .map_err(|e| e.map(CreateNodeError::ProcessSubstateError))?;
 
         match destination_device {
             SubstateDevice::Store => {
@@ -943,12 +960,15 @@ impl<C, L: Clone> CallFrame<C, L> {
             return Err(CallbackError::Error(WriteSubstateError::NoWritePermission));
         }
 
+        let diff = opened_substate.diff(&substate)
+            .map_err(|e| CallbackError::Error(WriteSubstateError::SubstateDiffError(e)))?;
+
         self
             .process_substate(
                 substate_io,
                 handler,
                 opened_substate.device,
-                &substate,
+                &diff,
                 Some(&mut opened_substate),
             )
             .map_err(|e| e.map(WriteSubstateError::ProcessSubstateError))?;
@@ -1268,12 +1288,9 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_io: &mut SubstateIO<S>,
         handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
         device: SubstateDevice,
-        updated_value: &IndexedScryptoValue,
+        diff: &SubstateDiff,
         mut open_substate: Option<&mut OpenedSubstate<L>>,
     ) -> Result<(), CallbackError<ProcessSubstateError, E>> {
-
-        let diff = OpenedSubstate::diff(&open_substate, updated_value)
-            .map_err(|e| CallbackError::Error(ProcessSubstateError::SubstateDiffError(e)))?;
 
         // Verify and Update call frame state based on diff
         {

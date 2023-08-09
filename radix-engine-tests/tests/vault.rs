@@ -174,8 +174,8 @@ fn invalid_double_ownership_of_vault() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
-                    ProcessSubstateError::SubstateDiffError(SubstateDiffError::ContainsDuplicateOwns)
+                CallFrameError::CreateNodeError(CreateNodeError::SubstateDiffError(
+                    SubstateDiffError::ContainsDuplicateOwns
                 ))
             ))
         )
