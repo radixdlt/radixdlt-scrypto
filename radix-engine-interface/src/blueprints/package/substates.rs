@@ -30,23 +30,25 @@ pub const PACKAGE_BLUEPRINTS_COLLECTION_INDEX: CollectionIndex = 0u8;
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_COLLECTION_INDEX: CollectionIndex = 1u8;
 
+pub const PACKAGE_SCHEMAS_PARTITION: PartitionNumber = PartitionNumber(7u8);
+pub const PACKAGE_SCHEMAS_COLLECTION_INDEX: CollectionIndex = 2u8;
+
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
-pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 2u8;
+pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 3u8;
 
 pub const PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
-pub const PACKAGE_AUTH_TEMPLATE_COLLECTION_INDEX: CollectionIndex = 3u8;
+pub const PACKAGE_AUTH_TEMPLATE_COLLECTION_INDEX: CollectionIndex = 4u8;
 
 pub const PACKAGE_VM_TYPE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
-pub const PACKAGE_VM_TYPE_COLLECTION_INDEX: CollectionIndex = 4u8;
+pub const PACKAGE_VM_TYPE_COLLECTION_INDEX: CollectionIndex = 5u8;
 
 pub const PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
-pub const PACKAGE_ORIGINAL_CODE_COLLECTION_INDEX: CollectionIndex = 5u8;
+pub const PACKAGE_ORIGINAL_CODE_COLLECTION_INDEX: CollectionIndex = 6u8;
 
 pub const PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(7u8);
-pub const PACKAGE_INSTRUMENTED_CODE_COLLECTION_INDEX: CollectionIndex = 6u8;
+pub const PACKAGE_INSTRUMENTED_CODE_COLLECTION_INDEX: CollectionIndex = 7u8;
 
-pub const PACKAGE_SCHEMAS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(8u8);
-pub const PACKAGE_SCHEMAS_COLLECTION_INDEX: CollectionIndex = 7u8;
+
 
 #[derive(Copy, Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmType {
@@ -325,6 +327,14 @@ impl BlueprintInterface {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum SystemInstruction {
+    MapCollectionToPhysicalPartition {
+        collection_index: u8,
+        partition_num: PartitionNumber,
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor, PartialOrd, Ord, Hash)]
 pub enum PartitionDescription {
     Logical(PartitionOffset),
@@ -335,11 +345,27 @@ pub enum PartitionDescription {
 pub struct IndexedStateSchema {
     pub fields: Option<(PartitionDescription, Vec<FieldSchema<TypePointer>>)>,
     pub collections: Vec<(PartitionDescription, BlueprintCollectionSchema<TypePointer>)>,
-    pub num_partitions: u8,
+    pub num_logical_partitions: u8,
 }
 
 impl IndexedStateSchema {
-    pub fn from_schema(schema_hash: Hash, schema: BlueprintStateSchemaInit) -> Self {
+    pub fn from_schema(
+        schema_hash: Hash,
+        schema: BlueprintStateSchemaInit,
+        system_instructions: Vec<SystemInstruction>,
+    ) -> Self {
+        let mut system_mappings = HashMap::new();
+        for system_instruction in system_instructions {
+            match system_instruction {
+                SystemInstruction::MapCollectionToPhysicalPartition {
+                    collection_index,
+                    partition_num,
+                } => {
+                    system_mappings.insert(collection_index as usize, partition_num);
+                }
+            }
+        }
+
         let mut partition_offset = 0u8;
 
         let mut fields = None;
@@ -366,26 +392,31 @@ impl IndexedStateSchema {
         };
 
         let mut collections = Vec::new();
-        for collection_schema in schema.collections {
+        for (collection_index, collection_schema) in schema.collections.into_iter().enumerate() {
             let schema = collection_schema.map(|type_ref| match type_ref {
                 TypeRef::Static(type_index) => {
                     TypePointer::Package(TypeIdentifier(schema_hash, type_index))
                 }
                 TypeRef::Generic(instance_index) => TypePointer::Instance(instance_index),
             });
-            collections.push((PartitionDescription::Logical(PartitionOffset(partition_offset)), schema));
-            partition_offset += 1;
+
+            if let Some(partition_num) = system_mappings.get(&collection_index) {
+                collections.push((PartitionDescription::Physical(*partition_num), schema));
+            } else {
+                collections.push((PartitionDescription::Logical(PartitionOffset(partition_offset)), schema));
+                partition_offset += 1;
+            }
         }
 
         Self {
             fields,
             collections,
-            num_partitions: partition_offset,
+            num_logical_partitions: partition_offset,
         }
     }
 
-    pub fn num_partitions(&self) -> u8 {
-        self.num_partitions
+    pub fn num_logical_partitions(&self) -> u8 {
+        self.num_logical_partitions
     }
 
     pub fn num_fields(&self) -> usize {

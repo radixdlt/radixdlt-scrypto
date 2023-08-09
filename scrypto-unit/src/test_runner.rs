@@ -23,12 +23,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, PackageDefinition, PackagePublishNativeManifestInput,
-    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
-    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-    PACKAGE_SCHEMAS_PARTITION_OFFSET,
-};
+use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageDefinition, PackagePublishNativeManifestInput, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
@@ -612,9 +607,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .substate_db()
             .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
                 package_address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                    .unwrap(),
+                PACKAGE_SCHEMAS_PARTITION,
             ))
         {
             let hash: Hash =
@@ -1938,9 +1931,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     .substate_db()
                     .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
                         blueprint_id.package_address.as_node_id(),
-                        MAIN_BASE_PARTITION
-                            .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                            .unwrap(),
+                        PACKAGE_SCHEMAS_PARTITION,
                         &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
                     )
                     .unwrap()

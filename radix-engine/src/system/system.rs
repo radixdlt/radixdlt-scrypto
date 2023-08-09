@@ -525,6 +525,11 @@ where
             }
         }
 
+        // FIXME: Remove
+        if !partitions.contains_key(&PartitionDescription::Physical(PACKAGE_SCHEMAS_PARTITION)) {
+            partitions.insert(PartitionDescription::Physical(PACKAGE_SCHEMAS_PARTITION), BTreeMap::new());
+        }
+
         Ok((type_substitutions, additional_schemas, partitions))
     }
 
@@ -545,9 +550,7 @@ where
 
         let handle = self.api.kernel_open_substate_with_default(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                .unwrap(),
+            PACKAGE_SCHEMAS_PARTITION,
             &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
             LockFlags::read_only(),
             Some(|| {
@@ -795,7 +798,9 @@ where
 
         for (partition_description, substates) in partitions.into_iter() {
             let partition_num = match partition_description {
-                PartitionDescription::Physical(partition_num) => partition_num,
+                PartitionDescription::Physical(partition_num) => {
+                    partition_num
+                },
                 PartitionDescription::Logical(offset) => {
                     MAIN_BASE_PARTITION
                         .at_offset(offset)
@@ -1204,7 +1209,7 @@ where
         let num_main_partitions = {
             let interface = self
                 .get_blueprint_default_interface(object_info.blueprint_info.blueprint_id.clone())?;
-            interface.state.num_partitions()
+            interface.state.num_logical_partitions()
         };
 
         // Create a global node
@@ -1220,6 +1225,13 @@ where
             INSTANCE_SCHEMAS_PARTITION,
             global_address.as_node_id(),
             INSTANCE_SCHEMAS_PARTITION,
+        )?;
+
+        self.kernel_move_partition(
+            &node_id,
+            PACKAGE_SCHEMAS_PARTITION,
+            global_address.as_node_id(),
+            PACKAGE_SCHEMAS_PARTITION,
         )?;
 
         // Move self modules to the newly created global node, and drop
@@ -1266,10 +1278,10 @@ where
 
                     // Move and drop
                     let interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
-                    let num_partitions = interface.state.num_partitions();
+                    let num_logical_partitions = interface.state.num_logical_partitions();
 
                     let module_base_partition = module_id.base_partition_num();
-                    for offset in 0u8..num_partitions {
+                    for offset in 0u8..num_logical_partitions {
                         let src = MAIN_BASE_PARTITION
                             .at_offset(PartitionOffset(offset))
                             .unwrap();

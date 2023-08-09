@@ -2,9 +2,7 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::{AccountNativePackage, AccountOwnerBadgeData};
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::{IdentityNativePackage, IdentityOwnerBadgeData};
-use crate::blueprints::package::{
-    create_bootstrap_package_partitions, PackageNativePackage, PackageOwnerBadgeData,
-};
+use crate::blueprints::package::{create_bootstrap_package_partitions, PackageNativePackage, PackageOwnerBadgeData, SystemInstruction};
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
@@ -418,6 +416,13 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Package Package".to_owned(), locked;
                 "description" => "A native package that is called to create a new package on the network.".to_owned(), locked;
             },
+            // Maps the application layer schema collection index to the system layer schema partition
+            btreemap! {
+                PACKAGE_BLUEPRINT.to_string() => vec![SystemInstruction::MapCollectionToPhysicalPartition {
+                    collection_index: PACKAGE_SCHEMAS_COLLECTION_INDEX,
+                    partition_num: PACKAGE_SCHEMAS_PARTITION,
+                }],
+            },
         ),
         (
             TRANSACTION_PROCESSOR_PACKAGE,
@@ -427,6 +432,7 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Transaction Processor Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the processing of manifest instructions and transaction runtime.".to_owned(), locked;
             },
+            btreemap!(),
         ),
         (
             METADATA_MODULE_PACKAGE,
@@ -436,6 +442,7 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Metadata Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the metadata module that is used by resources, components, and packages.".to_owned(), locked;
             },
+            btreemap!(),
         ),
         (
             ROLE_ASSIGNMENT_MODULE_PACKAGE,
@@ -445,6 +452,7 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Access Rules Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the access rules module that is used by resources, components, and packages.".to_owned(), locked;
             },
+            btreemap!(),
         ),
         (
             RESOURCE_PACKAGE,
@@ -454,6 +462,7 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Resource Package".to_owned(), locked;
                 "description" => "A native package that is called to create a new resource manager on the network.".to_owned(), locked;
             },
+            btreemap!(),
         ),
         (
             ROYALTY_MODULE_PACKAGE,
@@ -463,17 +472,19 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Royalty Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the royalty module used by components.".to_owned(), locked;
             },
+            btreemap!(),
         ),
     ];
 
     let mut to_flash = BTreeMap::new();
 
-    for (address, definition, native_code_id, metadata_init) in package_flashes {
+    for (address, definition, native_code_id, metadata_init, system_instructions) in package_flashes {
         let partitions = {
             let package_structure = PackageNativePackage::validate_and_build_package_structure(
                 definition,
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
+                system_instructions,
             )
             .expect("Invalid Package Package definition");
 

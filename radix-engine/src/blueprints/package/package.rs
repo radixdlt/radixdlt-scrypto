@@ -50,6 +50,7 @@ pub enum PackageError {
 
     InvalidBlueprintSchema(SchemaValidationError),
     TooManySubstateSchemas,
+    SystemInstructionsNotSupported,
 
     FailedToResolveLocalSchema {
         local_type_index: LocalTypeIndex,
@@ -550,9 +551,7 @@ pub fn create_bootstrap_package_partitions(
             .collect();
 
         partitions.insert(
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                .unwrap(),
+            PACKAGE_SCHEMAS_PARTITION,
             schemas_partition,
         );
     }
@@ -828,12 +827,6 @@ where
     Ok(PackageAddress::new_or_panic(address.into_node_id().0))
 }
 
-pub enum SystemInstruction {
-    MapCollectionToPhysicalPartition {
-        collection_index: u8,
-        partition_num: PartitionNumber,
-    }
-}
 
 pub struct PackageStructure {
     pub definitions: BTreeMap<String, BlueprintDefinition>,
@@ -844,7 +837,6 @@ pub struct PackageStructure {
     pub instrumented_code: BTreeMap<Hash, PackageInstrumentedCodeSubstate>,
     pub auth_configs: BTreeMap<String, AuthConfig>,
     pub package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
-    pub system_instructions: Vec<SystemInstruction>,
 }
 
 pub struct PackageNativePackage;
@@ -878,6 +870,15 @@ impl PackageNativePackage {
                 ),
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintDependencies>(),
+                ),
+                can_own: false,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueSchema {
+                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
+                value: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
                 ),
                 can_own: false,
             },
@@ -925,15 +926,6 @@ impl PackageNativePackage {
                 key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageInstrumentedCodeSubstate>(),
-                ),
-                can_own: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
                 ),
                 can_own: false,
             },
@@ -1112,6 +1104,7 @@ impl PackageNativePackage {
         definition: PackageDefinition,
         vm_type: VmType,
         original_code: Vec<u8>,
+        system_instructions: BTreeMap<String, Vec<SystemInstruction>>,
     ) -> Result<PackageStructure, RuntimeError> {
         // Validate schema
         validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
@@ -1207,6 +1200,8 @@ impl PackageNativePackage {
                     events.insert(key, index);
                 }
 
+                let system_instructions = system_instructions.get(&blueprint).cloned().unwrap_or_default();
+
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {
                         blueprint_type: definition_init.blueprint_type,
@@ -1218,6 +1213,7 @@ impl PackageNativePackage {
                         state: IndexedStateSchema::from_schema(
                             schema_hash,
                             definition_init.schema.state,
+                            system_instructions,
                         ),
                     },
                     function_exports,
@@ -1259,7 +1255,6 @@ impl PackageNativePackage {
             instrumented_code: instrumented_code_substates,
             auth_configs,
             package_royalties,
-            system_instructions: vec![],
         };
 
         Ok(package_structure)
@@ -1280,6 +1275,7 @@ impl PackageNativePackage {
             definition,
             VmType::Native,
             native_package_code_id.to_be_bytes().to_vec(),
+            Default::default(),
         )?;
         let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
@@ -1304,7 +1300,7 @@ impl PackageNativePackage {
     {
         validate_royalties(&definition, api)?;
         let package_structure =
-            Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code)?;
+            Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code, Default::default())?;
 
         let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: PACKAGE_PACKAGE,
@@ -1345,7 +1341,7 @@ impl PackageNativePackage {
     {
         validate_royalties(&definition, api)?;
         let package_structure =
-            Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code)?;
+            Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code, Default::default())?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
         let role_assignment = SecurifiedPackage::create_advanced(owner_role, api)?;
 

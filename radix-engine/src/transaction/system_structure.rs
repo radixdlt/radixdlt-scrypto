@@ -268,7 +268,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         partition_offset: PartitionOffset,
         key: &SubstateKey,
     ) -> SubstateSystemStructure {
-        if partition_offset.0 >= state_schema.num_partitions {
+        if partition_offset.0 >= state_schema.num_logical_partitions {
             panic!("Partition offset larger than partition count");
         }
 
