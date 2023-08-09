@@ -58,8 +58,11 @@ fn wasmi_write_memory(mut store: impl AsContextMut, memory: wasmi::Memory, ptr: 
         .expect("Memory access error");
 }
 
+// Build wasmi native function, which:
+// - reads input data from memory at offset a_ptr and b_ptr
+// - and writes output data to memory at offset c_ptr
 macro_rules! wasmi_native {
-    ($type:ident, $ops:literal, $op:tt) => {
+    ($type:ident, $ops:tt) => {
         paste::item! {
             fn [< wasmi_ $type:snake _ $ops _native >] (
                 mut caller: wasmi::Caller<'_, HostState>,
@@ -72,13 +75,22 @@ macro_rules! wasmi_native {
                 };
 
                 let a_vec = wasmi_read_memory(caller.as_context(), memory, a_ptr, <$type>::BITS / 8);
-                let b_vec = wasmi_read_memory(caller.as_context(), memory, b_ptr, <$type>::BITS / 8);
                 let a = <$type>::try_from(&a_vec[..]).unwrap();
-                let b = <$type>::try_from(&b_vec[..]).unwrap();
 
-                let c = match stringify!($op) {
-                    "+" => a + b,
-                    "*" => a * b,
+                let c = match stringify!($ops) {
+                    "add" => {
+                        let b_vec = wasmi_read_memory(caller.as_context(), memory, b_ptr, <$type>::BITS / 8);
+                        let b = <$type>::try_from(&b_vec[..]).unwrap();
+                        a + b
+                    },
+                    "mul" => {
+                        let b_vec = wasmi_read_memory(caller.as_context(), memory, b_ptr, <$type>::BITS / 8);
+                        let b = <$type>::try_from(&b_vec[..]).unwrap();
+                        a * b
+                    },
+                    "pow" => {
+                        a.powi(b_ptr.into())
+                    },
                     _ => panic!("Unsupported operator!"),
                 };
 
@@ -91,10 +103,12 @@ macro_rules! wasmi_native {
     };
 }
 
-wasmi_native!(Decimal, "add", +);
-wasmi_native!(Decimal, "mul", *);
-wasmi_native!(PreciseDecimal, "add", +);
-wasmi_native!(PreciseDecimal, "mul", *);
+wasmi_native!(Decimal, add);
+wasmi_native!(Decimal, mul);
+wasmi_native!(Decimal, pow);
+wasmi_native!(PreciseDecimal, add);
+wasmi_native!(PreciseDecimal, mul);
+wasmi_native!(PreciseDecimal, pow);
 
 // Instantiate WASMI instance with given WASM code
 fn wasmi_get_instance(
@@ -105,33 +119,22 @@ fn wasmi_get_instance(
     let module = wasmi::Module::new(&engine, code).unwrap();
     let mut linker = <wasmi::Linker<HostState>>::new();
 
-    let decimal_add_native = wasmi::Func::wrap(&mut store, wasmi_decimal_add_native);
-    linker
-        .define("env", "decimal_add_native", decimal_add_native)
-        .unwrap();
-    let decimal_mul_native = wasmi::Func::wrap(&mut store, wasmi_decimal_mul_native);
-    linker
-        .define("env", "decimal_mul_native", decimal_mul_native)
-        .unwrap();
-
-    let precise_decimal_add_native =
-        wasmi::Func::wrap(&mut store, wasmi_precise_decimal_add_native);
-    linker
-        .define(
-            "env",
-            "precise_decimal_add_native",
-            precise_decimal_add_native,
-        )
-        .unwrap();
-    let precise_decimal_mul_native =
-        wasmi::Func::wrap(&mut store, wasmi_precise_decimal_mul_native);
-    linker
-        .define(
-            "env",
-            "precise_decimal_mul_native",
-            precise_decimal_mul_native,
-        )
-        .unwrap();
+    macro_rules! linker_define {
+        ($name:tt) => {
+            paste::item! {
+                let $name = wasmi::Func::wrap(&mut store, [< wasmi_ $name >]);
+                linker
+                    .define("env", stringify!($name), $name)
+                    .unwrap();
+            }
+        };
+    }
+    linker_define!(decimal_add_native);
+    linker_define!(decimal_mul_native);
+    linker_define!(decimal_pow_native);
+    linker_define!(precise_decimal_add_native);
+    linker_define!(precise_decimal_mul_native);
+    linker_define!(precise_decimal_pow_native);
 
     linker
         .instantiate(store.as_context_mut(), &module)
@@ -181,8 +184,11 @@ fn wasmer_write_memory(memory: &wasmer::Memory, ptr: u32, data: &[u8]) {
     memory_slice[ptr..ptr + data.len()].copy_from_slice(data);
 }
 
+// Build wasmer native function, which:
+// - reads input data from memory at offset a_ptr and b_ptr
+// - and writes output data to memory at offset c_ptr
 macro_rules! wasmer_native {
-    ($type:ident, $ops:literal, $op:tt) => {
+    ($type:ident, $ops:tt) => {
         paste::item! {
             fn [< wasmer_ $type:snake _ $ops _native >] (
                     env: &WasmerInstanceEnv,
@@ -197,13 +203,22 @@ macro_rules! wasmer_native {
                     .expect("Memory access error");
 
                 let a_vec = wasmer_read_memory(&memory, a_ptr, <$type>::BITS / 8);
-                let b_vec = wasmer_read_memory(&memory, b_ptr, <$type>::BITS / 8);
                 let a = <$type>::try_from(&a_vec[..]).unwrap();
-                let b = <$type>::try_from(&b_vec[..]).unwrap();
 
-                let c = match stringify!($op) {
-                    "+" => a + b,
-                    "*" => a * b,
+                let c = match stringify!($ops) {
+                    "add" => {
+                        let b_vec = wasmer_read_memory(&memory, b_ptr, <$type>::BITS / 8);
+                        let b = <$type>::try_from(&b_vec[..]).unwrap();
+                        a + b
+                    },
+                    "mul" => {
+                        let b_vec = wasmer_read_memory(&memory, b_ptr, <$type>::BITS / 8);
+                        let b = <$type>::try_from(&b_vec[..]).unwrap();
+                        a * b
+                    },
+                    "pow" => {
+                        a.powi(b_ptr.into())
+                    }
                     _ => panic!("Unsupported operator!"),
                 };
                 let c_vec = c.to_vec();
@@ -215,10 +230,12 @@ macro_rules! wasmer_native {
     };
 }
 
-wasmer_native!(Decimal, "add", +);
-wasmer_native!(Decimal, "mul", *);
-wasmer_native!(PreciseDecimal, "add", +);
-wasmer_native!(PreciseDecimal, "mul", *);
+wasmer_native!(Decimal, add);
+wasmer_native!(Decimal, mul);
+wasmer_native!(Decimal, pow);
+wasmer_native!(PreciseDecimal, add);
+wasmer_native!(PreciseDecimal, mul);
+wasmer_native!(PreciseDecimal, pow);
 
 fn wasmer_get_instance(code: &[u8]) -> wasmer::Instance {
     let compiler = wasmer_compiler_singlepass::Singlepass::new();
@@ -232,8 +249,10 @@ fn wasmer_get_instance(code: &[u8]) -> wasmer::Instance {
         "env" => {
             "decimal_add_native" => wasmer::Function::new_native_with_env(module.store(), env.clone(), wasmer_decimal_add_native),
             "decimal_mul_native" => wasmer::Function::new_native_with_env(module.store(), env.clone(), wasmer_decimal_mul_native),
+            "decimal_pow_native" => wasmer::Function::new_native_with_env(module.store(), env.clone(), wasmer_decimal_pow_native),
             "precise_decimal_add_native" => wasmer::Function::new_native_with_env(module.store(), env.clone(), wasmer_precise_decimal_add_native),
             "precise_decimal_mul_native" => wasmer::Function::new_native_with_env(module.store(), env.clone(), wasmer_precise_decimal_mul_native),
+            "precise_decimal_pow_native" => wasmer::Function::new_native_with_env(module.store(), env.clone(), wasmer_precise_decimal_pow_native),
         }
     };
 
@@ -250,9 +269,10 @@ macro_rules! bench_ops {
     ($t:literal, $ops:literal) => {
         paste::item! {
             pub fn [< $t _ $ops _benchmark >] (c: &mut Criterion) {
+                let bench_name = concat!($t, "::", $ops);
                 let func_name = concat!($t, "_", $ops);
                 let func_call_native_name = &format!("{}_call_native", func_name);
-                let mut group = c.benchmark_group(func_name);
+                let mut group = c.benchmark_group(bench_name);
                 let wasm_code = get_wasm_file();
 
                 // wasmi stuff
@@ -314,25 +334,14 @@ macro_rules! bench_ops {
     };
 }
 
-//bench_ops!("primitive", "add");
-//bench_ops!("primitive", "mul");
-
 bench_ops!("decimal", "add");
 bench_ops!("decimal", "mul");
+bench_ops!("decimal", "pow");
 
 bench_ops!("precise_decimal", "add");
 bench_ops!("precise_decimal", "mul");
-/*
-criterion_group! {
-    name = primitive_benches;
-    config = Criterion::default()
-                .sample_size(10)
-                .measurement_time(core::time::Duration::from_secs(2))
-                .warm_up_time(core::time::Duration::from_millis(500));
-    targets = primitive_add_benchmark,
-        primitive_mul_benchmark
-}
-*/
+bench_ops!("precise_decimal", "pow");
+
 criterion_group! {
     name = decimal_benches;
     config = Criterion::default()
@@ -340,7 +349,8 @@ criterion_group! {
                 .measurement_time(core::time::Duration::from_secs(2))
                 .warm_up_time(core::time::Duration::from_millis(500));
     targets = decimal_add_benchmark,
-        decimal_mul_benchmark
+        decimal_mul_benchmark,
+        decimal_pow_benchmark,
 }
 
 criterion_group! {
@@ -350,6 +360,7 @@ criterion_group! {
                 .measurement_time(core::time::Duration::from_secs(2))
                 .warm_up_time(core::time::Duration::from_millis(500));
     targets = precise_decimal_add_benchmark,
-        precise_decimal_mul_benchmark
+        precise_decimal_mul_benchmark,
+        precise_decimal_pow_benchmark,
 }
 criterion_main!(decimal_benches, precise_decimal_benches);
