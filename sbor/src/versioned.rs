@@ -13,7 +13,36 @@ pub trait HasLatestVersion {
 /// This macro is intended for creating a data model which supports versioning.
 /// This is useful for creating an SBOR data model which can be updated in future.
 /// In future, enum variants can be added, and automatically mapped to.
-/// 
+///
+/// This macro is just a simpler wrapper around the [`define_versioned`] macro,
+/// for use when there's just a single version.
+#[macro_export]
+macro_rules! define_single_versioned {
+    (
+        $(#[$attributes:meta])*
+        $vis:vis enum $name:ident
+        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
+        =>
+        $latest_version_type:ty
+    ) => {
+        $crate::define_versioned!(
+            $(#[$attributes])*
+            $vis enum $name
+            $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+            {
+                previous_versions: [],
+                latest_version: {
+                    1 => $latest_version_type
+                },
+            }
+        );
+    };
+}
+
+/// This macro is intended for creating a data model which supports versioning.
+/// This is useful for creating an SBOR data model which can be updated in future.
+/// In future, enum variants can be added, and automatically mapped to.
+///
 /// NOTE: A circular version update chain will be an infinite loop at runtime. Be careful.
 ///
 /// In the future, this may become a programmatic macro to support better error handling /
@@ -22,35 +51,68 @@ pub trait HasLatestVersion {
 macro_rules! define_versioned {
     (
         $(#[$attributes:meta])*
-        $vis:vis enum $name:ident {
+        $vis:vis enum $name:ident
+        // Now match the optional type parameters
+        // See https://stackoverflow.com/questions/41603424/rust-macro-accepting-type-with-generic-parameters
+        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
+        {
             previous_versions: [
-                $($version_num:expr => $version_ident:ident -> { updates_to: $update_to_version_num:expr }),*
+                $($version_num:expr => $version_type:ty: { updates_to: $update_to_version_num:expr }),*
                 $(,)? // Optional trailing comma
             ],
             latest_version: {
-                $latest_version:expr => $latest_version_ident:ident,
-            }$(,)?
+                $latest_version:expr => $latest_version_type:ty
+                $(,)? // Optional trailing comma
+            }
+            $(,)? // Optional trailing comma
         }
     ) => {
         paste::paste! {
+            // Create inline sub-macros to handle the type generics nested inside
+            // iteration over previous_versions
+            // See eg https://stackoverflow.com/a/73543948
+            macro_rules! [<$name _trait_impl>] {
+                (
+                    $trait:ty,
+                    $impl_block:tt
+                ) => {
+                    #[allow(dead_code)]
+                    impl
+                    $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+                    $trait
+                    for $name $(< $( $lt ),+ >)?
+                    $impl_block
+                };
+            }
+
             $(#[$attributes])*
             // We include the repr(u8) so that the SBOR discriminants are assigned
             // to match the version numbers if SBOR is used on the versioned enum
             #[repr(u8)]
-            $vis enum $name {
+            $vis enum $name $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+            {
                 $(
-                    [<V $version_num>]($version_ident) = $version_num,
+                    [<V $version_num>]($version_type) = $version_num,
                 )*
-                [<V $latest_version>]($latest_version_ident) = $latest_version,
+                [<V $latest_version>]($latest_version_type) = $latest_version,
             }
 
-            impl $name {
+            #[allow(dead_code)]
+            impl
+            $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+            $name
+            $(< $( $lt ),+ >)?
+            {
+                pub fn new_latest(value: $latest_version_type) -> Self {
+                    Self::[<V $latest_version>](value)
+                }
+
                 pub fn update_once(self) -> UpdateResult<Self> {
                     match self {
                     $(
-                        Self::[<V $version_num>](value) => crate::UpdateResult::Updated(Self::[<V $update_to_version_num>](value.into())),
+                        Self::[<V $version_num>](value) => $crate::UpdateResult::Updated(Self::[<V $update_to_version_num>](value.into())),
                     )*
-                        Self::[<V $latest_version>](value) => crate::UpdateResult::AtLatest(Self::[<V $latest_version>](value)),
+                        Self::[<V $latest_version>](value) => $crate::UpdateResult::AtLatest(Self::[<V $latest_version>](value)),
                     }
                 }
 
@@ -68,30 +130,38 @@ macro_rules! define_versioned {
                 }
             }
 
-            impl crate::HasLatestVersion for $name {
-                type Latest = $latest_version_ident;
+            [<$name _trait_impl>]!(
+                $crate::HasLatestVersion,
+                {
+                    type Latest = $latest_version_type;
 
-                fn into_latest(self) -> Self::Latest {
-                    let Self::[<V $latest_version>](latest) = self.update_to_latest() else {
-                        panic!("Invalid resolved latest version not equal to latest type")
-                    };
-                    return latest;
+                    #[allow(irrefutable_let_patterns)]
+                    fn into_latest(self) -> Self::Latest {
+                        let Self::[<V $latest_version>](latest) = self.update_to_latest() else {
+                            panic!("Invalid resolved latest version not equal to latest type")
+                        };
+                        return latest;
+                    }
                 }
-            }
+            );
 
-            $(
-                impl From<$version_ident> for $name {
-                    fn from(value: $version_ident) -> Self {
+            $([<$name _trait_impl>]!(
+                From<$version_type>,
+                {
+                    fn from(value: $version_type) -> Self {
                         Self::[<V $version_num>](value)
                     }
                 }
-            )*
+            );)*
 
-            impl From<$latest_version_ident> for $name {
-                fn from(value: $latest_version_ident) -> Self {
-                    Self::[<V $latest_version>](value)
+            [<$name _trait_impl>]!(
+                From<$latest_version_type>,
+                {
+                    fn from(value: $latest_version_type) -> Self {
+                        Self::[<V $latest_version>](value)
+                    }
                 }
-            }
+            );
         }
     };
 }
@@ -105,9 +175,9 @@ mod tests {
         #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
         enum VersionedExample {
             previous_versions: [
-                1 => ExampleV1 -> { updates_to: 2 },
-                2 => ExampleV2 -> { updates_to: 4 },
-                3 => ExampleV3 -> { updates_to: 4 },
+                1 => ExampleV1: { updates_to: 2 },
+                2 => ExampleV2: { updates_to: 4 },
+                3 => ExampleV3: { updates_to: 4 },
             ],
             latest_version: {
                 4 => ExampleV4,
@@ -129,9 +199,7 @@ mod tests {
 
     impl ExampleV4 {
         pub fn of(value: u16) -> Self {
-            Self {
-                the_value: value,
-            }
+            Self { the_value: value }
         }
     }
 
@@ -139,17 +207,13 @@ mod tests {
     // for the versioned type
     impl From<ExampleV2> for ExampleV4 {
         fn from(value: ExampleV2) -> Self {
-            Self {
-                the_value: value,
-            }
+            Self { the_value: value }
         }
     }
 
     impl From<ExampleV3> for ExampleV4 {
         fn from(value: ExampleV3) -> Self {
-            Self {
-                the_value: value.0,
-            }
+            Self { the_value: value.0 }
         }
     }
 
@@ -166,7 +230,10 @@ mod tests {
         validate_latest(v4, expected_latest.clone());
     }
 
-    fn validate_latest(actual: impl Into<VersionedExample>, expected: <VersionedExample as HasLatestVersion>::Latest) {
+    fn validate_latest(
+        actual: impl Into<VersionedExample>,
+        expected: <VersionedExample as HasLatestVersion>::Latest,
+    ) {
         let versioned_actual = actual.into();
         let versioned_expected = VersionedExample::from(expected.clone());
         // Check update_to_latest (which returns a VersionedExample)
@@ -175,9 +242,25 @@ mod tests {
             versioned_expected,
         );
         // Check into_latest (which returns an ExampleV4)
+        assert_eq!(versioned_actual.into_latest(), expected,);
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct GenericModelV1<T>(T);
+
+    define_single_versioned!(
+        /// This is some rust doc as an example annotation
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        enum GenericModel<T> => GenericModelV1<T>
+    );
+
+    #[test]
+    pub fn generated_single_versioned_works() {
+        let v1_model = GenericModelV1(51u64);
+        let versioned = GenericModel::from(v1_model.clone());
         assert_eq!(
-            versioned_actual.into_latest(),
-            expected,
+            versioned.into_latest(),
+            v1_model
         );
     }
 }
