@@ -477,6 +477,7 @@ impl SecurifiedRoleAssignment for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
+
 pub fn create_bootstrap_package_partitions(
     package_structure: PackageStructure,
     metadata: MetadataInit,
@@ -827,6 +828,13 @@ where
     Ok(PackageAddress::new_or_panic(address.into_node_id().0))
 }
 
+pub enum SystemInstruction {
+    MapCollectionToPhysicalPartition {
+        collection_index: u8,
+        partition_num: PartitionNumber,
+    }
+}
+
 pub struct PackageStructure {
     pub definitions: BTreeMap<String, BlueprintDefinition>,
     pub dependencies: BTreeMap<String, BlueprintDependencies>,
@@ -836,6 +844,7 @@ pub struct PackageStructure {
     pub instrumented_code: BTreeMap<Hash, PackageInstrumentedCodeSubstate>,
     pub auth_configs: BTreeMap<String, AuthConfig>,
     pub package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
+    pub system_instructions: Vec<SystemInstruction>,
 }
 
 pub struct PackageNativePackage;
@@ -1250,6 +1259,7 @@ impl PackageNativePackage {
             instrumented_code: instrumented_code_substates,
             auth_configs,
             package_royalties,
+            system_instructions: vec![],
         };
 
         Ok(package_structure)
