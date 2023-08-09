@@ -50,22 +50,24 @@ impl Runtime {
         ComponentAddress::new_or_panic(address.into())
     }
 
-    /// Returns the running entity.
-    pub fn blueprint_id() -> BlueprintId {
-        ScryptoEnv.actor_get_blueprint_id().unwrap()
-    }
-
     pub fn node_id() -> NodeId {
         ScryptoEnv.actor_get_node_id().unwrap()
     }
 
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
-        Self::blueprint_id().package_address
+        ScryptoEnv.actor_get_blueprint_id().unwrap().package_address
     }
 
     pub fn package_token() -> NonFungibleGlobalId {
         NonFungibleGlobalId::package_of_direct_caller_badge(Runtime::package_address())
+    }
+
+    /// Get the global address an address reservation is associated with
+    pub fn get_reservation_address(reservation: &GlobalAddressReservation) -> GlobalAddress {
+        ScryptoEnv
+            .get_reservation_address(reservation.0.as_node_id())
+            .unwrap()
     }
 
     /// Returns the transaction hash.

@@ -180,6 +180,21 @@ where
         self.allocate_buffer(object_address_encoded)
     }
 
+    fn get_reservation_address(
+        &mut self,
+        node_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+
+        let address = self.api.get_reservation_address(&node_id)?;
+        let address_encoded = scrypto_encode(&address).expect("Failed to encode address");
+
+        self.allocate_buffer(address_encoded)
+    }
+
     fn globalize_object(
         &mut self,
         modules: Vec<u8>,

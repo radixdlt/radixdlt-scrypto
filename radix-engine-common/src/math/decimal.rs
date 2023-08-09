@@ -588,7 +588,7 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Decimal,
     Type::Decimal,
     Decimal::BITS / 8,
-    DECIMAL_ID,
+    DECIMAL_TYPE,
     decimal_type_data
 );
 

@@ -71,6 +71,8 @@ extern "C" {
 
     pub fn get_outer_object(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
+    pub fn get_reservation_address(node_id_ptr: *const u8, node_id_len: usize) -> Buffer;
+
     pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
     pub fn kv_store_get_info(
@@ -251,6 +253,11 @@ pub unsafe fn get_blueprint_id(_component_id_ptr: *const u8, _component_id_len: 
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_outer_object(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_reservation_address(_node_id_ptr: *const u8, _node_id_len: usize) -> Buffer {
     unreachable!()
 }
 

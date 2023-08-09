@@ -257,12 +257,9 @@ create_well_known_lookup!(
 );
 
 pub(crate) fn resolve_scrypto_well_known_type(
-    well_known_index: u8,
+    well_known_index: WellKnownTypeIndex,
 ) -> Option<&'static TypeData<ScryptoCustomTypeKind, LocalTypeIndex>> {
-    // We know that WELL_KNOWN_LOOKUP has 255 elements, so can use `get_unchecked` for fast look-ups
-    unsafe {
-        WELL_KNOWN_LOOKUP
-            .get_unchecked(well_known_index as usize)
-            .as_ref()
-    }
+    WELL_KNOWN_LOOKUP
+        .get(well_known_index.as_index())
+        .and_then(|x| x.as_ref())
 }

@@ -162,7 +162,7 @@ mod preallocation_component {
     impl PreallocationComponent {
         pub fn create_with_preallocated_address() -> Global<PreallocationComponent> {
             let (own, _component_address) =
-                Runtime::allocate_component_address(Runtime::blueprint_id());
+                Runtime::allocate_component_address(PreallocationComponent::blueprint_id());
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
@@ -172,8 +172,8 @@ mod preallocation_component {
 
         pub fn create_with_unused_preallocated_address_1() -> Global<PreallocationComponent> {
             let (own, _component_address) =
-                Runtime::allocate_component_address(Runtime::blueprint_id());
-            let _ = Runtime::allocate_component_address(Runtime::blueprint_id());
+                Runtime::allocate_component_address(PreallocationComponent::blueprint_id());
+            let _ = Runtime::allocate_component_address(PreallocationComponent::blueprint_id());
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
@@ -182,7 +182,7 @@ mod preallocation_component {
         }
 
         pub fn create_with_unused_preallocated_address_2() -> Global<PreallocationComponent> {
-            let _ = Runtime::allocate_component_address(Runtime::blueprint_id());
+            let _ = Runtime::allocate_component_address(PreallocationComponent::blueprint_id());
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
@@ -194,7 +194,7 @@ mod preallocation_component {
             Global<PreallocationComponent>,
         ) {
             let (own, _component_address) =
-                Runtime::allocate_component_address(Runtime::blueprint_id());
+                Runtime::allocate_component_address(PreallocationComponent::blueprint_id());
             let one = Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)

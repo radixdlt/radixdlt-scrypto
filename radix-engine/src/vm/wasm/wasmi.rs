@@ -242,6 +242,23 @@ fn allocate_global_address(
         .map(|buffer| buffer.0)
 }
 
+fn get_reservation_address(
+    mut caller: Caller<'_, HostState>,
+    node_id_ptr: u32,
+    node_id_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    runtime
+        .get_reservation_address(read_memory(
+            caller.as_context_mut(),
+            memory,
+            node_id_ptr,
+            node_id_len,
+        )?)
+        .map(|buffer| buffer.0)
+}
+
 fn cost_unit_limit(caller: Caller<'_, HostState>) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
@@ -690,6 +707,16 @@ impl WasmiModule {
             },
         );
 
+        let host_get_reservation_address = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             node_id_ptr: u32,
+             node_id_len: u32|
+             -> Result<u64, Trap> {
+                get_reservation_address(caller, node_id_ptr, node_id_len).map_err(|e| e.into())
+            },
+        );
+
         let host_cost_unit_limit = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u32, Trap> {
@@ -958,6 +985,11 @@ impl WasmiModule {
             linker,
             ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME,
             host_allocate_global_address
+        );
+        linker_define!(
+            linker,
+            GET_RESERVATION_ADDRESS_FUNCTION_NAME,
+            host_get_reservation_address
         );
         linker_define!(linker, COST_UNIT_LIMIT_FUNCTION_NAME, host_cost_unit_limit);
         linker_define!(linker, COST_UNIT_PRICE_FUNCTION_NAME, host_cost_unit_price);

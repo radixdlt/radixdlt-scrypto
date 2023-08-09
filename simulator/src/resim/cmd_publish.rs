@@ -206,12 +206,12 @@ impl Publish {
                     interface: BlueprintInterface {
                         generics: s.schema.generics,
                         blueprint_type: s.blueprint_type,
+                        is_transient: false,
                         feature_set: s.feature_set,
                         functions,
                         events,
                         state: IndexedStateSchema::from_schema(schema_hash, s.schema.state),
                     },
-                    is_transient: false,
                     function_exports,
                     hook_exports: BTreeMap::new(),
                 };

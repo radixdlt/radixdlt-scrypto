@@ -80,7 +80,7 @@ pub struct ValidatorSubstate {
     /// Unstaking burns the SUs and inactivates the staked XRDs (i.e. moves it from the regular
     /// [`stake_xrd_vault_id`] to the [`pending_xrd_withdraw_vault_id`]), and then requires to claim
     /// the XRDs using this NFT after a delay (see [`UnstakeData.claim_epoch`]).
-    pub unstake_nft: ResourceAddress,
+    pub claim_nft: ResourceAddress,
 
     /// A vault holding the XRDs that were unstaked (see the [`unstake_nft`]) but not yet claimed.
     pub pending_xrd_withdraw_vault_id: Own,
@@ -269,18 +269,16 @@ impl ValidatorBlueprint {
 
         // Unstake
         let (unstake_bucket, new_stake_amount) = {
+            let xrd_amount = Self::calculate_redemption_value(
+                stake_unit_bucket_amount,
+                &validator_substate,
+                api,
+            )?;
+
             let mut stake_vault = Vault(validator_substate.stake_xrd_vault_id);
             let mut unstake_vault = Vault(validator_substate.pending_xrd_withdraw_vault_id);
-            let nft_resman = ResourceManager(validator_substate.unstake_nft);
+            let nft_resman = ResourceManager(validator_substate.claim_nft);
             let mut stake_unit_resman = ResourceManager(validator_substate.stake_unit_resource);
-
-            let active_stake_amount = stake_vault.amount(api)?;
-            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
-            let xrd_amount = if total_stake_unit_supply.is_zero() {
-                Decimal::zero()
-            } else {
-                stake_unit_bucket_amount * active_stake_amount / total_stake_unit_supply
-            };
 
             stake_unit_resman.burn(stake_unit_bucket, api)?;
 
@@ -467,8 +465,8 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
         let validator: ValidatorSubstate = api.field_read_typed(handle)?;
-        let mut nft_resman = ResourceManager(validator.unstake_nft);
-        let resource_address = validator.unstake_nft;
+        let mut nft_resman = ResourceManager(validator.claim_nft);
+        let resource_address = validator.claim_nft;
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
         if !resource_address.eq(&bucket.resource_address(api)?) {
@@ -619,6 +617,63 @@ impl ValidatorBlueprint {
         api.field_close(handle)?;
 
         Ok(substate.accepts_delegated_stake)
+    }
+
+    pub fn total_stake_xrd_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::read_only(),
+        )?;
+
+        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let stake_vault = Vault(substate.stake_xrd_vault_id);
+        let stake_amount = stake_vault.amount(api)?;
+        api.field_close(handle)?;
+
+        Ok(stake_amount)
+    }
+
+    pub fn total_stake_unit_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::read_only(),
+        )?;
+
+        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let stake_resource = ResourceManager(substate.stake_unit_resource);
+        let total_stake_unit_supply = stake_resource.total_supply(api)?.unwrap();
+        api.field_close(handle)?;
+
+        Ok(total_stake_unit_supply)
+    }
+
+    pub fn get_redemption_value<Y>(
+        amount_of_stake_units: Decimal,
+        api: &mut Y,
+    ) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::read_only(),
+        )?;
+
+        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let redemption_value =
+            Self::calculate_redemption_value(amount_of_stake_units, &substate, api)?;
+        api.field_close(handle)?;
+
+        Ok(redemption_value)
     }
 
     pub fn update_accept_delegated_stake<Y>(
@@ -1022,6 +1077,25 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
+    fn calculate_redemption_value<Y: ClientApi<RuntimeError>>(
+        amount_of_stake_units: Decimal,
+        validator_substate: &ValidatorSubstate,
+        api: &mut Y,
+    ) -> Result<Decimal, RuntimeError> {
+        let stake_vault = Vault(validator_substate.stake_xrd_vault_id);
+        let stake_unit_resman = ResourceManager(validator_substate.stake_unit_resource);
+
+        let active_stake_amount = stake_vault.amount(api)?;
+        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
+        let xrd_amount = if total_stake_unit_supply.is_zero() {
+            Decimal::zero()
+        } else {
+            amount_of_stake_units * active_stake_amount / total_stake_unit_supply
+        };
+
+        Ok(xrd_amount)
+    }
+
     /// Returns an amount of stake units to be minted when [`xrd_amount`] of XRDs is being staked.
     fn calculate_stake_unit_amount(
         xrd_amount: Decimal,
@@ -1109,7 +1183,7 @@ impl ValidatorCreator {
         Ok(stake_unit_resman.0)
     }
 
-    fn create_unstake_nft<Y>(
+    fn create_claim_nft<Y>(
         validator_address: GlobalAddress,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
@@ -1165,7 +1239,7 @@ impl ValidatorCreator {
 
         let stake_xrd_vault = Vault::create(XRD, api)?;
         let pending_xrd_withdraw_vault = Vault::create(XRD, api)?;
-        let unstake_nft = Self::create_unstake_nft(validator_address, api)?;
+        let claim_nft = Self::create_claim_nft(validator_address, api)?;
         let stake_unit_resource = Self::create_stake_unit_resource(validator_address, api)?;
         let locked_owner_stake_unit_vault = Vault::create(stake_unit_resource, api)?;
         let pending_owner_stake_unit_unlock_vault = Vault::create(stake_unit_resource, api)?;
@@ -1179,7 +1253,7 @@ impl ValidatorCreator {
             validator_fee_factor: fee_factor,
             validator_fee_change_request: None,
             stake_unit_resource,
-            unstake_nft,
+            claim_nft: claim_nft,
             stake_xrd_vault_id: stake_xrd_vault.0,
             pending_xrd_withdraw_vault_id: pending_xrd_withdraw_vault.0,
             locked_owner_stake_unit_vault_id: locked_owner_stake_unit_vault.0,
@@ -1217,6 +1291,7 @@ impl ValidatorCreator {
             metadata_init! {
                 "owner_badge" => owner_badge_local_id, locked;
                 "pool_unit" => GlobalAddress::from(stake_unit_resource), locked;
+                "claim_nft" => GlobalAddress::from(claim_nft), locked;
             },
             api,
         )?;

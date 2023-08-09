@@ -16,6 +16,7 @@ pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
 // Blueprint/Object
 //=================
 pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "allocate_global_address";
+pub const GET_RESERVATION_ADDRESS_FUNCTION_NAME: &str = "get_reservation_address";
 pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
 pub const GLOBALIZE_FUNCTION_NAME: &str = "globalize";
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";

@@ -18,6 +18,9 @@ pub const MAX_NUMBER_OF_SUBSTATES_IN_TRACK: usize = 512;
 /// The max number of substates in heap.
 pub const MAX_NUMBER_OF_SUBSTATES_IN_HEAP: usize = 512;
 
+/// The maximum substate key read and write size
+pub const MAX_SUBSTATE_KEY_SIZE: usize = 1024;
+
 /// The maximum substate read and write size.
 pub const MAX_SUBSTATE_SIZE: usize = 2 * 1024 * 1024;
 
@@ -62,6 +65,12 @@ pub const MAX_METADATA_KEY_STRING_LEN: usize = 100;
 
 /// The max SBOR size of metadata value
 pub const MAX_METADATA_VALUE_SBOR_LEN: usize = 512;
+
+/// The max depth of an access rule, to protect unbounded native stack useage
+pub const MAX_ACCESS_RULE_DEPTH: usize = 8;
+
+/// The max number of access rule nodes in an access rule
+pub const MAX_ACCESS_RULE_NODES: usize = 64;
 
 //==========================
 // TO BE DEFINED

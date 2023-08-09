@@ -94,15 +94,15 @@ mod schema {
 
     impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for [T] {
         const TYPE_ID: GlobalTypeId = match T::TYPE_ID {
-            GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => {
-                GlobalTypeId::well_known(basic_well_known_types::BYTES_ID)
+            GlobalTypeId::WellKnown(basic_well_known_types::U8_TYPE) => {
+                GlobalTypeId::WellKnown(basic_well_known_types::BYTES_TYPE)
             }
             _ => GlobalTypeId::novel("Array", &[T::TYPE_ID]),
         };
 
         fn type_data() -> TypeData<C, GlobalTypeId> {
             match T::TYPE_ID {
-                GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => {
+                GlobalTypeId::WellKnown(basic_well_known_types::U8_TYPE) => {
                     basic_well_known_types::bytes_type_data()
                 }
                 _ => TypeData::new(

@@ -527,6 +527,23 @@ impl WasmModule {
                             ));
                         }
                     }
+                    GET_RESERVATION_ADDRESS_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    GET_RESERVATION_ADDRESS_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
                     GLOBALIZE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
@@ -1082,7 +1099,7 @@ mod tests {
         BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
         FunctionSchemaInit, TypeRef,
     };
-    use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
+    use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
     use wabt::wat2wasm;
 
     macro_rules! assert_invalid_wasm {
@@ -1325,7 +1342,7 @@ mod tests {
                     },
                     state: BlueprintStateSchemaInit {
                         fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
-                            UNIT_ID,
+                            UNIT_TYPE,
                         ))],
                         collections: vec![],
                     },
@@ -1334,8 +1351,8 @@ mod tests {
                         functions: btreemap!(
                             "f".to_string() => FunctionSchemaInit {
                                 receiver: Option::None,
-                                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                                output: TypeRef::Static(LocalTypeIndex::WellKnown(UNIT_ID)),
+                                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                                output: TypeRef::Static(LocalTypeIndex::WellKnown(UNIT_TYPE)),
                                 export: "Test_f".to_string(),
                             }
                         ),
