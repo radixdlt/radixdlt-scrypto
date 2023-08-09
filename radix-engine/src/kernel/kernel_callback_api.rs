@@ -169,16 +169,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn before_push_frame<Y>(
-        callee: &Self::CallFrameData,
-        message: &mut CallFrameMessage,
-        args: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -187,14 +178,6 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn after_pop_frame<Y>(
-        dropped_actor: &Self::CallFrameData,
-        message: &CallFrameMessage,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 

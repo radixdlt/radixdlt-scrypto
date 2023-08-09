@@ -1012,11 +1012,7 @@ where
         // Before push call frame
         let callee = invocation.call_frame_data;
         let args = &invocation.args;
-        let message = {
-            let mut message = CallFrameMessage::from_input(&args, &callee);
-            M::before_push_frame(&callee, &mut message, &args, self)?;
-            message
-        };
+        let message = CallFrameMessage::from_input(&args, &callee);
 
         // Push call frame
         {
@@ -1085,13 +1081,10 @@ where
         // Pop call frame
         {
             let parent = self.prev_frame_stack.pop().unwrap();
-
-            let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
-
-            M::after_pop_frame(dropped_frame.data(), &message, self)?;
+            let _ = core::mem::replace(&mut self.current_frame, parent);
         }
 
-        M::after_invoke(output.len(), self)?;
+        M::after_invoke(&output, self)?;
 
         Ok(output)
     }

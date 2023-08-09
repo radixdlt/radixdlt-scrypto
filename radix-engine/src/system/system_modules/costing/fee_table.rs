@@ -453,11 +453,6 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn assert_access_rule_cost(&self) -> u32 {
-        500
-    }
-
-    #[inline]
     pub fn query_transaction_hash_cost(&self) -> u32 {
         500
     }

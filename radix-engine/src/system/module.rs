@@ -10,7 +10,7 @@ use crate::kernel::kernel_callback_api::{
 };
 use crate::types::*;
 
-pub trait SystemModule<M: KernelCallbackObject> {
+pub trait KernelModule<M: KernelCallbackObject> {
     //======================
     // System module setup
     //======================
@@ -28,10 +28,8 @@ pub trait SystemModule<M: KernelCallbackObject> {
     // Invocation events
     //
     // -> BeforeInvoke
-    // -> BeforePushFrame
     //        -> ExecutionStart
     //        -> ExecutionFinish
-    // -> AfterPopFrame
     // -> AfterInvoke
     //======================
 
@@ -39,16 +37,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
         _invocation: &KernelInvocation<Actor>,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn before_push_frame<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _callee: &Actor,
-        _message: &mut CallFrameMessage,
-        _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -67,18 +55,9 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn after_pop_frame<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _dropped_actor: &Actor,
-        _message: &CallFrameMessage,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
     fn after_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
-        _output_size: usize,
+        _output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

@@ -72,7 +72,7 @@ impl NonFungibleGlobalId {
     }
 }
 
-#[derive(Clone, Debug, ScryptoSbor)]
+#[derive(Clone, Debug, PartialEq, Eq, ScryptoSbor)]
 pub enum GlobalCaller {
     /// If the previous global frame started with an object's main module
     GlobalObject(GlobalAddress),

@@ -44,7 +44,7 @@ fn test_many_current_auth_zone_call() {
 
     // Act
     let mut expressions = Vec::<ManifestExpression>::new();
-    for _ in 0..10000 {
+    for _ in 0..20000 {
         expressions.push(ManifestExpression::EntireAuthZone);
     }
     let manifest = ManifestBuilder::new()

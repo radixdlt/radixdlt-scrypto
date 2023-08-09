@@ -12,7 +12,8 @@ use crate::kernel::kernel_callback_api::{
 };
 #[cfg(feature = "resource_tracker")]
 use crate::kernel::substate_io::SubstateDevice;
-use crate::system::module::SystemModule;
+use crate::system::module::KernelModule;
+use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::AuthModule;
@@ -81,13 +82,13 @@ pub struct SystemModuleMixer {
     // The original reason for performance, but we should double check.
 
     /* flags */
-    enabled_modules: EnabledModules,
+    pub enabled_modules: EnabledModules,
 
     /* states */
     pub(super) kernel_trace: KernelTraceModule,
     pub(super) limits: LimitsModule,
     pub(super) costing: CostingModule,
-    pub(super) auth: AuthModule,
+    pub(crate) auth: AuthModule,
     pub(super) transaction_runtime: TransactionRuntimeModule,
     pub(super) execution_trace: ExecutionTraceModule,
 }
@@ -147,7 +148,6 @@ impl SystemModuleMixer {
             },
             auth: AuthModule {
                 params: auth_zone_params.clone(),
-                auth_zone_stack: Vec::new(),
             },
             limits: LimitsModule::new(TransactionLimitsConfig {
                 max_number_of_substates_in_track: execution_config.max_number_of_substates_in_track,
@@ -188,7 +188,7 @@ impl SystemModuleMixer {
 // This has an impact if there is module dependency.
 //====================================================================
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixer {
+impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for SystemModuleMixer {
     #[trace_resources]
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
@@ -240,19 +240,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        callee: &Actor,
-        message: &mut CallFrameMessage,
-        args: &IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api.kernel_get_system(),
-            before_push_frame(api, callee, message, args)
-        )
-    }
-
-    #[trace_resources]
     fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api.kernel_get_system(), on_execution_start(api))
     }
@@ -266,23 +253,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        dropped_actor: &Actor,
-        message: &CallFrameMessage,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api.kernel_get_system(),
-            after_pop_frame(api, dropped_actor, message)
-        )
-    }
-
-    #[trace_resources(log=output_size)]
     fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        output_size: usize,
+        output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), after_invoke(api, output_size))
+        internal_call_dispatch!(api.kernel_get_system(), after_invoke(api, output))
     }
 
     #[trace_resources(log=entity_type)]
@@ -403,6 +378,84 @@ impl SystemModuleMixer {
     // - Kernel uses the `SystemModule<SystemConfig<V>>` trait above;
     // - System uses methods defined below (TODO: add a trait?)
 
+    pub fn on_call_method<Y, V>(
+        api: &mut SystemService<Y, V>,
+        receiver: &NodeId,
+        module_id: ObjectModuleId,
+        direct_access: bool,
+        ident: &str,
+        args: &IndexedScryptoValue,
+    ) -> Result<NodeId, RuntimeError>
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
+    {
+        let auth_zone = if api
+            .kernel_get_system_state()
+            .system
+            .modules
+            .enabled_modules
+            .contains(EnabledModules::AUTH)
+        {
+            AuthModule::on_call_method(api, receiver, module_id, direct_access, ident, args)?
+        } else {
+            AuthModule::create_mock(
+                api,
+                Some((receiver, direct_access)),
+                btreeset!(),
+                btreeset!(),
+            )?
+        };
+
+        Ok(auth_zone)
+    }
+
+    pub fn on_call_method_finish<Y, V>(
+        api: &mut SystemService<Y, V>,
+        auth_zone: NodeId,
+    ) -> Result<(), RuntimeError>
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
+    {
+        AuthModule::on_fn_finish(api, auth_zone)
+    }
+
+    pub fn on_call_function<V, Y>(
+        api: &mut SystemService<Y, V>,
+        blueprint_id: &BlueprintId,
+        ident: &str,
+    ) -> Result<NodeId, RuntimeError>
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
+    {
+        let auth_zone = if api
+            .kernel_get_system_state()
+            .system
+            .modules
+            .enabled_modules
+            .contains(EnabledModules::AUTH)
+        {
+            AuthModule::on_call_function(api, blueprint_id, ident)?
+        } else {
+            AuthModule::create_mock(api, None, btreeset!(), btreeset!())?
+        };
+
+        Ok(auth_zone)
+    }
+
+    pub fn on_call_function_finish<V, Y>(
+        api: &mut SystemService<Y, V>,
+        auth_zone: NodeId,
+    ) -> Result<(), RuntimeError>
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
+    {
+        AuthModule::on_fn_finish(api, auth_zone)
+    }
+
     pub fn add_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
             if self.transaction_runtime.logs.len() >= self.limits.config().max_number_of_logs {
@@ -490,14 +543,6 @@ impl SystemModuleMixer {
             .contains(EnabledModules::TRANSACTION_RUNTIME)
         {
             self.transaction_runtime.add_replacement(old, new)
-        }
-    }
-
-    pub fn auth_zone_id(&mut self) -> Option<NodeId> {
-        if self.enabled_modules.contains(EnabledModules::AUTH) {
-            self.auth.last_auth_zone()
-        } else {
-            None
         }
     }
 
