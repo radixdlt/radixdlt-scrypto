@@ -1248,7 +1248,7 @@ where
             let partition_number = MAIN_BASE_PARTITION
                 .at_offset(PartitionOffset(offset))
                 .unwrap();
-            self.kernel_move_module(
+            self.kernel_move_partition(
                 &node_id,
                 partition_number,
                 global_address.as_node_id(),
@@ -1298,7 +1298,12 @@ where
                             .at_offset(PartitionOffset(offset))
                             .unwrap();
 
-                        self.kernel_move_module(&node_id, src, global_address.as_node_id(), dest)?;
+                        self.kernel_move_partition(
+                            &node_id,
+                            src,
+                            global_address.as_node_id(),
+                            dest,
+                        )?;
                     }
 
                     self.kernel_drop_node(&node_id)?;
@@ -1351,7 +1356,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_read(&mut self, handle: FieldHandle) -> Result<Vec<u8>, RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::Field(..) => {}
             _ => {
@@ -1368,7 +1373,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
 
         let blueprint_id = match data {
             SystemLockData::Field(FieldLockData::Write {
@@ -1405,7 +1410,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_lock(&mut self, handle: FieldHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
 
         match data {
             SystemLockData::Field(FieldLockData::Write { .. }) => {}
@@ -1426,7 +1431,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_close(&mut self, handle: FieldHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::Field(..) => {}
             _ => {
@@ -1702,7 +1707,7 @@ where
         &mut self,
         handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::KeyValueEntry(..) => {}
             _ => {
@@ -1719,7 +1724,7 @@ where
     // Costing through kernel
     // FIXME: Should this release lock or continue allow to mutate entry until lock released?
     fn key_value_entry_lock(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::KeyValueEntry(
                 KeyValueEntryLockData::Write { .. } | KeyValueEntryLockData::BlueprintWrite { .. },
@@ -1766,7 +1771,7 @@ where
         handle: KeyValueEntryHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
 
         let can_own = match data {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
@@ -1830,7 +1835,7 @@ where
 
     // Costing through kernel
     fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         if !data.is_kv_entry() {
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         }
@@ -2364,7 +2369,7 @@ where
         object_handle: ObjectHandle,
         field_index: u8,
         flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<SubstateHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num, schema_pointer, blueprint_id) =
@@ -2729,14 +2734,14 @@ where
         self.api.kernel_create_node(node_id, node_substates)
     }
 
-    fn kernel_move_module(
+    fn kernel_move_partition(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        self.api.kernel_move_module(
+        self.api.kernel_move_partition(
             src_node_id,
             src_partition_number,
             dest_node_id,
@@ -2758,7 +2763,7 @@ where
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: SystemLockData,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<SubstateHandle, RuntimeError> {
         self.api.kernel_open_substate_with_default(
             node_id,
             partition_num,
@@ -2769,27 +2774,27 @@ where
         )
     }
 
-    fn kernel_get_lock_info(
+    fn kernel_get_lock_data(
         &mut self,
-        lock_handle: LockHandle,
-    ) -> Result<LockInfo<SystemLockData>, RuntimeError> {
-        self.api.kernel_get_lock_info(lock_handle)
+        lock_handle: SubstateHandle,
+    ) -> Result<SystemLockData, RuntimeError> {
+        self.api.kernel_get_lock_data(lock_handle)
     }
 
-    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+    fn kernel_close_substate(&mut self, lock_handle: SubstateHandle) -> Result<(), RuntimeError> {
         self.api.kernel_close_substate(lock_handle)
     }
 
     fn kernel_read_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: SubstateHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         self.api.kernel_read_substate(lock_handle)
     }
 
     fn kernel_write_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: SubstateHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_write_substate(lock_handle, value)

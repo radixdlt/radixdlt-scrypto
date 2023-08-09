@@ -3,14 +3,15 @@ use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
-    KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi, LockInfo,
+    KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi,
 };
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::{
-    CallFrameMessage, PersistNodeHandler, StoreAccessHandler, SubstateReadHandler,
+    CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs, PersistNodeHandler,
+    StoreAccessHandler,
 };
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::{
@@ -18,13 +19,15 @@ use crate::kernel::kernel_callback_api::{
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
+use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
+use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::{
-    CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackOpenSubstateError,
+    CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackGetSubstateError,
 };
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -48,8 +51,12 @@ pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
 impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
     pub fn create_kernel_for_test_only(&mut self) -> Kernel<SystemConfig<V>, S> {
         Kernel {
-            heap: Heap::new(),
-            store: self.store,
+            substate_io: SubstateIO {
+                heap: Heap::new(),
+                store: self.store,
+                non_global_node_refs: NonGlobalNodeRefs::new(),
+                substate_locks: SubstateLocks::new(),
+            },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
             prev_frame_stack: vec![],
@@ -71,8 +78,12 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         });
 
         let mut kernel = Kernel {
-            heap: Heap::new(),
-            store: self.store,
+            substate_io: SubstateIO {
+                heap: Heap::new(),
+                store: self.store,
+                non_global_node_refs: NonGlobalNodeRefs::new(),
+                substate_locks: SubstateLocks::new(),
+            },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
             prev_frame_stack: vec![],
@@ -103,19 +114,17 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             // We have a reference to a node which can't be invoked - so it must be a direct access,
             // let's validate it as such
 
-            let handle = kernel
+            let substate_ref = kernel
+                .substate_io
                 .store
-                .open_substate(
+                .get_substate(
                     node_id,
                     TYPE_INFO_FIELD_PARTITION,
                     &TypeInfoField::TypeInfo.into(),
-                    LockFlags::read_only(),
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .map_err(|_| KernelError::InvalidReference(*node_id))?;
-            let substate_ref = kernel.store.read_substate(handle);
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-            kernel.store.close_substate(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint_info: BlueprintInfo { blueprint_id, .. },
@@ -197,10 +206,7 @@ pub struct Kernel<
     // execution pause and/or for better debuggability
     prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
 
-    /// Heap
-    heap: Heap,
-    /// Store
-    store: &'g mut S,
+    substate_io: SubstateIO<'g, S>,
 
     /// ID allocator
     id_allocator: &'g mut IdAllocator,
@@ -254,16 +260,16 @@ impl<
 impl<
         M: KernelCallbackObject,
         F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
-    > SubstateReadHandler<M::CallFrameData, M::LockData> for KernelHandler<'_, M, F>
+    > CallFrameSubstateReadHandler<M::CallFrameData, M::LockData> for KernelHandler<'_, M, F>
 {
     type Error = RuntimeError;
     fn on_read_substate(
         &mut self,
         current_frame: &CallFrame<M::CallFrameData, M::LockData>,
         heap: &Heap,
-        handle: LockHandle,
+        handle: SubstateHandle,
         value: &IndexedScryptoValue,
-        is_from_heap: bool,
+        device: SubstateDevice,
     ) -> Result<(), Self::Error> {
         let mut read_only = KernelReadOnly {
             current_frame,
@@ -277,7 +283,7 @@ impl<
             ReadSubstateEvent::OnRead {
                 handle,
                 value,
-                read_from_heap: is_from_heap,
+                device,
             },
         )
     }
@@ -288,7 +294,7 @@ macro_rules! as_read_only {
         KernelReadOnly {
             current_frame: &$kernel.current_frame,
             prev_frame: $kernel.prev_frame_stack.last(),
-            heap: &$kernel.heap,
+            heap: &$kernel.substate_io.heap,
             callback: $kernel.callback,
         }
     }};
@@ -327,13 +333,7 @@ where
         };
 
         self.current_frame
-            .create_node(
-                node_id,
-                node_substates,
-                &mut self.heap,
-                self.store,
-                &mut handler,
-            )
+            .create_node(&mut self.substate_io, &mut handler, node_id, node_substates)
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
                     CallFrameError::CreateNodeError(e),
@@ -355,7 +355,7 @@ where
         M::on_drop_node_mut(node_id, self)?;
         let node_substates = self
             .current_frame
-            .drop_node(&mut self.heap, node_id)
+            .drop_node(&mut self.substate_io, node_id)
             .map_err(CallFrameError::DropNodeError)
             .map_err(KernelError::CallFrameError)?;
 
@@ -366,7 +366,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_move_module(
+    fn kernel_move_partition(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
@@ -382,14 +382,13 @@ where
         };
 
         self.current_frame
-            .move_module(
+            .move_partition(
+                &mut self.substate_io,
+                &mut handler,
                 src_node_id,
                 src_partition_number,
                 dest_node_id,
                 dest_partition_number,
-                &mut self.heap,
-                self.store,
-                &mut handler,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -642,7 +641,7 @@ where
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: M::LockData,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<SubstateHandle, RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_open_substate(
             &mut read_only,
@@ -663,8 +662,7 @@ where
         };
 
         let maybe_lock_handle = self.current_frame.open_substate(
-            &mut self.heap,
-            self.store,
+            &mut self.substate_io,
             node_id,
             partition_num,
             substate_key,
@@ -678,7 +676,7 @@ where
             Ok((lock_handle, value_size)) => (*lock_handle, *value_size),
             Err(CallbackError::CallbackError(e)) => return Err(e.clone()),
             Err(CallbackError::Error(OpenSubstateError::TrackError(track_err))) => {
-                if matches!(track_err.as_ref(), TrackOpenSubstateError::NotFound(..)) {
+                if matches!(track_err.as_ref(), TrackGetSubstateError::NotFound(..)) {
                     let retry =
                         M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
 
@@ -696,8 +694,7 @@ where
 
                         self.current_frame
                             .open_substate(
-                                &mut self.heap,
-                                self.store,
+                                &mut self.substate_io,
                                 &node_id,
                                 partition_num,
                                 &substate_key,
@@ -759,46 +756,21 @@ where
     }
 
     #[trace_resources]
-    fn kernel_get_lock_info(
+    fn kernel_get_lock_data(
         &mut self,
-        lock_handle: LockHandle,
-    ) -> Result<LockInfo<M::LockData>, RuntimeError> {
+        lock_handle: SubstateHandle,
+    ) -> Result<M::LockData, RuntimeError> {
         self.current_frame
-            .get_lock_info(lock_handle)
-            .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(
-                lock_handle,
-            )))
-    }
-
-    #[trace_resources]
-    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        let mut handler = KernelHandler {
-            callback: self.callback,
-            prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
-                M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
-            },
-        };
-
-        self.current_frame
-            .close_substate(&mut self.heap, self.store, &mut handler, lock_handle)
-            .map_err(|e| match e {
-                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::CloseSubstateError(e),
-                )),
-                CallbackError::CallbackError(e) => e,
-            })?;
-
-        let mut read_only = as_read_only!(self);
-        M::on_close_substate(&mut read_only, CloseSubstateEvent::End(lock_handle))?;
-
-        Ok(())
+            .get_handle_info(lock_handle)
+            .ok_or(RuntimeError::KernelError(
+                KernelError::SubstateHandleDoesNotExist(lock_handle),
+            ))
     }
 
     #[trace_resources]
     fn kernel_read_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: SubstateHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -811,7 +783,7 @@ where
 
         let value = self
             .current_frame
-            .read_substate(&self.heap, self.store, lock_handle, &mut handler)
+            .read_substate(&mut self.substate_io, lock_handle, &mut handler)
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
                     CallFrameError::ReadSubstateError(e),
@@ -825,7 +797,7 @@ where
     #[trace_resources(log=value.len())]
     fn kernel_write_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: SubstateHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let mut read_only = as_read_only!(self);
@@ -837,8 +809,38 @@ where
             },
         )?;
 
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                M::on_write_substate(api, WriteSubstateEvent::StoreAccess(&store_access))
+            },
+        };
+
         self.current_frame
-            .write_substate(&mut self.heap, self.store, lock_handle, value)?;
+            .write_substate(&mut self.substate_io, &mut handler, lock_handle, value)
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::WriteSubstateError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
+
+        Ok(())
+    }
+
+    #[trace_resources]
+    fn kernel_close_substate(&mut self, lock_handle: SubstateHandle) -> Result<(), RuntimeError> {
+        self.current_frame
+            .close_substate(&mut self.substate_io, lock_handle)
+            .map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::CloseSubstateError(e),
+                ))
+            })?;
+
+        let mut read_only = as_read_only!(self);
+        M::on_close_substate(&mut read_only, CloseSubstateEvent::End(lock_handle))?;
 
         Ok(())
     }
@@ -860,6 +862,7 @@ where
 
         self.current_frame
             .set_substate(
+                &mut self.substate_io,
                 node_id,
                 partition_num,
                 substate_key,
@@ -868,8 +871,6 @@ where
                     self.callback
                         .on_set_substate(SetSubstateEvent::StoreAccess(&store_access))
                 },
-                &mut self.heap,
-                self.store,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -898,6 +899,7 @@ where
         let substate = self
             .current_frame
             .remove_substate(
+                &mut self.substate_io,
                 node_id,
                 partition_num,
                 &substate_key,
@@ -905,8 +907,6 @@ where
                     self.callback
                         .on_remove_substate(RemoveSubstateEvent::StoreAccess(&store_access))
                 },
-                &mut self.heap,
-                self.store,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -930,6 +930,7 @@ where
         let keys = self
             .current_frame
             .scan_keys::<K, _, _, _>(
+                &mut self.substate_io,
                 node_id,
                 partition_num,
                 limit,
@@ -937,8 +938,6 @@ where
                     self.callback
                         .on_scan_keys(ScanKeysEvent::StoreAccess(&store_access))
                 },
-                &mut self.heap,
-                self.store,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -963,6 +962,7 @@ where
         let substates = self
             .current_frame
             .drain_substates::<K, _, _, _>(
+                &mut self.substate_io,
                 node_id,
                 partition_num,
                 limit,
@@ -970,8 +970,6 @@ where
                     self.callback
                         .on_drain_substates(DrainSubstatesEvent::StoreAccess(&store_access))
                 },
-                &mut self.heap,
-                self.store,
             )
             .map_err(|e| match e {
                 CallbackError::CallbackError(e) => e,
@@ -996,6 +994,7 @@ where
         let substates =
             self.current_frame
                 .scan_sorted(
+                    &mut self.substate_io,
                     node_id,
                     partition_num,
                     limit,
@@ -1004,8 +1003,6 @@ where
                             ScanSortedSubstatesEvent::StoreAccess(&store_access),
                         )
                     },
-                    &mut self.heap,
-                    self.store,
                 )
                 .map_err(|e| match e {
                     CallbackError::Error(e) => RuntimeError::KernelError(
@@ -1049,23 +1046,13 @@ where
             // Handle execution start
             M::on_execution_start(self)?;
 
-            let mut handler = KernelHandler {
-                callback: self.callback,
-                prev_frame: self.prev_frame_stack.last(),
-                on_store_access: |api, store_access| {
-                    M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
-                },
-            };
-
             // Auto drop locks
             self.current_frame
-                .close_all_substates(&mut self.heap, self.store, &mut handler)
+                .close_all_substates(&mut self.substate_io)
                 .map_err(|e| {
-                    e.to_runtime_error(|e| {
-                        RuntimeError::KernelError(KernelError::CallFrameError(
-                            CallFrameError::CloseSubstateError(e),
-                        ))
-                    })
+                    RuntimeError::KernelError(KernelError::CallFrameError(
+                        CallFrameError::CloseSubstateError(e),
+                    ))
                 })?;
 
             // Run
@@ -1073,22 +1060,12 @@ where
             let message = CallFrameMessage::from_output(&output);
 
             // Auto-drop locks again in case module forgot to drop
-            let mut handler = KernelHandler {
-                callback: self.callback,
-                prev_frame: self.prev_frame_stack.last(),
-                on_store_access: |api, store_access| {
-                    M::on_close_substate(api, CloseSubstateEvent::StoreAccess(&store_access))
-                },
-            };
-
             self.current_frame
-                .close_all_substates(&mut self.heap, self.store, &mut handler)
+                .close_all_substates(&mut self.substate_io)
                 .map_err(|e| {
-                    e.to_runtime_error(|e| {
-                        RuntimeError::KernelError(KernelError::CallFrameError(
-                            CallFrameError::CloseSubstateError(e),
-                        ))
-                    })
+                    RuntimeError::KernelError(KernelError::CallFrameError(
+                        CallFrameError::CloseSubstateError(e),
+                    ))
                 })?;
 
             // Handle execution finish

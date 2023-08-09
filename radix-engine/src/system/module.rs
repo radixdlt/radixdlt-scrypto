@@ -134,7 +134,6 @@ pub trait KernelModule<M: KernelCallbackObject> {
         Ok(())
     }
 
-    #[inline(always)]
     fn on_set_substate(_system: &mut M, _event: &SetSubstateEvent) -> Result<(), RuntimeError> {
         Ok(())
     }

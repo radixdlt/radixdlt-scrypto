@@ -2,7 +2,9 @@ use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
 };
-use radix_engine::kernel::call_frame::{CloseSubstateError, CreateNodeError, TakeNodeError};
+use radix_engine::kernel::call_frame::{
+    CreateNodeError, ProcessSubstateError, SubstateDiffError, WriteSubstateError,
+};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
@@ -174,8 +176,8 @@ fn invalid_double_ownership_of_vault() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CreateNodeError(CreateNodeError::TakeNodeError(
-                    TakeNodeError::OwnNotFound(_)
+                CallFrameError::CreateNodeError(CreateNodeError::SubstateDiffError(
+                    SubstateDiffError::ContainsDuplicateOwns
                 ))
             ))
         )
@@ -237,7 +239,9 @@ fn cannot_overwrite_vault_in_map() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
+                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
+                    ProcessSubstateError::CantDropNodeInStore(..)
+                ))
             ))
         )
     });
@@ -294,7 +298,9 @@ fn cannot_remove_vaults() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
+                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
+                    ProcessSubstateError::CantDropNodeInStore(..)
+                ))
             ))
         )
     });

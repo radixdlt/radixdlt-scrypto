@@ -1,26 +1,12 @@
 use crate::errors::RuntimeError;
 use crate::types::*;
-use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
 /// Error when acquiring a lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum TrackOpenSubstateError {
+pub enum TrackGetSubstateError {
     NotFound(NodeId, PartitionNumber, SubstateKey),
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
-    LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
-    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SetSubstateError {
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum RemoveSubstateError {
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -49,6 +35,12 @@ impl<E, C> CallbackError<E, C> {
 
 pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
+pub enum TrackedSubstateInfo {
+    New,
+    Updated,
+    Unmodified,
+}
+
 /// Represents the interface between Radix Engine and Track.
 ///
 /// In practice, we will likely end up with only one implementation.
@@ -68,6 +60,45 @@ pub trait SubstateStore {
         on_store_access: &mut F,
     ) -> Result<(), E>;
 
+    fn get_tracked_substate_info(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> TrackedSubstateInfo;
+
+    /// Acquires a lock over a substate.
+    /// Returns tuple of lock handle id and information if particular substate
+    /// is locked for the first time during transaction execution.
+    fn get_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+        on_store_access: &mut F,
+    ) -> Result<&IndexedScryptoValue, CallbackError<TrackGetSubstateError, E>> {
+        self.get_substate_or_default(
+            node_id,
+            partition_num,
+            substate_key,
+            on_store_access,
+            || None,
+        )
+    }
+
+    fn get_substate_or_default<
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+        V: FnOnce() -> Option<IndexedScryptoValue>,
+    >(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+        on_store_access: &mut F,
+        virtualize: V,
+    ) -> Result<&IndexedScryptoValue, CallbackError<TrackGetSubstateError, E>>;
+
     /// Inserts a substate into the substate store.
     ///
     /// Clients must ensure the `node_id`/`partition_num` is a node which has been created; otherwise, the behavior
@@ -79,7 +110,14 @@ pub trait SubstateStore {
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
         on_store_access: &mut F,
-    ) -> Result<(), CallbackError<SetSubstateError, E>>;
+    ) -> Result<(), E>;
+
+    fn force_write(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: &PartitionNumber,
+        substate_key: &SubstateKey,
+    );
 
     /// Deletes a substate from the substate store.
     ///
@@ -94,7 +132,7 @@ pub trait SubstateStore {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         on_store_access: &mut F,
-    ) -> Result<Option<IndexedScryptoValue>, CallbackError<RemoveSubstateError, E>>;
+    ) -> Result<Option<IndexedScryptoValue>, E>;
 
     /// Returns Substate Keys of maximum count for a given partition.
     ///
@@ -136,60 +174,6 @@ pub trait SubstateStore {
         count: u32,
         on_store_access: &mut F,
     ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, E>;
-
-    /// Acquires a lock over a substate.
-    /// Returns tuple of lock handle id and information if particular substate
-    /// is locked for the first time during transaction execution.
-    fn open_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
-        &mut self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-        flags: LockFlags,
-        on_store_access: &mut F,
-    ) -> Result<u32, CallbackError<TrackOpenSubstateError, E>> {
-        self.open_substate_virtualize(
-            node_id,
-            partition_num,
-            substate_key,
-            flags,
-            on_store_access,
-            || None,
-        )
-    }
-
-    fn open_substate_virtualize<
-        E,
-        F: FnMut(StoreAccess) -> Result<(), E>,
-        V: FnOnce() -> Option<IndexedScryptoValue>,
-    >(
-        &mut self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-        flags: LockFlags,
-        on_store_access: &mut F,
-        virtualize: V,
-    ) -> Result<u32, CallbackError<TrackOpenSubstateError, E>>;
-
-    /// Releases a lock.
-    ///
-    /// # Panics
-    /// - If the lock handle is invalid.
-    fn close_substate(&mut self, handle: u32);
-
-    /// Reads a substate of the given node partition.
-    ///
-    /// # Panics
-    /// - If the lock handle is invalid
-    fn read_substate(&mut self, handle: u32) -> &IndexedScryptoValue;
-
-    /// Updates a substate.
-    ///
-    /// # Panics
-    /// - If the lock handle is invalid;
-    /// - If the lock handle is not associated with WRITE permission
-    fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
 
     /// Note: unstable interface, for intent transaction tracker only
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);

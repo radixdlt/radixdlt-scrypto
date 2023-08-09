@@ -258,7 +258,7 @@ fn test_drop_locked_fungible_bucket() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::DropNodeError(
-                DropNodeError::NodeBorrowed(_, _)
+                DropNodeError::NodeBorrowed(..)
             )))
         )
     });
@@ -293,7 +293,7 @@ fn test_drop_locked_non_fungible_bucket() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::DropNodeError(
-                DropNodeError::NodeBorrowed(_, _)
+                DropNodeError::NodeBorrowed(..)
             )))
         )
     });

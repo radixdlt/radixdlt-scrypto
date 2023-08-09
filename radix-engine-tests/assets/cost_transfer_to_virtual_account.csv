@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,     0.06831777,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.05960777,     87.3%
+Total Cost (XRD)                                                           ,     0.06832101,    100.0%
++ Execution Cost (XRD)                                                     ,     0.05961101,     87.3%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00871,     12.7%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        5960777,    100.0%
+Total Cost Units Consumed                                                  ,        5961101,    100.0%
 AllocateNodeId                                                             ,           2600,      0.0%
 BeforeInvoke                                                               ,           3288,      0.1%
 CloseSubstate                                                              ,          30870,      0.5%
@@ -25,7 +25,7 @@ OpenSubstate::InternalAccount                                              ,    
 OpenSubstate::InternalFungibleVault                                        ,          13958,      0.2%
 OpenSubstate::InternalGenericComponent                                     ,          37112,      0.6%
 QueryActor                                                                 ,           2500,      0.0%
-ReadSubstate                                                               ,         158286,      2.7%
+ReadSubstate                                                               ,         158610,      2.7%
 RunNativeCode::Worktop_drain                                               ,          13505,      0.2%
 RunNativeCode::Worktop_drop                                                ,          15385,      0.3%
 RunNativeCode::Worktop_put                                                 ,          18262,      0.3%

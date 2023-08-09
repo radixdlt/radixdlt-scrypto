@@ -243,7 +243,7 @@ where
         node_id: Vec<u8>,
         key: Vec<u8>,
         flags: u32,
-    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
+    ) -> Result<SubstateHandle, InvokeError<WasmRuntimeError>> {
         let node_id = NodeId(
             TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
@@ -298,7 +298,7 @@ where
         object_handle: u32,
         field: u8,
         flags: u32,
-    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
+    ) -> Result<SubstateHandle, InvokeError<WasmRuntimeError>> {
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
         let handle = self.api.actor_open_field(object_handle, field, flags)?;
 
@@ -307,7 +307,7 @@ where
 
     fn field_lock_read(
         &mut self,
-        handle: LockHandle,
+        handle: SubstateHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let substate = self.api.field_read(handle)?;
 
@@ -316,7 +316,7 @@ where
 
     fn field_lock_write(
         &mut self,
-        handle: LockHandle,
+        handle: SubstateHandle,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.field_write(handle, data)?;
@@ -326,7 +326,7 @@ where
 
     fn field_lock_release(
         &mut self,
-        handle: LockHandle,
+        handle: SubstateHandle,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.field_close(handle)?;
 

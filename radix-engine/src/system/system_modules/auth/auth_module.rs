@@ -198,7 +198,7 @@ impl AuthModule {
     fn copy_global_caller<V, Y>(
         system: &mut SystemService<Y, V>,
         node_id: &NodeId,
-    ) -> Result<(Option<(GlobalCaller, Reference)>, Option<LockHandle>), RuntimeError>
+    ) -> Result<(Option<(GlobalCaller, Reference)>, Option<SubstateHandle>), RuntimeError>
     where
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
@@ -252,8 +252,12 @@ impl AuthModule {
                             let global_caller: GlobalCaller = address.into();
                             (Some((global_caller, Reference(self_auth_zone))), None)
                         }
-                        (ReferenceOrigin::DirectlyAccessed, _) => (None, None),
-                        (ReferenceOrigin::Global(..), false) | (ReferenceOrigin::Heap, _) => {
+                        (
+                            ReferenceOrigin::SubstateNonGlobalReference(..)
+                            | ReferenceOrigin::DirectlyAccessed,
+                            _,
+                        ) => (None, None),
+                        (ReferenceOrigin::Global(..), false) | (ReferenceOrigin::FrameOwned, _) => {
                             Self::copy_global_caller(system, &self_auth_zone)?
                         }
                     }

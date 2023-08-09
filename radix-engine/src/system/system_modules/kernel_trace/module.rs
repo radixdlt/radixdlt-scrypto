@@ -165,14 +165,14 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModul
             ReadSubstateEvent::OnRead {
                 handle,
                 value,
-                read_from_heap,
+                device,
             } => {
                 log!(
                     api,
-                    "Reading substate: handle = {}, size = {}, read_from_heap = {}",
+                    "Reading substate: handle = {}, size = {}, device = {:?}",
                     handle,
                     value.len(),
-                    read_from_heap
+                    device
                 );
             }
         }
@@ -193,6 +193,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModul
                     value.len()
                 );
             }
+            _ => {}
         }
 
         Ok(())
@@ -206,7 +207,6 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModul
             CloseSubstateEvent::End(lock_handle) => {
                 log!(api, "Substate closed: handle = {} ", lock_handle);
             }
-            CloseSubstateEvent::StoreAccess(..) => {}
         }
         Ok(())
     }
