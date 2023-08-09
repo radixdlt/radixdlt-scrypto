@@ -92,6 +92,15 @@ pub struct OpenedSubstate<L> {
 }
 
 impl<L> OpenedSubstate<L> {
+    fn diff_on_close(&self) -> SubstateDiff {
+        SubstateDiff {
+            added_owns: index_set_new(),
+            added_refs: index_set_new(),
+            removed_owns: self.owned_nodes.clone(),
+            removed_refs: self.references.clone(),
+        }
+    }
+
     fn diff(&self, updated_value: &IndexedScryptoValue) -> Result<SubstateDiff, SubstateDiffError> {
         // Process owned nodes
         let (added_owned_nodes, removed_owned_nodes) = {
@@ -162,22 +171,20 @@ struct SubstateDiff {
 }
 
 impl SubstateDiff {
-    pub fn from_create_node(node_substates: &NodeSubstates) -> Result<Self, SubstateDiffError> {
+    pub fn from_new_substate(
+        substate_value: &IndexedScryptoValue,
+    ) -> Result<Self, SubstateDiffError> {
         let mut added_owns = index_set_new();
         let mut added_refs = index_set_new();
 
-        for (_partition_number, module) in node_substates {
-            for (_substate_key, substate_value) in module {
-                for own in substate_value.owned_nodes() {
-                    if !added_owns.insert(own.clone()) {
-                        return Err(SubstateDiffError::ContainsDuplicateOwns);
-                    }
-                }
-
-                for reference in substate_value.references() {
-                    added_refs.insert(reference.clone());
-                }
+        for own in substate_value.owned_nodes() {
+            if !added_owns.insert(own.clone()) {
+                return Err(SubstateDiffError::ContainsDuplicateOwns);
             }
+        }
+
+        for reference in substate_value.references() {
+            added_refs.insert(reference.clone());
         }
 
         Ok(Self {
@@ -188,22 +195,18 @@ impl SubstateDiff {
         })
     }
 
-    pub fn from_drop_node(node_substates: &NodeSubstates) -> Self {
+    pub fn from_drop_substate(substate_value: &IndexedScryptoValue) -> Self {
         let mut removed_owns = index_set_new();
         let mut removed_refs = index_set_new();
 
-        for (_partition_number, module) in node_substates {
-            for (_substate_key, substate_value) in module {
-                for own in substate_value.owned_nodes() {
-                    if !removed_owns.insert(own.clone()) {
-                        panic!("Should never have been able to create duplicate owns");
-                    }
-                }
-
-                for reference in substate_value.references() {
-                    removed_refs.insert(reference.clone());
-                }
+        for own in substate_value.owned_nodes() {
+            if !removed_owns.insert(own.clone()) {
+                panic!("Should never have been able to create duplicate owns");
             }
+        }
+
+        for reference in substate_value.references() {
+            removed_refs.insert(reference.clone());
         }
 
         Self {
@@ -681,25 +684,24 @@ impl<C, L: Clone> CallFrame<C, L> {
         // into store. This isn't a problem for now since only native objects are allowed
         // to be transient.
 
-        for (_partition_number, module) in &node_substates {
-            for (substate_key, _) in module {
-                self.process_input_substate_key(substate_key).map_err(|e| {
-                    CallbackError::Error(CreateNodeError::ProcessSubstateKeyError(e))
-                })?;
-            }
-        }
-
-        let diff = SubstateDiff::from_create_node(&node_substates)
-            .map_err(|e| CallbackError::Error(CreateNodeError::SubstateDiffError(e)))?;
-
         let destination_device = if node_id.is_global() {
             SubstateDevice::Store
         } else {
             SubstateDevice::Heap
         };
 
-        self.process_substate_diff(substate_io, handler, destination_device, &diff)
-            .map_err(|e| e.map(CreateNodeError::ProcessSubstateError))?;
+        for (_partition_number, module) in &node_substates {
+            for (substate_key, substate_value) in module {
+                self.process_input_substate_key(substate_key).map_err(|e| {
+                    CallbackError::Error(CreateNodeError::ProcessSubstateKeyError(e))
+                })?;
+                let diff = SubstateDiff::from_new_substate(&substate_value)
+                    .map_err(|e| CallbackError::Error(CreateNodeError::SubstateDiffError(e)))?;
+
+                self.process_substate_diff(substate_io, handler, destination_device, &diff)
+                    .map_err(|e| e.map(CreateNodeError::ProcessSubstateError))?;
+            }
+        }
 
         match destination_device {
             SubstateDevice::Store => {
@@ -732,16 +734,17 @@ impl<C, L: Clone> CallFrame<C, L> {
             .map_err(DropNodeError::TakeNodeError)?;
 
         let node_substates = substate_io.drop_node(SubstateDevice::Heap, node_id)?;
-        let mut handler = NullHandler {
-            phantom0: PhantomData::default(),
-            phantom1: PhantomData::default(),
-        };
-        let diff = SubstateDiff::from_drop_node(&node_substates);
-        self.process_substate_diff(substate_io, &mut handler, SubstateDevice::Heap, &diff)
-            .map_err(|e| match e {
-                CallbackError::Error(e) => DropNodeError::ProcessSubstateError(e),
-                CallbackError::CallbackError(..) => panic!("Should never get here."),
-            })?;
+        let mut handler = NullHandler::new();
+        for (_partition_number, module) in &node_substates {
+            for (_substate_key, substate_value) in module {
+                let diff = SubstateDiff::from_drop_substate(&substate_value);
+                self.process_substate_diff(substate_io, &mut handler, SubstateDevice::Heap, &diff)
+                    .map_err(|e| match e {
+                        CallbackError::Error(e) => DropNodeError::ProcessSubstateError(e),
+                        CallbackError::CallbackError(..) => panic!("Should never get here."),
+                    })?;
+            }
+        }
 
         Ok(node_substates)
     }
@@ -849,7 +852,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         self.process_input_substate_key(substate_key)
             .map_err(|e| CallbackError::Error(OpenSubstateError::ProcessSubstateKeyError(e)))?;
 
-        let (global_lock_handle, substate_value) = substate_io.open_substate(
+        let (global_substate_handle, substate_value) = substate_io.open_substate(
             device,
             node_id,
             partition_num,
@@ -859,59 +862,40 @@ impl<C, L: Clone> CallFrame<C, L> {
             default,
         )?;
 
-        // Analyze owns and references in the substate
         let value_len = substate_value.len();
-        let references: IndexSet<NodeId> =
-            substate_value.references().clone().into_iter().collect(); // du-duplicated
-        let owned_nodes: IndexSet<NodeId> =
-            substate_value.owned_nodes().clone().into_iter().collect();
-
-        for node_id in &references {
+        for node_id in substate_value.references() {
             if node_id.is_global() {
                 // Again, safe to overwrite because Global and DirectAccess are exclusive.
                 self.stable_references
                     .insert(node_id.clone(), StableReferenceType::Global);
-            } else {
-                // Expand transient reference set
-                let ref_device = substate_io.non_global_node_refs.get_ref_device(node_id);
-                self.transient_references
-                    .entry(node_id.clone())
-                    .or_insert(TransientReference {
-                        ref_count: 0usize,
-                        ref_origin: ReferenceOrigin::SubstateNonGlobalReference(ref_device),
-                    })
-                    .ref_count
-                    .add_assign(1);
             }
         }
 
-        for own in &owned_nodes {
-            self.transient_references
-                .entry(own.clone())
-                .or_insert(TransientReference {
-                    ref_count: 0usize,
-                    ref_origin, // Child inherits reference origin
-                })
-                .ref_count
-                .add_assign(1);
-        }
+        let mut open_substate = OpenedSubstate {
+            references: index_set_new(),
+            owned_nodes: index_set_new(),
+            ref_origin,
+            global_substate_handle,
+            device,
+            data,
+        };
+
+        let diff = SubstateDiff::from_new_substate(substate_value)
+            .expect("There should be no issues with already stored substate value");
+
+        Self::apply_diff_to_open_substate(
+            &mut self.transient_references,
+            substate_io,
+            &mut open_substate,
+            &diff,
+        );
 
         // Issue lock handle
-        let lock_handle = self.next_handle;
-        self.open_substates.insert(
-            lock_handle,
-            OpenedSubstate {
-                references,
-                owned_nodes,
-                ref_origin,
-                global_substate_handle: global_lock_handle,
-                device: device,
-                data,
-            },
-        );
+        let substate_handle = self.next_handle;
+        self.open_substates.insert(substate_handle, open_substate);
         self.next_handle = self.next_handle + 1;
 
-        Ok((lock_handle, value_len))
+        Ok((substate_handle, value_len))
     }
 
     pub fn read_substate<'f, S: SubstateStore, H: CallFrameSubstateReadHandler<C, L>>(
@@ -971,7 +955,12 @@ impl<C, L: Clone> CallFrame<C, L> {
         self.process_substate_diff(substate_io, handler, opened_substate.device, &diff)
             .map_err(|e| e.map(WriteSubstateError::ProcessSubstateError))?;
 
-        self.apply_verified_diff_to_open_substate(substate_io, &mut opened_substate, &diff);
+        Self::apply_diff_to_open_substate(
+            &mut self.transient_references,
+            substate_io,
+            &mut opened_substate,
+            &diff,
+        );
 
         substate_io.write_substate(opened_substate.global_substate_handle, substate)?;
 
@@ -985,35 +974,20 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_io: &mut SubstateIO<S>,
         lock_handle: SubstateHandle,
     ) -> Result<(), CloseSubstateError> {
-        let OpenedSubstate {
-            global_substate_handle,
-            owned_nodes,
-            references,
-            ..
-        } = self
+        let mut open_substate = self
             .open_substates
             .remove(&lock_handle)
             .ok_or_else(|| CloseSubstateError::LockNotFound(lock_handle))?;
 
-        substate_io.close_substate(global_substate_handle)?;
+        substate_io.close_substate(open_substate.global_substate_handle)?;
 
-        // Shrink transient reference set
-        for reference in references {
-            if !reference.is_global() {
-                let mut transient_ref = self.transient_references.remove(&reference).unwrap();
-                if transient_ref.ref_count > 1 {
-                    transient_ref.ref_count -= 1;
-                    self.transient_references.insert(reference, transient_ref);
-                }
-            }
-        }
-        for own in owned_nodes {
-            let mut transient_ref = self.transient_references.remove(&own).unwrap();
-            if transient_ref.ref_count > 1 {
-                transient_ref.ref_count -= 1;
-                self.transient_references.insert(own, transient_ref);
-            }
-        }
+        let diff = open_substate.diff_on_close();
+        Self::apply_diff_to_open_substate(
+            &mut self.transient_references,
+            substate_io,
+            &mut open_substate,
+            &diff,
+        );
 
         Ok(())
     }
@@ -1377,15 +1351,15 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
-    fn apply_verified_diff_to_open_substate<S: SubstateStore>(
-        &mut self,
+    fn apply_diff_to_open_substate<S: SubstateStore>(
+        transient_references: &mut NonIterMap<NodeId, TransientReference>,
         substate_io: &SubstateIO<S>,
         open_substate: &mut OpenedSubstate<L>,
         diff: &SubstateDiff,
     ) {
         for added_own in &diff.added_owns {
             open_substate.owned_nodes.insert(*added_own);
-            self.transient_references
+            transient_references
                 .entry(added_own.clone())
                 .or_insert(TransientReference {
                     ref_count: 0usize,
@@ -1397,9 +1371,11 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         for removed_own in &diff.removed_owns {
             open_substate.owned_nodes.remove(removed_own);
-            let transient_ref = self.transient_references.remove(removed_own).unwrap();
-            // This should be true due to write lock invariants
-            assert!(transient_ref.ref_count == 1);
+            let mut transient_ref = transient_references.remove(removed_own).unwrap();
+            if transient_ref.ref_count > 1 {
+                transient_ref.ref_count -= 1;
+                transient_references.insert(*removed_own, transient_ref);
+            }
         }
 
         for added_ref in &diff.added_refs {
@@ -1408,7 +1384,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             if !added_ref.is_global() {
                 let device = substate_io.non_global_node_refs.get_ref_device(added_ref);
 
-                self.transient_references
+                transient_references
                     .entry(added_ref.clone())
                     .or_insert(TransientReference {
                         ref_count: 0usize,
@@ -1423,11 +1399,10 @@ impl<C, L: Clone> CallFrame<C, L> {
             open_substate.references.remove(removed_ref);
 
             if !removed_ref.is_global() {
-                let mut transient_ref = self.transient_references.remove(&removed_ref).unwrap();
+                let mut transient_ref = transient_references.remove(&removed_ref).unwrap();
                 if transient_ref.ref_count > 1 {
                     transient_ref.ref_count -= 1;
-                    self.transient_references
-                        .insert(*removed_ref, transient_ref);
+                    transient_references.insert(*removed_ref, transient_ref);
                 }
             }
         }
@@ -1490,6 +1465,15 @@ impl NonGlobalNodeRefs {
 pub struct NullHandler<C, L> {
     phantom0: PhantomData<C>,
     phantom1: PhantomData<L>,
+}
+
+impl<C, L> NullHandler<C, L> {
+    fn new() -> Self {
+        NullHandler {
+            phantom0: PhantomData::default(),
+            phantom1: PhantomData::default(),
+        }
+    }
 }
 
 impl<C, L> StoreAccessHandler<C, L, ()> for NullHandler<C, L> {
