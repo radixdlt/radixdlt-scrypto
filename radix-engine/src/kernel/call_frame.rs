@@ -1199,9 +1199,6 @@ impl<C, L: Clone> CallFrame<C, L> {
                 };
 
                 if node_is_new {
-                    // Node no longer owned by frame
-                    self.take_node_internal(own)
-                        .map_err(|e| CallbackError::Error(ProcessSubstateError::TakeNodeError(e)))?;
                     added_owned_nodes.insert(*own);
                 }
             }
@@ -1211,12 +1208,6 @@ impl<C, L: Clone> CallFrame<C, L> {
                 for own in &open_substate.owned_nodes {
                     if !new_owned_nodes.contains(own) {
                         removed_owned_nodes.insert(*own);
-
-                        // Node detached
-
-                        // Owned nodes discarded by the substate go back to the call frame,
-                        // and must be explicitly dropped.
-                        //self.owned_root_nodes.insert(own.clone());
                     }
                 }
             }
@@ -1229,15 +1220,13 @@ impl<C, L: Clone> CallFrame<C, L> {
         //====================
         let (added_non_global_references, removed_non_global_refs) = {
             let mut updated_references: IndexSet<NodeId> = index_set_new();
-            let mut added_non_global_references: IndexMap<NodeId, SubstateDevice> = index_map_new();
+            let mut added_non_global_references: IndexSet<NodeId> = index_set_new();
             for node_id in updated_value.references() {
                 // Deduplicate
                 updated_references.insert(node_id.clone());
             }
 
             for reference in &updated_references {
-                // TODO: only check visibility if reference is new
-                // handle added references
                 let node_visibility = self.get_node_visibility(reference);
                 if !node_visibility.can_be_referenced_in_substate() {
                     return Err(CallbackError::Error(ProcessSubstateError::RefNotFound(reference.clone())));
@@ -1251,8 +1240,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                     };
 
                     if reference_is_new {
-                        let (_, device) = self.get_node_ref(reference).unwrap();
-                        added_non_global_references.insert(reference.clone(), device);
+                        added_non_global_references.insert(reference.clone());
                     }
                 }
             }
@@ -1269,9 +1257,13 @@ impl<C, L: Clone> CallFrame<C, L> {
             (added_non_global_references, removed_non_global_refs)
         };
 
-
-
         // Update call frame state
+        for added_owned_node in &added_owned_nodes {
+            // Node no longer owned by frame
+            self.take_node_internal(added_owned_node)
+                .map_err(|e| CallbackError::Error(ProcessSubstateError::TakeNodeError(e)))?;
+        }
+
         if let Some(open_substate) = open_substate.as_mut() {
             for added_owned_node in &added_owned_nodes {
                 open_substate.owned_nodes.insert(*added_owned_node);
@@ -1296,12 +1288,13 @@ impl<C, L: Clone> CallFrame<C, L> {
                 self.owned_root_nodes.insert(removed_owned_node.clone());
             }
 
-            for (reference, device) in &added_non_global_references {
+            for reference in &added_non_global_references {
+                let (_, device) = self.get_node_ref(reference).unwrap();
                 self.transient_references
                     .entry(reference.clone())
                     .or_insert(TransientReference {
                         ref_count: 0usize,
-                        ref_origin: ReferenceOrigin::SubstateNonGlobalReference(*device),
+                        ref_origin: ReferenceOrigin::SubstateNonGlobalReference(device),
                     })
                     .ref_count
                     .add_assign(1);
@@ -1321,8 +1314,9 @@ impl<C, L: Clone> CallFrame<C, L> {
         // Update global state
         match device {
             SubstateDevice::Heap => {
-                for (reference, device) in &added_non_global_references {
-                    substate_io.non_global_node_refs.increment_ref_count(*reference, *device);
+                for reference in &added_non_global_references {
+                    let (_, device) = self.get_node_ref(reference).unwrap();
+                    substate_io.non_global_node_refs.increment_ref_count(*reference, device);
                 }
                 for reference in &removed_non_global_refs {
                     substate_io.non_global_node_refs.decrement_ref_count(reference);
@@ -1334,7 +1328,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 }
 
                 if !added_non_global_references.is_empty() {
-                    return Err(CallbackError::Error(ProcessSubstateError::NonGlobalRefNotAllowed(added_non_global_references.into_keys().next().unwrap())));
+                    return Err(CallbackError::Error(ProcessSubstateError::NonGlobalRefNotAllowed(added_non_global_references.into_iter().next().unwrap())));
                 }
 
                 if !removed_non_global_refs.is_empty() {
