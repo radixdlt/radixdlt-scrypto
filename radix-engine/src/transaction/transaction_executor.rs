@@ -397,7 +397,7 @@ where
             () => resources_tracker.end_measurement(),
         };
 
-        // Produce final receipt
+        // P
         let receipt = TransactionReceipt {
             transaction_result: result,
             resources_usage,
@@ -1007,6 +1007,7 @@ pub fn execute_and_commit_transaction<
         fee_reserve_config,
         execution_config,
         transaction,
+        result,
     );
     if let TransactionResult::Commit(commit) = &receipt.transaction_result {
         substate_db.commit(&commit.state_updates.database_updates);

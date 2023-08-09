@@ -288,7 +288,7 @@ pub fn handle_manifest<O: std::io::Write>(
 }
 
 pub fn process_receipt(receipt: TransactionReceipt) -> Result<TransactionReceipt, Error> {
-    match &receipt.transaction_result {
+    match &receipt.result {
         TransactionResult::Commit(commit) => {
             let mut configs = get_configs()?;
             configs.nonce = get_nonce()? + 1;

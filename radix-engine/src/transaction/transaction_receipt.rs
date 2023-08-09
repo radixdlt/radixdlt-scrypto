@@ -1,7 +1,7 @@
 use super::{BalanceChange, StateUpdateSummary};
 use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
-use crate::system::system_modules::costing::FeeSummary;
+use crate::system::system_modules::costing::{FeeSummary, RoyaltyRecipient};
 use crate::system::system_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
 };
@@ -17,6 +17,8 @@ use radix_engine_interface::types::*;
 use sbor::representations::*;
 use utils::ContextualDisplay;
 
+/*---------------- Receipt models begin ----------------*/
+
 #[derive(Debug, Clone, Default, ScryptoSbor)]
 pub struct ResourcesUsage {
     pub heap_allocations_sum: usize,
@@ -31,20 +33,55 @@ pub struct TransactionExecutionTrace {
     pub fee_locks: FeeLocks,
 }
 
-impl TransactionExecutionTrace {
-    pub fn worktop_changes(&self) -> IndexMap<usize, Vec<WorktopChange>> {
-        let mut aggregator = index_map_new::<usize, Vec<WorktopChange>>();
-        for trace in &self.execution_traces {
-            trace.worktop_changes(&mut aggregator)
-        }
-        aggregator
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, Default)]
 pub struct FeeLocks {
     pub lock: Decimal,
     pub contingent_lock: Decimal,
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct FeeDestination {
+    pub to_proposer: Decimal,
+    pub to_validator_set: Decimal,
+    pub to_burn: Decimal,
+    pub to_royalty_recipient: IndexMap<RoyaltyRecipient, Decimal>,
+}
+
+/// Captures whether a transaction's commit outcome is Success or Failure
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum TransactionOutcome {
+    Success(Vec<InstructionOutput>),
+    Failure(RuntimeError),
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct CommitResult {
+    pub state_updates: StateUpdates,
+    pub state_update_summary: StateUpdateSummary,
+    pub outcome: TransactionOutcome,
+    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+    pub application_logs: Vec<(Level, String)>,
+    pub system_structure: SystemStructure,
+    /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
+    /// Mainly for transaction preview.
+    pub execution_trace: TransactionExecutionTrace,
+    pub fee_source: IndexMap<NodeId, Decimal>,
+    pub fee_destination: FeeDestination,
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct RejectResult {
+    pub error: RejectionError,
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct AbortResult {
+    pub reason: AbortReason,
+}
+
+#[derive(Debug, Clone, Display, PartialEq, Eq, Sbor)]
+pub enum AbortReason {
+    ConfiguredAbortTriggeredOnFeeLoanRepayment,
 }
 
 /// Captures whether a transaction should be committed, and its other results
@@ -53,6 +90,76 @@ pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
     Abort(AbortResult),
+}
+
+#[derive(Clone, ScryptoSbor)]
+pub struct TransactionParameters {
+    /// The price of execution cost unit in XRD.
+    pub execution_cost_unit_price: Decimal,
+    /// The maximum execution cost unit to consume.
+    pub execution_cost_unit_limit: u32,
+    /// The price of finalization cost unit in XRD.
+    pub finalization_cost_unit_price: Decimal,
+    /// The maximum finalization cost unit to consume.
+    pub finalization_cost_unit_limit: u32,
+    /// The tip percentage that should be applied on execution and finalization costs.
+    pub tip_percentage: u16,
+}
+
+#[derive(Clone, ScryptoSbor)]
+pub struct TransactionFeeSummary {
+    /// Total execution cost units consumed.
+    pub total_execution_cost_in_cost_units: u32,
+    /// Total execution cost in XRD.
+    pub total_execution_cost_in_xrd: Decimal,
+    /// Total finalization cost units consumed.
+    pub total_finalization_cost_in_cost_units: u32,
+    /// Total finalization cost in XRD.
+    pub total_finalization_cost_in_xrd: Decimal,
+    /// Total tip in XRD.
+    pub total_tip_cost_in_xrd: Decimal,
+    /// Total storage cost in XRD.
+    pub total_storage_cost_in_xrd: Decimal,
+    /// Total royalty cost in XRD.
+    pub total_royalty_cost_in_xrd: Decimal,
+}
+
+#[derive(Clone, ScryptoSbor)]
+pub struct TransactionFeeBreakdown {
+    /// Execution cost breakdown
+    ///
+    /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
+    execution_breakdown_in_cost_units: BTreeMap<String, u32>,
+    /// Finalization cost breakdown
+    ///
+    /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
+    finalization_breakdown_in_cost_units: BTreeMap<String, u32>,
+}
+
+#[derive(Clone, ScryptoSbor)]
+pub struct TransactionReceipt {
+    /// Transaction parameters
+    pub parameters: TransactionParameters,
+    /// Transaction fee summary
+    pub fee_summary: TransactionFeeSummary,
+    /// Transaction fee breakdown
+    pub fee_breakdown: TransactionFeeBreakdown,
+    /// Transaction result
+    pub result: TransactionResult,
+    /// Optional, only when compile-time feature flag `resources_usage` is ON.
+    pub resources_usage: ResourcesUsage,
+}
+
+/*---------------- Receipt models ends ----------------*/
+
+impl TransactionExecutionTrace {
+    pub fn worktop_changes(&self) -> IndexMap<usize, Vec<WorktopChange>> {
+        let mut aggregator = index_map_new::<usize, Vec<WorktopChange>>();
+        for trace in &self.execution_traces {
+            trace.worktop_changes(&mut aggregator)
+        }
+        aggregator
+    }
 }
 
 impl TransactionResult {
@@ -64,27 +171,12 @@ impl TransactionResult {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct CommitResult {
-    pub state_updates: StateUpdates,
-    pub state_update_summary: StateUpdateSummary,
-    pub outcome: TransactionOutcome,
-    pub fee_summary: FeeSummary,
-    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
-    pub application_logs: Vec<(Level, String)>,
-    pub system_structure: SystemStructure,
-    /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
-    /// Mainly for transaction preview.
-    pub execution_trace: TransactionExecutionTrace,
-}
-
 impl CommitResult {
     pub fn empty_with_outcome(outcome: TransactionOutcome) -> Self {
         Self {
             state_updates: Default::default(),
             state_update_summary: Default::default(),
             outcome,
-            fee_summary: Default::default(),
             application_events: Default::default(),
             application_logs: Default::default(),
             system_structure: Default::default(),
@@ -159,13 +251,6 @@ impl CommitResult {
     }
 }
 
-/// Captures whether a transaction's commit outcome is Success or Failure
-#[derive(Debug, Clone, ScryptoSbor)]
-pub enum TransactionOutcome {
-    Success(Vec<InstructionOutput>),
-    Failure(RuntimeError),
-}
-
 impl TransactionOutcome {
     pub fn is_success(&self) -> bool {
         matches!(self, Self::Success(_))
@@ -196,41 +281,18 @@ impl TransactionOutcome {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct RejectResult {
-    pub error: RejectionError,
-}
-
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct AbortResult {
-    pub reason: AbortReason,
-}
-
-#[derive(Debug, Clone, Display, PartialEq, Eq, Sbor)]
-pub enum AbortReason {
-    ConfiguredAbortTriggeredOnFeeLoanRepayment,
-}
-
-/// Represents a transaction receipt.
-#[derive(Clone, ScryptoSbor)]
-pub struct TransactionReceipt {
-    pub transaction_result: TransactionResult,
-    /// Optional, only when compile-time feature flag `resources_usage` is ON.
-    pub resources_usage: ResourcesUsage,
-}
-
 impl TransactionReceipt {
     /// An empty receipt for merging changes into.
     pub fn empty_with_commit(commit_result: CommitResult) -> Self {
         Self {
-            transaction_result: TransactionResult::Commit(commit_result),
+            result: TransactionResult::Commit(commit_result),
             resources_usage: Default::default(),
         }
     }
 
     pub fn is_commit_success(&self) -> bool {
         matches!(
-            self.transaction_result,
+            self.result,
             TransactionResult::Commit(CommitResult {
                 outcome: TransactionOutcome::Success(_),
                 ..
@@ -240,7 +302,7 @@ impl TransactionReceipt {
 
     pub fn is_commit_failure(&self) -> bool {
         matches!(
-            self.transaction_result,
+            self.result,
             TransactionResult::Commit(CommitResult {
                 outcome: TransactionOutcome::Failure(_),
                 ..
@@ -249,11 +311,11 @@ impl TransactionReceipt {
     }
 
     pub fn is_rejection(&self) -> bool {
-        matches!(self.transaction_result, TransactionResult::Reject(_))
+        matches!(self.result, TransactionResult::Reject(_))
     }
 
     pub fn expect_commit_ignore_result(&self) -> &CommitResult {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
@@ -286,7 +348,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_rejection(&self) -> &RejectionError {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
             TransactionResult::Reject(ref r) => &r.error,
             TransactionResult::Abort(..) => panic!("Expected rejection but was abort"),
@@ -294,7 +356,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_abortion(&self) -> &AbortReason {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(..) => panic!("Expected abortion but was commit"),
             TransactionResult::Reject(..) => panic!("Expected abortion but was reject"),
             TransactionResult::Abort(ref r) => &r.reason,
@@ -302,7 +364,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_not_success(&self) {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(c) => {
                 if c.outcome.is_success() {
                     panic!("Transaction succeeded unexpectedly")
@@ -317,7 +379,7 @@ impl TransactionReceipt {
     where
         F: Fn(&RejectionError) -> bool,
     {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was committed"),
             TransactionResult::Reject(result) => {
                 if !f(&result.error) {
@@ -332,7 +394,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_failure(&self) -> &RuntimeError {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
                 TransactionOutcome::Failure(error) => error,
@@ -488,7 +550,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         f: &mut F,
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        let result = &self.transaction_result;
+        let result = &self.result;
         let scrypto_value_display_context = context.display_context();
         let address_display_context = context.address_display_context();
 
