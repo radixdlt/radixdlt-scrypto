@@ -1,4 +1,9 @@
-use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateNodeError, DropNodeError, MoveModuleError, NonGlobalNodeRefs, OpenSubstateError, PersistNodeError, WriteSubstateError};
+use crate::kernel::call_frame::{
+    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
+    CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
+    CreateNodeError, DropNodeError, MoveModuleError, NonGlobalNodeRefs, OpenSubstateError,
+    PersistNodeError, WriteSubstateError,
+};
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::{
@@ -216,11 +221,8 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 SubstateDevice::Store => {
                     // Recursively move nodes to store
                     for own in substate_value.owned_nodes() {
-                        self.move_node_from_heap_to_store(
-                            handler,
-                            own,
-                        )
-                        .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
+                        self.move_node_from_heap_to_store(handler, own)
+                            .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                     }
 
                     for reference in substate_value.references() {
@@ -547,7 +549,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
 
         Ok(substates)
     }
-
 
     fn get_substate_internal<'a, E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         heap: &'a mut Heap,

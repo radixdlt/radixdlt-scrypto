@@ -2,7 +2,9 @@ use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
 };
-use radix_engine::kernel::call_frame::{CreateNodeError, ProcessSubstateError, SubstateDiffError, WriteSubstateError};
+use radix_engine::kernel::call_frame::{
+    CreateNodeError, ProcessSubstateError, SubstateDiffError, WriteSubstateError,
+};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
