@@ -24,7 +24,7 @@ pub enum SubstateDevice {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LockData {
-    flags: LockFlags,
+    pub flags: LockFlags,
     device: SubstateDevice,
 }
 

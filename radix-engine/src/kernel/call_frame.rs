@@ -853,6 +853,11 @@ impl<C, L: Clone> CallFrame<C, L> {
                     lock_handle,
                 )))?;
 
+        let (.., data) = substate_io.substate_locks.get(opened_substate.global_substate_handle);
+        if !data.flags.contains(LockFlags::MUTABLE) {
+            return Err(CallbackError::Error(WriteSubstateError::NoWritePermission));
+        }
+
         self
             .process_substate(
                 substate_io,
@@ -1179,7 +1184,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         mut open_substate: Option<&mut OpenedSubstate<L>>,
     ) -> Result<(), CallbackError<ProcessSubstateError, E>> {
         // Process owned nodes
-        let (new_owned_nodes, added_owned_nodes) = {
+        let (added_owned_nodes, removed_owned_nodes) = {
             let mut added_owned_nodes: IndexSet<NodeId> = index_set_new();
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
             for own in updated_value.owned_nodes() {
@@ -1201,21 +1206,22 @@ impl<C, L: Clone> CallFrame<C, L> {
                 }
             }
 
+            let mut removed_owned_nodes: IndexSet<NodeId> = index_set_new();
             if let Some(open_substate) = open_substate.as_mut() {
                 for own in &open_substate.owned_nodes {
                     if !new_owned_nodes.contains(own) {
+                        removed_owned_nodes.insert(*own);
+
                         // Node detached
-                        if device.eq(&SubstateDevice::Store) {
-                            return Err(CallbackError::Error(ProcessSubstateError::CantDropNodeInStore(own.clone())));
-                        }
+
                         // Owned nodes discarded by the substate go back to the call frame,
                         // and must be explicitly dropped.
-                        self.owned_root_nodes.insert(own.clone());
+                        //self.owned_root_nodes.insert(own.clone());
                     }
                 }
             }
 
-            (new_owned_nodes, added_owned_nodes)
+            (added_owned_nodes, removed_owned_nodes)
         };
 
         //====================
@@ -1268,6 +1274,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         // Update call frame state
         if let Some(open_substate) = open_substate.as_mut() {
             for added_owned_node in &added_owned_nodes {
+                open_substate.owned_nodes.insert(*added_owned_node);
                 self.transient_references
                     .entry(added_owned_node.clone())
                     .or_insert(TransientReference {
@@ -1277,9 +1284,17 @@ impl<C, L: Clone> CallFrame<C, L> {
                     .ref_count
                     .add_assign(1);
             }
-            open_substate.owned_nodes = new_owned_nodes;
 
-            // TODO: Remove transient references to removed_owned_nodes
+            for removed_owned_node in &removed_owned_nodes {
+                open_substate.owned_nodes.remove(removed_owned_node);
+                let transient_ref = self.transient_references.remove(removed_owned_node).unwrap();
+                // This should be true due to write lock invariants
+                assert!(transient_ref.ref_count == 1);
+
+                // Owned nodes discarded by the substate go back to the call frame,
+                // and must be explicitly dropped.
+                self.owned_root_nodes.insert(removed_owned_node.clone());
+            }
 
             for (reference, device) in &added_non_global_references {
                 self.transient_references
@@ -1314,6 +1329,10 @@ impl<C, L: Clone> CallFrame<C, L> {
                 }
             }
             SubstateDevice::Store => {
+                if !removed_owned_nodes.is_empty() {
+                    return Err(CallbackError::Error(ProcessSubstateError::CantDropNodeInStore(removed_owned_nodes.into_iter().next().unwrap())));
+                }
+
                 if !added_non_global_references.is_empty() {
                     return Err(CallbackError::Error(ProcessSubstateError::NonGlobalRefNotAllowed(added_non_global_references.into_keys().next().unwrap())));
                 }
