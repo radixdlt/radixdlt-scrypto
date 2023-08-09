@@ -15,7 +15,6 @@ use radix_engine_common::ScryptoSbor;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use sbor::prelude::Box;
 use sbor::prelude::Vec;
 use sbor::rust::collections::LinkedList;
 
@@ -29,6 +28,7 @@ pub enum SubstateDevice {
 pub struct LockData {
     pub flags: LockFlags,
     device: SubstateDevice,
+    virtualized: Option<IndexedScryptoValue>,
 }
 
 pub trait SubstateIOHandler<E> {
@@ -308,10 +308,32 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             partition_num,
             substate_key,
             on_store_access,
-            default,
         )?;
 
-        let lock_data = LockData { flags, device };
+        let (lock_data, substate_value) = if let Some(substate_value) = substate_value {
+            let lock_data = LockData {
+                flags,
+                device,
+                virtualized: None,
+            };
+
+            (lock_data, Some(substate_value))
+        } else if let Some(compute_default) = default {
+            let default_value = compute_default();
+            if !default_value.owned_nodes().is_empty() {
+                return Err(CallbackError::Error(OpenSubstateError::InvalidDefaultValue));
+            }
+
+            let lock_data = LockData {
+                flags,
+                device,
+                virtualized: Some(default_value),
+            };
+
+            (lock_data, None)
+        } else {
+            return Err(CallbackError::Error(OpenSubstateError::SubstateFault));
+        };
 
         let global_lock_handle = match self.substate_locks.lock(
             node_id,
@@ -330,6 +352,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             }
         };
 
+        let substate_value = substate_value.unwrap_or_else(|| {
+            let (.., data) = self.substate_locks.get(global_lock_handle);
+            data.virtualized.as_ref().unwrap()
+        });
+
         Ok((global_lock_handle, substate_value))
     }
 
@@ -341,6 +368,12 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get(global_lock_handle);
 
+        // If substate is current virtualized, just return it
+        if let Some(virtualized) = &lock_data.virtualized {
+            // TODO: Should we callback for costing in this case?
+            return Ok(virtualized);
+        }
+
         let substate = match lock_data.device {
             SubstateDevice::Heap => self
                 .heap
@@ -349,7 +382,8 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             SubstateDevice::Store => self
                 .store
                 .get_substate(node_id, *partition_num, substate_key, &mut |_| Err(()))
-                .expect("Getting substate on handled substate should not incur a store access."),
+                .expect("Getting substate on handled substate should not incur a store access.")
+                .unwrap(),
         };
 
         handler.on_read_substate(&self.heap, substate, lock_data.device)?;
@@ -367,6 +401,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         if !lock_data.flags.contains(LockFlags::MUTABLE) {
             return Err(CallbackError::Error(WriteSubstateError::NoWritePermission));
         }
+
+        // Remove any virtualized state if it exists
+        let _ = lock_data.virtualized.take();
 
         let node_id = node_id.clone();
         let partition_num = partition_num.clone();
@@ -558,23 +595,14 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         on_store_access: &mut F,
-        default: Option<fn() -> IndexedScryptoValue>,
-    ) -> Result<&'a IndexedScryptoValue, CallbackError<OpenSubstateError, E>> {
+    ) -> Result<Option<&'a IndexedScryptoValue>, CallbackError<OpenSubstateError, E>> {
         let value = match location {
-            SubstateDevice::Heap => heap
-                .get_substate_or_default(node_id, partition_num, substate_key, || {
-                    default.map(|f| f())
-                })
-                .map_err(|e| CallbackError::Error(OpenSubstateError::HeapError(e)))?,
+            SubstateDevice::Heap => heap.get_substate(node_id, partition_num, substate_key),
             SubstateDevice::Store => store
-                .get_substate_or_default(
-                    node_id,
-                    partition_num,
-                    substate_key,
-                    &mut |store_access| on_store_access(heap, store_access),
-                    || default.map(|f| f()),
-                )
-                .map_err(|x| x.map(|e| OpenSubstateError::TrackError(Box::new(e))))?,
+                .get_substate(node_id, partition_num, substate_key, &mut |store_access| {
+                    on_store_access(heap, store_access)
+                })
+                .map_err(|e| CallbackError::CallbackError(e))?,
         };
 
         Ok(value)

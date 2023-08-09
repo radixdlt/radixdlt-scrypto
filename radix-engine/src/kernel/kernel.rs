@@ -26,9 +26,7 @@ use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::track::interface::{
-    CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackGetSubstateError,
-};
+use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -117,13 +115,12 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             let substate_ref = kernel
                 .substate_io
                 .store
-                .get_substate(
+                .read_substate(
                     node_id,
                     TYPE_INFO_FIELD_PARTITION,
                     &TypeInfoField::TypeInfo.into(),
-                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
-                .map_err(|_| KernelError::InvalidReference(*node_id))?;
+                .ok_or_else(|| KernelError::InvalidReference(*node_id))?;
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
@@ -675,60 +672,45 @@ where
         let (lock_handle, value_size): (u32, usize) = match &maybe_lock_handle {
             Ok((lock_handle, value_size)) => (*lock_handle, *value_size),
             Err(CallbackError::CallbackError(e)) => return Err(e.clone()),
-            Err(CallbackError::Error(OpenSubstateError::TrackError(track_err))) => {
-                if matches!(track_err.as_ref(), TrackGetSubstateError::NotFound(..)) {
-                    let retry =
-                        M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
+            Err(CallbackError::Error(OpenSubstateError::SubstateFault)) => {
+                let retry =
+                    M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
 
-                    if retry {
-                        let mut handler = KernelHandler {
-                            callback: self.callback,
-                            prev_frame: self.prev_frame_stack.last(),
-                            on_store_access: |api, store_access| {
-                                M::on_open_substate(
-                                    api,
-                                    OpenSubstateEvent::StoreAccess(&store_access),
-                                )
-                            },
-                        };
+                if retry {
+                    let mut handler = KernelHandler {
+                        callback: self.callback,
+                        prev_frame: self.prev_frame_stack.last(),
+                        on_store_access: |api, store_access| {
+                            M::on_open_substate(api, OpenSubstateEvent::StoreAccess(&store_access))
+                        },
+                    };
 
-                        self.current_frame
-                            .open_substate(
-                                &mut self.substate_io,
-                                &node_id,
-                                partition_num,
-                                &substate_key,
-                                flags,
-                                &mut handler,
-                                None,
-                                M::LockData::default(),
-                            )
-                            .map_err(|e| match e {
-                                CallbackError::Error(e) => {
-                                    RuntimeError::KernelError(KernelError::CallFrameError(
-                                        CallFrameError::OpenSubstateError(e),
-                                    ))
-                                }
-                                CallbackError::CallbackError(e) => e,
-                            })?
-                    } else {
-                        return maybe_lock_handle
-                            .map(|(lock_handle, _)| lock_handle)
-                            .map_err(|e| match e {
-                                CallbackError::Error(e) => {
-                                    RuntimeError::KernelError(KernelError::CallFrameError(
-                                        CallFrameError::OpenSubstateError(e),
-                                    ))
-                                }
-                                CallbackError::CallbackError(e) => e,
-                            });
-                    }
+                    self.current_frame
+                        .open_substate(
+                            &mut self.substate_io,
+                            &node_id,
+                            partition_num,
+                            &substate_key,
+                            flags,
+                            &mut handler,
+                            None,
+                            M::LockData::default(),
+                        )
+                        .map_err(|e| match e {
+                            CallbackError::Error(e) => RuntimeError::KernelError(
+                                KernelError::CallFrameError(CallFrameError::OpenSubstateError(e)),
+                            ),
+                            CallbackError::CallbackError(e) => e,
+                        })?
                 } else {
-                    return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                        CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(
-                            track_err.clone(),
-                        )),
-                    )));
+                    return maybe_lock_handle
+                        .map(|(lock_handle, _)| lock_handle)
+                        .map_err(|e| match e {
+                            CallbackError::Error(e) => RuntimeError::KernelError(
+                                KernelError::CallFrameError(CallFrameError::OpenSubstateError(e)),
+                            ),
+                            CallbackError::CallbackError(e) => e,
+                        });
                 }
             }
             Err(err) => {

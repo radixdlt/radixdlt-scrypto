@@ -2,15 +2,13 @@ use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
     ProcessSubstateIOWriteError, SubstateDevice, SubstateIO, SubstateIOHandler, SubstateReadHandler,
 };
-use crate::track::interface::{
-    CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackGetSubstateError,
-};
+use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
-use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError};
+use super::heap::{Heap, HeapRemoveModuleError};
 
 /// A message used for communication between call frames.
 ///
@@ -479,8 +477,8 @@ pub enum MoveModuleError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum OpenSubstateError {
     NodeNotVisible(NodeId),
-    HeapError(HeapOpenSubstateError),
-    TrackError(Box<TrackGetSubstateError>),
+    SubstateFault,
+    InvalidDefaultValue,
     ProcessSubstateKeyError(ProcessSubstateKeyError),
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
     LockUnmodifiedBaseOnHeapNode,

@@ -309,7 +309,7 @@ where
                             May also cache the information for better performance.
                         */
                         let substate = track
-                            .get_substate(
+                            .read_substate(
                                 RESOURCE_PACKAGE.as_node_id(),
                                 MAIN_BASE_PARTITION
                                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
@@ -320,7 +320,6 @@ where
                                     ))
                                     .unwrap(),
                                 ),
-                                &mut |_| -> Result<(), ()> { Ok(()) },
                             )
                             .unwrap();
                         let substate: KeyValueEntrySubstate<BlueprintDefinition> =
@@ -416,20 +415,17 @@ where
     fn read_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
-        let substate: FieldSubstate<ConsensusManagerSubstate> = match track.get_substate(
+        match track.read_substate(
             CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
-            &mut |_| -> Result<(), ()> { Ok(()) },
         ) {
-            Ok(x) => x,
-            Err(_) => {
-                return None;
+            Some(x) => {
+                let substate: FieldSubstate<ConsensusManagerSubstate> = x.as_typed().unwrap();
+                Some(substate.value.0.epoch)
             }
+            None => None,
         }
-        .as_typed()
-        .unwrap();
-        Some(substate.value.0.epoch)
     }
 
     fn validate_epoch_range(
@@ -459,11 +455,10 @@ where
         expiry_epoch: Epoch,
     ) -> Result<(), RejectionError> {
         let substate: FieldSubstate<TransactionTrackerSubstate> = track
-            .get_substate(
+            .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
-                &mut |_| -> Result<(), ()> { Ok(()) },
             )
             .unwrap()
             .as_typed()
@@ -475,32 +470,28 @@ where
             .partition_for_expiry_epoch(expiry_epoch)
             .expect("Transaction tracker should cover all valid epoch ranges");
 
-        let substate: KeyValueEntrySubstate<TransactionStatus> = track
-            .get_substate_or_default(
-                TRANSACTION_TRACKER.as_node_id(),
-                PartitionNumber(partition_number),
-                &SubstateKey::Map(intent_hash.to_vec()),
-                &mut |_| -> Result<(), ()> { Ok(()) },
-                || {
-                    Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                        value: Option::<TransactionStatus>::None,
-                        mutability: SubstateMutability::Mutable,
-                    }))
-                },
-            )
-            .unwrap()
-            .as_typed()
-            .unwrap();
+        let substate = track.read_substate(
+            TRANSACTION_TRACKER.as_node_id(),
+            PartitionNumber(partition_number),
+            &SubstateKey::Map(intent_hash.to_vec()),
+        );
 
-        match substate.value {
-            Some(status) => match status {
-                TransactionStatus::CommittedSuccess | TransactionStatus::CommittedFailure => {
-                    return Err(RejectionError::IntentHashPreviouslyCommitted);
+        match substate {
+            Some(value) => {
+                let substate: KeyValueEntrySubstate<TransactionStatus> = value.as_typed().unwrap();
+                match substate.value {
+                    Some(status) => match status {
+                        TransactionStatus::CommittedSuccess
+                        | TransactionStatus::CommittedFailure => {
+                            return Err(RejectionError::IntentHashPreviouslyCommitted);
+                        }
+                        TransactionStatus::Cancelled => {
+                            return Err(RejectionError::IntentHashPreviouslyCancelled);
+                        }
+                    },
+                    None => {}
                 }
-                TransactionStatus::Cancelled => {
-                    return Err(RejectionError::IntentHashPreviouslyCancelled);
-                }
-            },
+            }
             None => {}
         }
 
@@ -652,12 +643,7 @@ where
             let node_id = recipient_vault_id;
             let substate_key = FungibleVaultField::LiquidFungible.into();
             let mut substate: FieldSubstate<LiquidFungibleResource> = track
-                .get_substate(
-                    &node_id,
-                    MAIN_BASE_PARTITION,
-                    &substate_key,
-                    &mut |_| -> Result<(), ()> { Ok(()) },
-                )
+                .read_substate(&node_id, MAIN_BASE_PARTITION, &substate_key)
                 .unwrap()
                 .as_typed()
                 .unwrap();
@@ -698,11 +684,10 @@ where
 
             // Refund overpayment
             let mut substate: FieldSubstate<LiquidFungibleResource> = track
-                .get_substate(
+                .read_substate(
                     &vault_id,
                     MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
-                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap()
                 .as_typed()
@@ -755,11 +740,10 @@ where
             // Fetch current leader
             // TODO: maybe we should move current leader into validator rewards?
             let substate: FieldSubstate<ConsensusManagerSubstate> = track
-                .get_substate(
+                .read_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &ConsensusManagerField::ConsensusManager.into(),
-                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap()
                 .as_typed()
@@ -768,11 +752,10 @@ where
 
             // Update validator rewards
             let mut substate: FieldSubstate<ValidatorRewardsSubstate> = track
-                .get_substate(
+                .read_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &ConsensusManagerField::ValidatorRewards.into(),
-                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap()
                 .as_typed()
@@ -802,11 +785,10 @@ where
 
             // Put validator rewards into the vault
             let mut substate: FieldSubstate<LiquidFungibleResource> = track
-                .get_substate(
+                .read_substate(
                     &vault_node_id,
                     MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
-                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap()
                 .as_typed()
@@ -838,11 +820,10 @@ where
     ) {
         // Read the intent hash store
         let mut transaction_tracker: FieldSubstate<TransactionTrackerSubstate> = track
-            .get_substate(
+            .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
-                &mut |_| -> Result<(), ()> { Ok(()) },
             )
             .unwrap()
             .as_typed()
