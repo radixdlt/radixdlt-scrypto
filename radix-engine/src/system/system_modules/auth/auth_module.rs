@@ -12,7 +12,6 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::EnabledModules;
 use crate::types::*;
 use radix_engine_interface::api::{ClientBlueprintApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
@@ -80,7 +79,7 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        // Create AuthActorInfo
+        // Create AuthZone
         let auth_zone = {
             // TODO: Remove special casing use of transaction processor and just have virtual resources
             // stored in root call frame
@@ -106,12 +105,6 @@ impl AuthModule {
         };
 
         // Check authorization
-        if api
-            .kernel_get_system_state()
-            .system
-            .modules
-            .enabled_modules
-            .contains(EnabledModules::AUTH)
         {
             // Step 1: Resolve method to permission
             let permission = PackageAuthNativeBlueprint::resolve_function_permission(
@@ -140,7 +133,7 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        Self::on_execution_finish(api, auth_zone)
+        Self::on_fn_finish(api, auth_zone)
     }
 
     pub fn on_call_method<V, Y>(
@@ -155,39 +148,25 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        let auth_zone = Self::on_execution_start(
+        let auth_zone = AuthModule::on_execution_start(
             api,
             Some((receiver, direct_access)),
             btreeset!(),
             btreeset!(),
         )?;
 
-        if api
-            .kernel_get_system_state()
-            .system
-            .modules
-            .enabled_modules
-            .contains(EnabledModules::AUTH)
-        {
-            // Step 1: Resolve method to permission
-            let blueprint_id = api.get_blueprint_info(receiver, module_id)?.blueprint_id;
+        // Step 1: Resolve method to permission
+        let blueprint_id = api.get_blueprint_info(receiver, module_id)?.blueprint_id;
 
-            let permission = Self::resolve_method_permission(
-                api,
-                &blueprint_id,
-                receiver,
-                &module_id,
-                ident,
-                args,
-            )?;
+        let permission =
+            Self::resolve_method_permission(api, &blueprint_id, receiver, &module_id, ident, args)?;
 
-            // Step 2: Check permission
-            let fn_identifier = FnIdentifier {
-                blueprint_id: blueprint_id.clone(),
-                ident: ident.to_string(),
-            };
-            Self::check_permission(&auth_zone, permission, fn_identifier, api)?;
-        }
+        // Step 2: Check permission
+        let fn_identifier = FnIdentifier {
+            blueprint_id: blueprint_id.clone(),
+            ident: ident.to_string(),
+        };
+        Self::check_permission(&auth_zone, permission, fn_identifier, api)?;
 
         Ok(auth_zone)
     }
@@ -200,7 +179,20 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        Self::on_execution_finish(api, auth_zone)
+        Self::on_fn_finish(api, auth_zone)
+    }
+
+    pub fn create_mock<V, Y>(
+        system: &mut SystemService<Y, V>,
+        receiver: Option<(&NodeId, bool)>,
+        virtual_resources: BTreeSet<ResourceAddress>,
+        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
+    ) -> Result<NodeId, RuntimeError>
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
+    {
+        Self::on_execution_start(system, receiver, virtual_resources, virtual_non_fungibles)
     }
 
     fn copy_global_caller<V, Y>(
@@ -331,7 +323,7 @@ impl AuthModule {
         Ok(self_auth_zone)
     }
 
-    fn on_execution_finish<V, Y>(
+    pub fn on_fn_finish<V, Y>(
         api: &mut SystemService<Y, V>,
         self_auth_zone: NodeId,
     ) -> Result<(), RuntimeError>

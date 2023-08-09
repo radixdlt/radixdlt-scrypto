@@ -16,9 +16,9 @@ use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_modules::transaction_runtime::Event;
+use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
@@ -1592,7 +1592,7 @@ where
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_actor_info = AuthModule::on_call_method(
+        let auth_actor_info = SystemModuleMixer::on_call_method(
             self,
             receiver,
             module_id,
@@ -1617,7 +1617,7 @@ where
             }))
             .map(|v| v.into())?;
 
-        AuthModule::on_call_method_finish(self, auth_actor_info)?;
+        SystemModuleMixer::on_call_method_finish(self, auth_actor_info)?;
 
         Ok(rtn)
     }
@@ -2178,7 +2178,7 @@ where
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
         let blueprint_id = BlueprintId::new(&package_address, blueprint_name);
-        let auth_zone = AuthModule::on_call_function(self, &blueprint_id, function_name)?;
+        let auth_zone = SystemModuleMixer::on_call_function(self, &blueprint_id, function_name)?;
 
         let rtn = self
             .api
@@ -2192,7 +2192,7 @@ where
             }))
             .map(|v| v.into())?;
 
-        AuthModule::on_call_function_finish(self, auth_zone)?;
+        SystemModuleMixer::on_call_function_finish(self, auth_zone)?;
 
         Ok(rtn)
     }

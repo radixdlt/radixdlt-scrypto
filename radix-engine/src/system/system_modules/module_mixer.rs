@@ -11,6 +11,7 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::module::KernelModule;
+use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::AuthModule;
@@ -374,6 +375,84 @@ impl SystemModuleMixer {
     // - Kernel uses the `SystemModule<SystemConfig<V>>` trait above;
     // - System uses methods defined below (TODO: add a trait?)
 
+    pub fn on_call_method<Y, V>(
+        api: &mut SystemService<Y, V>,
+        receiver: &NodeId,
+        module_id: ObjectModuleId,
+        direct_access: bool,
+        ident: &str,
+        args: &IndexedScryptoValue,
+    ) -> Result<NodeId, RuntimeError>
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
+    {
+        let auth_zone = if api
+            .kernel_get_system_state()
+            .system
+            .modules
+            .enabled_modules
+            .contains(EnabledModules::AUTH)
+        {
+            AuthModule::on_call_method(api, receiver, module_id, direct_access, ident, args)?
+        } else {
+            AuthModule::create_mock(
+                api,
+                Some((receiver, direct_access)),
+                btreeset!(),
+                btreeset!(),
+            )?
+        };
+
+        Ok(auth_zone)
+    }
+
+    pub fn on_call_method_finish<Y, V>(
+        api: &mut SystemService<Y, V>,
+        auth_zone: NodeId,
+    ) -> Result<(), RuntimeError>
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
+    {
+        AuthModule::on_fn_finish(api, auth_zone)
+    }
+
+    pub fn on_call_function<V, Y>(
+        api: &mut SystemService<Y, V>,
+        blueprint_id: &BlueprintId,
+        ident: &str,
+    ) -> Result<NodeId, RuntimeError>
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
+    {
+        let auth_zone = if api
+            .kernel_get_system_state()
+            .system
+            .modules
+            .enabled_modules
+            .contains(EnabledModules::AUTH)
+        {
+            AuthModule::on_call_function(api, blueprint_id, ident)?
+        } else {
+            AuthModule::create_mock(api, None, btreeset!(), btreeset!())?
+        };
+
+        Ok(auth_zone)
+    }
+
+    pub fn on_call_function_finish<V, Y>(
+        api: &mut SystemService<Y, V>,
+        auth_zone: NodeId,
+    ) -> Result<(), RuntimeError>
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
+    {
+        AuthModule::on_fn_finish(api, auth_zone)
+    }
+
     pub fn add_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
             if self.transaction_runtime.logs.len() >= self.limits.config().max_number_of_logs {
@@ -463,16 +542,6 @@ impl SystemModuleMixer {
             self.transaction_runtime.add_replacement(old, new)
         }
     }
-
-    /*
-    pub fn auth_zone_id(&mut self) -> Option<NodeId> {
-        if self.enabled_modules.contains(EnabledModules::AUTH) {
-            self.auth.last_auth_zone()
-        } else {
-            None
-        }
-    }
-     */
 
     pub fn fee_reserve(&mut self) -> Option<&SystemLoanFeeReserve> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
