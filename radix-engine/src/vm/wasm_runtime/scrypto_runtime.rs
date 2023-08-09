@@ -5,7 +5,6 @@ use crate::vm::wasm::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, FieldValue};
-use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::types::ClientCostingEntry;
 use radix_engine_interface::types::Level;
 use sbor::rust::vec::Vec;
@@ -360,15 +359,6 @@ where
 
         let buffer = scrypto_encode(&auth_zone).expect("Failed to encode auth_zone");
         self.allocate_buffer(buffer)
-    }
-
-    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
-        let rule =
-            scrypto_decode::<AccessRule>(&rule).map_err(WasmRuntimeError::InvalidAccessRule)?;
-
-        self.api
-            .assert_access_rule(rule)
-            .map_err(InvokeError::downstream)
     }
 
     fn consume_wasm_execution_units(

@@ -93,11 +93,21 @@ pub const AUTH_ZONE_DRAIN_IDENT: &str = "drain";
 pub struct AuthZoneDrainInput {}
 
 pub type AuthZoneDrainOutput = Vec<Proof>;
+
+pub const AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT: &str = "assert_access_rule";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct AuthZoneAssertAccessRuleInput {
+    pub rule: AccessRule,
+}
+
+pub type AuthZoneAssertAccessRuleOutput = ();
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 #[sbor(transparent)]
-pub struct OwnedAuthZone(pub Own);
+pub struct AuthZoneRef(pub NodeId);
 
-impl Describe<ScryptoCustomTypeKind> for OwnedAuthZone {
+impl Describe<ScryptoCustomTypeKind> for AuthZoneRef {
     const TYPE_ID: GlobalTypeId =
         GlobalTypeId::Novel(const_sha1::sha1("OwnedAuthZone".as_bytes()).as_bytes());
 

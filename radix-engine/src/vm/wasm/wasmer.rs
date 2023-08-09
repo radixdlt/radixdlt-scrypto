@@ -587,20 +587,6 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn assert_access_rule(
-            env: &WasmerInstanceEnv,
-            rule_ptr: u32,
-            rule_len: u32,
-        ) -> Result<(), RuntimeError> {
-            let (instance, runtime) = grab_runtime!(env);
-
-            let rule = read_memory(&instance, rule_ptr, rule_len)?;
-
-            runtime
-                .assert_access_rule(rule)
-                .map_err(|e| RuntimeError::user(Box::new(e)))
-        }
-
         fn consume_wasm_execution_units(
             env: &WasmerInstanceEnv,
             n: u64,
@@ -715,7 +701,6 @@ impl WasmerModule {
                 GET_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_global_address),
                 GET_BLUEPRINT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint),
                 GET_AUTH_ZONE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_auth_zone),
-                ASSERT_ACCESS_RULE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), assert_access_rule),
                 CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_wasm_execution_units),
                 EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
                 EMIT_LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_log),
