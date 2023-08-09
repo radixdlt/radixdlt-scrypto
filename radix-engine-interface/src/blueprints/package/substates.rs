@@ -7,6 +7,7 @@ use radix_engine_interface::blueprints::resource::Vault;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
+use crate::api::CollectionIndex;
 
 pub const PACKAGE_CODE_ID: u64 = 0u64;
 pub const RESOURCE_CODE_ID: u64 = 1u64;
@@ -22,15 +23,30 @@ pub const POOL_CODE_ID: u64 = 13u64;
 pub const TRANSACTION_TRACKER_CODE_ID: u64 = 14u64;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
-pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
-pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
-pub const PACKAGE_SCHEMAS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
-pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
-pub const PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
 
-pub const PACKAGE_VM_TYPE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
-pub const PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(7u8);
-pub const PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(8u8);
+pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
+pub const PACKAGE_BLUEPRINTS_COLLECTION_INDEX: CollectionIndex = 0u8;
+
+pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
+pub const PACKAGE_BLUEPRINT_DEPENDENCIES_COLLECTION_INDEX: CollectionIndex = 1u8;
+
+pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
+pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 2u8;
+
+pub const PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
+pub const PACKAGE_AUTH_TEMPLATE_COLLECTION_INDEX: CollectionIndex = 3u8;
+
+pub const PACKAGE_VM_TYPE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
+pub const PACKAGE_VM_TYPE_COLLECTION_INDEX: CollectionIndex = 4u8;
+
+pub const PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
+pub const PACKAGE_ORIGINAL_CODE_COLLECTION_INDEX: CollectionIndex = 5u8;
+
+pub const PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(7u8);
+pub const PACKAGE_INSTRUMENTED_CODE_COLLECTION_INDEX: CollectionIndex = 6u8;
+
+pub const PACKAGE_SCHEMAS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(8u8);
+pub const PACKAGE_SCHEMAS_COLLECTION_INDEX: CollectionIndex = 7u8;
 
 #[derive(Copy, Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmType {

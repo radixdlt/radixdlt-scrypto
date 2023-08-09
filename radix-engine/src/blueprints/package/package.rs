@@ -716,7 +716,7 @@ where
             };
             definition_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
-        kv_entries.insert(0u8, definition_partition);
+        kv_entries.insert(PACKAGE_BLUEPRINTS_COLLECTION_INDEX, definition_partition);
     }
 
     {
@@ -729,19 +729,7 @@ where
             };
             dependency_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
-        kv_entries.insert(1u8, dependency_partition);
-    }
-
-    {
-        let mut schemas_partition = BTreeMap::new();
-        for (hash, schema) in package_structure.schemas {
-            let entry = KVEntry {
-                value: Some(scrypto_encode(&schema).unwrap()),
-                locked: true,
-            };
-            schemas_partition.insert(scrypto_encode(&hash).unwrap(), entry);
-        }
-        kv_entries.insert(2u8, schemas_partition);
+        kv_entries.insert(PACKAGE_BLUEPRINT_DEPENDENCIES_COLLECTION_INDEX, dependency_partition);
     }
 
     {
@@ -754,7 +742,7 @@ where
             };
             package_royalties_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
-        kv_entries.insert(3u8, package_royalties_partition);
+        kv_entries.insert(PACKAGE_ROYALTY_COLLECTION_INDEX, package_royalties_partition);
     }
 
     {
@@ -767,7 +755,7 @@ where
             };
             auth_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
-        kv_entries.insert(4u8, auth_partition);
+        kv_entries.insert(PACKAGE_AUTH_TEMPLATE_COLLECTION_INDEX, auth_partition);
     }
 
     {
@@ -779,7 +767,7 @@ where
             };
             vm_type_partition.insert(scrypto_encode(&hash).unwrap(), entry);
         }
-        kv_entries.insert(5u8, vm_type_partition);
+        kv_entries.insert(PACKAGE_VM_TYPE_COLLECTION_INDEX, vm_type_partition);
     }
 
     {
@@ -791,7 +779,7 @@ where
             };
             original_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
         }
-        kv_entries.insert(6u8, original_code_partition);
+        kv_entries.insert(PACKAGE_ORIGINAL_CODE_COLLECTION_INDEX, original_code_partition);
     }
 
     {
@@ -803,8 +791,21 @@ where
             };
             instrumented_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
         }
-        kv_entries.insert(7u8, instrumented_code_partition);
+        kv_entries.insert(PACKAGE_INSTRUMENTED_CODE_COLLECTION_INDEX, instrumented_code_partition);
     }
+
+    {
+        let mut schemas_partition = BTreeMap::new();
+        for (hash, schema) in package_structure.schemas {
+            let entry = KVEntry {
+                value: Some(scrypto_encode(&schema).unwrap()),
+                locked: true,
+            };
+            schemas_partition.insert(scrypto_encode(&hash).unwrap(), entry);
+        }
+        kv_entries.insert(PACKAGE_SCHEMAS_COLLECTION_INDEX, schemas_partition);
+    }
+
 
     let package_object = api.new_object(
         PACKAGE_BLUEPRINT,
@@ -874,15 +875,6 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueSchema {
-                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
-                ),
-                can_own: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
@@ -924,6 +916,15 @@ impl PackageNativePackage {
                 key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageInstrumentedCodeSubstate>(),
+                ),
+                can_own: false,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueSchema {
+                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
+                value: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
                 ),
                 can_own: false,
             },
