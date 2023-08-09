@@ -1200,6 +1200,7 @@ impl PackageNativePackage {
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {
                         blueprint_type: definition_init.blueprint_type,
+                        is_transient: definition_init.is_transient,
                         generics: definition_init.schema.generics,
                         feature_set: definition_init.feature_set,
                         functions,
@@ -1209,7 +1210,6 @@ impl PackageNativePackage {
                             definition_init.schema.state,
                         ),
                     },
-                    is_transient: definition_init.is_transient,
                     function_exports,
                     hook_exports: {
                         definition_init

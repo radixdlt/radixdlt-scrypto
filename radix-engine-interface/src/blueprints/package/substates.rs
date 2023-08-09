@@ -151,7 +151,6 @@ pub struct PackageExport {
 pub struct BlueprintDefinition {
     // Frontend interface, this must be backward compatible with minor version updates
     pub interface: BlueprintInterface,
-    pub is_transient: bool,
 
     // Backend implementation pointers
 
@@ -165,6 +164,7 @@ pub struct BlueprintDefinition {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintInterface {
     pub blueprint_type: BlueprintType,
+    pub is_transient: bool,
     pub generics: Vec<Generic>,
     pub feature_set: BTreeSet<String>,
     pub state: IndexedStateSchema,
