@@ -10,6 +10,8 @@ use crate::kernel::kernel_callback_api::{
     OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
+#[cfg(feature = "resource_tracker")]
+use crate::kernel::substate_io::SubstateDevice;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -328,7 +330,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
 
     #[trace_resources(log={
         match event {
-            ReadSubstateEvent::OnRead { read_from_heap, .. } => *read_from_heap,
+            ReadSubstateEvent::OnRead { device: SubstateDevice::Heap, .. } => true,
+            ReadSubstateEvent::OnRead { device: SubstateDevice::Store, .. } => false,
         }
     })]
     fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(

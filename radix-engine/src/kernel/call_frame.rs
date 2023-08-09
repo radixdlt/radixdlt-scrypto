@@ -1,15 +1,16 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
+use crate::kernel::substate_io::{
+    ProcessSubstateIOWriteError, SubstateDevice, SubstateIO, SubstateIOHandler, SubstateReadHandler,
+};
 use crate::track::interface::{
-    CallbackError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess,
-    SubstateStore, TrackOpenSubstateError,
+    CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackGetSubstateError,
 };
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
+use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
-use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
-use super::kernel_api::LockInfo;
+use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError};
 
 /// A message used for communication between call frames.
 ///
@@ -80,17 +81,141 @@ impl CallFrameMessage {
     }
 }
 
-/// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SubstateLock<L> {
-    pub node_id: NodeId,
-    pub partition_num: PartitionNumber,
-    pub substate_key: SubstateKey,
-    pub non_global_references: IndexSet<NodeId>,
+pub struct OpenedSubstate<L> {
+    pub references: IndexSet<NodeId>,
     pub owned_nodes: IndexSet<NodeId>,
-    pub flags: LockFlags,
-    pub store_handle: Option<u32>,
+    pub ref_origin: ReferenceOrigin,
+    pub global_substate_handle: u32,
+    pub device: SubstateDevice,
     pub data: L,
+}
+
+impl<L> OpenedSubstate<L> {
+    fn diff_on_close(&self) -> SubstateDiff {
+        SubstateDiff {
+            added_owns: index_set_new(),
+            added_refs: index_set_new(),
+            removed_owns: self.owned_nodes.clone(),
+            removed_refs: self.references.clone(),
+        }
+    }
+
+    fn diff(&self, updated_value: &IndexedScryptoValue) -> Result<SubstateDiff, SubstateDiffError> {
+        // Process owned nodes
+        let (added_owned_nodes, removed_owned_nodes) = {
+            let mut added_owned_nodes: IndexSet<NodeId> = index_set_new();
+            let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
+            for own in updated_value.owned_nodes() {
+                if !new_owned_nodes.insert(own.clone()) {
+                    return Err(SubstateDiffError::ContainsDuplicateOwns);
+                }
+
+                if !self.owned_nodes.contains(own) {
+                    added_owned_nodes.insert(*own);
+                }
+            }
+
+            let mut removed_owned_nodes: IndexSet<NodeId> = index_set_new();
+            for own in &self.owned_nodes {
+                if !new_owned_nodes.contains(own) {
+                    removed_owned_nodes.insert(*own);
+                }
+            }
+
+            (added_owned_nodes, removed_owned_nodes)
+        };
+
+        //====================
+        // Process references
+        //====================
+        let (added_references, removed_references) = {
+            // De-duplicate
+            let updated_references: IndexSet<NodeId> =
+                updated_value.references().clone().into_iter().collect();
+
+            let mut added_references: IndexSet<NodeId> = index_set_new();
+            for reference in &updated_references {
+                let reference_is_new = !self.references.contains(reference);
+
+                if reference_is_new {
+                    added_references.insert(reference.clone());
+                }
+            }
+
+            let mut removed_references: IndexSet<NodeId> = index_set_new();
+            for old_ref in &self.references {
+                if !updated_references.contains(old_ref) {
+                    removed_references.insert(*old_ref);
+                }
+            }
+
+            (added_references, removed_references)
+        };
+
+        Ok(SubstateDiff {
+            added_owns: added_owned_nodes,
+            removed_owns: removed_owned_nodes,
+            added_refs: added_references,
+            removed_refs: removed_references,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SubstateDiff {
+    added_owns: IndexSet<NodeId>,
+    removed_owns: IndexSet<NodeId>,
+    added_refs: IndexSet<NodeId>,
+    removed_refs: IndexSet<NodeId>,
+}
+
+impl SubstateDiff {
+    pub fn from_new_substate(
+        substate_value: &IndexedScryptoValue,
+    ) -> Result<Self, SubstateDiffError> {
+        let mut added_owns = index_set_new();
+        let mut added_refs = index_set_new();
+
+        for own in substate_value.owned_nodes() {
+            if !added_owns.insert(own.clone()) {
+                return Err(SubstateDiffError::ContainsDuplicateOwns);
+            }
+        }
+
+        for reference in substate_value.references() {
+            added_refs.insert(reference.clone());
+        }
+
+        Ok(Self {
+            added_owns,
+            added_refs,
+            removed_owns: index_set_new(),
+            removed_refs: index_set_new(),
+        })
+    }
+
+    pub fn from_drop_substate(substate_value: &IndexedScryptoValue) -> Self {
+        let mut removed_owns = index_set_new();
+        let mut removed_refs = index_set_new();
+
+        for own in substate_value.owned_nodes() {
+            if !removed_owns.insert(own.clone()) {
+                panic!("Should never have been able to create duplicate owns");
+            }
+        }
+
+        for reference in substate_value.references() {
+            removed_refs.insert(reference.clone());
+        }
+
+        Self {
+            added_owns: index_set_new(),
+            added_refs: index_set_new(),
+            removed_owns,
+            removed_refs,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -107,9 +232,10 @@ pub struct TransientReference {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ReferenceOrigin {
-    Heap,
+    FrameOwned,
     Global(GlobalAddress),
     DirectlyAccessed,
+    SubstateNonGlobalReference(SubstateDevice),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -178,7 +304,7 @@ impl NodeVisibility {
                 }
                 Visibility::Borrowed(ref_origin) => return Some(ref_origin.clone()),
                 Visibility::FrameOwned => {
-                    return Some(ReferenceOrigin::Heap);
+                    return Some(ReferenceOrigin::FrameOwned);
                 }
             }
         }
@@ -204,17 +330,58 @@ pub trait PersistNodeHandler<E> {
     fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
 }
 
-pub trait SubstateReadHandler<C, L> {
+pub trait CallFrameSubstateReadHandler<C, L> {
     type Error;
 
     fn on_read_substate(
         &mut self,
         current_frame: &CallFrame<C, L>,
         heap: &Heap,
-        handle: LockHandle,
+        handle: SubstateHandle,
         value: &IndexedScryptoValue,
-        is_from_heap: bool,
+        device: SubstateDevice,
     ) -> Result<(), Self::Error>;
+}
+
+struct WrapperHandler<'g, C, L, E, H: StoreAccessHandler<C, L, E> + PersistNodeHandler<E>> {
+    handler: &'g mut H,
+    call_frame: &'g CallFrame<C, L>,
+    phantom: PhantomData<E>,
+}
+
+impl<'g, C, L, E, H: StoreAccessHandler<C, L, E> + PersistNodeHandler<E>> SubstateIOHandler<E>
+    for WrapperHandler<'g, C, L, E, H>
+{
+    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E> {
+        self.handler.on_persist_node(heap, node_id)
+    }
+
+    fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E> {
+        self.handler
+            .on_store_access(self.call_frame, heap, store_access)
+    }
+}
+
+struct WrapperHandler2<'g, C, L, H: CallFrameSubstateReadHandler<C, L>> {
+    handler: &'g mut H,
+    call_frame: &'g CallFrame<C, L>,
+    handle: SubstateHandle,
+}
+
+impl<'g, C, L, H: CallFrameSubstateReadHandler<C, L>> SubstateReadHandler
+    for WrapperHandler2<'g, C, L, H>
+{
+    type Error = H::Error;
+
+    fn on_read_substate(
+        &mut self,
+        heap: &Heap,
+        value: &IndexedScryptoValue,
+        location: SubstateDevice,
+    ) -> Result<(), Self::Error> {
+        self.handler
+            .on_read_substate(self.call_frame, heap, self.handle, value, location)
+    }
 }
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
@@ -227,8 +394,7 @@ pub struct CallFrame<C, L> {
     call_frame_data: C,
 
     /// Owned nodes which by definition must live on heap
-    /// Also keeps track of number of locks on this node, to prevent locked node from moving.
-    owned_root_nodes: IndexMap<NodeId, usize>,
+    owned_root_nodes: IndexSet<NodeId>,
 
     /// References to non-GLOBAL nodes, obtained from substate loading, ref counted.
     /// These references may NOT be passed between call frames as arguments
@@ -239,8 +405,8 @@ pub struct CallFrame<C, L> {
     /// These references MAY be passed between call frames
     stable_references: NonIterMap<NodeId, StableReferenceType>,
 
-    next_lock_handle: LockHandle,
-    locks: IndexMap<LockHandle, SubstateLock<L>>,
+    next_handle: SubstateHandle,
+    open_substates: IndexMap<SubstateHandle, OpenedSubstate<L>>,
 }
 
 /// Represents an error when creating a new frame.
@@ -258,49 +424,31 @@ pub enum PassMessageError {
     TransientRefNotFound(NodeId),
 }
 
-/// Represents an error when attempting to lock a substate.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum OpenSubstateError {
-    NodeNotVisible(NodeId),
-    HeapError(HeapOpenSubstateError),
-    TrackError(Box<TrackOpenSubstateError>),
-    ProcessSubstateKeyError(ProcessSubstateKeyError),
-}
-
-/// Represents an error when dropping a substate lock.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum CloseSubstateError {
-    LockNotFound(LockHandle),
-    ContainsDuplicatedOwns,
-    TakeNodeError(TakeNodeError),
-    RefNotFound(NodeId),
-    NonGlobalRefNotAllowed(NodeId),
-    CantDropNodeInStore(NodeId),
-    PersistNodeError(PersistNodeError),
-}
-
 /// Represents an error when creating a node.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateNodeError {
-    TakeNodeError(TakeNodeError),
-    RefNotFound(NodeId),
+    ProcessSubstateError(ProcessSubstateError),
+    ProcessSubstateIOWriteError(ProcessSubstateIOWriteError),
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
+    SubstateDiffError(SubstateDiffError),
 }
 
 /// Represents an error when dropping a node.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum DropNodeError {
     TakeNodeError(TakeNodeError),
-    NodeBorrowed(NodeId, usize),
+    NodeBorrowed(NodeId),
+    SubstateBorrowed(NodeId),
+    ProcessSubstateError(ProcessSubstateError),
 }
 
 /// Represents an error when persisting a node into store.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistNodeError {
     ContainsNonGlobalRef(NodeId),
-    NodeBorrowed(NodeId, usize),
+    NodeBorrowed(NodeId),
 }
 
 /// Represents an error when taking a node from current frame.
@@ -323,34 +471,59 @@ pub enum MoveModuleError {
     NodeNotAvailable(NodeId),
     HeapRemoveModuleErr(HeapRemoveModuleError),
     NonGlobalRefNotAllowed(NodeId),
-    TrackSetSubstateError(SetSubstateError),
     PersistNodeError(PersistNodeError),
+    SubstateBorrowed(NodeId),
+}
+
+/// Represents an error when attempting to lock a substate.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum OpenSubstateError {
+    NodeNotVisible(NodeId),
+    HeapError(HeapOpenSubstateError),
+    TrackError(Box<TrackGetSubstateError>),
+    ProcessSubstateKeyError(ProcessSubstateKeyError),
+    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
+    LockUnmodifiedBaseOnHeapNode,
+    LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
+    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey),
 }
 
 /// Represents an error when reading substates.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ReadSubstateError {
-    LockNotFound(LockHandle),
+    LockNotFound(SubstateHandle),
 }
 
 /// Represents an error when writing substates.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WriteSubstateError {
-    LockNotFound(LockHandle),
+    LockNotFound(SubstateHandle),
+    ProcessSubstateIOWriteError(ProcessSubstateIOWriteError),
+    ProcessSubstateError(ProcessSubstateError),
     NoWritePermission,
+    PersistNodeError(PersistNodeError),
+    NonGlobalRefNotAllowed(NodeId),
+    ContainsDuplicatedOwns,
+    SubstateDiffError(SubstateDiffError),
+}
+
+/// Represents an error when dropping a substate lock.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CloseSubstateError {
+    LockNotFound(SubstateHandle),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameSetSubstateError {
     NodeNotVisible(NodeId),
-    StoreError(SetSubstateError),
+    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameRemoveSubstateError {
     NodeNotVisible(NodeId),
-    StoreError(RemoveSubstateError),
+    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
@@ -382,6 +555,20 @@ pub enum ProcessSubstateKeyError {
     OwnedNodeNotSupported,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ProcessSubstateError {
+    TakeNodeError(TakeNodeError),
+    CantDropNodeInStore(NodeId),
+    RefNotFound(NodeId),
+    NonGlobalRefNotAllowed(NodeId),
+    PersistNodeError(PersistNodeError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SubstateDiffError {
+    ContainsDuplicateOwns,
+}
+
 impl<C, L: Clone> CallFrame<C, L> {
     pub fn new_root(call_frame_data: C) -> Self {
         Self {
@@ -389,9 +576,9 @@ impl<C, L: Clone> CallFrame<C, L> {
             call_frame_data,
             stable_references: NonIterMap::new(),
             transient_references: NonIterMap::new(),
-            owned_root_nodes: index_map_new(),
-            next_lock_handle: 0u32,
-            locks: index_map_new(),
+            owned_root_nodes: index_set_new(),
+            next_handle: 0u32,
+            open_substates: index_map_new(),
         }
     }
 
@@ -405,9 +592,9 @@ impl<C, L: Clone> CallFrame<C, L> {
             call_frame_data,
             stable_references: NonIterMap::new(),
             transient_references: NonIterMap::new(),
-            owned_root_nodes: index_map_new(),
-            next_lock_handle: 0u32,
-            locks: index_map_new(),
+            owned_root_nodes: index_set_new(),
+            next_handle: 0u32,
+            open_substates: index_map_new(),
         };
 
         // Copy references and move nodes
@@ -427,7 +614,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             // we don't allow move of "locked nodes".
             from.take_node_internal(&node_id)
                 .map_err(PassMessageError::TakeNodeError)?;
-            to.owned_root_nodes.insert(node_id, 0);
+            to.owned_root_nodes.insert(node_id);
         }
 
         // Only allow move of `Global` and `DirectAccess` references
@@ -486,6 +673,121 @@ impl<C, L: Clone> CallFrame<C, L> {
         &self.call_frame_data
     }
 
+    pub fn create_node<'f, S: SubstateStore, E>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
+        node_id: NodeId,
+        node_substates: NodeSubstates,
+    ) -> Result<(), CallbackError<CreateNodeError, E>> {
+        // TODO: We need to protect transient blueprints from being globalized directly
+        // into store. This isn't a problem for now since only native objects are allowed
+        // to be transient.
+
+        let destination_device = if node_id.is_global() {
+            SubstateDevice::Store
+        } else {
+            SubstateDevice::Heap
+        };
+
+        for (_partition_number, module) in &node_substates {
+            for (substate_key, substate_value) in module {
+                self.process_input_substate_key(substate_key).map_err(|e| {
+                    CallbackError::Error(CreateNodeError::ProcessSubstateKeyError(e))
+                })?;
+                let diff = SubstateDiff::from_new_substate(&substate_value)
+                    .map_err(|e| CallbackError::Error(CreateNodeError::SubstateDiffError(e)))?;
+
+                self.process_substate_diff(substate_io, handler, destination_device, &diff)
+                    .map_err(|e| e.map(CreateNodeError::ProcessSubstateError))?;
+            }
+        }
+
+        match destination_device {
+            SubstateDevice::Store => {
+                self.stable_references
+                    .insert(node_id, StableReferenceType::Global);
+            }
+            SubstateDevice::Heap => {
+                self.owned_root_nodes.insert(node_id);
+            }
+        }
+
+        let mut handler = WrapperHandler {
+            call_frame: self,
+            handler,
+            phantom: PhantomData::default(),
+        };
+
+        substate_io.create_node(&mut handler, destination_device, node_id, node_substates)?;
+
+        Ok(())
+    }
+
+    /// Removes node from call frame and owned nodes will be possessed by this call frame.
+    pub fn drop_node<S: SubstateStore>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+        node_id: &NodeId,
+    ) -> Result<NodeSubstates, DropNodeError> {
+        self.take_node_internal(node_id)
+            .map_err(DropNodeError::TakeNodeError)?;
+
+        let node_substates = substate_io.drop_node(SubstateDevice::Heap, node_id)?;
+        let mut handler = NullHandler::new();
+        for (_partition_number, module) in &node_substates {
+            for (_substate_key, substate_value) in module {
+                let diff = SubstateDiff::from_drop_substate(&substate_value);
+                self.process_substate_diff(substate_io, &mut handler, SubstateDevice::Heap, &diff)
+                    .map_err(|e| match e {
+                        CallbackError::Error(e) => DropNodeError::ProcessSubstateError(e),
+                        CallbackError::CallbackError(..) => panic!("Should never get here."),
+                    })?;
+            }
+        }
+
+        Ok(node_substates)
+    }
+
+    pub fn move_partition<'f, S: SubstateStore, E>(
+        &mut self,
+        substate_io: &'f mut SubstateIO<S>,
+        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
+        src_node_id: &NodeId,
+        src_partition_number: PartitionNumber,
+        dest_node_id: &NodeId,
+        dest_partition_number: PartitionNumber,
+    ) -> Result<(), CallbackError<MoveModuleError, E>> {
+        // Check src visibility
+        let (_ref_origin, src_device) = self.get_node_ref(src_node_id).ok_or_else(|| {
+            CallbackError::Error(MoveModuleError::NodeNotAvailable(src_node_id.clone()))
+        })?;
+
+        // Check dest visibility
+        let (_ref_origin, dest_device) = self.get_node_ref(dest_node_id).ok_or_else(|| {
+            CallbackError::Error(MoveModuleError::NodeNotAvailable(dest_node_id.clone()))
+        })?;
+
+        let mut handler = WrapperHandler {
+            call_frame: self,
+            handler,
+            phantom: PhantomData::default(),
+        };
+
+        // Move
+        substate_io.move_partition(
+            &mut handler,
+            src_device,
+            src_node_id,
+            src_partition_number,
+            dest_device,
+            dest_node_id,
+            dest_partition_number,
+        )?;
+
+        Ok(())
+    }
+
     fn process_input_substate_key(
         &self,
         substate_key: &SubstateKey,
@@ -534,8 +836,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     pub fn open_substate<S: SubstateStore, E, H: StoreAccessHandler<C, L, E>>(
         &mut self,
-        heap: &mut Heap,
-        store: &mut S,
+        substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
@@ -543,540 +844,158 @@ impl<C, L: Clone> CallFrame<C, L> {
         handler: &mut H,
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
-    ) -> Result<(LockHandle, usize), CallbackError<OpenSubstateError, E>> {
-        let node_visibility = self.get_node_visibility(node_id);
-        let ref_origin = if let Some(ref_origin) = node_visibility.reference_origin(node_id.clone())
-        {
-            ref_origin
-        } else {
-            return Err(CallbackError::Error(OpenSubstateError::NodeNotVisible(
-                node_id.clone(),
-            )));
-        };
+    ) -> Result<(SubstateHandle, usize), CallbackError<OpenSubstateError, E>> {
+        let (ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
+            CallbackError::Error(OpenSubstateError::NodeNotVisible(node_id.clone()))
+        })?;
 
         self.process_input_substate_key(substate_key)
             .map_err(|e| CallbackError::Error(OpenSubstateError::ProcessSubstateKeyError(e)))?;
 
-        // Lock and read the substate
-        let mut store_handle = None;
-        let substate_value = if heap.contains_node(node_id) {
-            // FIXME: we will have to move locking logic to heap because references moves between frames.
-            if flags.contains(LockFlags::UNMODIFIED_BASE) {
-                return Err(CallbackError::Error(OpenSubstateError::HeapError(
-                    HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode,
-                )));
-            }
-            if let Some(compute_default) = default {
-                heap.get_substate_virtualize(node_id, partition_num, substate_key, compute_default)
-            } else {
-                heap.get_substate(node_id, partition_num, substate_key)
-                    .ok_or_else(|| {
-                        CallbackError::Error(OpenSubstateError::HeapError(
-                            HeapOpenSubstateError::SubstateNotFound(
-                                node_id.clone(),
-                                partition_num,
-                                substate_key.clone(),
-                            ),
-                        ))
-                    })?
-            }
-        } else {
-            let handle = store
-                .open_substate_virtualize(
-                    node_id,
-                    partition_num,
-                    substate_key,
-                    flags,
-                    &mut |store_access| handler.on_store_access(self, heap, store_access),
-                    || default.map(|f| f()),
-                )
-                .map_err(|x| x.map(|e| OpenSubstateError::TrackError(Box::new(e))))?;
-            store_handle = Some(handle);
-            let value = store.read_substate(handle);
-            value
-        };
+        let (global_substate_handle, substate_value) = substate_io.open_substate(
+            device,
+            node_id,
+            partition_num,
+            substate_key,
+            flags,
+            &mut |heap, store_access| handler.on_store_access(self, heap, store_access),
+            default,
+        )?;
 
-        // Analyze owns and references in the substate
-        let mut non_global_references = index_set_new(); // du-duplicated
-        let mut owned_nodes = index_set_new();
+        let value_len = substate_value.len();
         for node_id in substate_value.references() {
             if node_id.is_global() {
                 // Again, safe to overwrite because Global and DirectAccess are exclusive.
                 self.stable_references
                     .insert(node_id.clone(), StableReferenceType::Global);
-            } else {
-                non_global_references.insert(node_id.clone());
-            }
-        }
-        for node_id in substate_value.owned_nodes() {
-            if !owned_nodes.insert(node_id.clone()) {
-                panic!("Duplicated own found in substate");
             }
         }
 
-        // Expand transient reference set
-        for reference in &non_global_references {
-            self.transient_references
-                .entry(reference.clone())
-                .or_insert(TransientReference {
-                    ref_count: 0usize,
-                    ref_origin,
-                })
-                .ref_count
-                .add_assign(1);
-        }
-        for own in &owned_nodes {
-            self.transient_references
-                .entry(own.clone())
-                .or_insert(TransientReference {
-                    ref_count: 0usize,
-                    ref_origin,
-                })
-                .ref_count
-                .add_assign(1);
-        }
+        let mut open_substate = OpenedSubstate {
+            references: index_set_new(),
+            owned_nodes: index_set_new(),
+            ref_origin,
+            global_substate_handle,
+            device,
+            data,
+        };
+
+        let diff = SubstateDiff::from_new_substate(substate_value)
+            .expect("There should be no issues with already stored substate value");
+
+        Self::apply_diff_to_open_substate(
+            &mut self.transient_references,
+            substate_io,
+            &mut open_substate,
+            &diff,
+        );
 
         // Issue lock handle
-        let lock_handle = self.next_lock_handle;
-        self.locks.insert(
-            lock_handle,
-            SubstateLock {
-                node_id: node_id.clone(),
-                partition_num,
-                substate_key: substate_key.clone(),
-                non_global_references,
-                owned_nodes,
-                flags,
-                store_handle,
-                data,
-            },
-        );
-        self.next_lock_handle = self.next_lock_handle + 1;
+        let substate_handle = self.next_handle;
+        self.open_substates.insert(substate_handle, open_substate);
+        self.next_handle = self.next_handle + 1;
 
-        // Update lock count on the node
-        if let Some(counter) = self.owned_root_nodes.get_mut(node_id) {
-            *counter += 1;
-        }
-
-        Ok((lock_handle, substate_value.len()))
+        Ok((substate_handle, value_len))
     }
 
-    pub fn close_substate<S: SubstateStore, E>(
+    pub fn read_substate<'f, S: SubstateStore, H: CallFrameSubstateReadHandler<C, L>>(
         &mut self,
-        heap: &mut Heap,
-        store: &mut S,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
-        lock_handle: LockHandle,
-    ) -> Result<(), CallbackError<CloseSubstateError, E>> {
-        let substate_lock = self
-            .locks
-            .remove(&lock_handle)
-            .ok_or_else(|| CallbackError::Error(CloseSubstateError::LockNotFound(lock_handle)))?;
-
-        let node_id = &substate_lock.node_id;
-        let partition_num = substate_lock.partition_num;
-        let substate_key = &substate_lock.substate_key;
-
-        if substate_lock.flags.contains(LockFlags::MUTABLE) {
-            let substate = if let Some(handle) = substate_lock.store_handle {
-                store.read_substate(handle)
-            } else {
-                heap.get_substate(node_id, partition_num, substate_key)
-                    .expect("Substate locked but missing")
-            }
-            .clone();
-
-            //==============
-            // Process owns
-            //==============
-            let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
-            for own in substate.owned_nodes() {
-                if !new_owned_nodes.insert(own.clone()) {
-                    return Err(CallbackError::Error(
-                        CloseSubstateError::ContainsDuplicatedOwns,
-                    ));
-                }
-            }
-            for own in &new_owned_nodes {
-                if !substate_lock.owned_nodes.contains(own) {
-                    // Node no longer owned by frame
-                    self.take_node_internal(own)
-                        .map_err(|e| CallbackError::Error(CloseSubstateError::TakeNodeError(e)))?;
-
-                    // Move the node to store, if its owner is already in store
-                    if !heap.contains_node(&node_id) {
-                        self.move_node_to_store(heap, store, handler, own)
-                            .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
-                    }
-                }
-            }
-            for own in &substate_lock.owned_nodes {
-                if !new_owned_nodes.contains(own) {
-                    // Node detached
-                    if !heap.contains_node(node_id) {
-                        return Err(CallbackError::Error(
-                            CloseSubstateError::CantDropNodeInStore(own.clone()),
-                        ));
-                    }
-                    // Owned nodes discarded by the substate go back to the call frame,
-                    // and must be explicitly dropped.
-                    // FIXME(Yulong): I suspect this is buggy as one can detach a locked non-root
-                    // node, move and drop; which will cause invalid lock handle in previous frames.
-                    // FIXME(Josh): Would prefer removing this case entirely as this edge case
-                    // means that a component's logic may or may not work depending on whether
-                    // it's in the store or the heap, which I think feels very unintuitive.
-                    // Rather, let's fix the specific worktop drop bucket issue
-                    self.owned_root_nodes.insert(own.clone(), 0);
-                }
-            }
-
-            //====================
-            // Process references
-            //====================
-            let mut new_references: IndexSet<NodeId> = index_set_new();
-            for own in substate.references() {
-                // Deduplicate
-                new_references.insert(own.clone());
-            }
-            for reference in &new_references {
-                if !substate_lock.non_global_references.contains(reference) {
-                    // handle added references
-
-                    if !self
-                        .get_node_visibility(reference)
-                        .can_be_referenced_in_substate()
-                    {
-                        return Err(CallbackError::Error(CloseSubstateError::RefNotFound(
-                            reference.clone(),
-                        )));
-                    }
-
-                    if !heap.contains_node(node_id) && !reference.is_global() {
-                        return Err(CallbackError::Error(
-                            CloseSubstateError::NonGlobalRefNotAllowed(*reference),
-                        ));
-                    }
-
-                    if heap.contains_node(reference) {
-                        heap.increase_borrow_count(reference);
-                    } else {
-                        // No op
-                    }
-                }
-            }
-            for reference in &substate_lock.non_global_references {
-                if !new_references.contains(reference) {
-                    // handle removed references
-
-                    if heap.contains_node(reference) {
-                        heap.decrease_borrow_count(reference);
-                    }
-                }
-            }
-        }
-
-        // Shrink transient reference set
-        for reference in substate_lock.non_global_references {
-            let mut transient_ref = self.transient_references.remove(&reference).unwrap();
-            if transient_ref.ref_count > 1 {
-                transient_ref.ref_count -= 1;
-                self.transient_references.insert(reference, transient_ref);
-            }
-        }
-        for own in substate_lock.owned_nodes {
-            let mut transient_ref = self.transient_references.remove(&own).unwrap();
-            if transient_ref.ref_count > 1 {
-                transient_ref.ref_count -= 1;
-                self.transient_references.insert(own, transient_ref);
-            }
-        }
-
-        // Update node lock count
-        if let Some(counter) = self.owned_root_nodes.get_mut(&substate_lock.node_id) {
-            *counter -= 1;
-        }
-
-        // Release track lock
-        if let Some(handle) = substate_lock.store_handle {
-            store.close_substate(handle);
-        }
-
-        Ok(())
-    }
-
-    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<LockInfo<L>> {
-        self.locks.get(&lock_handle).map(|substate_lock| LockInfo {
-            node_id: substate_lock.node_id,
-            partition_num: substate_lock.partition_num,
-            substate_key: substate_lock.substate_key.clone(),
-            flags: substate_lock.flags,
-            data: substate_lock.data.clone(),
-        })
-    }
-
-    pub fn read_substate<'f, S: SubstateStore, H: SubstateReadHandler<C, L>>(
-        &mut self,
-        heap: &'f Heap,
-        store: &'f mut S,
-        lock_handle: LockHandle,
+        substate_io: &'f mut SubstateIO<S>,
+        lock_handle: SubstateHandle,
         handler: &mut H,
     ) -> Result<&'f IndexedScryptoValue, CallbackError<ReadSubstateError, H::Error>> {
-        let SubstateLock {
-            node_id,
-            partition_num,
-            substate_key,
-            store_handle,
-            ..
-        } = self.locks.get(&lock_handle).ok_or(CallbackError::Error(
-            ReadSubstateError::LockNotFound(lock_handle),
-        ))?;
-
-        let value = if let Some(store_handle) = store_handle {
-            let value = store.read_substate(*store_handle);
-
-            handler
-                .on_read_substate(self, heap, lock_handle, value, false)
-                .map_err(|e| CallbackError::CallbackError(e))?;
-
-            value
-        } else {
-            let value = heap
-                .get_substate(node_id, *partition_num, substate_key)
-                .expect("Substate missing in heap");
-
-            handler
-                .on_read_substate(self, heap, lock_handle, value, true)
-                .map_err(|e| CallbackError::CallbackError(e))?;
-
-            value
-        };
-
-        Ok(value)
-    }
-
-    pub fn write_substate<'f, S: SubstateStore>(
-        &mut self,
-        heap: &'f mut Heap,
-        store: &'f mut S,
-        lock_handle: LockHandle,
-        substate: IndexedScryptoValue,
-    ) -> Result<(), WriteSubstateError> {
-        let SubstateLock {
-            node_id,
-            partition_num,
-            substate_key,
-            store_handle,
-            flags,
+        let OpenedSubstate {
+            global_substate_handle,
             ..
         } = self
-            .locks
+            .open_substates
             .get(&lock_handle)
-            .ok_or(WriteSubstateError::LockNotFound(lock_handle))?;
+            .ok_or(CallbackError::Error(ReadSubstateError::LockNotFound(
+                lock_handle,
+            )))?;
 
-        if !flags.contains(LockFlags::MUTABLE) {
-            return Err(WriteSubstateError::NoWritePermission);
-        }
-
-        if let Some(store_handle) = store_handle {
-            store.update_substate(*store_handle, substate);
-        } else {
-            heap.set_substate(*node_id, *partition_num, substate_key.clone(), substate);
-        }
-
-        Ok(())
-    }
-
-    pub fn create_node<'f, S: SubstateStore, E>(
-        &mut self,
-        node_id: NodeId,
-        node_substates: NodeSubstates,
-        heap: &mut Heap,
-        store: &'f mut S,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
-    ) -> Result<(), CallbackError<CreateNodeError, E>> {
-        // TODO: We need to protect transient blueprints from being globalized directly
-        // into store. This isn't a problem for now since only native objects are allowed
-        // to be transient.
-
-        let push_to_store = node_id.is_global();
-        for (_partition_number, module) in &node_substates {
-            for (substate_key, substate_value) in module {
-                //==============
-                // Process owns
-                //==============
-                for own in substate_value.owned_nodes() {
-                    self.take_node_internal(own)
-                        .map_err(|e| CallbackError::Error(CreateNodeError::TakeNodeError(e)))?;
-                    if push_to_store {
-                        self.move_node_to_store(heap, store, handler, own)
-                            .map_err(|e| e.map(CreateNodeError::PersistNodeError))?;
-                    }
-                }
-
-                //===================
-                // Process reference
-                //===================
-                for reference in substate_value.references() {
-                    if !self
-                        .get_node_visibility(reference)
-                        .can_be_referenced_in_substate()
-                    {
-                        return Err(CallbackError::Error(CreateNodeError::RefNotFound(
-                            reference.clone(),
-                        )));
-                    }
-
-                    if push_to_store && !reference.is_global() {
-                        return Err(CallbackError::Error(
-                            CreateNodeError::NonGlobalRefNotAllowed(*reference),
-                        ));
-                    }
-
-                    if heap.contains_node(reference) {
-                        heap.increase_borrow_count(reference);
-                    } else {
-                        // No op
-                    }
-                }
-
-                self.process_input_substate_key(substate_key).map_err(|e| {
-                    CallbackError::Error(CreateNodeError::ProcessSubstateKeyError(e))
-                })?;
-            }
-        }
-
-        if push_to_store {
-            self.stable_references
-                .insert(node_id, StableReferenceType::Global);
-
-            store
-                .create_node(node_id, node_substates, &mut |store_access| {
-                    handler.on_store_access(self, heap, store_access)
-                })
-                .map_err(CallbackError::CallbackError)?;
-        } else {
-            heap.create_node(node_id, node_substates);
-            self.owned_root_nodes.insert(node_id, 0);
+        let mut handler = WrapperHandler2 {
+            call_frame: self,
+            handler,
+            handle: *global_substate_handle,
         };
 
-        Ok(())
+        let substate = substate_io
+            .read_substate(*global_substate_handle, &mut handler)
+            .map_err(|e| CallbackError::CallbackError(e))?;
+
+        Ok(substate)
     }
 
-    /// Removes node from call frame and owned nodes will be possessed by this call frame.
-    pub fn drop_node(
+    pub fn write_substate<'f, S: SubstateStore, E>(
         &mut self,
-        heap: &mut Heap,
-        node_id: &NodeId,
-    ) -> Result<NodeSubstates, DropNodeError> {
-        self.take_node_internal(node_id)
-            .map_err(DropNodeError::TakeNodeError)?;
-        let node_substates = match heap.remove_node(node_id) {
-            Ok(substates) => substates,
-            Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
-                panic!("Frame owned node {:?} not found in heap", node_id)
-            }
-            Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
-                return Err(DropNodeError::NodeBorrowed(node_id, count));
-            }
-        };
-        for (_, module) in &node_substates {
-            for (_, substate_value) in module {
-                //=============
-                // Process own
-                //=============
-                for own in substate_value.owned_nodes() {
-                    // FIXME: This is problematic, as owned node must have been locked
-                    // In general, we'd like to move node locking/borrowing to heap.
-                    self.owned_root_nodes.insert(own.clone(), 0);
-                }
-
-                //====================
-                // Process references
-                //====================
-                for reference in substate_value.references() {
-                    if reference.is_global() {
-                        // Expand stable references
-                        // We keep all global references even if the owning substates are dropped.
-                        // Revisit this if the reference model is changed.
-                        self.stable_references
-                            .insert(reference.clone(), StableReferenceType::Global);
-                    } else {
-                        if heap.contains_node(reference) {
-                            // This substate is dropped and no longer borrows the heap node.
-                            heap.decrease_borrow_count(reference);
-                        }
-                    }
-                }
-            }
-        }
-        Ok(node_substates)
-    }
-
-    pub fn move_module<'f, S: SubstateStore, E>(
-        &mut self,
-        src_node_id: &NodeId,
-        src_partition_number: PartitionNumber,
-        dest_node_id: &NodeId,
-        dest_partition_number: PartitionNumber,
-        heap: &'f mut Heap,
-        store: &'f mut S,
+        substate_io: &'f mut SubstateIO<S>,
         handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
-    ) -> Result<(), CallbackError<MoveModuleError, E>> {
-        // Check ownership (and visibility)
-        if self.owned_root_nodes.get(src_node_id) != Some(&0) {
-            return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
-                src_node_id.clone(),
-            )));
+        lock_handle: SubstateHandle,
+        substate: IndexedScryptoValue,
+    ) -> Result<(), CallbackError<WriteSubstateError, E>> {
+        let mut opened_substate =
+            self.open_substates
+                .remove(&lock_handle)
+                .ok_or(CallbackError::Error(WriteSubstateError::LockNotFound(
+                    lock_handle,
+                )))?;
+
+        let (.., data) = substate_io
+            .substate_locks
+            .get(opened_substate.global_substate_handle);
+        if !data.flags.contains(LockFlags::MUTABLE) {
+            return Err(CallbackError::Error(WriteSubstateError::NoWritePermission));
         }
 
-        // Check visibility
-        if !self.get_node_visibility(dest_node_id).is_visible() {
-            return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
-                dest_node_id.clone(),
-            )));
-        }
+        let diff = opened_substate
+            .diff(&substate)
+            .map_err(|e| CallbackError::Error(WriteSubstateError::SubstateDiffError(e)))?;
 
-        // Move
-        let module = heap
-            .remove_module(src_node_id, src_partition_number)
-            .map_err(|e| CallbackError::Error(MoveModuleError::HeapRemoveModuleErr(e)))?;
-        let to_heap = heap.contains_node(dest_node_id);
-        for (substate_key, substate_value) in module {
-            if to_heap {
-                heap.set_substate(
-                    *dest_node_id,
-                    dest_partition_number,
-                    substate_key,
-                    substate_value,
-                );
-            } else {
-                // Recursively move nodes to store
-                for own in substate_value.owned_nodes() {
-                    self.move_node_to_store(heap, store, handler, own)
-                        .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
-                }
+        self.process_substate_diff(substate_io, handler, opened_substate.device, &diff)
+            .map_err(|e| e.map(WriteSubstateError::ProcessSubstateError))?;
 
-                for reference in substate_value.references() {
-                    if !reference.is_global() {
-                        return Err(CallbackError::Error(
-                            MoveModuleError::NonGlobalRefNotAllowed(reference.clone()),
-                        ));
-                    }
-                }
+        Self::apply_diff_to_open_substate(
+            &mut self.transient_references,
+            substate_io,
+            &mut opened_substate,
+            &diff,
+        );
 
-                store
-                    .set_substate(
-                        *dest_node_id,
-                        dest_partition_number,
-                        substate_key,
-                        substate_value,
-                        &mut |store_access| handler.on_store_access(self, heap, store_access),
-                    )
-                    .map_err(|e| e.map(MoveModuleError::TrackSetSubstateError))?
-            }
-        }
+        substate_io.write_substate(opened_substate.global_substate_handle, substate)?;
+
+        self.open_substates.insert(lock_handle, opened_substate);
 
         Ok(())
+    }
+
+    pub fn close_substate<S: SubstateStore>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+        lock_handle: SubstateHandle,
+    ) -> Result<(), CloseSubstateError> {
+        let mut open_substate = self
+            .open_substates
+            .remove(&lock_handle)
+            .ok_or_else(|| CloseSubstateError::LockNotFound(lock_handle))?;
+
+        substate_io.close_substate(open_substate.global_substate_handle)?;
+
+        let diff = open_substate.diff_on_close();
+        Self::apply_diff_to_open_substate(
+            &mut self.transient_references,
+            substate_io,
+            &mut open_substate,
+            &diff,
+        );
+
+        Ok(())
+    }
+
+    pub fn get_handle_info(&self, lock_handle: SubstateHandle) -> Option<L> {
+        self.open_substates
+            .get(&lock_handle)
+            .map(|substate_lock| substate_lock.data.clone())
     }
 
     pub fn add_global_reference(&mut self, address: GlobalAddress) {
@@ -1098,63 +1017,49 @@ impl<C, L: Clone> CallFrame<C, L> {
     // Should this be prevented at this layer?
     pub fn set_substate<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
+        substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: SubstateKey,
         value: IndexedScryptoValue,
         on_store_access: &mut F,
-        heap: &'f mut Heap,
-        store: &'f mut S,
     ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
-        // Check node visibility
-        if !self.get_node_visibility(node_id).is_visible() {
-            return Err(CallbackError::Error(
-                CallFrameSetSubstateError::NodeNotVisible(node_id.clone()),
-            ));
-        }
+        let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
+            CallbackError::Error(CallFrameSetSubstateError::NodeNotVisible(node_id.clone()))
+        })?;
 
         self.process_input_substate_key(&key).map_err(|e| {
             CallbackError::Error(CallFrameSetSubstateError::ProcessSubstateKeyError(e))
         })?;
 
-        if heap.contains_node(node_id) {
-            heap.set_substate(*node_id, partition_num, key, value);
-        } else {
-            store
-                .set_substate(*node_id, partition_num, key, value, on_store_access)
-                .map_err(|e| e.map(CallFrameSetSubstateError::StoreError))?
-        };
+        // TODO: Should process value here (For example, not allow owned objects or references) but
+        // this isn't a problem for now since only native objects are allowed to use set_substate
+
+        substate_io.set_substate(device, node_id, partition_num, key, value, on_store_access)?;
 
         Ok(())
     }
 
     pub fn remove_substate<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
+        substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: &SubstateKey,
         on_store_access: &mut F,
-        heap: &'f mut Heap,
-        store: &'f mut S,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
-        // Check node visibility
-        if !self.get_node_visibility(node_id).is_visible() {
-            return Err(CallbackError::Error(
-                CallFrameRemoveSubstateError::NodeNotVisible(node_id.clone()),
-            ));
-        }
+        let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
+            CallbackError::Error(CallFrameRemoveSubstateError::NodeNotVisible(
+                node_id.clone(),
+            ))
+        })?;
 
         self.process_input_substate_key(&key).map_err(|e| {
             CallbackError::Error(CallFrameRemoveSubstateError::ProcessSubstateKeyError(e))
         })?;
 
-        let removed = if heap.contains_node(node_id) {
-            heap.remove_substate(node_id, partition_num, key)
-        } else {
-            store
-                .remove_substate(node_id, partition_num, key, on_store_access)
-                .map_err(|e| e.map(CallFrameRemoveSubstateError::StoreError))?
-        };
+        let removed =
+            substate_io.remove_substate(device, node_id, partition_num, key, on_store_access)?;
 
         Ok(removed)
     }
@@ -1167,27 +1072,24 @@ impl<C, L: Clone> CallFrame<C, L> {
         F: FnMut(StoreAccess) -> Result<(), E>,
     >(
         &mut self,
+        substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
         on_store_access: &mut F,
-        heap: &'f mut Heap,
-        store: &'f mut S,
     ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).is_visible() {
-            return Err(CallbackError::Error(
-                CallFrameScanKeysError::NodeNotVisible(node_id.clone()),
-            ));
-        }
+        let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
+            CallbackError::Error(CallFrameScanKeysError::NodeNotVisible(node_id.clone()))
+        })?;
 
-        let keys = if heap.contains_node(node_id) {
-            heap.scan_keys(node_id, partition_num, limit)
-        } else {
-            store
-                .scan_keys::<K, E, F>(node_id, partition_num, limit, on_store_access)
-                .map_err(|e| CallbackError::CallbackError(e))?
-        };
+        let keys = substate_io.scan_keys::<K, E, F>(
+            device,
+            node_id,
+            partition_num,
+            limit,
+            on_store_access,
+        )?;
 
         for key in &keys {
             self.process_output_substate_key(key).map_err(|e| {
@@ -1206,30 +1108,29 @@ impl<C, L: Clone> CallFrame<C, L> {
         F: FnMut(StoreAccess) -> Result<(), E>,
     >(
         &mut self,
+        substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
         on_store_access: &mut F,
-        heap: &'f mut Heap,
-        store: &'f mut S,
     ) -> Result<
         Vec<(SubstateKey, IndexedScryptoValue)>,
         CallbackError<CallFrameDrainSubstatesError, E>,
     > {
         // Check node visibility
-        if !self.get_node_visibility(node_id).is_visible() {
-            return Err(CallbackError::Error(
-                CallFrameDrainSubstatesError::NodeNotVisible(node_id.clone()),
-            ));
-        }
+        let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
+            CallbackError::Error(CallFrameDrainSubstatesError::NodeNotVisible(
+                node_id.clone(),
+            ))
+        })?;
 
-        let substates = if heap.contains_node(node_id) {
-            heap.drain_substates(node_id, partition_num, limit)
-        } else {
-            store
-                .drain_substates::<K, E, F>(node_id, partition_num, limit, on_store_access)
-                .map_err(|e| CallbackError::CallbackError(e))?
-        };
+        let substates = substate_io.drain_substates::<K, E, F>(
+            device,
+            node_id,
+            partition_num,
+            limit,
+            on_store_access,
+        )?;
 
         for (key, substate) in &substates {
             self.process_output_substate_key(key).map_err(|e| {
@@ -1255,32 +1156,24 @@ impl<C, L: Clone> CallFrame<C, L> {
     // Should this be prevented at this layer?
     pub fn scan_sorted<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
+        substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: &mut F,
-        heap: &'f mut Heap,
-        store: &'f mut S,
     ) -> Result<
         Vec<(SortedU16Key, IndexedScryptoValue)>,
         CallbackError<CallFrameScanSortedSubstatesError, E>,
     > {
         // Check node visibility
-        if !self.get_node_visibility(node_id).is_visible() {
-            return Err(CallbackError::Error(
-                CallFrameScanSortedSubstatesError::NodeNotVisible(node_id.clone()),
-            ));
-        }
+        let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
+            CallbackError::Error(CallFrameScanSortedSubstatesError::NodeNotVisible(
+                node_id.clone(),
+            ))
+        })?;
 
-        let substates = if heap.contains_node(node_id) {
-            // This should never be triggered because sorted index store is
-            // used by consensus manager only.
-            panic!("Unexpected code path")
-        } else {
-            store
-                .scan_sorted_substates(node_id, partition_num, count, on_store_access)
-                .map_err(|e| CallbackError::CallbackError(e))?
-        };
+        let substates =
+            substate_io.scan_sorted(device, node_id, partition_num, count, on_store_access)?;
 
         for (key, substate) in &substates {
             self.process_output_substate_key(&SubstateKey::Sorted(key.clone()))
@@ -1305,90 +1198,35 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(substates)
     }
 
-    pub fn close_all_substates<S: SubstateStore, E>(
+    pub fn close_all_substates<S: SubstateStore>(
         &mut self,
-        heap: &mut Heap,
-        store: &mut S,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
-    ) -> Result<(), CallbackError<CloseSubstateError, E>> {
-        let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
+        substate_io: &mut SubstateIO<S>,
+    ) -> Result<(), CloseSubstateError> {
+        let lock_handles: Vec<SubstateHandle> = self.open_substates.keys().cloned().collect();
 
         for lock_handle in lock_handles {
-            self.close_substate(heap, store, handler, lock_handle)?;
+            self.close_substate(substate_io, lock_handle)?;
         }
 
         Ok(())
-    }
-
-    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
-        match self.owned_root_nodes.remove(node_id) {
-            None => {
-                return Err(TakeNodeError::OwnNotFound(node_id.clone()));
-            }
-            Some(lock_count) => {
-                if lock_count == 0 {
-                    Ok(())
-                } else {
-                    Err(TakeNodeError::OwnLocked(node_id.clone()))
-                }
-            }
-        }
     }
 
     pub fn owned_nodes(&self) -> Vec<NodeId> {
-        self.owned_root_nodes.keys().cloned().collect()
+        self.owned_root_nodes.clone().into_iter().collect()
     }
 
-    pub fn move_node_to_store<S: SubstateStore, E>(
-        &self,
-        heap: &mut Heap,
-        store: &mut S,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
-        node_id: &NodeId,
-    ) -> Result<(), CallbackError<PersistNodeError, E>> {
-        let mut queue = LinkedList::new();
-        queue.push_back(node_id.clone());
-
-        while let Some(node_id) = queue.pop_front() {
-            handler
-                .on_persist_node(heap, &node_id)
-                .map_err(CallbackError::CallbackError)?;
-
-            let node_substates = match heap.remove_node(&node_id) {
-                Ok(substates) => substates,
-                Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
-                    panic!("Frame owned node {:?} not found in heap", node_id)
-                }
-                Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
-                    return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(
-                        node_id, count,
-                    )));
-                }
-            };
-            for (_partition_number, module_substates) in &node_substates {
-                for (_substate_key, substate_value) in module_substates {
-                    for reference in substate_value.references() {
-                        if !reference.is_global() {
-                            return Err(CallbackError::Error(
-                                PersistNodeError::ContainsNonGlobalRef(*reference),
-                            ));
-                        }
-                    }
-
-                    for node_id in substate_value.owned_nodes() {
-                        queue.push_back(*node_id);
-                    }
-                }
+    fn get_node_ref(&self, node_id: &NodeId) -> Option<(ReferenceOrigin, SubstateDevice)> {
+        let node_visibility = self.get_node_visibility(node_id);
+        let ref_origin = node_visibility.reference_origin(node_id.clone())?;
+        let device = match ref_origin {
+            ReferenceOrigin::FrameOwned => SubstateDevice::Heap,
+            ReferenceOrigin::Global(..) | ReferenceOrigin::DirectlyAccessed => {
+                SubstateDevice::Store
             }
+            ReferenceOrigin::SubstateNonGlobalReference(device) => device,
+        };
 
-            store
-                .create_node(node_id.clone(), node_substates, &mut |store_access| {
-                    handler.on_store_access(self, heap, store_access)
-                })
-                .map_err(CallbackError::CallbackError)?;
-        }
-
-        Ok(())
+        Some((ref_origin, device))
     }
 
     pub fn get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
@@ -1403,7 +1241,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         // Frame owned nodes
-        if self.owned_root_nodes.contains_key(node_id) {
+        if self.owned_root_nodes.contains(node_id) {
             visibilities.insert(Visibility::FrameOwned);
         }
 
@@ -1413,5 +1251,244 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         NodeVisibility(visibilities)
+    }
+
+    fn process_substate_diff<S: SubstateStore, E>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
+        device: SubstateDevice,
+        diff: &SubstateDiff,
+    ) -> Result<(), CallbackError<ProcessSubstateError, E>> {
+        // Verify and Update call frame state based on diff
+        {
+            for added_own in &diff.added_owns {
+                // Node no longer owned by frame
+                self.take_node_internal(added_own)
+                    .map_err(|e| CallbackError::Error(ProcessSubstateError::TakeNodeError(e)))?;
+            }
+
+            for removed_own in &diff.removed_owns {
+                // Owned nodes discarded by the substate go back to the call frame,
+                // and must be explicitly dropped.
+                self.owned_root_nodes.insert(removed_own.clone());
+            }
+
+            for added_ref in &diff.added_refs {
+                let node_visibility = self.get_node_visibility(added_ref);
+                if !node_visibility.can_be_referenced_in_substate() {
+                    return Err(CallbackError::Error(ProcessSubstateError::RefNotFound(
+                        added_ref.clone(),
+                    )));
+                }
+            }
+
+            for removed_ref in &diff.removed_refs {
+                if removed_ref.is_global() {
+                    self.stable_references
+                        .insert(*removed_ref, StableReferenceType::Global);
+                }
+            }
+        }
+
+        // Update global state
+        match device {
+            SubstateDevice::Heap => {
+                for added_ref in &diff.added_refs {
+                    if !added_ref.is_global() {
+                        let (_, device) = self.get_node_ref(added_ref).unwrap();
+                        substate_io
+                            .non_global_node_refs
+                            .increment_ref_count(*added_ref, device);
+                    }
+                }
+                for removed_ref in &diff.removed_refs {
+                    if !removed_ref.is_global() {
+                        substate_io
+                            .non_global_node_refs
+                            .decrement_ref_count(removed_ref);
+                    }
+                }
+            }
+            SubstateDevice::Store => {
+                let mut handler = WrapperHandler {
+                    call_frame: self,
+                    handler,
+                    phantom: PhantomData::default(),
+                };
+
+                for added_own in &diff.added_owns {
+                    substate_io
+                        .move_node_from_heap_to_store(&mut handler, added_own)
+                        .map_err(|e| e.map(ProcessSubstateError::PersistNodeError))?;
+                }
+
+                if let Some(removed_own) = diff.removed_owns.iter().next() {
+                    return Err(CallbackError::Error(
+                        ProcessSubstateError::CantDropNodeInStore(*removed_own),
+                    ));
+                }
+
+                if let Some(non_global_ref) =
+                    diff.added_refs.iter().filter(|r| !r.is_global()).next()
+                {
+                    return Err(CallbackError::Error(
+                        ProcessSubstateError::NonGlobalRefNotAllowed(*non_global_ref),
+                    ));
+                }
+
+                if let Some(non_global_ref) =
+                    diff.removed_refs.iter().filter(|r| !r.is_global()).next()
+                {
+                    panic!(
+                        "Should never have contained a non global reference: {:?}",
+                        non_global_ref
+                    );
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn apply_diff_to_open_substate<S: SubstateStore>(
+        transient_references: &mut NonIterMap<NodeId, TransientReference>,
+        substate_io: &SubstateIO<S>,
+        open_substate: &mut OpenedSubstate<L>,
+        diff: &SubstateDiff,
+    ) {
+        for added_own in &diff.added_owns {
+            open_substate.owned_nodes.insert(*added_own);
+            transient_references
+                .entry(added_own.clone())
+                .or_insert(TransientReference {
+                    ref_count: 0usize,
+                    ref_origin: open_substate.ref_origin, // Child inherits reference origin
+                })
+                .ref_count
+                .add_assign(1);
+        }
+
+        for removed_own in &diff.removed_owns {
+            open_substate.owned_nodes.remove(removed_own);
+            let mut transient_ref = transient_references.remove(removed_own).unwrap();
+            if transient_ref.ref_count > 1 {
+                transient_ref.ref_count -= 1;
+                transient_references.insert(*removed_own, transient_ref);
+            }
+        }
+
+        for added_ref in &diff.added_refs {
+            open_substate.references.insert(*added_ref);
+
+            if !added_ref.is_global() {
+                let device = substate_io.non_global_node_refs.get_ref_device(added_ref);
+
+                transient_references
+                    .entry(added_ref.clone())
+                    .or_insert(TransientReference {
+                        ref_count: 0usize,
+                        ref_origin: ReferenceOrigin::SubstateNonGlobalReference(device),
+                    })
+                    .ref_count
+                    .add_assign(1);
+            }
+        }
+
+        for removed_ref in &diff.removed_refs {
+            open_substate.references.remove(removed_ref);
+
+            if !removed_ref.is_global() {
+                let mut transient_ref = transient_references.remove(&removed_ref).unwrap();
+                if transient_ref.ref_count > 1 {
+                    transient_ref.ref_count -= 1;
+                    transient_references.insert(*removed_ref, transient_ref);
+                }
+            }
+        }
+    }
+
+    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
+        if self.owned_root_nodes.remove(node_id) {
+            Ok(())
+        } else {
+            Err(TakeNodeError::OwnNotFound(node_id.clone()))
+        }
+    }
+}
+
+/// Non Global Node References
+/// This struct should be maintained with CallFrame as the call frame should be the only
+/// manipulator. Substate I/O though the "owner" only has read-access to this structure.
+pub struct NonGlobalNodeRefs {
+    node_refs: NonIterMap<NodeId, (SubstateDevice, usize)>,
+}
+
+impl NonGlobalNodeRefs {
+    pub fn new() -> Self {
+        Self {
+            node_refs: NonIterMap::new(),
+        }
+    }
+
+    pub fn node_is_referenced(&self, node_id: &NodeId) -> bool {
+        self.node_refs
+            .get(node_id)
+            .map(|(_, ref_count)| ref_count.gt(&0))
+            .unwrap_or(false)
+    }
+
+    fn get_ref_device(&self, node_id: &NodeId) -> SubstateDevice {
+        let (device, ref_count) = self.node_refs.get(node_id).unwrap();
+
+        if ref_count.eq(&0) {
+            panic!("Reference no longer exists");
+        }
+
+        *device
+    }
+
+    fn increment_ref_count(&mut self, node_id: NodeId, device: SubstateDevice) {
+        let (_, ref_count) = self.node_refs.entry(node_id).or_insert((device, 0));
+        ref_count.add_assign(1);
+    }
+
+    fn decrement_ref_count(&mut self, node_id: &NodeId) {
+        let (_, ref_count) = self
+            .node_refs
+            .get_mut(node_id)
+            .unwrap_or_else(|| panic!("Node {:?} not found", node_id));
+        ref_count.sub_assign(1);
+    }
+}
+
+pub struct NullHandler<C, L> {
+    phantom0: PhantomData<C>,
+    phantom1: PhantomData<L>,
+}
+
+impl<C, L> NullHandler<C, L> {
+    fn new() -> Self {
+        NullHandler {
+            phantom0: PhantomData::default(),
+            phantom1: PhantomData::default(),
+        }
+    }
+}
+
+impl<C, L> StoreAccessHandler<C, L, ()> for NullHandler<C, L> {
+    fn on_store_access(
+        &mut self,
+        _current_frame: &CallFrame<C, L>,
+        _heap: &Heap,
+        _store_access: StoreAccess,
+    ) -> Result<(), ()> {
+        Ok(())
+    }
+}
+
+impl<C, L> PersistNodeHandler<()> for NullHandler<C, L> {
+    fn on_persist_node(&mut self, _heap: &Heap, _node_id: &NodeId) -> Result<(), ()> {
+        Ok(())
     }
 }

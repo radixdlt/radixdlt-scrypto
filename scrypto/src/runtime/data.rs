@@ -12,7 +12,7 @@ use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 pub struct DataRef<V: ScryptoEncode> {
-    lock_handle: LockHandle,
+    lock_handle: SubstateHandle,
     value: V,
 }
 
@@ -23,7 +23,7 @@ impl<V: fmt::Display + ScryptoEncode> fmt::Display for DataRef<V> {
 }
 
 impl<V: ScryptoEncode> DataRef<V> {
-    pub fn new(lock_handle: LockHandle, substate: V) -> DataRef<V> {
+    pub fn new(lock_handle: SubstateHandle, substate: V) -> DataRef<V> {
         DataRef {
             lock_handle,
             value: substate,
@@ -52,7 +52,7 @@ pub enum OriginalData {
 }
 
 pub struct DataRefMut<V: ScryptoEncode> {
-    lock_handle: LockHandle,
+    lock_handle: SubstateHandle,
     original_data: OriginalData,
     value: V,
 }
@@ -64,7 +64,11 @@ impl<V: fmt::Display + ScryptoEncode> fmt::Display for DataRefMut<V> {
 }
 
 impl<V: ScryptoEncode> DataRefMut<V> {
-    pub fn new(lock_handle: LockHandle, original_data: OriginalData, value: V) -> DataRefMut<V> {
+    pub fn new(
+        lock_handle: SubstateHandle,
+        original_data: OriginalData,
+        value: V,
+    ) -> DataRefMut<V> {
         DataRefMut {
             lock_handle,
             original_data,

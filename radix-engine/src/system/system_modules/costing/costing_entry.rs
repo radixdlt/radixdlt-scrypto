@@ -65,7 +65,7 @@ pub enum CostingEntry<'a> {
         event: &'a WriteSubstateEvent<'a>,
     },
     CloseSubstate {
-        event: &'a CloseSubstateEvent<'a>,
+        event: &'a CloseSubstateEvent,
     },
 
     /* unstable node apis */
