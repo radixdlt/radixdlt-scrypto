@@ -3,7 +3,7 @@ use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
 };
 use radix_engine::kernel::call_frame::{
-    CreateNodeError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
+    CreateNodeError, ProcessSubstateError, SubstateDiffError, WriteSubstateError,
 };
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
@@ -176,8 +176,8 @@ fn invalid_double_ownership_of_vault() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
-                    ProcessSubstateError::TakeNodeError(TakeNodeError::OwnNotFound(_))
+                CallFrameError::CreateNodeError(CreateNodeError::SubstateDiffError(
+                    SubstateDiffError::ContainsDuplicateOwns
                 ))
             ))
         )

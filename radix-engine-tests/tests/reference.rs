@@ -1,10 +1,5 @@
-use radix_engine::kernel::call_frame::WriteSubstateError;
-use radix_engine::kernel::substate_io::ProcessSubstateIOWriteError;
-use radix_engine::{
-    errors::{CallFrameError, KernelError, RuntimeError},
-    kernel::call_frame::MoveModuleError,
-    types::*,
-};
+use radix_engine::errors::SystemError;
+use radix_engine::{errors::RuntimeError, types::*};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -34,11 +29,7 @@ fn test_create_global_node_with_local_ref() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::MoveModuleError(x),
-        )) => {
-            matches!(x, MoveModuleError::NonGlobalRefNotAllowed(_))
-        }
+        RuntimeError::SystemError(SystemError::InvalidReference) => true,
         _ => false,
     });
 }
@@ -82,16 +73,7 @@ fn test_add_local_ref_to_stored_substate() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::WriteSubstateError(x),
-        )) => {
-            matches!(
-                x,
-                WriteSubstateError::ProcessSubstateIOWriteError(
-                    ProcessSubstateIOWriteError::NonGlobalRefNotAllowed(..)
-                )
-            )
-        }
+        RuntimeError::SystemError(SystemError::InvalidReference) => true,
         _ => false,
     });
 }

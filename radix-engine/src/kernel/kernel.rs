@@ -10,7 +10,8 @@ use crate::blueprints::transaction_processor::TransactionProcessorRunInputEffici
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::{
-    CallFrameMessage, CallFrameSubstateReadHandler, PersistNodeHandler, StoreAccessHandler,
+    CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs, PersistNodeHandler,
+    StoreAccessHandler,
 };
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::{
@@ -18,7 +19,6 @@ use crate::kernel::kernel_callback_api::{
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
-use crate::kernel::node_refs::NonGlobalNodeRefs;
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
