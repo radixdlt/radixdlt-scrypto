@@ -516,7 +516,6 @@ pub enum ProcessSubstateKeyError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProcessSubstateError {
-    ContainsDuplicateOwns,
     TakeNodeError(TakeNodeError),
     CantDropNodeInStore(NodeId),
     RefNotFound(NodeId),
@@ -1284,17 +1283,18 @@ impl<C, L: Clone> CallFrame<C, L> {
                     .map_err(|e| CallbackError::Error(ProcessSubstateError::TakeNodeError(e)))?;
             }
 
+            for removed_own in &diff.removed_owns {
+                // Owned nodes discarded by the substate go back to the call frame,
+                // and must be explicitly dropped.
+                self.owned_root_nodes.insert(removed_own.clone());
+            }
+
             for added_ref in &diff.added_refs {
                 let node_visibility = self.get_node_visibility(added_ref);
                 if !node_visibility.can_be_referenced_in_substate() {
                     return Err(CallbackError::Error(ProcessSubstateError::RefNotFound(added_ref.clone())));
                 }
             }
-        }
-
-        // Update open substate
-        if let Some(open_substate) = open_substate.as_mut() {
-            self.apply_diff_to_open_substate(open_substate, &diff);
         }
 
         // Update global state
@@ -1338,10 +1338,20 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
+        // Update open substate, this depends on substate_io.non_global_node_refs being updated so execute this last
+        if let Some(open_substate) = open_substate.as_mut() {
+            self.apply_verified_diff_to_open_substate(substate_io, open_substate, &diff);
+        }
+
         Ok(())
     }
 
-    fn apply_diff_to_open_substate(&mut self, open_substate: &mut OpenedSubstate<L>, diff: &SubstateDiff) {
+    fn apply_verified_diff_to_open_substate<S: SubstateStore>(
+        &mut self,
+        substate_io: &SubstateIO<S>,
+        open_substate: &mut OpenedSubstate<L>,
+        diff: &SubstateDiff,
+    ) {
         for added_own in &diff.added_owns {
             open_substate.owned_nodes.insert(*added_own);
             self.transient_references
@@ -1359,17 +1369,14 @@ impl<C, L: Clone> CallFrame<C, L> {
             let transient_ref = self.transient_references.remove(removed_own).unwrap();
             // This should be true due to write lock invariants
             assert!(transient_ref.ref_count == 1);
-
-            // Owned nodes discarded by the substate go back to the call frame,
-            // and must be explicitly dropped.
-            self.owned_root_nodes.insert(removed_own.clone());
         }
 
         for added_ref in &diff.added_refs {
             open_substate.references.insert(*added_ref);
 
             if !added_ref.is_global() {
-                let (_, device) = self.get_node_ref(added_ref).unwrap();
+                let device = substate_io.non_global_node_refs.get_ref_device(added_ref);
+
                 self.transient_references
                     .entry(added_ref.clone())
                     .or_insert(TransientReference {

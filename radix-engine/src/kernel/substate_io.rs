@@ -13,8 +13,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Box;
 use sbor::prelude::Vec;
 use sbor::rust::collections::LinkedList;
-use utils::prelude::IndexMap;
-use utils::rust::prelude::IndexSet;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SubstateDevice {

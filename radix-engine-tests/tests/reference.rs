@@ -1,5 +1,4 @@
 use radix_engine::kernel::call_frame::{ProcessSubstateError, WriteSubstateError};
-use radix_engine::kernel::substate_io::ProcessSubstateIOWriteError;
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError},
     kernel::call_frame::MoveModuleError,
