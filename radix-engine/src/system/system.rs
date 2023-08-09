@@ -254,6 +254,19 @@ where
         Ok(())
     }
 
+    fn validate_substate_does_not_contain_refs(
+        &mut self,
+        value: &IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        for reference in value.references() {
+            if !reference.is_global() {
+                return Err(RuntimeError::SystemError(SystemError::InvalidReference));
+            }
+        }
+
+        Ok(())
+    }
+
     fn validate_instance_schema_and_state(
         &mut self,
         blueprint_id: &BlueprintId,
@@ -370,10 +383,12 @@ where
                         },
                     };
 
-                    partition.insert(
-                        SubstateKey::Field(i as u8),
-                        IndexedScryptoValue::from_typed(&substate),
-                    );
+                    let indexed_value = IndexedScryptoValue::from_typed(&substate);
+                    if !blueprint_interface.is_transient {
+                        self.validate_substate_does_not_contain_refs(&indexed_value)?;
+                    }
+
+                    partition.insert(SubstateKey::Field(i as u8), indexed_value);
                 }
 
                 partitions.insert(offset.clone(), partition);
@@ -429,6 +444,9 @@ where
                     };
 
                     let value = IndexedScryptoValue::from_typed(&kv_entry);
+                    if !blueprint_interface.is_transient {
+                        self.validate_substate_does_not_contain_refs(&value)?;
+                    }
                     if !value_can_own {
                         if !value.owned_nodes().is_empty() {
                             return Err(RuntimeError::SystemError(
@@ -1350,7 +1368,7 @@ where
     fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
 
-        match data {
+        let blueprint_id = match data {
             SystemLockData::Field(FieldLockData::Write {
                 blueprint_id,
                 type_pointer,
@@ -1361,16 +1379,22 @@ where
                     type_pointer,
                     &buffer,
                 )?;
+                blueprint_id
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteHandle));
             }
-        }
+        };
 
         let value: ScryptoValue =
             scrypto_decode(&buffer).expect("Should be valid due to payload check");
 
         let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_field(value));
+        let blueprint_interface = self.get_blueprint_default_interface(blueprint_id)?;
+        if !blueprint_interface.is_transient {
+            self.validate_substate_does_not_contain_refs(&substate)?;
+        }
+
         self.api.kernel_write_substate(handle, substate)?;
 
         Ok(())
@@ -1785,6 +1809,8 @@ where
         let value = substate.as_scrypto_value().clone();
         let kv_entry = KeyValueEntrySubstate::entry(value);
         let indexed = IndexedScryptoValue::from_typed(&kv_entry);
+
+        self.validate_substate_does_not_contain_refs(&indexed)?;
 
         self.api.kernel_write_substate(handle, indexed)?;
 
