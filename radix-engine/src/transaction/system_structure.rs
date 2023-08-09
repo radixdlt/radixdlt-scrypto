@@ -226,10 +226,10 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                             return SubstateSystemStructure::KeyValueStoreEntry(
                                 KeyValueStoreEntryStructure {
                                     key_value_store_address: (*node_id).try_into().unwrap(),
-                                    key_schema_hash: info.schema.key.0,
-                                    key_local_type_index: info.schema.key.1,
-                                    value_schema_hash: info.schema.value.0,
-                                    value_local_type_index: info.schema.value.1,
+                                    key_schema_hash: info.schema.key_type_substitution.0,
+                                    key_local_type_index: info.schema.key_type_substitution.1,
+                                    value_schema_hash: info.schema.value_type_substitution.0,
+                                    value_local_type_index: info.schema.value_type_substitution.1,
                                 },
                             )
                         }

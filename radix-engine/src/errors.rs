@@ -28,7 +28,7 @@ use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ObjectHandle;
-use radix_engine_interface::blueprints::package::{BlueprintPartitionIdentifier, BlueprintPayloadIdentifier, CanonicalBlueprintId};
+use radix_engine_interface::blueprints::package::{BlueprintPartitionIdentifier, BlueprintPayloadIdentifier, CanonicalBlueprintId, KeyOrValue};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -229,9 +229,8 @@ pub enum SystemError {
     NotAKeyValueStore,
     ObjectModuleDoesNotExist(ObjectModuleId),
     CannotStoreOwnedInIterable,
-    InvalidSubstateWrite(String),
     InvalidKeyValueStoreOwnership,
-    InvalidKeyValueKey(String),
+    KeyValueStorePayloadValidationError(KeyOrValue, String),
     NotAKeyValueWriteLock,
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),

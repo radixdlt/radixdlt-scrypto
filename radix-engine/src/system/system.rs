@@ -135,6 +135,12 @@ impl TryFrom<ObjectHandle> for ActorObjectType {
 }
 
 #[derive(Debug, Clone)]
+pub struct KVStoreValidationTarget {
+    pub kv_store_type: KeyValueStoreSchema,
+    pub meta: NodeId,
+}
+
+#[derive(Debug, Clone)]
 pub enum SchemaValidationMeta<'a> {
     ExistingObject {
         additional_schemas: NodeId,
@@ -147,6 +153,7 @@ pub enum SchemaValidationMeta<'a> {
 
 #[derive(Debug, Clone)]
 pub struct ValidationTarget<'a> {
+    // TODO: Add version
     pub blueprint_id: BlueprintId,
     pub type_substitutions: Vec<TypeIdentifier>,
     pub meta: SchemaValidationMeta<'a>,
@@ -180,6 +187,45 @@ where
             &validation_context,
         )
     }
+
+
+    pub fn validate_kv_store_payload(
+        &mut self,
+        target: &KVStoreValidationTarget,
+        payload_identifier: KeyOrValue,
+        payload: &[u8],
+    ) -> Result<(), RuntimeError> {
+
+        let type_identifier = match payload_identifier {
+            KeyOrValue::Key => target.kv_store_type.key_type_substitution,
+            KeyOrValue::Value => target.kv_store_type.value_type_substitution,
+        };
+
+        let handle = self.api.kernel_open_substate_with_default(
+            &target.meta,
+            INSTANCE_SCHEMAS_PARTITION,
+            &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
+            LockFlags::read_only(),
+            None,
+            SystemLockData::default(),
+        )?;
+
+        let schema: ScryptoSchema =
+            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+
+        self.validate_payload(payload, &schema, type_identifier.1, SchemaOrigin::KeyValueStore)
+            .map_err(|err| {
+                RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(
+                    payload_identifier,
+                    err.error_message(&schema),
+                ))
+            })?;
+
+        self.api.kernel_close_substate(handle)?;
+
+        Ok(())
+    }
+
 
     pub fn validate_blueprint_payload(
         &mut self,
@@ -1669,18 +1715,11 @@ where
                 )?
             }
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
-                schema,
-                index,
-                can_own,
+                kv_store_validation_target,
             }) => {
-                self.validate_payload(&buffer, &schema, index, SchemaOrigin::KeyValueStore {})
-                    .map_err(|e| {
-                        RuntimeError::SystemError(SystemError::InvalidSubstateWrite(
-                            e.error_message(&schema),
-                        ))
-                    })?;
+                self.validate_kv_store_payload(&kv_store_validation_target, KeyOrValue::Value, &buffer)?;
 
-                can_own
+                kv_store_validation_target.kv_store_type.can_own
             }
             _ => {
                 return Err(RuntimeError::SystemError(
@@ -1737,6 +1776,12 @@ where
             .validate()
             .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
 
+        let schema_hash = schema.schema.generate_schema_hash();
+        let instance_schema_partition = btreemap!(
+             SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()) => IndexedScryptoValue::from_typed(&schema.schema)
+        );
+        let schema = schema.into();
+
         let node_id = self
             .api
             .kernel_allocate_node_id(IDAllocation::KeyValueStore.entity_type())?;
@@ -1747,9 +1792,10 @@ where
                 MAIN_BASE_PARTITION => btreemap!(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::KeyValueStore(KeyValueStoreInfo {
-                        schema: schema.into(),
+                        schema,
                     })
                 ),
+                INSTANCE_SCHEMAS_PARTITION => instance_schema_partition,
             ),
         )?;
 
@@ -1789,23 +1835,20 @@ where
             _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
         };
 
-        self.validate_payload(
-            key,
-            &info.schema.schema,
-            info.schema.key.1,
-            SchemaOrigin::KeyValueStore {},
-        )
-        .map_err(|e| {
-            RuntimeError::SystemError(SystemError::InvalidKeyValueKey(
-                e.error_message(&info.schema.schema),
-            ))
-        })?;
+        let target = KVStoreValidationTarget {
+            kv_store_type: info.schema,
+            meta: *node_id,
+        };
+
+        self.validate_kv_store_payload(
+            &target,
+            KeyOrValue::Key,
+            &key,
+        )?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
-                schema: info.schema.schema,
-                index: info.schema.value.1,
-                can_own: info.schema.can_own,
+                kv_store_validation_target: target,
             })
         } else {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Read)

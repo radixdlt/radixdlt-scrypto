@@ -11,9 +11,8 @@ use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreSchema {
-    pub schema: ScryptoSchema,
-    pub key: TypeIdentifier,
-    pub value: TypeIdentifier,
+    pub key_type_substitution: TypeIdentifier,
+    pub value_type_substitution: TypeIdentifier,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
@@ -48,9 +47,8 @@ impl From<KeyValueStoreSchemaInit> for KeyValueStoreSchema {
     fn from(schema: KeyValueStoreSchemaInit) -> Self {
         let schema_hash = schema.schema.generate_schema_hash();
         KeyValueStoreSchema {
-            schema: schema.schema,
-            key: TypeIdentifier(schema_hash, schema.key),
-            value: TypeIdentifier(schema_hash, schema.value),
+            key_type_substitution: TypeIdentifier(schema_hash, schema.key),
+            value_type_substitution: TypeIdentifier(schema_hash, schema.value),
             can_own: schema.can_own,
         }
     }

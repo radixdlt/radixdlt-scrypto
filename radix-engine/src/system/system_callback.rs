@@ -20,7 +20,7 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::module::SystemModule;
-use crate::system::system::{FieldSubstate, ValidationTarget, SchemaValidationMeta};
+use crate::system::system::{FieldSubstate, ValidationTarget, SchemaValidationMeta, KVStoreValidationTarget};
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -57,9 +57,7 @@ impl Default for SystemLockData {
 pub enum KeyValueEntryLockData {
     Read,
     Write {
-        schema: ScryptoSchema,
-        index: LocalTypeIndex,
-        can_own: bool,
+        kv_store_validation_target: KVStoreValidationTarget,
     },
     BlueprintWrite {
         collection_index: CollectionIndex,

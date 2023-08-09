@@ -6,6 +6,7 @@ use radix_engine::kernel::call_frame::{CloseSubstateError, CreateNodeError, Take
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::blueprints::package::KeyOrValue;
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
@@ -92,7 +93,7 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::InvalidSubstateWrite(_))
+            RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(KeyOrValue::Value, _))
         )
     });
 }
@@ -124,7 +125,7 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::InvalidSubstateWrite(_))
+            RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(KeyOrValue::Value, _))
         )
     });
 }
