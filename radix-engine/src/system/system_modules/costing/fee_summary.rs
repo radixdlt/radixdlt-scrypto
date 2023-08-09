@@ -5,45 +5,49 @@ use sbor::rust::collections::*;
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct FeeSummary {
-    /// The cost unit price in XRD.
-    pub cost_unit_price: Decimal,
+    /// The max execution cost units to consume.
+    pub execution_cost_unit_limit: u32,
+    /// The price of execution cost unit in XRD.
+    pub execution_cost_unit_price: Decimal,
+    /// The max finalization cost units to consume.
+    pub finalization_cost_unit_limit: u32,
+    /// The price of finalization cost unit in XRD.
+    pub finalization_cost_unit_price: Decimal,
+    /// The price of USD in XRD.
+    pub usd_price_in_xrd: Decimal,
+    /// The price of storage in XRD.
+    pub storage_price_in_xrd: Decimal,
     /// The tip percentage
     pub tip_percentage: u16,
-    /// The specified max cost units can be consumed.
-    pub cost_unit_limit: u32,
     /// The total cost for execution, excluding tips
-    pub total_execution_cost_xrd: Decimal,
+    pub total_execution_cost_in_xrd: Decimal,
     /// The total cost for tipping
-    pub total_tipping_cost_xrd: Decimal,
+    pub total_tipping_cost_in_xrd: Decimal,
     /// The total cost for state expansion
-    pub total_state_expansion_cost_xrd: Decimal,
+    pub total_storage_cost_in_xrd: Decimal,
     /// The total cost for royalty
-    pub total_royalty_cost_xrd: Decimal,
+    pub total_royalty_cost_in_xrd: Decimal,
     /// The (non-negative) amount of bad debt due to transaction unable to repay loan.
-    pub total_bad_debt_xrd: Decimal,
+    pub total_bad_debt_in_xrd: Decimal,
     /// The vaults locked for XRD payment
     pub locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
-    /// The execution cost breakdown
-    pub execution_cost_breakdown: BTreeMap<String, u32>,
     /// The total number of cost units consumed (excluding royalties).
-    pub execution_cost_sum: u32,
+    pub total_execution_cost_units_consumed: u32,
     /// The royalty cost breakdown
-    pub royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, (NodeId, Decimal)>,
-    /// The actual fee payments
-    pub fee_payments: IndexMap<NodeId, Decimal>,
+    pub royalty_cost_breakdown: IndexMap<RoyaltyRecipient, Decimal>,
 }
 
 impl FeeSummary {
     pub fn loan_fully_repaid(&self) -> bool {
-        self.total_bad_debt_xrd == 0.into()
+        self.total_bad_debt_in_xrd == 0.into()
     }
 
     fn tips(&self) -> Decimal {
-        self.total_tipping_cost_xrd
+        self.total_tipping_cost_in_xrd
     }
 
     fn fees(&self) -> Decimal {
-        self.total_execution_cost_xrd + self.total_state_expansion_cost_xrd
+        self.total_execution_cost_in_xrd + self.total_storage_cost_in_xrd
     }
 
     pub fn to_proposer_amount(&self) -> Decimal {
@@ -62,14 +66,10 @@ impl FeeSummary {
     }
 
     pub fn total_cost(&self) -> Decimal {
-        self.total_execution_cost_xrd
-            + self.total_tipping_cost_xrd
-            + self.total_state_expansion_cost_xrd
-            + self.total_royalty_cost_xrd
-    }
-
-    pub fn total_payments(&self) -> Decimal {
-        self.fee_payments.values().cloned().sum::<Decimal>()
+        self.total_execution_cost_in_xrd
+            + self.total_tipping_cost_in_xrd
+            + self.total_storage_cost_in_xrd
+            + self.total_royalty_cost_in_xrd
     }
 
     pub fn used_free_credit(&self) -> Decimal {

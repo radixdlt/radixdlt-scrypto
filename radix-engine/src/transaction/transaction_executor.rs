@@ -679,10 +679,10 @@ where
         // Take fee payments
         let fee_summary = fee_reserve.finalize();
         let mut fee_payments: IndexMap<NodeId, Decimal> = index_map_new();
-        let mut required = fee_summary.total_execution_cost_xrd
-            + fee_summary.total_tipping_cost_xrd
-            + fee_summary.total_state_expansion_cost_xrd
-            + fee_summary.total_royalty_cost_xrd;
+        let mut required = fee_summary.total_execution_cost_in_xrd
+            + fee_summary.total_tipping_cost_in_xrd
+            + fee_summary.total_storage_cost_in_xrd
+            + fee_summary.total_royalty_cost_in_xrd;
         let mut collected_fees = LiquidFungibleResource::new(Decimal::ZERO);
         for (vault_id, mut locked, contingent) in fee_summary.locked_fees.iter().cloned().rev() {
             let amount = if contingent {
@@ -732,16 +732,16 @@ where
 
         // Sanity checks
         assert!(
-            fee_summary.total_bad_debt_xrd == Decimal::ZERO,
+            fee_summary.total_bad_debt_in_xrd == Decimal::ZERO,
             "Bad debt is non-zero: {}",
-            fee_summary.total_bad_debt_xrd
+            fee_summary.total_bad_debt_in_xrd
         );
         assert!(
             required == Decimal::ZERO,
             "Locked fee does not cover transaction cost: {} required",
             required
         );
-        let remaining_collected_fees = collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */;
+        let remaining_collected_fees = collected_fees.amount() - fee_summary.total_royalty_cost_in_xrd /* royalty already distributed */;
         assert!(
             remaining_collected_fees  == to_proposer + to_validator_set + to_burn,
             "Remaining collected fee isn't equal to amount to distribute (proposer/validator set/burn): {} != {}",

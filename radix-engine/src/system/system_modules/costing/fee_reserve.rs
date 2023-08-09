@@ -49,7 +49,6 @@ pub trait ExecutionFeeReserve {
         &mut self,
         royalty_amount: RoyaltyAmount,
         recipient: RoyaltyRecipient,
-        recipient_vault_id: NodeId,
     ) -> Result<(), FeeReserveError>;
 
     fn consume_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
@@ -81,7 +80,7 @@ pub struct SystemLoanFeeReserve {
     /// The price of USD
     usd_price: u128,
     /// The price for adding a single byte to substate store
-    state_expansion_price: u128,
+    storage_price: u128,
     /// The tip percentage
     tip_percentage: u16,
     /// The number of cost units that can be consumed at most
@@ -101,15 +100,15 @@ pub struct SystemLoanFeeReserve {
     xrd_owed: u128,
 
     /// Execution costs
-    execution_committed_sum: u32,
-    execution_deferred_sum: u32,
+    execution_cost_committed: u32,
+    execution_cost_deferred: u32,
 
     /// Royalty costs
-    royalty_committed: BTreeMap<RoyaltyRecipient, (NodeId, u128)>,
-    royalty_committed_sum: u128,
+    royalty_cost_committed: u128,
+    royalty_cost_committed_breakdown: BTreeMap<RoyaltyRecipient, u128>,
 
     /// State expansion costs
-    state_expansion_committed: u128,
+    storage_cost_committed: u128,
 
     /// Payments made during the execution of a transaction.
     locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
@@ -153,7 +152,7 @@ impl SystemLoanFeeReserve {
         Self {
             cost_unit_price: transmute_decimal_as_u128(cost_unit_price).unwrap(),
             usd_price: transmute_decimal_as_u128(usd_price).unwrap(),
-            state_expansion_price: transmute_decimal_as_u128(state_expansion_price).unwrap(),
+            storage_price: transmute_decimal_as_u128(state_expansion_price).unwrap(),
             tip_percentage,
             cost_unit_limit,
             system_loan,
@@ -165,13 +164,13 @@ impl SystemLoanFeeReserve {
             xrd_balance: effective_price * system_loan as u128,
             xrd_owed: effective_price * system_loan as u128,
 
-            execution_committed_sum: 0,
-            execution_deferred_sum: 0,
+            execution_cost_committed: 0,
+            execution_cost_deferred: 0,
 
-            royalty_committed: BTreeMap::new(),
-            royalty_committed_sum: 0,
+            royalty_cost_committed_breakdown: BTreeMap::new(),
+            royalty_cost_committed: 0,
 
-            state_expansion_committed: 0,
+            storage_cost_committed: 0,
 
             locked_fees: Vec::new(),
         }
@@ -207,10 +206,10 @@ impl SystemLoanFeeReserve {
     }
 
     fn check_cost_unit_limit(&self, cost_units: u32) -> Result<(), FeeReserveError> {
-        if checked_add(self.execution_committed_sum, cost_units)? > self.cost_unit_limit {
+        if checked_add(self.execution_cost_committed, cost_units)? > self.cost_unit_limit {
             return Err(FeeReserveError::LimitExceeded {
                 limit: self.cost_unit_limit,
-                committed: self.execution_committed_sum,
+                committed: self.execution_cost_committed,
                 new: cost_units,
             });
         }
@@ -228,7 +227,7 @@ impl SystemLoanFeeReserve {
             });
         } else {
             self.xrd_balance -= amount;
-            self.execution_committed_sum += cost_units;
+            self.execution_cost_committed += cost_units;
             Ok(())
         }
     }
@@ -237,7 +236,6 @@ impl SystemLoanFeeReserve {
         &mut self,
         royalty_amount: RoyaltyAmount,
         recipient: RoyaltyRecipient,
-        recipient_vault_id: NodeId,
     ) -> Result<(), FeeReserveError> {
         let amount = match royalty_amount {
             RoyaltyAmount::Xrd(xrd_amount) => transmute_decimal_as_u128(xrd_amount)?,
@@ -256,20 +254,19 @@ impl SystemLoanFeeReserve {
             });
         } else {
             self.xrd_balance -= amount;
-            self.royalty_committed
+            self.royalty_cost_committed_breakdown
                 .entry(recipient)
-                .or_insert((recipient_vault_id, 0))
-                .1
+                .or_default()
                 .add_assign(amount);
-            self.royalty_committed_sum += amount;
+            self.royalty_cost_committed += amount;
             Ok(())
         }
     }
 
     pub fn repay_all(&mut self) -> Result<(), FeeReserveError> {
         // Apply deferred execution cost
-        self.consume_execution_internal(self.execution_deferred_sum)?;
-        self.execution_deferred_sum = 0;
+        self.consume_execution_internal(self.execution_cost_deferred)?;
+        self.execution_cost_deferred = 0;
 
         // Repay owed with balance
         let amount = min(self.xrd_balance, self.xrd_owed);
@@ -291,17 +288,9 @@ impl SystemLoanFeeReserve {
     }
 
     pub fn revert_royalty(&mut self) {
-        self.xrd_balance += self.royalty_committed.values().map(|x| x.1).sum::<u128>();
-        self.royalty_committed.clear();
-        self.royalty_committed_sum = 0;
-    }
-
-    pub fn royalty_cost(&self) -> BTreeMap<RoyaltyRecipient, (NodeId, Decimal)> {
-        self.royalty_committed
-            .clone()
-            .into_iter()
-            .map(|(k, v)| (k, (v.0, transmute_u128_as_decimal(v.1))))
-            .collect()
+        self.xrd_balance += self.royalty_cost_committed_breakdown.values().sum::<u128>();
+        self.royalty_cost_committed_breakdown.clear();
+        self.royalty_cost_committed = 0;
     }
 
     #[inline]
@@ -316,7 +305,7 @@ impl PreExecutionFeeReserve for SystemLoanFeeReserve {
             return Ok(());
         }
 
-        checked_assign_add(&mut self.execution_deferred_sum, cost_units)?;
+        checked_assign_add(&mut self.execution_cost_deferred, cost_units)?;
 
         Ok(())
     }
@@ -327,15 +316,14 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         &mut self,
         royalty_amount: RoyaltyAmount,
         recipient: RoyaltyRecipient,
-        recipient_vault_id: NodeId,
     ) -> Result<(), FeeReserveError> {
         if royalty_amount.is_zero() {
             return Ok(());
         }
 
-        self.consume_royalty_internal(royalty_amount, recipient, recipient_vault_id)?;
+        self.consume_royalty_internal(royalty_amount, recipient)?;
 
-        if !self.fully_repaid() && self.execution_committed_sum >= self.system_loan {
+        if !self.fully_repaid() && self.execution_cost_committed >= self.system_loan {
             self.repay_all()?;
         }
 
@@ -357,7 +345,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
             }
             StoreCommit::Delete { .. } => 0, // TODO: refund?
         };
-        let amount = self.state_expansion_price.saturating_mul(delta as u128);
+        let amount = self.storage_price.saturating_mul(delta as u128);
 
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance {
@@ -366,7 +354,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
             });
         } else {
             self.xrd_balance -= amount;
-            self.state_expansion_committed += amount;
+            self.storage_cost_committed += amount;
             Ok(())
         }
     }
@@ -378,7 +366,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
         self.consume_execution_internal(cost_units)?;
 
-        if !self.fully_repaid() && self.execution_committed_sum >= self.system_loan {
+        if !self.fully_repaid() && self.execution_cost_committed >= self.system_loan {
             self.repay_all()?;
         }
 
@@ -407,30 +395,34 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
     fn finalize(self) -> FeeSummary {
-        let royalty_cost_breakdown = self.royalty_cost();
         let fee_summary = FeeSummary {
-            cost_unit_limit: self.cost_unit_limit,
-            cost_unit_price: transmute_u128_as_decimal(self.cost_unit_price),
+            execution_cost_unit_limit: self.cost_unit_limit,
+            execution_cost_unit_price: transmute_u128_as_decimal(self.cost_unit_price),
+            finalization_cost_unit_limit: 0, // FIXME implement finalization cost
+            finalization_cost_unit_price: Decimal::ZERO,
+            usd_price_in_xrd: transmute_u128_as_decimal(self.usd_price),
+            storage_price_in_xrd: transmute_u128_as_decimal(self.storage_price),
             tip_percentage: self.tip_percentage,
-            total_execution_cost_xrd: self.cost_unit_price() * self.execution_committed_sum,
-            total_tipping_cost_xrd: self.tip_price() * self.execution_committed_sum,
-            total_royalty_cost_xrd: transmute_u128_as_decimal(self.royalty_committed_sum),
-            total_state_expansion_cost_xrd: transmute_u128_as_decimal(
-                self.state_expansion_committed,
-            ),
-            total_bad_debt_xrd: transmute_u128_as_decimal(self.xrd_owed),
+            total_execution_cost_in_xrd: self.cost_unit_price() * self.execution_cost_committed,
+            total_tipping_cost_in_xrd: self.tip_price() * self.execution_cost_committed,
+            total_royalty_cost_in_xrd: transmute_u128_as_decimal(self.royalty_cost_committed),
+            total_storage_cost_in_xrd: transmute_u128_as_decimal(self.storage_cost_committed),
+            total_bad_debt_in_xrd: transmute_u128_as_decimal(self.xrd_owed),
             locked_fees: self.locked_fees,
-            execution_cost_breakdown: BTreeMap::new(),
-            execution_cost_sum: self.execution_committed_sum,
-            royalty_cost_breakdown,
-            fee_payments: index_map_new(),
+            total_execution_cost_units_consumed: self.execution_cost_committed,
+            royalty_cost_breakdown: self
+                .royalty_cost_committed_breakdown
+                .clone()
+                .into_iter()
+                .map(|(k, v)| (k, transmute_u128_as_decimal(v)))
+                .collect(),
         };
 
         // Sanity check
         assert_eq!(
-            fee_summary.total_execution_cost_xrd
-                + fee_summary.total_tipping_cost_xrd
-                + fee_summary.total_state_expansion_cost_xrd,
+            fee_summary.total_execution_cost_in_xrd
+                + fee_summary.total_tipping_cost_in_xrd
+                + fee_summary.total_storage_cost_in_xrd,
             fee_summary.to_proposer_amount()
                 + fee_summary.to_validator_set_amount()
                 + fee_summary.to_burn_amount()
@@ -477,11 +469,11 @@ mod tests {
         fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
-        assert_eq!(summary.execution_cost_sum, 2);
-        assert_eq!(summary.total_execution_cost_xrd, dec!("2"));
-        assert_eq!(summary.total_tipping_cost_xrd, dec!("0.04"));
-        assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
-        assert_eq!(summary.total_bad_debt_xrd, dec!("0"));
+        assert_eq!(summary.total_execution_cost_units_consumed, 2);
+        assert_eq!(summary.total_execution_cost_in_xrd, dec!("2"));
+        assert_eq!(summary.total_tipping_cost_in_xrd, dec!("0.04"));
+        assert_eq!(summary.total_royalty_cost_in_xrd, dec!("0"));
+        assert_eq!(summary.total_bad_debt_in_xrd, dec!("0"));
     }
 
     #[test]
@@ -498,10 +490,10 @@ mod tests {
         fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
-        assert_eq!(summary.execution_cost_sum, 0);
-        assert_eq!(summary.total_execution_cost_xrd, dec!("0"));
-        assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
-        assert_eq!(summary.total_bad_debt_xrd, dec!("0"));
+        assert_eq!(summary.total_execution_cost_units_consumed, 0);
+        assert_eq!(summary.total_execution_cost_in_xrd, dec!("0"));
+        assert_eq!(summary.total_royalty_cost_in_xrd, dec!("0"));
+        assert_eq!(summary.total_bad_debt_in_xrd, dec!("0"));
     }
 
     #[test]
@@ -514,10 +506,10 @@ mod tests {
         fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
-        assert_eq!(summary.execution_cost_sum, 0);
-        assert_eq!(summary.total_execution_cost_xrd, dec!("0"));
-        assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
-        assert_eq!(summary.total_bad_debt_xrd, dec!("0"));
+        assert_eq!(summary.total_execution_cost_units_consumed, 0);
+        assert_eq!(summary.total_execution_cost_in_xrd, dec!("0"));
+        assert_eq!(summary.total_royalty_cost_in_xrd, dec!("0"));
+        assert_eq!(summary.total_bad_debt_in_xrd, dec!("0"));
     }
 
     #[test]
@@ -530,10 +522,10 @@ mod tests {
         fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
-        assert_eq!(summary.execution_cost_sum, 0);
-        assert_eq!(summary.total_execution_cost_xrd, dec!("0"));
-        assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
-        assert_eq!(summary.total_bad_debt_xrd, dec!("0"));
+        assert_eq!(summary.total_execution_cost_units_consumed, 0);
+        assert_eq!(summary.total_execution_cost_in_xrd, dec!("0"));
+        assert_eq!(summary.total_royalty_cost_in_xrd, dec!("0"));
+        assert_eq!(summary.total_bad_debt_in_xrd, dec!("0"));
         assert_eq!(summary.locked_fees, vec![(TEST_VAULT_ID, xrd(100), false)],);
     }
 
@@ -548,11 +540,11 @@ mod tests {
         );
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), false);
-        assert_eq!(summary.execution_cost_sum, 2);
-        assert_eq!(summary.total_execution_cost_xrd, dec!("10"));
-        assert_eq!(summary.total_tipping_cost_xrd, dec!("0.1"));
-        assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
-        assert_eq!(summary.total_bad_debt_xrd, dec!("10.1"));
+        assert_eq!(summary.total_execution_cost_units_consumed, 2);
+        assert_eq!(summary.total_execution_cost_in_xrd, dec!("10"));
+        assert_eq!(summary.total_tipping_cost_in_xrd, dec!("0.1"));
+        assert_eq!(summary.total_royalty_cost_in_xrd, dec!("0"));
+        assert_eq!(summary.total_bad_debt_in_xrd, dec!("10.1"));
         assert_eq!(summary.locked_fees, vec![],);
     }
 
@@ -564,15 +556,13 @@ mod tests {
         fee_reserve
             .consume_royalty(
                 RoyaltyAmount::Xrd(2.into()),
-                RoyaltyRecipient::Package(PACKAGE_PACKAGE),
-                TEST_VAULT_ID,
+                RoyaltyRecipient::Package(PACKAGE_PACKAGE, TEST_VAULT_ID),
             )
             .unwrap();
         fee_reserve
             .consume_royalty(
                 RoyaltyAmount::Usd(7.into()),
-                RoyaltyRecipient::Package(PACKAGE_PACKAGE),
-                TEST_VAULT_ID,
+                RoyaltyRecipient::Package(PACKAGE_PACKAGE, TEST_VAULT_ID),
             )
             .unwrap();
         fee_reserve
@@ -581,16 +571,16 @@ mod tests {
         fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
-        assert_eq!(summary.total_execution_cost_xrd, dec!("10"));
-        assert_eq!(summary.total_tipping_cost_xrd, dec!("0.1"));
-        assert_eq!(summary.total_royalty_cost_xrd, dec!("16"));
-        assert_eq!(summary.total_bad_debt_xrd, dec!("0"));
+        assert_eq!(summary.total_execution_cost_in_xrd, dec!("10"));
+        assert_eq!(summary.total_tipping_cost_in_xrd, dec!("0.1"));
+        assert_eq!(summary.total_royalty_cost_in_xrd, dec!("16"));
+        assert_eq!(summary.total_bad_debt_in_xrd, dec!("0"));
         assert_eq!(summary.locked_fees, vec![(TEST_VAULT_ID, xrd(100), false)]);
-        assert_eq!(summary.execution_cost_sum, 2);
+        assert_eq!(summary.total_execution_cost_units_consumed, 2);
         assert_eq!(
             summary.royalty_cost_breakdown,
-            btreemap!(
-                RoyaltyRecipient::Package(PACKAGE_PACKAGE) => (TEST_VAULT_ID, dec!("16"))
+            indexmap!(
+                RoyaltyRecipient::Package(PACKAGE_PACKAGE, TEST_VAULT_ID) => dec!("16")
             )
         );
     }
@@ -605,15 +595,13 @@ mod tests {
         fee_reserve
             .consume_royalty(
                 RoyaltyAmount::Xrd(90.into()),
-                RoyaltyRecipient::Package(PACKAGE_PACKAGE),
-                TEST_VAULT_ID,
+                RoyaltyRecipient::Package(PACKAGE_PACKAGE, TEST_VAULT_ID),
             )
             .unwrap();
         assert_eq!(
             fee_reserve.consume_royalty(
                 RoyaltyAmount::Xrd(80.into()),
-                RoyaltyRecipient::Component(TEST_COMPONENT),
-                TEST_VAULT_ID_2
+                RoyaltyRecipient::Component(TEST_COMPONENT, TEST_VAULT_ID_2),
             ),
             Err(FeeReserveError::InsufficientBalance {
                 required: dec!("80"),
