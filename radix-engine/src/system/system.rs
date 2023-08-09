@@ -952,10 +952,10 @@ where
         Ok(object_id)
     }
 
-    fn get_actor_partition_info(
+    fn get_actor_collection_partition_info(
         &mut self,
         actor_object_type: ActorObjectType,
-        blueprint_partition: BlueprintPartitionIdentifier,
+        collection_index: u8,
         expected_type: &BlueprintPartitionType,
     ) -> Result<(NodeId, BlueprintInfo, PartitionNumber), RuntimeError> {
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
@@ -965,19 +965,19 @@ where
 
         let partition_num = {
             let (partition_offset, partition_type) = blueprint_interface.state
-                .get_partition(blueprint_partition.clone())
+                .get_partition(collection_index)
                 .ok_or_else(|| {
-                    RuntimeError::SystemError(SystemError::BlueprintPartitionDoesNotExist(
+                    RuntimeError::SystemError(SystemError::CollectionIndexDoesNotExist(
                         blueprint_info.blueprint_id.clone(),
-                        blueprint_partition.clone(),
+                        collection_index,
                     ))
                 })?;
 
             if !partition_type.eq(expected_type) {
                 // TODO: Implement different error
-                return Err(RuntimeError::SystemError(SystemError::BlueprintPartitionDoesNotExist(
+                return Err(RuntimeError::SystemError(SystemError::CollectionIndexDoesNotExist(
                     blueprint_info.blueprint_id.clone(),
-                    blueprint_partition,
+                    collection_index,
                 )))
             }
 
@@ -1958,9 +1958,9 @@ where
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, info, partition_num) = self.get_actor_partition_info(
+        let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
-            BlueprintPartitionIdentifier::Collection(collection_index),
+            collection_index,
             &BlueprintPartitionType::IndexCollection,
         )?;
 
@@ -2008,9 +2008,9 @@ where
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, _info, partition_num) = self.get_actor_partition_info(
+        let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
-            BlueprintPartitionIdentifier::Collection(collection_index),
+            collection_index,
             &BlueprintPartitionType::IndexCollection,
         )?;
 
@@ -2031,9 +2031,9 @@ where
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, _info, partition_num) = self.get_actor_partition_info(
+        let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
-            BlueprintPartitionIdentifier::Collection(collection_index),
+            collection_index,
             &BlueprintPartitionType::IndexCollection,
         )?;
 
@@ -2056,9 +2056,9 @@ where
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, _info, partition_num) = self.get_actor_partition_info(
+        let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
-            BlueprintPartitionIdentifier::Collection(collection_index),
+            collection_index,
             &BlueprintPartitionType::IndexCollection,
         )?;
 
@@ -2089,9 +2089,9 @@ where
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, info, partition_num) = self.get_actor_partition_info(
+        let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
-            BlueprintPartitionIdentifier::Collection(collection_index),
+            collection_index,
             &BlueprintPartitionType::SortedIndexCollection,
         )?;
 
@@ -2142,9 +2142,9 @@ where
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, _info, partition_num) = self.get_actor_partition_info(
+        let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
-            BlueprintPartitionIdentifier::Collection(collection_index),
+            collection_index,
             &BlueprintPartitionType::SortedIndexCollection,
         )?;
 
@@ -2170,9 +2170,9 @@ where
     ) -> Result<Vec<(SortedKey, Vec<u8>)>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, _info, partition_num) = self.get_actor_partition_info(
+        let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
-            BlueprintPartitionIdentifier::Collection(collection_index),
+            collection_index,
             &BlueprintPartitionType::SortedIndexCollection,
         )?;
 
@@ -2551,9 +2551,9 @@ where
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, info, partition_num) = self.get_actor_partition_info(
+        let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
-            BlueprintPartitionIdentifier::Collection(collection_index),
+            collection_index,
             &BlueprintPartitionType::KeyValueCollection,
         )?;
 

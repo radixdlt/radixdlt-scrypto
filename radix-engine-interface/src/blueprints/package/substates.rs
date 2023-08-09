@@ -200,11 +200,6 @@ pub enum BlueprintPayloadIdentifier {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum BlueprintPartitionIdentifier {
-    Collection(u8),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BlueprintPartitionType {
     KeyValueCollection,
     IndexCollection,
@@ -394,20 +389,16 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn get_partition(&self, blueprint_partition_identifier: BlueprintPartitionIdentifier) -> Option<(PartitionOffset, BlueprintPartitionType)> {
-        match blueprint_partition_identifier {
-            BlueprintPartitionIdentifier::Collection(collection_index) => {
-                self.collections.get(collection_index as usize)
-                    .map(|(partition, schema)| {
-                        let partition_type = match schema {
-                            BlueprintCollectionSchema::KeyValueStore(..) => BlueprintPartitionType::KeyValueCollection,
-                            BlueprintCollectionSchema::Index(..) => BlueprintPartitionType::IndexCollection,
-                            BlueprintCollectionSchema::SortedIndex(..) => BlueprintPartitionType::SortedIndexCollection,
-                        };
-                        (*partition, partition_type)
-                    })
-            }
-        }
+    pub fn get_partition(&self, collection_index: u8) -> Option<(PartitionOffset, BlueprintPartitionType)> {
+        self.collections.get(collection_index as usize)
+            .map(|(partition, schema)| {
+                let partition_type = match schema {
+                    BlueprintCollectionSchema::KeyValueStore(..) => BlueprintPartitionType::KeyValueCollection,
+                    BlueprintCollectionSchema::Index(..) => BlueprintPartitionType::IndexCollection,
+                    BlueprintCollectionSchema::SortedIndex(..) => BlueprintPartitionType::SortedIndexCollection,
+                };
+                (*partition, partition_type)
+            })
     }
 
     pub fn get_field_type_pointer(&self, field_index: u8) -> Option<TypePointer> {
