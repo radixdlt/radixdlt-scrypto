@@ -1,7 +1,7 @@
 use super::{BalanceChange, StateUpdateSummary};
 use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
-use crate::system::system_modules::costing::{FeeSummary, RoyaltyRecipient};
+use crate::system::system_modules::costing::RoyaltyRecipient;
 use crate::system::system_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
 };
@@ -17,7 +17,9 @@ use radix_engine_interface::types::*;
 use sbor::representations::*;
 use utils::ContextualDisplay;
 
-/*---------------- Receipt models begin ----------------*/
+//=======================
+// Receipt models begin
+//=======================
 
 #[derive(Debug, Clone, Default, ScryptoSbor)]
 pub struct ResourcesUsage {
@@ -39,7 +41,7 @@ pub struct FeeLocks {
     pub contingent_lock: Decimal,
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, Default, ScryptoSbor)]
 pub struct FeeDestination {
     pub to_proposer: Decimal,
     pub to_validator_set: Decimal,
@@ -92,7 +94,7 @@ pub enum TransactionResult {
     Abort(AbortResult),
 }
 
-#[derive(Clone, ScryptoSbor)]
+#[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct TransactionParameters {
     /// The price of execution cost unit in XRD.
     pub execution_cost_unit_price: Decimal,
@@ -106,7 +108,7 @@ pub struct TransactionParameters {
     pub tip_percentage: u16,
 }
 
-#[derive(Clone, ScryptoSbor)]
+#[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct TransactionFeeSummary {
     /// Total execution cost units consumed.
     pub total_execution_cost_in_cost_units: u32,
@@ -116,15 +118,15 @@ pub struct TransactionFeeSummary {
     pub total_finalization_cost_in_cost_units: u32,
     /// Total finalization cost in XRD.
     pub total_finalization_cost_in_xrd: Decimal,
-    /// Total tip in XRD.
-    pub total_tip_cost_in_xrd: Decimal,
+    /// Total tipping cost in XRD.
+    pub total_tipping_cost_in_xrd: Decimal,
     /// Total storage cost in XRD.
     pub total_storage_cost_in_xrd: Decimal,
     /// Total royalty cost in XRD.
     pub total_royalty_cost_in_xrd: Decimal,
 }
 
-#[derive(Clone, ScryptoSbor)]
+#[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct TransactionFeeBreakdown {
     /// Execution cost breakdown
     ///
@@ -150,7 +152,9 @@ pub struct TransactionReceipt {
     pub resources_usage: ResourcesUsage,
 }
 
-/*---------------- Receipt models ends ----------------*/
+//=======================
+// Receipt models end
+//=======================
 
 impl TransactionExecutionTrace {
     pub fn worktop_changes(&self) -> IndexMap<usize, Vec<WorktopChange>> {
@@ -181,6 +185,8 @@ impl CommitResult {
             application_logs: Default::default(),
             system_structure: Default::default(),
             execution_trace: Default::default(),
+            fee_source: Default::default(),
+            fee_destination: Default::default(),
         }
     }
 
@@ -285,6 +291,9 @@ impl TransactionReceipt {
     /// An empty receipt for merging changes into.
     pub fn empty_with_commit(commit_result: CommitResult) -> Self {
         Self {
+            parameters: Default::default(),
+            fee_summary: Default::default(),
+            fee_breakdown: Default::default(),
             result: TransactionResult::Commit(commit_result),
             resources_usage: Default::default(),
         }
@@ -568,27 +577,36 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             },
         )?;
 
-        if let TransactionResult::Commit(c) = &result {
-            write!(
+        write!(
                 f,
-                "\n{} Execution => {} XRD, Tipping => {} XRD, State Expansion => {} XRD, Royalty => {} XRD",
+                "\n{} Execution => {} XRD, Finalization => {} XRD, Tipping => {} XRD, Storage => {} XRD, Royalty => {} XRD",
                 "Transaction Cost:".bold().green(),
-                c.fee_summary.total_execution_cost_xrd,
-                c.fee_summary.total_tipping_cost_xrd,
-                c.fee_summary.total_state_expansion_cost_xrd,
-                c.fee_summary.total_royalty_cost_xrd,
+                self.fee_summary.total_execution_cost_in_xrd,
+                self.fee_summary.total_finalization_cost_in_xrd,
+                self.fee_summary.total_tipping_cost_in_xrd,
+                self.fee_summary.total_storage_cost_in_xrd,
+                self.fee_summary.total_royalty_cost_in_xrd,
             )?;
 
-            write!(
-                f,
-                "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
-                "Cost Units:".bold().green(),
-                c.fee_summary.cost_unit_limit,
-                c.fee_summary.execution_cost_sum,
-                c.fee_summary.cost_unit_price,
-                c.fee_summary.tip_percentage
-            )?;
+        write!(
+            f,
+            "\n{} {} limit, {} consumed, {} XRD per unit",
+            "Execution Cost Units:".bold().green(),
+            self.parameters.execution_cost_unit_limit,
+            self.fee_summary.total_execution_cost_in_cost_units,
+            self.parameters.execution_cost_unit_price,
+        )?;
 
+        write!(
+            f,
+            "\n{} {} limit, {} consumed, {} XRD per unit",
+            "Finalization Cost Units:".bold().green(),
+            self.parameters.finalization_cost_unit_limit,
+            self.fee_summary.total_finalization_cost_in_cost_units,
+            self.parameters.finalization_cost_unit_price,
+        )?;
+
+        if let TransactionResult::Commit(c) = &result {
             write!(
                 f,
                 "\n{} {}",
