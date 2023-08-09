@@ -272,47 +272,55 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
             panic!("Partition offset larger than partition count");
         }
 
-        if let Some((offset, fields)) = &state_schema.fields {
-            if offset.eq(&partition_offset) {
-                if let SubstateKey::Field(field_index) = key {
-                    let field = fields
-                        .get(*field_index as usize)
-                        .expect("Field index was not valid");
-                    return SubstateSystemStructure::ObjectField(FieldStructure {
-                        value_schema: resolver.resolve(field.field),
-                    });
-                } else {
-                    panic!("Expected a field substate key");
+        if let Some((partition_description, fields)) = &state_schema.fields {
+            match partition_description {
+                PartitionDescription::Logical(offset) => {
+                    if offset.eq(&partition_offset) {
+                        if let SubstateKey::Field(field_index) = key {
+                            let field = fields
+                                .get(*field_index as usize)
+                                .expect("Field index was not valid");
+                            return SubstateSystemStructure::ObjectField(FieldStructure {
+                                value_schema: resolver.resolve(field.field),
+                            });
+                        } else {
+                            panic!("Expected a field substate key");
+                        }
+                    }
                 }
             }
         }
 
-        for (offset, collection_schema) in &state_schema.collections {
-            if offset.eq(&partition_offset) {
-                match collection_schema {
-                    BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
-                        return SubstateSystemStructure::ObjectKeyValuePartitionEntry(
-                            KeyValuePartitionEntryStructure {
-                                key_schema: resolver.resolve(kv_schema.key),
-                                value_schema: resolver.resolve(kv_schema.value),
-                            },
-                        )
-                    }
-                    BlueprintCollectionSchema::Index(kv_schema) => {
-                        return SubstateSystemStructure::ObjectIndexPartitionEntry(
-                            IndexPartitionEntryStructure {
-                                key_schema: resolver.resolve(kv_schema.key),
-                                value_schema: resolver.resolve(kv_schema.value),
-                            },
-                        )
-                    }
-                    BlueprintCollectionSchema::SortedIndex(kv_schema) => {
-                        return SubstateSystemStructure::ObjectSortedIndexPartitionEntry(
-                            SortedIndexPartitionEntryStructure {
-                                key_schema: resolver.resolve(kv_schema.key),
-                                value_schema: resolver.resolve(kv_schema.value),
-                            },
-                        )
+        for (partition_description, collection_schema) in &state_schema.collections {
+            match partition_description {
+                PartitionDescription::Logical(offset) => {
+                    if offset.eq(&partition_offset) {
+                        match collection_schema {
+                            BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
+                                return SubstateSystemStructure::ObjectKeyValuePartitionEntry(
+                                    KeyValuePartitionEntryStructure {
+                                        key_schema: resolver.resolve(kv_schema.key),
+                                        value_schema: resolver.resolve(kv_schema.value),
+                                    },
+                                )
+                            }
+                            BlueprintCollectionSchema::Index(kv_schema) => {
+                                return SubstateSystemStructure::ObjectIndexPartitionEntry(
+                                    IndexPartitionEntryStructure {
+                                        key_schema: resolver.resolve(kv_schema.key),
+                                        value_schema: resolver.resolve(kv_schema.value),
+                                    },
+                                )
+                            }
+                            BlueprintCollectionSchema::SortedIndex(kv_schema) => {
+                                return SubstateSystemStructure::ObjectSortedIndexPartitionEntry(
+                                    SortedIndexPartitionEntryStructure {
+                                        key_schema: resolver.resolve(kv_schema.key),
+                                        value_schema: resolver.resolve(kv_schema.value),
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }

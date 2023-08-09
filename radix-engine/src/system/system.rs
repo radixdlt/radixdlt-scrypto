@@ -350,7 +350,7 @@ where
         (
             Vec<TypeIdentifier>,
             BTreeMap<Hash, ScryptoSchema>,
-            BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+            IndexMap<PartitionDescription, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         ),
         RuntimeError,
     > {
@@ -394,7 +394,7 @@ where
         };
 
 
-        let mut partitions = BTreeMap::new();
+        let mut partitions = IndexMap::new();
 
         // Fields
         {
@@ -409,7 +409,7 @@ where
                 )));
             }
 
-            if let Some((offset, field_schemas)) = &blueprint_interface.state.fields {
+            if let Some((partition_description, field_schemas)) = &blueprint_interface.state.fields {
                 let mut field_partition = BTreeMap::new();
 
                 for (i, field) in fields.iter().enumerate() {
@@ -453,7 +453,7 @@ where
                     }
                 }
 
-                partitions.insert(offset.clone(), field_partition);
+                partitions.insert(partition_description.clone(), field_partition);
             }
         }
 
@@ -502,7 +502,7 @@ where
                     partition.insert(SubstateKey::Map(key), value);
                 }
 
-                let partition_offset = blueprint_interface
+                let partition_description = blueprint_interface
                     .state
                     .collections
                     .get(collection_index as usize)
@@ -513,14 +513,14 @@ where
                     })?
                     .0;
 
-                partitions.insert(partition_offset, partition);
+                partitions.insert(partition_description, partition);
             }
 
-            for (offset, _blueprint_partition_schema) in
+            for (partition_description, _blueprint_partition_schema) in
                 blueprint_interface.state.collections.iter()
             {
-                if !partitions.contains_key(offset) {
-                    partitions.insert(offset.clone(), BTreeMap::new());
+                if !partitions.contains_key(partition_description) {
+                    partitions.insert(partition_description.clone(), BTreeMap::new());
                 }
             }
         }
@@ -749,7 +749,7 @@ where
                 (OuterObjectInfo::None, BTreeSet::new())
             };
 
-        let (type_substitutions, additional_schemas, user_substates) = self
+        let (type_substitutions, additional_schemas, partitions) = self
             .validate_instance_schema_and_state(
                 blueprint_id,
                 &blueprint_interface,
@@ -793,11 +793,16 @@ where
             INSTANCE_SCHEMAS_PARTITION => instance_schema_partition,
         );
 
-        for (offset, partition) in user_substates.into_iter() {
-            let partition_num = MAIN_BASE_PARTITION
-                .at_offset(offset)
-                .expect("Module number overflow");
-            node_substates.insert(partition_num, partition);
+        for (partition_description, substates) in partitions.into_iter() {
+            let partition_num = match partition_description {
+                PartitionDescription::Logical(offset) => {
+                    MAIN_BASE_PARTITION
+                        .at_offset(offset)
+                        .expect("Module number overflow")
+                }
+            };
+
+            node_substates.insert(partition_num, substates);
         }
 
         self.api.kernel_create_node(node_id, node_substates)?;
@@ -964,7 +969,7 @@ where
             self.get_blueprint_default_interface(blueprint_info.blueprint_id.clone())?;
 
         let partition_num = {
-            let (partition_offset, partition_type) = blueprint_interface.state
+            let (partition_description, partition_type) = blueprint_interface.state
                 .get_partition(collection_index)
                 .ok_or_else(|| {
                     RuntimeError::SystemError(SystemError::CollectionIndexDoesNotExist(
@@ -981,10 +986,14 @@ where
                 )))
             }
 
-            module_id
-                .base_partition_num()
-                .at_offset(partition_offset)
-                .expect("Module number overflow")
+            match partition_description {
+                PartitionDescription::Logical(offset) => {
+                    module_id
+                        .base_partition_num()
+                        .at_offset(offset)
+                        .expect("Module number overflow")
+                }
+            }
         };
 
         Ok((node_id, blueprint_info, partition_num))
@@ -1009,7 +1018,7 @@ where
     ) -> Result<(NodeId, PartitionNumber, TypePointer, BlueprintId), RuntimeError> {
         let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
 
-        let (partition_offset, field_schema) =
+        let (partition_description, field_schema) =
             interface.state.field(field_index).ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                     info.blueprint_id.clone(),
@@ -1047,10 +1056,14 @@ where
 
         let pointer = field_schema.field;
 
-        let partition_num = module_id
-            .base_partition_num()
-            .at_offset(partition_offset)
-            .expect("Module number overflow");
+        let partition_num = match partition_description {
+            PartitionDescription::Logical(offset) => {
+                module_id
+                    .base_partition_num()
+                    .at_offset(offset)
+                    .expect("Module number overflow")
+            }
+        };
 
         Ok((node_id, partition_num, pointer, info.blueprint_id))
     }

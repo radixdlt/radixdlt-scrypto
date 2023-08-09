@@ -116,7 +116,7 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
                     BlueprintCollectionSchema::KeyValueStore(kv) => {
                         let result = check_type_pointers(&schemas_by_hash, &[kv.key, kv.value]);
                         if result.is_not_safe() {
-                            println!("Partition {:?} is {:?}", partition.0, result);
+                            println!("Partition {:?} is {:?}", partition, result);
                         }
                     }
                     BlueprintCollectionSchema::Index(_) => {

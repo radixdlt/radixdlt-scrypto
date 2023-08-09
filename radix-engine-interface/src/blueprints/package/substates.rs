@@ -325,10 +325,16 @@ impl BlueprintInterface {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor, PartialOrd, Ord, Hash)]
+pub enum PartitionDescription {
+    Logical(PartitionOffset),
+    //Physical(PartitionNumber),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedStateSchema {
-    pub fields: Option<(PartitionOffset, Vec<FieldSchema<TypePointer>>)>,
-    pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema<TypePointer>)>,
+    pub fields: Option<(PartitionDescription, Vec<FieldSchema<TypePointer>>)>,
+    pub collections: Vec<(PartitionDescription, BlueprintCollectionSchema<TypePointer>)>,
     pub num_partitions: u8,
 }
 
@@ -355,7 +361,7 @@ impl IndexedStateSchema {
                     }
                 })
                 .collect();
-            fields = Some((PartitionOffset(partition_offset), schema_fields));
+            fields = Some((PartitionDescription::Logical(PartitionOffset(partition_offset)), schema_fields));
             partition_offset += 1;
         };
 
@@ -367,7 +373,7 @@ impl IndexedStateSchema {
                 }
                 TypeRef::Generic(instance_index) => TypePointer::Instance(instance_index),
             });
-            collections.push((PartitionOffset(partition_offset), schema));
+            collections.push((PartitionDescription::Logical(PartitionOffset(partition_offset)), schema));
             partition_offset += 1;
         }
 
@@ -389,7 +395,7 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn get_partition(&self, collection_index: u8) -> Option<(PartitionOffset, BlueprintPartitionType)> {
+    pub fn get_partition(&self, collection_index: u8) -> Option<(PartitionDescription, BlueprintPartitionType)> {
         self.collections.get(collection_index as usize)
             .map(|(partition, schema)| {
                 let partition_type = match schema {
@@ -468,60 +474,15 @@ impl IndexedStateSchema {
     }
 
 
-    pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, FieldSchema<TypePointer>)> {
+    pub fn field(&self, field_index: u8) -> Option<(PartitionDescription, FieldSchema<TypePointer>)> {
         match &self.fields {
-            Some((offset, fields)) => {
+            Some((partition, fields)) => {
                 let field_index: usize = field_index.into();
                 fields
                     .get(field_index)
                     .cloned()
-                    .map(|f| (offset.clone(), f))
+                    .map(|f| (partition.clone(), f))
             }
-            _ => None,
-        }
-    }
-
-    pub fn into_key_value_store_partition(
-        mut self,
-        collection_index: u8,
-    ) -> Option<(PartitionOffset, BlueprintKeyValueSchema<TypePointer>)> {
-        let index = collection_index as usize;
-        if index >= self.collections.len() {
-            return None;
-        }
-
-        match self.collections.swap_remove(index) {
-            (offset, BlueprintCollectionSchema::KeyValueStore(schema)) => Some((offset, schema)),
-            _ => None,
-        }
-    }
-
-    pub fn into_index_partition(
-        mut self,
-        collection_index: u8,
-    ) -> Option<(PartitionOffset, BlueprintKeyValueSchema<TypePointer>)> {
-        let index = collection_index as usize;
-        if index >= self.collections.len() {
-            return None;
-        }
-
-        match self.collections.swap_remove(index) {
-            (offset, BlueprintCollectionSchema::Index(schema)) => Some((offset, schema)),
-            _ => None,
-        }
-    }
-
-    pub fn into_sorted_index_partition(
-        mut self,
-        collection_index: u8,
-    ) -> Option<(PartitionOffset, BlueprintKeyValueSchema<TypePointer>)> {
-        let index = collection_index as usize;
-        if index >= self.collections.len() {
-            return None;
-        }
-
-        match self.collections.swap_remove(index) {
-            (offset, BlueprintCollectionSchema::SortedIndex(schema)) => Some((offset, schema)),
             _ => None,
         }
     }
