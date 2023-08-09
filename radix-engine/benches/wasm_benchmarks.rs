@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use radix_engine_common::math::Decimal;
+use radix_engine_common::math::{Decimal, PreciseDecimal};
 use std::process::Command;
 use wasm_benchmarks_lib::*;
 use wasmer::{self, WasmerEnv};
@@ -58,28 +58,43 @@ fn wasmi_write_memory(mut store: impl AsContextMut, memory: wasmi::Memory, ptr: 
         .expect("Memory access error");
 }
 
-fn wasmi_decimal_mul_native(
-    mut caller: wasmi::Caller<'_, HostState>,
-    a_ptr: u32,
-    b_ptr: u32,
-    c_ptr: u32,
-) -> Result<i64, wasmi::core::Trap> {
-    let memory = match caller.get_export("memory") {
-        Some(wasmi::Extern::Memory(memory)) => memory,
-        _ => panic!("Failed to find memory export"),
+macro_rules! wasmi_native {
+    ($type:ident, $ops:literal, $op:tt) => {
+        paste::item! {
+            fn [< wasmi_ $type:snake _ $ops _native >] (
+                mut caller: wasmi::Caller<'_, HostState>,
+                a_ptr: u32,
+                b_ptr: u32,
+                c_ptr: u32) -> Result<i64, wasmi::core::Trap> {
+                let memory = match caller.get_export("memory") {
+                    Some(wasmi::Extern::Memory(memory)) => memory,
+                    _ => panic!("Failed to find memory export"),
+                };
+
+                let a_vec = wasmi_read_memory(caller.as_context(), memory, a_ptr, <$type>::BITS / 8);
+                let b_vec = wasmi_read_memory(caller.as_context(), memory, b_ptr, <$type>::BITS / 8);
+                let a = <$type>::try_from(&a_vec[..]).unwrap();
+                let b = <$type>::try_from(&b_vec[..]).unwrap();
+
+                let c = match stringify!($op) {
+                    "+" => a + b,
+                    "*" => a * b,
+                    _ => panic!("Unsupported operator!"),
+                };
+
+                let c_vec = c.to_vec();
+                wasmi_write_memory(caller.as_context_mut(), memory, c_ptr, &c_vec[..]);
+
+                Ok(1)
+            }
+        }
     };
-
-    let a_vec = wasmi_read_memory(caller.as_context(), memory, a_ptr, Decimal::BITS / 8);
-    let b_vec = wasmi_read_memory(caller.as_context(), memory, b_ptr, Decimal::BITS / 8);
-    let a = Decimal::try_from(&a_vec[..]).unwrap();
-    let b = Decimal::try_from(&b_vec[..]).unwrap();
-
-    let c = a * b;
-    let c_vec = c.to_vec();
-    wasmi_write_memory(caller.as_context_mut(), memory, c_ptr, &c_vec[..]);
-
-    Ok(1)
 }
+
+wasmi_native!(Decimal, "add", +);
+wasmi_native!(Decimal, "mul", *);
+wasmi_native!(PreciseDecimal, "add", +);
+wasmi_native!(PreciseDecimal, "mul", *);
 
 // Instantiate WASMI instance with given WASM code
 fn wasmi_get_instance(
@@ -90,9 +105,32 @@ fn wasmi_get_instance(
     let module = wasmi::Module::new(&engine, code).unwrap();
     let mut linker = <wasmi::Linker<HostState>>::new();
 
+    let decimal_add_native = wasmi::Func::wrap(&mut store, wasmi_decimal_add_native);
+    linker
+        .define("env", "decimal_add_native", decimal_add_native)
+        .unwrap();
     let decimal_mul_native = wasmi::Func::wrap(&mut store, wasmi_decimal_mul_native);
     linker
         .define("env", "decimal_mul_native", decimal_mul_native)
+        .unwrap();
+
+    let precise_decimal_add_native =
+        wasmi::Func::wrap(&mut store, wasmi_precise_decimal_add_native);
+    linker
+        .define(
+            "env",
+            "precise_decimal_add_native",
+            precise_decimal_add_native,
+        )
+        .unwrap();
+    let precise_decimal_mul_native =
+        wasmi::Func::wrap(&mut store, wasmi_precise_decimal_mul_native);
+    linker
+        .define(
+            "env",
+            "precise_decimal_mul_native",
+            precise_decimal_mul_native,
+        )
         .unwrap();
 
     linker
@@ -143,29 +181,44 @@ fn wasmer_write_memory(memory: &wasmer::Memory, ptr: u32, data: &[u8]) {
     memory_slice[ptr..ptr + data.len()].copy_from_slice(data);
 }
 
-fn wasmer_decimal_mul_native(
-    env: &WasmerInstanceEnv,
-    a_ptr: u32,
-    b_ptr: u32,
-    c_ptr: u32,
-) -> Result<i64, wasmi::core::Trap> {
-    let instance = unsafe { env.instance.get_unchecked() };
-    let memory = instance
-        .exports
-        .get_memory("memory")
-        .expect("Memory access error");
+macro_rules! wasmer_native {
+    ($type:ident, $ops:literal, $op:tt) => {
+        paste::item! {
+            fn [< wasmer_ $type:snake _ $ops _native >] (
+                    env: &WasmerInstanceEnv,
+                    a_ptr: u32,
+                    b_ptr: u32,
+                    c_ptr: u32,
+                ) -> Result<i64, wasmi::core::Trap> {
+                let instance = unsafe { env.instance.get_unchecked() };
+                let memory = instance
+                    .exports
+                    .get_memory("memory")
+                    .expect("Memory access error");
 
-    let a_vec = wasmer_read_memory(&memory, a_ptr, Decimal::BITS / 8);
-    let b_vec = wasmer_read_memory(&memory, b_ptr, Decimal::BITS / 8);
-    let a = Decimal::try_from(&a_vec[..]).unwrap();
-    let b = Decimal::try_from(&b_vec[..]).unwrap();
+                let a_vec = wasmer_read_memory(&memory, a_ptr, <$type>::BITS / 8);
+                let b_vec = wasmer_read_memory(&memory, b_ptr, <$type>::BITS / 8);
+                let a = <$type>::try_from(&a_vec[..]).unwrap();
+                let b = <$type>::try_from(&b_vec[..]).unwrap();
 
-    let c = a * b;
-    let c_vec = c.to_vec();
-    wasmer_write_memory(&memory, c_ptr, &c_vec[..]);
+                let c = match stringify!($op) {
+                    "+" => a + b,
+                    "*" => a * b,
+                    _ => panic!("Unsupported operator!"),
+                };
+                let c_vec = c.to_vec();
+                wasmer_write_memory(&memory, c_ptr, &c_vec[..]);
 
-    Ok(1)
+                Ok(1)
+            }
+        }
+    };
 }
+
+wasmer_native!(Decimal, "add", +);
+wasmer_native!(Decimal, "mul", *);
+wasmer_native!(PreciseDecimal, "add", +);
+wasmer_native!(PreciseDecimal, "mul", *);
 
 fn wasmer_get_instance(code: &[u8]) -> wasmer::Instance {
     let compiler = wasmer_compiler_singlepass::Singlepass::new();
@@ -177,7 +230,10 @@ fn wasmer_get_instance(code: &[u8]) -> wasmer::Instance {
 
     let import_object = wasmer::imports! {
         "env" => {
-            "decimal_mul_native" => wasmer::Function::new_native_with_env(module.store(), env.clone(), wasmer_decimal_mul_native)
+            "decimal_add_native" => wasmer::Function::new_native_with_env(module.store(), env.clone(), wasmer_decimal_add_native),
+            "decimal_mul_native" => wasmer::Function::new_native_with_env(module.store(), env.clone(), wasmer_decimal_mul_native),
+            "precise_decimal_add_native" => wasmer::Function::new_native_with_env(module.store(), env.clone(), wasmer_precise_decimal_add_native),
+            "precise_decimal_mul_native" => wasmer::Function::new_native_with_env(module.store(), env.clone(), wasmer_precise_decimal_mul_native),
         }
     };
 
@@ -261,11 +317,11 @@ macro_rules! bench_ops {
 //bench_ops!("primitive", "add");
 //bench_ops!("primitive", "mul");
 
-//bench_ops!("decimal", "add");
+bench_ops!("decimal", "add");
 bench_ops!("decimal", "mul");
 
-//bench_ops!("precise_decimal", "add");
-//bench_ops!("precise_decimal", "mul");
+bench_ops!("precise_decimal", "add");
+bench_ops!("precise_decimal", "mul");
 /*
 criterion_group! {
     name = primitive_benches;
@@ -283,10 +339,10 @@ criterion_group! {
                 .sample_size(10)
                 .measurement_time(core::time::Duration::from_secs(2))
                 .warm_up_time(core::time::Duration::from_millis(500));
-    targets = //decimal_add_benchmark,
+    targets = decimal_add_benchmark,
         decimal_mul_benchmark
 }
-/*
+
 criterion_group! {
     name = precise_decimal_benches;
     config = Criterion::default()
@@ -296,6 +352,4 @@ criterion_group! {
     targets = precise_decimal_add_benchmark,
         precise_decimal_mul_benchmark
 }
-criterion_main!(primitive_benches, decimal_benches, precise_decimal_benches);
-*/
-criterion_main!(decimal_benches);
+criterion_main!(decimal_benches, precise_decimal_benches);
