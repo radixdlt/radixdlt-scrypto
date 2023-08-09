@@ -70,7 +70,7 @@ pub trait WasmRuntime {
         node_id: Vec<u8>,
         key: Vec<u8>,
         flags: u32,
-    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
+    ) -> Result<SubstateHandle, InvokeError<WasmRuntimeError>>;
 
     fn key_value_entry_get(&mut self, handle: u32)
         -> Result<Buffer, InvokeError<WasmRuntimeError>>;
@@ -107,22 +107,22 @@ pub trait WasmRuntime {
         object_handle: u32,
         field: u8,
         flags: u32,
-    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
+    ) -> Result<SubstateHandle, InvokeError<WasmRuntimeError>>;
 
     fn field_lock_read(
         &mut self,
-        handle: LockHandle,
+        handle: SubstateHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn field_lock_write(
         &mut self,
-        handle: LockHandle,
+        handle: SubstateHandle,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn field_lock_release(
         &mut self,
-        handle: LockHandle,
+        handle: SubstateHandle,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
@@ -132,8 +132,6 @@ pub trait WasmRuntime {
     fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
-
-    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn consume_wasm_execution_units(&mut self, n: u32)
         -> Result<(), InvokeError<WasmRuntimeError>>;

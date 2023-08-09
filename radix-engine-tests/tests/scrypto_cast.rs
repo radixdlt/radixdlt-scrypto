@@ -1,6 +1,5 @@
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::types::*;
-use scrypto::prelude::ComponentCastError;
 use scrypto_unit::*;
 use transaction::prelude::*;
 

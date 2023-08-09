@@ -7,8 +7,8 @@ use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use sbor::basic_well_known_types::ANY_TYPE;
 use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
-use scrypto_schema::FunctionSchemaInit;
 use scrypto_schema::TypeRef;
+use scrypto_schema::{BlueprintCollectionSchema, BlueprintKeyValueSchema, FunctionSchemaInit};
 use scrypto_schema::{BlueprintFunctionsSchemaInit, ReceiverInfo};
 use scrypto_schema::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
 
@@ -253,6 +253,53 @@ impl PackageDefinition {
                         fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
                             ANY_TYPE,
                         ))],
+                        ..Default::default()
+                    },
+                    functions: BlueprintFunctionsSchemaInit {
+                        functions: functions
+                            .into_iter()
+                            .map(|(function_name, export_name, has_receiver)| {
+                                let schema = FunctionSchemaInit {
+                                    receiver: if has_receiver {
+                                        Some(ReceiverInfo::normal_ref())
+                                    } else {
+                                        None
+                                    },
+                                    input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                                    output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                                    export: export_name.to_string(),
+                                };
+                                (function_name.to_string(), schema)
+                            })
+                            .collect(),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        );
+        PackageDefinition { blueprints }
+    }
+
+    // For testing only
+    pub fn new_with_kv_collection_test_definition(
+        blueprint_name: &str,
+        functions: Vec<(&str, &str, bool)>,
+    ) -> PackageDefinition {
+        let mut blueprints = BTreeMap::new();
+        blueprints.insert(
+            blueprint_name.to_string(),
+            BlueprintDefinitionInit {
+                schema: BlueprintSchemaInit {
+                    state: BlueprintStateSchemaInit {
+                        collections: vec![BlueprintCollectionSchema::KeyValueStore(
+                            BlueprintKeyValueSchema {
+                                key: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                                value: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                                can_own: true,
+                            },
+                        )],
                         ..Default::default()
                     },
                     functions: BlueprintFunctionsSchemaInit {

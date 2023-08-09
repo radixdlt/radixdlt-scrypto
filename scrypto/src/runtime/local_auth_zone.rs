@@ -20,12 +20,12 @@ impl LocalAuthZone {
     pub fn push<P: Into<Proof>>(proof: P) {
         let proof: Proof = proof.into();
         let node_id = ScryptoEnv.get_auth_zone().unwrap();
-        OwnedAuthZone(Own(node_id)).push(proof)
+        AuthZoneRef(node_id).push(proof)
     }
 
     pub fn pop() -> Proof {
         let node_id = ScryptoEnv.get_auth_zone().unwrap();
-        OwnedAuthZone(Own(node_id)).pop()
+        AuthZoneRef(node_id).pop()
     }
 
     pub fn create_proof_of_amount<A: Into<Decimal>>(
@@ -33,7 +33,7 @@ impl LocalAuthZone {
         resource_address: ResourceAddress,
     ) -> Proof {
         let node_id = ScryptoEnv.get_auth_zone().unwrap();
-        OwnedAuthZone(Own(node_id)).create_proof_of_amount(amount, resource_address)
+        AuthZoneRef(node_id).create_proof_of_amount(amount, resource_address)
     }
 
     pub fn create_proof_of_non_fungibles(
@@ -41,26 +41,26 @@ impl LocalAuthZone {
         resource_address: ResourceAddress,
     ) -> Proof {
         let node_id = ScryptoEnv.get_auth_zone().unwrap();
-        OwnedAuthZone(Own(node_id)).create_proof_of_non_fungibles(ids, resource_address)
+        AuthZoneRef(node_id).create_proof_of_non_fungibles(ids, resource_address)
     }
 
     pub fn create_proof_of_all(resource_address: ResourceAddress) -> Proof {
         let node_id = ScryptoEnv.get_auth_zone().unwrap();
-        OwnedAuthZone(Own(node_id)).create_proof_of_all(resource_address)
+        AuthZoneRef(node_id).create_proof_of_all(resource_address)
     }
 
     pub fn drop_proofs() {
         let node_id = ScryptoEnv.get_auth_zone().unwrap();
-        OwnedAuthZone(Own(node_id)).drop_proofs()
+        AuthZoneRef(node_id).drop_proofs()
     }
 
     pub fn drop_signature_proofs() {
         let node_id = ScryptoEnv.get_auth_zone().unwrap();
-        OwnedAuthZone(Own(node_id)).drop_signature_proofs()
+        AuthZoneRef(node_id).drop_signature_proofs()
     }
 
     pub fn drop_regular_proofs() {
         let node_id = ScryptoEnv.get_auth_zone().unwrap();
-        OwnedAuthZone(Own(node_id)).drop_regular_proofs()
+        AuthZoneRef(node_id).drop_regular_proofs()
     }
 }

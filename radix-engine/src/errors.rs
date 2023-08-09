@@ -144,7 +144,7 @@ pub enum KernelError {
     InvalidReference(NodeId),
 
     // Substate lock/read/write/unlock
-    LockDoesNotExist(LockHandle),
+    SubstateHandleDoesNotExist(SubstateHandle),
 
     OrphanedNodes(Vec<NodeId>),
 }
@@ -219,6 +219,7 @@ pub enum SystemError {
     OuterObjectDoesNotExist,
     NotAFieldHandle,
     NotAFieldWriteHandle,
+    InvalidReference,
     FieldDoesNotExist(BlueprintId, u8),
     KeyValueStoreDoesNotExist(BlueprintId, u8),
     SortedIndexDoesNotExist(BlueprintId, u8),

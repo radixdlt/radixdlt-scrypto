@@ -1,11 +1,10 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent,
-    RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
-    WriteSubstateEvent,
+    CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent,
+    ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
-use crate::system::module::SystemModule;
+use crate::system::module::KernelModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::StoreAccess;
@@ -100,7 +99,7 @@ impl LimitsModule {
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
+impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for LimitsModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
@@ -207,6 +206,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         let limits = &mut api.kernel_get_system().modules.limits.config;
 
         match event {
+            WriteSubstateEvent::StoreAccess(store_access) => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_store_access(store_access)?;
+            }
             WriteSubstateEvent::Start { value, .. } => {
                 if value.len() > limits.max_substate_size {
                     return Err(RuntimeError::SystemModuleError(
@@ -216,23 +221,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
                     ));
                 }
             }
-        }
-
-        Ok(())
-    }
-
-    fn on_close_substate<Y: KernelInternalApi<SystemConfig<V>>>(
-        api: &mut Y,
-        event: &CloseSubstateEvent,
-    ) -> Result<(), RuntimeError> {
-        match event {
-            CloseSubstateEvent::StoreAccess(store_access) => {
-                api.kernel_get_system()
-                    .modules
-                    .limits
-                    .process_store_access(store_access)?;
-            }
-            _ => {}
         }
 
         Ok(())

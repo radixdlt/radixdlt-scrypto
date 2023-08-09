@@ -55,7 +55,6 @@ pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "actor_call_module_meth
 pub const GET_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "get_global_address";
 pub const GET_BLUEPRINT_FUNCTION_NAME: &str = "get_blueprint";
 pub const GET_AUTH_ZONE_FUNCTION_NAME: &str = "get_auth_zone";
-pub const ASSERT_ACCESS_RULE_FUNCTION_NAME: &str = "assert_access_rule";
 pub const GET_NODE_ID_FUNCTION_NAME: &str = "get_node_id";
 
 //=================

@@ -1,6 +1,5 @@
 use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
-use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingEntry;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
@@ -17,9 +16,9 @@ use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::{ActingLocation, AuthorizationCheckResult};
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_modules::transaction_runtime::Event;
+use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
@@ -157,6 +156,11 @@ pub struct ValidationTarget<'a> {
     pub blueprint_id: BlueprintId,
     pub type_substitutions: Vec<TypeIdentifier>,
     pub meta: SchemaValidationMeta<'a>,
+}
+
+enum EmitterActor {
+    Actor(Actor),
+    AsInnerObject(NodeId, ObjectModuleId),
 }
 
 impl<'a, Y, V> SystemService<'a, Y, V>
@@ -320,6 +324,19 @@ where
         Ok(can_own)
     }
 
+    fn validate_substate_does_not_contain_refs(
+        &mut self,
+        value: &IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        for reference in value.references() {
+            if !reference.is_global() {
+                return Err(RuntimeError::SystemError(SystemError::InvalidReference));
+            }
+        }
+
+        Ok(())
+    }
+
     fn validate_instance_schema_and_state(
         &mut self,
         blueprint_id: &BlueprintId,
@@ -429,6 +446,11 @@ where
                         SubstateKey::Field(i as u8),
                         IndexedScryptoValue::from_typed(&substate),
                     );
+
+                    let indexed_value = IndexedScryptoValue::from_typed(&substate);
+                    if !blueprint_interface.is_transient {
+                        self.validate_substate_does_not_contain_refs(&indexed_value)?;
+                    }
                 }
 
                 partitions.insert(offset.clone(), field_partition);
@@ -466,6 +488,9 @@ where
                     };
 
                     let value = IndexedScryptoValue::from_typed(&kv_entry);
+                    if !blueprint_interface.is_transient {
+                        self.validate_substate_does_not_contain_refs(&value)?;
+                    }
                     if !value_can_own {
                         if !value.owned_nodes().is_empty() {
                             return Err(RuntimeError::SystemError(
@@ -782,7 +807,7 @@ where
 
     fn emit_event_internal(
         &mut self,
-        actor: Actor,
+        actor: EmitterActor,
         event_name: String,
         event_data: Vec<u8>,
     ) -> Result<(), RuntimeError> {
@@ -796,9 +821,10 @@ where
         // Locking the package info substate associated with the emitter's package
         // Getting the package address and blueprint name associated with the actor
         let validation_target = match &actor {
-            Actor::Method(MethodActor {
-                node_id, module_id, ..
-            }) => {
+            EmitterActor::AsInnerObject(node_id, module_id)
+            | EmitterActor::Actor(Actor::Method(MethodActor {
+                                                    node_id, module_id, ..
+                                                })) => {
                 let blueprint_obj_info = self.get_blueprint_info(node_id, *module_id)?;
                 ValidationTarget {
                     blueprint_id: blueprint_obj_info.blueprint_id.clone(),
@@ -808,7 +834,7 @@ where
                     }
                 }
             }
-            Actor::Function(FunctionActor { blueprint_id, .. }) => {
+            EmitterActor::Actor(Actor::Function(FunctionActor { blueprint_id, .. })) => {
                 ValidationTarget {
                     blueprint_id: blueprint_id.clone(),
                     type_substitutions: vec![],
@@ -826,16 +852,16 @@ where
 
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
-            Actor::Method(MethodActor {
+            EmitterActor::AsInnerObject(node_id, module_id)
+            | EmitterActor::Actor(Actor::Method(MethodActor {
                 node_id, module_id, ..
-            }) => Ok(EventTypeIdentifier(
+            })) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id, module_id),
                 event_name,
             )),
-            Actor::Function(FunctionActor { blueprint_id, .. }) => Ok(EventTypeIdentifier(
-                Emitter::Function(blueprint_id.clone()),
-                event_name,
-            )),
+            EmitterActor::Actor(Actor::Function(FunctionActor { blueprint_id, .. })) => Ok(
+                EventTypeIdentifier(Emitter::Function(blueprint_id.clone()), event_name),
+            ),
             _ => Err(RuntimeError::SystemModuleError(
                 SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
             )),
@@ -1173,7 +1199,7 @@ where
             ),
         )?;
 
-        self.kernel_move_module(
+        self.kernel_move_partition(
             &node_id,
             INSTANCE_SCHEMAS_PARTITION,
             global_address.as_node_id(),
@@ -1185,7 +1211,7 @@ where
             let partition_number = MAIN_BASE_PARTITION
                 .at_offset(PartitionOffset(offset))
                 .unwrap();
-            self.kernel_move_module(
+            self.kernel_move_partition(
                 &node_id,
                 partition_number,
                 global_address.as_node_id(),
@@ -1235,7 +1261,12 @@ where
                             .at_offset(PartitionOffset(offset))
                             .unwrap();
 
-                        self.kernel_move_module(&node_id, src, global_address.as_node_id(), dest)?;
+                        self.kernel_move_partition(
+                            &node_id,
+                            src,
+                            global_address.as_node_id(),
+                            dest,
+                        )?;
                     }
 
                     self.kernel_drop_node(&node_id)?;
@@ -1288,7 +1319,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_read(&mut self, handle: FieldHandle) -> Result<Vec<u8>, RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::Field(..) => {}
             _ => {
@@ -1305,16 +1336,17 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {
-        let LockInfo { node_id, data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
 
-        match data {
+        let blueprint_id = match data {
             SystemLockData::Field(FieldLockData::Write {
+                node_id,
                 blueprint_id,
                 field_index,
             }) => {
                 self.validate_blueprint_payload(
                     &ValidationTarget {
-                        blueprint_id,
+                        blueprint_id: blueprint_id.clone(),
                         // TODO: Change to empty vector, once support for generic fields is implemented
                         type_substitutions: vec![],
                         meta: SchemaValidationMeta::ExistingObject {
@@ -1324,16 +1356,22 @@ where
                     BlueprintPayloadIdentifier::Field(field_index),
                     &buffer,
                 )?;
+                blueprint_id
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteHandle));
             }
-        }
+        };
 
         let value: ScryptoValue =
             scrypto_decode(&buffer).expect("Should be valid due to payload check");
 
         let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_field(value));
+        let blueprint_interface = self.get_blueprint_default_interface(blueprint_id)?;
+        if !blueprint_interface.is_transient {
+            self.validate_substate_does_not_contain_refs(&substate)?;
+        }
+
         self.api.kernel_write_substate(handle, substate)?;
 
         Ok(())
@@ -1342,7 +1380,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_lock(&mut self, handle: FieldHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
 
         match data {
             SystemLockData::Field(FieldLockData::Write { .. }) => {}
@@ -1363,7 +1401,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_close(&mut self, handle: FieldHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::Field(..) => {}
             _ => {
@@ -1498,15 +1536,8 @@ where
             btreemap!(),
         )?;
 
-        let object_info = self.get_object_info(global_address.as_node_id())?;
         self.emit_event_internal(
-            Actor::Method(MethodActor {
-                direct_access: false,
-                node_id: global_address.into_node_id(),
-                module_id: ObjectModuleId::Main,
-                ident: String::default(),
-                object_info,
-            }),
+            EmitterActor::AsInnerObject(global_address.into_node_id(), ObjectModuleId::Main),
             event_name,
             event_data,
         )?;
@@ -1532,22 +1563,38 @@ where
             ));
         }
 
-        let invocation = KernelInvocation {
-            call_frame_data: Actor::method(
-                direct_access,
-                receiver.clone(),
-                module_id,
-                method_name.to_string(),
-                object_info,
-            ),
-            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?,
-        };
+        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
 
-        self.api
-            .kernel_invoke(Box::new(invocation))
-            .map(|v| v.into())
+        let auth_actor_info = SystemModuleMixer::on_call_method(
+            self,
+            receiver,
+            module_id,
+            direct_access,
+            method_name,
+            &args,
+        )?;
+
+        let rtn = self
+            .api
+            .kernel_invoke(Box::new(KernelInvocation {
+                call_frame_data: Actor::Method(MethodActor {
+                    direct_access,
+                    node_id: receiver.clone(),
+                    module_id,
+                    ident: method_name.to_string(),
+
+                    auth_zone: auth_actor_info.clone(),
+                    object_info,
+                }),
+                args,
+            }))
+            .map(|v| v.into())?;
+
+        SystemModuleMixer::on_call_method_finish(self, auth_actor_info)?;
+
+        Ok(rtn)
     }
 
     // Costing through kernel
@@ -1630,7 +1677,7 @@ where
         &mut self,
         handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::KeyValueEntry(..) => {}
             _ => {
@@ -1647,7 +1694,7 @@ where
     // Costing through kernel
     // FIXME: Should this release lock or continue allow to mutate entry until lock released?
     fn key_value_entry_lock(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::KeyValueEntry(
                 KeyValueEntryLockData::Write { .. } | KeyValueEntryLockData::BlueprintWrite { .. },
@@ -1694,10 +1741,11 @@ where
         handle: KeyValueEntryHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let LockInfo { node_id, data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
 
         let can_own = match data {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
+                node_id,
                 collection_index,
                 blueprint_id,
                 type_substitutions,
@@ -1744,6 +1792,8 @@ where
         let kv_entry = KeyValueEntrySubstate::entry(value);
         let indexed = IndexedScryptoValue::from_typed(&kv_entry);
 
+        self.validate_substate_does_not_contain_refs(&indexed)?;
+
         self.api.kernel_write_substate(handle, indexed)?;
 
         Ok(())
@@ -1751,7 +1801,7 @@ where
 
     // Costing through kernel
     fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         if !data.is_kv_entry() {
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         }
@@ -2151,19 +2201,27 @@ where
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let invocation = KernelInvocation {
-            call_frame_data: Actor::function(
-                BlueprintId::new(&package_address, blueprint_name),
-                function_name.to_string(),
-            ),
-            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?,
-        };
+        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+        let blueprint_id = BlueprintId::new(&package_address, blueprint_name);
+        let auth_zone = SystemModuleMixer::on_call_function(self, &blueprint_id, function_name)?;
 
-        self.api
-            .kernel_invoke(Box::new(invocation))
-            .map(|v| v.into())
+        let rtn = self
+            .api
+            .kernel_invoke(Box::new(KernelInvocation {
+                call_frame_data: Actor::Function(FunctionActor {
+                    blueprint_id,
+                    ident: function_name.to_string(),
+                    auth_zone: auth_zone.clone(),
+                }),
+                args,
+            }))
+            .map(|v| v.into())?;
+
+        SystemModuleMixer::on_call_function_finish(self, auth_zone)?;
+
+        Ok(rtn)
     }
 }
 
@@ -2333,7 +2391,7 @@ where
         object_handle: ObjectHandle,
         field_index: u8,
         flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<SubstateHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num, schema_pointer, blueprint_id) =
@@ -2351,6 +2409,7 @@ where
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
+                node_id,
                 blueprint_id,
                 field_index,
             }
@@ -2514,6 +2573,7 @@ where
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             KeyValueEntryLockData::BlueprintWrite {
+                node_id,
                 collection_index,
                 blueprint_id: info.blueprint_id,
                 type_substitutions: info.type_substitutions,
@@ -2577,35 +2637,10 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryAuthZone)?;
 
-        if let Some(auth_zone_id) = self.api.kernel_get_system().modules.auth_zone_id() {
+        if let Some(auth_zone_id) = self.current_actor().self_auth_zone() {
             Ok(auth_zone_id.into())
         } else {
             Err(RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))
-        }
-    }
-
-    #[trace_resources]
-    fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(CostingEntry::AssertAccessRule)?;
-
-        // Fetch the tip auth zone
-        let auth_zone_id = self.get_auth_zone()?;
-
-        // Authorize
-        let auth_result = Authorization::check_authorization_against_access_rule(
-            ActingLocation::InCallFrame,
-            auth_zone_id,
-            &rule,
-            self,
-        )?;
-        match auth_result {
-            AuthorizationCheckResult::Authorized => Ok(()),
-            AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(
-                SystemError::AssertAccessRuleFailed,
-            )),
         }
     }
 }
@@ -2634,7 +2669,7 @@ where
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         let actor = self.current_actor();
-        self.emit_event_internal(actor, event_name, event_data)
+        self.emit_event_internal(EmitterActor::Actor(actor), event_name, event_data)
     }
 
     #[trace_resources]
@@ -2733,14 +2768,14 @@ where
         self.api.kernel_create_node(node_id, node_substates)
     }
 
-    fn kernel_move_module(
+    fn kernel_move_partition(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        self.api.kernel_move_module(
+        self.api.kernel_move_partition(
             src_node_id,
             src_partition_number,
             dest_node_id,
@@ -2762,7 +2797,7 @@ where
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: SystemLockData,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<SubstateHandle, RuntimeError> {
         self.api.kernel_open_substate_with_default(
             node_id,
             partition_num,
@@ -2773,27 +2808,27 @@ where
         )
     }
 
-    fn kernel_get_lock_info(
+    fn kernel_get_lock_data(
         &mut self,
-        lock_handle: LockHandle,
-    ) -> Result<LockInfo<SystemLockData>, RuntimeError> {
-        self.api.kernel_get_lock_info(lock_handle)
+        lock_handle: SubstateHandle,
+    ) -> Result<SystemLockData, RuntimeError> {
+        self.api.kernel_get_lock_data(lock_handle)
     }
 
-    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+    fn kernel_close_substate(&mut self, lock_handle: SubstateHandle) -> Result<(), RuntimeError> {
         self.api.kernel_close_substate(lock_handle)
     }
 
     fn kernel_read_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: SubstateHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         self.api.kernel_read_substate(lock_handle)
     }
 
     fn kernel_write_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: SubstateHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_write_substate(lock_handle, value)

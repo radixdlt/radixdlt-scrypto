@@ -5,7 +5,7 @@ use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DropNodeEvent, OpenSubstateEvent, ReadSubstateEvent,
     WriteSubstateEvent,
 };
-use crate::system::module::SystemModule;
+use crate::system::module::KernelModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
@@ -26,7 +26,7 @@ macro_rules! log {
 }
 
 #[allow(unused_variables)] // for no_std
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
+impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModule {
     #[cfg(feature = "resource_tracker")]
     fn on_init<Y: KernelApi<SystemConfig<V>>>(_api: &mut Y) -> Result<(), RuntimeError> {
         panic!("KernelTraceModule should be disabled for feature resource_tracker!")
@@ -44,17 +44,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         .green();
 
         log!(api, "{}", message);
-        Ok(())
-    }
-
-    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        callee: &Actor,
-        message: &mut CallFrameMessage,
-        _args: &IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
-        log!(api, "Sending nodes: {:?}", message.move_nodes);
-        log!(api, "Sending refs: {:?}", message.copy_global_references);
+        log!(api, "Sending nodes: {:?}", invocation.args.owned_nodes());
+        log!(api, "Sending refs: {:?}", invocation.args.references());
         Ok(())
     }
 
@@ -69,9 +60,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
 
     fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        output_size: usize,
+        output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Exiting: output size = {}", output_size);
+        log!(api, "Exiting: output size = {}", output.len());
         Ok(())
     }
 
@@ -174,14 +165,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
             ReadSubstateEvent::OnRead {
                 handle,
                 value,
-                read_from_heap,
+                device,
             } => {
                 log!(
                     api,
-                    "Reading substate: handle = {}, size = {}, read_from_heap = {}",
+                    "Reading substate: handle = {}, size = {}, device = {:?}",
                     handle,
                     value.len(),
-                    read_from_heap
+                    device
                 );
             }
         }
@@ -202,6 +193,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
                     value.len()
                 );
             }
+            _ => {}
         }
 
         Ok(())
@@ -215,7 +207,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
             CloseSubstateEvent::End(lock_handle) => {
                 log!(api, "Substate closed: handle = {} ", lock_handle);
             }
-            CloseSubstateEvent::StoreAccess(..) => {}
         }
         Ok(())
     }
