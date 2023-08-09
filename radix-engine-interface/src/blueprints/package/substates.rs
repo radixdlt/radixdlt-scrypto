@@ -328,7 +328,7 @@ impl BlueprintInterface {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor, PartialOrd, Ord, Hash)]
 pub enum PartitionDescription {
     Logical(PartitionOffset),
-    //Physical(PartitionNumber),
+    Physical(PartitionNumber),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

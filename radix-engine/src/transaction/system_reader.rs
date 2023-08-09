@@ -18,7 +18,7 @@ use crate::track::TrackedNode;
 
 pub enum SystemPartitionDescription {
     TypeInfo,
-    InstanceSchemas,
+    System(PartitionNumber),
     Module(ObjectModuleId, PartitionOffset),
 }
 
@@ -50,7 +50,7 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
             let partition_offset = PartitionOffset(partition_num.0 - MAIN_BASE_PARTITION.0);
             SystemPartitionDescription::Module(ObjectModuleId::Main, partition_offset)
         } else if partition_num.ge(&INSTANCE_SCHEMAS_PARTITION) {
-            SystemPartitionDescription::InstanceSchemas
+            SystemPartitionDescription::System(*partition_num)
         } else if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
             let partition_offset =
                 PartitionOffset(partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0);

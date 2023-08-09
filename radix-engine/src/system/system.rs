@@ -795,6 +795,7 @@ where
 
         for (partition_description, substates) in partitions.into_iter() {
             let partition_num = match partition_description {
+                PartitionDescription::Physical(partition_num) => partition_num,
                 PartitionDescription::Logical(offset) => {
                     MAIN_BASE_PARTITION
                         .at_offset(offset)
@@ -987,6 +988,7 @@ where
             }
 
             match partition_description {
+                PartitionDescription::Physical(partition_num) => partition_num,
                 PartitionDescription::Logical(offset) => {
                     module_id
                         .base_partition_num()
@@ -1057,6 +1059,7 @@ where
         let pointer = field_schema.field;
 
         let partition_num = match partition_description {
+            PartitionDescription::Physical(partition_num) => partition_num,
             PartitionDescription::Logical(offset) => {
                 module_id
                     .base_partition_num()

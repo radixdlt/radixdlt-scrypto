@@ -201,13 +201,13 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         key: &SubstateKey,
     ) -> SubstateSystemStructure {
         match partition_description {
-            SystemPartitionDescription::InstanceSchemas => {
-                SubstateSystemStructure::SystemType
-            }
             SystemPartitionDescription::TypeInfo => {
                 SubstateSystemStructure::SystemField(SystemFieldStructure {
                     field_kind: SystemFieldKind::TypeInfo,
                 })
+            }
+            SystemPartitionDescription::System(_partition_num) => {
+                SubstateSystemStructure::SystemType
             }
             SystemPartitionDescription::Module(module_id, partition_offset) => {
                 let (blueprint_id, type_instances) = if let ObjectModuleId::Main = module_id {
@@ -272,21 +272,17 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
             panic!("Partition offset larger than partition count");
         }
 
-        if let Some((partition_description, fields)) = &state_schema.fields {
-            match partition_description {
-                PartitionDescription::Logical(offset) => {
-                    if offset.eq(&partition_offset) {
-                        if let SubstateKey::Field(field_index) = key {
-                            let field = fields
-                                .get(*field_index as usize)
-                                .expect("Field index was not valid");
-                            return SubstateSystemStructure::ObjectField(FieldStructure {
-                                value_schema: resolver.resolve(field.field),
-                            });
-                        } else {
-                            panic!("Expected a field substate key");
-                        }
-                    }
+        if let Some((PartitionDescription::Logical(offset), fields)) = &state_schema.fields {
+            if offset.eq(&partition_offset) {
+                if let SubstateKey::Field(field_index) = key {
+                    let field = fields
+                        .get(*field_index as usize)
+                        .expect("Field index was not valid");
+                    return SubstateSystemStructure::ObjectField(FieldStructure {
+                        value_schema: resolver.resolve(field.field),
+                    });
+                } else {
+                    panic!("Expected a field substate key");
                 }
             }
         }
@@ -323,6 +319,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                         }
                     }
                 }
+                PartitionDescription::Physical(..) => {}
             }
         }
 
