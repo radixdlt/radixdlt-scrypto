@@ -1,11 +1,5 @@
-use crate::kernel::call_frame::{
-    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
-    CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
-    CreateNodeError, DropNodeError, MoveModuleError, OpenSubstateError, PersistNodeError,
-    WriteSubstateError,
-};
+use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateNodeError, DropNodeError, MoveModuleError, NonGlobalNodeRefs, OpenSubstateError, PersistNodeError, WriteSubstateError};
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
-use crate::kernel::node_refs::NonGlobalNodeRefs;
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::{
     CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo,
@@ -57,12 +51,6 @@ pub enum ProcessSubstateIOWriteError {
     PersistNodeError(PersistNodeError),
 }
 
-pub struct SubstateIOWrite {
-    pub move_nodes_from_heap: IndexSet<NodeId>,
-    pub add_non_global_refs: IndexMap<NodeId, SubstateDevice>,
-    pub remove_non_global_refs: IndexSet<NodeId>,
-}
-
 pub struct SubstateIO<'g, S: SubstateStore> {
     pub heap: Heap,
     pub store: &'g mut S,
@@ -80,6 +68,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         }
     }
 
+    /// Creates a new node with partitions/substates at the given device.
+    /// No additional node movement occurs (For example, owned nodes in node substates
+    /// are not moved and must be done manually using other interfaces)
     pub fn create_node<E>(
         &mut self,
         handler: &mut impl SubstateIOHandler<E>,
@@ -92,23 +83,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 self.heap.create_node(node_id, node_substates);
             }
             SubstateDevice::Store => {
-                /*
-                for (_partition_number, module) in &node_substates {
-                    for (substate_key, substate_value) in module {
-                        for own in substate_value.owned_nodes() {
-                            Self::move_node_from_heap_to_store_internal(
-                                &mut self.heap,
-                                self.store,
-                                handler,
-                                &self.non_global_node_refs,
-                                own,
-                            )
-                                .map_err(|e| e.map(CreateNodeError::PersistNodeError))?
-                        }
-                    }
-                }
-                 */
-
                 self.store
                     .create_node(node_id, node_substates, &mut |store_access| {
                         handler.on_store_access(&self.heap, store_access)
@@ -145,16 +119,62 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             }
         };
 
-        for (_, module) in &node_substates {
-            for (_, substate_value) in module {
-                for reference in substate_value.references() {
-                    if !reference.is_global() {
-                        self.non_global_node_refs.decrement_ref_count(reference);
+        Ok(node_substates)
+    }
+
+    pub fn move_node_from_heap_to_store<E>(
+        &mut self,
+        handler: &mut impl SubstateIOHandler<E>,
+        node_id: &NodeId,
+    ) -> Result<(), CallbackError<PersistNodeError, E>> {
+        // TODO: Add locked substate checks, though this is not required since
+        // the system layer currently maintains the invariant that a call frame cannot
+        // open a substate of an owned node
+
+        let mut queue = LinkedList::new();
+        queue.push_back(node_id.clone());
+
+        while let Some(node_id) = queue.pop_front() {
+            handler
+                .on_persist_node(&self.heap, &node_id)
+                .map_err(CallbackError::CallbackError)?;
+
+            if self.non_global_node_refs.node_is_referenced(&node_id) {
+                return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(
+                    node_id,
+                )));
+            }
+
+            let node_substates = match self.heap.remove_node(&node_id) {
+                Ok(substates) => substates,
+                Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
+                    panic!("Frame owned node {:?} not found in heap", node_id)
+                }
+            };
+            for (_partition_number, module_substates) in &node_substates {
+                for (_substate_key, substate_value) in module_substates {
+                    for reference in substate_value.references() {
+                        if !reference.is_global() {
+                            return Err(CallbackError::Error(
+                                PersistNodeError::ContainsNonGlobalRef(*reference),
+                            ));
+                        }
+                    }
+
+                    for node_id in substate_value.owned_nodes() {
+                        queue.push_back(*node_id);
                     }
                 }
             }
+
+            self.store
+                .create_node(node_id.clone(), node_substates, &mut |store_access| {
+                    handler.on_store_access(&self.heap, store_access)
+                })
+                .map_err(CallbackError::CallbackError)?;
         }
-        Ok(node_substates)
+
+        Ok(())
     }
 
     pub fn move_partition<'f, E>(
@@ -339,10 +359,8 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
 
     pub fn write_substate<E>(
         &mut self,
-        handler: &mut impl SubstateIOHandler<E>,
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
-        io_write: SubstateIOWrite,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get_mut(global_lock_handle);
@@ -360,19 +378,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     .set_substate(node_id, partition_num, substate_key, substate);
             }
             SubstateDevice::Store => {
-                /*
-                for own in io_write.move_nodes_from_heap {
-                    Self::move_node_from_heap_to_store_internal(
-                        &mut self.heap,
-                        self.store,
-                        handler,
-                        &self.non_global_node_refs,
-                        &own,
-                    )
-                        .map_err(|e| e.map(WriteSubstateError::PersistNodeError))?
-                }
-                 */
-
                 self.store
                     .set_substate(node_id, partition_num, substate_key, substate, &mut |_| {
                         Err(())
@@ -545,119 +550,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(substates)
     }
 
-    pub fn move_node_from_heap_to_store<E>(
-        &mut self,
-        handler: &mut impl SubstateIOHandler<E>,
-        node_id: &NodeId,
-    ) -> Result<(), CallbackError<PersistNodeError, E>> {
-        // TODO: Add locked substate checks, though this is not required since
-        // the system layer currently maintains the invariant that a call frame cannot
-        // open a substate of an owned node
-
-        let mut queue = LinkedList::new();
-        queue.push_back(node_id.clone());
-
-        while let Some(node_id) = queue.pop_front() {
-            handler
-                .on_persist_node(&self.heap, &node_id)
-                .map_err(CallbackError::CallbackError)?;
-
-            if self.non_global_node_refs.node_is_referenced(&node_id) {
-                return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(
-                    node_id,
-                )));
-            }
-
-            let node_substates = match self.heap.remove_node(&node_id) {
-                Ok(substates) => substates,
-                Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
-                    panic!("Frame owned node {:?} not found in heap", node_id)
-                }
-            };
-            for (_partition_number, module_substates) in &node_substates {
-                for (_substate_key, substate_value) in module_substates {
-                    for reference in substate_value.references() {
-                        if !reference.is_global() {
-                            return Err(CallbackError::Error(
-                                PersistNodeError::ContainsNonGlobalRef(*reference),
-                            ));
-                        }
-                    }
-
-                    for node_id in substate_value.owned_nodes() {
-                        queue.push_back(*node_id);
-                    }
-                }
-            }
-
-            self.store
-                .create_node(node_id.clone(), node_substates, &mut |store_access| {
-                    handler.on_store_access(&self.heap, store_access)
-                })
-                .map_err(CallbackError::CallbackError)?;
-        }
-
-        Ok(())
-    }
-
-    /*
-    fn move_node_from_heap_to_store_internal<E>(
-        heap: &mut Heap,
-        store: &mut S,
-        handler: &mut impl SubstateIOHandler<E>,
-        node_refs: &NonGlobalNodeRefs,
-        node_id: &NodeId,
-    ) -> Result<(), CallbackError<PersistNodeError, E>> {
-        // TODO: Add locked substate checks, though this is not required since
-        // the system layer currently maintains the invariant that a call frame cannot
-        // open a substate of an owned node
-
-        let mut queue = LinkedList::new();
-        queue.push_back(node_id.clone());
-
-        while let Some(node_id) = queue.pop_front() {
-            handler
-                .on_persist_node(heap, &node_id)
-                .map_err(CallbackError::CallbackError)?;
-
-            if node_refs.node_is_referenced(&node_id) {
-                return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(
-                    node_id,
-                )));
-            }
-
-            let node_substates = match heap.remove_node(&node_id) {
-                Ok(substates) => substates,
-                Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
-                    panic!("Frame owned node {:?} not found in heap", node_id)
-                }
-            };
-            for (_partition_number, module_substates) in &node_substates {
-                for (_substate_key, substate_value) in module_substates {
-                    for reference in substate_value.references() {
-                        if !reference.is_global() {
-                            return Err(CallbackError::Error(
-                                PersistNodeError::ContainsNonGlobalRef(*reference),
-                            ));
-                        }
-                    }
-
-                    for node_id in substate_value.owned_nodes() {
-                        queue.push_back(*node_id);
-                    }
-                }
-            }
-
-            store
-                .create_node(node_id.clone(), node_substates, &mut |store_access| {
-                    handler.on_store_access(heap, store_access)
-                })
-                .map_err(CallbackError::CallbackError)?;
-        }
-
-        Ok(())
-    }
-     */
 
     fn get_substate_internal<'a, E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         heap: &'a mut Heap,

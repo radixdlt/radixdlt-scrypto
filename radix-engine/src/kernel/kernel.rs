@@ -9,16 +9,13 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::{
-    CallFrameMessage, CallFrameSubstateReadHandler, PersistNodeHandler, StoreAccessHandler,
-};
+use crate::kernel::call_frame::{CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs, PersistNodeHandler, StoreAccessHandler};
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
-use crate::kernel::node_refs::NonGlobalNodeRefs;
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;

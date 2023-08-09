@@ -1,6 +1,6 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
-    ProcessSubstateIOWriteError, SubstateDevice, SubstateIO, SubstateIOHandler, SubstateIOWrite,
+    ProcessSubstateIOWriteError, SubstateDevice, SubstateIO, SubstateIOHandler,
     SubstateReadHandler,
 };
 use crate::track::interface::{
@@ -625,6 +625,8 @@ impl<C, L: Clone> CallFrame<C, L> {
                         // Revisit this if the reference model is changed.
                         self.stable_references
                             .insert(reference.clone(), StableReferenceType::Global);
+                    } else {
+                        substate_io.non_global_node_refs.decrement_ref_count(reference);
                     }
                 }
             }
@@ -815,7 +817,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         handler: &mut H,
     ) -> Result<&'f IndexedScryptoValue, CallbackError<ReadSubstateError, H::Error>> {
         let OpenedSubstate {
-            global_substate_handle: global_lock_handle,
+            global_substate_handle,
             ..
         } = self
             .open_substates
@@ -827,11 +829,11 @@ impl<C, L: Clone> CallFrame<C, L> {
         let mut handler = WrapperHandler2 {
             call_frame: self,
             handler,
-            handle: *global_lock_handle,
+            handle: *global_substate_handle,
         };
 
         let substate = substate_io
-            .read_substate(*global_lock_handle, &mut handler)
+            .read_substate(*global_substate_handle, &mut handler)
             .map_err(|e| CallbackError::CallbackError(e))?;
 
         Ok(substate)
@@ -851,7 +853,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                     lock_handle,
                 )))?;
 
-        let io_write = self
+        self
             .process_substate(
                 substate_io,
                 handler,
@@ -861,17 +863,9 @@ impl<C, L: Clone> CallFrame<C, L> {
             )
             .map_err(|e| e.map(WriteSubstateError::ProcessSubstateError))?;
 
-        let mut handler = WrapperHandler {
-            call_frame: self,
-            handler,
-            phantom: PhantomData::default(),
-        };
-
         substate_io.write_substate(
-            &mut handler,
             opened_substate.global_substate_handle,
             substate,
-            io_write,
         )?;
 
         self.open_substates.insert(lock_handle, opened_substate);
@@ -1183,7 +1177,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         device: SubstateDevice,
         updated_value: &IndexedScryptoValue,
         mut open_substate: Option<&mut OpenedSubstate<L>>,
-    ) -> Result<SubstateIOWrite, CallbackError<ProcessSubstateError, E>> {
+    ) -> Result<(), CallbackError<ProcessSubstateError, E>> {
         // Process owned nodes
         let (new_owned_nodes, added_owned_nodes) = {
             let mut added_owned_nodes: IndexSet<NodeId> = index_set_new();
@@ -1341,11 +1335,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        Ok(SubstateIOWrite {
-            move_nodes_from_heap: added_owned_nodes,
-            add_non_global_refs: added_non_global_references,
-            remove_non_global_refs: removed_non_global_refs,
-        })
+        Ok(())
     }
 
     fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
@@ -1354,5 +1344,51 @@ impl<C, L: Clone> CallFrame<C, L> {
         } else {
             Err(TakeNodeError::OwnNotFound(node_id.clone()))
         }
+    }
+}
+
+
+/// Non Global Node References
+/// This struct should be maintained with CallFrame as the call frame should be the only
+/// manipulator. Substate I/O though the "owner" only has read-access to this structure.
+pub struct NonGlobalNodeRefs {
+    node_refs: NonIterMap<NodeId, (SubstateDevice, usize)>,
+}
+
+impl NonGlobalNodeRefs {
+    pub fn new() -> Self {
+        Self {
+            node_refs: NonIterMap::new(),
+        }
+    }
+
+    pub fn node_is_referenced(&self, node_id: &NodeId) -> bool {
+        self.node_refs
+            .get(node_id)
+            .map(|(_, ref_count)| ref_count.gt(&0))
+            .unwrap_or(false)
+    }
+
+    fn get_ref_device(&self, node_id: &NodeId) -> SubstateDevice {
+        let (device, ref_count) = self.node_refs.get(node_id).unwrap();
+
+        if ref_count.eq(&0) {
+            panic!("Reference no longer exists");
+        }
+
+        *device
+    }
+
+    fn increment_ref_count(&mut self, node_id: NodeId, device: SubstateDevice) {
+        let (_, ref_count) = self.node_refs.entry(node_id).or_insert((device, 0));
+        ref_count.add_assign(1);
+    }
+
+    fn decrement_ref_count(&mut self, node_id: &NodeId) {
+        let (_, ref_count) = self
+            .node_refs
+            .get_mut(node_id)
+            .unwrap_or_else(|| panic!("Node {:?} not found", node_id));
+        ref_count.sub_assign(1);
     }
 }

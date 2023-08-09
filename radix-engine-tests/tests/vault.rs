@@ -177,7 +177,7 @@ fn invalid_double_ownership_of_vault() {
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
                 CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
-                    ProcessSubstateError::TakeNodeError(TakeNodeError::OwnNotFound(_))
+                    ProcessSubstateError::ContainsDuplicateOwns(..)
                 ))
             ))
         )
