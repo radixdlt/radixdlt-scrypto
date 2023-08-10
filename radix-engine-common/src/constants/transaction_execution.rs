@@ -1,8 +1,14 @@
-/// The system loan amount, used by transaction executor.
-pub const SYSTEM_LOAN_AMOUNT: u32 = 10_000_000;
+/// The execution cost unit loaned from system
+pub const EXECUTION_COST_UNIT_LOAN: u32 = 10_000_000;
 
-/// The cost unit limit.
-pub const COST_UNIT_LIMIT: u32 = 100_000_000;
+/// The execution cost unit limit.
+pub const EXECUTION_COST_UNIT_LIMIT: u32 = 100_000_000;
+
+/// The finalization cost unit loaned from system
+pub const FINALIZATION_COST_UNIT_LOAN: u32 = 10_000_000;
+
+/// The finalization cost unit limit.
+pub const FINALIZATION_COST_UNIT_LIMIT: u32 = 100_000_000;
 
 /// The free credit, for preview only.
 pub const FREE_CREDIT_IN_XRD: &str = "100";
@@ -76,8 +82,11 @@ pub const MAX_ACCESS_RULE_NODES: usize = 64;
 // TO BE DEFINED
 //==========================
 
-/// The cost unit price, in XRD.
+/// The price of execution cost unit, in XRD.
 pub const EXECUTION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
+
+/// The price of finalization cost unit, in XRD.
+pub const FINALIZATION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
 
 /// The price for adding a single byte to the substate store, in XRD.
 pub const STORAGE_PRICE_IN_XRD: &str = "0.00001";

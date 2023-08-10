@@ -32,32 +32,37 @@ pub struct CostingParameters {
     pub execution_cost_unit_price: Decimal,
     /// The maximum execution cost unit to consume.
     pub execution_cost_unit_limit: u32,
+    /// The number of execution cost units loaned from system.
+    pub execution_cost_unit_loan: u32,
+
     /// The price of finalization cost unit in XRD.
     pub finalization_cost_unit_price: Decimal,
     /// The maximum finalization cost unit to consume.
     pub finalization_cost_unit_limit: u32,
+    /// The number of finalization cost units loaned from system.
+    pub finalization_cost_unit_loan: u32,
+
     /// The price of USD in xrd
     pub usd_price: Decimal,
     /// The price of storage in xrd
     pub storage_price: Decimal,
-    /// The amount of loaned
-    pub execution_cost_units_loan: u32,
 
     /// The tip percentage that should be applied on execution and finalization costs.
     pub tip_percentage: u16,
 }
 
-impl CostingParameters {
-    pub fn default() -> Self {
+impl Default for CostingParameters {
+    fn default() -> Self {
         Self {
             execution_cost_unit_price: EXECUTION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            execution_cost_unit_limit: EXECUTION_COST_UNIT_LIMIT,
+            execution_cost_unit_loan: EXECUTION_COST_UNIT_LOAN,
+            finalization_cost_unit_price: FINALIZATION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            finalization_cost_unit_limit: FINALIZATION_COST_UNIT_LIMIT,
+            finalization_cost_unit_loan: FINALIZATION_COST_UNIT_LOAN,
             usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
             storage_price: STORAGE_PRICE_IN_XRD.try_into().unwrap(),
-            execution_cost_units_loan: SYSTEM_LOAN_AMOUNT,
-            execution_cost_unit_limit: todo!(),
-            finalization_cost_unit_price: todo!(),
-            finalization_cost_unit_limit: todo!(),
-            tip_percentage: todo!(),
+            tip_percentage: DEFAULT_TIP_PERCENTAGE,
         }
     }
 }
@@ -208,7 +213,7 @@ where
             fee_reserve_config.storage_price,
             tip_percentage,
             execution_config.cost_unit_limit,
-            fee_reserve_config.execution_cost_units_loan,
+            fee_reserve_config.execution_cost_unit_loan,
             execution_config.abort_when_loan_repaid,
         )
         .with_free_credit(free_credit);
