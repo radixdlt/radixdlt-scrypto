@@ -218,6 +218,8 @@ impl SystemLoanFeeReserve {
             execution_cost_units_committed: 0,
             execution_cost_units_deferred: 0,
 
+            finalization_cost_units_committed: 0,
+
             royalty_cost_breakdown: BTreeMap::new(),
             royalty_cost: 0,
 
@@ -534,10 +536,34 @@ mod tests {
         LiquidFungibleResource::new(amount.into())
     }
 
+    fn new_test_fee_reserve(
+        execution_cost_unit_price: Decimal,
+        usd_price: Decimal,
+        storage_price: Decimal,
+        tip_percentage: u16,
+        execution_cost_unit_limit: u32,
+        execution_cost_unit_loan: u32,
+        abort_when_loan_repaid: bool,
+    ) -> SystemLoanFeeReserve {
+        let mut costing_parameters = CostingParameters::default();
+        costing_parameters.execution_cost_unit_price = execution_cost_unit_price;
+        costing_parameters.execution_cost_unit_limit = execution_cost_unit_limit;
+        costing_parameters.execution_cost_unit_loan = execution_cost_unit_loan;
+        costing_parameters.usd_price = usd_price;
+        costing_parameters.storage_price = storage_price;
+        let mut transaction_costing_parameters = TransactionCostingParameters::default();
+        transaction_costing_parameters.tip_percentage = tip_percentage;
+
+        SystemLoanFeeReserve::new(
+            &costing_parameters,
+            &transaction_costing_parameters,
+            abort_when_loan_repaid,
+        )
+    }
+
     #[test]
     fn test_consume_and_repay() {
-        let mut fee_reserve =
-            SystemLoanFeeReserve::new(dec!(1), dec!(1), dec!(0), 2, 100, 5, false);
+        let mut fee_reserve = new_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 5, false);
         fee_reserve.consume_execution(2).unwrap();
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(3), false).unwrap();
         fee_reserve.repay_all().unwrap();
@@ -552,8 +578,7 @@ mod tests {
 
     #[test]
     fn test_out_of_cost_unit() {
-        let mut fee_reserve =
-            SystemLoanFeeReserve::new(dec!(1), dec!(1), dec!(0), 2, 100, 5, false);
+        let mut fee_reserve = new_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 5, false);
         assert_eq!(
             fee_reserve.consume_execution(6),
             Err(FeeReserveError::InsufficientBalance {
@@ -572,8 +597,7 @@ mod tests {
 
     #[test]
     fn test_lock_fee() {
-        let mut fee_reserve =
-            SystemLoanFeeReserve::new(dec!(1), dec!(1), dec!(0), 2, 100, 500, false);
+        let mut fee_reserve = new_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 500, false);
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
@@ -588,8 +612,7 @@ mod tests {
 
     #[test]
     fn test_xrd_cost_unit_conversion() {
-        let mut fee_reserve =
-            SystemLoanFeeReserve::new(dec!(5), dec!(1), dec!(0), 0, 100, 500, false);
+        let mut fee_reserve = new_test_fee_reserve(dec!(5), dec!(1), dec!(0), 0, 100, 500, false);
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
@@ -605,12 +628,11 @@ mod tests {
 
     #[test]
     fn test_bad_debt() {
-        let mut fee_reserve =
-            SystemLoanFeeReserve::new(dec!(5), dec!(1), dec!(0), 1, 100, 50, false);
+        let mut fee_reserve = new_test_fee_reserve(dec!(5), dec!(1), dec!(0), 1, 100, 50, false);
         fee_reserve.consume_execution(2).unwrap();
         assert_eq!(
             fee_reserve.repay_all(),
-            Err(FeeReserveError::LoanRepaymentFailed)
+            Err(FeeReserveError::LoanRepaymentFailed { xrd_owed: dec!(1) })
         );
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), false);
@@ -624,8 +646,7 @@ mod tests {
 
     #[test]
     fn test_royalty_execution_mix() {
-        let mut fee_reserve =
-            SystemLoanFeeReserve::new(dec!(5), dec!(2), dec!(0), 1, 100, 50, false);
+        let mut fee_reserve = new_test_fee_reserve(dec!(5), dec!(2), dec!(0), 1, 100, 50, false);
         fee_reserve.consume_execution(2).unwrap();
         fee_reserve
             .consume_royalty(
@@ -661,8 +682,7 @@ mod tests {
 
     #[test]
     fn test_royalty_insufficient_balance() {
-        let mut fee_reserve =
-            SystemLoanFeeReserve::new(dec!(1), dec!(1), dec!(0), 0, 1000, 50, false);
+        let mut fee_reserve = new_test_fee_reserve(dec!(1), dec!(1), dec!(0), 0, 1000, 50, false);
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();

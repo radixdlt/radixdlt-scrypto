@@ -1,10 +1,10 @@
-/// The execution cost unit loaned from system
+/// The execution cost units loaned from system
 pub const EXECUTION_COST_UNIT_LOAN: u32 = 10_000_000;
 
 /// The execution cost unit limit.
 pub const EXECUTION_COST_UNIT_LIMIT: u32 = 100_000_000;
 
-/// The finalization cost unit loaned from system
+/// The finalization cost units loaned from system
 pub const FINALIZATION_COST_UNIT_LOAN: u32 = 10_000_000;
 
 /// The finalization cost unit limit.
