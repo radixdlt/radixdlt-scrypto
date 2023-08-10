@@ -5,7 +5,7 @@ pub const EXECUTION_COST_UNIT_LOAN: u32 = 10_000_000;
 pub const EXECUTION_COST_UNIT_LIMIT: u32 = 100_000_000;
 
 /// The finalization cost unit limit.
-pub const FINALIZATION_COST_UNIT_LIMIT: u32 = 100_000_000;
+pub const FINALIZATION_COST_UNIT_LIMIT: u32 = 20_000_000;
 
 /// The free credit, for preview only.
 pub const FREE_CREDIT_IN_XRD: &str = "100";
