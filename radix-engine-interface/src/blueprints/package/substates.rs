@@ -30,7 +30,7 @@ pub const PACKAGE_BLUEPRINTS_COLLECTION_INDEX: CollectionIndex = 0u8;
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_COLLECTION_INDEX: CollectionIndex = 1u8;
 
-pub const PACKAGE_SCHEMAS_PARTITION: PartitionNumber = PartitionNumber(7u8);
+pub const PACKAGE_SCHEMAS_PARTITION: PartitionNumber = INSTANCE_SCHEMAS_PARTITION;
 pub const PACKAGE_SCHEMAS_COLLECTION_INDEX: CollectionIndex = 2u8;
 
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);

@@ -350,7 +350,6 @@ where
     ) -> Result<
         (
             Vec<TypeIdentifier>,
-            BTreeMap<Hash, ScryptoSchema>,
             IndexMap<PartitionDescription, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         ),
         RuntimeError,
@@ -526,12 +525,16 @@ where
             }
         }
 
-        // FIXME: Remove
-        if !partitions.contains_key(&PartitionDescription::Physical(PACKAGE_SCHEMAS_PARTITION)) {
-            partitions.insert(PartitionDescription::Physical(PACKAGE_SCHEMAS_PARTITION), BTreeMap::new());
+        let schema_partition = partitions.entry(PartitionDescription::Physical(INSTANCE_SCHEMAS_PARTITION))
+            .or_insert(BTreeMap::new());
+
+        for (schema_hash, schema) in additional_schemas {
+            let key = SubstateKey::Map(scrypto_encode(&schema_hash).unwrap());
+            let value = IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::locked_entry(schema));
+            schema_partition.insert(key, value);
         }
 
-        Ok((type_substitutions, additional_schemas, partitions))
+        Ok((type_substitutions, partitions))
     }
 
     pub fn get_schema(
@@ -753,7 +756,7 @@ where
                 (OuterObjectInfo::None, BTreeSet::new())
             };
 
-        let (type_substitutions, additional_schemas, partitions) = self
+        let (type_substitutions, partitions) = self
             .validate_instance_schema_and_state(
                 blueprint_id,
                 &blueprint_interface,
@@ -772,12 +775,6 @@ where
             .entity_type(),
         )?;
 
-        let instance_schema_partition = additional_schemas.into_iter().map(|(hash, schema)| {
-            let key = SubstateKey::Map(scrypto_encode(&hash).unwrap());
-            let value = IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::locked_entry(schema));
-            (key, value)
-        }).collect();
-
         let mut node_substates = btreemap!(
             TYPE_INFO_FIELD_PARTITION => type_info_partition(
                 TypeInfoSubstate::Object(ObjectInfo {
@@ -794,7 +791,6 @@ where
                     }
                 })
             ),
-            INSTANCE_SCHEMAS_PARTITION => instance_schema_partition,
         );
 
         for (partition_description, substates) in partitions.into_iter() {
@@ -1226,13 +1222,6 @@ where
             INSTANCE_SCHEMAS_PARTITION,
             global_address.as_node_id(),
             INSTANCE_SCHEMAS_PARTITION,
-        )?;
-
-        self.kernel_move_partition(
-            &node_id,
-            PACKAGE_SCHEMAS_PARTITION,
-            global_address.as_node_id(),
-            PACKAGE_SCHEMAS_PARTITION,
         )?;
 
         // Move self modules to the newly created global node, and drop
