@@ -1,3 +1,5 @@
+use core::cmp::Ordering;
+
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use num_bigint::BigInt;
@@ -120,7 +122,7 @@ impl Decimal {
         match mode {
             RoundingMode::ToPositiveInfinity => {
                 if self.0 % divisor == BnumI192::ZERO {
-                    self.clone()
+                    *self
                 } else if self.is_negative() {
                     Self(self.0 / divisor * divisor)
                 } else {
@@ -129,7 +131,7 @@ impl Decimal {
             }
             RoundingMode::ToNegativeInfinity => {
                 if self.0 % divisor == BnumI192::ZERO {
-                    self.clone()
+                    *self
                 } else if self.is_negative() {
                     Self((self.0 / divisor - BnumI192::ONE) * divisor)
                 } else {
@@ -138,14 +140,14 @@ impl Decimal {
             }
             RoundingMode::ToZero => {
                 if self.0 % divisor == BnumI192::ZERO {
-                    self.clone()
+                    *self
                 } else {
                     Self(self.0 / divisor * divisor)
                 }
             }
             RoundingMode::AwayFromZero => {
                 if self.0 % divisor == BnumI192::ZERO {
-                    self.clone()
+                    *self
                 } else if self.is_negative() {
                     Self((self.0 / divisor - BnumI192::ONE) * divisor)
                 } else {
@@ -155,7 +157,7 @@ impl Decimal {
             RoundingMode::ToNearestMidpointTowardZero => {
                 let remainder = (self.0 % divisor).abs();
                 if remainder == BnumI192::ZERO {
-                    self.clone()
+                    *self
                 } else {
                     let mid_point = divisor / BnumI192::from(2);
                     if remainder > mid_point {
@@ -172,7 +174,7 @@ impl Decimal {
             RoundingMode::ToNearestMidpointAwayFromZero => {
                 let remainder = (self.0 % divisor).abs();
                 if remainder == BnumI192::ZERO {
-                    self.clone()
+                    *self
                 } else {
                     let mid_point = divisor / BnumI192::from(2);
                     if remainder >= mid_point {
@@ -189,27 +191,27 @@ impl Decimal {
             RoundingMode::ToNearestMidpointToEven => {
                 let remainder = (self.0 % divisor).abs();
                 if remainder == BnumI192::ZERO {
-                    self.clone()
+                    *self
                 } else {
                     let mid_point = divisor / BnumI192::from(2);
-                    if remainder > mid_point {
-                        if self.is_negative() {
-                            Self((self.0 / divisor - BnumI192::ONE) * divisor)
-                        } else {
-                            Self((self.0 / divisor + BnumI192::ONE) * divisor)
-                        }
-                    } else if remainder == mid_point {
-                        if self.0 / divisor % BnumI192::from(2) == BnumI192::ZERO {
-                            Self(self.0 / divisor * divisor)
-                        } else {
+                    match remainder.cmp(&mid_point) {
+                        Ordering::Greater => {
                             if self.is_negative() {
                                 Self((self.0 / divisor - BnumI192::ONE) * divisor)
                             } else {
                                 Self((self.0 / divisor + BnumI192::ONE) * divisor)
                             }
                         }
-                    } else {
-                        Self(self.0 / divisor * divisor)
+                        Ordering::Equal => {
+                            if self.0 / divisor % BnumI192::from(2) == BnumI192::ZERO {
+                                Self(self.0 / divisor * divisor)
+                            } else if self.is_negative() {
+                                Self((self.0 / divisor - BnumI192::ONE) * divisor)
+                            } else {
+                                Self((self.0 / divisor + BnumI192::ONE) * divisor)
+                            }
+                        }
+                        Ordering::Less => Self(self.0 / divisor * divisor),
                     }
                 }
             }
@@ -226,7 +228,7 @@ impl Decimal {
 
         if exp < 0 {
             let dec_256 = BnumI192::try_from(one_256 * one_256 / base_256).expect("Overflow");
-            return Decimal(dec_256).powi(mul(exp, -1));
+            return Self(dec_256).powi(mul(exp, -1));
         }
         if exp == 0 {
             return Self::ONE;
@@ -236,10 +238,10 @@ impl Decimal {
         }
         if exp % 2 == 0 {
             let dec_256 = BnumI192::try_from(base_256 * base_256 / one_256).expect("Overflow");
-            Decimal(dec_256).powi(div(exp, 2))
+            Self(dec_256).powi(div(exp, 2))
         } else {
             let dec_256 = BnumI192::try_from(base_256 * base_256 / one_256).expect("Overflow");
-            let sub_dec = Decimal(dec_256);
+            let sub_dec = Self(dec_256);
             *self * sub_dec.powi(div(sub(exp, 1), 2))
         }
     }
@@ -257,9 +259,9 @@ impl Decimal {
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^9 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^18) = sqrt(d)*10^18
         let self_256 = BnumI256::from(self.0);
-        let correct_nb = self_256 * BnumI256::from(Decimal::ONE.0);
+        let correct_nb = self_256 * BnumI256::from(Self::ONE.0);
         let sqrt = BnumI192::try_from(correct_nb.sqrt()).expect("Overflow");
-        Some(Decimal(sqrt))
+        Some(Self(sqrt))
     }
 
     /// Cubic root of a Decimal
@@ -270,9 +272,9 @@ impl Decimal {
 
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
         let self_384 = BnumI384::from(self.0);
-        let correct_nb = self_384 * BnumI384::from(Decimal::one().0).pow(2);
+        let correct_nb = self_384 * BnumI384::from(Self::ONE.0).pow(2);
         let cbrt = BnumI192::try_from(correct_nb.cbrt()).expect("Overflow");
-        Decimal(cbrt)
+        Self(cbrt)
     }
 
     /// Nth root of a Decimal
@@ -280,7 +282,7 @@ impl Decimal {
         if (self.is_negative() && n % 2 == 0) || n == 0 {
             None
         } else if n == 1 {
-            Some(self.clone())
+            Some(*self)
         } else {
             if self.is_zero() {
                 return Some(Self::ZERO);
@@ -289,7 +291,7 @@ impl Decimal {
             // By induction, we need to multiply by the (n-1)th power of 10^18.
             // To not overflow, we use BigInts
             let self_bigint = BigInt::from(self.0);
-            let correct_nb = self_bigint * BigInt::from(Decimal::one().0).pow(n - 1);
+            let correct_nb = self_bigint * BigInt::from(Decimal::ONE.0).pow(n - 1);
             let nth_root = BnumI192::try_from(correct_nb.nth_root(n)).unwrap();
             Some(Decimal(nth_root))
         }
@@ -661,7 +663,7 @@ impl fmt::Display for Decimal {
 
 impl fmt::Debug for Decimal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self)
     }
 }
 
