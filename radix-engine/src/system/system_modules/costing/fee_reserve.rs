@@ -168,24 +168,15 @@ impl SystemLoanFeeReserve {
         transaction_costing_parameters: &TransactionCostingParameters,
         abort_when_loan_repaid: bool,
     ) -> Self {
-        let effective_execution_cost_unit_price = transmute_decimal_as_u128(
-            costing_parameters.execution_cost_unit_price
-                + costing_parameters.execution_cost_unit_price
-                    * transaction_costing_parameters.tip_percentage
-                    / dec!(100),
-        )
-        .unwrap();
-        let effective_finalization_cost_unit_price = transmute_decimal_as_u128(
-            costing_parameters.finalization_cost_unit_price
-                + costing_parameters.finalization_cost_unit_price
-                    * transaction_costing_parameters.tip_percentage
-                    / dec!(100),
-        )
-        .unwrap();
+        let effective_execution_cost_unit_price = costing_parameters.execution_cost_unit_price
+            * (dec!(1) + transaction_costing_parameters.tip_percentage / dec!(100));
+        let effective_finalization_cost_unit_price = costing_parameters
+            .finalization_cost_unit_price
+            * (dec!(1) + transaction_costing_parameters.tip_percentage / dec!(100));
         let system_loan_in_xrd = effective_execution_cost_unit_price
-            * costing_parameters.execution_cost_unit_loan as u128
+            * costing_parameters.execution_cost_unit_loan
             + effective_finalization_cost_unit_price
-                * costing_parameters.finalization_cost_unit_loan as u128;
+                * costing_parameters.finalization_cost_unit_loan;
 
         Self {
             // Execution costing parameters
@@ -215,14 +206,21 @@ impl SystemLoanFeeReserve {
             abort_when_loan_repaid,
 
             // Cache
-            effective_execution_cost_unit_price,
-            effective_finalization_cost_unit_price,
+            effective_execution_cost_unit_price: transmute_decimal_as_u128(
+                effective_execution_cost_unit_price,
+            )
+            .unwrap(),
+            effective_finalization_cost_unit_price: transmute_decimal_as_u128(
+                effective_finalization_cost_unit_price,
+            )
+            .unwrap(),
 
             // Running balance
-            xrd_balance: system_loan_in_xrd
-                + transmute_decimal_as_u128(transaction_costing_parameters.free_credit_in_xrd)
-                    .unwrap(),
-            xrd_owed: system_loan_in_xrd,
+            xrd_balance: transmute_decimal_as_u128(
+                system_loan_in_xrd + transaction_costing_parameters.free_credit_in_xrd,
+            )
+            .unwrap(),
+            xrd_owed: transmute_decimal_as_u128(system_loan_in_xrd).unwrap(),
 
             // Internal states
             execution_cost_units_committed: 0,

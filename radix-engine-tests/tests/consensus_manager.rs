@@ -2856,6 +2856,7 @@ fn test_tips_and_fee_distribution_two_validators() {
         ManifestBuilder::new().drop_auth_zone_proofs().build(),
         vec![],
     );
+    let result1 = receipt1.expect_commit_success();
 
     // Advance epoch
     let receipt2 = test_runner.advance_to_round(Round::of(1));
@@ -2866,22 +2867,14 @@ fn test_tips_and_fee_distribution_two_validators() {
     assert_eq!(events[0].epoch, initial_epoch);
     assert_close_to!(
         events[0].amount,
-        receipt1.expect_commit_success().fee_destination.to_proposer
-            + receipt1
-                .expect_commit_success()
-                .fee_destination
-                .to_validator_set
-                * initial_stake_amount1
+        result1.fee_destination.to_proposer
+            + result1.fee_destination.to_validator_set * initial_stake_amount1
                 / (initial_stake_amount1 + initial_stake_amount2)
     );
     assert_eq!(events[1].epoch, initial_epoch);
     assert_close_to!(
         events[1].amount,
-        receipt1
-            .expect_commit_success()
-            .fee_destination
-            .to_validator_set
-            * initial_stake_amount2
+        result1.fee_destination.to_validator_set * initial_stake_amount2
             / (initial_stake_amount1 + initial_stake_amount2)
     );
 }
