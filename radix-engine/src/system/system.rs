@@ -140,22 +140,22 @@ pub struct KVStoreValidationTarget {
 }
 
 #[derive(Debug, Clone)]
-pub enum SchemaValidationMeta<'a> {
+pub enum SchemaValidationMeta {
     ExistingObject {
         additional_schemas: NodeId,
     },
     NewObject {
-        additional_schemas: &'a NonIterMap<Hash, ScryptoSchema>,
+        additional_schemas: NonIterMap<Hash, ScryptoSchema>,
     },
     Blueprint,
 }
 
 #[derive(Debug, Clone)]
-pub struct ValidationTarget<'a> {
+pub struct ValidationTarget {
     // TODO: Add version
     pub blueprint_id: BlueprintId,
     pub type_substitutions: Vec<TypeIdentifier>,
-    pub meta: SchemaValidationMeta<'a>,
+    pub meta: SchemaValidationMeta,
 }
 
 enum EmitterActor {
@@ -369,13 +369,11 @@ where
                 .unwrap_or_default()
         };
 
-        let non_iter_additional_schemas = additional_schemas.clone().into_iter().collect();
-
         let validation_target = ValidationTarget {
             blueprint_id: blueprint_id.clone(),
             type_substitutions: type_substitutions.clone(),
             meta: SchemaValidationMeta::NewObject {
-                additional_schemas: &non_iter_additional_schemas,
+                additional_schemas: additional_schemas.clone().into_iter().collect(),
             },
         };
 
@@ -1021,7 +1019,7 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
         field_index: u8,
-    ) -> Result<(NodeId, PartitionNumber, TypePointer, BlueprintId), RuntimeError> {
+    ) -> Result<(NodeId, BlueprintInfo, PartitionNumber), RuntimeError> {
         let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
 
         let (partition_description, field_schema) =
@@ -1060,8 +1058,6 @@ where
             Condition::Always => {}
         }
 
-        let pointer = field_schema.field;
-
         let partition_num = match partition_description {
             PartitionDescription::Physical(partition_num) => partition_num,
             PartitionDescription::Logical(offset) => module_id
@@ -1070,7 +1066,7 @@ where
                 .expect("Module number overflow"),
         };
 
-        Ok((node_id, partition_num, pointer, info.blueprint_id))
+        Ok((node_id, info, partition_num))
     }
 
     fn resolve_blueprint_from_modules(
@@ -1358,23 +1354,15 @@ where
 
         let blueprint_id = match data {
             SystemLockData::Field(FieldLockData::Write {
-                node_id,
-                blueprint_id,
+                target,
                 field_index,
             }) => {
                 self.validate_blueprint_payload(
-                    &ValidationTarget {
-                        blueprint_id: blueprint_id.clone(),
-                        // TODO: Change to empty vector, once support for generic fields is implemented
-                        type_substitutions: vec![],
-                        meta: SchemaValidationMeta::ExistingObject {
-                            additional_schemas: node_id,
-                        },
-                    },
+                    &target,
                     BlueprintPayloadIdentifier::Field(field_index),
                     &buffer,
                 )?;
-                blueprint_id
+                target.blueprint_id.clone()
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteHandle));
@@ -1763,18 +1751,10 @@ where
 
         let can_own = match data {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
-                node_id,
                 collection_index,
-                blueprint_id,
-                type_substitutions,
+                target,
             }) => self.validate_blueprint_payload(
-                &ValidationTarget {
-                    blueprint_id,
-                    type_substitutions,
-                    meta: SchemaValidationMeta::ExistingObject {
-                        additional_schemas: node_id,
-                    },
-                },
+                &target,
                 BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value),
                 &buffer,
             )?,
@@ -2414,12 +2394,12 @@ where
     ) -> Result<SubstateHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, schema_pointer, blueprint_id) =
+        let (node_id, blueprint_info, partition_num) =
             self.get_actor_field_info(actor_object_type, field_index)?;
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(blueprint_id.eq(&BlueprintId::new(
+            if !(blueprint_info.blueprint_id.eq(&BlueprintId::new(
                 &RESOURCE_PACKAGE,
                 FUNGIBLE_VAULT_BLUEPRINT,
             ))) {
@@ -2428,9 +2408,16 @@ where
         }
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
+            let target = ValidationTarget {
+                blueprint_id: blueprint_info.blueprint_id,
+                type_substitutions: blueprint_info.type_substitutions,
+                meta: SchemaValidationMeta::ExistingObject {
+                    additional_schemas: node_id,
+                },
+            };
+
             FieldLockData::Write {
-                node_id,
-                blueprint_id,
+                target,
                 field_index,
             }
         } else {
@@ -2578,8 +2565,8 @@ where
         )?;
 
         let target = ValidationTarget {
-            blueprint_id: info.blueprint_id.clone(),
-            type_substitutions: info.type_substitutions.clone(),
+            blueprint_id: info.blueprint_id,
+            type_substitutions: info.type_substitutions,
             meta: SchemaValidationMeta::ExistingObject {
                 additional_schemas: node_id,
             },
@@ -2593,10 +2580,8 @@ where
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             KeyValueEntryLockData::BlueprintWrite {
-                node_id,
                 collection_index,
-                blueprint_id: info.blueprint_id,
-                type_substitutions: info.type_substitutions,
+                target,
             }
         } else {
             KeyValueEntryLockData::Read

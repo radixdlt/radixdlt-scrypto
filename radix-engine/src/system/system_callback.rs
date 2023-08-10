@@ -59,10 +59,8 @@ pub enum KeyValueEntryLockData {
         kv_store_validation_target: KVStoreValidationTarget,
     },
     BlueprintWrite {
-        node_id: NodeId,
+        target: ValidationTarget,
         collection_index: CollectionIndex,
-        blueprint_id: BlueprintId,
-        type_substitutions: Vec<TypeIdentifier>,
     },
 }
 
@@ -70,8 +68,7 @@ pub enum KeyValueEntryLockData {
 pub enum FieldLockData {
     Read,
     Write {
-        node_id: NodeId,
-        blueprint_id: BlueprintId,
+        target: ValidationTarget,
         field_index: u8,
     },
 }
