@@ -4,6 +4,7 @@ use crate::schema::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::crypto::Hash;
+use radix_engine_common::prelude::ScryptoSchema;
 use radix_engine_interface::blueprints::resource::Vault;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
@@ -520,64 +521,4 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn validate_generic_args(&self, generic_args: &Option<GenericArgs>) -> bool {
-        if let Some((_, field_schemas)) = &self.fields {
-            for field_schema in field_schemas {
-                match &field_schema.field {
-                    TypePointer::Package(..) => {}
-                    TypePointer::Instance(type_index) => {
-                        if let Some(generic_args) = generic_args {
-                            if generic_args.type_substitution_refs.len()
-                                < (*type_index as usize)
-                            {
-                                return false;
-                            }
-                        } else {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-
-        for (_, collection_schema) in &self.collections {
-            match collection_schema {
-                BlueprintCollectionSchema::Index(kv_schema) |
-                BlueprintCollectionSchema::SortedIndex(kv_schema) |
-                BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
-                    match &kv_schema.key {
-                        TypePointer::Package(..) => {}
-                        TypePointer::Instance(type_index) => {
-                            if let Some(generic_args) = generic_args {
-                                if generic_args.type_substitution_refs.len()
-                                    < (*type_index as usize)
-                                {
-                                    return false;
-                                }
-                            } else {
-                                return false;
-                            }
-                        }
-                    }
-
-                    match &kv_schema.value {
-                        TypePointer::Package(..) => {}
-                        TypePointer::Instance(type_index) => {
-                            if let Some(generic_args) = generic_args {
-                                if generic_args.type_substitution_refs.len()
-                                    < (*type_index as usize)
-                                {
-                                    return false;
-                                }
-                            } else {
-                                return false;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        true
-    }
 }

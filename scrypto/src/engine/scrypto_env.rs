@@ -5,7 +5,7 @@ use radix_engine_interface::api::field_api::FieldHandle;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
-use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
+use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueStoreGenericArgs};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::{ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldValue, GenericArgs, ObjectHandle};
@@ -19,7 +19,7 @@ use radix_engine_interface::types::{Level, NodeId, SubstateHandle};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::{KeyValueStoreTypeSubstitutions, KeyValueStoreGenericArgs};
+use scrypto_schema::{KeyValueStoreTypeSubstitutions};
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -97,7 +97,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         _blueprint_ident: &str,
         _features: Vec<&str>,
-        _schema: Option<GenericArgs>,
+        _generic_args: GenericArgs,
         _fields: Vec<FieldValue>,
         _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, ClientApiError> {

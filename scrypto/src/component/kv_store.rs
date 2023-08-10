@@ -2,7 +2,7 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
-use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
+use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueStoreGenericArgs};
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
     own_key_value_store_type_data, OWN_KEY_VALUE_STORE_TYPE,
@@ -13,7 +13,6 @@ use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::*;
-use scrypto_schema::KeyValueStoreGenericArgs;
 
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::Runtime;

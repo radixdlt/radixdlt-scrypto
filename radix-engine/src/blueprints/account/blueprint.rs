@@ -13,7 +13,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, GenericArgs, OBJECT_HANDLE_SELF};
 use radix_engine_interface::api::{CollectionIndex, FieldValue};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
@@ -236,7 +236,7 @@ impl AccountBlueprint {
         let account_id = api.new_object(
             ACCOUNT_BLUEPRINT,
             vec![],
-            None,
+            GenericArgs::default(),
             vec![FieldValue::new(&AccountSubstate {
                 default_deposit_rule: DefaultDepositRule::Accept,
             })],

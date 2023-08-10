@@ -27,7 +27,7 @@ use radix_engine_interface::api::field_api::{FieldHandle, LockFlags};
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
-use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
+use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueStoreGenericArgs};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
@@ -171,6 +171,72 @@ where
             api,
             phantom: PhantomData::default(),
         }
+    }
+
+
+    pub fn validate_bp_generic_args(
+        &mut self,
+        blueprint_id: &BlueprintId,
+        schemas: &IndexMap<Hash, ScryptoSchema>,
+        type_substitution_refs: &Vec<TypeIdentifier>,
+    ) -> Result<(), RuntimeError> {
+        let state_schema =
+            self.get_blueprint_default_interface(blueprint_id.clone())?.state;
+
+        if let Some((_, field_schemas)) = &state_schema.fields {
+            for field_schema in field_schemas {
+                match &field_schema.field {
+                    TypePointer::Package(..) => {}
+                    TypePointer::Instance(type_index) => {
+                        let type_ref = type_substitution_refs.get(*type_index as usize).ok_or_else(|| {
+                            RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                        })?;
+
+                        let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
+                            RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                        })?;
+
+                        // TODO: validate schema with index
+                    }
+                }
+            }
+        }
+
+        for (_, collection_schema) in &state_schema.collections {
+            match collection_schema {
+                BlueprintCollectionSchema::Index(kv_schema) |
+                BlueprintCollectionSchema::SortedIndex(kv_schema) |
+                BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
+                    match &kv_schema.key {
+                        TypePointer::Package(..) => {}
+                        TypePointer::Instance(type_index) => {
+                            let type_ref = type_substitution_refs.get(*type_index as usize).ok_or_else(|| {
+                                RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                            })?;
+
+                            let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
+                                RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                            })?;
+                        }
+                    }
+
+                    match &kv_schema.value {
+                        TypePointer::Package(..) => {}
+                        TypePointer::Instance(type_index) => {
+                            let type_ref = type_substitution_refs.get(*type_index as usize).ok_or_else(|| {
+                                RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                            })?;
+
+                            let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
+                                RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                            })?;
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 
     fn validate_payload<'s>(
@@ -333,7 +399,7 @@ where
         outer_obj_info: OuterObjectInfo,
         features: BTreeSet<String>,
         outer_blueprint_features: &BTreeSet<String>,
-        generic_args: Option<GenericArgs>,
+        generic_args: GenericArgs,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<
@@ -345,29 +411,18 @@ where
     > {
         // Validate generic arguments
         let (type_substitutions, additional_schemas) = {
-            if let Some(generic_args) = &generic_args {
-                validate_schema(&generic_args.schemas)
+            let mut additional_schemas = index_map_new();
+
+            if let Some(schema) = generic_args.additional_schema {
+                validate_schema(&schema)
                     .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
+                let schema_hash = schema.generate_schema_hash();
+                additional_schemas.insert(schema_hash, schema);
             }
 
-            // FIXME: Create HashMap of schemas
-            if !blueprint_interface
-                .state
-                .validate_generic_args(&generic_args)
-            {
-                return Err(RuntimeError::SystemError(
-                    SystemError::InvalidGenericArgs,
-                ));
-            }
+            self.validate_bp_generic_args(blueprint_id, &additional_schemas, &generic_args.type_substitution_refs)?;
 
-            generic_args
-                .map(|generic_args| {
-                    let schema_hash = generic_args.schemas.generate_schema_hash();
-                    let type_substitutions: Vec<TypeIdentifier> = generic_args.type_substitution_refs;
-                    let additional_schemas = btreemap!(schema_hash => generic_args.schemas);
-                    (type_substitutions, additional_schemas)
-                })
-                .unwrap_or_default()
+            (generic_args.type_substitution_refs, additional_schemas)
         };
 
         let blueprint_info = BlueprintInfo {
@@ -710,7 +765,7 @@ where
         blueprint_id: &BlueprintId,
         features: Vec<&str>,
         instance_context: Option<InstanceContext>,
-        new_instance_schema: Option<GenericArgs>,
+        generic_args: GenericArgs,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
@@ -769,7 +824,7 @@ where
             outer_obj_info,
             object_features,
             &outer_object_features,
-            new_instance_schema,
+            generic_args,
             fields,
             kv_entries,
         )?;
@@ -1469,7 +1524,7 @@ where
         &mut self,
         blueprint_ident: &str,
         features: Vec<&str>,
-        schema: Option<GenericArgs>,
+        generic_args: GenericArgs,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
@@ -1485,7 +1540,7 @@ where
             &blueprint_id,
             features,
             instance_context,
-            schema,
+            generic_args,
             fields,
             kv_entries,
         )
@@ -1576,7 +1631,7 @@ where
             Some(InstanceContext {
                 outer_object: global_address,
             }),
-            None,
+            GenericArgs::default(),
             inner_object_fields,
             btreemap!(),
         )?;

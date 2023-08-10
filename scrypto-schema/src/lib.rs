@@ -17,44 +17,6 @@ pub struct KeyValueStoreTypeSubstitutions {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct KeyValueStoreGenericArgs {
-    pub schema: ScryptoSchema,
-    pub key: LocalTypeIndex,
-    pub value: LocalTypeIndex,
-    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
-}
-
-impl KeyValueStoreGenericArgs {
-    pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let key_type_index = aggregator.add_child_type_and_descendents::<K>();
-        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
-        let schema = generate_full_schema(aggregator);
-        Self {
-            schema,
-            key: key_type_index,
-            value: value_type_index,
-            can_own,
-        }
-    }
-
-    pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
-        replace_self_package_address(&mut self.schema, package_address);
-    }
-}
-
-impl From<KeyValueStoreGenericArgs> for KeyValueStoreTypeSubstitutions {
-    fn from(schema: KeyValueStoreGenericArgs) -> Self {
-        let schema_hash = schema.schema.generate_schema_hash();
-        KeyValueStoreTypeSubstitutions {
-            key_type_substitution: TypeIdentifier(schema_hash, schema.key),
-            value_type_substitution: TypeIdentifier(schema_hash, schema.value),
-            can_own: schema.can_own,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum Generic {
     Any,
 }

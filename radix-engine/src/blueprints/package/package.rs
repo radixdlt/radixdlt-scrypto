@@ -14,9 +14,7 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::{
-    ClientApi, FieldValue, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
-};
+use radix_engine_interface::api::{ClientApi, FieldValue, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF, GenericArgs};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
@@ -817,7 +815,7 @@ where
     let package_object = api.new_object(
         PACKAGE_BLUEPRINT,
         vec![PACKAGE_ROYALTY_FEATURE],
-        None,
+        GenericArgs::default(),
         vec![FieldValue::immutable(&royalty)],
         kv_entries,
     )?;

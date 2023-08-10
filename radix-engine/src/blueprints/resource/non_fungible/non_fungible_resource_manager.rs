@@ -224,7 +224,7 @@ impl NonFungibleResourceManagerBlueprint {
         let schema_hash = non_fungible_schema.schema.generate_schema_hash();
 
         let generic_args = GenericArgs {
-            schemas: non_fungible_schema.schema,
+            additional_schema: Some(non_fungible_schema.schema),
             type_substitution_refs: vec![TypeIdentifier(schema_hash, non_fungible_schema.non_fungible)],
         };
 
@@ -243,7 +243,7 @@ impl NonFungibleResourceManagerBlueprint {
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
-            Some(generic_args),
+            generic_args,
             vec![
                 FieldValue::immutable(&id_type),
                 FieldValue::immutable(&mutable_fields),
@@ -328,8 +328,8 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let schema_hash = non_fungible_schema.schema.generate_schema_hash();
-        let instance_schema = GenericArgs {
-            schemas: non_fungible_schema.schema,
+        let generic_args = GenericArgs {
+            additional_schema: Some(non_fungible_schema.schema),
             type_substitution_refs: vec![TypeIdentifier(schema_hash, non_fungible_schema.non_fungible)],
         };
 
@@ -348,7 +348,7 @@ impl NonFungibleResourceManagerBlueprint {
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
-            Some(instance_schema),
+            generic_args,
             vec![
                 FieldValue::immutable(&id_type),
                 FieldValue::immutable(&mutable_fields),
@@ -414,8 +414,8 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         let schema_hash = non_fungible_schema.schema.generate_schema_hash();
-        let instance_schema = GenericArgs {
-            schemas: non_fungible_schema.schema,
+        let generic_args = GenericArgs {
+            additional_schema: Some(non_fungible_schema.schema),
             type_substitution_refs: vec![TypeIdentifier(schema_hash, non_fungible_schema.non_fungible)],
         };
 
@@ -434,7 +434,7 @@ impl NonFungibleResourceManagerBlueprint {
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
-            Some(instance_schema),
+            generic_args,
             vec![
                 FieldValue::immutable(&NonFungibleIdType::RUID),
                 FieldValue::immutable(&mutable_fields),

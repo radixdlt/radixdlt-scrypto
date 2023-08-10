@@ -5,6 +5,7 @@ use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::{ClientApi, LockFlags};
+use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

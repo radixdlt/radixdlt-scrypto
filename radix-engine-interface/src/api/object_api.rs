@@ -100,9 +100,9 @@ impl FieldValue {
 }
 
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct GenericArgs {
-    pub schemas: ScryptoSchema,
+    pub additional_schema: Option<ScryptoSchema>,
     pub type_substitution_refs: Vec<TypeIdentifier>,
 }
 
@@ -119,7 +119,7 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         fields: Vec<FieldValue>,
     ) -> Result<NodeId, E> {
-        self.new_object(blueprint_ident, vec![], None, fields, btreemap![])
+        self.new_object(blueprint_ident, vec![], GenericArgs::default(), fields, btreemap![])
     }
 
     /// Creates a new object of a given blueprint type
@@ -127,7 +127,7 @@ pub trait ClientObjectApi<E> {
         &mut self,
         blueprint_ident: &str,
         features: Vec<&str>,
-        schema: Option<GenericArgs>,
+        generic_args: GenericArgs,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;
