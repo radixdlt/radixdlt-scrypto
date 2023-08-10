@@ -24,18 +24,18 @@ pub struct TransactionReceipt {
     pub costing_parameters: CostingParameters,
     /// Transaction costing parameters
     pub transaction_costing_parameters: TransactionCostingParameters,
-    /// Transaction fee summary
-    pub fee_summary: TransactionFeeSummary,
-    /// Transaction fee breakdown
-    pub fee_details: TransactionFeeDetails,
+    /// Transaction costing summary
+    pub costing_summary: TransactionCostingSummary,
+    /// Transaction costing breakdown
+    pub costing_details: TransactionCostingDetails,
     /// Transaction result
-    pub transaction_result: TransactionResult,
+    pub result: TransactionResult,
     /// Optional, only when compile-time feature flag `resources_usage` is ON.
     pub resources_usage: ResourcesUsage,
 }
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
-pub struct TransactionFeeSummary {
+pub struct TransactionCostingSummary {
     /// Total execution cost units consumed.
     pub total_execution_cost_units_consumed: u32,
     /// Total finalization cost units consumed.
@@ -54,7 +54,7 @@ pub struct TransactionFeeSummary {
 }
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
-pub struct TransactionFeeDetails {
+pub struct TransactionCostingDetails {
     /// Execution cost breakdown
     ///
     /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
@@ -83,7 +83,7 @@ pub struct CommitResult {
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
     pub system_structure: SystemStructure,
-    /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
+    /// Empty unless `EnabledModule::ExecutionTrace` is turned on.
     /// Mainly for transaction preview.
     pub execution_trace: TransactionExecutionTrace,
 }
@@ -280,16 +280,16 @@ impl TransactionReceipt {
         Self {
             costing_parameters: Default::default(),
             transaction_costing_parameters: Default::default(),
-            fee_summary: Default::default(),
-            fee_details: Default::default(),
-            transaction_result: TransactionResult::Commit(commit_result),
+            costing_summary: Default::default(),
+            costing_details: Default::default(),
+            result: TransactionResult::Commit(commit_result),
             resources_usage: Default::default(),
         }
     }
 
     pub fn is_commit_success(&self) -> bool {
         matches!(
-            self.transaction_result,
+            self.result,
             TransactionResult::Commit(CommitResult {
                 outcome: TransactionOutcome::Success(_),
                 ..
@@ -299,7 +299,7 @@ impl TransactionReceipt {
 
     pub fn is_commit_failure(&self) -> bool {
         matches!(
-            self.transaction_result,
+            self.result,
             TransactionResult::Commit(CommitResult {
                 outcome: TransactionOutcome::Failure(_),
                 ..
@@ -308,11 +308,11 @@ impl TransactionReceipt {
     }
 
     pub fn is_rejection(&self) -> bool {
-        matches!(self.transaction_result, TransactionResult::Reject(_))
+        matches!(self.result, TransactionResult::Reject(_))
     }
 
     pub fn expect_commit_ignore_result(&self) -> &CommitResult {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
@@ -345,7 +345,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_rejection(&self) -> &RejectionReason {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
             TransactionResult::Reject(ref r) => &r.reason,
             TransactionResult::Abort(..) => panic!("Expected rejection but was abort"),
@@ -353,7 +353,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_abortion(&self) -> &AbortReason {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(..) => panic!("Expected abortion but was commit"),
             TransactionResult::Reject(..) => panic!("Expected abortion but was reject"),
             TransactionResult::Abort(ref r) => &r.reason,
@@ -361,7 +361,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_not_success(&self) {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(c) => {
                 if c.outcome.is_success() {
                     panic!("Transaction succeeded unexpectedly")
@@ -376,7 +376,7 @@ impl TransactionReceipt {
     where
         F: Fn(&RejectionReason) -> bool,
     {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was committed"),
             TransactionResult::Reject(result) => {
                 if !f(&result.reason) {
@@ -391,7 +391,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_failure(&self) -> &RuntimeError {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
                 TransactionOutcome::Failure(error) => error,
@@ -547,7 +547,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         f: &mut F,
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        let result = &self.transaction_result;
+        let result = &self.result;
         let scrypto_value_display_context = context.display_context();
         let address_display_context = context.address_display_context();
 
@@ -560,7 +560,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                     TransactionOutcome::Success(_) => "COMMITTED SUCCESS".green(),
                     TransactionOutcome::Failure(e) => format!("COMMITTED FAILURE: {}", e).red(),
                 },
-                TransactionResult::Reject(r) => format!("REJECTED: {}", r.error).red(),
+                TransactionResult::Reject(r) => format!("REJECTED: {}", r.reason).red(),
                 TransactionResult::Abort(a) => format!("ABORTED: {}", a.reason).bright_red(),
             },
         )?;
@@ -569,11 +569,11 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                 f,
                 "\n{} Execution => {} XRD, Finalization => {} XRD, Tipping => {} XRD, Storage => {} XRD, Royalty => {} XRD",
                 "Transaction Cost:".bold().green(),
-                self.fee_summary.total_execution_cost_in_xrd,
-                self.fee_summary.total_finalization_cost_in_xrd,
-                self.fee_summary.total_tipping_cost_in_xrd,
-                self.fee_summary.total_storage_cost_in_xrd,
-                self.fee_summary.total_royalty_cost_in_xrd,
+                self.costing_summary.total_execution_cost_in_xrd,
+                self.costing_summary.total_finalization_cost_in_xrd,
+                self.costing_summary.total_tipping_cost_in_xrd,
+                self.costing_summary.total_storage_cost_in_xrd,
+                self.costing_summary.total_royalty_cost_in_xrd,
             )?;
 
         write!(
@@ -581,7 +581,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             "\n{} {} limit, {} consumed, {} XRD per unit",
             "Execution Cost Units:".bold().green(),
             self.costing_parameters.execution_cost_unit_limit,
-            self.fee_summary.total_execution_cost_units_consumed,
+            self.costing_summary.total_execution_cost_units_consumed,
             self.costing_parameters.execution_cost_unit_price,
         )?;
 
@@ -590,7 +590,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             "\n{} {} limit, {} consumed, {} XRD per unit",
             "Finalization Cost Units:".bold().green(),
             self.costing_parameters.finalization_cost_unit_limit,
-            self.fee_summary.total_finalization_cost_units_consumed,
+            self.costing_summary.total_finalization_cost_units_consumed,
             self.costing_parameters.finalization_cost_unit_price,
         )?;
 
@@ -832,7 +832,7 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
     Ok(())
 }
 
-impl From<FeeReserveFinalizationSummary> for TransactionFeeSummary {
+impl From<FeeReserveFinalizationSummary> for TransactionCostingSummary {
     fn from(value: FeeReserveFinalizationSummary) -> Self {
         Self {
             total_execution_cost_units_consumed: value.total_execution_cost_units_consumed,

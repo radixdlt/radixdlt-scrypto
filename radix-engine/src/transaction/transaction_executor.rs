@@ -68,6 +68,13 @@ impl Default for CostingParameters {
     }
 }
 
+impl CostingParameters {
+    pub fn with_execution_cost_unit_limit(mut self, execution_cost_unit_limit: u32) -> Self {
+        self.execution_cost_unit_limit = execution_cost_unit_limit;
+        self
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
     pub enabled_modules: EnabledModules,
@@ -200,8 +207,8 @@ where
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let fee_reserve = SystemLoanFeeReserve::new(
-            costing_parameters.clone(),
-            executable.costing_parameters().clone(),
+            costing_parameters,
+            executable.costing_parameters(),
             execution_config.abort_when_loan_repaid,
         );
         let fee_table = FeeTable::new();
@@ -249,7 +256,7 @@ where
         };
 
         // Run manifest
-        let (fee_summary, fee_details, transaction_result) = match validation_result {
+        let (costing_summary, costing_details, result) = match validation_result {
             Ok(()) => {
                 let (
                     interpretation_result,
@@ -277,7 +284,7 @@ where
                     .map(|(k, v)| (k.to_string(), v))
                     .collect();
                 let finalization_cost_breakdown = Default::default();
-                let fee_details = TransactionFeeDetails {
+                let costing_details = TransactionCostingDetails {
                     execution_cost_breakdown,
                     finalization_cost_breakdown,
                 };
@@ -297,17 +304,19 @@ where
                         }
 
                         // Distribute fees
-                        let (finalization_summary, fee_source) = Self::finalize_fees(
+                        let (fee_reserve_finalization, paying_vaults) = Self::finalize_fees(
                             &mut track,
                             costing_module.fee_reserve,
                             is_success,
                             executable.costing_parameters().free_credit_in_xrd,
                         );
                         let fee_destination = FeeDestination {
-                            to_proposer: finalization_summary.to_proposer_amount(),
-                            to_validator_set: finalization_summary.to_validator_set_amount(),
-                            to_burn: finalization_summary.to_burn_amount(),
-                            to_royalty_recipients: finalization_summary.royalty_cost_breakdown,
+                            to_proposer: fee_reserve_finalization.to_proposer_amount(),
+                            to_validator_set: fee_reserve_finalization.to_validator_set_amount(),
+                            to_burn: fee_reserve_finalization.to_burn_amount(),
+                            to_royalty_recipients: fee_reserve_finalization
+                                .royalty_cost_breakdown
+                                .clone(),
                         };
 
                         // Update intent hash status
@@ -359,14 +368,14 @@ where
                                 type_pointer,
                             ),
                             scrypto_encode(&BurnFungibleResourceEvent {
-                                amount: finalization_summary.to_burn_amount(),
+                                amount: fee_destination.to_burn,
                             })
                             .unwrap(),
                         ));
 
                         // Finalize execution trace
                         let execution_trace =
-                            execution_trace_module.finalize(&fee_source, is_success);
+                            execution_trace_module.finalize(&paying_vaults, is_success);
 
                         // Finalize track
                         let (tracked_nodes, deleted_partitions) = track.finalize();
@@ -384,30 +393,43 @@ where
                             deleted_partitions,
                         );
 
-                        TransactionResult::Commit(CommitResult {
-                            state_updates,
-                            state_update_summary,
-                            fee_source,
-                            fee_destination,
-                            outcome: match outcome {
-                                Ok(o) => TransactionOutcome::Success(o),
-                                Err(e) => TransactionOutcome::Failure(e),
-                            },
-                            application_events,
-                            application_logs,
-                            system_structure,
-                            execution_trace,
-                        })
+                        (
+                            fee_reserve_finalization.into(),
+                            costing_details,
+                            TransactionResult::Commit(CommitResult {
+                                state_updates,
+                                state_update_summary,
+                                fee_source: FeeSource { paying_vaults },
+                                fee_destination,
+                                outcome: match outcome {
+                                    Ok(o) => TransactionOutcome::Success(o),
+                                    Err(e) => TransactionOutcome::Failure(e),
+                                },
+                                application_events,
+                                application_logs,
+                                system_structure,
+                                execution_trace,
+                            }),
+                        )
                     }
-                    TransactionResultType::Reject(error) => {
-                        TransactionResult::Reject(RejectResult { reason: error })
-                    }
-                    TransactionResultType::Abort(error) => {
-                        TransactionResult::Abort(AbortResult { reason: error })
-                    }
+                    TransactionResultType::Reject(reason) => (
+                        costing_module.fee_reserve.finalize().into(),
+                        costing_details,
+                        TransactionResult::Reject(RejectResult { reason }),
+                    ),
+                    TransactionResultType::Abort(reason) => (
+                        costing_module.fee_reserve.finalize().into(),
+                        costing_details,
+                        TransactionResult::Abort(AbortResult { reason }),
+                    ),
                 }
             }
-            Err(error) => TransactionResult::Reject(RejectResult { reason: error }),
+            Err(reason) => (
+                // No execution is done, so add empty costing summary and details
+                TransactionCostingSummary::default(),
+                TransactionCostingDetails::default(),
+                TransactionResult::Reject(RejectResult { reason }),
+            ),
         };
 
         // Stop hardware resource usage tracker
@@ -422,9 +444,9 @@ where
         let receipt = TransactionReceipt {
             costing_parameters: costing_parameters.clone(),
             transaction_costing_parameters: executable.costing_parameters().clone(),
-            fee_summary: todo!(),
-            fee_details: todo!(),
-            transaction_result,
+            costing_summary,
+            costing_details,
+            result,
             resources_usage,
         };
 
@@ -933,7 +955,10 @@ where
         println!("{:-^100}", "Executable");
         println!("Intent hash: {}", executable.intent_hash().as_hash());
         println!("Payload size: {}", executable.payload_size());
-        println!("Fee payment: {:?}", executable.fee_payment());
+        println!(
+            "Transaction costing parameters: {:?}",
+            executable.costing_parameters()
+        );
         println!(
             "Pre-allocated addresses: {:?}",
             executable.pre_allocated_addresses()
@@ -947,12 +972,12 @@ where
         // NB - we use "to_string" to ensure they align correctly
 
         println!("{:-^100}", "Execution Cost Breakdown");
-        for (k, v) in &receipt.fee_details.execution_cost_breakdown {
+        for (k, v) in &receipt.costing_details.execution_cost_breakdown {
             println!("{:<75}: {:>15}", k, v.to_string());
         }
 
         println!("{:-^100}", "Finalization Cost Breakdown");
-        for (k, v) in &receipt.fee_details.finalization_cost_breakdown {
+        for (k, v) in &receipt.costing_details.finalization_cost_breakdown {
             println!("{:<75}: {:>15}", k, v.to_string());
         }
 
@@ -973,7 +998,7 @@ where
             "{:<30}: {:>15}",
             "Execution Cost Unit Consumed",
             receipt
-                .fee_summary
+                .costing_summary
                 .total_execution_cost_units_consumed
                 .to_string()
         );
@@ -993,27 +1018,36 @@ where
             "{:<30}: {:>15}",
             "Finalization Cost Unit Consumed",
             receipt
-                .fee_summary
+                .costing_summary
                 .total_finalization_cost_units_consumed
                 .to_string()
         );
         println!(
             "{:<30}: {:>15}",
             "Tipping Cost in XRD",
-            receipt.fee_summary.total_tipping_cost_in_xrd.to_string()
+            receipt
+                .costing_summary
+                .total_tipping_cost_in_xrd
+                .to_string()
         );
         println!(
             "{:<30}: {:>15}",
             "Storage Cost in XRD",
-            receipt.fee_summary.total_storage_cost_in_xrd.to_string()
+            receipt
+                .costing_summary
+                .total_storage_cost_in_xrd
+                .to_string()
         );
         println!(
             "{:<30}: {:>15}",
             "Royalty Costs in XRD",
-            receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
+            receipt
+                .costing_summary
+                .total_royalty_cost_in_xrd
+                .to_string()
         );
 
-        match &receipt.transaction_result {
+        match &receipt.result {
             TransactionResult::Commit(commit) => {
                 println!("{:-^100}", "Application Logs");
                 for (level, message) in &commit.application_logs {
@@ -1059,7 +1093,7 @@ pub fn execute_and_commit_transaction<
         execution_config,
         transaction,
     );
-    if let TransactionResult::Commit(commit) = &receipt.transaction_result {
+    if let TransactionResult::Commit(commit) = &receipt.result {
         substate_db.commit(&commit.state_updates.database_updates);
     }
     receipt

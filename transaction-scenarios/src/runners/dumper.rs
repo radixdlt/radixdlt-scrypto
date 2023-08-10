@@ -75,7 +75,7 @@ pub fn run_scenario_with_default_config<S>(
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
 {
-    let fee_reserve_config = FeeReserveConfig::default();
+    let costing_parameters = CostingParameters::default();
     let execution_config = ExecutionConfig::for_test_transaction();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
@@ -87,7 +87,7 @@ where
         &validator,
         substate_db,
         vm,
-        &fee_reserve_config,
+        &costing_parameters,
         &execution_config,
         scenario,
     )
@@ -98,7 +98,7 @@ pub fn run_scenario<S, V>(
     validator: &NotarizedTransactionValidator,
     substate_db: &mut S,
     vm: V,
-    fee_reserve_config: &FeeReserveConfig,
+    costing_parameters: &CostingParameters,
     execution_config: &ExecutionConfig,
     scenario: &mut Box<dyn ScenarioInstance>,
 ) -> Result<EndState, FullScenarioError>
@@ -121,7 +121,7 @@ where
                 previous = Some(execute_and_commit_transaction(
                     substate_db,
                     vm.clone(),
-                    fee_reserve_config,
+                    costing_parameters,
                     execution_config,
                     &transaction.get_executable(),
                 ));
