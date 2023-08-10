@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedStateSchema, PackageExport,
-    TypePointer, VmType, *,
+    BlueprintPayloadDef, VmType, *,
 };
 use radix_engine_interface::blueprints::package::{PackageDefinition, PackageOriginalCodeSubstate};
 use radix_engine_interface::schema::TypeRef;
@@ -163,15 +163,15 @@ impl Publish {
                             receiver: setup.receiver,
                             input: match setup.input {
                                 TypeRef::Static(type_index) => {
-                                    TypePointer::Package(TypeIdentifier(schema_hash, type_index))
+                                    BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
                                 }
-                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                             },
                             output: match setup.output {
                                 TypeRef::Static(type_index) => {
-                                    TypePointer::Package(TypeIdentifier(schema_hash, type_index))
+                                    BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
                                 }
-                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                             },
                         },
                     );
@@ -192,9 +192,9 @@ impl Publish {
                             key,
                             match index {
                                 TypeRef::Static(index) => {
-                                    TypePointer::Package(TypeIdentifier(schema_hash, index))
+                                    BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, index))
                                 }
-                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                             },
                         )
                     })

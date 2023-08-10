@@ -352,16 +352,16 @@ impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
         }
     }
 
-    pub fn resolve(&self, type_pointer: TypePointer) -> ObjectSubstateTypeReference {
+    pub fn resolve(&self, type_pointer: BlueprintPayloadDef) -> ObjectSubstateTypeReference {
         match type_pointer {
-            TypePointer::Package(type_identifier) => {
+            BlueprintPayloadDef::Static(type_identifier) => {
                 ObjectSubstateTypeReference::Package(PackageTypeReference {
                     package_address: self.blueprint_id.package_address,
                     schema_hash: type_identifier.0,
                     local_type_index: type_identifier.1,
                 })
             }
-            TypePointer::Instance(instance_type_index) => {
+            BlueprintPayloadDef::Generic(instance_type_index) => {
                 let type_substition_ref = *self
                     .type_substitution_refs
                     .get(instance_type_index as usize)
@@ -432,7 +432,7 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
                 .get_event_type_pointer(event_type_identifier.1.as_str())
                 .unwrap();
 
-            let TypePointer::Package(type_identifier) = type_pointer else {
+            let BlueprintPayloadDef::Static(type_identifier) = type_pointer else {
                 panic!("Event identifier type pointer cannot be an instance type pointer");
             };
 

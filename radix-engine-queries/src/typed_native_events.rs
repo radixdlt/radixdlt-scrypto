@@ -20,7 +20,7 @@ use radix_engine_interface::blueprints::identity::*;
 ///
 /// # Panics
 ///
-/// This function panics if the even't [`TypePointer`] is of variant [`TypePointer::Instance`] as
+/// This function panics if the even't [`BlueprintPayloadDef`] is of variant [`BlueprintPayloadDef::Generic`] as
 /// generics are not supported in events.
 pub fn to_typed_native_event(
     event_type_identifier: &EventTypeIdentifier,

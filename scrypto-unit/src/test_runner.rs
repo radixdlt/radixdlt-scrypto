@@ -28,7 +28,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinitionInit, PackageDefinition, PackagePublishNativeManifestInput,
-    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, BlueprintPayloadDef,
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
@@ -1938,7 +1938,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .unwrap();
 
         match schema_pointer {
-            TypePointer::Package(type_identifier) => {
+            BlueprintPayloadDef::Static(type_identifier) => {
                 let schema = self
                     .substate_db()
                     .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
@@ -1952,7 +1952,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
                 (type_identifier.1, schema)
             }
-            TypePointer::Instance(_instance_index) => {
+            BlueprintPayloadDef::Generic(_instance_index) => {
                 todo!()
             }
         }

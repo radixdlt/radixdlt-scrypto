@@ -1,5 +1,5 @@
 use crate::api::ObjectModuleId;
-use crate::blueprints::package::TypePointer;
+use crate::blueprints::package::BlueprintPayloadDef;
 use crate::types::BlueprintId;
 use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;

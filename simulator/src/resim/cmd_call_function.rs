@@ -111,11 +111,11 @@ impl CallFunction {
             })?;
 
         let (schema, index) = match function_schema.input {
-            TypePointer::Package(TypeIdentifier(hash, index)) => {
+            BlueprintPayloadDef::Static(TypeIdentifier(hash, index)) => {
                 let schema = export_schema(package_address, hash)?;
                 (schema, index)
             }
-            TypePointer::Instance(_instance_index) => {
+            BlueprintPayloadDef::Generic(_instance_index) => {
                 todo!()
             }
         };

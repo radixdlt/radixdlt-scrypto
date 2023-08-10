@@ -70,7 +70,7 @@ use radix_engine::vm::wasm::*;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, TypePointer,
+    BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, BlueprintPayloadDef,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;

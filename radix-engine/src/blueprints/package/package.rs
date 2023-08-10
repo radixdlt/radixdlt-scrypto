@@ -1182,8 +1182,8 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: function_schema_init.receiver,
-                            input: TypePointer::Package(TypeIdentifier(schema_hash, input)),
-                            output: TypePointer::Package(TypeIdentifier(schema_hash, output)),
+                            input: BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, input)),
+                            output: BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, output)),
                         },
                     );
                     let export = PackageExport {
@@ -1197,9 +1197,9 @@ impl PackageNativePackage {
                 for (key, type_ref) in definition_init.schema.events.event_schema {
                     let index = match type_ref {
                         TypeRef::Static(index) => {
-                            TypePointer::Package(TypeIdentifier(schema_hash, index))
+                            BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, index))
                         }
-                        TypeRef::Generic(index) => TypePointer::Instance(index),
+                        TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                     };
                     events.insert(key, index);
                 }

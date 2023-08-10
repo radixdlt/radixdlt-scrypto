@@ -204,76 +204,19 @@ where
         schemas: &IndexMap<Hash, ScryptoSchema>,
         type_substitution_refs: &Vec<TypeSubstitutionRef>,
     ) -> Result<(), RuntimeError> {
-        let state_schema =
-            self.get_blueprint_default_interface(blueprint_id.clone())?.state;
+        let generics =
+            self.get_blueprint_default_interface(blueprint_id.clone())?.generics;
 
-        // FIXME: Check length of type_substitution_refs
-
-        if let Some((_, field_schemas)) = &state_schema.fields {
-            for field_schema in field_schemas {
-                match &field_schema.field {
-                    TypePointer::Package(..) => {}
-                    TypePointer::Instance(type_index) => {
-                        let type_ref = type_substitution_refs.get(*type_index as usize).ok_or_else(|| {
-                            RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                        })?;
-
-                        match type_ref {
-                            TypeSubstitutionRef::Local(type_ref) => {
-                                let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
-                                    RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                                })?;
-
-                                // TODO: validate schema with index
-                            }
-                        }
-                    }
-                }
-            }
+        if !generics.len().eq(&type_substitution_refs.len()) {
+            return Err(RuntimeError::SystemError(SystemError::InvalidGenericArgs))
         }
 
-        for (_, collection_schema) in &state_schema.collections {
-            match collection_schema {
-                BlueprintCollectionSchema::Index(kv_schema) |
-                BlueprintCollectionSchema::SortedIndex(kv_schema) |
-                BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
-                    match &kv_schema.key {
-                        TypePointer::Package(..) => {}
-                        TypePointer::Instance(type_index) => {
-                            let type_ref = type_substitution_refs.get(*type_index as usize).ok_or_else(|| {
-                                RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                            })?;
-
-                            match type_ref {
-                                TypeSubstitutionRef::Local(type_ref) => {
-                                    let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
-                                        RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                                    })?;
-
-                                    // TODO: validate schema with index
-                                }
-                            }
-                        }
-                    }
-
-                    match &kv_schema.value {
-                        TypePointer::Package(..) => {}
-                        TypePointer::Instance(type_index) => {
-                            let type_ref = type_substitution_refs.get(*type_index as usize).ok_or_else(|| {
-                                RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                            })?;
-
-                            match type_ref {
-                                TypeSubstitutionRef::Local(type_ref) => {
-                                    let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
-                                        RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                                    })?;
-
-                                    // TODO: validate schema with index
-                                }
-                            }
-                        }
-                    }
+        for type_substitution_ref in type_substitution_refs {
+            match type_substitution_ref {
+                TypeSubstitutionRef::Local(type_id) => {
+                    let _schema = schemas.get(&type_id.0).ok_or_else(|| {
+                        RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                    })?;
                 }
             }
         }
@@ -357,7 +300,7 @@ where
             })?;
 
         let (schema, index, schema_origin) = match type_pointer {
-            TypePointer::Package(type_identifier) => {
+            BlueprintPayloadDef::Static(type_identifier) => {
                 let schema = self.get_schema(
                     target.blueprint_info.blueprint_id.package_address.as_node_id(),
                     &type_identifier.0,
@@ -368,7 +311,7 @@ where
                     SchemaOrigin::Blueprint(target.blueprint_info.blueprint_id.clone()),
                 )
             }
-            TypePointer::Instance(instance_index) => {
+            BlueprintPayloadDef::Generic(instance_index) => {
                 let type_substitution_ref = target
                     .blueprint_info
                     .type_substitutions_refs

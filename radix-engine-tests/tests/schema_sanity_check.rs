@@ -7,7 +7,7 @@ use radix_engine::{
 };
 use radix_engine_common::prelude::well_known_scrypto_custom_types::*;
 use radix_engine_interface::schema::TypeRef;
-use radix_engine_queries::typed_substate_layout::TypePointer;
+use radix_engine_queries::typed_substate_layout::BlueprintPayloadDef;
 use sbor::basic_well_known_types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -147,7 +147,7 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
 
 fn check_type_pointers(
     schemas_by_hash: &IndexMap<Hash, ScryptoSchema>,
-    type_pointers: &[TypePointer],
+    type_pointers: &[BlueprintPayloadDef],
 ) -> CheckResult {
     for ty in type_pointers {
         let result = check_type_pointer(schemas_by_hash, ty);
@@ -160,14 +160,14 @@ fn check_type_pointers(
 
 fn check_type_pointer(
     schemas_by_hash: &IndexMap<Hash, ScryptoSchema>,
-    type_pointer: &TypePointer,
+    type_pointer: &BlueprintPayloadDef,
 ) -> CheckResult {
     match type_pointer {
-        TypePointer::Package(type_identifier) => check_type(
+        BlueprintPayloadDef::Static(type_identifier) => check_type(
             schemas_by_hash.get(&type_identifier.0).unwrap(),
             type_identifier.1,
         ),
-        TypePointer::Instance(_) => CheckResult::Safe,
+        BlueprintPayloadDef::Generic(_) => CheckResult::Safe,
     }
 }
 
