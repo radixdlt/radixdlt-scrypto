@@ -546,7 +546,7 @@ mod tests {
         LiquidFungibleResource::new(amount.into())
     }
 
-    fn new_test_fee_reserve(
+    fn create_test_fee_reserve(
         execution_cost_unit_price: Decimal,
         usd_price: Decimal,
         storage_price: Decimal,
@@ -573,7 +573,7 @@ mod tests {
 
     #[test]
     fn test_consume_and_repay() {
-        let mut fee_reserve = new_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 5, false);
+        let mut fee_reserve = create_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 5, false);
         fee_reserve.consume_execution(2).unwrap();
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(3), false).unwrap();
         fee_reserve.repay_all().unwrap();
@@ -588,12 +588,15 @@ mod tests {
 
     #[test]
     fn test_out_of_cost_unit() {
-        let mut fee_reserve = new_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 5, false);
+        let mut fee_reserve = create_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 5, false);
         assert_eq!(
             fee_reserve.consume_execution(6),
             Err(FeeReserveError::InsufficientBalance {
                 required: dec!("6.12"),
-                remaining: dec!("5.1"),
+                remaining: dec!("5.1")
+                    + Decimal::try_from(FINALIZATION_COST_UNIT_PRICE_IN_XRD).unwrap()
+                        * dec!("1.02")
+                        * FINALIZATION_COST_UNIT_LOAN,
             }),
         );
         fee_reserve.repay_all().unwrap();
@@ -607,7 +610,8 @@ mod tests {
 
     #[test]
     fn test_lock_fee() {
-        let mut fee_reserve = new_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 500, false);
+        let mut fee_reserve =
+            create_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 500, false);
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
@@ -622,7 +626,8 @@ mod tests {
 
     #[test]
     fn test_xrd_cost_unit_conversion() {
-        let mut fee_reserve = new_test_fee_reserve(dec!(5), dec!(1), dec!(0), 0, 100, 500, false);
+        let mut fee_reserve =
+            create_test_fee_reserve(dec!(5), dec!(1), dec!(0), 0, 100, 500, false);
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
@@ -638,11 +643,13 @@ mod tests {
 
     #[test]
     fn test_bad_debt() {
-        let mut fee_reserve = new_test_fee_reserve(dec!(5), dec!(1), dec!(0), 1, 100, 50, false);
+        let mut fee_reserve = create_test_fee_reserve(dec!(5), dec!(1), dec!(0), 1, 100, 50, false);
         fee_reserve.consume_execution(2).unwrap();
         assert_eq!(
             fee_reserve.repay_all(),
-            Err(FeeReserveError::LoanRepaymentFailed { xrd_owed: dec!(1) })
+            Err(FeeReserveError::LoanRepaymentFailed {
+                xrd_owed: dec!("10.1")
+            })
         );
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), false);
@@ -656,7 +663,7 @@ mod tests {
 
     #[test]
     fn test_royalty_execution_mix() {
-        let mut fee_reserve = new_test_fee_reserve(dec!(5), dec!(2), dec!(0), 1, 100, 50, false);
+        let mut fee_reserve = create_test_fee_reserve(dec!(5), dec!(2), dec!(0), 1, 100, 50, false);
         fee_reserve.consume_execution(2).unwrap();
         fee_reserve
             .consume_royalty(
@@ -692,7 +699,8 @@ mod tests {
 
     #[test]
     fn test_royalty_insufficient_balance() {
-        let mut fee_reserve = new_test_fee_reserve(dec!(1), dec!(1), dec!(0), 0, 1000, 50, false);
+        let mut fee_reserve =
+            create_test_fee_reserve(dec!(1), dec!(1), dec!(0), 0, 1000, 50, false);
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
@@ -709,7 +717,10 @@ mod tests {
             ),
             Err(FeeReserveError::InsufficientBalance {
                 required: dec!("80"),
-                remaining: dec!("60"),
+                remaining: dec!("60")
+                    + Decimal::try_from(FINALIZATION_COST_UNIT_PRICE_IN_XRD).unwrap()
+                        * dec!("1")
+                        * FINALIZATION_COST_UNIT_LOAN,
             }),
         );
     }

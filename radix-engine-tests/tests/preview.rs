@@ -46,7 +46,7 @@ fn test_transaction_preview_cost_estimate() {
     assert_eq!(
         // TODO: better preview payload size estimate?
         preview_receipt.costing_summary.total_cost()
-            + Decimal::try_from(EXECUTION_COST_UNIT_LIMIT).unwrap()
+            + Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD).unwrap()
                 * FeeTable::new().tx_payload_cost(size_diff),
         actual_receipt.costing_summary.total_cost(),
     );
