@@ -49,7 +49,6 @@ pub trait SortedIndexEntryContent: Sized {
     }
 }
 
-
 /// Generates types and typed-interfaces for native blueprints and their
 /// interaction with the substate store.
 ///
@@ -57,7 +56,7 @@ pub trait SortedIndexEntryContent: Sized {
 ///    * `<BlueprintIdent><FieldIdent>FieldV1`
 /// * For collections, assumes the existence of types called:
 ///    * `<BlueprintIdent><CollectionIdent>ValueV1`
-/// 
+///
 /// In future, resolve the `x_type` fields as a $x:tt and then
 /// map in other macros into:
 /// ```
@@ -66,7 +65,7 @@ pub trait SortedIndexEntryContent: Sized {
 ///         the_type: x,
 ///     },
 ///     Instance {
-///         ident: 
+///         ident:
 ///     },
 ///     StaticMultiVersioned(V1, V2),
 /// ```
@@ -444,10 +443,9 @@ mod helper_macros {
             }
         ) => {
             // Don't output any types for an instance schema
-        };
-        // TODO - Add support for some kind of StaticMultiVersioned type here
+        }; // TODO - Add support for some kind of StaticMultiVersioned type here
     }
-    
+
     #[allow(unused)]
     pub(crate) use generate_content_type_aliases;
 
@@ -478,37 +476,31 @@ mod helper_macros {
             ));
         };
     }
-    
+
     #[allow(unused)]
     pub(crate) use generate_system_substate_type_alias;
-    
+
     macro_rules! map_collection_schema {
         (KeyValue, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $can_own:expr$(,)?) => {
-            BlueprintCollectionSchema::KeyValueStore(
-                BlueprintKeyValueSchema {
-                    key: map_type_ref!($aggregator, $key_type, $key_content_alias),
-                    value: map_type_ref!($aggregator, $value_type, $value_content_alias),
-                    can_own: $can_own,
-                },
-            )
+            BlueprintCollectionSchema::KeyValueStore(BlueprintKeyValueSchema {
+                key: map_type_ref!($aggregator, $key_type, $key_content_alias),
+                value: map_type_ref!($aggregator, $value_type, $value_content_alias),
+                can_own: $can_own,
+            })
         };
         (Index, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $can_own:expr$(,)?) => {
-            BlueprintCollectionSchema::Index(
-                BlueprintKeyValueSchema {
-                    key: map_type_ref!($aggregator, $key_type, $key_content_alias),
-                    value: map_type_ref!($aggregator, $value_type, $value_content_alias),
-                    can_own: $can_own,
-                },
-            )
+            BlueprintCollectionSchema::Index(BlueprintKeyValueSchema {
+                key: map_type_ref!($aggregator, $key_type, $key_content_alias),
+                value: map_type_ref!($aggregator, $value_type, $value_content_alias),
+                can_own: $can_own,
+            })
         };
         (SortedIndex, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $can_own:expr$(,)?) => {
-            BlueprintCollectionSchema::SortedIndex(
-                BlueprintKeyValueSchema {
-                    key: map_type_ref!($aggregator, $key_type, $key_content_alias),
-                    value: map_type_ref!($aggregator, $value_type, $value_content_alias),
-                    can_own: $can_own,
-                },
-            )
+            BlueprintCollectionSchema::SortedIndex(BlueprintKeyValueSchema {
+                key: map_type_ref!($aggregator, $key_type, $key_content_alias),
+                value: map_type_ref!($aggregator, $value_type, $value_content_alias),
+                can_own: $can_own,
+            })
         };
         ($unknown_system_substate_type:ident, $aggregator:ident, $collection_key_type:tt, $collection_value_type:tt, $collection_can_own:expr$(,)?) => {
             compile_error!(concat!(
@@ -518,7 +510,7 @@ mod helper_macros {
             ));
         };
     }
-    
+
     #[allow(unused)]
     pub(crate) use map_collection_schema;
 
@@ -531,9 +523,7 @@ mod helper_macros {
             },
             $content_alias:ident$(,)?
         ) => {
-            TypeRef::Static(
-                $aggregator.add_child_type_and_descendents::<$content_alias>(),
-            )
+            TypeRef::Static($aggregator.add_child_type_and_descendents::<$content_alias>())
         };
         (
             $aggregator:ident,
@@ -544,9 +534,7 @@ mod helper_macros {
             },
             $content_alias:ident$(,)?
         ) => {
-            TypeRef::Static(
-                $aggregator.add_child_type_and_descendents::<$content_alias>(),
-            )
+            TypeRef::Static($aggregator.add_child_type_and_descendents::<$content_alias>())
         };
         (
             $aggregator:ident,
@@ -558,13 +546,12 @@ mod helper_macros {
             $content_alias:ident$(,)?
         ) => {
             compile_error!("Instance schemas not yet supported - close though!")
-        };
-        // TODO - Add support for some kind of StaticMultiVersioned type here
+        }; // TODO - Add support for some kind of StaticMultiVersioned type here
     }
 
     #[allow(unused)]
     pub(crate) use map_type_ref;
-    
+
     macro_rules! map_entry_substate_to_kv_entry {
         (KeyValue, $entry_substate:ident) => {
             paste::paste! {
@@ -595,7 +582,7 @@ mod helper_macros {
             }
         };
     }
-    
+
     #[allow(unused)]
     pub(crate) use map_entry_substate_to_kv_entry;
 }
@@ -607,18 +594,18 @@ mod tests {
     // Check that the below compiles
     #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct PackageRoyaltyFieldV1;
-    
+
     #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct PackageBlueprintDefinitionValueV1;
-    
+
     #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct PackageMyCoolIndexValueV1;
-    
+
     #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct PackageMyCoolSortedIndexValueV1;
-    
+
     use radix_engine_interface::blueprints::package::*;
-    
+
     declare_native_blueprint_state! {
         blueprint_ident: Package,
         blueprint_snake_case: package,
@@ -667,5 +654,5 @@ mod tests {
                 can_own: true,
             },
         }
-    }    
+    }
 }

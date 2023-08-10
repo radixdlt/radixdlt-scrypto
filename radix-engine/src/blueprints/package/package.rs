@@ -14,16 +14,10 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::{
-    ClientApi, FieldValue, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
-};
+use radix_engine_interface::api::*;
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
-    BlueprintKeyValueSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
-    FunctionSchemaInit, TypeRef,
-};
+use radix_engine_interface::schema::*;
 use sbor::LocalTypeIndex;
 use syn::Ident;
 
@@ -41,6 +35,8 @@ use crate::vm::VmPackageValidation;
 pub use radix_engine_interface::blueprints::package::{
     PackageInstrumentedCodeSubstate, PackageOriginalCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
+
+use super::*;
 
 pub const PACKAGE_ROYALTY_FEATURE: &str = "package_royalty";
 
@@ -843,91 +839,7 @@ impl PackageNativePackage {
     pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut fields = Vec::new();
-        fields.push(FieldSchema::if_feature(
-            aggregator.add_child_type_and_descendents::<PackageRoyaltyAccumulatorSubstate>(),
-            PACKAGE_ROYALTY_FEATURE,
-        ));
-
-        let mut collections = Vec::new();
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
-                ),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintDefinition>(),
-                ),
-                can_own: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
-                ),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintDependencies>(),
-                ),
-                can_own: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
-                ),
-                can_own: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
-                ),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<PackageRoyaltyConfig>(),
-                ),
-                can_own: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
-                ),
-                value: TypeRef::Static(aggregator.add_child_type_and_descendents::<AuthConfig>()),
-                can_own: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<PackageVmTypeSubstate>(),
-                ),
-                can_own: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<PackageOriginalCodeSubstate>(),
-                ),
-                can_own: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<PackageInstrumentedCodeSubstate>(),
-                ),
-                can_own: false,
-            },
-        ));
+        let state = PackageStateSchemaInit::create_schema_init(&mut aggregator);
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -999,10 +911,7 @@ impl PackageNativePackage {
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,
-                    state: BlueprintStateSchemaInit {
-                        fields,
-                        collections,
-                    },
+                    state,
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
                         functions,

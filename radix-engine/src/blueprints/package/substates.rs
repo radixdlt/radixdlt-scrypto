@@ -1,8 +1,8 @@
-use crate::blueprints::macros::*;
 use super::*;
+use crate::blueprints::macros::*;
 use crate::types::*;
 
-declare_native_blueprint_state!{
+declare_native_blueprint_state! {
     blueprint_ident: Package,
     blueprint_snake_case: package,
     instance_schema_types: [],
