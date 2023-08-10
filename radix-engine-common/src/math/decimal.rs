@@ -374,10 +374,10 @@ impl Mul<Decimal> for Decimal {
 
     #[inline]
     fn mul(self, other: Decimal) -> Self::Output {
-        // Use BnumI384 (BInt<6>) to not overflow.
-        let a = BnumI384::from(self.0);
-        let b = BnumI384::from(other.0);
-        let c = a * b / BnumI384::from(Self::ONE.0);
+        // Use BnumI256 (BInt<4>) to not overflow.
+        let a = BnumI256::from(self.0);
+        let b = BnumI256::from(other.0);
+        let c = a * b / BnumI256::from(Self::ONE.0);
         let c_256 = BnumI192::try_from(c).expect("Overflow");
         Decimal(c_256)
     }
@@ -388,10 +388,10 @@ impl Div<Decimal> for Decimal {
 
     #[inline]
     fn div(self, other: Decimal) -> Self::Output {
-        // Use BnumI384 (BInt<6>) to not overflow.
-        let a = BnumI384::from(self.0);
-        let b = BnumI384::from(other.0);
-        let c = a * BnumI384::from(Self::ONE.0) / b;
+        // Use BnumI256 (BInt<4>) to not overflow.
+        let a = BnumI256::from(self.0);
+        let b = BnumI256::from(other.0);
+        let c = a * BnumI256::from(Self::ONE.0) / b;
         let c_256 = BnumI192::try_from(c).expect("Overflow");
         Decimal(c_256)
     }
