@@ -2,41 +2,49 @@ use crate::system::system::*;
 use crate::types::*;
 
 pub trait FieldContent: Sized {
-    type VersionedContent: From<Self>;
+    type ActualContent: From<Self>;
 
-    fn into_locked_substate(self) -> FieldSubstate<Self::VersionedContent> {
+    fn into_locked_substate(self) -> FieldSubstate<Self::ActualContent> {
         FieldSubstate::new_locked_field(self.into())
     }
 
-    fn into_mutable_substate(self) -> FieldSubstate<Self::VersionedContent> {
+    fn into_mutable_substate(self) -> FieldSubstate<Self::ActualContent> {
         FieldSubstate::new_field(self.into())
     }
 }
 
-pub trait KVEntryContent: Sized {
-    type VersionedContent: From<Self>;
+pub trait KeyContent: Sized {
+    type ActualContent: From<Self>;
 
-    fn into_locked_substate(self) -> KeyValueEntrySubstate<Self::VersionedContent> {
+    fn into_key(self) -> Self::ActualContent {
+        self.into()
+    }
+}
+
+pub trait KeyValueEntryContent: Sized {
+    type ActualContent: From<Self>;
+
+    fn into_locked_substate(self) -> KeyValueEntrySubstate<Self::ActualContent> {
         KeyValueEntrySubstate::entry(self.into())
     }
 
-    fn into_mutable_substate(self) -> KeyValueEntrySubstate<Self::VersionedContent> {
+    fn into_mutable_substate(self) -> KeyValueEntrySubstate<Self::ActualContent> {
         KeyValueEntrySubstate::locked_entry(self.into())
     }
 }
 
 pub trait IndexEntryContent: Sized {
-    type VersionedContent: From<Self>;
+    type ActualContent: From<Self>;
 
-    fn into_substate(self) -> Self::VersionedContent {
+    fn into_substate(self) -> Self::ActualContent {
         self.into()
     }
 }
 
 pub trait SortedIndexEntryContent: Sized {
-    type VersionedContent: From<Self>;
+    type ActualContent: From<Self>;
 
-    fn into_substate(self) -> Self::VersionedContent {
+    fn into_substate(self) -> Self::ActualContent {
         self.into()
     }
 }
@@ -46,10 +54,9 @@ pub trait SortedIndexEntryContent: Sized {
 /// interaction with the substate store.
 ///
 /// * For fields, assumes the existence of a type called:
-///    `<BlueprintIdent><FieldIdent>FieldV1`
+///    * `<BlueprintIdent><FieldIdent>FieldV1`
 /// * For collections, assumes the existence of types called:
-///    `<BlueprintIdent><CollectionIdent>Key`
-///    `<BlueprintIdent><CollectionIdent>ValueV1`
+///    * `<BlueprintIdent><CollectionIdent>ValueV1`
 /// 
 /// In future, resolve the `x_type` fields as a $x:tt and then
 /// map in other macros into:
@@ -81,7 +88,7 @@ macro_rules! declare_native_blueprint_state {
             $(
                 $field_property_name:ident: {
                     ident: $field_ident:ident,
-                    field_type: StaticSingleVersioned,
+                    field_type: $field_type:tt,
                     condition: $field_condition:expr
                     $(,)? // Optional trialing comma
                 }
@@ -92,10 +99,8 @@ macro_rules! declare_native_blueprint_state {
             $(
                 $collection_property_name:ident: $collection_type:ident {
                     entry_ident: $collection_ident:ident,
-                    key_type: Static { // Will be Static { type: X } or Instance { index: X }
-                        the_type: $collection_key_type:ty,
-                    },
-                    value_type: StaticSingleVersioned,
+                    key_type: $collection_key_type:tt,
+                    value_type: $collection_value_type:tt,
                     can_own: $collection_can_own:expr
                     // Collection options for (eg) passing in a property name
                     // of the sorted index parameter for SortedIndex
@@ -124,31 +129,44 @@ macro_rules! declare_native_blueprint_state {
 
                 // Generate models for each field
                 $(
-                    // TODO: In future, expand this macro to support multi-versioned fields
-                    sbor::define_single_versioned!(
-                        #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
-                        pub enum [<Versioned $blueprint_ident $field_ident Field>] => [<$blueprint_ident $field_ident Field>] = [<$blueprint_ident $field_ident FieldV1>]
+                    generate_content_type_aliases!(
+                        content_trait: FieldContent,
+                        ident_core: [<$blueprint_ident $field_ident Field>],
+                        type [<$blueprint_ident $field_ident FieldContent>] = $field_type
                     );
-                    generate_wrapped_substate_type_alias!(Field, $blueprint_ident, $field_ident);
-                    impl FieldContent for [<Versioned $blueprint_ident $field_ident Field>] {
-                        type VersionedContent = Self;
-                    }
-                    impl FieldContent for [<$blueprint_ident $field_ident Field>] {
-                        type VersionedContent = [<Versioned $blueprint_ident $field_ident Field>];
-                    }
+                    // Part 2 - Generate the common Substate type aliases for FieldContent
+                    generate_system_substate_type_alias!(
+                        Field,
+                        type [<$blueprint_ident $field_ident FieldSubstate>] = WRAPPED [<$blueprint_ident $field_ident FieldContent>]
+                    );
                 );*
 
                 // Generate models for each collection
                 $(
-                    pub type [<$blueprint_ident $collection_ident Key>] = $collection_key_type;
-                    // TODO: In future, expand this macro to support multi-versioned collection values
-                    sbor::define_single_versioned!(
-                        #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
-                        pub enum [<Versioned $blueprint_ident $collection_ident Value>] => [<$blueprint_ident $collection_ident Value>] = [<$blueprint_ident $collection_ident ValueV1>]
+                    // Key
+                    // > Set up any Versioned types
+                    // > Set up the _KeyContent alias
+                    // > Set up the KeyContent traits
+                    generate_content_type_aliases!(
+                        content_trait: KeyContent,
+                        ident_core: [<$blueprint_ident $collection_ident KeyInner>],
+                        type [<$blueprint_ident $collection_ident Key>] = $collection_key_type
                     );
-                    generate_wrapped_substate_type_alias!($collection_type, $blueprint_ident, $collection_ident);
-                    generate_collection_substate_content_trait!($collection_type, [<Versioned $blueprint_ident $collection_ident Value>], Self);
-                    generate_collection_substate_content_trait!($collection_type, [<$blueprint_ident $collection_ident Value>], [<Versioned $blueprint_ident $collection_ident Value>]);
+
+                    // Values
+                    // > Set up any Versioned types
+                    // > Set up the _ValueContent alias
+                    // > Set up the _EntryContent traits
+                    generate_content_type_aliases!(
+                        content_trait: [<$collection_type EntryContent>],
+                        ident_core: [<$blueprint_ident $collection_ident Value>],
+                        type [<$blueprint_ident $collection_ident ValueContent>] = $collection_value_type
+                    );
+                    // > Set up the _EntrySubstate alias
+                    generate_system_substate_type_alias!(
+                        $collection_type,
+                        type [<$blueprint_ident $collection_ident EntrySubstate>] = WRAPPED [<$blueprint_ident $collection_ident ValueContent>]
+                    );
                 )*
 
                 //--------------------------------------------------------
@@ -264,7 +282,9 @@ macro_rules! declare_native_blueprint_state {
                                 $collection_type,
                                 type_aggregator,
                                 $collection_key_type,
-                                [<Versioned $blueprint_ident $collection_ident Value>],
+                                [<$blueprint_ident $collection_ident Key>],
+                                $collection_value_type,
+                                [<$blueprint_ident $collection_ident ValueContent>],
                                 $collection_can_own
                             ));
                         )*
@@ -373,133 +393,177 @@ pub(crate) use declare_native_blueprint_state;
 pub(crate) use helper_macros::*;
 
 mod helper_macros {
-    macro_rules! generate_wrapped_substate_type_alias {
-        (SystemField, $module_ident:ident, $field_ident:ident) => {
+    macro_rules! generate_content_type_aliases {
+        (
+            content_trait: $content_trait:ident,
+            ident_core: $ident_core:ident,
+            type $alias:ident = {
+                kind: StaticSingleVersioned
+                $(,)?
+            }$(,)?
+        ) => {
             paste::paste! {
-                pub type [<$module_ident $field_ident FieldSubstate>] = [<Versioned $module_ident $field_ident Field>];
+                sbor::define_single_versioned!(
+                    #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
+                    pub enum [<Versioned $ident_core>] => $ident_core = [<$ident_core V1>]
+                );
+                pub type $alias = [<Versioned $ident_core>];
+                impl $content_trait for $ident_core {
+                    type ActualContent = $alias;
+                }
+                impl $content_trait for $alias {
+                    type ActualContent = Self;
+                }
             }
         };
-        (Field, $blueprint_ident:ident, $field_ident:ident) => {
+        (
+            content_trait: $content_trait:ident,
+            ident_core: $ident_core:ident,
+            type $alias:ident = {
+                kind: Static,
+                the_type: $static_type:ty
+                $(,)?
+            }$(,)?
+        ) => {
             paste::paste! {
-                pub type [<$blueprint_ident $field_ident FieldSubstate>] = $crate::system::system::FieldSubstate<[<Versioned $blueprint_ident $field_ident Field>]>;
+                pub type $alias = $static_type;
+                // TODO(David) - Fix this for eg BlueprintVersion being used in multiple keys
+                // Maybe by making these aliases actually new-types(?)
+                // impl $content_trait for $alias {
+                //     type ActualContent = Self;
+                // }
             }
         };
-        (KeyValue, $blueprint_ident:ident, $collection_ident:ident) => {
-            paste::paste! {
-                pub type [<$blueprint_ident $collection_ident EntrySubstate>] = $crate::system::system::KeyValueEntrySubstate<[<Versioned $blueprint_ident $collection_ident Value>]>;
+        (
+            content_trait: $content_trait:ident,
+            ident_core: $ident_core:ident,
+            type $alias:ident = {
+                kind: Instance,
+                ident: $instance_ident:ident
+                $(,)?
             }
+        ) => {
+            // Don't output any types for an instance schema
         };
-        (Index, $blueprint_ident:ident, $collection_ident:ident) => {
-            // No wrapper around Index substates
-            paste::paste! {
-                pub type [<$blueprint_ident $collection_ident EntrySubstate>] = [<Versioned $blueprint_ident $collection_ident Value>];
-            }
+        // TODO - Add support for some kind of StaticMultiVersioned type here
+    }
+    
+    #[allow(unused)]
+    pub(crate) use generate_content_type_aliases;
+
+    macro_rules! generate_system_substate_type_alias {
+        (SystemField, type $alias:ident = WRAPPED $content:ty$(,)?) => {
+            // There is no system wrapper around SystemField substates
+            pub type $alias = $content;
         };
-        (SortedIndex, $blueprint_ident:ident, $collection_ident:ident) => {
-            // There is no wrapper around Index substates
-            paste::paste! {
-                pub type [<$blueprint_ident $collection_ident EntrySubstate>] = [<Versioned $blueprint_ident $collection_ident Value>];
-            }
+        (Field, type $alias:ident = WRAPPED $content:ty$(,)?) => {
+            pub type $alias = FieldSubstate<$content>;
         };
-        ($unknown_system_substate_type:ident, $blueprint_ident:ident, $collection_ident:ident) => {
-            paste::paste! {
-                compile_error!(concat!(
-                    "Unrecognized system substate type: `",
-                    stringify!($unknown_system_substate_type),
-                    "` - expected `Field`, `SystemField`, `KeyValue`, `Index` or `SortedIndex`"
-                ));
-            }
+        (KeyValue, type $alias:ident = WRAPPED $content:ty$(,)?) => {
+            pub type $alias = KeyValueEntrySubstate<$content>;
+        };
+        (Index, type $alias:ident = WRAPPED $content:ty$(,)?) => {
+            // There is no system wrapper around Index substates
+            pub type $alias = $content;
+        };
+        (SortedIndex, type $alias:ident = WRAPPED $content:ty$(,)?) => {
+            // There is no system wrapper around SortedIndex substates
+            pub type $alias = $content;
+        };
+        ($unknown_system_substate_type:ident, type $alias:ident = WRAPPED $content:ty$(,)?) => {
+            compile_error!(concat!(
+                "Unrecognized system substate type: `",
+                stringify!($unknown_system_substate_type),
+                "` - expected `Field`, `SystemField`, `KeyValue`, `Index` or `SortedIndex`"
+            ));
         };
     }
     
     #[allow(unused)]
-    pub(crate) use generate_wrapped_substate_type_alias;
-    
-    macro_rules! generate_collection_substate_content_trait {
-        (KeyValue, $type:ident, $versioned:ident) => {
-            impl KVEntryContent for $type {
-                type VersionedContent = $versioned;
-            }
-        };
-        (Index, $type:ident, $versioned:ident) => {
-            impl IndexEntryContent for $type {
-                type VersionedContent = $versioned;
-            }
-        };
-        (SortedIndex, $type:ident, $versioned:ident) => {
-            impl SortedIndexEntryContent for $type {
-                type VersionedContent = $versioned;
-            }
-        };
-        ($unknown_system_substate_type:ident, $type:ident, $versioned:ident) => {
-            paste::paste! {
-                compile_error!(concat!(
-                    "Unrecognized system collection substate type: `",
-                    stringify!($unknown_system_substate_type),
-                    "` - expected `KeyValue`, `Index` or `SortedIndex`"
-                ));
-            }
-        };
-    }
-    
-    #[allow(unused)]
-    pub(crate) use generate_collection_substate_content_trait;
+    pub(crate) use generate_system_substate_type_alias;
     
     macro_rules! map_collection_schema {
-        (KeyValue, $aggregator:ident, $collection_key_type:ty, $collection_value_type:ty, $collection_can_own:expr$(,)?) => {
-            paste::paste! {
-                BlueprintCollectionSchema::KeyValueStore(
-                    BlueprintKeyValueSchema {
-                        key: TypeRef::Static(
-                            $aggregator.add_child_type_and_descendents::<$collection_key_type>(),
-                        ),
-                        value: TypeRef::Static(
-                            $aggregator.add_child_type_and_descendents::<$collection_value_type>()
-                        ),
-                        can_own: $collection_can_own,
-                    },
-                )
-            }
+        (KeyValue, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $can_own:expr$(,)?) => {
+            BlueprintCollectionSchema::KeyValueStore(
+                BlueprintKeyValueSchema {
+                    key: map_type_ref!($aggregator, $key_type, $key_content_alias),
+                    value: map_type_ref!($aggregator, $value_type, $value_content_alias),
+                    can_own: $can_own,
+                },
+            )
         };
-        (Index, $aggregator:ident, $collection_key_type:ty, $collection_value_type:ty, $collection_can_own:expr$(,)?) => {
+        (Index, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $can_own:expr$(,)?) => {
             BlueprintCollectionSchema::Index(
                 BlueprintKeyValueSchema {
-                    key: TypeRef::Static(
-                        $aggregator.add_child_type_and_descendents::<$collection_key_type>(),
-                    ),
-                    value: TypeRef::Static(
-                        $aggregator.add_child_type_and_descendents::<$collection_value_type>()
-                    ),
-                    can_own: $collection_can_own,
+                    key: map_type_ref!($aggregator, $key_type, $key_content_alias),
+                    value: map_type_ref!($aggregator, $value_type, $value_content_alias),
+                    can_own: $can_own,
                 },
             )
         };
-        (SortedIndex, $aggregator:ident, $collection_key_type:ty, $collection_value_type:ty, $collection_can_own:expr$(,)?) => {
+        (SortedIndex, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $can_own:expr$(,)?) => {
             BlueprintCollectionSchema::SortedIndex(
                 BlueprintKeyValueSchema {
-                    key: TypeRef::Static(
-                        $aggregator.add_child_type_and_descendents::<$collection_key_type>(),
-                    ),
-                    value: TypeRef::Static(
-                        $aggregator.add_child_type_and_descendents::<$collection_value_type>()
-                    ),
-                    can_own: $collection_can_own,
+                    key: map_type_ref!($aggregator, $key_type, $key_content_alias),
+                    value: map_type_ref!($aggregator, $value_type, $value_content_alias),
+                    can_own: $can_own,
                 },
             )
         };
-        ($unknown_system_substate_type:ident, $aggregator:ident, $collection_key_type:ty, $collection_value_type:ty, $collection_can_own:expr$(,)?) => {
-            paste::paste! {
-                compile_error!(concat!(
-                    "Unrecognized system collection substate type: `",
-                    stringify!($unknown_system_substate_type),
-                    "` - expected `KeyValue`, `Index` or `SortedIndex`"
-                ));
-            }
+        ($unknown_system_substate_type:ident, $aggregator:ident, $collection_key_type:tt, $collection_value_type:tt, $collection_can_own:expr$(,)?) => {
+            compile_error!(concat!(
+                "Unrecognized system collection substate type: `",
+                stringify!($unknown_system_substate_type),
+                "` - expected `KeyValue`, `Index` or `SortedIndex`"
+            ));
         };
     }
     
     #[allow(unused)]
     pub(crate) use map_collection_schema;
+
+    macro_rules! map_type_ref {
+        (
+            $aggregator:ident,
+            {
+                kind: StaticSingleVersioned
+                $(,)?
+            },
+            $content_alias:ident$(,)?
+        ) => {
+            TypeRef::Static(
+                $aggregator.add_child_type_and_descendents::<$content_alias>(),
+            )
+        };
+        (
+            $aggregator:ident,
+            {
+                kind: Static,
+                the_type: $static_type:ty
+                $(,)?
+            },
+            $content_alias:ident$(,)?
+        ) => {
+            TypeRef::Static(
+                $aggregator.add_child_type_and_descendents::<$content_alias>(),
+            )
+        };
+        (
+            $aggregator:ident,
+            {
+                kind: Instance,
+                ident: $instance_ident:ident
+                $(,)?
+            },
+            $content_alias:ident$(,)?
+        ) => {
+            compile_error!("Instance schemas not yet supported - close though!")
+        };
+        // TODO - Add support for some kind of StaticMultiVersioned type here
+    }
+
+    #[allow(unused)]
+    pub(crate) use map_type_ref;
     
     macro_rules! map_entry_substate_to_kv_entry {
         (KeyValue, $entry_substate:ident) => {
@@ -562,33 +626,44 @@ mod tests {
         fields: {
             royalty:  {
                 ident: Royalty,
-                field_type: StaticSingleVersioned,
+                field_type: {
+                    kind: StaticSingleVersioned,
+                },
                 condition: Condition::Always,
             }
         },
         collections: {
             blueprint_definitions: KeyValue {
                 entry_ident: BlueprintDefinition,
-                key_type: Static {
+                key_type: {
+                    kind: Static,
                     the_type: BlueprintVersion,
                 },
-                value_type: StaticSingleVersioned,
+                value_type: {
+                    kind: StaticSingleVersioned,
+                },
                 can_own: true,
             },
             abc: Index {
                 entry_ident: MyCoolIndex,
-                key_type: Static {
+                key_type: {
+                    kind: Static,
                     the_type: BlueprintVersion,
                 },
-                value_type: StaticSingleVersioned,
+                value_type: {
+                    kind: StaticSingleVersioned,
+                },
                 can_own: true,
             },
             def: SortedIndex {
                 entry_ident: MyCoolSortedIndex,
-                key_type: Static {
+                key_type: {
+                    kind: Static,
                     the_type: BlueprintVersion,
                 },
-                value_type: StaticSingleVersioned,
+                value_type: {
+                    kind: StaticSingleVersioned,
+                },
                 can_own: true,
             },
         }
