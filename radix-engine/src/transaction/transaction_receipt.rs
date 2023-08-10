@@ -311,7 +311,7 @@ impl TransactionReceipt {
         matches!(self.result, TransactionResult::Reject(_))
     }
 
-    pub fn expect_commit_ignore_result(&self) -> &CommitResult {
+    pub fn expect_commit_ignore_outcome(&self) -> &CommitResult {
         match &self.result {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
@@ -320,7 +320,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_commit(&self, success: bool) -> &CommitResult {
-        let c = self.expect_commit_ignore_result();
+        let c = self.expect_commit_ignore_outcome();
         if c.outcome.is_success() != success {
             panic!(
                 "Expected {} but was {}: {:?}",
@@ -843,5 +843,48 @@ impl From<FeeReserveFinalizationSummary> for TransactionCostingSummary {
             total_storage_cost_in_xrd: value.total_storage_cost_in_xrd,
             total_royalty_cost_in_xrd: value.total_royalty_cost_in_xrd,
         }
+    }
+}
+
+impl TransactionCostingSummary {
+    pub fn total_cost(&self) -> Decimal {
+        self.total_execution_cost_in_xrd
+            + self.total_finalization_cost_in_xrd
+            + self.total_tipping_cost_in_xrd
+            + self.total_storage_cost_in_xrd
+            + self.total_royalty_cost_in_xrd
+    }
+
+    pub fn network_fees(&self) -> Decimal {
+        self.total_execution_cost_in_xrd
+            + self.total_finalization_cost_in_xrd
+            + self.total_storage_cost_in_xrd
+    }
+
+    //===================
+    // For testing only
+    //===================
+
+    pub fn expected_reward_if_single_validator(&self) -> Decimal {
+        self.expected_reward_as_proposer_if_single_validator()
+            + self.expected_reward_as_active_validator_if_single_validator()
+    }
+
+    pub fn expected_reward_as_proposer_if_single_validator(&self) -> Decimal {
+        self.total_tipping_cost_in_xrd * (TIPS_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
+            + (self.total_execution_cost_in_xrd
+                + self.total_finalization_cost_in_xrd
+                + self.total_storage_cost_in_xrd)
+                * (NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE)
+                / dec!(100)
+    }
+
+    pub fn expected_reward_as_active_validator_if_single_validator(&self) -> Decimal {
+        self.total_tipping_cost_in_xrd * (TIPS_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
+            + (self.total_execution_cost_in_xrd
+                + self.total_finalization_cost_in_xrd
+                + self.total_storage_cost_in_xrd)
+                * (NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE)
+                / dec!(100)
     }
 }

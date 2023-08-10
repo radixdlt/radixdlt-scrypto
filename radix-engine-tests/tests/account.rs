@@ -208,8 +208,6 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     );
 
     // Assert
-    let result = receipt.expect_commit_success();
-
     assert_eq!(
         receipt
             .expect_commit_success()
@@ -219,7 +217,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
             .unwrap()
             .get(&XRD)
             .unwrap(),
-        &BalanceChange::Fungible(-result.fee_summary.total_cost())
+        &BalanceChange::Fungible(-receipt.costing_summary.total_cost())
     );
 }
 

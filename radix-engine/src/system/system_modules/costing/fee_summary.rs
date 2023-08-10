@@ -34,31 +34,6 @@ impl FeeReserveFinalizationSummary {
         self.total_bad_debt_in_xrd == 0.into()
     }
 
-    fn tips(&self) -> Decimal {
-        self.total_tipping_cost_in_xrd
-    }
-
-    fn fees(&self) -> Decimal {
-        self.total_execution_cost_in_xrd
-            + self.total_finalization_cost_in_xrd
-            + self.total_storage_cost_in_xrd
-    }
-
-    pub fn to_proposer_amount(&self) -> Decimal {
-        self.tips() * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
-            + self.fees() * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100)
-    }
-
-    pub fn to_validator_set_amount(&self) -> Decimal {
-        self.tips() * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
-            + self.fees() * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
-    }
-
-    pub fn to_burn_amount(&self) -> Decimal {
-        self.tips() * TIPS_TO_BURN_PERCENTAGE / dec!(100)
-            + self.fees() * FEES_TO_BURN_PERCENTAGE / dec!(100)
-    }
-
     pub fn total_cost(&self) -> Decimal {
         self.total_execution_cost_in_xrd
             + self.total_finalization_cost_in_xrd
@@ -67,22 +42,24 @@ impl FeeReserveFinalizationSummary {
             + self.total_royalty_cost_in_xrd
     }
 
-    //===================
-    // For testing only
-    //===================
-
-    pub fn expected_reward_if_single_validator(&self) -> Decimal {
-        self.expected_reward_as_proposer_if_single_validator()
-            + self.expected_reward_as_active_validator_if_single_validator()
+    pub fn network_fees(&self) -> Decimal {
+        self.total_execution_cost_in_xrd
+            + self.total_finalization_cost_in_xrd
+            + self.total_storage_cost_in_xrd
     }
 
-    pub fn expected_reward_as_proposer_if_single_validator(&self) -> Decimal {
-        self.tips() * (TIPS_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
-            + self.fees() * (FEES_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
+    pub fn to_proposer_amount(&self) -> Decimal {
+        self.total_tipping_cost_in_xrd * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
+            + self.network_fees() * NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100)
     }
 
-    pub fn expected_reward_as_active_validator_if_single_validator(&self) -> Decimal {
-        self.tips() * (TIPS_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
-            + self.fees() * (FEES_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
+    pub fn to_validator_set_amount(&self) -> Decimal {
+        self.total_tipping_cost_in_xrd * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+            + self.network_fees() * NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+    }
+
+    pub fn to_burn_amount(&self) -> Decimal {
+        self.total_tipping_cost_in_xrd * TIPS_TO_BURN_PERCENTAGE / dec!(100)
+            + self.network_fees() * NETWORK_FEES_TO_BURN_PERCENTAGE / dec!(100)
     }
 }

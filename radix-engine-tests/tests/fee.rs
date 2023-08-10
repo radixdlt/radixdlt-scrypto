@@ -1,6 +1,6 @@
 use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
-use radix_engine::errors::{RejectionError, RuntimeError};
+use radix_engine::errors::{RejectionReason, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::kernel::heap::HeapOpenSubstateError;
 use radix_engine::track::interface::TrackOpenSubstateError;
@@ -150,7 +150,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
     });
 
     receipt.expect_specific_rejection(|e| match e {
-        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+        RejectionReason::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::OpenSubstateError(
                 OpenSubstateError::HeapError(HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode),
             )),
@@ -187,7 +187,7 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
     });
 
     receipt.expect_specific_rejection(|e| match e {
-        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+        RejectionReason::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::OpenSubstateError(
                 OpenSubstateError::TrackError(err),
             )),
@@ -246,7 +246,7 @@ fn test_fee_accounting_success() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -257,14 +257,17 @@ fn test_fee_accounting_success() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
+    let effective_execution_cost_unit_price = receipt.costing_parameters.execution_cost_unit_price
+        + receipt.costing_parameters.execution_cost_unit_price
+            * receipt.transaction_costing_parameters.tip_percentage
+            / 100;
+    let summary = &receipt.costing_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
             - 66
-            - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
-                * summary.execution_cost_sum
-            - summary.total_state_expansion_cost_xrd
+            - effective_execution_cost_unit_price * summary.total_execution_cost_units_consumed
+            - summary.total_storage_cost_in_xrd
     );
     assert_eq!(account2_new_balance, account2_balance + 66);
 }
@@ -307,7 +310,7 @@ fn test_fee_accounting_failure() {
             ))
         )
     });
-    let commit_result = receipt.expect_commit(false);
+    receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -318,12 +321,15 @@ fn test_fee_accounting_failure() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
+    let effective_execution_cost_unit_price = receipt.costing_parameters.execution_cost_unit_price
+        + receipt.costing_parameters.execution_cost_unit_price
+            * receipt.transaction_costing_parameters.tip_percentage
+            / 100;
+    let summary = &receipt.costing_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
-                * summary.execution_cost_sum
+            - effective_execution_cost_unit_price * summary.total_execution_cost_units_consumed
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
@@ -389,7 +395,7 @@ fn test_contingent_fee_accounting_success() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -400,15 +406,17 @@ fn test_contingent_fee_accounting_success() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
-    let effective_price =
-        summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
+    let effective_execution_cost_unit_price = receipt.costing_parameters.execution_cost_unit_price
+        + receipt.costing_parameters.execution_cost_unit_price
+            * receipt.transaction_costing_parameters.tip_percentage
+            / 100;
     let contingent_fee = dec!("0.001");
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - effective_price * summary.execution_cost_sum
-            - summary.total_state_expansion_cost_xrd
+            - effective_execution_cost_unit_price
+                * receipt.costing_summary.total_execution_cost_units_consumed
+            - receipt.costing_summary.total_storage_cost_in_xrd
             + contingent_fee
     );
     assert_eq!(account2_new_balance, account2_balance - contingent_fee);
@@ -454,7 +462,7 @@ fn test_contingent_fee_accounting_failure() {
             ))
         )
     });
-    let commit_result = receipt.expect_commit(false);
+    receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -465,12 +473,15 @@ fn test_contingent_fee_accounting_failure() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
-    let effective_price =
-        summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
+    let effective_execution_cost_unit_price = receipt.costing_parameters.execution_cost_unit_price
+        + receipt.costing_parameters.execution_cost_unit_price
+            * receipt.transaction_costing_parameters.tip_percentage
+            / 100;
+    let summary = &receipt.costing_summary;
     assert_eq!(
         account1_new_balance,
-        account1_balance - effective_price * summary.execution_cost_sum
+        account1_balance
+            - effective_execution_cost_unit_price * summary.total_execution_cost_units_consumed
     );
     assert_eq!(account2_new_balance, account2_balance);
 }

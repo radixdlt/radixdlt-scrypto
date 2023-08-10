@@ -1,5 +1,5 @@
-use radix_engine::errors::RejectionError;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
+use radix_engine::errors::RejectionReason;
+use radix_engine::transaction::{CostingParameters, ExecutionConfig};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
 use scrypto_unit::*;
@@ -33,7 +33,7 @@ fn test_transaction_replay_protection() {
     let validated = get_validated(&transaction).unwrap();
     let receipt = test_runner.execute_transaction(
         validated.get_executable(),
-        FeeReserveConfig::default(),
+        CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction(),
     );
     receipt.expect_commit_success();
@@ -45,11 +45,11 @@ fn test_transaction_replay_protection() {
     // 3. Run the transaction again
     let receipt = test_runner.execute_transaction(
         validated.get_executable(),
-        FeeReserveConfig::default(),
+        CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction(),
     );
     receipt.expect_specific_rejection(|e| match e {
-        RejectionError::IntentHashPreviouslyCommitted => true,
+        RejectionReason::IntentHashPreviouslyCommitted => true,
         _ => false,
     });
 
@@ -70,7 +70,7 @@ fn test_transaction_replay_protection() {
     executable.skip_epoch_range_check();
     let receipt = test_runner.execute_transaction(
         executable,
-        FeeReserveConfig::default(),
+        CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction(),
     );
     receipt.expect_commit_success();

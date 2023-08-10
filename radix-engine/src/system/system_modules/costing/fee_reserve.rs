@@ -132,6 +132,16 @@ pub struct SystemLoanFeeReserve {
     locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
 }
 
+impl Default for SystemLoanFeeReserve {
+    fn default() -> Self {
+        Self::new(
+            &CostingParameters::default(),
+            &TransactionCostingParameters::default(),
+            false,
+        )
+    }
+}
+
 #[inline]
 fn checked_add(a: u32, b: u32) -> Result<u32, FeeReserveError> {
     a.checked_add(b).ok_or(FeeReserveError::Overflow)

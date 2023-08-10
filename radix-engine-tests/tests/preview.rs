@@ -1,6 +1,6 @@
 use radix_engine::system::system_modules::costing::FeeTable;
+use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
-use radix_engine::transaction::FeeReserveConfig;
 use radix_engine::types::*;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
@@ -34,21 +34,21 @@ fn test_transaction_preview_cost_estimate() {
     // Act & Assert: Execute the preview, followed by a normal execution.
     // Ensure that both succeed and that the preview result provides an accurate cost estimate
     let preview_receipt = test_runner.preview(preview_intent, &network).unwrap();
-    let preview_result = preview_receipt.expect_commit_success();
+    preview_receipt.expect_commit_success();
     let actual_receipt = test_runner.execute_transaction(
         validate(&network, &notarized_transaction).get_executable(),
-        FeeReserveConfig::default(),
+        CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction()
             .with_kernel_trace(true)
             .with_cost_breakdown(true),
     );
-    let actual_result = actual_receipt.expect_commit(true);
+    actual_receipt.expect_commit(true);
     assert_eq!(
         // TODO: better preview payload size estimate?
-        preview_result.fee_summary.total_cost()
-            + FeeReserveConfig::default().cost_unit_price
+        preview_receipt.costing_summary.total_cost()
+            + Decimal::try_from(EXECUTION_COST_UNIT_LIMIT).unwrap()
                 * FeeTable::new().tx_payload_cost(size_diff),
-        actual_result.fee_summary.total_cost(),
+        actual_receipt.costing_summary.total_cost(),
     );
 }
 
@@ -75,13 +75,12 @@ fn test_transaction_preview_without_locking_fee() {
 
     // Act
     let preview_receipt = test_runner.preview(preview_intent, &network).unwrap();
-    let fee_summary = &preview_receipt.expect_commit_success().fee_summary;
+    let costing_summary = &preview_receipt.costing_summary;
     println!("{:?}", preview_receipt);
-    assert!(fee_summary.total_execution_cost_xrd.is_positive());
-    assert_eq!(fee_summary.total_tipping_cost_xrd, dec!("0"));
-    assert!(fee_summary.total_state_expansion_cost_xrd.is_positive());
-    assert_eq!(fee_summary.total_royalty_cost_xrd, dec!("0"));
-    assert_eq!(fee_summary.total_payments(), dec!("0")); // no one is paying the fees; wallets need to fill the gap.
+    assert!(costing_summary.total_execution_cost_in_xrd.is_positive());
+    assert_eq!(costing_summary.total_tipping_cost_in_xrd, dec!("0"));
+    assert!(costing_summary.total_storage_cost_in_xrd.is_positive());
+    assert_eq!(costing_summary.total_royalty_cost_in_xrd, dec!("0"));
 }
 
 #[test]

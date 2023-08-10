@@ -726,11 +726,13 @@ where
         }
 
         // Take fee payments
-        let fee_summary = fee_reserve.finalize();
+        let fee_reserve_finalization = fee_reserve.finalize();
         let mut fee_payments: IndexMap<NodeId, Decimal> = index_map_new();
-        let mut required = fee_summary.total_cost();
+        let mut required = fee_reserve_finalization.total_cost();
         let mut collected_fees = LiquidFungibleResource::new(Decimal::ZERO);
-        for (vault_id, mut locked, contingent) in fee_summary.locked_fees.iter().cloned().rev() {
+        for (vault_id, mut locked, contingent) in
+            fee_reserve_finalization.locked_fees.iter().cloned().rev()
+        {
             let amount = if contingent {
                 if is_success {
                     Decimal::min(locked.amount(), required)
@@ -772,22 +774,22 @@ where
             required -= amount;
         }
 
-        let to_proposer = fee_summary.to_proposer_amount();
-        let to_validator_set = fee_summary.to_validator_set_amount();
-        let to_burn = fee_summary.to_burn_amount();
+        let to_proposer = fee_reserve_finalization.to_proposer_amount();
+        let to_validator_set = fee_reserve_finalization.to_validator_set_amount();
+        let to_burn = fee_reserve_finalization.to_burn_amount();
 
         // Sanity checks
         assert!(
-            fee_summary.total_bad_debt_in_xrd == Decimal::ZERO,
+            fee_reserve_finalization.total_bad_debt_in_xrd == Decimal::ZERO,
             "Bad debt is non-zero: {}",
-            fee_summary.total_bad_debt_in_xrd
+            fee_reserve_finalization.total_bad_debt_in_xrd
         );
         assert!(
             required == Decimal::ZERO,
             "Locked fee does not cover transaction cost: {} required",
             required
         );
-        let remaining_collected_fees = collected_fees.amount() - fee_summary.total_royalty_cost_in_xrd /* royalty already distributed */;
+        let remaining_collected_fees = collected_fees.amount() - fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */;
         assert!(
             remaining_collected_fees  == to_proposer + to_validator_set + to_burn,
             "Remaining collected fee isn't equal to amount to distribute (proposer/validator set/burn): {} != {}",
@@ -860,7 +862,7 @@ where
             track.close_substate(handle);
         }
 
-        (fee_summary, fee_payments)
+        (fee_reserve_finalization, fee_payments)
     }
 
     fn update_transaction_tracker(
