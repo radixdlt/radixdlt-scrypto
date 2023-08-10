@@ -102,8 +102,8 @@ impl Clone for PackageRoyaltyAccumulatorSubstate {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum TypePointer {
-    Package(TypeIdentifier), // For static types
-    Instance(u8),            // For generics
+    Package(TypeIdentifier),
+    Instance(u8),           
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

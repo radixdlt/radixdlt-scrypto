@@ -10,7 +10,6 @@ use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode, ScryptoSchema}
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
-use sbor::LocalTypeIndex;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
@@ -103,7 +102,7 @@ impl FieldValue {
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct GenericArgs {
     pub additional_schema: Option<ScryptoSchema>,
-    pub type_substitution_refs: Vec<TypeIdentifier>,
+    pub type_substitution_refs: Vec<TypeSubstitutionRef>,
 }
 
 pub struct KVEntry {

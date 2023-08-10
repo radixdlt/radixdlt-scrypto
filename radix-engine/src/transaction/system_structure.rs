@@ -210,7 +210,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                 SubstateSystemStructure::SystemType
             }
             SystemPartitionDescription::Module(module_id, partition_offset) => {
-                let (blueprint_id, type_instances) = if let ObjectModuleId::Main = module_id {
+                let (blueprint_id, type_substitution_refs) = if let ObjectModuleId::Main = module_id {
                     let main_type_info =
                         self.system_reader
                             .get_type_info(node_id)
@@ -220,16 +220,22 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     match main_type_info {
                         TypeInfoSubstate::Object(info) => (
                             info.blueprint_info.blueprint_id,
-                            info.blueprint_info.type_substitutions,
+                            info.blueprint_info.type_substitutions_refs,
                         ),
                         TypeInfoSubstate::KeyValueStore(info) => {
+                            let key_type_id = match info.type_substitutions.key_type_substitution {
+                                TypeSubstitutionRef::Local(type_id) => type_id
+                            };
+                            let value_type_id = match info.type_substitutions.value_type_substitution {
+                                TypeSubstitutionRef::Local(type_id) => type_id
+                            };
                             return SubstateSystemStructure::KeyValueStoreEntry(
                                 KeyValueStoreEntryStructure {
                                     key_value_store_address: (*node_id).try_into().unwrap(),
-                                    key_schema_hash: info.type_substitutions.key_type_substitution.0,
-                                    key_local_type_index: info.type_substitutions.key_type_substitution.1,
-                                    value_schema_hash: info.type_substitutions.value_type_substitution.0,
-                                    value_local_type_index: info.type_substitutions.value_type_substitution.1,
+                                    key_schema_hash: key_type_id.0,
+                                    key_local_type_index: key_type_id.1,
+                                    value_schema_hash: value_type_id.0,
+                                    value_local_type_index: value_type_id.1,
                                 },
                             )
                         }
@@ -249,7 +255,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                 let resolver = ObjectSubstateTypeReferenceResolver::new(
                     &node_id,
                     &blueprint_id,
-                    &type_instances,
+                    &type_substitution_refs,
                 );
                 self.resolve_object_substate_structure(
                     &resolver,
@@ -330,19 +336,19 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
 pub struct ObjectSubstateTypeReferenceResolver<'a> {
     node_id: &'a NodeId,
     blueprint_id: &'a BlueprintId,
-    type_instances: &'a Vec<TypeIdentifier>,
+    type_substitution_refs: &'a Vec<TypeSubstitutionRef>,
 }
 
 impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
     pub fn new(
         node_id: &'a NodeId,
         blueprint_id: &'a BlueprintId,
-        type_instances: &'a Vec<TypeIdentifier>,
+        type_substitution_refs: &'a Vec<TypeSubstitutionRef>,
     ) -> Self {
         Self {
             node_id,
             blueprint_id,
-            type_instances,
+            type_substitution_refs,
         }
     }
 
@@ -356,16 +362,20 @@ impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
                 })
             }
             TypePointer::Instance(instance_type_index) => {
-                let type_identifier = *self
-                    .type_instances
+                let type_substition_ref = *self
+                    .type_substitution_refs
                     .get(instance_type_index as usize)
                     .expect("Instance type index not valid");
-                ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {
-                    entity_address: (*self.node_id).try_into().unwrap(),
-                    instance_type_index,
-                    schema_hash: type_identifier.0,
-                    local_type_index: type_identifier.1,
-                })
+                match type_substition_ref {
+                    TypeSubstitutionRef::Local(type_id) => {
+                        ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {
+                            entity_address: (*self.node_id).try_into().unwrap(),
+                            instance_type_index,
+                            schema_hash: type_id.0,
+                            local_type_index: type_id.1,
+                        })
+                    }
+                }
             }
         }
     }

@@ -10,8 +10,8 @@ use scrypto_schema::{KeyValueStoreTypeSubstitutions};
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreGenericArgs {
     pub additional_schema: Option<ScryptoSchema>,
-    pub key_type: TypeIdentifier,
-    pub value_type: TypeIdentifier,
+    pub key_type: TypeSubstitutionRef,
+    pub value_type: TypeSubstitutionRef,
     pub can_own: bool,
 }
 
@@ -24,8 +24,8 @@ impl KeyValueStoreGenericArgs {
         let schema_hash = schema.generate_schema_hash();
         Self {
             additional_schema: Some(schema),
-            key_type: TypeIdentifier(schema_hash, key_type_index),
-            value_type: TypeIdentifier(schema_hash, value_type_index),
+            key_type: TypeSubstitutionRef::Local(TypeIdentifier(schema_hash, key_type_index)),
+            value_type: TypeSubstitutionRef::Local(TypeIdentifier(schema_hash, value_type_index)),
             can_own,
         }
     }

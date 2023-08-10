@@ -5,7 +5,7 @@ use core::fmt::Formatter;
 use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::crypto::Hash;
 use radix_engine_common::prelude::{ScryptoSchema, TypeIdentifier};
-use radix_engine_common::types::GlobalAddress;
+use radix_engine_common::types::{GlobalAddress, TypeSubstitutionRef};
 use radix_engine_common::types::PackageAddress;
 use radix_engine_derive::ManifestSbor;
 use radix_engine_interface::api::ObjectModuleId;
@@ -31,7 +31,7 @@ pub struct BlueprintInfo {
     pub blueprint_id: BlueprintId,
     pub outer_obj_info: OuterObjectInfo,
     pub features: BTreeSet<String>,
-    pub type_substitutions: Vec<TypeIdentifier>,
+    pub type_substitutions_refs: Vec<TypeSubstitutionRef>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

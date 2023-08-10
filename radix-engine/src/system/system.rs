@@ -176,16 +176,24 @@ where
     pub fn validate_kv_store_generic_args(
         &mut self,
         schemas: &IndexMap<Hash, ScryptoSchema>,
-        key: &TypeIdentifier,
-        value: &TypeIdentifier,
+        key: &TypeSubstitutionRef,
+        value: &TypeSubstitutionRef,
     ) -> Result<(), RuntimeError> {
-        let _schema = schemas.get(&key.0).ok_or_else(|| {
-            RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-        })?;
+        match key {
+            TypeSubstitutionRef::Local(type_id) => {
+                let _schema = schemas.get(&type_id.0).ok_or_else(|| {
+                    RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                })?;
+            }
+        }
 
-        let _schema = schemas.get(&value.0).ok_or_else(|| {
-            RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-        })?;
+        match value {
+            TypeSubstitutionRef::Local(type_id) => {
+                let _schema = schemas.get(&type_id.0).ok_or_else(|| {
+                    RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                })?;
+            }
+        }
 
         Ok(())
     }
@@ -194,7 +202,7 @@ where
         &mut self,
         blueprint_id: &BlueprintId,
         schemas: &IndexMap<Hash, ScryptoSchema>,
-        type_substitution_refs: &Vec<TypeIdentifier>,
+        type_substitution_refs: &Vec<TypeSubstitutionRef>,
     ) -> Result<(), RuntimeError> {
         let state_schema =
             self.get_blueprint_default_interface(blueprint_id.clone())?.state;
@@ -210,11 +218,15 @@ where
                             RuntimeError::SystemError(SystemError::InvalidGenericArgs)
                         })?;
 
-                        let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
-                            RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                        })?;
+                        match type_ref {
+                            TypeSubstitutionRef::Local(type_ref) => {
+                                let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
+                                    RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                                })?;
 
-                        // TODO: validate schema with index
+                                // TODO: validate schema with index
+                            }
+                        }
                     }
                 }
             }
@@ -232,9 +244,15 @@ where
                                 RuntimeError::SystemError(SystemError::InvalidGenericArgs)
                             })?;
 
-                            let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
-                                RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                            })?;
+                            match type_ref {
+                                TypeSubstitutionRef::Local(type_ref) => {
+                                    let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
+                                        RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                                    })?;
+
+                                    // TODO: validate schema with index
+                                }
+                            }
                         }
                     }
 
@@ -245,9 +263,15 @@ where
                                 RuntimeError::SystemError(SystemError::InvalidGenericArgs)
                             })?;
 
-                            let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
-                                RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                            })?;
+                            match type_ref {
+                                TypeSubstitutionRef::Local(type_ref) => {
+                                    let _schema = schemas.get(&type_ref.0).ok_or_else(|| {
+                                        RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+                                    })?;
+
+                                    // TODO: validate schema with index
+                                }
+                            }
                         }
                     }
                 }
@@ -280,38 +304,32 @@ where
         payload_identifier: KeyOrValue,
         payload: &[u8],
     ) -> Result<(), RuntimeError> {
-        let type_identifier = match payload_identifier {
+        let type_substition_ref = match payload_identifier {
             KeyOrValue::Key => target.kv_store_type.key_type_substitution,
             KeyOrValue::Value => target.kv_store_type.value_type_substitution,
         };
 
-        let handle = self.api.kernel_open_substate_with_default(
-            &target.meta,
-            SCHEMAS_PARTITION,
-            &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
-            LockFlags::read_only(),
-            None,
-            SystemLockData::default(),
-        )?;
+        match type_substition_ref {
+            TypeSubstitutionRef::Local(type_id) => {
+                let schema = self.get_schema(
+                    &target.meta,
+                        &type_id.0,
+                )?;
 
-        let schema: KeyValueEntrySubstate<ScryptoSchema> =
-            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema = schema.value.unwrap();
-
-        self.validate_payload(
-            payload,
-            &schema,
-            type_identifier.1,
-            SchemaOrigin::KeyValueStore,
-        )
-        .map_err(|err| {
-            RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(
-                payload_identifier,
-                err.error_message(&schema),
-            ))
-        })?;
-
-        self.api.kernel_close_substate(handle)?;
+                self.validate_payload(
+                    payload,
+                    &schema,
+                    type_id.1,
+                    SchemaOrigin::KeyValueStore,
+                )
+                    .map_err(|err| {
+                        RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(
+                            payload_identifier,
+                            err.error_message(&schema),
+                        ))
+                    })?;
+            }
+        }
 
         Ok(())
     }
@@ -351,9 +369,9 @@ where
                 )
             }
             TypePointer::Instance(instance_index) => {
-                let type_identifier = target
+                let type_substitution_ref = target
                     .blueprint_info
-                    .type_substitutions
+                    .type_substitutions_refs
                     .get(instance_index as usize)
                     .ok_or_else(|| {
                         RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
@@ -361,27 +379,31 @@ where
                         ))
                     })?;
 
-                let schema = match &target.meta {
-                    SchemaValidationMeta::ExistingObject { additional_schemas } => {
-                        self.get_schema(additional_schemas, &type_identifier.0)?
-                    }
-                    SchemaValidationMeta::NewObject { additional_schemas } => {
-                        additional_schemas.get(&type_identifier.0).ok_or_else(|| {
-                            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                            ))
-                        })?.clone() // TODO: Remove clone
-                    }
-                    SchemaValidationMeta::Blueprint => {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                            ),
-                        ));
-                    }
-                };
+                match type_substitution_ref {
+                    TypeSubstitutionRef::Local(type_id) => {
+                        let schema = match &target.meta {
+                            SchemaValidationMeta::ExistingObject { additional_schemas } => {
+                                self.get_schema(additional_schemas, &type_id.0)?
+                            }
+                            SchemaValidationMeta::NewObject { additional_schemas } => {
+                                additional_schemas.get(&type_id.0).ok_or_else(|| {
+                                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                                        PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
+                                    ))
+                                })?.clone() // TODO: Remove clone
+                            }
+                            SchemaValidationMeta::Blueprint => {
+                                return Err(RuntimeError::SystemError(
+                                    SystemError::PayloadValidationAgainstSchemaError(
+                                        PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
+                                    ),
+                                ));
+                            }
+                        };
 
-                (schema, type_identifier.1, SchemaOrigin::Instance)
+                        (schema, type_id.1, SchemaOrigin::Instance)
+                    }
+                }
             }
         };
 
@@ -447,7 +469,7 @@ where
             outer_obj_info,
             features: features.clone(),
             blueprint_id: blueprint_id.clone(),
-            type_substitutions: type_substitutions.clone(),
+            type_substitutions_refs: type_substitutions.clone(),
         };
 
         let validation_target = BlueprintTypeTarget {
@@ -993,7 +1015,7 @@ where
                 blueprint_id: module_id.static_blueprint().unwrap(),
                 outer_obj_info: OuterObjectInfo::None,
                 features: BTreeSet::default(),
-                type_substitutions: vec![],
+                type_substitutions_refs: vec![],
             },
         };
 
@@ -1010,7 +1032,7 @@ where
                         blueprint_id: actor.blueprint_id.clone(),
                         outer_obj_info: OuterObjectInfo::None,
                         features: btreeset!(),
-                        type_substitutions: vec![],
+                        type_substitutions_refs: vec![],
                     },
                     meta: SchemaValidationMeta::Blueprint,
                 })
@@ -1021,7 +1043,7 @@ where
                         blueprint_id: actor.blueprint_id.clone(),
                         outer_obj_info: OuterObjectInfo::None,
                         features: btreeset!(),
-                        type_substitutions: vec![],
+                        type_substitutions_refs: vec![],
                     },
                     meta: SchemaValidationMeta::Blueprint,
                 })
@@ -1951,7 +1973,7 @@ where
             (key, value)
         }).collect();
 
-        let schema = KeyValueStoreTypeSubstitutions {
+        let type_substitutions = KeyValueStoreTypeSubstitutions {
             key_type_substitution: generic_args.key_type,
             value_type_substitution: generic_args.value_type,
             can_own: generic_args.can_own,

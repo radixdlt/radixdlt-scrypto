@@ -113,7 +113,7 @@ impl TransactionProcessorBlueprint {
                         ),
                         blueprint_info: BlueprintInfo {
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
-                            type_substitutions: Vec::new(),
+                            type_substitutions_refs: Vec::new(),
                             outer_obj_info: OuterObjectInfo::default(),
                             features: btreeset!(),
                         }

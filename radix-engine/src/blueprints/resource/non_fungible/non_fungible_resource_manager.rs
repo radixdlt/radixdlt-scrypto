@@ -225,7 +225,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            type_substitution_refs: vec![TypeIdentifier(schema_hash, non_fungible_schema.non_fungible)],
+            type_substitution_refs: vec![TypeSubstitutionRef::Local(TypeIdentifier(schema_hash, non_fungible_schema.non_fungible))],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
@@ -330,7 +330,7 @@ impl NonFungibleResourceManagerBlueprint {
         let schema_hash = non_fungible_schema.schema.generate_schema_hash();
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            type_substitution_refs: vec![TypeIdentifier(schema_hash, non_fungible_schema.non_fungible)],
+            type_substitution_refs: vec![TypeSubstitutionRef::Local(TypeIdentifier(schema_hash, non_fungible_schema.non_fungible))],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
@@ -416,7 +416,7 @@ impl NonFungibleResourceManagerBlueprint {
         let schema_hash = non_fungible_schema.schema.generate_schema_hash();
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            type_substitution_refs: vec![TypeIdentifier(schema_hash, non_fungible_schema.non_fungible)],
+            type_substitution_refs: vec![TypeSubstitutionRef::Local(TypeIdentifier(schema_hash, non_fungible_schema.non_fungible))],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
