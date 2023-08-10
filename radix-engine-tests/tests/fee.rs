@@ -249,16 +249,13 @@ fn test_fee_accounting_success() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let effective_execution_cost_unit_price = receipt.costing_parameters.execution_cost_unit_price
-        + receipt.costing_parameters.execution_cost_unit_price
-            * receipt.transaction_costing_parameters.tip_percentage
-            / 100;
     let summary = &receipt.costing_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
             - 66
-            - effective_execution_cost_unit_price * summary.total_execution_cost_units_consumed
+            - receipt.effective_execution_cost_unit_price()
+                * summary.total_execution_cost_units_consumed
             - summary.total_storage_cost_in_xrd
     );
     assert_eq!(account2_new_balance, account2_balance + 66);
@@ -313,15 +310,12 @@ fn test_fee_accounting_failure() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let effective_execution_cost_unit_price = receipt.costing_parameters.execution_cost_unit_price
-        + receipt.costing_parameters.execution_cost_unit_price
-            * receipt.transaction_costing_parameters.tip_percentage
-            / 100;
     let summary = &receipt.costing_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - effective_execution_cost_unit_price * summary.total_execution_cost_units_consumed
+            - receipt.effective_execution_cost_unit_price()
+                * summary.total_execution_cost_units_consumed
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
@@ -398,15 +392,11 @@ fn test_contingent_fee_accounting_success() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let effective_execution_cost_unit_price = receipt.costing_parameters.execution_cost_unit_price
-        + receipt.costing_parameters.execution_cost_unit_price
-            * receipt.transaction_costing_parameters.tip_percentage
-            / 100;
     let contingent_fee = dec!("0.001");
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - effective_execution_cost_unit_price
+            - receipt.effective_execution_cost_unit_price()
                 * receipt.costing_summary.total_execution_cost_units_consumed
             - receipt.costing_summary.total_storage_cost_in_xrd
             + contingent_fee
@@ -465,15 +455,12 @@ fn test_contingent_fee_accounting_failure() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let effective_execution_cost_unit_price = receipt.costing_parameters.execution_cost_unit_price
-        + receipt.costing_parameters.execution_cost_unit_price
-            * receipt.transaction_costing_parameters.tip_percentage
-            / 100;
     let summary = &receipt.costing_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - effective_execution_cost_unit_price * summary.total_execution_cost_units_consumed
+            - receipt.effective_execution_cost_unit_price()
+                * summary.total_execution_cost_units_consumed
     );
     assert_eq!(account2_new_balance, account2_balance);
 }

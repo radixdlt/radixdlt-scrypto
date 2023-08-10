@@ -439,6 +439,16 @@ impl TransactionReceipt {
             )
         })
     }
+
+    pub fn effective_execution_cost_unit_price(&self) -> Decimal {
+        self.costing_parameters.execution_cost_unit_price
+            * (1 + Decimal::from(self.transaction_costing_parameters.tip_percentage) / 100)
+    }
+
+    pub fn effective_finalization_cost_unit_price(&self) -> Decimal {
+        self.costing_parameters.finalization_cost_unit_price
+            * (1 + Decimal::from(self.transaction_costing_parameters.tip_percentage) / 100)
+    }
 }
 
 macro_rules! prefix {
