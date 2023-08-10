@@ -214,8 +214,9 @@ where
             SystemLockData::default(),
         )?;
 
-        let schema: ScryptoSchema =
+        let schema: KeyValueEntrySubstate<ScryptoSchema> =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let schema = schema.value.unwrap();
 
         self.validate_payload(payload, &schema, type_identifier.1, SchemaOrigin::KeyValueStore)
             .map_err(|err| {
@@ -281,11 +282,11 @@ where
                             SystemLockData::default(),
                         )?;
 
-                        let schema: ScryptoSchema =
+                        let schema: KeyValueEntrySubstate<ScryptoSchema> =
                             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
                         self.api.kernel_close_substate(handle)?;
 
-                        (type_identifier.1, schema)
+                        (type_identifier.1, schema.value.unwrap())
                     }
                     SchemaValidationMeta::NewObject {additional_schemas } => {
                         let type_identifier =
@@ -773,7 +774,7 @@ where
 
         let instance_schema_partition = additional_schemas.into_iter().map(|(hash, schema)| {
             let key = SubstateKey::Map(scrypto_encode(&hash).unwrap());
-            let value = IndexedScryptoValue::from_typed(&schema);
+            let value = IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::locked_entry(schema));
             (key, value)
         }).collect();
 
@@ -1855,10 +1856,17 @@ where
             .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
 
         let schema_hash = schema.schema.generate_schema_hash();
+        let substate = KeyValueEntrySubstate::locked_entry(schema.schema);
         let instance_schema_partition = btreemap!(
-             SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()) => IndexedScryptoValue::from_typed(&schema.schema)
+             SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()) => IndexedScryptoValue::from_typed(&
+                substate
+            )
         );
-        let schema = schema.into();
+        let schema = KeyValueStoreSchema {
+            key_type_substitution: TypeIdentifier(schema_hash, schema.key),
+            value_type_substitution: TypeIdentifier(schema_hash, schema.value),
+            can_own: schema.can_own,
+        };
 
         let node_id = self
             .api
