@@ -206,7 +206,7 @@ pub trait HasSchemaHash {
     fn generate_schema_hash(&self) -> Hash;
 }
 
-// TODO - change to VersionedScryptoSchema when we use that in substates
+// TODO(David) - change to hash the VersionedScryptoSchema when we use that in substates
 impl HasSchemaHash for ScryptoSchema {
     fn generate_schema_hash(&self) -> Hash {
         hash(scrypto_encode(self).unwrap())

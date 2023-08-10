@@ -266,7 +266,7 @@ macro_rules! declare_native_blueprint_state {
                     ) -> BlueprintStateSchemaInit {
                         let mut fields = vec![];
                         $(
-                            // TODO - Implement instance schema
+                            // TODO(David) - Implement instance schema
                             fields.push(FieldSchema {
                                 field: TypeRef::Static(
                                     type_aggregator.add_child_type_and_descendents::<[<Versioned $blueprint_ident $field_ident Field>]>()
@@ -276,7 +276,7 @@ macro_rules! declare_native_blueprint_state {
                         )*
                         let mut collections = vec![];
                         $(
-                            // TODO - Implement instance schema
+                            // TODO(David) - Implement instance schema
                             collections.push(map_collection_schema!(
                                 $collection_type,
                                 type_aggregator,
@@ -427,7 +427,8 @@ mod helper_macros {
             paste::paste! {
                 pub type $alias = $static_type;
                 // TODO(David) - Fix this for eg BlueprintVersion being used in multiple keys
-                // Maybe by making these aliases actually new-types(?)
+                // - Maybe by making these aliases actually new-types(?)
+                // - Or by removing these traits completely perhaps...
                 // impl $content_trait for $alias {
                 //     type ActualContent = Self;
                 // }
