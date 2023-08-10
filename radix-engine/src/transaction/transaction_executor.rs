@@ -40,8 +40,6 @@ pub struct CostingParameters {
     pub finalization_cost_unit_price: Decimal,
     /// The max number finalization cost units to consume.
     pub finalization_cost_unit_limit: u32,
-    /// The number of finalization cost units loaned from system.
-    pub finalization_cost_unit_loan: u32,
 
     /// The price of USD in xrd
     pub usd_price: Decimal,
@@ -57,7 +55,6 @@ impl Default for CostingParameters {
             execution_cost_unit_loan: EXECUTION_COST_UNIT_LOAN,
             finalization_cost_unit_price: FINALIZATION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
             finalization_cost_unit_limit: FINALIZATION_COST_UNIT_LIMIT,
-            finalization_cost_unit_loan: FINALIZATION_COST_UNIT_LOAN,
             usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
             storage_price: STORAGE_PRICE_IN_XRD.try_into().unwrap(),
         }

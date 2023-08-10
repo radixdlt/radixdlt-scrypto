@@ -4,9 +4,6 @@ pub const EXECUTION_COST_UNIT_LOAN: u32 = 10_000_000;
 /// The execution cost unit limit.
 pub const EXECUTION_COST_UNIT_LIMIT: u32 = 100_000_000;
 
-/// The finalization cost units loaned from system
-pub const FINALIZATION_COST_UNIT_LOAN: u32 = 10_000_000;
-
 /// The finalization cost unit limit.
 pub const FINALIZATION_COST_UNIT_LIMIT: u32 = 100_000_000;
 
@@ -86,7 +83,7 @@ pub const MAX_ACCESS_RULE_NODES: usize = 64;
 pub const EXECUTION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
 
 /// The price of finalization cost unit, in XRD.
-pub const FINALIZATION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
+pub const FINALIZATION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000002";
 
 /// The price for adding a single byte to the substate store, in XRD.
 pub const STORAGE_PRICE_IN_XRD: &str = "0.00001";

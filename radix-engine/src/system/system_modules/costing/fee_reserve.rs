@@ -93,7 +93,6 @@ pub struct SystemLoanFeeReserve {
 
     finalization_cost_unit_price: u128,
     finalization_cost_unit_limit: u32,
-    finalization_cost_unit_loan: u32,
 
     usd_price: u128,
     storage_price: u128,
@@ -173,10 +172,8 @@ impl SystemLoanFeeReserve {
         let effective_finalization_cost_unit_price = costing_parameters
             .finalization_cost_unit_price
             * (dec!(1) + transaction_costing_parameters.tip_percentage / dec!(100));
-        let system_loan_in_xrd = effective_execution_cost_unit_price
-            * costing_parameters.execution_cost_unit_loan
-            + effective_finalization_cost_unit_price
-                * costing_parameters.finalization_cost_unit_loan;
+        let system_loan_in_xrd =
+            effective_execution_cost_unit_price * costing_parameters.execution_cost_unit_loan;
 
         Self {
             // Execution costing parameters
@@ -193,7 +190,6 @@ impl SystemLoanFeeReserve {
             )
             .unwrap(),
             finalization_cost_unit_limit: costing_parameters.finalization_cost_unit_limit,
-            finalization_cost_unit_loan: costing_parameters.finalization_cost_unit_loan,
 
             // USD and storage price
             usd_price: transmute_decimal_as_u128(costing_parameters.usd_price).unwrap(),
@@ -432,12 +428,6 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
         self.consume_finalization_internal(cost_units)?;
 
-        if !self.fully_repaid()
-            && self.finalization_cost_units_committed >= self.finalization_cost_unit_loan
-        {
-            self.repay_all()?;
-        }
-
         Ok(())
     }
 
@@ -591,10 +581,7 @@ mod tests {
             fee_reserve.consume_execution(6),
             Err(FeeReserveError::InsufficientBalance {
                 required: dec!("6.12"),
-                remaining: dec!("5.1")
-                    + Decimal::try_from(FINALIZATION_COST_UNIT_PRICE_IN_XRD).unwrap()
-                        * dec!("1.02")
-                        * FINALIZATION_COST_UNIT_LOAN,
+                remaining: dec!("5.1"),
             }),
         );
         fee_reserve.repay_all().unwrap();
@@ -715,10 +702,7 @@ mod tests {
             ),
             Err(FeeReserveError::InsufficientBalance {
                 required: dec!("80"),
-                remaining: dec!("60")
-                    + Decimal::try_from(FINALIZATION_COST_UNIT_PRICE_IN_XRD).unwrap()
-                        * dec!("1")
-                        * FINALIZATION_COST_UNIT_LOAN,
+                remaining: dec!("60"),
             }),
         );
     }
