@@ -575,7 +575,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
 
         write!(
                 f,
-                "\n{} Execution => {} XRD, Finalization => {} XRD, Tipping => {} XRD, Storage => {} XRD, Royalty => {} XRD",
+                "\n{} Network Execution: {} XRD, Network Finalization: {} XRD, Tip: {} XRD, Network Storage: {} XRD, Royalties: {} XRD",
                 "Transaction Cost:".bold().green(),
                 self.fee_summary.total_execution_cost_in_xrd,
                 self.fee_summary.total_finalization_cost_in_xrd,
