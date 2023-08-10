@@ -1154,10 +1154,8 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             proposals_missed: 0,
         },]
     );
-    let emission_and_tx1_rewards = emission_xrd_per_epoch
-        + receipt1
-            .costing_summary
-            .expected_reward_if_single_validator();
+    let emission_and_tx1_rewards =
+        emission_xrd_per_epoch + receipt1.fee_summary.expected_reward_if_single_validator();
     let validator_substate = test_runner.get_active_validator_info_by_key(&validator_key);
     assert_close_to!(
         test_runner
@@ -1198,12 +1196,8 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
             .unwrap(),
         initial_stake_amount
-            + receipt1
-                .costing_summary
-                .expected_reward_if_single_validator()
-            + receipt2
-                .costing_summary
-                .expected_reward_if_single_validator()
+            + receipt1.fee_summary.expected_reward_if_single_validator()
+            + receipt2.fee_summary.expected_reward_if_single_validator()
             + dec!("2") * emission_xrd_per_epoch // everything still goes into stake, by various means
     );
     // the new fee goes into internal owner's vault (as stake units)
@@ -1214,10 +1208,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             .inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0)
             .unwrap(),
         emission_and_tx1_rewards
-            + (receipt2
-                .costing_summary
-                .expected_reward_if_single_validator()
-                + next_epoch_fee_xrd)
+            + (receipt2.fee_summary.expected_reward_if_single_validator() + next_epoch_fee_xrd)
                 * stake_unit_exchange_rate
     );
 }
@@ -1280,14 +1271,14 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(&validator_key)],
             )
-            .costing_summary
+            .fee_summary
             .expected_reward_if_single_validator();
     total_rewards += last_reward;
 
     // ... and wait 1 epoch to make it effective
     last_reward = test_runner
         .advance_to_round(Round::of(1))
-        .costing_summary
+        .fee_summary
         .expected_reward_if_single_validator();
     total_rewards += last_reward;
     let current_epoch = initial_epoch.next();
@@ -1313,7 +1304,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(&validator_key)],
             )
-            .costing_summary
+            .fee_summary
             .expected_reward_if_single_validator();
     total_rewards += last_reward;
     let increase_effective_at_epoch = current_epoch.after(fee_increase_delay_epochs);
@@ -1323,7 +1314,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     for _ in current_epoch.number()..increase_effective_at_epoch.number() {
         last_reward = test_runner
             .advance_to_round(Round::of(1))
-            .costing_summary
+            .fee_summary
             .expected_reward_if_single_validator();
         total_rewards += last_reward;
     }
@@ -1344,9 +1335,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
 
     // Assert: during that next epoch, the `increased_fee_factor` was already effective
     let result = receipt.expect_commit_success();
-    last_reward = receipt
-        .costing_summary
-        .expected_reward_if_single_validator();
+    last_reward = receipt.fee_summary.expected_reward_if_single_validator();
     total_rewards += last_reward;
     let event = test_runner
         .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result)
@@ -2657,7 +2646,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         // The validator isn't eligible for the validator set rewards because it's `reliability_factor` is zero.
         Decimal::from(9)
             + receipt1
-                .costing_summary
+                .fee_summary
                 .expected_reward_as_proposer_if_single_validator()
     );
 }
@@ -2816,9 +2805,7 @@ fn test_tips_and_fee_distribution_single_validator() {
     assert_eq!(event.epoch, initial_epoch);
     assert_close_to!(
         event.amount,
-        receipt1
-            .costing_summary
-            .expected_reward_if_single_validator()
+        receipt1.fee_summary.expected_reward_if_single_validator()
     );
 }
 

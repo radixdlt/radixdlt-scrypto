@@ -149,7 +149,7 @@ fn compose_proof(amount: Decimal) -> u32 {
             NonFungibleGlobalId::from_public_key(&pk4),
         ],
     );
-    receipt.costing_summary.total_execution_cost_units_consumed
+    receipt.fee_summary.total_execution_cost_units_consumed
 }
 
 #[test]

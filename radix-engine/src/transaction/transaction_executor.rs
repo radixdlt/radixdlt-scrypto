@@ -252,7 +252,7 @@ where
         };
 
         // Run manifest
-        let (costing_summary, costing_details, result) = match validation_result {
+        let (fee_summary, fee_details, result) = match validation_result {
             Ok(()) => {
                 let (
                     interpretation_result,
@@ -280,7 +280,7 @@ where
                     .map(|(k, v)| (k.to_string(), v))
                     .collect();
                 let finalization_cost_breakdown = Default::default();
-                let costing_details = TransactionCostingDetails {
+                let fee_details = TransactionFeeDetails {
                     execution_cost_breakdown,
                     finalization_cost_breakdown,
                 };
@@ -388,7 +388,7 @@ where
 
                         (
                             fee_reserve_finalization.into(),
-                            costing_details,
+                            fee_details,
                             TransactionResult::Commit(CommitResult {
                                 state_updates,
                                 state_update_summary,
@@ -407,20 +407,20 @@ where
                     }
                     TransactionResultType::Reject(reason) => (
                         costing_module.fee_reserve.finalize().into(),
-                        costing_details,
+                        fee_details,
                         TransactionResult::Reject(RejectResult { reason }),
                     ),
                     TransactionResultType::Abort(reason) => (
                         costing_module.fee_reserve.finalize().into(),
-                        costing_details,
+                        fee_details,
                         TransactionResult::Abort(AbortResult { reason }),
                     ),
                 }
             }
             Err(reason) => (
-                // No execution is done, so add empty costing summary and details
-                TransactionCostingSummary::default(),
-                TransactionCostingDetails::default(),
+                // No execution is done, so add empty fee summary and details
+                TransactionFeeSummary::default(),
+                TransactionFeeDetails::default(),
                 TransactionResult::Reject(RejectResult { reason }),
             ),
         };
@@ -437,8 +437,8 @@ where
         let receipt = TransactionReceipt {
             costing_parameters: costing_parameters.clone(),
             transaction_costing_parameters: executable.costing_parameters().clone(),
-            costing_summary,
-            costing_details,
+            fee_summary,
+            fee_details,
             result,
             resources_usage,
         };
@@ -958,12 +958,12 @@ where
         // NB - we use "to_string" to ensure they align correctly
 
         println!("{:-^100}", "Execution Cost Breakdown");
-        for (k, v) in &receipt.costing_details.execution_cost_breakdown {
+        for (k, v) in &receipt.fee_details.execution_cost_breakdown {
             println!("{:<75}: {:>15}", k, v.to_string());
         }
 
         println!("{:-^100}", "Finalization Cost Breakdown");
-        for (k, v) in &receipt.costing_details.finalization_cost_breakdown {
+        for (k, v) in &receipt.fee_details.finalization_cost_breakdown {
             println!("{:<75}: {:>15}", k, v.to_string());
         }
 
@@ -984,7 +984,7 @@ where
             "{:<30}: {:>15}",
             "Execution Cost Unit Consumed",
             receipt
-                .costing_summary
+                .fee_summary
                 .total_execution_cost_units_consumed
                 .to_string()
         );
@@ -1004,33 +1004,24 @@ where
             "{:<30}: {:>15}",
             "Finalization Cost Unit Consumed",
             receipt
-                .costing_summary
+                .fee_summary
                 .total_finalization_cost_units_consumed
                 .to_string()
         );
         println!(
             "{:<30}: {:>15}",
             "Tipping Cost in XRD",
-            receipt
-                .costing_summary
-                .total_tipping_cost_in_xrd
-                .to_string()
+            receipt.fee_summary.total_tipping_cost_in_xrd.to_string()
         );
         println!(
             "{:<30}: {:>15}",
             "Storage Cost in XRD",
-            receipt
-                .costing_summary
-                .total_storage_cost_in_xrd
-                .to_string()
+            receipt.fee_summary.total_storage_cost_in_xrd.to_string()
         );
         println!(
             "{:<30}: {:>15}",
             "Royalty Costs in XRD",
-            receipt
-                .costing_summary
-                .total_royalty_cost_in_xrd
-                .to_string()
+            receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
         );
 
         match &receipt.result {

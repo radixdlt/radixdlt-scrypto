@@ -24,10 +24,10 @@ pub struct TransactionReceipt {
     pub costing_parameters: CostingParameters,
     /// Transaction costing parameters
     pub transaction_costing_parameters: TransactionCostingParameters,
-    /// Transaction costing summary
-    pub costing_summary: TransactionCostingSummary,
-    /// Transaction costing breakdown
-    pub costing_details: TransactionCostingDetails,
+    /// Transaction fee summary
+    pub fee_summary: TransactionFeeSummary,
+    /// Transaction fee detail
+    pub fee_details: TransactionFeeDetails,
     /// Transaction result
     pub result: TransactionResult,
     /// Optional, only when compile-time feature flag `resources_usage` is ON.
@@ -35,7 +35,7 @@ pub struct TransactionReceipt {
 }
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
-pub struct TransactionCostingSummary {
+pub struct TransactionFeeSummary {
     /// Total execution cost units consumed.
     pub total_execution_cost_units_consumed: u32,
     /// Total finalization cost units consumed.
@@ -54,13 +54,11 @@ pub struct TransactionCostingSummary {
 }
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
-pub struct TransactionCostingDetails {
+pub struct TransactionFeeDetails {
     /// Execution cost breakdown
-    ///
     /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
     pub execution_cost_breakdown: BTreeMap<String, u32>,
     /// Finalization cost breakdown
-    ///
     /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
     pub finalization_cost_breakdown: BTreeMap<String, u32>,
 }
@@ -280,8 +278,8 @@ impl TransactionReceipt {
         Self {
             costing_parameters: Default::default(),
             transaction_costing_parameters: Default::default(),
-            costing_summary: Default::default(),
-            costing_details: Default::default(),
+            fee_summary: Default::default(),
+            fee_details: Default::default(),
             result: TransactionResult::Commit(commit_result),
             resources_usage: Default::default(),
         }
@@ -579,11 +577,11 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                 f,
                 "\n{} Execution => {} XRD, Finalization => {} XRD, Tipping => {} XRD, Storage => {} XRD, Royalty => {} XRD",
                 "Transaction Cost:".bold().green(),
-                self.costing_summary.total_execution_cost_in_xrd,
-                self.costing_summary.total_finalization_cost_in_xrd,
-                self.costing_summary.total_tipping_cost_in_xrd,
-                self.costing_summary.total_storage_cost_in_xrd,
-                self.costing_summary.total_royalty_cost_in_xrd,
+                self.fee_summary.total_execution_cost_in_xrd,
+                self.fee_summary.total_finalization_cost_in_xrd,
+                self.fee_summary.total_tipping_cost_in_xrd,
+                self.fee_summary.total_storage_cost_in_xrd,
+                self.fee_summary.total_royalty_cost_in_xrd,
             )?;
 
         write!(
@@ -591,7 +589,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             "\n{} {} limit, {} consumed, {} XRD per unit",
             "Execution Cost Units:".bold().green(),
             self.costing_parameters.execution_cost_unit_limit,
-            self.costing_summary.total_execution_cost_units_consumed,
+            self.fee_summary.total_execution_cost_units_consumed,
             self.costing_parameters.execution_cost_unit_price,
         )?;
 
@@ -600,7 +598,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             "\n{} {} limit, {} consumed, {} XRD per unit",
             "Finalization Cost Units:".bold().green(),
             self.costing_parameters.finalization_cost_unit_limit,
-            self.costing_summary.total_finalization_cost_units_consumed,
+            self.fee_summary.total_finalization_cost_units_consumed,
             self.costing_parameters.finalization_cost_unit_price,
         )?;
 
@@ -842,7 +840,7 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
     Ok(())
 }
 
-impl From<FeeReserveFinalizationSummary> for TransactionCostingSummary {
+impl From<FeeReserveFinalizationSummary> for TransactionFeeSummary {
     fn from(value: FeeReserveFinalizationSummary) -> Self {
         Self {
             total_execution_cost_units_consumed: value.total_execution_cost_units_consumed,
@@ -856,7 +854,7 @@ impl From<FeeReserveFinalizationSummary> for TransactionCostingSummary {
     }
 }
 
-impl TransactionCostingSummary {
+impl TransactionFeeSummary {
     pub fn total_cost(&self) -> Decimal {
         self.total_execution_cost_in_xrd
             + self.total_finalization_cost_in_xrd

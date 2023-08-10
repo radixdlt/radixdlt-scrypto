@@ -45,10 +45,10 @@ fn test_transaction_preview_cost_estimate() {
     actual_receipt.expect_commit(true);
     assert_eq!(
         // TODO: better preview payload size estimate?
-        preview_receipt.costing_summary.total_cost()
+        preview_receipt.fee_summary.total_cost()
             + Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD).unwrap()
                 * FeeTable::new().tx_payload_cost(size_diff),
-        actual_receipt.costing_summary.total_cost(),
+        actual_receipt.fee_summary.total_cost(),
     );
 }
 
@@ -75,12 +75,12 @@ fn test_transaction_preview_without_locking_fee() {
 
     // Act
     let preview_receipt = test_runner.preview(preview_intent, &network).unwrap();
-    let costing_summary = &preview_receipt.costing_summary;
+    let fee_summary = &preview_receipt.fee_summary;
     println!("{:?}", preview_receipt);
-    assert!(costing_summary.total_execution_cost_in_xrd.is_positive());
-    assert_eq!(costing_summary.total_tipping_cost_in_xrd, dec!("0"));
-    assert_eq!(costing_summary.total_storage_cost_in_xrd, dec!("0"));
-    assert_eq!(costing_summary.total_royalty_cost_in_xrd, dec!("0"));
+    assert!(fee_summary.total_execution_cost_in_xrd.is_positive());
+    assert_eq!(fee_summary.total_tipping_cost_in_xrd, dec!("0"));
+    assert_eq!(fee_summary.total_storage_cost_in_xrd, dec!("0"));
+    assert_eq!(fee_summary.total_royalty_cost_in_xrd, dec!("0"));
 }
 
 #[test]

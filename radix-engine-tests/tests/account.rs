@@ -217,7 +217,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
             .unwrap()
             .get(&XRD)
             .unwrap(),
-        &BalanceChange::Fungible(-receipt.costing_summary.total_cost())
+        &BalanceChange::Fungible(-receipt.fee_summary.total_cost())
     );
 }
 
