@@ -13,7 +13,7 @@ use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::*;
-use scrypto_schema::KeyValueStoreSchemaInit;
+use scrypto_schema::KeyValueStoreGenericArgs;
 
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::Runtime;
@@ -39,7 +39,7 @@ impl<
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
 
-        let mut store_schema = KeyValueStoreSchemaInit::new::<K, V>(true);
+        let mut store_schema = KeyValueStoreGenericArgs::new::<K, V>(true);
         store_schema.replace_self_package_address(Runtime::package_address());
 
         Self {

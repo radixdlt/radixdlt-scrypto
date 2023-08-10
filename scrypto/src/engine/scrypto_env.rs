@@ -21,7 +21,7 @@ use radix_engine_interface::types::{Level, NodeId, SubstateHandle};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::{InstanceSchemaInit, KeyValueStoreSchema, KeyValueStoreSchemaInit};
+use scrypto_schema::{GenericArgs, KeyValueStoreTypeSubstitutions, KeyValueStoreGenericArgs};
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -99,7 +99,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         _blueprint_ident: &str,
         _features: Vec<&str>,
-        _schema: Option<InstanceSchemaInit>,
+        _schema: Option<GenericArgs>,
         _fields: Vec<FieldValue>,
         _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, ClientApiError> {
@@ -256,7 +256,7 @@ impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
 impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
     fn key_value_store_new(
         &mut self,
-        schema: KeyValueStoreSchemaInit,
+        schema: KeyValueStoreGenericArgs,
     ) -> Result<NodeId, ClientApiError> {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { kv_store_new(schema.as_ptr(), schema.len()) });
@@ -266,7 +266,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
     fn key_value_store_get_info(
         &mut self,
         node_id: &NodeId,
-    ) -> Result<KeyValueStoreSchema, ClientApiError> {
+    ) -> Result<KeyValueStoreTypeSubstitutions, ClientApiError> {
         let bytes = copy_buffer(unsafe {
             kv_store_get_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });

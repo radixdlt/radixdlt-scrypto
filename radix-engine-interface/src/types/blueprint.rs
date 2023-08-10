@@ -10,7 +10,7 @@ use radix_engine_common::types::PackageAddress;
 use radix_engine_derive::ManifestSbor;
 use radix_engine_interface::api::ObjectModuleId;
 use sbor::rust::prelude::*;
-use scrypto_schema::KeyValueStoreSchema;
+use scrypto_schema::KeyValueStoreTypeSubstitutions;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -73,7 +73,7 @@ pub struct GlobalAddressPhantom {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct KeyValueStoreInfo {
-    pub schema: KeyValueStoreSchema,
+    pub schema: KeyValueStoreTypeSubstitutions,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]

@@ -10,21 +10,21 @@ use radix_engine_common::prelude::*;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct KeyValueStoreSchema {
+pub struct KeyValueStoreTypeSubstitutions {
     pub key_type_substitution: TypeIdentifier,
     pub value_type_substitution: TypeIdentifier,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct KeyValueStoreSchemaInit {
+pub struct KeyValueStoreGenericArgs {
     pub schema: ScryptoSchema,
     pub key: LocalTypeIndex,
     pub value: LocalTypeIndex,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
-impl KeyValueStoreSchemaInit {
+impl KeyValueStoreGenericArgs {
     pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
@@ -43,10 +43,10 @@ impl KeyValueStoreSchemaInit {
     }
 }
 
-impl From<KeyValueStoreSchemaInit> for KeyValueStoreSchema {
-    fn from(schema: KeyValueStoreSchemaInit) -> Self {
+impl From<KeyValueStoreGenericArgs> for KeyValueStoreTypeSubstitutions {
+    fn from(schema: KeyValueStoreGenericArgs) -> Self {
         let schema_hash = schema.schema.generate_schema_hash();
-        KeyValueStoreSchema {
+        KeyValueStoreTypeSubstitutions {
             key_type_substitution: TypeIdentifier(schema_hash, schema.key),
             value_type_substitution: TypeIdentifier(schema_hash, schema.value),
             can_own: schema.can_own,
@@ -254,33 +254,7 @@ pub enum Receiver {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InstanceSchemaInit {
+pub struct GenericArgs {
     pub schema: ScryptoSchema,
-    pub instance_type_lookup: Vec<LocalTypeIndex>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InstanceSchema {
-    pub schema: ScryptoSchema,
-    pub instance_type_lookup: Vec<TypeIdentifier>,
-}
-
-impl From<InstanceSchemaInit> for InstanceSchema {
-    fn from(
-        InstanceSchemaInit {
-            schema,
-            instance_type_lookup,
-        }: InstanceSchemaInit,
-    ) -> Self {
-        let schema_hash = schema.generate_schema_hash();
-        let instance_type_lookup = instance_type_lookup
-            .into_iter()
-            .map(|t| TypeIdentifier(schema_hash, t))
-            .collect();
-
-        Self {
-            schema,
-            instance_type_lookup,
-        }
-    }
+    pub type_substitution_refs: Vec<LocalTypeIndex>,
 }

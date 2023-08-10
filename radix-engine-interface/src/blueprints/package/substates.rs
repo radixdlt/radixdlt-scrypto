@@ -520,7 +520,7 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchemaInit>) -> bool {
+    pub fn validate_instance_schema(&self, instance_schema: &Option<GenericArgs>) -> bool {
         for (_, partition) in &self.collections {
             match partition {
                 BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
@@ -528,7 +528,7 @@ impl IndexedStateSchema {
                         TypePointer::Package(..) => {}
                         TypePointer::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
-                                if instance_schema.instance_type_lookup.len()
+                                if instance_schema.type_substitution_refs.len()
                                     < (*type_index as usize)
                                 {
                                     return false;
@@ -543,7 +543,7 @@ impl IndexedStateSchema {
                         TypePointer::Package(..) => {}
                         TypePointer::Instance(type_index) => {
                             if let Some(instance_schema) = instance_schema {
-                                if instance_schema.instance_type_lookup.len()
+                                if instance_schema.type_substitution_refs.len()
                                     < (*type_index as usize)
                                 {
                                     return false;

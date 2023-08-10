@@ -228,7 +228,7 @@ where
         &mut self,
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let schema = scrypto_decode::<KeyValueStoreSchemaInit>(&schema)
+        let schema = scrypto_decode::<KeyValueStoreGenericArgs>(&schema)
             .map_err(WasmRuntimeError::InvalidKeyValueStoreSchema)?;
 
         let key_value_store_id = self.api.key_value_store_new(schema)?;

@@ -33,7 +33,7 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    Condition, KeyValueStoreSchema,
+    Condition, KeyValueStoreTypeSubstitutions,
 };
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
@@ -135,7 +135,7 @@ impl TryFrom<ObjectHandle> for ActorObjectType {
 
 #[derive(Debug, Clone)]
 pub struct KVStoreValidationTarget {
-    pub kv_store_type: KeyValueStoreSchema,
+    pub kv_store_type: KeyValueStoreTypeSubstitutions,
     pub meta: NodeId,
 }
 
@@ -333,7 +333,7 @@ where
         outer_obj_info: OuterObjectInfo,
         features: BTreeSet<String>,
         outer_blueprint_features: &BTreeSet<String>,
-        new_instance_schema: Option<InstanceSchemaInit>,
+        generic_args: Option<GenericArgs>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<
@@ -345,24 +345,24 @@ where
     > {
         // Validate instance schema
         let (type_substitutions, additional_schemas) = {
-            if let Some(instance_schema) = &new_instance_schema {
+            if let Some(instance_schema) = &generic_args {
                 validate_schema(&instance_schema.schema)
                     .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
             }
             if !blueprint_interface
                 .state
-                .validate_instance_schema(&new_instance_schema)
+                .validate_instance_schema(&generic_args)
             {
                 return Err(RuntimeError::SystemError(
                     SystemError::InvalidInstanceSchema,
                 ));
             }
 
-            new_instance_schema
+            generic_args
                 .map(|schema_init| {
                     let schema_hash = schema_init.schema.generate_schema_hash();
                     let type_substitutions: Vec<TypeIdentifier> = schema_init
-                        .instance_type_lookup
+                        .type_substitution_refs
                         .into_iter()
                         .map(|t| TypeIdentifier(schema_hash, t))
                         .collect();
@@ -712,7 +712,7 @@ where
         blueprint_id: &BlueprintId,
         features: Vec<&str>,
         instance_context: Option<InstanceContext>,
-        new_instance_schema: Option<InstanceSchemaInit>,
+        new_instance_schema: Option<GenericArgs>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
@@ -1471,7 +1471,7 @@ where
         &mut self,
         blueprint_ident: &str,
         features: Vec<&str>,
-        schema: Option<InstanceSchemaInit>,
+        schema: Option<GenericArgs>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
@@ -1861,24 +1861,24 @@ where
     #[trace_resources]
     fn key_value_store_new(
         &mut self,
-        schema: KeyValueStoreSchemaInit,
+        generic_args: KeyValueStoreGenericArgs,
     ) -> Result<NodeId, RuntimeError> {
-        schema
+        generic_args
             .schema
             .validate()
             .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
 
-        let schema_hash = schema.schema.generate_schema_hash();
-        let substate = KeyValueEntrySubstate::locked_entry(schema.schema);
+        let schema_hash = generic_args.schema.generate_schema_hash();
+        let substate = KeyValueEntrySubstate::locked_entry(generic_args.schema);
         let instance_schema_partition = btreemap!(
              SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()) => IndexedScryptoValue::from_typed(&
                 substate
             )
         );
-        let schema = KeyValueStoreSchema {
-            key_type_substitution: TypeIdentifier(schema_hash, schema.key),
-            value_type_substitution: TypeIdentifier(schema_hash, schema.value),
-            can_own: schema.can_own,
+        let schema = KeyValueStoreTypeSubstitutions {
+            key_type_substitution: TypeIdentifier(schema_hash, generic_args.key),
+            value_type_substitution: TypeIdentifier(schema_hash, generic_args.value),
+            can_own: generic_args.can_own,
         };
 
         let node_id = self
@@ -1906,7 +1906,7 @@ where
     fn key_value_store_get_info(
         &mut self,
         node_id: &NodeId,
-    ) -> Result<KeyValueStoreSchema, RuntimeError> {
+    ) -> Result<KeyValueStoreTypeSubstitutions, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let info = match type_info {
             TypeInfoSubstate::KeyValueStore(info) => info,
