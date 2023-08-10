@@ -1,5 +1,5 @@
-use crate::types::*;
 use crate::system::system::*;
+use crate::types::*;
 
 pub trait FieldContent: Sized {
     type VersionedContent: From<Self>;
@@ -241,7 +241,7 @@ macro_rules! declare_native_blueprint_state {
 
                 impl TryFrom<&SubstateKey> for [<$blueprint_ident Field>] {
                     type Error = ();
-        
+
                     fn try_from(key: &SubstateKey) -> Result<Self, Self::Error> {
                         match key {
                             SubstateKey::Field(x) => Self::from_repr(*x).ok_or(()),
@@ -252,7 +252,7 @@ macro_rules! declare_native_blueprint_state {
 
                 impl TryFrom<u8> for [<$blueprint_ident Field>] {
                     type Error = ();
-                
+
                     fn try_from(offset: u8) -> Result<Self, Self::Error> {
                         Self::from_repr(offset).ok_or(())
                     }
@@ -373,7 +373,7 @@ macro_rules! declare_native_blueprint_state {
                 pub struct [<$blueprint_ident StateApi>]<'a, Y: ClientApi<RuntimeError>> {
                     api: &'a mut Y,
                 }
-    
+
                 impl<'a, Y: ClientApi<RuntimeError>> [<$blueprint_ident StateApi>]<'a, Y> {
                     pub fn with(client_api: &'a mut Y) -> Self {
                         Self {
@@ -381,7 +381,7 @@ macro_rules! declare_native_blueprint_state {
                         }
                     }
                 }
-    
+
                 impl<'a, Y: ClientApi<$crate::errors::RuntimeError>> From<&'a mut Y> for [<$blueprint_ident StateApi>]<'a, Y> {
                     fn from(value: &'a mut Y) -> Self {
                         Self::with(value)
@@ -433,7 +433,7 @@ struct PackageMyCoolSortedIndexValueV1;
 
 use radix_engine_interface::blueprints::package::*;
 
-declare_native_blueprint_state!{
+declare_native_blueprint_state! {
     blueprint_ident: Package,
     fields: {
         royalty:  {
