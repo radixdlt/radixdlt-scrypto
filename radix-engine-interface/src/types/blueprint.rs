@@ -73,7 +73,7 @@ pub struct GlobalAddressPhantom {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct KeyValueStoreInfo {
-    pub schema: KeyValueStoreTypeSubstitutions,
+    pub type_substitutions: KeyValueStoreTypeSubstitutions,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]

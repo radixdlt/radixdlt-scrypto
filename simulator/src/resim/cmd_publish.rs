@@ -82,9 +82,7 @@ impl Publish {
             );
             let schemas_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                    .unwrap(),
+                SCHEMAS_PARTITION,
             );
             let dependencies_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,
@@ -210,7 +208,7 @@ impl Publish {
                         feature_set: s.feature_set,
                         functions,
                         events,
-                        state: IndexedStateSchema::from_schema(schema_hash, s.schema.state),
+                        state: IndexedStateSchema::from_schema(schema_hash, s.schema.state, vec![]),
                     },
                     function_exports,
                     hook_exports: BTreeMap::new(),

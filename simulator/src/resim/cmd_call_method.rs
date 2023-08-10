@@ -111,8 +111,10 @@ impl CallMethod {
                 (schema, index)
             }
             TypePointer::Instance(instance_index) => {
+                todo!()
+                /*
                 let object_info = export_object_info(component_address)?;
-                match object_info.blueprint_info.instance_schema {
+                match object_info.blueprint_info.type_substitutions {
                     None => {
                         return Err(Error::InstanceSchemaNot(component_address, instance_index))
                     }
@@ -127,6 +129,7 @@ impl CallMethod {
                         (instance_schema.schema, type_identifier.1)
                     }
                 }
+                 */
             }
         };
 

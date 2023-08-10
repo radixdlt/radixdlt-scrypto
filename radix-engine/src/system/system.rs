@@ -173,6 +173,22 @@ where
         }
     }
 
+    pub fn validate_kv_store_generic_args(
+        &mut self,
+        schemas: &IndexMap<Hash, ScryptoSchema>,
+        key: &TypeIdentifier,
+        value: &TypeIdentifier,
+    ) -> Result<(), RuntimeError> {
+        let _schema = schemas.get(&key.0).ok_or_else(|| {
+            RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+        })?;
+
+        let _schema = schemas.get(&value.0).ok_or_else(|| {
+            RuntimeError::SystemError(SystemError::InvalidGenericArgs)
+        })?;
+
+        Ok(())
+    }
 
     pub fn validate_bp_generic_args(
         &mut self,
@@ -182,6 +198,8 @@ where
     ) -> Result<(), RuntimeError> {
         let state_schema =
             self.get_blueprint_default_interface(blueprint_id.clone())?.state;
+
+        // FIXME: Check length of type_substitution_refs
 
         if let Some((_, field_schemas)) = &state_schema.fields {
             for field_schema in field_schemas {
@@ -1916,21 +1934,26 @@ where
         &mut self,
         generic_args: KeyValueStoreGenericArgs,
     ) -> Result<NodeId, RuntimeError> {
-        generic_args
-            .schema
-            .validate()
-            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
+        let mut additional_schemas = index_map_new();
+        if let Some(schema) = generic_args.additional_schema {
+            validate_schema(&schema)
+                .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
+            let schema_hash = schema.generate_schema_hash();
+            additional_schemas.insert(schema_hash, schema);
+        }
 
-        let schema_hash = generic_args.schema.generate_schema_hash();
-        let substate = KeyValueEntrySubstate::locked_entry(generic_args.schema);
-        let instance_schema_partition = btreemap!(
-             SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()) => IndexedScryptoValue::from_typed(&
-                substate
-            )
-        );
+        self.validate_kv_store_generic_args(&additional_schemas, &generic_args.key_type, &generic_args.value_type)?;
+
+        let schema_partition = additional_schemas.into_iter().map(|(schema_hash, schema)| {
+            let key = SubstateKey::Map(scrypto_encode(&schema_hash).unwrap());
+            let substate = KeyValueEntrySubstate::locked_entry(schema);
+            let value = IndexedScryptoValue::from_typed(&substate);
+            (key, value)
+        }).collect();
+
         let schema = KeyValueStoreTypeSubstitutions {
-            key_type_substitution: TypeIdentifier(schema_hash, generic_args.key),
-            value_type_substitution: TypeIdentifier(schema_hash, generic_args.value),
+            key_type_substitution: generic_args.key_type,
+            value_type_substitution: generic_args.value_type,
             can_own: generic_args.can_own,
         };
 
@@ -1944,10 +1967,10 @@ where
                 MAIN_BASE_PARTITION => btreemap!(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::KeyValueStore(KeyValueStoreInfo {
-                        schema,
+                        type_substitutions,
                     })
                 ),
-                SCHEMAS_PARTITION => instance_schema_partition,
+                SCHEMAS_PARTITION => schema_partition,
             ),
         )?;
 
@@ -1966,7 +1989,7 @@ where
             _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
         };
 
-        Ok(info.schema)
+        Ok(info.type_substitutions)
     }
 
     // Costing through kernel
@@ -1988,7 +2011,7 @@ where
         };
 
         let target = KVStoreValidationTarget {
-            kv_store_type: info.schema,
+            kv_store_type: info.type_substitutions,
             meta: *node_id,
         };
 

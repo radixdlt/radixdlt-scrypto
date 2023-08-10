@@ -71,7 +71,6 @@ use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, TypePointer,
-    PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
@@ -388,9 +387,7 @@ pub fn export_schema(
     let schema = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                .unwrap(),
+            SCHEMAS_PARTITION,
             &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
         )
         .ok_or(Error::SchemaNotFound(package_address, schema_hash))?
@@ -443,6 +440,8 @@ pub fn get_event_schema<S: SubstateDatabase>(
     substate_db: &S,
     event_type_identifier: &EventTypeIdentifier,
 ) -> Option<(LocalTypeIndex, ScryptoSchema)> {
+    todo!();
+    /*
     let (package_address, schema_pointer) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
             match node_module {
@@ -492,6 +491,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
             todo!()
         }
     }
+     */
 }
 
 pub fn db_upsert_timestamps(

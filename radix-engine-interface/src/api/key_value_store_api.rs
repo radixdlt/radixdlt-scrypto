@@ -1,18 +1,18 @@
-use radix_engine_common::prelude::{replace_self_package_address, ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
+use radix_engine_common::prelude::{HasSchemaHash, replace_self_package_address, ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::LockFlags;
-use sbor::{generate_full_schema, LocalTypeIndex, TypeAggregator};
+use sbor::{generate_full_schema, TypeAggregator};
 use sbor::rust::prelude::*;
 use scrypto_schema::{KeyValueStoreTypeSubstitutions};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreGenericArgs {
-    pub schema: ScryptoSchema,
-    pub key: LocalTypeIndex,
-    pub value: LocalTypeIndex,
-    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
+    pub additional_schema: Option<ScryptoSchema>,
+    pub key_type: TypeIdentifier,
+    pub value_type: TypeIdentifier,
+    pub can_own: bool,
 }
 
 impl KeyValueStoreGenericArgs {
@@ -21,16 +21,19 @@ impl KeyValueStoreGenericArgs {
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
         let value_type_index = aggregator.add_child_type_and_descendents::<V>();
         let schema = generate_full_schema(aggregator);
+        let schema_hash = schema.generate_schema_hash();
         Self {
-            schema,
-            key: key_type_index,
-            value: value_type_index,
+            additional_schema: Some(schema),
+            key_type: TypeIdentifier(schema_hash, key_type_index),
+            value_type: TypeIdentifier(schema_hash, value_type_index),
             can_own,
         }
     }
 
     pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
-        replace_self_package_address(&mut self.schema, package_address);
+        if let Some(schema) = &mut self.additional_schema {
+            replace_self_package_address(schema, package_address);
+        }
     }
 }
 
