@@ -478,7 +478,6 @@ impl SecurifiedRoleAssignment for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
-
 pub fn create_bootstrap_package_partitions(
     package_structure: PackageStructure,
     metadata: MetadataInit,
@@ -550,10 +549,7 @@ pub fn create_bootstrap_package_partitions(
             })
             .collect();
 
-        partitions.insert(
-            PACKAGE_SCHEMAS_PARTITION,
-            schemas_partition,
-        );
+        partitions.insert(SCHEMAS_PARTITION, schemas_partition);
     }
 
     {
@@ -729,7 +725,10 @@ where
             };
             dependency_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
-        kv_entries.insert(PACKAGE_BLUEPRINT_DEPENDENCIES_COLLECTION_INDEX, dependency_partition);
+        kv_entries.insert(
+            PACKAGE_BLUEPRINT_DEPENDENCIES_COLLECTION_INDEX,
+            dependency_partition,
+        );
     }
 
     {
@@ -742,7 +741,10 @@ where
             };
             package_royalties_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
-        kv_entries.insert(PACKAGE_ROYALTY_COLLECTION_INDEX, package_royalties_partition);
+        kv_entries.insert(
+            PACKAGE_ROYALTY_COLLECTION_INDEX,
+            package_royalties_partition,
+        );
     }
 
     {
@@ -779,7 +781,10 @@ where
             };
             original_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
         }
-        kv_entries.insert(PACKAGE_ORIGINAL_CODE_COLLECTION_INDEX, original_code_partition);
+        kv_entries.insert(
+            PACKAGE_ORIGINAL_CODE_COLLECTION_INDEX,
+            original_code_partition,
+        );
     }
 
     {
@@ -791,7 +796,10 @@ where
             };
             instrumented_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
         }
-        kv_entries.insert(PACKAGE_INSTRUMENTED_CODE_COLLECTION_INDEX, instrumented_code_partition);
+        kv_entries.insert(
+            PACKAGE_INSTRUMENTED_CODE_COLLECTION_INDEX,
+            instrumented_code_partition,
+        );
     }
 
     {
@@ -805,7 +813,6 @@ where
         }
         kv_entries.insert(PACKAGE_SCHEMAS_COLLECTION_INDEX, schemas_partition);
     }
-
 
     let package_object = api.new_object(
         PACKAGE_BLUEPRINT,
@@ -826,7 +833,6 @@ where
 
     Ok(PackageAddress::new_or_panic(address.into_node_id().0))
 }
-
 
 pub struct PackageStructure {
     pub definitions: BTreeMap<String, BlueprintDefinition>,
@@ -1200,7 +1206,10 @@ impl PackageNativePackage {
                     events.insert(key, index);
                 }
 
-                let system_instructions = system_instructions.get(&blueprint).cloned().unwrap_or_default();
+                let system_instructions = system_instructions
+                    .get(&blueprint)
+                    .cloned()
+                    .unwrap_or_default();
 
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {
@@ -1299,8 +1308,12 @@ impl PackageNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         validate_royalties(&definition, api)?;
-        let package_structure =
-            Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code, Default::default())?;
+        let package_structure = Self::validate_and_build_package_structure(
+            definition,
+            VmType::ScryptoV1,
+            code,
+            Default::default(),
+        )?;
 
         let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: PACKAGE_PACKAGE,
@@ -1340,8 +1353,12 @@ impl PackageNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         validate_royalties(&definition, api)?;
-        let package_structure =
-            Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code, Default::default())?;
+        let package_structure = Self::validate_and_build_package_structure(
+            definition,
+            VmType::ScryptoV1,
+            code,
+            Default::default(),
+        )?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
         let role_assignment = SecurifiedPackage::create_advanced(owner_role, api)?;
 

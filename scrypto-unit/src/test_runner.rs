@@ -8,7 +8,10 @@ use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
-use radix_engine::transaction::{execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, PreviewError, TransactionReceipt, TransactionResult, SystemReader};
+use radix_engine::transaction::{
+    execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
+    PreviewError, SystemReader, TransactionReceipt, TransactionResult,
+};
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
@@ -23,7 +26,11 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageDefinition, PackagePublishNativeManifestInput, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinitionInit, PackageDefinition, PackagePublishNativeManifestInput,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
+    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
@@ -607,7 +614,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .substate_db()
             .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
                 package_address.as_node_id(),
-                PACKAGE_SCHEMAS_PARTITION,
+                SCHEMAS_PARTITION,
             ))
         {
             let hash: Hash =
@@ -1912,7 +1919,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                             }
                         }
                     }
-                    module @ _ => module.static_blueprint().unwrap()
+                    module @ _ => module.static_blueprint().unwrap(),
                 };
                 (blueprint_id, event_name.clone())
             }
@@ -1922,8 +1929,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         };
 
         let system_reader = SystemReader::new(self.substate_db());
-        let definition = system_reader.get_blueprint_definition(&blueprint_id).unwrap();
-        let schema_pointer = definition.interface.get_event_type_pointer(name.as_str()).unwrap();
+        let definition = system_reader
+            .get_blueprint_definition(&blueprint_id)
+            .unwrap();
+        let schema_pointer = definition
+            .interface
+            .get_event_type_pointer(name.as_str())
+            .unwrap();
 
         match schema_pointer {
             TypePointer::Package(type_identifier) => {
@@ -1931,7 +1943,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     .substate_db()
                     .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
                         blueprint_id.package_address.as_node_id(),
-                        PACKAGE_SCHEMAS_PARTITION,
+                        SCHEMAS_PARTITION,
                         &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
                     )
                     .unwrap()

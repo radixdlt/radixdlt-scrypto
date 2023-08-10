@@ -28,7 +28,10 @@ pub struct SystemReader<'a, S: SubstateDatabase> {
 }
 
 impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
-    pub fn new_with_overlay(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
+    pub fn new_with_overlay(
+        substate_db: &'a S,
+        tracked: &'a IndexMap<NodeId, TrackedNode>,
+    ) -> Self {
         Self {
             substate_db,
             tracked: Some(tracked),
@@ -49,7 +52,7 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
         if partition_num.ge(&MAIN_BASE_PARTITION) {
             let partition_offset = PartitionOffset(partition_num.0 - MAIN_BASE_PARTITION.0);
             SystemPartitionDescription::Module(ObjectModuleId::Main, partition_offset)
-        } else if partition_num.ge(&INSTANCE_SCHEMAS_PARTITION) {
+        } else if partition_num.ge(&SCHEMAS_PARTITION) {
             SystemPartitionDescription::System(*partition_num)
         } else if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
             let partition_offset =

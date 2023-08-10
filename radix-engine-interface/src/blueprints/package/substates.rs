@@ -1,3 +1,4 @@
+use crate::api::CollectionIndex;
 use crate::blueprints::package::BlueprintType;
 use crate::schema::*;
 use crate::types::*;
@@ -7,7 +8,6 @@ use radix_engine_interface::blueprints::resource::Vault;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
-use crate::api::CollectionIndex;
 
 pub const PACKAGE_CODE_ID: u64 = 0u64;
 pub const RESOURCE_CODE_ID: u64 = 1u64;
@@ -30,7 +30,7 @@ pub const PACKAGE_BLUEPRINTS_COLLECTION_INDEX: CollectionIndex = 0u8;
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_COLLECTION_INDEX: CollectionIndex = 1u8;
 
-pub const PACKAGE_SCHEMAS_PARTITION: PartitionNumber = INSTANCE_SCHEMAS_PARTITION;
+// There is no offset for the package schema collection as it is directly mapped to SCHEMAS_PARTITION
 pub const PACKAGE_SCHEMAS_COLLECTION_INDEX: CollectionIndex = 2u8;
 
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
@@ -47,8 +47,6 @@ pub const PACKAGE_ORIGINAL_CODE_COLLECTION_INDEX: CollectionIndex = 6u8;
 
 pub const PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(7u8);
 pub const PACKAGE_INSTRUMENTED_CODE_COLLECTION_INDEX: CollectionIndex = 7u8;
-
-
 
 #[derive(Copy, Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmType {
@@ -264,63 +262,59 @@ impl BlueprintInterface {
         self.events.get(event_name).cloned()
     }
 
-
-
     pub fn get_type_pointer(
         &self,
-       payload_identifier: &BlueprintPayloadIdentifier,
+        payload_identifier: &BlueprintPayloadIdentifier,
     ) -> Option<(TypePointer, bool)> {
         match payload_identifier {
             BlueprintPayloadIdentifier::Function(function_ident, InputOrOutput::Input) => {
-                let type_pointer = self
-                    .get_function_input_type_pointer(function_ident.as_str())?;
+                let type_pointer = self.get_function_input_type_pointer(function_ident.as_str())?;
                 Some((type_pointer, true))
             }
             BlueprintPayloadIdentifier::Function(function_ident, InputOrOutput::Output) => {
-                let type_pointer = self
-                    .get_function_output_type_pointer(function_ident.as_str())?;
+                let type_pointer =
+                    self.get_function_output_type_pointer(function_ident.as_str())?;
                 Some((type_pointer, true))
             }
             BlueprintPayloadIdentifier::Field(field_index) => {
-                let type_pointer = self
-                    .get_field_type_pointer(*field_index)?;
+                let type_pointer = self.get_field_type_pointer(*field_index)?;
                 Some((type_pointer, true))
             }
             BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Key) => {
-                let type_pointer = self
-                    .get_kv_key_type_pointer(*collection_index)?;
+                let type_pointer = self.get_kv_key_type_pointer(*collection_index)?;
                 Some((type_pointer, false))
             }
             BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value) => {
                 self.get_kv_value_type_pointer(*collection_index)
             }
             BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Key) => {
-                let type_pointer = self
-                    .state
-                    .get_index_type_pointer_key(*collection_index)?;
+                let type_pointer = self.state.get_index_type_pointer_key(*collection_index)?;
                 Some((type_pointer, false))
             }
             BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Value) => {
-                let type_pointer = self
-                    .state
-                    .get_index_type_pointer_value(*collection_index)?;
+                let type_pointer = self.state.get_index_type_pointer_value(*collection_index)?;
                 Some((type_pointer, false))
             }
-            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Key) => {
+            BlueprintPayloadIdentifier::SortedIndexCollection(
+                collection_index,
+                KeyOrValue::Key,
+            ) => {
                 let type_pointer = self
                     .state
                     .get_sorted_index_type_pointer_key(*collection_index)?;
                 Some((type_pointer, false))
             }
-            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Value) => {
+            BlueprintPayloadIdentifier::SortedIndexCollection(
+                collection_index,
+                KeyOrValue::Value,
+            ) => {
                 let type_pointer = self
                     .state
                     .get_sorted_index_type_pointer_value(*collection_index)?;
                 Some((type_pointer, false))
             }
             BlueprintPayloadIdentifier::Event(event_name) => {
-                let type_pointer = self
-                    .get_event_type_pointer(event_name.as_str())?;
+                let type_pointer = self.get_event_type_pointer(event_name.as_str())?;
                 Some((type_pointer, false))
             }
         }
@@ -332,7 +326,7 @@ pub enum SystemInstruction {
     MapCollectionToPhysicalPartition {
         collection_index: u8,
         partition_num: PartitionNumber,
-    }
+    },
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor, PartialOrd, Ord, Hash)]
@@ -387,7 +381,10 @@ impl IndexedStateSchema {
                     }
                 })
                 .collect();
-            fields = Some((PartitionDescription::Logical(PartitionOffset(partition_offset)), schema_fields));
+            fields = Some((
+                PartitionDescription::Logical(PartitionOffset(partition_offset)),
+                schema_fields,
+            ));
             partition_offset += 1;
         };
 
@@ -403,7 +400,10 @@ impl IndexedStateSchema {
             if let Some(partition_num) = system_mappings.get(&collection_index) {
                 collections.push((PartitionDescription::Physical(*partition_num), schema));
             } else {
-                collections.push((PartitionDescription::Logical(PartitionOffset(partition_offset)), schema));
+                collections.push((
+                    PartitionDescription::Logical(PartitionOffset(partition_offset)),
+                    schema,
+                ));
                 partition_offset += 1;
             }
         }
@@ -426,13 +426,21 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn get_partition(&self, collection_index: u8) -> Option<(PartitionDescription, BlueprintPartitionType)> {
-        self.collections.get(collection_index as usize)
+    pub fn get_partition(
+        &self,
+        collection_index: u8,
+    ) -> Option<(PartitionDescription, BlueprintPartitionType)> {
+        self.collections
+            .get(collection_index as usize)
             .map(|(partition, schema)| {
                 let partition_type = match schema {
-                    BlueprintCollectionSchema::KeyValueStore(..) => BlueprintPartitionType::KeyValueCollection,
+                    BlueprintCollectionSchema::KeyValueStore(..) => {
+                        BlueprintPartitionType::KeyValueCollection
+                    }
                     BlueprintCollectionSchema::Index(..) => BlueprintPartitionType::IndexCollection,
-                    BlueprintCollectionSchema::SortedIndex(..) => BlueprintPartitionType::SortedIndexCollection,
+                    BlueprintCollectionSchema::SortedIndex(..) => {
+                        BlueprintPartitionType::SortedIndexCollection
+                    }
                 };
                 (*partition, partition_type)
             })
@@ -467,9 +475,7 @@ impl IndexedStateSchema {
     pub fn get_index_type_pointer_key(&self, collection_index: u8) -> Option<TypePointer> {
         let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
-            BlueprintCollectionSchema::Index(index) => {
-                Some(index.key.clone())
-            }
+            BlueprintCollectionSchema::Index(index) => Some(index.key.clone()),
             _ => None,
         }
     }
@@ -477,9 +483,7 @@ impl IndexedStateSchema {
     pub fn get_index_type_pointer_value(&self, collection_index: u8) -> Option<TypePointer> {
         let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
-            BlueprintCollectionSchema::Index(index) => {
-                Some(index.value.clone())
-            }
+            BlueprintCollectionSchema::Index(index) => Some(index.value.clone()),
             _ => None,
         }
     }
@@ -487,9 +491,7 @@ impl IndexedStateSchema {
     pub fn get_sorted_index_type_pointer_key(&self, collection_index: u8) -> Option<TypePointer> {
         let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
-            BlueprintCollectionSchema::SortedIndex(index) => {
-                Some(index.key.clone())
-            }
+            BlueprintCollectionSchema::SortedIndex(index) => Some(index.key.clone()),
             _ => None,
         }
     }
@@ -497,15 +499,15 @@ impl IndexedStateSchema {
     pub fn get_sorted_index_type_pointer_value(&self, collection_index: u8) -> Option<TypePointer> {
         let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
-            BlueprintCollectionSchema::SortedIndex(index) => {
-                Some(index.value.clone())
-            }
+            BlueprintCollectionSchema::SortedIndex(index) => Some(index.value.clone()),
             _ => None,
         }
     }
 
-
-    pub fn field(&self, field_index: u8) -> Option<(PartitionDescription, FieldSchema<TypePointer>)> {
+    pub fn field(
+        &self,
+        field_index: u8,
+    ) -> Option<(PartitionDescription, FieldSchema<TypePointer>)> {
         match &self.fields {
             Some((partition, fields)) => {
                 let field_index: usize = field_index.into();

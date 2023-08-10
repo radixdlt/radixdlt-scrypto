@@ -192,14 +192,12 @@ where
         )
     }
 
-
     pub fn validate_kv_store_payload(
         &mut self,
         target: &KVStoreValidationTarget,
         payload_identifier: KeyOrValue,
         payload: &[u8],
     ) -> Result<(), RuntimeError> {
-
         let type_identifier = match payload_identifier {
             KeyOrValue::Key => target.kv_store_type.key_type_substitution,
             KeyOrValue::Value => target.kv_store_type.value_type_substitution,
@@ -207,7 +205,7 @@ where
 
         let handle = self.api.kernel_open_substate_with_default(
             &target.meta,
-            INSTANCE_SCHEMAS_PARTITION,
+            SCHEMAS_PARTITION,
             &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
             LockFlags::read_only(),
             None,
@@ -218,109 +216,97 @@ where
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         let schema = schema.value.unwrap();
 
-        self.validate_payload(payload, &schema, type_identifier.1, SchemaOrigin::KeyValueStore)
-            .map_err(|err| {
-                RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(
-                    payload_identifier,
-                    err.error_message(&schema),
-                ))
-            })?;
+        self.validate_payload(
+            payload,
+            &schema,
+            type_identifier.1,
+            SchemaOrigin::KeyValueStore,
+        )
+        .map_err(|err| {
+            RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(
+                payload_identifier,
+                err.error_message(&schema),
+            ))
+        })?;
 
         self.api.kernel_close_substate(handle)?;
 
         Ok(())
     }
 
-
     pub fn validate_blueprint_payload(
         &mut self,
         target: &ValidationTarget,
         payload_identifier: BlueprintPayloadIdentifier,
         payload: &[u8],
-    ) -> Result<bool, RuntimeError> { // TODO: Remove bool return
+    ) -> Result<bool, RuntimeError> {
+        // TODO: Remove bool return
 
-        let blueprint_interface = self.get_blueprint_default_interface(target.blueprint_id.clone())?;
+        let blueprint_interface =
+            self.get_blueprint_default_interface(target.blueprint_id.clone())?;
 
-        let (type_pointer, can_own) = blueprint_interface.get_type_pointer(&payload_identifier)
-            .ok_or_else(|| RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError::PayloadDoesNotExist(payload_identifier))))?;
+        let (type_pointer, can_own) = blueprint_interface
+            .get_type_pointer(&payload_identifier)
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                    PayloadValidationAgainstSchemaError::PayloadDoesNotExist(payload_identifier),
+                ))
+            })?;
 
-
-        match type_pointer {
+        let (schema, index, schema_origin) = match type_pointer {
             TypePointer::Package(type_identifier) => {
-                let schema = self.get_schema(target.blueprint_id.package_address, &type_identifier.0)?;
-
-                self.validate_payload(
-                    payload,
-                    &schema,
+                let schema = self.get_schema(
+                    target.blueprint_id.package_address.as_node_id(),
+                    &type_identifier.0,
+                )?;
+                (
+                    schema,
                     type_identifier.1,
                     SchemaOrigin::Blueprint(target.blueprint_id.clone()),
                 )
-                    .map_err(|err| {
-                        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::PayloadValidationError(
-                                err.error_message(&schema),
-                            ),
-                        ))
-                    })?;
             }
             TypePointer::Instance(instance_index) => {
-                let (local_type_index, schema) = match &target.meta {
+                let type_identifier = target
+                    .type_substitutions
+                    .get(instance_index as usize)
+                    .ok_or_else(|| {
+                        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                            PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
+                        ))
+                    })?;
+
+                let schema = match &target.meta {
                     SchemaValidationMeta::ExistingObject { additional_schemas } => {
-                        let type_identifier =
-                            target.type_substitutions.get(instance_index as usize).ok_or_else(|| {
-                                RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                                    PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                                ))
-                            })?;
-
-                        let handle = self.api.kernel_open_substate_with_default(
-                            additional_schemas,
-                            INSTANCE_SCHEMAS_PARTITION,
-                            &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
-                            LockFlags::read_only(),
-                            None,
-                            SystemLockData::default(),
-                        )?;
-
-                        let schema: KeyValueEntrySubstate<ScryptoSchema> =
-                            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-                        self.api.kernel_close_substate(handle)?;
-
-                        (type_identifier.1, schema.value.unwrap())
+                        self.get_schema(additional_schemas, &type_identifier.0)?
                     }
-                    SchemaValidationMeta::NewObject {additional_schemas } => {
-                        let type_identifier =
-                            target.type_substitutions.get(instance_index as usize).ok_or_else(|| {
-                                RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                                    PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                                ))
-                            })?;
-
-                        let schema = additional_schemas.get(&type_identifier.0).ok_or_else(|| {
+                    SchemaValidationMeta::NewObject { additional_schemas } => {
+                        additional_schemas.get(&type_identifier.0).ok_or_else(|| {
                             RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
                                 PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
                             ))
-                        })?.clone(); // TODO: Remove clone
-
-                        (type_identifier.1, schema)
+                        })?.clone() // TODO: Remove clone
                     }
                     SchemaValidationMeta::Blueprint => {
-                        return Err(RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                        )));
+                        return Err(RuntimeError::SystemError(
+                            SystemError::PayloadValidationAgainstSchemaError(
+                                PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
+                            ),
+                        ));
                     }
                 };
 
-                self.validate_payload(payload, &schema, local_type_index, SchemaOrigin::Instance)
-                    .map_err(|err| {
-                        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::PayloadValidationError(
-                                err.error_message(&schema),
-                            ),
-                        ))
-                    })?;
+                (schema, type_identifier.1, SchemaOrigin::Instance)
             }
-        }
+        };
+
+        self.validate_payload(payload, &schema, index, schema_origin)
+            .map_err(|err| {
+                RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                    PayloadValidationAgainstSchemaError::PayloadValidationError(
+                        err.error_message(&schema),
+                    ),
+                ))
+            })?;
 
         Ok(can_own)
     }
@@ -390,9 +376,8 @@ where
             type_substitutions: type_substitutions.clone(),
             meta: SchemaValidationMeta::NewObject {
                 additional_schemas: &non_iter_additional_schemas,
-            }
+            },
         };
-
 
         let mut partitions = IndexMap::new();
 
@@ -409,7 +394,8 @@ where
                 )));
             }
 
-            if let Some((partition_description, field_schemas)) = &blueprint_interface.state.fields {
+            if let Some((partition_description, field_schemas)) = &blueprint_interface.state.fields
+            {
                 let mut field_partition = BTreeMap::new();
 
                 for (i, field) in fields.iter().enumerate() {
@@ -428,7 +414,11 @@ where
                         Condition::Always => {}
                     }
 
-                    self.validate_blueprint_payload(&validation_target, BlueprintPayloadIdentifier::Field(i as u8), &field.value)?;
+                    self.validate_blueprint_payload(
+                        &validation_target,
+                        BlueprintPayloadIdentifier::Field(i as u8),
+                        &field.value,
+                    )?;
 
                     let value: ScryptoValue =
                         scrypto_decode(&field.value).expect("Checked by payload-schema validation");
@@ -466,11 +456,21 @@ where
                     let (kv_entry, value_can_own) = if let Some(value) = kv_entry.value {
                         self.validate_blueprint_payload(
                             &validation_target,
-                            BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Key), &key)?;
+                            BlueprintPayloadIdentifier::KeyValueCollection(
+                                collection_index,
+                                KeyOrValue::Key,
+                            ),
+                            &key,
+                        )?;
 
                         let value_can_own = self.validate_blueprint_payload(
                             &validation_target,
-                            BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value), &value)?;
+                            BlueprintPayloadIdentifier::KeyValueCollection(
+                                collection_index,
+                                KeyOrValue::Value,
+                            ),
+                            &value,
+                        )?;
 
                         let value: ScryptoValue = scrypto_decode(&value).unwrap();
                         let kv_entry = if kv_entry.locked {
@@ -525,12 +525,14 @@ where
             }
         }
 
-        let schema_partition = partitions.entry(PartitionDescription::Physical(INSTANCE_SCHEMAS_PARTITION))
+        let schema_partition = partitions
+            .entry(PartitionDescription::Physical(SCHEMAS_PARTITION))
             .or_insert(BTreeMap::new());
 
         for (schema_hash, schema) in additional_schemas {
             let key = SubstateKey::Map(scrypto_encode(&schema_hash).unwrap());
-            let value = IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::locked_entry(schema));
+            let value =
+                IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::locked_entry(schema));
             schema_partition.insert(key, value);
         }
 
@@ -539,7 +541,7 @@ where
 
     pub fn get_schema(
         &mut self,
-        package_address: PackageAddress,
+        node_id: &NodeId,
         schema_hash: &Hash,
     ) -> Result<ScryptoSchema, RuntimeError> {
         let def = self
@@ -553,8 +555,8 @@ where
         }
 
         let handle = self.api.kernel_open_substate_with_default(
-            package_address.as_node_id(),
-            PACKAGE_SCHEMAS_PARTITION,
+            node_id,
+            SCHEMAS_PARTITION,
             &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
             LockFlags::read_only(),
             Some(|| {
@@ -756,16 +758,15 @@ where
                 (OuterObjectInfo::None, BTreeSet::new())
             };
 
-        let (type_substitutions, partitions) = self
-            .validate_instance_schema_and_state(
-                blueprint_id,
-                &blueprint_interface,
-                &object_features,
-                &outer_object_features,
-                new_instance_schema,
-                fields,
-                kv_entries,
-            )?;
+        let (type_substitutions, partitions) = self.validate_instance_schema_and_state(
+            blueprint_id,
+            &blueprint_interface,
+            &object_features,
+            &outer_object_features,
+            new_instance_schema,
+            fields,
+            kv_entries,
+        )?;
 
         let node_id = self.api.kernel_allocate_node_id(
             IDAllocation::Object {
@@ -795,14 +796,10 @@ where
 
         for (partition_description, substates) in partitions.into_iter() {
             let partition_num = match partition_description {
-                PartitionDescription::Physical(partition_num) => {
-                    partition_num
-                },
-                PartitionDescription::Logical(offset) => {
-                    MAIN_BASE_PARTITION
-                        .at_offset(offset)
-                        .expect("Module number overflow")
-                }
+                PartitionDescription::Physical(partition_num) => partition_num,
+                PartitionDescription::Logical(offset) => MAIN_BASE_PARTITION
+                    .at_offset(offset)
+                    .expect("Module number overflow"),
             };
 
             node_substates.insert(partition_num, substates);
@@ -831,15 +828,15 @@ where
         let validation_target = match &actor {
             EmitterActor::AsInnerObject(node_id, module_id)
             | EmitterActor::Actor(Actor::Method(MethodActor {
-                                                    node_id, module_id, ..
-                                                })) => {
+                node_id, module_id, ..
+            })) => {
                 let blueprint_obj_info = self.get_blueprint_info(node_id, *module_id)?;
                 ValidationTarget {
                     blueprint_id: blueprint_obj_info.blueprint_id.clone(),
                     type_substitutions: blueprint_obj_info.type_substitutions,
                     meta: SchemaValidationMeta::ExistingObject {
                         additional_schemas: *node_id,
-                    }
+                    },
                 }
             }
             EmitterActor::Actor(Actor::Function(FunctionActor { blueprint_id, .. })) => {
@@ -856,7 +853,11 @@ where
             }
         };
 
-        self.validate_blueprint_payload(&validation_target, BlueprintPayloadIdentifier::Event(event_name.clone()), &event_data)?;
+        self.validate_blueprint_payload(
+            &validation_target,
+            BlueprintPayloadIdentifier::Event(event_name.clone()),
+            &event_data,
+        )?;
 
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
@@ -972,7 +973,8 @@ where
             self.get_blueprint_default_interface(blueprint_info.blueprint_id.clone())?;
 
         let partition_num = {
-            let (partition_description, partition_type) = blueprint_interface.state
+            let (partition_description, partition_type) = blueprint_interface
+                .state
                 .get_partition(collection_index)
                 .ok_or_else(|| {
                     RuntimeError::SystemError(SystemError::CollectionIndexDoesNotExist(
@@ -983,20 +985,20 @@ where
 
             if !partition_type.eq(expected_type) {
                 // TODO: Implement different error
-                return Err(RuntimeError::SystemError(SystemError::CollectionIndexDoesNotExist(
-                    blueprint_info.blueprint_id.clone(),
-                    collection_index,
-                )))
+                return Err(RuntimeError::SystemError(
+                    SystemError::CollectionIndexDoesNotExist(
+                        blueprint_info.blueprint_id.clone(),
+                        collection_index,
+                    ),
+                ));
             }
 
             match partition_description {
                 PartitionDescription::Physical(partition_num) => partition_num,
-                PartitionDescription::Logical(offset) => {
-                    module_id
-                        .base_partition_num()
-                        .at_offset(offset)
-                        .expect("Module number overflow")
-                }
+                PartitionDescription::Logical(offset) => module_id
+                    .base_partition_num()
+                    .at_offset(offset)
+                    .expect("Module number overflow"),
             }
         };
 
@@ -1062,12 +1064,10 @@ where
 
         let partition_num = match partition_description {
             PartitionDescription::Physical(partition_num) => partition_num,
-            PartitionDescription::Logical(offset) => {
-                module_id
-                    .base_partition_num()
-                    .at_offset(offset)
-                    .expect("Module number overflow")
-            }
+            PartitionDescription::Logical(offset) => module_id
+                .base_partition_num()
+                .at_offset(offset)
+                .expect("Module number overflow"),
         };
 
         Ok((node_id, partition_num, pointer, info.blueprint_id))
@@ -1219,9 +1219,9 @@ where
 
         self.kernel_move_partition(
             &node_id,
-            INSTANCE_SCHEMAS_PARTITION,
+            SCHEMAS_PARTITION,
             global_address.as_node_id(),
-            INSTANCE_SCHEMAS_PARTITION,
+            SCHEMAS_PARTITION,
         )?;
 
         // Move self modules to the newly created global node, and drop
@@ -1767,23 +1767,25 @@ where
                 collection_index,
                 blueprint_id,
                 type_substitutions,
-            }) => {
-                self.validate_blueprint_payload(
-                    &ValidationTarget {
-                        blueprint_id,
-                        type_substitutions,
-                        meta: SchemaValidationMeta::ExistingObject {
-                            additional_schemas: node_id,
-                        }
+            }) => self.validate_blueprint_payload(
+                &ValidationTarget {
+                    blueprint_id,
+                    type_substitutions,
+                    meta: SchemaValidationMeta::ExistingObject {
+                        additional_schemas: node_id,
                     },
-                    BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value),
-                    &buffer,
-                )?
-            }
+                },
+                BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value),
+                &buffer,
+            )?,
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
                 kv_store_validation_target,
             }) => {
-                self.validate_kv_store_payload(&kv_store_validation_target, KeyOrValue::Value, &buffer)?;
+                self.validate_kv_store_payload(
+                    &kv_store_validation_target,
+                    KeyOrValue::Value,
+                    &buffer,
+                )?;
 
                 kv_store_validation_target.kv_store_type.can_own
             }
@@ -1870,7 +1872,7 @@ where
                         schema,
                     })
                 ),
-                INSTANCE_SCHEMAS_PARTITION => instance_schema_partition,
+                SCHEMAS_PARTITION => instance_schema_partition,
             ),
         )?;
 
@@ -1915,11 +1917,7 @@ where
             meta: *node_id,
         };
 
-        self.validate_kv_store_payload(
-            &target,
-            KeyOrValue::Key,
-            &key,
-        )?;
+        self.validate_kv_store_payload(&target, KeyOrValue::Key, &key)?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
@@ -1994,7 +1992,7 @@ where
             type_substitutions: info.type_substitutions,
             meta: SchemaValidationMeta::ExistingObject {
                 additional_schemas: node_id,
-            }
+            },
         };
 
         self.validate_blueprint_payload(
@@ -2017,8 +2015,6 @@ where
                 SystemError::CannotStoreOwnedInIterable,
             ));
         }
-
-
 
         self.api
             .kernel_set_substate(&node_id, partition_num, SubstateKey::Map(key), value)
@@ -2125,7 +2121,7 @@ where
             type_substitutions: info.type_substitutions,
             meta: SchemaValidationMeta::ExistingObject {
                 additional_schemas: node_id,
-            }
+            },
         };
 
         self.validate_blueprint_payload(
@@ -2200,7 +2196,6 @@ where
             collection_index,
             &BlueprintPartitionType::SortedIndexCollection,
         )?;
-
 
         let substates = self
             .api
@@ -2587,7 +2582,7 @@ where
             type_substitutions: info.type_substitutions.clone(),
             meta: SchemaValidationMeta::ExistingObject {
                 additional_schemas: node_id,
-            }
+            },
         };
 
         self.validate_blueprint_payload(

@@ -186,9 +186,7 @@ pub fn to_typed_substate_key(
                 TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
             ))
         }
-        INSTANCE_SCHEMAS_PARTITION => {
-            TypedSubstateKey::Schema
-        }
+        SCHEMAS_PARTITION => TypedSubstateKey::Schema,
         METADATA_BASE_PARTITION => {
             TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(
                 scrypto_decode(
@@ -283,12 +281,14 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
+                /*
                 PackagePartitionOffset::Schemas => {
                     let key = substate_key.for_map().ok_or(())?;
                     TypedMainModuleSubstateKey::PackageSchemaKey(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
+                 */
                 PackagePartitionOffset::RoyaltyConfig => {
                     let key = substate_key.for_map().ok_or(())?;
                     TypedMainModuleSubstateKey::PackageRoyaltyKey(
@@ -626,9 +626,7 @@ fn to_typed_substate_value_internal(
                 }
             })
         }
-        TypedSubstateKey::Schema => {
-            TypedSubstateValue::Schema
-        }
+        TypedSubstateKey::Schema => TypedSubstateValue::Schema,
         TypedSubstateKey::RoleAssignmentModule(role_assignment_key) => match role_assignment_key {
             TypedRoleAssignmentSubstateKey::RoleAssignmentField(role_assignment_field_offset) => {
                 match role_assignment_field_offset {

@@ -417,7 +417,10 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
                 .get_blueprint_definition(&blueprint_id)
                 .unwrap();
 
-            let type_pointer = blueprint_definition.interface.get_event_type_pointer(event_type_identifier.1.as_str()).unwrap();
+            let type_pointer = blueprint_definition
+                .interface
+                .get_event_type_pointer(event_type_identifier.1.as_str())
+                .unwrap();
 
             let TypePointer::Package(type_identifier) = type_pointer else {
                 panic!("Event identifier type pointer cannot be an instance type pointer");

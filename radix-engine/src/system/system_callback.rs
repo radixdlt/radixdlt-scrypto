@@ -18,16 +18,16 @@ use crate::kernel::kernel_callback_api::{
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
-use crate::system::system::{ValidationTarget, SchemaValidationMeta, KVStoreValidationTarget};
 use crate::system::module::KernelModule;
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
+use crate::system::system::{KVStoreValidationTarget, SchemaValidationMeta, ValidationTarget};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientBlueprintApi, CollectionIndex};
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::{ClientBlueprintApi, CollectionIndex};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
@@ -305,9 +305,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         type_substitutions: vec![],
                         meta: SchemaValidationMeta::ExistingObject {
                             additional_schemas: method.node_id,
-                        }
+                        },
                     }
-
                 } else {
                     ValidationTarget {
                         blueprint_id: blueprint_id.clone(),
@@ -320,7 +319,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 system.validate_blueprint_payload(
                     &validating_object,
                     BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Input),
-                    input.as_vec_ref()
+                    input.as_vec_ref(),
                 )?;
 
                 // Validate receiver type
@@ -360,7 +359,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 system.validate_blueprint_payload(
                     &validating_object,
                     BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Output),
-                    output.as_vec_ref()
+                    output.as_vec_ref(),
                 )?;
 
                 Ok(output)
