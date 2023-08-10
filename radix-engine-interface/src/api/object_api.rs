@@ -6,14 +6,14 @@ use crate::constants::{
 use crate::types::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode};
+use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode, ScryptoSchema};
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use sbor::LocalTypeIndex;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
-use scrypto_schema::GenericArgs;
 
 #[repr(u8)]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -97,6 +97,13 @@ impl FieldValue {
             locked: true,
         }
     }
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct GenericArgs {
+    pub schemas: ScryptoSchema,
+    pub type_substitution_refs: Vec<TypeIdentifier>,
 }
 
 pub struct KVEntry {

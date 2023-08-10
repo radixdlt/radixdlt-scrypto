@@ -1,4 +1,4 @@
-use crate::api::CollectionIndex;
+use crate::api::{CollectionIndex, GenericArgs};
 use crate::blueprints::package::BlueprintType;
 use crate::schema::*;
 use crate::types::*;
@@ -520,15 +520,36 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn validate_instance_schema(&self, instance_schema: &Option<GenericArgs>) -> bool {
-        for (_, partition) in &self.collections {
-            match partition {
+    pub fn validate_generic_args(&self, generic_args: &Option<GenericArgs>) -> bool {
+        if let Some((_, field_schemas)) = &self.fields {
+            for field_schema in field_schemas {
+                match &field_schema.field {
+                    TypePointer::Package(..) => {}
+                    TypePointer::Instance(type_index) => {
+                        if let Some(generic_args) = generic_args {
+                            if generic_args.type_substitution_refs.len()
+                                < (*type_index as usize)
+                            {
+                                return false;
+                            }
+                        } else {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
+        for (_, collection_schema) in &self.collections {
+            match collection_schema {
+                BlueprintCollectionSchema::Index(kv_schema) |
+                BlueprintCollectionSchema::SortedIndex(kv_schema) |
                 BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
                     match &kv_schema.key {
                         TypePointer::Package(..) => {}
                         TypePointer::Instance(type_index) => {
-                            if let Some(instance_schema) = instance_schema {
-                                if instance_schema.type_substitution_refs.len()
+                            if let Some(generic_args) = generic_args {
+                                if generic_args.type_substitution_refs.len()
                                     < (*type_index as usize)
                                 {
                                     return false;
@@ -542,8 +563,8 @@ impl IndexedStateSchema {
                     match &kv_schema.value {
                         TypePointer::Package(..) => {}
                         TypePointer::Instance(type_index) => {
-                            if let Some(instance_schema) = instance_schema {
-                                if instance_schema.type_substitution_refs.len()
+                            if let Some(generic_args) = generic_args {
+                                if generic_args.type_substitution_refs.len()
                                     < (*type_index as usize)
                                 {
                                     return false;
@@ -554,7 +575,6 @@ impl IndexedStateSchema {
                         }
                     }
                 }
-                _ => {}
             }
         }
 

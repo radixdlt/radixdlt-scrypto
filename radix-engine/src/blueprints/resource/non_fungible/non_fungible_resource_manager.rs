@@ -7,9 +7,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, FieldValue, KVEntry, OBJECT_HANDLE_SELF,
-};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, GenericArgs, KVEntry, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
@@ -223,9 +221,11 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_field_index,
         };
 
-        let instance_schema = GenericArgs {
-            schema: non_fungible_schema.schema,
-            type_substitution_refs: vec![non_fungible_schema.non_fungible],
+        let schema_hash = non_fungible_schema.schema.generate_schema_hash();
+
+        let generic_args = GenericArgs {
+            schemas: non_fungible_schema.schema,
+            type_substitution_refs: vec![TypeIdentifier(schema_hash, non_fungible_schema.non_fungible)],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
@@ -243,7 +243,7 @@ impl NonFungibleResourceManagerBlueprint {
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
-            Some(instance_schema),
+            Some(generic_args),
             vec![
                 FieldValue::immutable(&id_type),
                 FieldValue::immutable(&mutable_fields),
@@ -327,9 +327,10 @@ impl NonFungibleResourceManagerBlueprint {
             non_fungibles.insert(scrypto_encode(&id).unwrap(), kv_entry);
         }
 
+        let schema_hash = non_fungible_schema.schema.generate_schema_hash();
         let instance_schema = GenericArgs {
-            schema: non_fungible_schema.schema,
-            type_substitution_refs: vec![non_fungible_schema.non_fungible],
+            schemas: non_fungible_schema.schema,
+            type_substitution_refs: vec![TypeIdentifier(schema_hash, non_fungible_schema.non_fungible)],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
@@ -412,9 +413,10 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_field_index,
         };
 
+        let schema_hash = non_fungible_schema.schema.generate_schema_hash();
         let instance_schema = GenericArgs {
-            schema: non_fungible_schema.schema,
-            type_substitution_refs: vec![non_fungible_schema.non_fungible],
+            schemas: non_fungible_schema.schema,
+            type_substitution_refs: vec![TypeIdentifier(schema_hash, non_fungible_schema.non_fungible)],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();

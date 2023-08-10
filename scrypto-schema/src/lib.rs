@@ -252,9 +252,3 @@ pub enum Receiver {
     SelfRef,
     SelfRefMut,
 }
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct GenericArgs {
-    pub schema: ScryptoSchema,
-    pub type_substitution_refs: Vec<LocalTypeIndex>,
-}

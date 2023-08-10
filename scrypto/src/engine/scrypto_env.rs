@@ -8,9 +8,7 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::{
-    ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldValue, ObjectHandle,
-};
+use radix_engine_interface::api::{ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldValue, GenericArgs, ObjectHandle};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{KVEntry, LockFlags};
 use radix_engine_interface::crypto::Hash;
@@ -21,7 +19,7 @@ use radix_engine_interface::types::{Level, NodeId, SubstateHandle};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::{GenericArgs, KeyValueStoreTypeSubstitutions, KeyValueStoreGenericArgs};
+use scrypto_schema::{KeyValueStoreTypeSubstitutions, KeyValueStoreGenericArgs};
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {

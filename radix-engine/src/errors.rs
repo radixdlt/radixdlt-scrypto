@@ -244,7 +244,7 @@ pub enum SystemError {
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
     CreateObjectError(Box<CreateObjectError>),
-    InvalidInstanceSchema,
+    InvalidGenericArgs,
     InvalidFeature(String),
     AssertAccessRuleFailed,
     BlueprintDoesNotExist(CanonicalBlueprintId),

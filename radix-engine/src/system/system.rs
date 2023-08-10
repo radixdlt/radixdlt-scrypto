@@ -326,7 +326,7 @@ where
         Ok(())
     }
 
-    fn validate_instance_schema_and_state(
+    fn validate_new_object(
         &mut self,
         blueprint_id: &BlueprintId,
         blueprint_interface: &BlueprintInterface,
@@ -343,30 +343,28 @@ where
         ),
         RuntimeError,
     > {
-        // Validate instance schema
+        // Validate generic arguments
         let (type_substitutions, additional_schemas) = {
-            if let Some(instance_schema) = &generic_args {
-                validate_schema(&instance_schema.schema)
-                    .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
+            if let Some(generic_args) = &generic_args {
+                validate_schema(&generic_args.schemas)
+                    .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
             }
+
+            // FIXME: Create HashMap of schemas
             if !blueprint_interface
                 .state
-                .validate_instance_schema(&generic_args)
+                .validate_generic_args(&generic_args)
             {
                 return Err(RuntimeError::SystemError(
-                    SystemError::InvalidInstanceSchema,
+                    SystemError::InvalidGenericArgs,
                 ));
             }
 
             generic_args
-                .map(|schema_init| {
-                    let schema_hash = schema_init.schema.generate_schema_hash();
-                    let type_substitutions: Vec<TypeIdentifier> = schema_init
-                        .type_substitution_refs
-                        .into_iter()
-                        .map(|t| TypeIdentifier(schema_hash, t))
-                        .collect();
-                    let additional_schemas = btreemap!(schema_hash => schema_init.schema);
+                .map(|generic_args| {
+                    let schema_hash = generic_args.schemas.generate_schema_hash();
+                    let type_substitutions: Vec<TypeIdentifier> = generic_args.type_substitution_refs;
+                    let additional_schemas = btreemap!(schema_hash => generic_args.schemas);
                     (type_substitutions, additional_schemas)
                 })
                 .unwrap_or_default()
@@ -765,7 +763,7 @@ where
                 (OuterObjectInfo::None, BTreeSet::new())
             };
 
-        let (blueprint_info, partitions) = self.validate_instance_schema_and_state(
+        let (blueprint_info, partitions) = self.validate_new_object(
             blueprint_id,
             &blueprint_interface,
             outer_obj_info,
