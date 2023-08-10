@@ -107,7 +107,7 @@ pub enum TypeRef<T> {
 pub struct BlueprintKeyValueSchema<T> {
     pub key: T,
     pub value: T,
-    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
+    pub allow_ownership: bool,
 }
 
 impl<T> BlueprintKeyValueSchema<T> {
@@ -115,7 +115,7 @@ impl<T> BlueprintKeyValueSchema<T> {
         BlueprintKeyValueSchema {
             key: f(self.key),
             value: f(self.value),
-            can_own: self.can_own,
+            allow_ownership: self.allow_ownership,
         }
     }
 }

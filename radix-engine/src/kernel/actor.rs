@@ -1,9 +1,9 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
+use crate::system::system::{BlueprintTypeTarget, SchemaValidationMeta};
 use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
-use crate::system::system::{SchemaValidationMeta, BlueprintTypeTarget};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstanceContext {

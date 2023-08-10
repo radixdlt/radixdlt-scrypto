@@ -219,16 +219,12 @@ pub struct BlueprintInterface {
 }
 
 impl BlueprintInterface {
-    pub fn get_field_type_pointer(&self, field_index: u8) -> Option<BlueprintPayloadDef> {
-        self.state.get_field_type_pointer(field_index)
+    pub fn get_field_payload_dev(&self, field_index: u8) -> Option<BlueprintPayloadDef> {
+        self.state.get_field_payload_dev(field_index)
     }
 
-    pub fn get_kv_key_type_pointer(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
-        self.state.get_kv_key_type_pointer(collection_index)
-    }
-
-    pub fn get_kv_value_type_pointer(&self, collection_index: u8) -> Option<(BlueprintPayloadDef, bool)> {
-        self.state.get_kv_value_type_pointer(collection_index)
+    pub fn get_kv_key_payload_dev(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
+        self.state.get_kv_key_payload_dev(collection_index)
     }
 
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
@@ -263,38 +259,39 @@ impl BlueprintInterface {
         self.events.get(event_name).cloned()
     }
 
-    pub fn get_type_pointer(
+    pub fn get_payload_def(
         &self,
         payload_identifier: &BlueprintPayloadIdentifier,
-    ) -> Option<(BlueprintPayloadDef, bool)> {
+    ) -> Option<(BlueprintPayloadDef, bool, bool)> {
         match payload_identifier {
             BlueprintPayloadIdentifier::Function(function_ident, InputOrOutput::Input) => {
-                let type_pointer = self.get_function_input_type_pointer(function_ident.as_str())?;
-                Some((type_pointer, true))
+                let payload_def = self.get_function_input_type_pointer(function_ident.as_str())?;
+                Some((payload_def, true, true))
             }
             BlueprintPayloadIdentifier::Function(function_ident, InputOrOutput::Output) => {
-                let type_pointer =
-                    self.get_function_output_type_pointer(function_ident.as_str())?;
-                Some((type_pointer, true))
+                let payload_def = self.get_function_output_type_pointer(function_ident.as_str())?;
+                Some((payload_def, true, true))
             }
             BlueprintPayloadIdentifier::Field(field_index) => {
-                let type_pointer = self.get_field_type_pointer(*field_index)?;
-                Some((type_pointer, true))
+                let payload_def = self.get_field_payload_dev(*field_index)?;
+                Some((payload_def, true, self.is_transient))
             }
             BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Key) => {
-                let type_pointer = self.get_kv_key_type_pointer(*collection_index)?;
-                Some((type_pointer, false))
+                let payload_def = self.get_kv_key_payload_dev(*collection_index)?;
+                Some((payload_def, false, self.is_transient))
             }
             BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value) => {
-                self.get_kv_value_type_pointer(*collection_index)
+                let (payload_def, allow_ownership) =
+                    self.state.get_kv_value_payload_def(*collection_index)?;
+                Some((payload_def, allow_ownership, self.is_transient))
             }
             BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Key) => {
                 let type_pointer = self.state.get_index_type_pointer_key(*collection_index)?;
-                Some((type_pointer, false))
+                Some((type_pointer, false, self.is_transient))
             }
             BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Value) => {
                 let type_pointer = self.state.get_index_type_pointer_value(*collection_index)?;
-                Some((type_pointer, false))
+                Some((type_pointer, false, self.is_transient))
             }
             BlueprintPayloadIdentifier::SortedIndexCollection(
                 collection_index,
@@ -303,7 +300,7 @@ impl BlueprintInterface {
                 let type_pointer = self
                     .state
                     .get_sorted_index_type_pointer_key(*collection_index)?;
-                Some((type_pointer, false))
+                Some((type_pointer, false, self.is_transient))
             }
             BlueprintPayloadIdentifier::SortedIndexCollection(
                 collection_index,
@@ -312,11 +309,11 @@ impl BlueprintInterface {
                 let type_pointer = self
                     .state
                     .get_sorted_index_type_pointer_value(*collection_index)?;
-                Some((type_pointer, false))
+                Some((type_pointer, false, self.is_transient))
             }
             BlueprintPayloadIdentifier::Event(event_name) => {
                 let type_pointer = self.get_event_type_pointer(event_name.as_str())?;
-                Some((type_pointer, false))
+                Some((type_pointer, false, false))
             }
         }
     }
@@ -339,7 +336,10 @@ pub enum PartitionDescription {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedStateSchema {
     pub fields: Option<(PartitionDescription, Vec<FieldSchema<BlueprintPayloadDef>>)>,
-    pub collections: Vec<(PartitionDescription, BlueprintCollectionSchema<BlueprintPayloadDef>)>,
+    pub collections: Vec<(
+        PartitionDescription,
+        BlueprintCollectionSchema<BlueprintPayloadDef>,
+    )>,
     pub num_logical_partitions: u8,
 }
 
@@ -374,7 +374,9 @@ impl IndexedStateSchema {
                         TypeRef::Static(type_index) => {
                             BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
                         }
-                        TypeRef::Generic(instance_index) => BlueprintPayloadDef::Generic(instance_index),
+                        TypeRef::Generic(instance_index) => {
+                            BlueprintPayloadDef::Generic(instance_index)
+                        }
                     };
                     FieldSchema {
                         field: pointer,
@@ -447,13 +449,13 @@ impl IndexedStateSchema {
             })
     }
 
-    pub fn get_field_type_pointer(&self, field_index: u8) -> Option<BlueprintPayloadDef> {
+    pub fn get_field_payload_dev(&self, field_index: u8) -> Option<BlueprintPayloadDef> {
         let (_partition, fields) = self.fields.clone()?;
         let field_schema = fields.get(field_index.clone() as usize)?;
         Some(field_schema.field.clone())
     }
 
-    pub fn get_kv_key_type_pointer(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
+    pub fn get_kv_key_payload_dev(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
         let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
             BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
@@ -463,12 +465,16 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn get_kv_value_type_pointer(&self, collection_index: u8) -> Option<(BlueprintPayloadDef, bool)> {
+    pub fn get_kv_value_payload_def(
+        &self,
+        collection_index: u8,
+    ) -> Option<(BlueprintPayloadDef, bool)> {
         let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
-            BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
-                Some((key_value_store.value.clone(), key_value_store.can_own))
-            }
+            BlueprintCollectionSchema::KeyValueStore(key_value_store) => Some((
+                key_value_store.value.clone(),
+                key_value_store.allow_ownership,
+            )),
             _ => None,
         }
     }
@@ -481,7 +487,10 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn get_index_type_pointer_value(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
+    pub fn get_index_type_pointer_value(
+        &self,
+        collection_index: u8,
+    ) -> Option<BlueprintPayloadDef> {
         let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
             BlueprintCollectionSchema::Index(index) => Some(index.value.clone()),
@@ -489,7 +498,10 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn get_sorted_index_type_pointer_key(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
+    pub fn get_sorted_index_type_pointer_key(
+        &self,
+        collection_index: u8,
+    ) -> Option<BlueprintPayloadDef> {
         let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
             BlueprintCollectionSchema::SortedIndex(index) => Some(index.key.clone()),
@@ -497,7 +509,10 @@ impl IndexedStateSchema {
         }
     }
 
-    pub fn get_sorted_index_type_pointer_value(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
+    pub fn get_sorted_index_type_pointer_value(
+        &self,
+        collection_index: u8,
+    ) -> Option<BlueprintPayloadDef> {
         let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
             BlueprintCollectionSchema::SortedIndex(index) => Some(index.value.clone()),
@@ -520,5 +535,4 @@ impl IndexedStateSchema {
             _ => None,
         }
     }
-
 }

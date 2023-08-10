@@ -14,7 +14,9 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::{ClientApi, FieldValue, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF, GenericArgs};
+use radix_engine_interface::api::{
+    ClientApi, FieldValue, GenericArgs, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
+};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
@@ -864,7 +866,7 @@ impl PackageNativePackage {
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintDefinition>(),
                 ),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -875,7 +877,7 @@ impl PackageNativePackage {
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintDependencies>(),
                 ),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -884,7 +886,7 @@ impl PackageNativePackage {
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
                 ),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -895,7 +897,7 @@ impl PackageNativePackage {
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageRoyaltyConfig>(),
                 ),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -904,7 +906,7 @@ impl PackageNativePackage {
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
                 value: TypeRef::Static(aggregator.add_child_type_and_descendents::<AuthConfig>()),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -913,7 +915,7 @@ impl PackageNativePackage {
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageVmTypeSubstate>(),
                 ),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -922,7 +924,7 @@ impl PackageNativePackage {
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageOriginalCodeSubstate>(),
                 ),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -931,7 +933,7 @@ impl PackageNativePackage {
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<PackageInstrumentedCodeSubstate>(),
                 ),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
 
@@ -1183,7 +1185,10 @@ impl PackageNativePackage {
                         FunctionSchema {
                             receiver: function_schema_init.receiver,
                             input: BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, input)),
-                            output: BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, output)),
+                            output: BlueprintPayloadDef::Static(TypeIdentifier(
+                                schema_hash,
+                                output,
+                            )),
                         },
                     );
                     let export = PackageExport {

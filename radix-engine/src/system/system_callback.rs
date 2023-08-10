@@ -21,7 +21,7 @@ use crate::kernel::kernel_callback_api::{
 use crate::system::module::KernelModule;
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
-use crate::system::system::{KVStoreValidationTarget, SchemaValidationMeta, BlueprintTypeTarget};
+use crate::system::system::{BlueprintTypeTarget, KVStoreValidationTarget, SchemaValidationMeta};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::types::*;
@@ -37,7 +37,7 @@ use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::hooks::OnMoveOutput;
 use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
-use radix_engine_interface::schema::{RefTypes};
+use radix_engine_interface::schema::RefTypes;
 
 #[derive(Clone)]
 pub enum SystemLockData {

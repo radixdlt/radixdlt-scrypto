@@ -5,10 +5,15 @@ use radix_engine_interface::api::field_api::FieldHandle;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
-use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueStoreGenericArgs};
+use radix_engine_interface::api::key_value_store_api::{
+    ClientKeyValueStoreApi, KeyValueStoreGenericArgs,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::{ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldValue, GenericArgs, ObjectHandle};
+use radix_engine_interface::api::{
+    ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldValue, GenericArgs,
+    ObjectHandle,
+};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{KVEntry, LockFlags};
 use radix_engine_interface::crypto::Hash;
@@ -19,7 +24,7 @@ use radix_engine_interface::types::{Level, NodeId, SubstateHandle};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::{KeyValueStoreTypeSubstitutions};
+use scrypto_schema::KeyValueStoreTypeSubstitutions;
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {

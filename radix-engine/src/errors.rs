@@ -221,7 +221,6 @@ pub enum SystemError {
     OuterObjectDoesNotExist,
     NotAFieldHandle,
     NotAFieldWriteHandle,
-    InvalidReference,
     RootHasNoType,
     FieldDoesNotExist(BlueprintId, u8),
     KeyValueStoreDoesNotExist(BlueprintId, u8),
@@ -232,8 +231,6 @@ pub enum SystemError {
     MutatingImmutableFieldSubstate(ObjectHandle, u8),
     NotAKeyValueStore,
     ObjectModuleDoesNotExist(ObjectModuleId),
-    CannotStoreOwnedInIterable,
-    InvalidKeyValueStoreOwnership,
     KeyValueStorePayloadValidationError(KeyOrValue, String),
     NotAKeyValueWriteLock,
     InvalidLockFlags,
@@ -316,7 +313,7 @@ pub enum SystemModuleError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PayloadValidationAgainstSchemaError {
-    PayloadDoesNotExist(BlueprintInfo, BlueprintPayloadIdentifier),
+    PayloadDoesNotExist(Box<BlueprintInfo>, BlueprintPayloadIdentifier),
     CollectionDoesNotExist,
     PayloadValidationError(String),
     InstanceSchemaDoesNotExist,

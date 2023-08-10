@@ -1,11 +1,14 @@
-use radix_engine_common::prelude::{HasSchemaHash, replace_self_package_address, ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
+use radix_engine_common::prelude::{
+    replace_self_package_address, HasSchemaHash, ScryptoCustomTypeKind, ScryptoDescribe,
+    ScryptoSchema,
+};
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::LockFlags;
-use sbor::{generate_full_schema, TypeAggregator};
 use sbor::rust::prelude::*;
-use scrypto_schema::{KeyValueStoreTypeSubstitutions};
+use sbor::{generate_full_schema, TypeAggregator};
+use scrypto_schema::KeyValueStoreTypeSubstitutions;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreGenericArgs {
@@ -30,9 +33,21 @@ impl KeyValueStoreGenericArgs {
         }
     }
 
-    pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
-        if let Some(schema) = &mut self.additional_schema {
-            replace_self_package_address(schema, package_address);
+    pub fn new_with_self_package<K: ScryptoDescribe, V: ScryptoDescribe>(
+        can_own: bool,
+        package_address: PackageAddress,
+    ) -> Self {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let key_type_index = aggregator.add_child_type_and_descendents::<K>();
+        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
+        let mut schema = generate_full_schema(aggregator);
+        replace_self_package_address(&mut schema, package_address);
+        let schema_hash = schema.generate_schema_hash();
+        Self {
+            additional_schema: Some(schema),
+            key_type: TypeSubstitutionRef::Local(TypeIdentifier(schema_hash, key_type_index)),
+            value_type: TypeSubstitutionRef::Local(TypeIdentifier(schema_hash, value_type_index)),
+            can_own,
         }
     }
 }
@@ -43,7 +58,10 @@ pub trait ClientKeyValueStoreApi<E> {
 
     // TODO: Remove
     /// Get info regarding a visible key value store
-    fn key_value_store_get_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreTypeSubstitutions, E>;
+    fn key_value_store_get_info(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<KeyValueStoreTypeSubstitutions, E>;
 
     /// Lock a key value store entry for reading/writing
     fn key_value_store_open_entry(

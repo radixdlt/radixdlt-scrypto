@@ -4,8 +4,8 @@ use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
+use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -29,8 +29,8 @@ fn opening_long_substate_key_should_fail() {
         {
             match export_name {
                 "test" => {
-                    let kv_store =
-                        api.key_value_store_new(KeyValueStoreGenericArgs::new::<String, ()>(false))?;
+                    let kv_store = api
+                        .key_value_store_new(KeyValueStoreGenericArgs::new::<String, ()>(false))?;
                     let long_key = "a".repeat(MAX_SUBSTATE_KEY_SIZE + 1);
                     api.key_value_store_open_entry(
                         &kv_store,

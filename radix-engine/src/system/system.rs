@@ -27,14 +27,14 @@ use radix_engine_interface::api::field_api::{FieldHandle, LockFlags};
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
-use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueStoreGenericArgs};
+use radix_engine_interface::api::key_value_store_api::{
+    ClientKeyValueStoreApi, KeyValueStoreGenericArgs,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{
-    Condition, KeyValueStoreTypeSubstitutions,
-};
+use radix_engine_interface::schema::{Condition, KeyValueStoreTypeSubstitutions};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -181,17 +181,17 @@ where
     ) -> Result<(), RuntimeError> {
         match key {
             TypeSubstitutionRef::Local(type_id) => {
-                let _schema = schemas.get(&type_id.0).ok_or_else(|| {
-                    RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                })?;
+                let _schema = schemas
+                    .get(&type_id.0)
+                    .ok_or_else(|| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
             }
         }
 
         match value {
             TypeSubstitutionRef::Local(type_id) => {
-                let _schema = schemas.get(&type_id.0).ok_or_else(|| {
-                    RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                })?;
+                let _schema = schemas
+                    .get(&type_id.0)
+                    .ok_or_else(|| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
             }
         }
 
@@ -204,11 +204,12 @@ where
         schemas: &IndexMap<Hash, ScryptoSchema>,
         type_substitution_refs: &Vec<TypeSubstitutionRef>,
     ) -> Result<(), RuntimeError> {
-        let generics =
-            self.get_blueprint_default_interface(blueprint_id.clone())?.generics;
+        let generics = self
+            .get_blueprint_default_interface(blueprint_id.clone())?
+            .generics;
 
         if !generics.len().eq(&type_substitution_refs.len()) {
-            return Err(RuntimeError::SystemError(SystemError::InvalidGenericArgs))
+            return Err(RuntimeError::SystemError(SystemError::InvalidGenericArgs));
         }
 
         for type_substitution_ref in type_substitution_refs {
@@ -230,9 +231,16 @@ where
         schema: &'s ScryptoSchema,
         type_index: LocalTypeIndex,
         schema_origin: SchemaOrigin,
+        allow_ownership: bool,
+        allow_non_global_ref: bool,
     ) -> Result<(), LocatedValidationError<'s, ScryptoCustomExtension>> {
-        let validation_context: Box<dyn TypeInfoLookup> =
-            Box::new(SystemServiceTypeInfoLookup::new(self, schema_origin));
+        let validation_context: Box<dyn ValidationContext> =
+            Box::new(SystemServiceTypeInfoLookup::new(
+                self,
+                schema_origin,
+                allow_ownership,
+                allow_non_global_ref,
+            ));
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             payload,
             schema,
@@ -252,25 +260,29 @@ where
             KeyOrValue::Value => target.kv_store_type.value_type_substitution,
         };
 
+        let allow_ownership = match payload_identifier {
+            KeyOrValue::Key => false,
+            KeyOrValue::Value => target.kv_store_type.can_own,
+        };
+
         match type_substition_ref {
             TypeSubstitutionRef::Local(type_id) => {
-                let schema = self.get_schema(
-                    &target.meta,
-                        &type_id.0,
-                )?;
+                let schema = self.get_schema(&target.meta, &type_id.0)?;
 
                 self.validate_payload(
                     payload,
                     &schema,
                     type_id.1,
                     SchemaOrigin::KeyValueStore,
+                    allow_ownership,
+                    false,
                 )
-                    .map_err(|err| {
-                        RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(
-                            payload_identifier,
-                            err.error_message(&schema),
-                        ))
-                    })?;
+                .map_err(|err| {
+                    RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(
+                        payload_identifier,
+                        err.error_message(&schema),
+                    ))
+                })?;
             }
         }
 
@@ -282,27 +294,29 @@ where
         target: &BlueprintTypeTarget,
         payload_identifier: BlueprintPayloadIdentifier,
         payload: &[u8],
-    ) -> Result<bool, RuntimeError> {
-        // TODO: Remove bool return
-
+    ) -> Result<(), RuntimeError> {
         let blueprint_interface =
             self.get_blueprint_default_interface(target.blueprint_info.blueprint_id.clone())?;
 
-        let (type_pointer, can_own) = blueprint_interface
-            .get_type_pointer(&payload_identifier)
+        let (payload_def, allow_ownership, allow_non_global_ref) = blueprint_interface
+            .get_payload_def(&payload_identifier)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
                     PayloadValidationAgainstSchemaError::PayloadDoesNotExist(
-                        target.blueprint_info.clone(),
+                        Box::new(target.blueprint_info.clone()),
                         payload_identifier,
                     ),
                 ))
             })?;
 
-        let (schema, index, schema_origin) = match type_pointer {
+        let (schema, index, schema_origin) = match payload_def {
             BlueprintPayloadDef::Static(type_identifier) => {
                 let schema = self.get_schema(
-                    target.blueprint_info.blueprint_id.package_address.as_node_id(),
+                    target
+                        .blueprint_info
+                        .blueprint_id
+                        .package_address
+                        .as_node_id(),
                     &type_identifier.0,
                 )?;
                 (
@@ -350,27 +364,21 @@ where
             }
         };
 
-        self.validate_payload(payload, &schema, index, schema_origin)
-            .map_err(|err| {
-                RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                    PayloadValidationAgainstSchemaError::PayloadValidationError(
-                        err.error_message(&schema),
-                    ),
-                ))
-            })?;
-
-        Ok(can_own)
-    }
-
-    fn validate_substate_does_not_contain_refs(
-        &mut self,
-        value: &IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
-        for reference in value.references() {
-            if !reference.is_global() {
-                return Err(RuntimeError::SystemError(SystemError::InvalidReference));
-            }
-        }
+        self.validate_payload(
+            payload,
+            &schema,
+            index,
+            schema_origin,
+            allow_ownership,
+            allow_non_global_ref,
+        )
+        .map_err(|err| {
+            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                PayloadValidationAgainstSchemaError::PayloadValidationError(
+                    err.error_message(&schema),
+                ),
+            ))
+        })?;
 
         Ok(())
     }
@@ -403,7 +411,11 @@ where
                 additional_schemas.insert(schema_hash, schema);
             }
 
-            self.validate_bp_generic_args(blueprint_id, &additional_schemas, &generic_args.type_substitution_refs)?;
+            self.validate_bp_generic_args(
+                blueprint_id,
+                &additional_schemas,
+                &generic_args.type_substitution_refs,
+            )?;
 
             (generic_args.type_substitution_refs, additional_schemas)
         };
@@ -479,11 +491,6 @@ where
                         SubstateKey::Field(i as u8),
                         IndexedScryptoValue::from_typed(&substate),
                     );
-
-                    let indexed_value = IndexedScryptoValue::from_typed(&substate);
-                    if !blueprint_interface.is_transient {
-                        self.validate_substate_does_not_contain_refs(&indexed_value)?;
-                    }
                 }
 
                 partitions.insert(partition_description.clone(), field_partition);
@@ -496,7 +503,7 @@ where
                 let mut partition = BTreeMap::new();
 
                 for (key, kv_entry) in entries {
-                    let (kv_entry, value_can_own) = if let Some(value) = kv_entry.value {
+                    let kv_entry = if let Some(value) = kv_entry.value {
                         self.validate_blueprint_payload(
                             &validation_target,
                             BlueprintPayloadIdentifier::KeyValueCollection(
@@ -506,7 +513,7 @@ where
                             &key,
                         )?;
 
-                        let value_can_own = self.validate_blueprint_payload(
+                        self.validate_blueprint_payload(
                             &validation_target,
                             BlueprintPayloadIdentifier::KeyValueCollection(
                                 collection_index,
@@ -521,26 +528,16 @@ where
                         } else {
                             KeyValueEntrySubstate::entry(value)
                         };
-                        (kv_entry, value_can_own)
+                        kv_entry
                     } else {
                         if kv_entry.locked {
-                            (KeyValueEntrySubstate::locked_empty_entry(), true)
+                            KeyValueEntrySubstate::locked_empty_entry()
                         } else {
                             continue;
                         }
                     };
 
                     let value = IndexedScryptoValue::from_typed(&kv_entry);
-                    if !blueprint_interface.is_transient {
-                        self.validate_substate_does_not_contain_refs(&value)?;
-                    }
-                    if !value_can_own {
-                        if !value.owned_nodes().is_empty() {
-                            return Err(RuntimeError::SystemError(
-                                SystemError::InvalidKeyValueStoreOwnership,
-                            ));
-                        }
-                    }
 
                     partition.insert(SubstateKey::Map(key), value);
                 }
@@ -870,13 +867,11 @@ where
                 BlueprintTypeTarget {
                     blueprint_info: bp_info,
                     meta: SchemaValidationMeta::ExistingObject {
-                        additional_schemas: *node_id
-                    }
+                        additional_schemas: *node_id,
+                    },
                 }
             }
-            EmitterActor::CurrentActor => {
-                self.get_actor_type_target()?
-            }
+            EmitterActor::CurrentActor => self.get_actor_type_target()?,
         };
 
         self.validate_blueprint_payload(
@@ -887,30 +882,25 @@ where
 
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
-            EmitterActor::AsObject(node_id, module_id, ..) => {
-                Ok(EventTypeIdentifier(
+            EmitterActor::AsObject(node_id, module_id, ..) => Ok(EventTypeIdentifier(
+                Emitter::Method(node_id, module_id),
+                event_name,
+            )),
+            EmitterActor::CurrentActor => match self.current_actor() {
+                Actor::Method(MethodActor {
+                    node_id, module_id, ..
+                }) => Ok(EventTypeIdentifier(
                     Emitter::Method(node_id, module_id),
                     event_name,
-                ))
-            }
-            EmitterActor::CurrentActor => {
-                match self.current_actor() {
-                    Actor::Method(MethodActor {
-                                      node_id, module_id, ..
-                                  }) => {
-                        Ok(EventTypeIdentifier(
-                            Emitter::Method(node_id, module_id),
-                            event_name,
-                        ))
-                    }
-                    Actor::Function(FunctionActor { blueprint_id, .. }) => Ok(
-                        EventTypeIdentifier(Emitter::Function(blueprint_id.clone()), event_name),
-                    ),
-                    _ => Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
-                    ))
-                }
-            }
+                )),
+                Actor::Function(FunctionActor { blueprint_id, .. }) => Ok(EventTypeIdentifier(
+                    Emitter::Function(blueprint_id.clone()),
+                    event_name,
+                )),
+                _ => Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
+                )),
+            },
         }?;
 
         let event = Event {
@@ -969,34 +959,30 @@ where
         let actor = self.current_actor();
         match actor {
             Actor::Root => Err(RuntimeError::SystemError(SystemError::RootHasNoType)),
-            Actor::BlueprintHook(actor) => {
-                Ok(BlueprintTypeTarget {
-                    blueprint_info: BlueprintInfo {
-                        blueprint_id: actor.blueprint_id.clone(),
-                        outer_obj_info: OuterObjectInfo::None,
-                        features: btreeset!(),
-                        type_substitutions_refs: vec![],
-                    },
-                    meta: SchemaValidationMeta::Blueprint,
-                })
-            }
-            Actor::Function(actor) => {
-                Ok(BlueprintTypeTarget {
-                    blueprint_info: BlueprintInfo {
-                        blueprint_id: actor.blueprint_id.clone(),
-                        outer_obj_info: OuterObjectInfo::None,
-                        features: btreeset!(),
-                        type_substitutions_refs: vec![],
-                    },
-                    meta: SchemaValidationMeta::Blueprint,
-                })
-            }
+            Actor::BlueprintHook(actor) => Ok(BlueprintTypeTarget {
+                blueprint_info: BlueprintInfo {
+                    blueprint_id: actor.blueprint_id.clone(),
+                    outer_obj_info: OuterObjectInfo::None,
+                    features: btreeset!(),
+                    type_substitutions_refs: vec![],
+                },
+                meta: SchemaValidationMeta::Blueprint,
+            }),
+            Actor::Function(actor) => Ok(BlueprintTypeTarget {
+                blueprint_info: BlueprintInfo {
+                    blueprint_id: actor.blueprint_id.clone(),
+                    outer_obj_info: OuterObjectInfo::None,
+                    features: btreeset!(),
+                    type_substitutions_refs: vec![],
+                },
+                meta: SchemaValidationMeta::Blueprint,
+            }),
             Actor::Method(actor) => {
                 let blueprint_info = self.get_blueprint_info(&actor.node_id, actor.module_id)?;
                 Ok(BlueprintTypeTarget {
                     blueprint_info,
                     meta: SchemaValidationMeta::ExistingObject {
-                        additional_schemas: actor.node_id
+                        additional_schemas: actor.node_id,
                     },
                 })
             }
@@ -1429,7 +1415,7 @@ where
     fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
 
-        let blueprint_id = match data {
+        match data {
             SystemLockData::Field(FieldLockData::Write {
                 target,
                 field_index,
@@ -1439,7 +1425,6 @@ where
                     BlueprintPayloadIdentifier::Field(field_index),
                     &buffer,
                 )?;
-                target.blueprint_info.blueprint_id.clone()
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteHandle));
@@ -1450,10 +1435,6 @@ where
             scrypto_decode(&buffer).expect("Should be valid due to payload check");
 
         let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_field(value));
-        let blueprint_interface = self.get_blueprint_default_interface(blueprint_id)?;
-        if !blueprint_interface.is_transient {
-            self.validate_substate_does_not_contain_refs(&substate)?;
-        }
 
         self.api.kernel_write_substate(handle, substate)?;
 
@@ -1618,7 +1599,6 @@ where
             inner_object_fields,
             btreemap!(),
         )?;
-
 
         self.emit_event_internal(
             EmitterActor::AsObject(global_address.as_node_id().clone(), ObjectModuleId::Main),
@@ -1827,15 +1807,20 @@ where
     ) -> Result<(), RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
 
-        let can_own = match data {
+        match data {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
                 collection_index,
                 target,
-            }) => self.validate_blueprint_payload(
-                &target,
-                BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value),
-                &buffer,
-            )?,
+            }) => {
+                self.validate_blueprint_payload(
+                    &target,
+                    BlueprintPayloadIdentifier::KeyValueCollection(
+                        collection_index,
+                        KeyOrValue::Value,
+                    ),
+                    &buffer,
+                )?;
+            }
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
                 kv_store_validation_target,
             }) => {
@@ -1844,33 +1829,20 @@ where
                     KeyOrValue::Value,
                     &buffer,
                 )?;
-
-                kv_store_validation_target.kv_store_type.can_own
             }
             _ => {
                 return Err(RuntimeError::SystemError(
                     SystemError::NotAKeyValueWriteLock,
                 ));
             }
-        };
+        }
 
         let substate =
             IndexedScryptoValue::from_slice(&buffer).expect("Should be valid due to payload check");
 
-        if !can_own {
-            let own = substate.owned_nodes();
-            if !own.is_empty() {
-                return Err(RuntimeError::SystemError(
-                    SystemError::InvalidKeyValueStoreOwnership,
-                ));
-            }
-        }
-
         let value = substate.as_scrypto_value().clone();
         let kv_entry = KeyValueEntrySubstate::entry(value);
         let indexed = IndexedScryptoValue::from_typed(&kv_entry);
-
-        self.validate_substate_does_not_contain_refs(&indexed)?;
 
         self.api.kernel_write_substate(handle, indexed)?;
 
@@ -1907,14 +1879,21 @@ where
             additional_schemas.insert(schema_hash, schema);
         }
 
-        self.validate_kv_store_generic_args(&additional_schemas, &generic_args.key_type, &generic_args.value_type)?;
+        self.validate_kv_store_generic_args(
+            &additional_schemas,
+            &generic_args.key_type,
+            &generic_args.value_type,
+        )?;
 
-        let schema_partition = additional_schemas.into_iter().map(|(schema_hash, schema)| {
-            let key = SubstateKey::Map(scrypto_encode(&schema_hash).unwrap());
-            let substate = KeyValueEntrySubstate::locked_entry(schema);
-            let value = IndexedScryptoValue::from_typed(&substate);
-            (key, value)
-        }).collect();
+        let schema_partition = additional_schemas
+            .into_iter()
+            .map(|(schema_hash, schema)| {
+                let key = SubstateKey::Map(scrypto_encode(&schema_hash).unwrap());
+                let substate = KeyValueEntrySubstate::locked_entry(schema);
+                let value = IndexedScryptoValue::from_typed(&substate);
+                (key, value)
+            })
+            .collect();
 
         let type_substitutions = KeyValueStoreTypeSubstitutions {
             key_type_substitution: generic_args.key_type,
@@ -2072,12 +2051,6 @@ where
         let value = IndexedScryptoValue::from_vec(buffer)
             .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
-        if !value.owned_nodes().is_empty() {
-            return Err(RuntimeError::SystemError(
-                SystemError::CannotStoreOwnedInIterable,
-            ));
-        }
-
         self.api
             .kernel_set_substate(&node_id, partition_num, SubstateKey::Map(key), value)
     }
@@ -2199,12 +2172,6 @@ where
 
         let value = IndexedScryptoValue::from_vec(buffer)
             .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
-
-        if !value.owned_nodes().is_empty() {
-            return Err(RuntimeError::SystemError(
-                SystemError::CannotStoreOwnedInIterable,
-            ));
-        }
 
         self.api.kernel_set_substate(
             &node_id,

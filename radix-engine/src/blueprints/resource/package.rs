@@ -431,7 +431,7 @@ impl ResourceNativePackage {
                         aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
                     ),
                     value: TypeRef::Generic(0u8),
-                    can_own: false,
+                    allow_ownership: false,
                 },
             ));
 
@@ -1003,7 +1003,7 @@ impl ResourceNativePackage {
                     aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
                 ),
                 value: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
-                can_own: false,
+                allow_ownership: false,
             }));
 
             let mut functions = BTreeMap::new();

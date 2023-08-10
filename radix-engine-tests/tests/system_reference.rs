@@ -1,11 +1,11 @@
-use radix_engine::errors::{RuntimeError, SystemError};
+use radix_engine::errors::{PayloadValidationAgainstSchemaError, RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, OBJECT_HANDLE_SELF};
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::blueprints::package::{KeyOrValue, PackageDefinition};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -62,8 +62,11 @@ fn cannot_store_reference_in_non_transient_blueprint() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::SystemError(SystemError::InvalidReference))
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+            PayloadValidationAgainstSchemaError::PayloadValidationError(error),
+        )) => error.contains("Non Global Reference"),
+        _ => false,
     });
 }
 
@@ -124,8 +127,11 @@ fn cannot_write_reference_in_non_transient_blueprint() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::SystemError(SystemError::InvalidReference))
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+            PayloadValidationAgainstSchemaError::PayloadValidationError(error),
+        )) => error.contains("Non Global Reference"),
+        _ => false,
     });
 }
 
@@ -192,7 +198,11 @@ fn cannot_write_reference_in_kv_store() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::SystemError(SystemError::InvalidReference))
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(
+            KeyOrValue::Value,
+            error,
+        )) => error.contains("Non Global Reference"),
+        _ => false,
     });
 }

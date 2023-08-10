@@ -7,7 +7,9 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, GenericArgs, KVEntry, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{
+    ClientApi, CollectionIndex, FieldValue, GenericArgs, KVEntry, OBJECT_HANDLE_SELF,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
@@ -225,7 +227,10 @@ impl NonFungibleResourceManagerBlueprint {
 
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            type_substitution_refs: vec![TypeSubstitutionRef::Local(TypeIdentifier(schema_hash, non_fungible_schema.non_fungible))],
+            type_substitution_refs: vec![TypeSubstitutionRef::Local(TypeIdentifier(
+                schema_hash,
+                non_fungible_schema.non_fungible,
+            ))],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
@@ -330,7 +335,10 @@ impl NonFungibleResourceManagerBlueprint {
         let schema_hash = non_fungible_schema.schema.generate_schema_hash();
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            type_substitution_refs: vec![TypeSubstitutionRef::Local(TypeIdentifier(schema_hash, non_fungible_schema.non_fungible))],
+            type_substitution_refs: vec![TypeSubstitutionRef::Local(TypeIdentifier(
+                schema_hash,
+                non_fungible_schema.non_fungible,
+            ))],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
@@ -416,7 +424,10 @@ impl NonFungibleResourceManagerBlueprint {
         let schema_hash = non_fungible_schema.schema.generate_schema_hash();
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            type_substitution_refs: vec![TypeSubstitutionRef::Local(TypeIdentifier(schema_hash, non_fungible_schema.non_fungible))],
+            type_substitution_refs: vec![TypeSubstitutionRef::Local(TypeIdentifier(
+                schema_hash,
+                non_fungible_schema.non_fungible,
+            ))],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();

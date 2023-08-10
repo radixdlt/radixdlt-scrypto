@@ -2,8 +2,8 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedStateSchema, PackageExport,
-    BlueprintPayloadDef, VmType, *,
+    BlueprintDefinition, BlueprintDependencies, BlueprintPayloadDef, FunctionSchema,
+    IndexedStateSchema, PackageExport, VmType, *,
 };
 use radix_engine_interface::blueprints::package::{PackageDefinition, PackageOriginalCodeSubstate};
 use radix_engine_interface::schema::TypeRef;
@@ -80,10 +80,8 @@ impl Publish {
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
                     .unwrap(),
             );
-            let schemas_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                &node_id,
-                SCHEMAS_PARTITION,
-            );
+            let schemas_partition_key =
+                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, SCHEMAS_PARTITION);
             let dependencies_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,
                 MAIN_BASE_PARTITION
@@ -162,15 +160,15 @@ impl Publish {
                         FunctionSchema {
                             receiver: setup.receiver,
                             input: match setup.input {
-                                TypeRef::Static(type_index) => {
-                                    BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
-                                }
+                                TypeRef::Static(type_index) => BlueprintPayloadDef::Static(
+                                    TypeIdentifier(schema_hash, type_index),
+                                ),
                                 TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                             },
                             output: match setup.output {
-                                TypeRef::Static(type_index) => {
-                                    BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
-                                }
+                                TypeRef::Static(type_index) => BlueprintPayloadDef::Static(
+                                    TypeIdentifier(schema_hash, type_index),
+                                ),
                                 TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                             },
                         },

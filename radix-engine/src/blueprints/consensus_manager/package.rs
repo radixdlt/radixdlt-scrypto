@@ -59,7 +59,7 @@ impl ConsensusManagerNativePackage {
                     value: TypeRef::Static(
                         aggregator.add_child_type_and_descendents::<Validator>(),
                     ),
-                    can_own: false,
+                    allow_ownership: false,
                 },
             ));
 

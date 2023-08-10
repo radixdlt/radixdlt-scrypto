@@ -1,5 +1,7 @@
 use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
+use radix_engine::errors::{
+    ApplicationError, PayloadValidationAgainstSchemaError, RuntimeError, SystemError,
+};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
@@ -307,7 +309,9 @@ fn cannot_have_non_fungible_data_ownership() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::InvalidKeyValueStoreOwnership)
+            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                PayloadValidationAgainstSchemaError::PayloadValidationError(..)
+            ))
         )
     });
 }

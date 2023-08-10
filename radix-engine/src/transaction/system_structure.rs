@@ -210,7 +210,8 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                 SubstateSystemStructure::SystemType
             }
             SystemPartitionDescription::Module(module_id, partition_offset) => {
-                let (blueprint_id, type_substitution_refs) = if let ObjectModuleId::Main = module_id {
+                let (blueprint_id, type_substitution_refs) = if let ObjectModuleId::Main = module_id
+                {
                     let main_type_info =
                         self.system_reader
                             .get_type_info(node_id)
@@ -224,11 +225,12 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                         ),
                         TypeInfoSubstate::KeyValueStore(info) => {
                             let key_type_id = match info.type_substitutions.key_type_substitution {
-                                TypeSubstitutionRef::Local(type_id) => type_id
+                                TypeSubstitutionRef::Local(type_id) => type_id,
                             };
-                            let value_type_id = match info.type_substitutions.value_type_substitution {
-                                TypeSubstitutionRef::Local(type_id) => type_id
-                            };
+                            let value_type_id =
+                                match info.type_substitutions.value_type_substitution {
+                                    TypeSubstitutionRef::Local(type_id) => type_id,
+                                };
                             return SubstateSystemStructure::KeyValueStoreEntry(
                                 KeyValueStoreEntryStructure {
                                     key_value_store_address: (*node_id).try_into().unwrap(),
@@ -237,7 +239,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                                     value_schema_hash: value_type_id.0,
                                     value_local_type_index: value_type_id.1,
                                 },
-                            )
+                            );
                         }
                         TypeInfoSubstate::GlobalAddressPhantom(_)
                         | TypeInfoSubstate::GlobalAddressReservation(_) => {
