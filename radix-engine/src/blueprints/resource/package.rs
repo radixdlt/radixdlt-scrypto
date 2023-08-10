@@ -149,6 +149,7 @@ pub const AUTH_ZONE_DROP_SIGNATURE_PROOFS_EXPORT_NAME: &str = "AuthZone_drop_sig
 pub const AUTH_ZONE_DROP_REGULAR_PROOFS_EXPORT_NAME: &str = "AuthZone_drop_regular_proofs";
 pub const AUTH_ZONE_DROP_PROOFS_EXPORT_NAME: &str = "AuthZone_drop_proofs";
 pub const AUTH_ZONE_DRAIN_EXPORT_NAME: &str = "AuthZone_drain";
+pub const AUTH_ZONE_ASSERT_ACCESS_RULE_EXPORT_NAME: &str = "AuthZone_assert_access_rule";
 
 pub struct ResourceNativePackage;
 
@@ -2185,6 +2186,21 @@ impl ResourceNativePackage {
                     export: AUTH_ZONE_DRAIN_EXPORT_NAME.to_string(),
                 },
             );
+            functions.insert(
+                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AuthZoneAssertAccessRuleInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AuthZoneAssertAccessRuleOutput>(),
+                    ),
+                    export: AUTH_ZONE_ASSERT_ACCESS_RULE_EXPORT_NAME.to_string(),
+                },
+            );
 
             let schema = generate_full_schema(aggregator);
             let auth_zone_blueprint = BlueprintStateSchemaInit {
@@ -3136,6 +3152,15 @@ impl ResourceNativePackage {
                 let proofs = AuthZoneBlueprint::drain(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&proofs))
+            }
+            AUTH_ZONE_ASSERT_ACCESS_RULE_EXPORT_NAME => {
+                let input: AuthZoneAssertAccessRuleInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn = AuthZoneBlueprint::assert_access_rule(input.rule, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::ExportDoesNotExist(export_name.to_string()),

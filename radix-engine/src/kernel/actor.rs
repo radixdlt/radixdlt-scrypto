@@ -1,24 +1,22 @@
-use crate::kernel::call_frame::ReferenceOrigin;
-use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::CallFrameReferences;
-use crate::system::system_callback::SystemConfig;
-use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
-use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstanceContext {
     pub outer_object: GlobalAddress,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MethodActor {
     pub direct_access: bool,
     pub node_id: NodeId,
     pub module_id: ObjectModuleId,
     pub ident: String,
+
+    pub auth_zone: NodeId,
 
     // Cached info
     pub object_info: ObjectInfo,
@@ -40,10 +38,12 @@ impl MethodActor {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionActor {
     pub blueprint_id: BlueprintId,
     pub ident: String,
+
+    pub auth_zone: NodeId,
 }
 
 impl FunctionActor {
@@ -53,16 +53,20 @@ impl FunctionActor {
             ident: self.ident.to_string(),
         }
     }
+
+    pub fn as_global_caller(&self) -> GlobalCaller {
+        GlobalCaller::PackageBlueprint(self.blueprint_id.clone())
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlueprintHookActor {
     pub receiver: Option<NodeId>,
     pub hook: BlueprintHook,
     pub blueprint_id: BlueprintId,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Actor {
     Root,
     Method(MethodActor),
@@ -107,14 +111,14 @@ impl CallFrameReferences for Actor {
     }
 
     fn stable_transient_references(&self) -> Vec<NodeId> {
-        if self.is_direct_access() {
-            vec![]
-        } else {
-            self.node_id()
-                .into_iter()
-                .filter(|n| !n.is_global())
-                .collect()
+        let mut references = vec![];
+        references.extend(self.self_auth_zone());
+
+        if !self.is_direct_access() {
+            references.extend(self.node_id().filter(|n| !n.is_global()));
         }
+
+        references
     }
 
     fn len(&self) -> usize {
@@ -126,6 +130,7 @@ impl CallFrameReferences for Actor {
             Actor::Function(FunctionActor {
                 blueprint_id,
                 ident,
+                ..
             }) => {
                 blueprint_id.package_address.as_ref().len()
                     + blueprint_id.blueprint_name.len()
@@ -139,6 +144,14 @@ impl CallFrameReferences for Actor {
 }
 
 impl Actor {
+    pub fn self_auth_zone(&self) -> Option<NodeId> {
+        match self {
+            Actor::Root | Actor::BlueprintHook(..) => None,
+            Actor::Method(method_actor) => Some(method_actor.auth_zone),
+            Actor::Function(function_actor) => Some(function_actor.auth_zone),
+        }
+    }
+
     pub fn instance_context(&self) -> Option<InstanceContext> {
         let method_actor = match self {
             Actor::Method(method_actor) => method_actor,
@@ -263,64 +276,5 @@ impl Actor {
 
     pub fn package_address(&self) -> Option<PackageAddress> {
         self.blueprint_id().map(|id| id.package_address)
-    }
-
-    /// Proofs which exist only on the local call frame
-    pub fn get_local_call_frame_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
-        if let Some(blueprint_id) = self.blueprint_id() {
-            btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
-                blueprint_id.package_address
-            ))
-        } else {
-            btreeset!()
-        }
-    }
-
-    pub fn get_global_call_frame_proofs<V: SystemCallbackObject, Y: KernelApi<SystemConfig<V>>>(
-        &self,
-        api: &mut Y,
-    ) -> BTreeSet<NonFungibleGlobalId> {
-        let global_caller: Option<GlobalCaller> = match self {
-            Actor::Method(actor) => {
-                let node_visibility = api.kernel_get_node_visibility(&actor.node_id);
-                match node_visibility.reference_origin(actor.node_id).unwrap() {
-                    ReferenceOrigin::Heap | ReferenceOrigin::DirectlyAccessed => None,
-                    ReferenceOrigin::Global(address) => Some(address.into()),
-                }
-            }
-            Actor::Function(FunctionActor { blueprint_id, .. }) => {
-                Some(blueprint_id.clone().into())
-            }
-            _ => None,
-        };
-
-        if let Some(global_caller) = global_caller {
-            btreeset!(NonFungibleGlobalId::global_caller_badge(global_caller))
-        } else {
-            btreeset!()
-        }
-    }
-
-    pub fn method(
-        direct_access: bool,
-        node_id: NodeId,
-        module_id: ObjectModuleId,
-        ident: String,
-        object_info: ObjectInfo,
-    ) -> Self {
-        Self::Method(MethodActor {
-            direct_access,
-            node_id,
-            module_id,
-            ident,
-            object_info,
-        })
-    }
-
-    pub fn function(blueprint_id: BlueprintId, ident: String) -> Self {
-        Self::Function(FunctionActor {
-            blueprint_id,
-            ident,
-        })
     }
 }

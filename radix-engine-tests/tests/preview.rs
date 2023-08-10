@@ -79,7 +79,7 @@ fn test_transaction_preview_without_locking_fee() {
     println!("{:?}", preview_receipt);
     assert!(costing_summary.total_execution_cost_in_xrd.is_positive());
     assert_eq!(costing_summary.total_tipping_cost_in_xrd, dec!("0"));
-    assert!(costing_summary.total_storage_cost_in_xrd.is_positive());
+    assert_eq!(costing_summary.total_storage_cost_in_xrd, dec!("0"));
     assert_eq!(costing_summary.total_royalty_cost_in_xrd, dec!("0"));
 }
 

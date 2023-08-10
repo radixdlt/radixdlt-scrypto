@@ -3,7 +3,6 @@ use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
-use crate::blueprints::resource::AuthZone;
 use crate::errors::SystemUpstreamError;
 use crate::errors::{RuntimeError, SystemError};
 use crate::kernel::actor::Actor;
@@ -19,8 +18,7 @@ use crate::kernel::kernel_callback_api::{
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
-use crate::system::module::SystemModule;
-use crate::system::system::FieldSubstate;
+use crate::system::module::KernelModule;
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -189,30 +187,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_invoke(api, invocation)
-    }
+        let is_to_barrier = invocation.call_frame_data.is_barrier();
+        let destination_blueprint_id = invocation.call_frame_data.blueprint_id();
 
-    fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_invoke(api, output_size)
-    }
-
-    fn before_push_frame<Y>(
-        callee: &Actor,
-        message: &mut CallFrameMessage,
-        args: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::before_push_frame(api, callee, message, args)?;
-
-        let is_to_barrier = callee.is_barrier();
-        let destination_blueprint_id = callee.blueprint_id();
-        for node_id in &message.move_nodes {
+        for node_id in invocation.args.owned_nodes() {
             Self::on_move_node(
                 node_id,
                 true,
@@ -222,7 +200,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             )?;
         }
 
-        Ok(())
+        SystemModuleMixer::before_invoke(api, invocation)
     }
 
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -241,20 +219,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(())
     }
 
-    fn after_pop_frame<Y>(
-        dropped_actor: &Actor,
-        message: &CallFrameMessage,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_pop_frame(api, dropped_actor, message)?;
-
         let current_actor = api.kernel_get_system_state().current_call_frame;
         let is_to_barrier = current_actor.is_barrier();
         let destination_blueprint_id = current_actor.blueprint_id();
-        for node_id in &message.move_nodes {
+        for node_id in output.owned_nodes() {
             Self::on_move_node(
                 node_id,
                 false,
@@ -264,7 +236,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             )?;
         }
 
-        Ok(())
+        SystemModuleMixer::after_invoke(api, output)
     }
 
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
@@ -482,54 +454,27 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             }
         }
 
-        // Round 2 - drop the auth zone
-        //
-        // Note that we destroy frame's auth zone at the very end of the `auto_drop` process
-        // to make sure the auth zone stack is in good state for the proof dropping above.
-        //
-        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
-            // Detach proofs from the auth zone
-            let handle = api.kernel_open_substate(
-                &auth_zone_id,
-                MAIN_BASE_PARTITION,
-                &AuthZoneField::AuthZone.into(),
-                LockFlags::MUTABLE,
-                SystemLockData::Default,
-            )?;
-            let mut substate: FieldSubstate<AuthZone> =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
-            api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
-            api.kernel_close_substate(handle)?;
-
-            // Drop all proofs (previously) owned by the auth zone
-            for proof in proofs {
-                let mut system = SystemService::new(api);
-                let object_info = system.get_object_info(proof.0.as_node_id())?;
-                system.call_function(
-                    RESOURCE_PACKAGE,
-                    &object_info.blueprint_info.blueprint_id.blueprint_name,
-                    PROOF_DROP_IDENT,
-                    scrypto_encode(&ProofDropInput { proof }).unwrap(),
-                )?;
-            }
-
-            // Drop the auth zone
-            api.kernel_drop_node(&auth_zone_id)?;
-        }
-
         Ok(())
     }
 
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
-        _partition_num: PartitionNumber,
-        _offset: &SubstateKey,
+        partition_num: PartitionNumber,
+        offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
         Y: KernelApi<Self>,
     {
+        // As currently implemented, this should always be called with partition_num=0 and offset=0
+        // since all nodes are access by accessing their type info first
+        // This check is simply a sanity check that this invariant remain true
+        if !partition_num.eq(&TYPE_INFO_FIELD_PARTITION)
+            || !offset.eq(&TypeInfoField::TypeInfo.into())
+        {
+            return Ok(false);
+        }
+
         let (blueprint_id, variant_id) = match node_id.entity_type() {
             Some(EntityType::GlobalVirtualSecp256k1Account) => (
                 BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),

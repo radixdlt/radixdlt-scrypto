@@ -78,7 +78,7 @@ pub trait NativeAuthZone {
         Y: ClientApi<E>;
 }
 
-impl NativeAuthZone for OwnedAuthZone {
+impl NativeAuthZone for AuthZoneRef {
     fn drain<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
@@ -87,7 +87,7 @@ impl NativeAuthZone for OwnedAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            self.0.as_node_id(),
+            &self.0,
             AUTH_ZONE_DRAIN_IDENT,
             scrypto_encode(&AuthZoneDrainInput {}).unwrap(),
         )?;
@@ -102,7 +102,7 @@ impl NativeAuthZone for OwnedAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            self.0.as_node_id(),
+            &self.0,
             AUTH_ZONE_DROP_PROOFS_IDENT,
             scrypto_encode(&AuthZoneDropProofsInput {}).unwrap(),
         )?;
@@ -117,7 +117,7 @@ impl NativeAuthZone for OwnedAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            self.0.as_node_id(),
+            &self.0,
             AUTH_ZONE_DROP_REGULAR_PROOFS_IDENT,
             scrypto_encode(&AuthZoneDropRegularProofsInput {}).unwrap(),
         )?;
@@ -132,7 +132,7 @@ impl NativeAuthZone for OwnedAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            self.0.as_node_id(),
+            &self.0,
             AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT,
             scrypto_encode(&AuthZoneDropSignatureProofsInput {}).unwrap(),
         )?;
@@ -144,7 +144,7 @@ impl NativeAuthZone for OwnedAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            self.0.as_node_id(),
+            &self.0,
             AUTH_ZONE_POP_IDENT,
             scrypto_encode(&AuthZonePopInput {}).unwrap(),
         )?;
@@ -162,7 +162,7 @@ impl NativeAuthZone for OwnedAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            self.0.as_node_id(),
+            &self.0,
             AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
             scrypto_encode(&AuthZoneCreateProofOfAmountInput {
                 resource_address,
@@ -184,7 +184,7 @@ impl NativeAuthZone for OwnedAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            self.0.as_node_id(),
+            &self.0,
             AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
             scrypto_encode(&AuthZoneCreateProofOfNonFungiblesInput {
                 resource_address,
@@ -205,7 +205,7 @@ impl NativeAuthZone for OwnedAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            self.0.as_node_id(),
+            &self.0,
             AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT,
             scrypto_encode(&AuthZoneCreateProofOfAllInput { resource_address }).unwrap(),
         )?;
@@ -224,7 +224,7 @@ impl NativeAuthZone for OwnedAuthZone {
         let proof: Proof = proof.into();
 
         let _rtn = api.call_method(
-            self.0.as_node_id(),
+            &self.0,
             AUTH_ZONE_PUSH_IDENT,
             scrypto_encode(&AuthZonePushInput { proof }).unwrap(),
         )?;

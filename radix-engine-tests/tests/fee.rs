@@ -2,8 +2,6 @@ use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
 use radix_engine::errors::{RejectionReason, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
-use radix_engine::kernel::heap::HeapOpenSubstateError;
-use radix_engine::track::interface::TrackOpenSubstateError;
 use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -152,7 +150,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
     receipt.expect_specific_rejection(|e| match e {
         RejectionReason::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::OpenSubstateError(
-                OpenSubstateError::HeapError(HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode),
+                OpenSubstateError::LockUnmodifiedBaseOnHeapNode,
             )),
         )) => true,
         _ => false,
@@ -189,15 +187,9 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
     receipt.expect_specific_rejection(|e| match e {
         RejectionReason::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::OpenSubstateError(
-                OpenSubstateError::TrackError(err),
+                OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(..),
             )),
-        )) => {
-            if let TrackOpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
-                return true;
-            } else {
-                return false;
-            }
-        }
+        )) => true,
         _ => false,
     });
 }

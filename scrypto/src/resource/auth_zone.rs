@@ -34,12 +34,12 @@ pub trait ScryptoAuthZone {
     fn drop_regular_proofs(&self);
 }
 
-impl ScryptoAuthZone for OwnedAuthZone {
+impl ScryptoAuthZone for AuthZoneRef {
     fn push<P: Into<Proof>>(&self, proof: P) {
         let proof: Proof = proof.into();
         let mut env = ScryptoEnv;
         env.call_method(
-            self.0.as_node_id(),
+            &self.0,
             AUTH_ZONE_PUSH_IDENT,
             scrypto_encode(&AuthZonePushInput { proof }).unwrap(),
         )
@@ -50,7 +50,7 @@ impl ScryptoAuthZone for OwnedAuthZone {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                &self.0,
                 AUTH_ZONE_POP_IDENT,
                 scrypto_encode(&AuthZonePopInput {}).unwrap(),
             )
@@ -66,7 +66,7 @@ impl ScryptoAuthZone for OwnedAuthZone {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                &self.0,
                 AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
                 scrypto_encode(&AuthZoneCreateProofOfAmountInput {
                     resource_address,
@@ -86,7 +86,7 @@ impl ScryptoAuthZone for OwnedAuthZone {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                &self.0,
                 AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
                 scrypto_encode(&AuthZoneCreateProofOfNonFungiblesInput {
                     resource_address,
@@ -102,7 +102,7 @@ impl ScryptoAuthZone for OwnedAuthZone {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                &self.0,
                 AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT,
                 scrypto_encode(&AuthZoneCreateProofOfAllInput { resource_address }).unwrap(),
             )
@@ -114,7 +114,7 @@ impl ScryptoAuthZone for OwnedAuthZone {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                &self.0,
                 AUTH_ZONE_DROP_PROOFS_IDENT,
                 scrypto_encode(&AuthZoneDropProofsInput {}).unwrap(),
             )
@@ -126,7 +126,7 @@ impl ScryptoAuthZone for OwnedAuthZone {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                &self.0,
                 AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT,
                 scrypto_encode(&AuthZoneDropSignatureProofsInput {}).unwrap(),
             )
@@ -138,7 +138,7 @@ impl ScryptoAuthZone for OwnedAuthZone {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                &self.0,
                 AUTH_ZONE_DROP_REGULAR_PROOFS_IDENT,
                 scrypto_encode(&AuthZoneDropRegularProofsInput {}).unwrap(),
             )

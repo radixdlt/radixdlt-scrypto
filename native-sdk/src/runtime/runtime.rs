@@ -1,7 +1,9 @@
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::resource::AccessRule;
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AuthZoneAssertAccessRuleInput, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
@@ -85,12 +87,19 @@ impl Runtime {
         api.generate_ruid()
     }
 
-    pub fn assert_access_rule<Y, E>(access_rule: AccessRule, api: &mut Y) -> Result<(), E>
+    pub fn assert_access_rule<Y, E>(rule: AccessRule, api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.assert_access_rule(access_rule)
+        let auth_zone = api.get_auth_zone()?;
+        let _rtn = api.call_method(
+            &auth_zone,
+            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+            scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
+        )?;
+
+        Ok(())
     }
 
     pub fn get_node_id<Y, E>(api: &mut Y) -> Result<NodeId, E>

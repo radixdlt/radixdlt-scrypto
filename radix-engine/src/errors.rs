@@ -144,7 +144,7 @@ pub enum KernelError {
     InvalidReference(NodeId),
 
     // Substate lock/read/write/unlock
-    LockDoesNotExist(LockHandle),
+    SubstateHandleDoesNotExist(SubstateHandle),
 
     OrphanedNodes(Vec<NodeId>),
 }

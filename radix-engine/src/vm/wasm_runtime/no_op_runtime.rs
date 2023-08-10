@@ -116,7 +116,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         node_id: Vec<u8>,
         offset: Vec<u8>,
         flags: u32,
-    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
+    ) -> Result<SubstateHandle, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
@@ -243,10 +243,6 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
     }
 
     fn generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

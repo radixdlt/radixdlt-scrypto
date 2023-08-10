@@ -3,6 +3,7 @@ use crate::kernel::kernel_callback_api::{
     OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
+use crate::kernel::substate_io::SubstateDevice;
 use crate::{
     blueprints::package::*,
     kernel::actor::Actor,
@@ -325,12 +326,12 @@ impl FeeTable {
     #[inline]
     pub fn read_substate_cost(&self, event: &ReadSubstateEvent) -> u32 {
         match event {
-            ReadSubstateEvent::OnRead {
-                value,
-                read_from_heap,
-                ..
-            } => {
-                let base_cost: u32 = if *read_from_heap { 2127 } else { 3345 };
+            ReadSubstateEvent::OnRead { value, device, .. } => {
+                let base_cost: u32 = match device {
+                    SubstateDevice::Heap => 2127,
+                    SubstateDevice::Store => 3345,
+                };
+
                 add(
                     base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
                     Self::data_processing_cost(value.len()),
@@ -342,6 +343,7 @@ impl FeeTable {
     #[inline]
     pub fn write_substate_cost(&self, event: &WriteSubstateEvent) -> u32 {
         match event {
+            WriteSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
             WriteSubstateEvent::Start { value, .. } => add(
                 2003u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                 Self::data_processing_cost(value.len()),
@@ -352,7 +354,6 @@ impl FeeTable {
     #[inline]
     pub fn close_substate_cost(&self, event: &CloseSubstateEvent) -> u32 {
         match event {
-            CloseSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
             CloseSubstateEvent::End(..) => 3596u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
         }
     }
@@ -448,11 +449,6 @@ impl FeeTable {
 
     #[inline]
     pub fn query_auth_zone_cost(&self) -> u32 {
-        500
-    }
-
-    #[inline]
-    pub fn assert_access_rule_cost(&self) -> u32 {
         500
     }
 

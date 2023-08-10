@@ -2,9 +2,9 @@ use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::CallFrameMessage;
-use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent, KernelCallbackObject};
-use crate::system::module::SystemModule;
+use crate::system::module::KernelModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
@@ -284,7 +284,7 @@ impl ResourceSummary {
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceModule {
+impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for ExecutionTraceModule {
     fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         event: &CreateNodeEvent,
@@ -344,19 +344,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
+    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        callee: &Actor,
-        message: &mut CallFrameMessage,
-        args: &IndexedScryptoValue,
+        invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
-        let resource_summary = ResourceSummary::from_message(api, message);
+        let message = CallFrameMessage::from_input(&invocation.args, &invocation.call_frame_data);
+        let resource_summary = ResourceSummary::from_message(api, &message);
+        let callee = &invocation.call_frame_data;
+        let args = &invocation.args;
         let system_state = api.kernel_get_system_state();
         system_state
             .system
             .modules
             .execution_trace
-            .handle_before_push_frame(
+            .handle_before_invoke(
                 system_state.current_call_frame,
                 callee,
                 resource_summary,
@@ -459,7 +460,7 @@ impl ExecutionTraceModule {
         self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
     }
 
-    fn handle_before_push_frame(
+    fn handle_before_invoke(
         &mut self,
         current_actor: &Actor,
         callee: &Actor,
@@ -482,6 +483,7 @@ impl ExecutionTraceModule {
             Actor::Function(FunctionActor {
                 blueprint_id,
                 ident,
+                ..
             }) => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
                 blueprint_id: blueprint_id.clone(),
                 ident: ident.clone(),
