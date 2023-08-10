@@ -33,7 +33,7 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintKeyValueSchema, Condition, InstanceSchema, KeyValueStoreSchema,
+    Condition, KeyValueStoreSchema,
 };
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
@@ -151,16 +151,14 @@ pub enum SchemaValidationMeta {
 }
 
 #[derive(Debug, Clone)]
-pub struct ValidationTarget {
-    // TODO: Add version
-    pub blueprint_id: BlueprintId,
-    pub type_substitutions: Vec<TypeIdentifier>,
+pub struct BlueprintTypeTarget {
+    pub blueprint_info: BlueprintInfo,
     pub meta: SchemaValidationMeta,
 }
 
 enum EmitterActor {
-    Actor(Actor),
-    AsInnerObject(NodeId, ObjectModuleId),
+    CurrentActor,
+    AsObject(NodeId, ObjectModuleId),
 }
 
 impl<'a, Y, V> SystemService<'a, Y, V>
@@ -236,37 +234,41 @@ where
 
     pub fn validate_blueprint_payload(
         &mut self,
-        target: &ValidationTarget,
+        target: &BlueprintTypeTarget,
         payload_identifier: BlueprintPayloadIdentifier,
         payload: &[u8],
     ) -> Result<bool, RuntimeError> {
         // TODO: Remove bool return
 
         let blueprint_interface =
-            self.get_blueprint_default_interface(target.blueprint_id.clone())?;
+            self.get_blueprint_default_interface(target.blueprint_info.blueprint_id.clone())?;
 
         let (type_pointer, can_own) = blueprint_interface
             .get_type_pointer(&payload_identifier)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                    PayloadValidationAgainstSchemaError::PayloadDoesNotExist(payload_identifier),
+                    PayloadValidationAgainstSchemaError::PayloadDoesNotExist(
+                        target.blueprint_info.clone(),
+                        payload_identifier,
+                    ),
                 ))
             })?;
 
         let (schema, index, schema_origin) = match type_pointer {
             TypePointer::Package(type_identifier) => {
                 let schema = self.get_schema(
-                    target.blueprint_id.package_address.as_node_id(),
+                    target.blueprint_info.blueprint_id.package_address.as_node_id(),
                     &type_identifier.0,
                 )?;
                 (
                     schema,
                     type_identifier.1,
-                    SchemaOrigin::Blueprint(target.blueprint_id.clone()),
+                    SchemaOrigin::Blueprint(target.blueprint_info.blueprint_id.clone()),
                 )
             }
             TypePointer::Instance(instance_index) => {
                 let type_identifier = target
+                    .blueprint_info
                     .type_substitutions
                     .get(instance_index as usize)
                     .ok_or_else(|| {
@@ -328,14 +330,15 @@ where
         &mut self,
         blueprint_id: &BlueprintId,
         blueprint_interface: &BlueprintInterface,
-        blueprint_features: &BTreeSet<String>,
+        outer_obj_info: OuterObjectInfo,
+        features: BTreeSet<String>,
         outer_blueprint_features: &BTreeSet<String>,
         new_instance_schema: Option<InstanceSchemaInit>,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<
         (
-            Vec<TypeIdentifier>,
+            BlueprintInfo,
             IndexMap<PartitionDescription, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         ),
         RuntimeError,
@@ -369,9 +372,15 @@ where
                 .unwrap_or_default()
         };
 
-        let validation_target = ValidationTarget {
+        let blueprint_info = BlueprintInfo {
+            outer_obj_info,
+            features: features.clone(),
             blueprint_id: blueprint_id.clone(),
             type_substitutions: type_substitutions.clone(),
+        };
+
+        let validation_target = BlueprintTypeTarget {
+            blueprint_info,
             meta: SchemaValidationMeta::NewObject {
                 additional_schemas: additional_schemas.clone().into_iter().collect(),
             },
@@ -400,7 +409,7 @@ where
                     // Check for any feature conditions
                     match &field_schemas[i].condition {
                         Condition::IfFeature(feature) => {
-                            if !blueprint_features.contains(feature) {
+                            if !features.contains(feature) {
                                 continue;
                             }
                         }
@@ -534,7 +543,7 @@ where
             schema_partition.insert(key, value);
         }
 
-        Ok((type_substitutions, partitions))
+        Ok((validation_target.blueprint_info, partitions))
     }
 
     pub fn get_schema(
@@ -756,10 +765,11 @@ where
                 (OuterObjectInfo::None, BTreeSet::new())
             };
 
-        let (type_substitutions, partitions) = self.validate_instance_schema_and_state(
+        let (blueprint_info, partitions) = self.validate_instance_schema_and_state(
             blueprint_id,
             &blueprint_interface,
-            &object_features,
+            outer_obj_info,
+            object_features,
             &outer_object_features,
             new_instance_schema,
             fields,
@@ -781,13 +791,7 @@ where
                     module_versions: btreemap!(
                         ObjectModuleId::Main => BlueprintVersion::default(),
                     ),
-
-                    blueprint_info: BlueprintInfo {
-                        blueprint_id: blueprint_id.clone(),
-                        outer_obj_info,
-                        features: object_features,
-                        type_substitutions,
-                    }
+                    blueprint_info,
                 })
             ),
         );
@@ -824,30 +828,18 @@ where
         // Locking the package info substate associated with the emitter's package
         // Getting the package address and blueprint name associated with the actor
         let validation_target = match &actor {
-            EmitterActor::AsInnerObject(node_id, module_id)
-            | EmitterActor::Actor(Actor::Method(MethodActor {
-                node_id, module_id, ..
-            })) => {
-                let blueprint_obj_info = self.get_blueprint_info(node_id, *module_id)?;
-                ValidationTarget {
-                    blueprint_id: blueprint_obj_info.blueprint_id.clone(),
-                    type_substitutions: blueprint_obj_info.type_substitutions,
+            EmitterActor::AsObject(node_id, module_id) => {
+                let bp_info = self.get_blueprint_info(node_id, *module_id)?;
+
+                BlueprintTypeTarget {
+                    blueprint_info: bp_info,
                     meta: SchemaValidationMeta::ExistingObject {
-                        additional_schemas: *node_id,
-                    },
+                        additional_schemas: *node_id
+                    }
                 }
             }
-            EmitterActor::Actor(Actor::Function(FunctionActor { blueprint_id, .. })) => {
-                ValidationTarget {
-                    blueprint_id: blueprint_id.clone(),
-                    type_substitutions: vec![],
-                    meta: SchemaValidationMeta::Blueprint,
-                }
-            }
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::EventError(
-                    EventError::InvalidActor,
-                )))
+            EmitterActor::CurrentActor => {
+                self.get_actor_type_target()?
             }
         };
 
@@ -859,19 +851,30 @@ where
 
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
-            EmitterActor::AsInnerObject(node_id, module_id)
-            | EmitterActor::Actor(Actor::Method(MethodActor {
-                node_id, module_id, ..
-            })) => Ok(EventTypeIdentifier(
-                Emitter::Method(node_id, module_id),
-                event_name,
-            )),
-            EmitterActor::Actor(Actor::Function(FunctionActor { blueprint_id, .. })) => Ok(
-                EventTypeIdentifier(Emitter::Function(blueprint_id.clone()), event_name),
-            ),
-            _ => Err(RuntimeError::SystemModuleError(
-                SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
-            )),
+            EmitterActor::AsObject(node_id, module_id, ..) => {
+                Ok(EventTypeIdentifier(
+                    Emitter::Method(node_id, module_id),
+                    event_name,
+                ))
+            }
+            EmitterActor::CurrentActor => {
+                match self.current_actor() {
+                    Actor::Method(MethodActor {
+                                      node_id, module_id, ..
+                                  }) => {
+                        Ok(EventTypeIdentifier(
+                            Emitter::Method(node_id, module_id),
+                            event_name,
+                        ))
+                    }
+                    Actor::Function(FunctionActor { blueprint_id, .. }) => Ok(
+                        EventTypeIdentifier(Emitter::Function(blueprint_id.clone()), event_name),
+                    ),
+                    _ => Err(RuntimeError::SystemModuleError(
+                        SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
+                    ))
+                }
+            }
         }?;
 
         let event = Event {
@@ -924,6 +927,44 @@ where
         };
 
         Ok(info)
+    }
+
+    pub fn get_actor_type_target(&mut self) -> Result<BlueprintTypeTarget, RuntimeError> {
+        let actor = self.current_actor();
+        match actor {
+            Actor::Root => Err(RuntimeError::SystemError(SystemError::RootHasNoType)),
+            Actor::BlueprintHook(actor) => {
+                Ok(BlueprintTypeTarget {
+                    blueprint_info: BlueprintInfo {
+                        blueprint_id: actor.blueprint_id.clone(),
+                        outer_obj_info: OuterObjectInfo::None,
+                        features: btreeset!(),
+                        type_substitutions: vec![],
+                    },
+                    meta: SchemaValidationMeta::Blueprint,
+                })
+            }
+            Actor::Function(actor) => {
+                Ok(BlueprintTypeTarget {
+                    blueprint_info: BlueprintInfo {
+                        blueprint_id: actor.blueprint_id.clone(),
+                        outer_obj_info: OuterObjectInfo::None,
+                        features: btreeset!(),
+                        type_substitutions: vec![],
+                    },
+                    meta: SchemaValidationMeta::Blueprint,
+                })
+            }
+            Actor::Method(actor) => {
+                let blueprint_info = self.get_blueprint_info(&actor.node_id, actor.module_id)?;
+                Ok(BlueprintTypeTarget {
+                    blueprint_info,
+                    meta: SchemaValidationMeta::ExistingObject {
+                        additional_schemas: actor.node_id
+                    },
+                })
+            }
+        }
     }
 
     fn get_actor_object_id(
@@ -1362,7 +1403,7 @@ where
                     BlueprintPayloadIdentifier::Field(field_index),
                     &buffer,
                 )?;
-                target.blueprint_id.clone()
+                target.blueprint_info.blueprint_id.clone()
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteHandle));
@@ -1542,8 +1583,9 @@ where
             btreemap!(),
         )?;
 
+
         self.emit_event_internal(
-            EmitterActor::AsInnerObject(global_address.into_node_id(), ObjectModuleId::Main),
+            EmitterActor::AsObject(global_address.as_node_id().clone(), ObjectModuleId::Main),
             event_name,
             event_data,
         )?;
@@ -1967,9 +2009,8 @@ where
             &BlueprintPartitionType::IndexCollection,
         )?;
 
-        let target = ValidationTarget {
-            blueprint_id: info.blueprint_id,
-            type_substitutions: info.type_substitutions,
+        let target = BlueprintTypeTarget {
+            blueprint_info: info,
             meta: SchemaValidationMeta::ExistingObject {
                 additional_schemas: node_id,
             },
@@ -2096,9 +2137,8 @@ where
             &BlueprintPartitionType::SortedIndexCollection,
         )?;
 
-        let target = ValidationTarget {
-            blueprint_id: info.blueprint_id,
-            type_substitutions: info.type_substitutions,
+        let target = BlueprintTypeTarget {
+            blueprint_info: info,
             meta: SchemaValidationMeta::ExistingObject {
                 additional_schemas: node_id,
             },
@@ -2408,9 +2448,8 @@ where
         }
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
-            let target = ValidationTarget {
-                blueprint_id: blueprint_info.blueprint_id,
-                type_substitutions: blueprint_info.type_substitutions,
+            let target = BlueprintTypeTarget {
+                blueprint_info,
                 meta: SchemaValidationMeta::ExistingObject {
                     additional_schemas: node_id,
                 },
@@ -2564,9 +2603,8 @@ where
             &BlueprintPartitionType::KeyValueCollection,
         )?;
 
-        let target = ValidationTarget {
-            blueprint_id: info.blueprint_id,
-            type_substitutions: info.type_substitutions,
+        let target = BlueprintTypeTarget {
+            blueprint_info: info,
             meta: SchemaValidationMeta::ExistingObject {
                 additional_schemas: node_id,
             },
@@ -2673,8 +2711,7 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        let actor = self.current_actor();
-        self.emit_event_internal(EmitterActor::Actor(actor), event_name, event_data)
+        self.emit_event_internal(EmitterActor::CurrentActor, event_name, event_data)
     }
 
     #[trace_resources]

@@ -222,6 +222,7 @@ pub enum SystemError {
     NotAFieldHandle,
     NotAFieldWriteHandle,
     InvalidReference,
+    RootHasNoType,
     FieldDoesNotExist(BlueprintId, u8),
     KeyValueStoreDoesNotExist(BlueprintId, u8),
     SortedIndexDoesNotExist(BlueprintId, u8),
@@ -315,7 +316,7 @@ pub enum SystemModuleError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PayloadValidationAgainstSchemaError {
-    PayloadDoesNotExist(BlueprintPayloadIdentifier),
+    PayloadDoesNotExist(BlueprintInfo, BlueprintPayloadIdentifier),
     CollectionDoesNotExist,
     PayloadValidationError(String),
     InstanceSchemaDoesNotExist,

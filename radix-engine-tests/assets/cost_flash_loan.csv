@@ -1,12 +1,12 @@
-Total Cost (XRD)                                                           ,     0.12007338,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.11998338,     99.9%
+Total Cost (XRD)                                                           ,     0.12042182,    100.0%
++ Execution Cost (XRD)                                                     ,     0.12033182,     99.9%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00009,      0.1%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       11998338,    100.0%
+Total Cost Units Consumed                                                  ,       12033182,    100.0%
 AllocateNodeId                                                             ,           5304,      0.0%
 BeforeInvoke                                                               ,           9320,      0.1%
-CloseSubstate                                                              ,          85785,      0.7%
+CloseSubstate                                                              ,          89985,      0.7%
 Commit::GlobalGenericComponent                                             ,         100025,      0.8%
 Commit::GlobalNonFungibleResourceManager                                   ,         200012,      1.7%
 Commit::InternalFungibleVault                                              ,         400033,      3.3%
@@ -15,18 +15,18 @@ DropNode                                                                   ,    
 EmitEvent                                                                  ,           4548,      0.0%
 GenerateRuid                                                               ,            500,      0.0%
 LockFee                                                                    ,            500,      0.0%
-OpenSubstate                                                               ,        3965951,     33.1%
-OpenSubstate::GlobalAccount                                                ,          13397,      0.1%
+OpenSubstate                                                               ,        3965951,     33.0%
+OpenSubstate::GlobalAccount                                                ,          15026,      0.1%
 OpenSubstate::GlobalFungibleResourceManager                                ,          15014,      0.1%
-OpenSubstate::GlobalGenericComponent                                       ,           6052,      0.1%
-OpenSubstate::GlobalNonFungibleResourceManager                             ,          27824,      0.2%
-OpenSubstate::GlobalPackage                                                ,        1842070,     15.4%
-OpenSubstate::InternalFungibleVault                                        ,          38110,      0.3%
-OpenSubstate::InternalGenericComponent                                     ,         146790,      1.2%
+OpenSubstate::GlobalGenericComponent                                       ,           7076,      0.1%
+OpenSubstate::GlobalNonFungibleResourceManager                             ,          29897,      0.2%
+OpenSubstate::GlobalPackage                                                ,        1842070,     15.3%
+OpenSubstate::InternalFungibleVault                                        ,          42620,      0.4%
+OpenSubstate::InternalGenericComponent                                     ,         155446,      1.3%
 PrepareWasmCode                                                            ,        1621116,     13.5%
 QueryActor                                                                 ,           9500,      0.1%
 QueryAuthZone                                                              ,           2000,      0.0%
-ReadSubstate                                                               ,        1949608,     16.2%
+ReadSubstate                                                               ,        1962360,     16.3%
 RunNativeCode::AuthZone_pop                                                ,          37132,      0.3%
 RunNativeCode::AuthZone_push                                               ,          50694,      0.4%
 RunNativeCode::Worktop_drain                                               ,          13505,      0.1%

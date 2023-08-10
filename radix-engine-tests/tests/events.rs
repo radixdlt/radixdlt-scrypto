@@ -98,6 +98,7 @@ fn scrypto_cant_emit_unregistered_event() {
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
             PayloadValidationAgainstSchemaError::PayloadDoesNotExist(
+                _,
                 BlueprintPayloadIdentifier::Event(event),
             ),
         )) if event.eq("UnregisteredEvent") => true,

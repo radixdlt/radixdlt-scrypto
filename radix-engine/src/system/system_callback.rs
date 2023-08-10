@@ -21,7 +21,7 @@ use crate::kernel::kernel_callback_api::{
 use crate::system::module::KernelModule;
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
-use crate::system::system::{KVStoreValidationTarget, SchemaValidationMeta, ValidationTarget};
+use crate::system::system::{KVStoreValidationTarget, SchemaValidationMeta, BlueprintTypeTarget};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::types::*;
@@ -37,7 +37,7 @@ use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::hooks::OnMoveOutput;
 use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
-use radix_engine_interface::schema::{InstanceSchema, RefTypes};
+use radix_engine_interface::schema::{RefTypes};
 
 #[derive(Clone)]
 pub enum SystemLockData {
@@ -59,7 +59,7 @@ pub enum KeyValueEntryLockData {
         kv_store_validation_target: KVStoreValidationTarget,
     },
     BlueprintWrite {
-        target: ValidationTarget,
+        target: BlueprintTypeTarget,
         collection_index: CollectionIndex,
     },
 }
@@ -68,7 +68,7 @@ pub enum KeyValueEntryLockData {
 pub enum FieldLockData {
     Read,
     Write {
-        target: ValidationTarget,
+        target: BlueprintTypeTarget,
         field_index: u8,
     },
 }
@@ -295,26 +295,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
                 )?;
 
-                let validating_object = if let Actor::Method(method) = actor {
-                    // TODO: Change to non empty identifiers
-                    ValidationTarget {
-                        blueprint_id: blueprint_id.clone(),
-                        type_substitutions: vec![],
-                        meta: SchemaValidationMeta::ExistingObject {
-                            additional_schemas: method.node_id,
-                        },
-                    }
-                } else {
-                    ValidationTarget {
-                        blueprint_id: blueprint_id.clone(),
-                        type_substitutions: vec![],
-                        meta: SchemaValidationMeta::Blueprint,
-                    }
-                };
+                let target = system.get_actor_type_target()?;
 
                 // Validate input
                 system.validate_blueprint_payload(
-                    &validating_object,
+                    &target,
                     BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Input),
                     input.as_vec_ref(),
                 )?;
@@ -354,7 +339,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
                 // Validate output
                 system.validate_blueprint_payload(
-                    &validating_object,
+                    &target,
                     BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Output),
                     output.as_vec_ref(),
                 )?;
