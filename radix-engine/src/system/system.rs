@@ -71,6 +71,13 @@ impl<V> FieldSubstate<V> {
             mutability: SubstateMutability::Mutable,
         }
     }
+
+    pub fn new_locked_field(value: V) -> Self {
+        Self {
+            value: (value,),
+            mutability: SubstateMutability::Immutable,
+        }
+    }
 }
 
 pub type KeyValueEntrySubstate<V> = DynSubstate<Option<V>>;

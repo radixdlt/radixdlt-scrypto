@@ -1,3 +1,4 @@
+pub mod macros;
 pub mod access_controller;
 pub mod account;
 pub mod consensus_manager;

@@ -126,7 +126,7 @@ macro_rules! define_versioned {
                     Self::[<V $latest_version>](value)
                 }
 
-                pub fn update_once(self) -> UpdateResult<Self> {
+                pub fn update_once(self) -> $crate::UpdateResult<Self> {
                     match self {
                     $($(
                         Self::[<V $version_num>](value) => $crate::UpdateResult::Updated(Self::[<V $update_to_version_num>](value.into())),
@@ -138,10 +138,10 @@ macro_rules! define_versioned {
                 pub fn update_to_latest(mut self) -> Self {
                     loop {
                         match self.update_once() {
-                            UpdateResult::Updated(new) => {
+                            $crate::UpdateResult::Updated(new) => {
                                 self = new;
                             }
-                            UpdateResult::AtLatest(latest) => {
+                            $crate::UpdateResult::AtLatest(latest) => {
                                 return latest;
                             }
                         }
@@ -204,7 +204,7 @@ macro_rules! define_versioned {
                     impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? [<$name Version>] for $inner_type
                     {
                         type Versioned = $name $(< $( $lt ),+ >)?;
-        
+
                         fn into_versioned(self) -> Self::Versioned {
                             self.into()
                         }
@@ -311,13 +311,7 @@ mod tests {
         let v1_model: GenericModel<_> = GenericModelV1(51u64);
         let versioned = VersionedGenericModel::from(v1_model.clone());
         let versioned_2 = v1_model.clone().into_versioned();
-        assert_eq!(
-            versioned.clone().into_latest(),
-            v1_model.clone()
-        );
-        assert_eq!(
-            versioned,
-            versioned_2
-        );
+        assert_eq!(versioned.clone().into_latest(), v1_model.clone());
+        assert_eq!(versioned, versioned_2);
     }
 }
