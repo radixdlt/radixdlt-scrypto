@@ -106,7 +106,7 @@ pub struct SystemLoanFeeReserve {
 
     /// (Cache) The effective execution cost unit price, with tips considered
     effective_execution_cost_unit_price: u128,
-    /// (Cache) The effective execution cost unit price, with tips considered
+    /// (Cache) The effective finalization cost unit price, with tips considered
     effective_finalization_cost_unit_price: u128,
 
     /// The XRD balance

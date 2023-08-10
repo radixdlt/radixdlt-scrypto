@@ -47,9 +47,6 @@ pub struct CostingParameters {
     pub usd_price: Decimal,
     /// The price of storage in xrd
     pub storage_price: Decimal,
-
-    /// The tip percentage that should be applied on execution and finalization costs.
-    pub tip_percentage: u16,
 }
 
 impl Default for CostingParameters {
@@ -63,7 +60,6 @@ impl Default for CostingParameters {
             finalization_cost_unit_loan: FINALIZATION_COST_UNIT_LOAN,
             usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
             storage_price: STORAGE_PRICE_IN_XRD.try_into().unwrap(),
-            tip_percentage: DEFAULT_TIP_PERCENTAGE,
         }
     }
 }
