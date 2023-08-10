@@ -1,5 +1,4 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
-use crate::system::system::{BlueprintTypeTarget, SchemaValidationMeta};
 use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;

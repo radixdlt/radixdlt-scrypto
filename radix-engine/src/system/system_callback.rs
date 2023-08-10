@@ -21,9 +21,9 @@ use crate::kernel::kernel_callback_api::{
 use crate::system::module::KernelModule;
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
-use crate::system::system::{BlueprintTypeTarget, KVStoreValidationTarget, SchemaValidationMeta};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
+use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreValidationTarget};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
