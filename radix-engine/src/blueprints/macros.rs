@@ -41,102 +41,6 @@ pub trait SortedIndexEntryContent: Sized {
     }
 }
 
-macro_rules! generate_wrapped_substate_type_alias {
-    (SystemField, $module_ident:ident, $field_ident:ident) => {
-        paste::paste! {
-            pub type [<$module_ident $field_ident FieldSubstate>] = [<Versioned $module_ident $field_ident Field>];
-        }
-    };
-    (Field, $blueprint_ident:ident, $field_ident:ident) => {
-        paste::paste! {
-            pub type [<$blueprint_ident $field_ident FieldSubstate>] = $crate::system::system::FieldSubstate<[<Versioned $blueprint_ident $field_ident Field>]>;
-        }
-    };
-    (KeyValue, $blueprint_ident:ident, $collection_ident:ident) => {
-        paste::paste! {
-            pub type [<$blueprint_ident $collection_ident EntrySubstate>] = $crate::system::system::KeyValueEntrySubstate<[<Versioned $blueprint_ident $collection_ident Value>]>;
-        }
-    };
-    (Index, $blueprint_ident:ident, $collection_ident:ident) => {
-        // No wrapper around Index substates
-        paste::paste! {
-            pub type [<$blueprint_ident $collection_ident EntrySubstate>] = [<Versioned $blueprint_ident $collection_ident Value>];
-        }
-    };
-    (SortedIndex, $blueprint_ident:ident, $collection_ident:ident) => {
-        // There is no wrapper around Index substates
-        paste::paste! {
-            pub type [<$blueprint_ident $collection_ident EntrySubstate>] = [<Versioned $blueprint_ident $collection_ident Value>];
-        }
-    };
-    ($unknown_system_substate_type:ident, $blueprint_ident:ident, $collection_ident:ident) => {
-        paste::paste! {
-            compile_error!(concat!(
-                "Unrecognized system substate type: `",
-                stringify!($unknown_system_substate_type),
-                "` - expected `Field`, `SystemField`, `KeyValue`, `Index` or `SortedIndex`"
-            ));
-        }
-    };
-}
-
-macro_rules! generate_collection_substate_content_trait {
-    (KeyValue, $type:ident, $versioned:ident) => {
-        impl KVEntryContent for $type {
-            type VersionedContent = $versioned;
-        }
-    };
-    (Index, $type:ident, $versioned:ident) => {
-        impl IndexEntryContent for $type {
-            type VersionedContent = $versioned;
-        }
-    };
-    (SortedIndex, $type:ident, $versioned:ident) => {
-        impl SortedIndexEntryContent for $type {
-            type VersionedContent = $versioned;
-        }
-    };
-    ($unknown_system_substate_type:ident, $type:ident, $versioned:ident) => {
-        paste::paste! {
-            compile_error!(concat!(
-                "Unrecognized system collection substate type: `",
-                stringify!($unknown_system_substate_type),
-                "` - expected `KeyValue`, `Index` or `SortedIndex`"
-            ));
-        }
-    };
-}
-
-macro_rules! map_entry_substate_to_kv_entry {
-    (KeyValue, $entry_substate:ident) => {
-        paste::paste! {
-            KVEntry {
-                value: $entry_substate.value.map(|v| scrypto_encode(&v).unwrap()),
-                locked: match $entry_substate.mutability {
-                    SubstateMutability::Mutable => true,
-                    SubstateMutability::Immutable => false,
-                },
-            }
-        }
-    };
-    (Index, $entry_substate:ident) => {
-        // This code still needs to compile, but it shouldn't be possible to execute
-        panic!("Not possible to map an Index entry to a KVEntry")
-    };
-    (SortedIndex, $entry_substate:ident) => {
-        // This code still needs to compile, but it shouldn't be possible to execute
-        panic!("Not possible to map a SortedIndex entry to a KVEntry")
-    };
-    ($unknown_system_substate_type:ident, $entry_substate:ident) => {
-        paste::paste! {
-            compile_error!(concat!(
-                "Unrecognized system collection substate type: `",
-                stringify!($unknown_system_substate_type),
-                "` - expected `KeyValue`, `Index` or `SortedIndex`"
-            ));
-        }
-    };
-}
 
 /// Generates types and typed-interfaces for native blueprints and their
 /// interaction with the substate store.
@@ -146,13 +50,38 @@ macro_rules! map_entry_substate_to_kv_entry {
 /// * For collections, assumes the existence of types called:
 ///    `<BlueprintIdent><CollectionIdent>Key`
 ///    `<BlueprintIdent><CollectionIdent>ValueV1`
+/// 
+/// In future, resolve the `x_type` fields as a $x:tt and then
+/// map in other macros into:
+/// ```
+///     StaticSingleVersioned,
+///     Static {
+///         the_type: x,
+///     },
+///     Instance {
+///         ident: 
+///     },
+///     StaticMultiVersioned(V1, V2),
+/// ```
+#[allow(unused)]
 macro_rules! declare_native_blueprint_state {
     (
         blueprint_ident: $blueprint_ident:ident,
+        blueprint_snake_case: $blueprint_property_name:ident,
+        instance_schema_types: [
+            // If no types => instance schema disabled
+            $(
+                $instance_type_property_name:ident: {
+                    ident: $instance_type_ident:ident,
+                }
+            ),*
+            $(,)?
+        ],
         fields: {
             $(
                 $field_property_name:ident: {
                     ident: $field_ident:ident,
+                    field_type: StaticSingleVersioned,
                     condition: $field_condition:expr
                     $(,)? // Optional trialing comma
                 }
@@ -163,7 +92,10 @@ macro_rules! declare_native_blueprint_state {
             $(
                 $collection_property_name:ident: $collection_type:ident {
                     entry_ident: $collection_ident:ident,
-                    key_type: $collection_key_type:ty,
+                    key_type: Static { // Will be Static { type: X } or Instance { index: X }
+                        the_type: $collection_key_type:ty,
+                    },
+                    value_type: StaticSingleVersioned,
                     can_own: $collection_can_own:expr
                     // Collection options for (eg) passing in a property name
                     // of the sorted index parameter for SortedIndex
@@ -176,8 +108,10 @@ macro_rules! declare_native_blueprint_state {
         $(,)?
     ) => {
         paste::paste! {
-            #[allow(unused_imports)]
-            mod [<$blueprint_ident _models>] {
+            pub use [<$blueprint_property_name _models>]::*;
+
+            #[allow(unused_imports, dead_code, unused_mut, unused_assignments, unused_variables, unreachable_code)]
+            mod [<$blueprint_property_name _models>] {
                 use super::*;
                 use sbor::*;
                 use $crate::types::*;
@@ -218,11 +152,10 @@ macro_rules! declare_native_blueprint_state {
                 )*
 
                 //--------------------------------------------------------
-                // Node Layout
-                // (to replace node_layout.rs)
+                // Node Layout (to replace node_layout.rs)
                 //--------------------------------------------------------
                 #[repr(u8)]
-                #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
                 pub enum [<$blueprint_ident Field>] {
                     $($field_ident,)*
                 }
@@ -259,7 +192,7 @@ macro_rules! declare_native_blueprint_state {
                 }
 
                 #[repr(u8)]
-                #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
                 pub enum [<$blueprint_ident Partition>] {
                     Field,
                     $([<$collection_ident $collection_type>],)*
@@ -271,7 +204,11 @@ macro_rules! declare_native_blueprint_state {
                     }
 
                     pub const fn main_partition(&self) -> PartitionNumber {
-                        MAIN_BASE_PARTITION.at_offset(self.offset()).unwrap()
+                        match MAIN_BASE_PARTITION.at_offset(self.offset()) {
+                            // Work around .unwrap() on Option not being const
+                            Some(x) => x,
+                            None => panic!("Offset larger than allowed value")
+                        }
                     }
                 }
 
@@ -302,10 +239,49 @@ macro_rules! declare_native_blueprint_state {
                 }
 
                 //----------------------
+                // Schema
+                //----------------------
+                pub struct [<$blueprint_ident StateSchemaInit>];
+
+                impl [<$blueprint_ident StateSchemaInit>] {
+                    pub fn create_schema_init(
+                        type_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>,
+                    ) -> BlueprintStateSchemaInit {
+                        let mut fields = vec![];
+                        $(
+                            // TODO - Implement instance schema
+                            fields.push(FieldSchema {
+                                field: TypeRef::Static(
+                                    type_aggregator.add_child_type_and_descendents::<[<Versioned $blueprint_ident $field_ident Field>]>()
+                                ),
+                                condition: $field_condition,
+                            });
+                        )*
+                        let mut collections = vec![];
+                        $(
+                            // TODO - Implement instance schema
+                            collections.push(map_collection_schema!(
+                                $collection_type,
+                                type_aggregator,
+                                $collection_key_type,
+                                [<Versioned $blueprint_ident $collection_ident Value>],
+                                $collection_can_own
+                            ));
+                        )*
+                        BlueprintStateSchemaInit {
+                            fields,
+                            collections,
+                        }
+                    }
+                }
+
+                //----------------------
                 // Object Initialization
                 //----------------------
 
-                /// This doesn't support:
+                /// Used for initializing blueprint state.
+                ///
+                /// Note - this doesn't support:
                 /// * Features
                 /// * Instance schemas
                 /// * Feature-dependent fields
@@ -339,7 +315,6 @@ macro_rules! declare_native_blueprint_state {
                         let mut all_collection_entries = BTreeMap::new();
                         let mut collection_index: u8 = 0;
                         $(
-                            #[allow(unreachable_code)]
                             let this_collection_entries = self.$collection_property_name
                                 .into_iter()
                                 .map(|(key, entry_substate)| {
@@ -388,89 +363,234 @@ macro_rules! declare_native_blueprint_state {
                     }
                 }
             }
-            #[allow(unused)]
-            pub(crate) use [<$blueprint_ident _models>]::*;
         }
     }
 }
 
-// See PackageNativePackage "definition()"
-// See "create_bootstrap_package_partitions" in package.rs
-// See "globalize_package" in package.rs
-
-// This macro should:
-// * Able to create:
-//   - VersionedSubstateType
-//   - LatestSubstateType
-//
-// * Generate node_layout.rs
-//
-// And future, it would be cool to support:
-//
-// * Able to create BlueprintStateSchemaInit
-//  -> ie FieldSchema (field's type, and Condition)
-//  -> ie BlueprintCollectionSchema (one of three options, plus: key / value / can_own)
-//
-// * Able to create APIs for reading/writing individual fields
-
-// Fields:
-//
-
+#[allow(unused)]
 pub(crate) use declare_native_blueprint_state;
-use radix_engine_common::types::PartitionNumber;
 
-#[derive(Debug, PartialEq, Eq, Sbor)]
-struct PackageRoyaltyFieldV1;
+pub(crate) use helper_macros::*;
 
-#[derive(Debug, PartialEq, Eq, Sbor)]
-struct PackageBlueprintDefinitionValueV1;
-
-#[derive(Debug, PartialEq, Eq, Sbor)]
-struct PackageMyCoolIndexValueV1;
-
-#[derive(Debug, PartialEq, Eq, Sbor)]
-struct PackageMyCoolSortedIndexValueV1;
-
-use radix_engine_interface::blueprints::package::*;
-
-declare_native_blueprint_state! {
-    blueprint_ident: Package,
-    fields: {
-        royalty:  {
-            // Generates:
-            // - PackageRoyaltyField
-            // - VersionedPackageRoyaltyField
-            // Must find type called:
-            // - PackageRoyaltyFieldV1
-            ident: Royalty,
-            condition: Condition::Xyz (
-
-            ),
-        }
-    },
-    // Generates static colletion offsets + collection
-    // Eg PackageCollections::BlueprintDefinition.collection_offset()
-    // EG PackageCollections::BlueprintDefinition.partition_number()
-    collections: {
-        blueprint_definitions: KeyValue {
-            entry_ident: BlueprintDefinition,
-            key_type: BlueprintVersion,
-            can_own: true,
-        },
-        abc: Index {
-            entry_ident: MyCoolIndex,
-            key_type: BlueprintVersion,
-            can_own: true,
-        },
-        def: SortedIndex {
-            entry_ident: MyCoolSortedIndex,
-            key_type: BlueprintVersion,
-            can_own: true,
-        },
+mod helper_macros {
+    macro_rules! generate_wrapped_substate_type_alias {
+        (SystemField, $module_ident:ident, $field_ident:ident) => {
+            paste::paste! {
+                pub type [<$module_ident $field_ident FieldSubstate>] = [<Versioned $module_ident $field_ident Field>];
+            }
+        };
+        (Field, $blueprint_ident:ident, $field_ident:ident) => {
+            paste::paste! {
+                pub type [<$blueprint_ident $field_ident FieldSubstate>] = $crate::system::system::FieldSubstate<[<Versioned $blueprint_ident $field_ident Field>]>;
+            }
+        };
+        (KeyValue, $blueprint_ident:ident, $collection_ident:ident) => {
+            paste::paste! {
+                pub type [<$blueprint_ident $collection_ident EntrySubstate>] = $crate::system::system::KeyValueEntrySubstate<[<Versioned $blueprint_ident $collection_ident Value>]>;
+            }
+        };
+        (Index, $blueprint_ident:ident, $collection_ident:ident) => {
+            // No wrapper around Index substates
+            paste::paste! {
+                pub type [<$blueprint_ident $collection_ident EntrySubstate>] = [<Versioned $blueprint_ident $collection_ident Value>];
+            }
+        };
+        (SortedIndex, $blueprint_ident:ident, $collection_ident:ident) => {
+            // There is no wrapper around Index substates
+            paste::paste! {
+                pub type [<$blueprint_ident $collection_ident EntrySubstate>] = [<Versioned $blueprint_ident $collection_ident Value>];
+            }
+        };
+        ($unknown_system_substate_type:ident, $blueprint_ident:ident, $collection_ident:ident) => {
+            paste::paste! {
+                compile_error!(concat!(
+                    "Unrecognized system substate type: `",
+                    stringify!($unknown_system_substate_type),
+                    "` - expected `Field`, `SystemField`, `KeyValue`, `Index` or `SortedIndex`"
+                ));
+            }
+        };
     }
+    
+    #[allow(unused)]
+    pub(crate) use generate_wrapped_substate_type_alias;
+    
+    macro_rules! generate_collection_substate_content_trait {
+        (KeyValue, $type:ident, $versioned:ident) => {
+            impl KVEntryContent for $type {
+                type VersionedContent = $versioned;
+            }
+        };
+        (Index, $type:ident, $versioned:ident) => {
+            impl IndexEntryContent for $type {
+                type VersionedContent = $versioned;
+            }
+        };
+        (SortedIndex, $type:ident, $versioned:ident) => {
+            impl SortedIndexEntryContent for $type {
+                type VersionedContent = $versioned;
+            }
+        };
+        ($unknown_system_substate_type:ident, $type:ident, $versioned:ident) => {
+            paste::paste! {
+                compile_error!(concat!(
+                    "Unrecognized system collection substate type: `",
+                    stringify!($unknown_system_substate_type),
+                    "` - expected `KeyValue`, `Index` or `SortedIndex`"
+                ));
+            }
+        };
+    }
+    
+    #[allow(unused)]
+    pub(crate) use generate_collection_substate_content_trait;
+    
+    macro_rules! map_collection_schema {
+        (KeyValue, $aggregator:ident, $collection_key_type:ty, $collection_value_type:ty, $collection_can_own:expr$(,)?) => {
+            paste::paste! {
+                BlueprintCollectionSchema::KeyValueStore(
+                    BlueprintKeyValueSchema {
+                        key: TypeRef::Static(
+                            $aggregator.add_child_type_and_descendents::<$collection_key_type>(),
+                        ),
+                        value: TypeRef::Static(
+                            $aggregator.add_child_type_and_descendents::<$collection_value_type>()
+                        ),
+                        can_own: $collection_can_own,
+                    },
+                )
+            }
+        };
+        (Index, $aggregator:ident, $collection_key_type:ty, $collection_value_type:ty, $collection_can_own:expr$(,)?) => {
+            BlueprintCollectionSchema::Index(
+                BlueprintKeyValueSchema {
+                    key: TypeRef::Static(
+                        $aggregator.add_child_type_and_descendents::<$collection_key_type>(),
+                    ),
+                    value: TypeRef::Static(
+                        $aggregator.add_child_type_and_descendents::<$collection_value_type>()
+                    ),
+                    can_own: $collection_can_own,
+                },
+            )
+        };
+        (SortedIndex, $aggregator:ident, $collection_key_type:ty, $collection_value_type:ty, $collection_can_own:expr$(,)?) => {
+            BlueprintCollectionSchema::SortedIndex(
+                BlueprintKeyValueSchema {
+                    key: TypeRef::Static(
+                        $aggregator.add_child_type_and_descendents::<$collection_key_type>(),
+                    ),
+                    value: TypeRef::Static(
+                        $aggregator.add_child_type_and_descendents::<$collection_value_type>()
+                    ),
+                    can_own: $collection_can_own,
+                },
+            )
+        };
+        ($unknown_system_substate_type:ident, $aggregator:ident, $collection_key_type:ty, $collection_value_type:ty, $collection_can_own:expr$(,)?) => {
+            paste::paste! {
+                compile_error!(concat!(
+                    "Unrecognized system collection substate type: `",
+                    stringify!($unknown_system_substate_type),
+                    "` - expected `KeyValue`, `Index` or `SortedIndex`"
+                ));
+            }
+        };
+    }
+    
+    #[allow(unused)]
+    pub(crate) use map_collection_schema;
+    
+    macro_rules! map_entry_substate_to_kv_entry {
+        (KeyValue, $entry_substate:ident) => {
+            paste::paste! {
+                KVEntry {
+                    value: $entry_substate.value.map(|v| scrypto_encode(&v).unwrap()),
+                    locked: match $entry_substate.mutability {
+                        SubstateMutability::Mutable => true,
+                        SubstateMutability::Immutable => false,
+                    },
+                }
+            }
+        };
+        (Index, $entry_substate:ident) => {
+            // This code still needs to compile, but it shouldn't be possible to execute
+            panic!("Not possible to map an Index entry to a KVEntry")
+        };
+        (SortedIndex, $entry_substate:ident) => {
+            // This code still needs to compile, but it shouldn't be possible to execute
+            panic!("Not possible to map a SortedIndex entry to a KVEntry")
+        };
+        ($unknown_system_substate_type:ident, $entry_substate:ident) => {
+            paste::paste! {
+                compile_error!(concat!(
+                    "Unrecognized system collection substate type: `",
+                    stringify!($unknown_system_substate_type),
+                    "` - expected `KeyValue`, `Index` or `SortedIndex`"
+                ));
+            }
+        };
+    }
+    
+    #[allow(unused)]
+    pub(crate) use map_entry_substate_to_kv_entry;
 }
 
-fn xyz() {
-    PackageField::Royalty;
-    PackagePartitionOffset::Fields;
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Check that the below compiles
+    #[derive(Debug, PartialEq, Eq, Sbor)]
+    pub struct PackageRoyaltyFieldV1;
+    
+    #[derive(Debug, PartialEq, Eq, Sbor)]
+    pub struct PackageBlueprintDefinitionValueV1;
+    
+    #[derive(Debug, PartialEq, Eq, Sbor)]
+    pub struct PackageMyCoolIndexValueV1;
+    
+    #[derive(Debug, PartialEq, Eq, Sbor)]
+    pub struct PackageMyCoolSortedIndexValueV1;
+    
+    use radix_engine_interface::blueprints::package::*;
+    
+    declare_native_blueprint_state! {
+        blueprint_ident: Package,
+        blueprint_snake_case: package,
+        instance_schema_types: [],
+        fields: {
+            royalty:  {
+                ident: Royalty,
+                field_type: StaticSingleVersioned,
+                condition: Condition::Always,
+            }
+        },
+        collections: {
+            blueprint_definitions: KeyValue {
+                entry_ident: BlueprintDefinition,
+                key_type: Static {
+                    the_type: BlueprintVersion,
+                },
+                value_type: StaticSingleVersioned,
+                can_own: true,
+            },
+            abc: Index {
+                entry_ident: MyCoolIndex,
+                key_type: Static {
+                    the_type: BlueprintVersion,
+                },
+                value_type: StaticSingleVersioned,
+                can_own: true,
+            },
+            def: SortedIndex {
+                entry_ident: MyCoolSortedIndex,
+                key_type: Static {
+                    the_type: BlueprintVersion,
+                },
+                value_type: StaticSingleVersioned,
+                can_own: true,
+            },
+        }
+    }    
 }
