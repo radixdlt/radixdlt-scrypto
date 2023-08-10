@@ -4,35 +4,23 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::*;
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
-pub struct FeeSummary {
-    /// The max execution cost units to consume.
-    pub execution_cost_unit_limit: u32,
-    /// The price of execution cost unit in XRD.
-    pub execution_cost_unit_price: Decimal,
-    /// The max finalization cost units to consume.
-    pub finalization_cost_unit_limit: u32,
-    /// The price of finalization cost unit in XRD.
-    pub finalization_cost_unit_price: Decimal,
-    /// The price of USD in XRD.
-    pub usd_price_in_xrd: Decimal,
-    /// The price of storage in XRD.
-    pub storage_price_in_xrd: Decimal,
-    /// The tip percentage
-    pub tip_percentage: u16,
-    /// The total cost for execution
-    pub total_execution_cost_in_xrd: Decimal,
+pub struct FeeReserveFinalizationSummary {
     /// The total execution cost units consumed
     pub total_execution_cost_units_consumed: u32,
-    /// The total cost for finalization
-    pub total_finalization_cost_in_xrd: Decimal,
     /// The total finalization cost units consumed
     pub total_finalization_cost_units_consumed: u32,
+
+    /// The total cost for execution
+    pub total_execution_cost_in_xrd: Decimal,
+    /// The total cost for finalization
+    pub total_finalization_cost_in_xrd: Decimal,
     /// The total cost for tipping
     pub total_tipping_cost_in_xrd: Decimal,
     /// The total cost for state expansion
     pub total_storage_cost_in_xrd: Decimal,
     /// The total cost for royalty
     pub total_royalty_cost_in_xrd: Decimal,
+
     /// The (non-negative) amount of bad debt due to transaction unable to repay loan.
     pub total_bad_debt_in_xrd: Decimal,
     /// The vaults locked for XRD payment
@@ -41,7 +29,7 @@ pub struct FeeSummary {
     pub royalty_cost_breakdown: IndexMap<RoyaltyRecipient, Decimal>,
 }
 
-impl FeeSummary {
+impl FeeReserveFinalizationSummary {
     pub fn loan_fully_repaid(&self) -> bool {
         self.total_bad_debt_in_xrd == 0.into()
     }

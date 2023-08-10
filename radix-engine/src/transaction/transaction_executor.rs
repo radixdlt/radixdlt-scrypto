@@ -26,18 +26,19 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
 
-#[derive(Debug, Clone, ScryptoSbor)]
+/// Protocol-defined costing parameters
+#[derive(Debug, Copy, Clone, ScryptoSbor)]
 pub struct CostingParameters {
     /// The price of execution cost unit in XRD.
     pub execution_cost_unit_price: Decimal,
-    /// The maximum execution cost unit to consume.
+    /// The max number execution cost units to consume.
     pub execution_cost_unit_limit: u32,
     /// The number of execution cost units loaned from system.
     pub execution_cost_unit_loan: u32,
 
     /// The price of finalization cost unit in XRD.
     pub finalization_cost_unit_price: Decimal,
-    /// The maximum finalization cost unit to consume.
+    /// The max number finalization cost units to consume.
     pub finalization_cost_unit_limit: u32,
     /// The number of finalization cost units loaned from system.
     pub finalization_cost_unit_loan: u32,
@@ -70,16 +71,15 @@ impl Default for CostingParameters {
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
     pub enabled_modules: EnabledModules,
+    pub abort_when_loan_repaid: bool,
+    pub enable_cost_breakdown: bool,
     pub max_execution_trace_depth: usize,
     pub max_call_depth: usize,
-    pub cost_unit_limit: u32,
-    pub abort_when_loan_repaid: bool,
     pub max_number_of_substates_in_track: usize,
     pub max_number_of_substates_in_heap: usize,
     pub max_substate_key_size: usize,
     pub max_substate_size: usize,
     pub max_invoke_input_size: usize,
-    pub enable_cost_breakdown: bool,
     pub max_event_size: usize,
     pub max_log_size: usize,
     pub max_panic_message_size: usize,
@@ -94,16 +94,15 @@ impl ExecutionConfig {
     fn default() -> Self {
         Self {
             enabled_modules: EnabledModules::for_notarized_transaction(),
+            abort_when_loan_repaid: false,
+            enable_cost_breakdown: false,
             max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
             max_call_depth: MAX_CALL_DEPTH,
-            cost_unit_limit: COST_UNIT_LIMIT,
-            abort_when_loan_repaid: false,
             max_number_of_substates_in_track: MAX_NUMBER_OF_SUBSTATES_IN_TRACK,
             max_number_of_substates_in_heap: MAX_NUMBER_OF_SUBSTATES_IN_HEAP,
             max_substate_key_size: MAX_SUBSTATE_KEY_SIZE,
             max_substate_size: MAX_SUBSTATE_SIZE,
             max_invoke_input_size: MAX_INVOKE_PAYLOAD_SIZE,
-            enable_cost_breakdown: false,
             max_event_size: MAX_EVENT_SIZE,
             max_log_size: MAX_LOG_SIZE,
             max_panic_message_size: MAX_PANIC_MESSAGE_SIZE,
@@ -168,11 +167,6 @@ impl ExecutionConfig {
         self
     }
 
-    pub fn with_cost_unit_limit(mut self, cost_unit_limit: u32) -> Self {
-        self.cost_unit_limit = cost_unit_limit;
-        self
-    }
-
     pub fn up_to_loan_repayment(mut self, enabled: bool) -> Self {
         self.abort_when_loan_repaid = enabled;
         self
@@ -202,21 +196,14 @@ where
     pub fn execute(
         &mut self,
         executable: &Executable,
-        fee_reserve_config: &CostingParameters,
+        costing_parameters: &CostingParameters,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let free_credit = executable.fee_payment().free_credit_in_xrd;
-        let tip_percentage = executable.fee_payment().tip_percentage;
         let fee_reserve = SystemLoanFeeReserve::new(
-            fee_reserve_config.execution_cost_unit_price,
-            fee_reserve_config.usd_price,
-            fee_reserve_config.storage_price,
-            tip_percentage,
-            execution_config.cost_unit_limit,
-            fee_reserve_config.execution_cost_unit_loan,
+            costing_parameters.clone(),
+            executable.costing_parameters().clone(),
             execution_config.abort_when_loan_repaid,
-        )
-        .with_free_credit(free_credit);
+        );
         let fee_table = FeeTable::new();
 
         // Dump executable
@@ -262,7 +249,7 @@ where
         };
 
         // Run manifest
-        let result = match validation_result {
+        let (fee_summary, fee_details, transaction_result) = match validation_result {
             Ok(()) => {
                 let (
                     interpretation_result,
@@ -290,6 +277,10 @@ where
                     .map(|(k, v)| (k.to_string(), v))
                     .collect();
                 let finalization_cost_breakdown = Default::default();
+                let fee_details = TransactionFeeDetails {
+                    execution_cost_breakdown,
+                    finalization_cost_breakdown,
+                };
 
                 let result_type = Self::determine_result_type(
                     interpretation_result,
@@ -306,17 +297,17 @@ where
                         }
 
                         // Distribute fees
-                        let (fee_summary, fee_source) = Self::finalize_fees(
+                        let (finalization_summary, fee_source) = Self::finalize_fees(
                             &mut track,
                             costing_module.fee_reserve,
                             is_success,
-                            free_credit,
+                            executable.costing_parameters().free_credit_in_xrd,
                         );
                         let fee_destination = FeeDestination {
-                            to_proposer: fee_summary.to_proposer_amount(),
-                            to_validator_set: fee_summary.to_validator_set_amount(),
-                            to_burn: fee_summary.to_burn_amount(),
-                            to_royalty_recipients: fee_summary.royalty_cost_breakdown,
+                            to_proposer: finalization_summary.to_proposer_amount(),
+                            to_validator_set: finalization_summary.to_validator_set_amount(),
+                            to_burn: finalization_summary.to_burn_amount(),
+                            to_royalty_recipients: finalization_summary.royalty_cost_breakdown,
                         };
 
                         // Update intent hash status
@@ -368,7 +359,7 @@ where
                                 type_pointer,
                             ),
                             scrypto_encode(&BurnFungibleResourceEvent {
-                                amount: fee_summary.to_burn_amount(),
+                                amount: finalization_summary.to_burn_amount(),
                             })
                             .unwrap(),
                         ));
@@ -396,6 +387,8 @@ where
                         TransactionResult::Commit(CommitResult {
                             state_updates,
                             state_update_summary,
+                            fee_source,
+                            fee_destination,
                             outcome: match outcome {
                                 Ok(o) => TransactionOutcome::Success(o),
                                 Err(e) => TransactionOutcome::Failure(e),
@@ -404,19 +397,17 @@ where
                             application_logs,
                             system_structure,
                             execution_trace,
-                            fee_source,
-                            fee_destination,
                         })
                     }
                     TransactionResultType::Reject(error) => {
-                        TransactionResult::Reject(RejectResult { error })
+                        TransactionResult::Reject(RejectResult { reason: error })
                     }
                     TransactionResultType::Abort(error) => {
                         TransactionResult::Abort(AbortResult { reason: error })
                     }
                 }
             }
-            Err(error) => TransactionResult::Reject(RejectResult { error }),
+            Err(error) => TransactionResult::Reject(RejectResult { reason: error }),
         };
 
         // Stop hardware resource usage tracker
@@ -429,20 +420,12 @@ where
 
         // Produce final receipt
         let receipt = TransactionReceipt {
-            resources_usage,
-            costing_parameters: TransactionParameters {
-                execution_cost_unit_price: execution_config.cost_unit_p,
-                execution_cost_unit_limit: execution_config.cost_unit_limit,
-                finalization_cost_unit_price: (),
-                finalization_cost_unit_limit: (),
-                tip_percentage: (),
-            },
+            costing_parameters: costing_parameters.clone(),
+            transaction_costing_parameters: executable.costing_parameters().clone(),
             fee_summary: todo!(),
-            fee_breakdown: TransactionFeeBreakdown {
-                execution_cost_breakdown,
-                finalization_cost_breakdown,
-            },
-            result,
+            fee_details: todo!(),
+            transaction_result,
+            resources_usage,
         };
 
         // Dump summary
@@ -482,15 +465,15 @@ where
         current_epoch: Epoch,
         start_epoch_inclusive: Epoch,
         end_epoch_exclusive: Epoch,
-    ) -> Result<(), RejectionError> {
+    ) -> Result<(), RejectionReason> {
         if current_epoch < start_epoch_inclusive {
-            return Err(RejectionError::TransactionEpochNotYetValid {
+            return Err(RejectionReason::TransactionEpochNotYetValid {
                 valid_from: start_epoch_inclusive,
                 current_epoch,
             });
         }
         if current_epoch >= end_epoch_exclusive {
-            return Err(RejectionError::TransactionEpochNoLongerValid {
+            return Err(RejectionReason::TransactionEpochNoLongerValid {
                 valid_until: end_epoch_exclusive.previous(),
                 current_epoch,
             });
@@ -503,7 +486,7 @@ where
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         intent_hash: Hash,
         expiry_epoch: Epoch,
-    ) -> Result<(), RejectionError> {
+    ) -> Result<(), RejectionReason> {
         let handle = track
             .open_substate(
                 TRANSACTION_TRACKER.as_node_id(),
@@ -545,10 +528,10 @@ where
         match substate.value {
             Some(status) => match status {
                 TransactionStatus::CommittedSuccess | TransactionStatus::CommittedFailure => {
-                    return Err(RejectionError::IntentHashPreviouslyCommitted);
+                    return Err(RejectionReason::IntentHashPreviouslyCommitted);
                 }
                 TransactionStatus::Cancelled => {
-                    return Err(RejectionError::IntentHashPreviouslyCancelled);
+                    return Err(RejectionReason::IntentHashPreviouslyCancelled);
                 }
             },
             None => {}
@@ -651,7 +634,7 @@ where
                     current_epoch,
                 } => {
                     return TransactionResultType::Reject(
-                        RejectionError::TransactionEpochNotYetValid {
+                        RejectionReason::TransactionEpochNotYetValid {
                             valid_from: *valid_from,
                             current_epoch: *current_epoch,
                         },
@@ -662,7 +645,7 @@ where
                     current_epoch,
                 } => {
                     return TransactionResultType::Reject(
-                        RejectionError::TransactionEpochNoLongerValid {
+                        RejectionReason::TransactionEpochNoLongerValid {
                             valid_until: *valid_until,
                             current_epoch: *current_epoch,
                         },
@@ -681,9 +664,11 @@ where
         // Check for errors before loan is repaid - in which case, we also reject
         if !fee_reserve.fully_repaid() {
             return match interpretation_result {
-                Ok(..) => TransactionResultType::Reject(RejectionError::SuccessButFeeLoanNotRepaid),
+                Ok(..) => {
+                    TransactionResultType::Reject(RejectionReason::SuccessButFeeLoanNotRepaid)
+                }
                 Err(error) => {
-                    TransactionResultType::Reject(RejectionError::ErrorBeforeFeeLoanRepaid(error))
+                    TransactionResultType::Reject(RejectionReason::ErrorBeforeFeeLoanRepaid(error))
                 }
             };
         }
@@ -696,7 +681,7 @@ where
         fee_reserve: SystemLoanFeeReserve,
         is_success: bool,
         free_credit: Decimal,
-    ) -> (FeeSummary, IndexMap<NodeId, Decimal>) {
+    ) -> (FeeReserveFinalizationSummary, IndexMap<NodeId, Decimal>) {
         // Distribute royalty
         for (recipient, amount) in fee_reserve.royalty_cost_breakdown() {
             let node_id = recipient.vault_id();
@@ -962,12 +947,12 @@ where
         // NB - we use "to_string" to ensure they align correctly
 
         println!("{:-^100}", "Execution Cost Breakdown");
-        for (k, v) in &receipt.fee_breakdown.execution_cost_breakdown {
+        for (k, v) in &receipt.fee_details.execution_cost_breakdown {
             println!("{:<75}: {:>15}", k, v.to_string());
         }
 
         println!("{:-^100}", "Finalization Cost Breakdown");
-        for (k, v) in &receipt.fee_breakdown.finalization_cost_breakdown {
+        for (k, v) in &receipt.fee_details.finalization_cost_breakdown {
             println!("{:<75}: {:>15}", k, v.to_string());
         }
 
@@ -1028,7 +1013,7 @@ where
             receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
         );
 
-        match &receipt.result {
+        match &receipt.transaction_result {
             TransactionResult::Commit(commit) => {
                 println!("{:-^100}", "Application Logs");
                 for (level, message) in &commit.application_logs {
@@ -1046,7 +1031,7 @@ where
             }
             TransactionResult::Reject(e) => {
                 println!("{:-^100}", "Transaction Rejected");
-                println!("{:?}", e.error);
+                println!("{:?}", e.reason);
             }
             TransactionResult::Abort(e) => {
                 println!("{:-^100}", "Transaction Aborted");
@@ -1063,18 +1048,18 @@ pub fn execute_and_commit_transaction<
 >(
     substate_db: &mut S,
     vm: V,
-    fee_reserve_config: &CostingParameters,
+    costing_parameters: &CostingParameters,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
     let receipt = execute_transaction(
         substate_db,
         vm,
-        fee_reserve_config,
+        costing_parameters,
         execution_config,
         transaction,
     );
-    if let TransactionResult::Commit(commit) = &receipt.result {
+    if let TransactionResult::Commit(commit) = &receipt.transaction_result {
         substate_db.commit(&commit.state_updates.database_updates);
     }
     receipt
@@ -1083,19 +1068,19 @@ pub fn execute_and_commit_transaction<
 pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
     substate_db: &S,
     vm: V,
-    fee_reserve_config: &CostingParameters,
+    costing_parameters: &CostingParameters,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
     TransactionExecutor::new(substate_db, vm).execute(
         transaction,
-        fee_reserve_config,
+        costing_parameters,
         execution_config,
     )
 }
 
 enum TransactionResultType {
     Commit(Result<Vec<InstructionOutput>, RuntimeError>),
-    Reject(RejectionError),
+    Reject(RejectionReason),
     Abort(AbortReason),
 }

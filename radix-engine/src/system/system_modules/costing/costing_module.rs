@@ -108,7 +108,7 @@ impl CostingModule {
         store_commit: &StoreCommit,
     ) -> Result<(), RuntimeError> {
         self.fee_reserve
-            .consume_state_expansion(store_commit)
+            .consume_storage(store_commit)
             .map_err(|e| {
                 RuntimeError::SystemModuleError(SystemModuleError::CostingError(
                     CostingError::FeeReserveError(e),

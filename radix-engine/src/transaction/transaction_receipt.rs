@@ -1,7 +1,7 @@
 use super::{BalanceChange, CostingParameters, StateUpdateSummary};
 use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
-use crate::system::system_modules::costing::RoyaltyRecipient;
+use crate::system::system_modules::costing::{FeeReserveFinalizationSummary, RoyaltyRecipient};
 use crate::system::system_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
 };
@@ -15,18 +15,21 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
 use sbor::representations::*;
+use transaction::prelude::TransactionCostingParameters;
 use utils::ContextualDisplay;
 
 #[derive(Clone, ScryptoSbor)]
 pub struct TransactionReceipt {
-    /// Transaction parameters
+    /// Costing parameters
     pub costing_parameters: CostingParameters,
+    /// Transaction costing parameters
+    pub transaction_costing_parameters: TransactionCostingParameters,
     /// Transaction fee summary
     pub fee_summary: TransactionFeeSummary,
     /// Transaction fee breakdown
-    pub fee_breakdown: TransactionFeeBreakdown,
+    pub fee_details: TransactionFeeDetails,
     /// Transaction result
-    pub result: TransactionResult,
+    pub transaction_result: TransactionResult,
     /// Optional, only when compile-time feature flag `resources_usage` is ON.
     pub resources_usage: ResourcesUsage,
 }
@@ -35,10 +38,11 @@ pub struct TransactionReceipt {
 pub struct TransactionFeeSummary {
     /// Total execution cost units consumed.
     pub total_execution_cost_units_consumed: u32,
-    /// Total execution cost in XRD.
-    pub total_execution_cost_in_xrd: Decimal,
     /// Total finalization cost units consumed.
     pub total_finalization_cost_units_consumed: u32,
+
+    /// Total execution cost in XRD.
+    pub total_execution_cost_in_xrd: Decimal,
     /// Total finalization cost in XRD.
     pub total_finalization_cost_in_xrd: Decimal,
     /// Total tipping cost in XRD.
@@ -50,7 +54,7 @@ pub struct TransactionFeeSummary {
 }
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
-pub struct TransactionFeeBreakdown {
+pub struct TransactionFeeDetails {
     /// Execution cost breakdown
     ///
     /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
@@ -119,7 +123,7 @@ pub struct FeeLocks {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct RejectResult {
-    pub error: RejectionError,
+    pub reason: RejectionReason,
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -163,13 +167,13 @@ impl CommitResult {
         Self {
             state_updates: Default::default(),
             state_update_summary: Default::default(),
+            fee_source: Default::default(),
+            fee_destination: Default::default(),
             outcome,
             application_events: Default::default(),
             application_logs: Default::default(),
             system_structure: Default::default(),
             execution_trace: Default::default(),
-            fee_source: Default::default(),
-            fee_destination: Default::default(),
         }
     }
 
@@ -275,16 +279,17 @@ impl TransactionReceipt {
     pub fn empty_with_commit(commit_result: CommitResult) -> Self {
         Self {
             costing_parameters: Default::default(),
+            transaction_costing_parameters: Default::default(),
             fee_summary: Default::default(),
-            fee_breakdown: Default::default(),
-            result: TransactionResult::Commit(commit_result),
+            fee_details: Default::default(),
+            transaction_result: TransactionResult::Commit(commit_result),
             resources_usage: Default::default(),
         }
     }
 
     pub fn is_commit_success(&self) -> bool {
         matches!(
-            self.result,
+            self.transaction_result,
             TransactionResult::Commit(CommitResult {
                 outcome: TransactionOutcome::Success(_),
                 ..
@@ -294,7 +299,7 @@ impl TransactionReceipt {
 
     pub fn is_commit_failure(&self) -> bool {
         matches!(
-            self.result,
+            self.transaction_result,
             TransactionResult::Commit(CommitResult {
                 outcome: TransactionOutcome::Failure(_),
                 ..
@@ -303,11 +308,11 @@ impl TransactionReceipt {
     }
 
     pub fn is_rejection(&self) -> bool {
-        matches!(self.result, TransactionResult::Reject(_))
+        matches!(self.transaction_result, TransactionResult::Reject(_))
     }
 
     pub fn expect_commit_ignore_result(&self) -> &CommitResult {
-        match &self.result {
+        match &self.transaction_result {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
@@ -339,16 +344,16 @@ impl TransactionReceipt {
         self.expect_commit(false)
     }
 
-    pub fn expect_rejection(&self) -> &RejectionError {
-        match &self.result {
+    pub fn expect_rejection(&self) -> &RejectionReason {
+        match &self.transaction_result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
-            TransactionResult::Reject(ref r) => &r.error,
+            TransactionResult::Reject(ref r) => &r.reason,
             TransactionResult::Abort(..) => panic!("Expected rejection but was abort"),
         }
     }
 
     pub fn expect_abortion(&self) -> &AbortReason {
-        match &self.result {
+        match &self.transaction_result {
             TransactionResult::Commit(..) => panic!("Expected abortion but was commit"),
             TransactionResult::Reject(..) => panic!("Expected abortion but was reject"),
             TransactionResult::Abort(ref r) => &r.reason,
@@ -356,7 +361,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_not_success(&self) {
-        match &self.result {
+        match &self.transaction_result {
             TransactionResult::Commit(c) => {
                 if c.outcome.is_success() {
                     panic!("Transaction succeeded unexpectedly")
@@ -369,12 +374,12 @@ impl TransactionReceipt {
 
     pub fn expect_specific_rejection<F>(&self, f: F)
     where
-        F: Fn(&RejectionError) -> bool,
+        F: Fn(&RejectionReason) -> bool,
     {
-        match &self.result {
+        match &self.transaction_result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was committed"),
             TransactionResult::Reject(result) => {
-                if !f(&result.error) {
+                if !f(&result.reason) {
                     panic!(
                         "Expected specific rejection but was different error:\n{:?}",
                         self
@@ -386,7 +391,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_failure(&self) -> &RuntimeError {
-        match &self.result {
+        match &self.transaction_result {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
                 TransactionOutcome::Failure(error) => error,
@@ -542,7 +547,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         f: &mut F,
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        let result = &self.result;
+        let result = &self.transaction_result;
         let scrypto_value_display_context = context.display_context();
         let address_display_context = context.address_display_context();
 
@@ -825,4 +830,18 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
         event
     )?;
     Ok(())
+}
+
+impl From<FeeReserveFinalizationSummary> for TransactionFeeSummary {
+    fn from(value: FeeReserveFinalizationSummary) -> Self {
+        Self {
+            total_execution_cost_units_consumed: value.total_execution_cost_units_consumed,
+            total_finalization_cost_units_consumed: value.total_finalization_cost_units_consumed,
+            total_execution_cost_in_xrd: value.total_execution_cost_in_xrd,
+            total_finalization_cost_in_xrd: value.total_finalization_cost_in_xrd,
+            total_tipping_cost_in_xrd: value.total_tipping_cost_in_xrd,
+            total_storage_cost_in_xrd: value.total_storage_cost_in_xrd,
+            total_royalty_cost_in_xrd: value.total_royalty_cost_in_xrd,
+        }
+    }
 }
