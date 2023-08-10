@@ -175,7 +175,7 @@ fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_t
                 NextAction::Transaction(next) => {
                     let receipt =
                         test_runner.execute_raw_transaction(&network, &next.raw_transaction);
-                    match &receipt.transaction_result {
+                    match &receipt.result {
                         TransactionResult::Commit(commit_result) => {
                             assert_receipt_substate_changes_can_be_typed(commit_result);
                         }
@@ -212,7 +212,7 @@ fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
                 NextAction::Transaction(next) => {
                     let receipt =
                         test_runner.execute_raw_transaction(&network, &next.raw_transaction);
-                    match &receipt.transaction_result {
+                    match &receipt.result {
                         TransactionResult::Commit(commit_result) => {
                             assert_receipt_events_can_be_typed(commit_result);
                         }

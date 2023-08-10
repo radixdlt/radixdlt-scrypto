@@ -2,7 +2,9 @@ use super::FeeSummary;
 use crate::{
     errors::CanBeAbortion, track::interface::StoreCommit, transaction::AbortReason, types::*,
 };
-use radix_engine_common::constants::{COST_UNIT_LIMIT, COST_UNIT_PRICE_IN_XRD, SYSTEM_LOAN_AMOUNT};
+use radix_engine_common::constants::{
+    COST_UNIT_LIMIT, EXECUTION_COST_UNIT_PRICE_IN_XRD, SYSTEM_LOAN_AMOUNT,
+};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::cmp::min;
 
@@ -76,8 +78,7 @@ pub enum RoyaltyRecipient {
 impl RoyaltyRecipient {
     pub fn vault_id(&self) -> NodeId {
         match self {
-            RoyaltyRecipient::Package(_, v) => v,
-            RoyaltyRecipient::Component(_, v) => v,
+            RoyaltyRecipient::Package(_, v) | RoyaltyRecipient::Component(_, v) => *v,
         }
     }
 }
@@ -214,7 +215,7 @@ impl SystemLoanFeeReserve {
         transmute_u128_as_decimal(self.xrd_balance)
     }
 
-    pub fn royalty_cost_breakdown(&self) -> BTreeMap<RoyaltyRecipient, Decimal> {
+    pub fn royalty_cost_breakdown(&self) -> IndexMap<RoyaltyRecipient, Decimal> {
         self.royalty_cost_breakdown
             .clone()
             .into_iter()
@@ -452,9 +453,9 @@ impl FeeReserve for SystemLoanFeeReserve {}
 impl Default for SystemLoanFeeReserve {
     fn default() -> Self {
         Self::new(
-            COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            EXECUTION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
             USD_PRICE_IN_XRD.try_into().unwrap(),
-            STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
+            STORAGE_PRICE_IN_XRD.try_into().unwrap(),
             0,
             COST_UNIT_LIMIT,
             SYSTEM_LOAN_AMOUNT,

@@ -1,4 +1,4 @@
-use super::{BalanceChange, StateUpdateSummary};
+use super::{BalanceChange, CostingParameters, StateUpdateSummary};
 use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
 use crate::system::system_modules::costing::RoyaltyRecipient;
@@ -17,15 +17,91 @@ use radix_engine_interface::types::*;
 use sbor::representations::*;
 use utils::ContextualDisplay;
 
-//=======================
-// Receipt models begin
-//=======================
+#[derive(Clone, ScryptoSbor)]
+pub struct TransactionReceipt {
+    /// Transaction parameters
+    pub costing_parameters: CostingParameters,
+    /// Transaction fee summary
+    pub fee_summary: TransactionFeeSummary,
+    /// Transaction fee breakdown
+    pub fee_breakdown: TransactionFeeBreakdown,
+    /// Transaction result
+    pub result: TransactionResult,
+    /// Optional, only when compile-time feature flag `resources_usage` is ON.
+    pub resources_usage: ResourcesUsage,
+}
+
+#[derive(Default, Debug, Clone, ScryptoSbor)]
+pub struct TransactionFeeSummary {
+    /// Total execution cost units consumed.
+    pub total_execution_cost_units_consumed: u32,
+    /// Total execution cost in XRD.
+    pub total_execution_cost_in_xrd: Decimal,
+    /// Total finalization cost units consumed.
+    pub total_finalization_cost_units_consumed: u32,
+    /// Total finalization cost in XRD.
+    pub total_finalization_cost_in_xrd: Decimal,
+    /// Total tipping cost in XRD.
+    pub total_tipping_cost_in_xrd: Decimal,
+    /// Total storage cost in XRD.
+    pub total_storage_cost_in_xrd: Decimal,
+    /// Total royalty cost in XRD.
+    pub total_royalty_cost_in_xrd: Decimal,
+}
+
+#[derive(Default, Debug, Clone, ScryptoSbor)]
+pub struct TransactionFeeBreakdown {
+    /// Execution cost breakdown
+    ///
+    /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
+    pub execution_cost_breakdown: BTreeMap<String, u32>,
+    /// Finalization cost breakdown
+    ///
+    /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
+    pub finalization_cost_breakdown: BTreeMap<String, u32>,
+}
+
+/// Captures whether a transaction should be committed, and its other results
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum TransactionResult {
+    Commit(CommitResult),
+    Reject(RejectResult),
+    Abort(AbortResult),
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct CommitResult {
+    pub state_updates: StateUpdates,
+    pub state_update_summary: StateUpdateSummary,
+    pub fee_source: FeeSource,
+    pub fee_destination: FeeDestination,
+    pub outcome: TransactionOutcome,
+    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+    pub application_logs: Vec<(Level, String)>,
+    pub system_structure: SystemStructure,
+    /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
+    /// Mainly for transaction preview.
+    pub execution_trace: TransactionExecutionTrace,
+}
 
 #[derive(Debug, Clone, Default, ScryptoSbor)]
-pub struct ResourcesUsage {
-    pub heap_allocations_sum: usize,
-    pub heap_peak_memory: usize,
-    pub cpu_cycles: u64,
+pub struct FeeSource {
+    pub paying_vaults: IndexMap<NodeId, Decimal>,
+}
+
+#[derive(Debug, Clone, Default, ScryptoSbor)]
+pub struct FeeDestination {
+    pub to_proposer: Decimal,
+    pub to_validator_set: Decimal,
+    pub to_burn: Decimal,
+    pub to_royalty_recipients: IndexMap<RoyaltyRecipient, Decimal>,
+}
+
+/// Captures whether a transaction's commit outcome is Success or Failure
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum TransactionOutcome {
+    Success(Vec<InstructionOutput>),
+    Failure(RuntimeError),
 }
 
 #[derive(Debug, Clone, ScryptoSbor, Default)]
@@ -39,36 +115,6 @@ pub struct TransactionExecutionTrace {
 pub struct FeeLocks {
     pub lock: Decimal,
     pub contingent_lock: Decimal,
-}
-
-#[derive(Debug, Clone, Default, ScryptoSbor)]
-pub struct FeeDestination {
-    pub to_proposer: Decimal,
-    pub to_validator_set: Decimal,
-    pub to_burn: Decimal,
-    pub to_royalty_recipient: IndexMap<RoyaltyRecipient, Decimal>,
-}
-
-/// Captures whether a transaction's commit outcome is Success or Failure
-#[derive(Debug, Clone, ScryptoSbor)]
-pub enum TransactionOutcome {
-    Success(Vec<InstructionOutput>),
-    Failure(RuntimeError),
-}
-
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct CommitResult {
-    pub state_updates: StateUpdates,
-    pub state_update_summary: StateUpdateSummary,
-    pub outcome: TransactionOutcome,
-    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
-    pub application_logs: Vec<(Level, String)>,
-    pub system_structure: SystemStructure,
-    /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
-    /// Mainly for transaction preview.
-    pub execution_trace: TransactionExecutionTrace,
-    pub fee_source: IndexMap<NodeId, Decimal>,
-    pub fee_destination: FeeDestination,
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -86,75 +132,12 @@ pub enum AbortReason {
     ConfiguredAbortTriggeredOnFeeLoanRepayment,
 }
 
-/// Captures whether a transaction should be committed, and its other results
-#[derive(Debug, Clone, ScryptoSbor)]
-pub enum TransactionResult {
-    Commit(CommitResult),
-    Reject(RejectResult),
-    Abort(AbortResult),
+#[derive(Debug, Clone, Default, ScryptoSbor)]
+pub struct ResourcesUsage {
+    pub heap_allocations_sum: usize,
+    pub heap_peak_memory: usize,
+    pub cpu_cycles: u64,
 }
-
-#[derive(Default, Debug, Clone, ScryptoSbor)]
-pub struct TransactionParameters {
-    /// The price of execution cost unit in XRD.
-    pub execution_cost_unit_price: Decimal,
-    /// The maximum execution cost unit to consume.
-    pub execution_cost_unit_limit: u32,
-    /// The price of finalization cost unit in XRD.
-    pub finalization_cost_unit_price: Decimal,
-    /// The maximum finalization cost unit to consume.
-    pub finalization_cost_unit_limit: u32,
-    /// The tip percentage that should be applied on execution and finalization costs.
-    pub tip_percentage: u16,
-}
-
-#[derive(Default, Debug, Clone, ScryptoSbor)]
-pub struct TransactionFeeSummary {
-    /// Total execution cost units consumed.
-    pub total_execution_cost_in_cost_units: u32,
-    /// Total execution cost in XRD.
-    pub total_execution_cost_in_xrd: Decimal,
-    /// Total finalization cost units consumed.
-    pub total_finalization_cost_in_cost_units: u32,
-    /// Total finalization cost in XRD.
-    pub total_finalization_cost_in_xrd: Decimal,
-    /// Total tipping cost in XRD.
-    pub total_tipping_cost_in_xrd: Decimal,
-    /// Total storage cost in XRD.
-    pub total_storage_cost_in_xrd: Decimal,
-    /// Total royalty cost in XRD.
-    pub total_royalty_cost_in_xrd: Decimal,
-}
-
-#[derive(Default, Debug, Clone, ScryptoSbor)]
-pub struct TransactionFeeBreakdown {
-    /// Execution cost breakdown
-    ///
-    /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
-    pub execution_cost_units_breakdown: BTreeMap<String, u32>,
-    /// Finalization cost breakdown
-    ///
-    /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
-    pub finalization_cost_units_breakdown: BTreeMap<String, u32>,
-}
-
-#[derive(Clone, ScryptoSbor)]
-pub struct TransactionReceipt {
-    /// Transaction parameters
-    pub parameters: TransactionParameters,
-    /// Transaction fee summary
-    pub fee_summary: TransactionFeeSummary,
-    /// Transaction fee breakdown
-    pub fee_breakdown: TransactionFeeBreakdown,
-    /// Transaction result
-    pub result: TransactionResult,
-    /// Optional, only when compile-time feature flag `resources_usage` is ON.
-    pub resources_usage: ResourcesUsage,
-}
-
-//=======================
-// Receipt models end
-//=======================
 
 impl TransactionExecutionTrace {
     pub fn worktop_changes(&self) -> IndexMap<usize, Vec<WorktopChange>> {
@@ -291,7 +274,7 @@ impl TransactionReceipt {
     /// An empty receipt for merging changes into.
     pub fn empty_with_commit(commit_result: CommitResult) -> Self {
         Self {
-            parameters: Default::default(),
+            costing_parameters: Default::default(),
             fee_summary: Default::default(),
             fee_breakdown: Default::default(),
             result: TransactionResult::Commit(commit_result),
@@ -592,18 +575,18 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             f,
             "\n{} {} limit, {} consumed, {} XRD per unit",
             "Execution Cost Units:".bold().green(),
-            self.parameters.execution_cost_unit_limit,
-            self.fee_summary.total_execution_cost_in_cost_units,
-            self.parameters.execution_cost_unit_price,
+            self.costing_parameters.execution_cost_unit_limit,
+            self.fee_summary.total_execution_cost_units_consumed,
+            self.costing_parameters.execution_cost_unit_price,
         )?;
 
         write!(
             f,
             "\n{} {} limit, {} consumed, {} XRD per unit",
             "Finalization Cost Units:".bold().green(),
-            self.parameters.finalization_cost_unit_limit,
-            self.fee_summary.total_finalization_cost_in_cost_units,
-            self.parameters.finalization_cost_unit_price,
+            self.costing_parameters.finalization_cost_unit_limit,
+            self.fee_summary.total_finalization_cost_units_consumed,
+            self.costing_parameters.finalization_cost_unit_price,
         )?;
 
         if let TransactionResult::Commit(c) = &result {

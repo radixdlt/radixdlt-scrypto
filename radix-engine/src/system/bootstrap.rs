@@ -18,7 +18,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::SystemUpdates;
 use crate::transaction::{
-    execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, StateUpdateSummary,
+    execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
     TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use crate::types::*;
@@ -344,7 +344,7 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            &FeeReserveConfig::default(),
+            &CostingParameters::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
@@ -370,7 +370,7 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            &FeeReserveConfig::default(),
+            &CostingParameters::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
@@ -391,7 +391,7 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            &FeeReserveConfig::default(),
+            &CostingParameters::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()

@@ -77,10 +77,10 @@ pub const MAX_ACCESS_RULE_NODES: usize = 64;
 //==========================
 
 /// The cost unit price, in XRD.
-pub const COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
+pub const EXECUTION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
 
 /// The price for adding a single byte to the substate store, in XRD.
-pub const STATE_EXPANSION_PRICE_IN_XRD: &str = "0.00001";
+pub const STORAGE_PRICE_IN_XRD: &str = "0.00001";
 
 /// The USD price, in XRD
 pub const USD_PRICE_IN_XRD: &str = "10";

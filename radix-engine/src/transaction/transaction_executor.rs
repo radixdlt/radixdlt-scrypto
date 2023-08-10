@@ -26,21 +26,38 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
 
-#[derive(Debug, Clone)]
-pub struct FeeReserveConfig {
-    pub cost_unit_price: Decimal,
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct CostingParameters {
+    /// The price of execution cost unit in XRD.
+    pub execution_cost_unit_price: Decimal,
+    /// The maximum execution cost unit to consume.
+    pub execution_cost_unit_limit: u32,
+    /// The price of finalization cost unit in XRD.
+    pub finalization_cost_unit_price: Decimal,
+    /// The maximum finalization cost unit to consume.
+    pub finalization_cost_unit_limit: u32,
+    /// The price of USD in xrd
     pub usd_price: Decimal,
-    pub state_expansion_price: Decimal,
-    pub system_loan: u32,
+    /// The price of storage in xrd
+    pub storage_price: Decimal,
+    /// The amount of loaned
+    pub execution_cost_units_loan: u32,
+
+    /// The tip percentage that should be applied on execution and finalization costs.
+    pub tip_percentage: u16,
 }
 
-impl Default for FeeReserveConfig {
-    fn default() -> Self {
+impl CostingParameters {
+    pub fn default() -> Self {
         Self {
-            cost_unit_price: COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            execution_cost_unit_price: EXECUTION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
             usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
-            state_expansion_price: STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
-            system_loan: SYSTEM_LOAN_AMOUNT,
+            storage_price: STORAGE_PRICE_IN_XRD.try_into().unwrap(),
+            execution_cost_units_loan: SYSTEM_LOAN_AMOUNT,
+            execution_cost_unit_limit: todo!(),
+            finalization_cost_unit_price: todo!(),
+            finalization_cost_unit_limit: todo!(),
+            tip_percentage: todo!(),
         }
     }
 }
@@ -180,18 +197,18 @@ where
     pub fn execute(
         &mut self,
         executable: &Executable,
-        fee_reserve_config: &FeeReserveConfig,
+        fee_reserve_config: &CostingParameters,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let free_credit = executable.fee_payment().free_credit_in_xrd;
         let tip_percentage = executable.fee_payment().tip_percentage;
         let fee_reserve = SystemLoanFeeReserve::new(
-            fee_reserve_config.cost_unit_price,
+            fee_reserve_config.execution_cost_unit_price,
             fee_reserve_config.usd_price,
-            fee_reserve_config.state_expansion_price,
+            fee_reserve_config.storage_price,
             tip_percentage,
             execution_config.cost_unit_limit,
-            fee_reserve_config.system_loan,
+            fee_reserve_config.execution_cost_units_loan,
             execution_config.abort_when_loan_repaid,
         )
         .with_free_credit(free_credit);
@@ -262,6 +279,13 @@ where
                     println!("{:?}", interpretation_result);
                 }
 
+                let execution_cost_breakdown = costing_module
+                    .costing_traces
+                    .into_iter()
+                    .map(|(k, v)| (k.to_string(), v))
+                    .collect();
+                let finalization_cost_breakdown = Default::default();
+
                 let result_type = Self::determine_result_type(
                     interpretation_result,
                     &mut costing_module.fee_reserve,
@@ -277,18 +301,18 @@ where
                         }
 
                         // Distribute fees
-                        let (mut fee_summary, fee_payments) = Self::finalize_fees(
+                        let (fee_summary, fee_source) = Self::finalize_fees(
                             &mut track,
                             costing_module.fee_reserve,
                             is_success,
                             free_credit,
                         );
-                        let execution_breakdown_in_cost_units = costing_module
-                            .costing_traces
-                            .into_iter()
-                            .map(|(k, v)| (k.to_string(), v))
-                            .collect();
-                        fee_summary.fee_payments = fee_payments.clone();
+                        let fee_destination = FeeDestination {
+                            to_proposer: fee_summary.to_proposer_amount(),
+                            to_validator_set: fee_summary.to_validator_set_amount(),
+                            to_burn: fee_summary.to_burn_amount(),
+                            to_royalty_recipients: fee_summary.royalty_cost_breakdown,
+                        };
 
                         // Update intent hash status
                         if let Some(next_epoch) = Self::read_epoch(&mut track) {
@@ -346,7 +370,7 @@ where
 
                         // Finalize execution trace
                         let execution_trace =
-                            execution_trace_module.finalize(&fee_payments, is_success);
+                            execution_trace_module.finalize(&fee_source, is_success);
 
                         // Finalize track
                         let (tracked_nodes, deleted_partitions) = track.finalize();
@@ -371,11 +395,12 @@ where
                                 Ok(o) => TransactionOutcome::Success(o),
                                 Err(e) => TransactionOutcome::Failure(e),
                             },
-                            fee_summary,
                             application_events,
                             application_logs,
                             system_structure,
                             execution_trace,
+                            fee_source,
+                            fee_destination,
                         })
                     }
                     TransactionResultType::Reject(error) => {
@@ -397,10 +422,22 @@ where
             () => resources_tracker.end_measurement(),
         };
 
-        // P
+        // Produce final receipt
         let receipt = TransactionReceipt {
-            transaction_result: result,
             resources_usage,
+            costing_parameters: TransactionParameters {
+                execution_cost_unit_price: execution_config.cost_unit_p,
+                execution_cost_unit_limit: execution_config.cost_unit_limit,
+                finalization_cost_unit_price: (),
+                finalization_cost_unit_limit: (),
+                tip_percentage: (),
+            },
+            fee_summary: todo!(),
+            fee_breakdown: TransactionFeeBreakdown {
+                execution_cost_breakdown,
+                finalization_cost_breakdown,
+            },
+            result,
         };
 
         // Dump summary
@@ -920,12 +957,12 @@ where
         // NB - we use "to_string" to ensure they align correctly
 
         println!("{:-^100}", "Execution Cost Breakdown");
-        for (k, v) in &receipt.fee_breakdown.execution_cost_units_breakdown {
+        for (k, v) in &receipt.fee_breakdown.execution_cost_breakdown {
             println!("{:<75}: {:>15}", k, v.to_string());
         }
 
         println!("{:-^100}", "Finalization Cost Breakdown");
-        for (k, v) in &receipt.fee_breakdown.finalization_cost_units_breakdown {
+        for (k, v) in &receipt.fee_breakdown.finalization_cost_breakdown {
             println!("{:<75}: {:>15}", k, v.to_string());
         }
 
@@ -933,35 +970,41 @@ where
         println!(
             "{:<30}: {:>15}",
             "Execution Cost Unit Price",
-            receipt.parameters.execution_cost_unit_price.to_string()
+            receipt
+                .costing_parameters
+                .execution_cost_unit_price
+                .to_string()
         );
         println!(
             "{:<30}: {:>15}",
-            "Execution Cost Unit Limit", receipt.parameters.execution_cost_unit_limit
+            "Execution Cost Unit Limit", receipt.costing_parameters.execution_cost_unit_limit
         );
         println!(
             "{:<30}: {:>15}",
             "Execution Cost Unit Consumed",
             receipt
                 .fee_summary
-                .total_execution_cost_in_cost_units
+                .total_execution_cost_units_consumed
                 .to_string()
         );
         println!(
             "{:<30}: {:>15}",
             "Finalization Cost Unit Price",
-            receipt.parameters.finalization_cost_unit_price.to_string()
+            receipt
+                .costing_parameters
+                .finalization_cost_unit_price
+                .to_string()
         );
         println!(
             "{:<30}: {:>15}",
-            "Finalization Cost Unit Limit", receipt.parameters.finalization_cost_unit_limit
+            "Finalization Cost Unit Limit", receipt.costing_parameters.finalization_cost_unit_limit
         );
         println!(
             "{:<30}: {:>15}",
             "Finalization Cost Unit Consumed",
             receipt
                 .fee_summary
-                .total_finalization_cost_in_cost_units
+                .total_finalization_cost_units_consumed
                 .to_string()
         );
         println!(
@@ -1015,7 +1058,7 @@ pub fn execute_and_commit_transaction<
 >(
     substate_db: &mut S,
     vm: V,
-    fee_reserve_config: &FeeReserveConfig,
+    fee_reserve_config: &CostingParameters,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
@@ -1025,9 +1068,8 @@ pub fn execute_and_commit_transaction<
         fee_reserve_config,
         execution_config,
         transaction,
-        result,
     );
-    if let TransactionResult::Commit(commit) = &receipt.transaction_result {
+    if let TransactionResult::Commit(commit) = &receipt.result {
         substate_db.commit(&commit.state_updates.database_updates);
     }
     receipt
@@ -1036,7 +1078,7 @@ pub fn execute_and_commit_transaction<
 pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
     substate_db: &S,
     vm: V,
-    fee_reserve_config: &FeeReserveConfig,
+    fee_reserve_config: &CostingParameters,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
