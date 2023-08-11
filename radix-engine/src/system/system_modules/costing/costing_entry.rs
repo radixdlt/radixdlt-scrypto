@@ -168,7 +168,7 @@ impl<'a> FinalizationCostingEntry<'a> {
         match self {
             FinalizationCostingEntry::BaseCost => ft.base_cost(),
             FinalizationCostingEntry::CommitStateUpdates { store_commit } => {
-                ft.commit_states_cost(store_commit)
+                ft.commit_state_updates_cost(store_commit)
             }
             FinalizationCostingEntry::CommitEvents { events } => ft.commit_events_cost(events),
             FinalizationCostingEntry::CommitLogs { logs } => ft.commit_logs_cost(logs),

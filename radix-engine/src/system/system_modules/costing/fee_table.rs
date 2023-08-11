@@ -449,7 +449,7 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn commit_states_cost(&self, store_commit: &StoreCommit) -> u32 {
+    pub fn commit_state_updates_cost(&self, store_commit: &StoreCommit) -> u32 {
         // Committing state time (µs): 0.0025 * size + 1000
         // Finalization cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000
         // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
