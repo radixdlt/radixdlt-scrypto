@@ -446,7 +446,7 @@ pub struct ValidatorSignalProtocolUpdateReadinessInput {
 
 pub type ValidatorSignalProtocolUpdateReadinessOutput = ();
 
-pub const VALIDATOR_GET_PROTOCOL_UPDATE_READINESS: &str = "get_protocol_update_readiness";
+pub const VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT: &str = "get_protocol_update_readiness";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorGetProtocolUpdateReadinessInput {}

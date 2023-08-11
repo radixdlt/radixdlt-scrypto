@@ -758,7 +758,7 @@ impl ConsensusManagerBlueprint {
             next_validator_set_total_stake += validator.stake;
             let rtn = api.call_method(
                 validator_address.as_node_id(),
-                VALIDATOR_GET_PROTOCOL_UPDATE_READINESS,
+                VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT,
                 scrypto_encode(&ValidatorGetProtocolUpdateReadinessInput {}).unwrap(),
             )?;
             if let Some(protocol_update_readiness) = scrypto_decode::<Option<String>>(&rtn).unwrap()
