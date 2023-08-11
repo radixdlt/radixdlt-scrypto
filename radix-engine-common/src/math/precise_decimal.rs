@@ -383,12 +383,12 @@ impl Mul<PreciseDecimal> for PreciseDecimal {
 
     #[inline]
     fn mul(self, other: PreciseDecimal) -> Self::Output {
-        // Use BnumI768 to not overflow.
-        let a = BnumI768::from(self.0);
-        let b = BnumI768::from(other.0);
-        let c = a * b / BnumI768::from(Self::ONE.0);
-        let c_512 = BnumI256::try_from(c).expect("Overflow");
-        PreciseDecimal(c_512)
+        // Use BnumI384 to not overflow.
+        let a = BnumI384::from(self.0);
+        let b = BnumI384::from(other.0);
+        let c = a * b / BnumI384::from(Self::ONE.0);
+        let c_256 = BnumI256::try_from(c).expect("Overflow");
+        PreciseDecimal(c_256)
     }
 }
 
@@ -397,12 +397,12 @@ impl Div<PreciseDecimal> for PreciseDecimal {
 
     #[inline]
     fn div(self, other: PreciseDecimal) -> Self::Output {
-        // Use BnumI768 to not overflow.
-        let a = BnumI768::from(self.0);
-        let b = BnumI768::from(other.0);
-        let c = a * BnumI768::from(Self::ONE.0) / b;
-        let c_512 = BnumI256::try_from(c).expect("Overflow");
-        PreciseDecimal(c_512)
+        // Use BnumI384 to not overflow.
+        let a = BnumI384::from(self.0);
+        let b = BnumI384::from(other.0);
+        let c = a * BnumI384::from(Self::ONE.0) / b;
+        let c_256 = BnumI256::try_from(c).expect("Overflow");
+        PreciseDecimal(c_256)
     }
 }
 
@@ -894,6 +894,13 @@ mod tests {
         let a = PreciseDecimal::from_str("1000000000").unwrap();
         let b = PreciseDecimal::from_str("1000000000").unwrap();
         assert_eq!((a * b).to_string(), "1000000000000000000");
+
+        let a = PreciseDecimal::MAX / 2;
+        let b = PreciseDecimal::from(2);
+        assert_eq!(
+            a * b,
+            pdec!("57896044618658097711785492504343953926634.992332820282019728792003956564819966")
+        );
     }
 
     #[test]
@@ -964,6 +971,12 @@ mod tests {
             "0.714285714285714285714285714285714285"
         );
         assert_eq!((b / a).to_string(), "1.4");
+        let a = PreciseDecimal::MAX;
+        let b = PreciseDecimal::from(2);
+        assert_eq!(
+            a / b,
+            pdec!("28948022309329048855892746252171976963317.496166410141009864396001978282409983")
+        );
     }
 
     #[test]
