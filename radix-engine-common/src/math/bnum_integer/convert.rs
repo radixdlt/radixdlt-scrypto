@@ -326,16 +326,6 @@ macro_rules! impl_from_bnum {
     };
 }
 
-impl_from_bnum! {
-    BnumI192, BInt::<3>, (
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>
-    )
-}
 impl_try_from_bnum! {
     BnumI192, BInt::<3>, (
         BnumU192, BUint::<3>,
@@ -345,6 +335,16 @@ impl_try_from_bnum! {
         BnumU448, BUint::<7>,
         BnumU512, BUint::<8>,
         BnumU768, BUint::<12>
+    )
+}
+impl_from_bnum! {
+    BnumI192, BInt::<3>, (
+        BnumI256, BInt::<4>,
+        BnumI320, BInt::<5>,
+        BnumI384, BInt::<6>,
+        BnumI448, BInt::<7>,
+        BnumI512, BInt::<8>,
+        BnumI768, BInt::<12>
     )
 }
 
@@ -477,6 +477,11 @@ impl_try_from_bnum! {
 }
 
 // must fit 0 - MAX
+impl_try_from_bnum! {
+    BnumU192, BUint::<3>, (
+        BnumI192, BInt::<3>
+    )
+}
 impl_from_bnum! {
     BnumU192, BUint::<3>, (
         BnumI256, BInt::<4>,
@@ -493,12 +498,14 @@ impl_from_bnum! {
         BnumU768, BUint::<12>
     )
 }
+
 impl_try_from_bnum! {
-    BnumU192, BUint::<3>, (
-        BnumI192, BInt::<3>
+    BnumU256, BUint::<4>, (
+        BnumI192, BInt::<3>,
+        BnumU192, BUint::<3>,
+        BnumI256, BInt::<4>
     )
 }
-
 impl_from_bnum! {
     BnumU256, BUint::<4>, (
         BnumI320, BInt::<5>,
@@ -511,13 +518,6 @@ impl_from_bnum! {
         BnumU448, BUint::<7>,
         BnumU512, BUint::<8>,
         BnumU768, BUint::<12>
-    )
-}
-impl_try_from_bnum! {
-    BnumU256, BUint::<4>, (
-        BnumI192, BInt::<3>,
-        BnumU192, BUint::<3>,
-        BnumI256, BInt::<4>
     )
 }
 
