@@ -226,16 +226,16 @@ impl PreciseDecimal {
 
     /// Calculates power using exponentiation by squaring.
     pub fn powi(&self, exp: i64) -> Self {
-        let one_768 = BnumI768::from(Self::ONE.0);
-        let base_768 = BnumI768::from(self.0);
+        let one_384 = BnumI384::from(Self::ONE.0);
+        let base_384 = BnumI384::from(self.0);
         let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
 
         if exp < 0 {
-            let sub_768 = one_768 * one_768 / base_768;
-            let sub_512 = BnumI256::try_from(sub_768).expect("Overflow");
-            return PreciseDecimal(sub_512).powi(mul(exp, -1));
+            let sub_384 = one_384 * one_384 / base_384;
+            let sub_256 = BnumI256::try_from(sub_384).expect("Overflow");
+            return PreciseDecimal(sub_256).powi(mul(exp, -1));
         }
         if exp == 0 {
             return Self::ONE;
@@ -244,13 +244,13 @@ impl PreciseDecimal {
             return *self;
         }
         if exp % 2 == 0 {
-            let sub_768 = base_768 * base_768 / one_768;
-            let sub_512 = BnumI256::try_from(sub_768).expect("Overflow");
-            PreciseDecimal(sub_512).powi(div(exp, 2))
+            let sub_384 = base_384 * base_384 / one_384;
+            let sub_256 = BnumI256::try_from(sub_384).expect("Overflow");
+            PreciseDecimal(sub_256).powi(div(exp, 2))
         } else {
-            let sub_768 = base_768 * base_768 / one_768;
-            let sub_512 = BnumI256::try_from(sub_768).expect("Overflow");
-            let sub_pdec = PreciseDecimal(sub_512);
+            let sub_384 = base_384 * base_384 / one_384;
+            let sub_256 = BnumI256::try_from(sub_384).expect("Overflow");
+            let sub_pdec = PreciseDecimal(sub_256);
             *self * sub_pdec.powi(div(sub(exp, 1), 2))
         }
     }
@@ -267,8 +267,8 @@ impl PreciseDecimal {
         // The BnumI256 i associated to a Decimal d is : i = d*10^36.
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^32 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^36) = sqrt(d)*10^36
-        let self_768 = BnumI768::from(self.0);
-        let correct_nb = self_768 * BnumI768::from(PreciseDecimal::one().0);
+        let self_384 = BnumI384::from(self.0);
+        let correct_nb = self_384 * BnumI384::from(PreciseDecimal::one().0);
         let sqrt = BnumI256::try_from(correct_nb.sqrt()).expect("Overflow");
         Some(PreciseDecimal(sqrt))
     }
@@ -766,8 +766,8 @@ macro_rules! try_from_integer {
 }
 
 from_integer!(BnumI192, BnumU192);
-try_from_integer!(BnumI256, BnumI320, BnumI384, BnumI512);
-try_from_integer!(BnumU256, BnumU320, BnumU384, BnumU512);
+try_from_integer!(BnumI256, BnumI320, BnumI384, BnumI448, BnumI512);
+try_from_integer!(BnumU256, BnumU320, BnumU384, BnumU448, BnumU512);
 
 #[cfg(test)]
 mod tests {
