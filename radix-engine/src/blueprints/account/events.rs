@@ -6,20 +6,20 @@ use sbor::rust::prelude::*;
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum WithdrawEvent {
-    Amount(ResourceAddress, Decimal),
-    Ids(ResourceAddress, BTreeSet<NonFungibleLocalId>),
+    Fungible(ResourceAddress, Decimal),
+    NonFungible(ResourceAddress, BTreeSet<NonFungibleLocalId>),
 }
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DepositEvent {
-    Amount(ResourceAddress, Decimal),
-    Ids(ResourceAddress, BTreeSet<NonFungibleLocalId>),
+    Fungible(ResourceAddress, Decimal),
+    NonFungible(ResourceAddress, BTreeSet<NonFungibleLocalId>),
 }
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RejectedDepositEvent {
-    Amount(ResourceAddress, Decimal),
-    Ids(ResourceAddress, BTreeSet<NonFungibleLocalId>),
+    Fungible(ResourceAddress, Decimal),
+    NonFungible(ResourceAddress, BTreeSet<NonFungibleLocalId>),
 }
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

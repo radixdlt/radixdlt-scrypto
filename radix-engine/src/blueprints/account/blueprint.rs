@@ -302,9 +302,9 @@ impl AccountBlueprint {
     {
         let resource_address = bucket.resource_address(api)?;
         let event = if resource_address.is_fungible() {
-            DepositEvent::Amount(resource_address, bucket.amount(api)?)
+            DepositEvent::Fungible(resource_address, bucket.amount(api)?)
         } else {
-            DepositEvent::Ids(resource_address, bucket.non_fungible_local_ids(api)?)
+            DepositEvent::NonFungible(resource_address, bucket.non_fungible_local_ids(api)?)
         };
         Self::get_vault(
             resource_address,
@@ -347,9 +347,12 @@ impl AccountBlueprint {
             Ok(None)
         } else {
             let event = if resource_address.is_fungible() {
-                RejectedDepositEvent::Amount(resource_address, bucket.amount(api)?)
+                RejectedDepositEvent::Fungible(resource_address, bucket.amount(api)?)
             } else {
-                RejectedDepositEvent::Ids(resource_address, bucket.non_fungible_local_ids(api)?)
+                RejectedDepositEvent::NonFungible(
+                    resource_address,
+                    bucket.non_fungible_local_ids(api)?,
+                )
             };
             Runtime::emit_event(api, event)?;
             Ok(Some(bucket))
@@ -395,9 +398,12 @@ impl AccountBlueprint {
             for bucket in offending_buckets {
                 let resource_address = bucket.resource_address(api)?;
                 let event = if resource_address.is_fungible() {
-                    RejectedDepositEvent::Amount(resource_address, bucket.amount(api)?)
+                    RejectedDepositEvent::Fungible(resource_address, bucket.amount(api)?)
                 } else {
-                    RejectedDepositEvent::Ids(resource_address, bucket.non_fungible_local_ids(api)?)
+                    RejectedDepositEvent::NonFungible(
+                        resource_address,
+                        bucket.non_fungible_local_ids(api)?,
+                    )
                 };
                 Runtime::emit_event(api, event)?;
             }
@@ -504,9 +510,9 @@ impl AccountBlueprint {
             api,
         )?;
         let event = if resource_address.is_fungible() {
-            WithdrawEvent::Amount(resource_address, bucket.amount(api)?)
+            WithdrawEvent::Fungible(resource_address, bucket.amount(api)?)
         } else {
-            WithdrawEvent::Ids(resource_address, bucket.non_fungible_local_ids(api)?)
+            WithdrawEvent::NonFungible(resource_address, bucket.non_fungible_local_ids(api)?)
         };
         Runtime::emit_event(api, event)?;
 
@@ -527,7 +533,8 @@ impl AccountBlueprint {
             false,
             api,
         )?;
-        let event = WithdrawEvent::Ids(resource_address, bucket.non_fungible_local_ids(api)?);
+        let event =
+            WithdrawEvent::NonFungible(resource_address, bucket.non_fungible_local_ids(api)?);
         Runtime::emit_event(api, event)?;
 
         Ok(bucket)

@@ -812,7 +812,10 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
                 ref event_data,
             )) if test_runner.is_event_name_equal::<account::DepositEvent>(event_identifier)
                 && is_decoded_equal(
-                    &account::DepositEvent::Ids(resource_address, [id.clone(), id2.clone()].into()),
+                    &account::DepositEvent::NonFungible(
+                        resource_address,
+                        [id.clone(), id2.clone()].into()
+                    ),
                     event_data
                 ) =>
                 true,
@@ -1239,7 +1242,7 @@ fn validator_staking_emits_correct_event() {
                 ref event_data,
             )) if test_runner.is_event_name_equal::<account::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
-                    &account::WithdrawEvent::Amount(XRD, 100.into()),
+                    &account::WithdrawEvent::Fungible(XRD, 100.into()),
                     event_data
                 ) =>
                 true,
@@ -1381,7 +1384,7 @@ fn validator_unstake_emits_correct_events() {
                 ref event_data,
             )) if test_runner.is_event_name_equal::<account::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
-                    &account::WithdrawEvent::Amount(
+                    &account::WithdrawEvent::Fungible(
                         validator_substate.stake_unit_resource,
                         1.into()
                     ),
@@ -2071,7 +2074,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
         );
         assert_eq!(
             scrypto_decode::<account::WithdrawEvent>(&account_withdraw_event.1).unwrap(),
-            account::WithdrawEvent::Amount(XRD, dec!("1"))
+            account::WithdrawEvent::Fungible(XRD, dec!("1"))
         )
     }
     {
@@ -2091,7 +2094,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
         );
         assert_eq!(
             scrypto_decode::<account::DepositEvent>(&account_deposit_event.1).unwrap(),
-            account::DepositEvent::Amount(XRD, dec!("1"))
+            account::DepositEvent::Fungible(XRD, dec!("1"))
         )
     }
 }
@@ -2156,7 +2159,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
         );
         assert_eq!(
             scrypto_decode::<account::WithdrawEvent>(&account_withdraw_event.1).unwrap(),
-            account::WithdrawEvent::Ids(resource_address, expected_non_fungibles.clone())
+            account::WithdrawEvent::NonFungible(resource_address, expected_non_fungibles.clone())
         )
     }
     {
@@ -2176,7 +2179,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
         );
         assert_eq!(
             scrypto_decode::<account::DepositEvent>(&account_deposit_event.1).unwrap(),
-            account::DepositEvent::Ids(resource_address, expected_non_fungibles)
+            account::DepositEvent::NonFungible(resource_address, expected_non_fungibles)
         )
     }
 }
@@ -2503,7 +2506,7 @@ fn account_deposit_batch_emits_expected_events() {
             );
             assert_eq!(
                 scrypto_decode::<account::DepositEvent>(&xrd_deposit_event.1).unwrap(),
-                account::DepositEvent::Amount(XRD, dec!("1"))
+                account::DepositEvent::Fungible(XRD, dec!("1"))
             )
         }
         {
@@ -2517,7 +2520,7 @@ fn account_deposit_batch_emits_expected_events() {
             );
             assert_eq!(
                 scrypto_decode::<account::DepositEvent>(&nfts_deposit_event.1).unwrap(),
-                account::DepositEvent::Ids(
+                account::DepositEvent::NonFungible(
                     resource_address,
                     btreeset![
                         NonFungibleLocalId::integer(1),
@@ -2591,7 +2594,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
         );
         assert_eq!(
             scrypto_decode::<account::RejectedDepositEvent>(&xrd_rejected_deposit_event.1).unwrap(),
-            account::RejectedDepositEvent::Amount(XRD, dec!("1"))
+            account::RejectedDepositEvent::Fungible(XRD, dec!("1"))
         )
     }
     {
@@ -2606,7 +2609,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
         assert_eq!(
             scrypto_decode::<account::RejectedDepositEvent>(&nfts_rejected_deposit_event.1)
                 .unwrap(),
-            account::RejectedDepositEvent::Ids(
+            account::RejectedDepositEvent::NonFungible(
                 resource_address,
                 btreeset![
                     NonFungibleLocalId::integer(1),
