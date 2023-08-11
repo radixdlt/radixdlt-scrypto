@@ -340,11 +340,8 @@ define_structure! {
     RoleAssignment => {
         RoleAssignment => [
             SetRoleEvent,
-            LockRoleEvent,
-            SetAndLockRoleEvent,
             SetOwnerRoleEvent,
             LockOwnerRoleEvent,
-            SetAndLockOwnerRoleEvent,
         ]
     },
     Metadata => {
