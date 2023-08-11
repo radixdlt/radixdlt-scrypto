@@ -1444,8 +1444,7 @@ impl PackageRoyaltyNativeBlueprint {
             apply_royalty_cost(
                 api,
                 royalty_charge,
-                RoyaltyRecipient::Package(package_address),
-                vault_id.0,
+                RoyaltyRecipient::Package(package_address, vault_id.0),
             )?;
 
             api.kernel_close_substate(handle)?;

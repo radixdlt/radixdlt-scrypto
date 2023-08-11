@@ -2,7 +2,7 @@
 mod multi_threaded_test {
     use radix_engine::system::bootstrap::Bootstrapper;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
-    use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
+    use radix_engine::transaction::{CostingParameters, ExecutionConfig};
     use radix_engine::types::*;
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
     use radix_engine_interface::dec;
@@ -51,7 +51,7 @@ mod multi_threaded_test {
                 let account = execute_and_commit_transaction(
                     &mut substate_db,
                     vm.clone(),
-                    &FeeReserveConfig::default(),
+                    &CostingParameters::default(),
                     &ExecutionConfig::for_test_transaction(),
                     &TestTransaction::new(manifest.clone(), hash(format!("Account creation: {i}")))
                         .prepare()
@@ -79,7 +79,7 @@ mod multi_threaded_test {
             execute_and_commit_transaction(
                 &mut substate_db,
                 vm.clone(),
-                &FeeReserveConfig::default(),
+                &CostingParameters::default(),
                 &ExecutionConfig::for_test_transaction(),
                 &TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
                     .prepare()
@@ -105,7 +105,7 @@ mod multi_threaded_test {
                     let receipt = execute_transaction(
                         &substate_db,
                         vm.clone(),
-                        &FeeReserveConfig::default(),
+                        &CostingParameters::default(),
                         &ExecutionConfig::for_test_transaction(),
                         &TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
                             .prepare()

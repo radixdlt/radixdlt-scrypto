@@ -1,6 +1,6 @@
 use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
-use radix_engine::errors::{RejectionError, RuntimeError};
+use radix_engine::errors::{RejectionReason, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
@@ -148,7 +148,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
     });
 
     receipt.expect_specific_rejection(|e| match e {
-        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+        RejectionReason::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::OpenSubstateError(
                 OpenSubstateError::LockUnmodifiedBaseOnHeapNode,
             )),
@@ -185,7 +185,7 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
     });
 
     receipt.expect_specific_rejection(|e| match e {
-        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+        RejectionReason::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::OpenSubstateError(
                 OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(..),
             )),
@@ -238,7 +238,7 @@ fn test_fee_accounting_success() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -249,14 +249,14 @@ fn test_fee_accounting_success() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
+    let summary = &receipt.fee_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
             - 66
-            - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
-                * summary.execution_cost_sum
-            - summary.total_state_expansion_cost_xrd
+            - receipt.effective_execution_cost_unit_price()
+                * summary.total_execution_cost_units_consumed
+            - summary.total_storage_cost_in_xrd
     );
     assert_eq!(account2_new_balance, account2_balance + 66);
 }
@@ -299,7 +299,7 @@ fn test_fee_accounting_failure() {
             ))
         )
     });
-    let commit_result = receipt.expect_commit(false);
+    receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -310,12 +310,12 @@ fn test_fee_accounting_failure() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
+    let summary = &receipt.fee_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
-                * summary.execution_cost_sum
+            - receipt.effective_execution_cost_unit_price()
+                * summary.total_execution_cost_units_consumed
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
@@ -381,7 +381,7 @@ fn test_contingent_fee_accounting_success() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -392,15 +392,13 @@ fn test_contingent_fee_accounting_success() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
-    let effective_price =
-        summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
     let contingent_fee = dec!("0.001");
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - effective_price * summary.execution_cost_sum
-            - summary.total_state_expansion_cost_xrd
+            - receipt.effective_execution_cost_unit_price()
+                * receipt.fee_summary.total_execution_cost_units_consumed
+            - receipt.fee_summary.total_storage_cost_in_xrd
             + contingent_fee
     );
     assert_eq!(account2_new_balance, account2_balance - contingent_fee);
@@ -446,7 +444,7 @@ fn test_contingent_fee_accounting_failure() {
             ))
         )
     });
-    let commit_result = receipt.expect_commit(false);
+    receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -457,12 +455,12 @@ fn test_contingent_fee_accounting_failure() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
-    let effective_price =
-        summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
+    let summary = &receipt.fee_summary;
     assert_eq!(
         account1_new_balance,
-        account1_balance - effective_price * summary.execution_cost_sum
+        account1_balance
+            - receipt.effective_execution_cost_unit_price()
+                * summary.total_execution_cost_units_consumed
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
@@ -487,7 +485,7 @@ fn locked_fees_are_correct_in_execution_trace() {
     // Assert
     let commit = receipt.expect_commit_success();
     assert_eq!(
-        commit.execution_trace.fee_locks,
+        commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("104.676"),
             contingent_lock: Decimal::ZERO
@@ -517,7 +515,7 @@ fn multiple_locked_fees_are_correct_in_execution_trace() {
     // Assert
     let commit = receipt.expect_commit_success();
     assert_eq!(
-        commit.execution_trace.fee_locks,
+        commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("206.856"),
             contingent_lock: Decimal::ZERO
@@ -547,7 +545,7 @@ fn regular_and_contingent_fee_locks_are_correct_in_execution_trace() {
     // Assert
     let commit = receipt.expect_commit_success();
     assert_eq!(
-        commit.execution_trace.fee_locks,
+        commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("104.676"),
             contingent_lock: dec!("102.180")

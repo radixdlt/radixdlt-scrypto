@@ -22,8 +22,10 @@ pub struct StateUpdateSummary {
     pub new_components: IndexSet<ComponentAddress>,
     pub new_resources: IndexSet<ResourceAddress>,
     pub new_vaults: IndexSet<InternalAddress>,
+    /// TODO: remove
     pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
     /// This field accounts for Direct vault recalls (and the owner is not loaded during the transaction);
+    /// TODO: remove
     pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
 }
 

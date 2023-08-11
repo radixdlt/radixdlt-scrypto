@@ -1,10 +1,11 @@
-use crate::errors::InvokeError;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::types::*;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::NoOpWasmRuntime;
+use crate::{errors::InvokeError, transaction::CostingParameters};
 use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageDefinition};
 use sbor::rust::iter;
+use transaction::prelude::TransactionCostingParameters;
 
 #[derive(Debug)]
 pub enum ExtractSchemaError {
@@ -36,8 +37,14 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
 
     // Execute with empty state (with default cost unit limit)
     let wasm_engine = DefaultWasmEngine::default();
-    let fee_reserve = SystemLoanFeeReserve::default()
-        .with_free_credit(Decimal::try_from(FREE_CREDIT_IN_XRD).unwrap());
+    let fee_reserve = SystemLoanFeeReserve::new(
+        &CostingParameters::default(),
+        &TransactionCostingParameters {
+            tip_percentage: 0,
+            free_credit_in_xrd: Decimal::try_from(FREE_CREDIT_IN_XRD).unwrap(),
+        },
+        false,
+    );
     let mut wasm_execution_units_consumed = 0;
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
         fee_reserve,

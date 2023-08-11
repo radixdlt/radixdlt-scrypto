@@ -1,7 +1,7 @@
 use std::io;
 use std::path::PathBuf;
 
-use radix_engine::errors::{RejectionError, RuntimeError};
+use radix_engine::errors::{RejectionReason, RuntimeError};
 use radix_engine::transaction::AbortReason;
 use radix_engine::types::{ComponentAddress, Hash, NodeId, PackageAddress};
 use radix_engine::utils::ExtractSchemaError;
@@ -52,7 +52,7 @@ pub enum Error {
 
     TransactionFailed(RuntimeError),
 
-    TransactionRejected(RejectionError),
+    TransactionRejected(RejectionReason),
 
     TransactionAborted(AbortReason),
 

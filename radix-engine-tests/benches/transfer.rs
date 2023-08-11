@@ -1,7 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::execute_and_commit_transaction;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
+use radix_engine::transaction::CostingParameters;
+use radix_engine::transaction::ExecutionConfig;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
@@ -42,7 +43,7 @@ fn bench_transfer(c: &mut Criterion) {
             let account = execute_and_commit_transaction(
                 &mut substate_db,
                 vm.clone(),
-                &FeeReserveConfig::default(),
+                &CostingParameters::default(),
                 &ExecutionConfig::for_notarized_transaction(),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
@@ -69,7 +70,7 @@ fn bench_transfer(c: &mut Criterion) {
         execute_and_commit_transaction(
             &mut substate_db,
             vm.clone(),
-            &FeeReserveConfig::default(),
+            &CostingParameters::default(),
             &ExecutionConfig::for_notarized_transaction(),
             &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                 .prepare()
@@ -93,7 +94,7 @@ fn bench_transfer(c: &mut Criterion) {
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,
                 vm.clone(),
-                &FeeReserveConfig::default(),
+                &CostingParameters::default(),
                 &ExecutionConfig::for_notarized_transaction(),
                 &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                     .prepare()

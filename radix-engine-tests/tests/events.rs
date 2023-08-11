@@ -63,7 +63,7 @@ fn create_proof_emits_correct_events() {
         )) if test_runner.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
             && is_decoded_equal(
                 &BurnFungibleResourceEvent {
-                    amount: receipt.expect_commit_success().fee_summary.to_burn_amount()
+                    amount: receipt.expect_commit_success().fee_destination.to_burn
                 },
                 event_data
             ) =>

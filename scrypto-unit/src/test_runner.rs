@@ -9,7 +9,7 @@ use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::transaction::{
-    execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
+    execute_preview, execute_transaction, CommitResult, CostingParameters, ExecutionConfig,
     PreviewError, SystemReader, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
@@ -951,7 +951,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(btreeset!(AuthAddresses::system_role())),
-            FeeReserveConfig::default(),
+            CostingParameters::default(),
             ExecutionConfig::for_system_transaction(),
         );
 
@@ -1059,7 +1059,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .expect("Expected raw transaction to be valid");
         self.execute_transaction(
             validated.get_executable(),
-            FeeReserveConfig::default(),
+            CostingParameters::default(),
             ExecutionConfig::for_notarized_transaction(),
         )
     }
@@ -1078,16 +1078,16 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            FeeReserveConfig::default(),
+            CostingParameters::default(),
             ExecutionConfig::for_test_transaction(),
         )
     }
 
-    pub fn execute_manifest_with_cost_unit_limit<T>(
+    pub fn execute_manifest_with_execution_cost_unit_limit<T>(
         &mut self,
         manifest: TransactionManifestV1,
         initial_proofs: T,
-        cost_unit_limit: u32,
+        execution_cost_unit_limit: u32,
     ) -> TransactionReceipt
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
@@ -1098,15 +1098,15 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            FeeReserveConfig::default(),
-            ExecutionConfig::for_test_transaction().with_cost_unit_limit(cost_unit_limit),
+            CostingParameters::default().with_execution_cost_unit_limit(execution_cost_unit_limit),
+            ExecutionConfig::for_test_transaction(),
         )
     }
 
     pub fn execute_transaction(
         &mut self,
         executable: Executable,
-        fee_reserve_config: FeeReserveConfig,
+        fee_reserve_config: CostingParameters,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         // Override the kernel trace config
@@ -1124,7 +1124,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             &execution_config,
             &executable,
         );
-        if let TransactionResult::Commit(commit) = &transaction_receipt.transaction_result {
+        if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             self.database.commit(&commit.state_updates.database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates.database_updates);
@@ -1760,7 +1760,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            FeeReserveConfig::default(),
+            CostingParameters::default(),
             ExecutionConfig::for_system_transaction(),
         )
     }
@@ -1790,7 +1790,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            FeeReserveConfig::default(),
+            CostingParameters::default(),
             ExecutionConfig::for_system_transaction(),
         )
     }
@@ -1812,7 +1812,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            FeeReserveConfig::default(),
+            CostingParameters::default(),
             ExecutionConfig::for_system_transaction(),
         )
     }

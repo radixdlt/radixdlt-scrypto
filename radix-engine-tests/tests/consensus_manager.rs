@@ -1135,7 +1135,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_key)],
     );
-    let result1 = receipt1.expect_commit_success();
+    receipt1.expect_commit_success();
 
     // Act: change epoch
     let receipt2 = test_runner.advance_to_round(Round::of(1));
@@ -1155,7 +1155,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         },]
     );
     let emission_and_tx1_rewards =
-        emission_xrd_per_epoch + result1.fee_summary.expected_reward_if_single_validator();
+        emission_xrd_per_epoch + receipt1.fee_summary.expected_reward_if_single_validator();
     let validator_substate = test_runner.get_active_validator_info_by_key(&validator_key);
     assert_close_to!(
         test_runner
@@ -1196,8 +1196,8 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
             .unwrap(),
         initial_stake_amount
-            + result1.fee_summary.expected_reward_if_single_validator()
-            + result2.fee_summary.expected_reward_if_single_validator()
+            + receipt1.fee_summary.expected_reward_if_single_validator()
+            + receipt2.fee_summary.expected_reward_if_single_validator()
             + dec!("2") * emission_xrd_per_epoch // everything still goes into stake, by various means
     );
     // the new fee goes into internal owner's vault (as stake units)
@@ -1208,7 +1208,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             .inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0)
             .unwrap(),
         emission_and_tx1_rewards
-            + (result2.fee_summary.expected_reward_if_single_validator() + next_epoch_fee_xrd)
+            + (receipt2.fee_summary.expected_reward_if_single_validator() + next_epoch_fee_xrd)
                 * stake_unit_exchange_rate
     );
 }
@@ -1271,7 +1271,6 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(&validator_key)],
             )
-            .expect_commit_success()
             .fee_summary
             .expected_reward_if_single_validator();
     total_rewards += last_reward;
@@ -1279,7 +1278,6 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     // ... and wait 1 epoch to make it effective
     last_reward = test_runner
         .advance_to_round(Round::of(1))
-        .expect_commit_success()
         .fee_summary
         .expected_reward_if_single_validator();
     total_rewards += last_reward;
@@ -1306,7 +1304,6 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(&validator_key)],
             )
-            .expect_commit_success()
             .fee_summary
             .expected_reward_if_single_validator();
     total_rewards += last_reward;
@@ -1317,7 +1314,6 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     for _ in current_epoch.number()..increase_effective_at_epoch.number() {
         last_reward = test_runner
             .advance_to_round(Round::of(1))
-            .expect_commit_success()
             .fee_summary
             .expected_reward_if_single_validator();
         total_rewards += last_reward;
@@ -1339,7 +1335,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
 
     // Assert: during that next epoch, the `increased_fee_factor` was already effective
     let result = receipt.expect_commit_success();
-    last_reward = result.fee_summary.expected_reward_if_single_validator();
+    last_reward = receipt.fee_summary.expected_reward_if_single_validator();
     total_rewards += last_reward;
     let event = test_runner
         .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result)
@@ -2631,7 +2627,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
-    let result1 = receipt1.expect_commit_success();
+    receipt1.expect_commit_success();
 
     // Act
     let receipt2 = test_runner.advance_to_round(Round::of(rounds_per_epoch));
@@ -2649,7 +2645,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             .stake,
         // The validator isn't eligible for the validator set rewards because it's `reliability_factor` is zero.
         Decimal::from(9)
-            + result1
+            + receipt1
                 .fee_summary
                 .expected_reward_as_proposer_if_single_validator()
     );
@@ -2785,7 +2781,7 @@ fn test_tips_and_fee_distribution_single_validator() {
         ManifestBuilder::new().drop_auth_zone_proofs().build(),
         vec![],
     );
-    let result1 = receipt1.expect_commit_success();
+    receipt1.expect_commit_success();
 
     // Advance epoch
     let receipt2 = test_runner.advance_to_round(Round::of(1));
@@ -2809,7 +2805,7 @@ fn test_tips_and_fee_distribution_single_validator() {
     assert_eq!(event.epoch, initial_epoch);
     assert_close_to!(
         event.amount,
-        result1.fee_summary.expected_reward_if_single_validator()
+        receipt1.fee_summary.expected_reward_if_single_validator()
     );
 }
 
@@ -2858,14 +2854,14 @@ fn test_tips_and_fee_distribution_two_validators() {
     assert_eq!(events[0].epoch, initial_epoch);
     assert_close_to!(
         events[0].amount,
-        result1.fee_summary.to_proposer_amount()
-            + result1.fee_summary.to_validator_set_amount() * initial_stake_amount1
+        result1.fee_destination.to_proposer
+            + result1.fee_destination.to_validator_set * initial_stake_amount1
                 / (initial_stake_amount1 + initial_stake_amount2)
     );
     assert_eq!(events[1].epoch, initial_epoch);
     assert_close_to!(
         events[1].amount,
-        result1.fee_summary.to_validator_set_amount() * initial_stake_amount2
+        result1.fee_destination.to_validator_set * initial_stake_amount2
             / (initial_stake_amount1 + initial_stake_amount2)
     );
 }

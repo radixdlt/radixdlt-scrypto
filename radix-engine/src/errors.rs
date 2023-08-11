@@ -43,7 +43,7 @@ pub trait CanBeAbortion {
 
 /// Represents an error which causes a transaction to be rejected.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum RejectionError {
+pub enum RejectionReason {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
     TransactionEpochNotYetValid {
@@ -58,7 +58,7 @@ pub enum RejectionError {
     IntentHashPreviouslyCancelled,
 }
 
-impl fmt::Display for RejectionError {
+impl fmt::Display for RejectionReason {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }

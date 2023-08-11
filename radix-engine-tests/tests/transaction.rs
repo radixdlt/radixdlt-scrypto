@@ -1,7 +1,7 @@
 use radix_engine::blueprints::transaction_processor::TransactionProcessorError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::KernelError;
-use radix_engine::errors::RejectionError;
+use radix_engine::errors::RejectionReason;
 use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
@@ -34,7 +34,7 @@ fn test_manifest_with_non_existent_resource() {
     receipt.expect_specific_rejection(|e| {
         matches!(
             e,
-            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+            RejectionReason::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
                 KernelError::InvalidReference(..)
             ))
         )

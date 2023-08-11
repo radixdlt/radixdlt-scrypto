@@ -19,7 +19,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::SystemUpdates;
 use crate::transaction::{
-    execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, StateUpdateSummary,
+    execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
     TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use crate::types::*;
@@ -193,7 +193,7 @@ impl FlashReceipt {
     // This is currently a necessary hack in order to not change GenesisReceipt with
     // the addition of a new system_flash_receipt.
     pub fn merge_genesis_flash_into_transaction_receipt(self, receipt: &mut TransactionReceipt) {
-        match &mut receipt.transaction_result {
+        match &mut receipt.result {
             TransactionResult::Commit(result) => {
                 let mut new_packages = self.state_update_summary.new_packages;
                 new_packages.extend(result.state_update_summary.new_packages.drain(..));
@@ -345,7 +345,7 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            &FeeReserveConfig::default(),
+            &CostingParameters::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
@@ -371,7 +371,7 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            &FeeReserveConfig::default(),
+            &CostingParameters::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
@@ -392,7 +392,7 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            &FeeReserveConfig::default(),
+            &CostingParameters::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()

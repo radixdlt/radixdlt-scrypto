@@ -1,7 +1,7 @@
 use radix_engine::{
     errors::{RuntimeError, SystemModuleError},
     system::system_modules::limits::TransactionLimitsError,
-    transaction::{ExecutionConfig, FeeReserveConfig},
+    transaction::{CostingParameters, ExecutionConfig},
     types::*,
 };
 use scrypto_unit::*;
@@ -40,7 +40,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
 
     let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
-    let fee_config = FeeReserveConfig::default();
+    let fee_config = CostingParameters::default();
     let mut execution_config = ExecutionConfig::for_test_transaction();
     // lower substate reads limit to avoid Fee limit transaction result
     execution_config.max_number_of_substates_in_track = 150;
@@ -94,7 +94,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
 
     let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
-    let fee_config = FeeReserveConfig::default();
+    let fee_config = CostingParameters::default();
     let mut execution_config = ExecutionConfig::for_test_transaction();
     // lower substate writes limit to avoid Fee limit transaction result
     execution_config.max_number_of_substates_in_track = 100;

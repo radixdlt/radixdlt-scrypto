@@ -1,6 +1,6 @@
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::{
-    execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
+    execute_and_commit_transaction, CostingParameters, ExecutionConfig,
 };
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
@@ -57,7 +57,7 @@ impl TransactionFuzzer {
             .expect("transaction to be validatable");
 
         let execution_config = ExecutionConfig::for_test_transaction();
-        let fee_reserve_config = FeeReserveConfig::default();
+        let fee_reserve_config = CostingParameters::default();
 
         let vm = Vm::new(&self.scrypto_vm, self.native_vm.clone());
 
