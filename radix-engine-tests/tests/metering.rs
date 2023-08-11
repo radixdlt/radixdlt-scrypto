@@ -119,7 +119,7 @@ pub fn load_cost_breakdown(content: &str) -> (BTreeMap<String, u32>, BTreeMap<St
     let lines: Vec<String> = content.split("\n").map(String::from).collect();
     let mut is_execution = true;
     for i in 8..lines.len() {
-        if lines[i].starts_with("+") {
+        if lines[i].starts_with("-") {
             let mut tokens = lines[i].split(",");
             let entry = tokens.next().unwrap().trim()[2..].to_string();
             let cost = tokens.next().unwrap().trim();
@@ -170,7 +170,7 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ Execution Cost (XRD)",
+            "- Execution Cost (XRD)",
             fee_summary.total_execution_cost_in_xrd.to_string(),
             decimal_to_float(
                 fee_summary.total_execution_cost_in_xrd / fee_summary.total_cost() * 100
@@ -181,7 +181,7 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ Finalization Cost (XRD)",
+            "- Finalization Cost (XRD)",
             fee_summary.total_finalization_cost_in_xrd.to_string(),
             decimal_to_float(
                 fee_summary.total_finalization_cost_in_xrd / fee_summary.total_cost() * 100
@@ -192,7 +192,7 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ Tipping Cost (XRD)",
+            "- Tipping Cost (XRD)",
             fee_summary.total_tipping_cost_in_xrd.to_string(),
             decimal_to_float(
                 fee_summary.total_tipping_cost_in_xrd / fee_summary.total_cost() * 100
@@ -203,7 +203,7 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ State Expansion Cost (XRD)",
+            "- State Expansion Cost (XRD)",
             fee_summary.total_storage_cost_in_xrd.to_string(),
             decimal_to_float(
                 fee_summary.total_storage_cost_in_xrd / fee_summary.total_cost() * 100
@@ -214,7 +214,7 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ Tipping Cost (XRD)",
+            "- Tipping Cost (XRD)",
             fee_summary.total_tipping_cost_in_xrd.to_string(),
             decimal_to_float(
                 fee_summary.total_tipping_cost_in_xrd / fee_summary.total_cost() * 100
@@ -225,7 +225,7 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ Royalty Cost (XRD)",
+            "- Royalty Cost (XRD)",
             fee_summary.total_royalty_cost_in_xrd.to_string(),
             decimal_to_float(
                 fee_summary.total_royalty_cost_in_xrd / fee_summary.total_cost() * 100
@@ -245,7 +245,7 @@ pub fn write_cost_breakdown(
     for (k, v) in &fee_details.execution_cost_breakdown {
         buffer.push_str(
             format!(
-                "+ {:<73},{:>15}, {:8.1}%\n",
+                "- {:<73},{:>15}, {:8.1}%\n",
                 k,
                 v,
                 decimal_to_float(
@@ -272,7 +272,7 @@ pub fn write_cost_breakdown(
     for (k, v) in &fee_details.finalization_cost_breakdown {
         buffer.push_str(
             format!(
-                "+ {:<73},{:>15}, {:8.1}%\n",
+                "- {:<73},{:>15}, {:8.1}%\n",
                 k,
                 v,
                 decimal_to_float(
