@@ -4,6 +4,7 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::kernel::substate_io::SubstateDevice;
+use crate::system::system_modules::transaction_runtime::Event;
 use crate::{
     blueprints::package::*,
     kernel::actor::Actor,
@@ -428,32 +429,17 @@ impl FeeTable {
     }
 
     //======================
-    // Storage costs
-    //======================
-
-    #[inline]
-    pub fn store_commit_cost(&self, store_commit: &StoreCommit) -> u32 {
-        // Execution time (µs): 0.0025 * size + 1000
-        // Execution cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000
-        // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-        match store_commit {
-            StoreCommit::Insert { size, .. } => add(cast(*size) / 4, 100_000),
-            StoreCommit::Update { size, .. } => add(cast(*size) / 4, 100_000),
-            StoreCommit::Delete { .. } => 100_000,
-        }
-    }
-
-    //======================
     // Finalization costs
+    // This is primarily to account for the additional work on the Node side
     //======================
 
     #[inline]
-    pub fn tx_base_cost(&self) -> u32 {
+    pub fn transaction_base_cost(&self) -> u32 {
         50_000
     }
 
     #[inline]
-    pub fn tx_payload_cost(&self, size: usize) -> u32 {
+    pub fn transaction_payload_cost(&self, size: usize) -> u32 {
         // Rational:
         // Transaction payload is propagated over a P2P network.
         // Larger size may slows down the network performance.
@@ -463,10 +449,34 @@ impl FeeTable {
         mul(cast(size), 40)
     }
 
-    fn transient_data_cost(size: usize) -> u32 {
-        // Rationality:
-        // To limit transient data to 64 MB, the cost for a byte should be 100,000,000 / 64,000,000 = 1.56.
-        mul(cast(size), 2)
+    #[inline]
+    pub fn commit_states_cost(&self, store_commit: &StoreCommit) -> u32 {
+        // Committing state time (µs): 0.0025 * size + 1000
+        // Finalization cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000
+        // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+        match store_commit {
+            StoreCommit::Insert { size, .. } => add(cast(*size) / 4, 100_000),
+            StoreCommit::Update { size, .. } => add(cast(*size) / 4, 100_000),
+            StoreCommit::Delete { .. } => 100_000,
+        }
+    }
+
+    #[inline]
+    pub fn commit_events_cost(&self, events: &Vec<Event>) -> u32 {
+        let mut sum = 0;
+        for event in events {
+            sum += add(cast(event.payload.len()) / 4, 10_000)
+        }
+        sum
+    }
+
+    #[inline]
+    pub fn commit_logs_cost(&self, logs: &Vec<(Level, String)>) -> u32 {
+        let mut sum = 0;
+        for log in logs {
+            sum += add(cast(log.1.len()) / 4, 10_000)
+        }
+        sum
     }
 }
 

@@ -56,9 +56,9 @@ impl CostingModule {
 
     pub fn apply_execution_cost(
         &mut self,
-        costing_entry: CostingEntry,
+        costing_entry: ExecutionCostingEntry,
     ) -> Result<(), RuntimeError> {
-        let cost_units = costing_entry.to_cost_units(&self.fee_table);
+        let cost_units = costing_entry.to_execution_cost_units(&self.fee_table);
 
         self.fee_reserve
             .consume_execution(cost_units)
@@ -81,9 +81,9 @@ impl CostingModule {
 
     pub fn apply_deferred_execution_cost(
         &mut self,
-        costing_entry: CostingEntry,
+        costing_entry: ExecutionCostingEntry,
     ) -> Result<(), RuntimeError> {
-        let cost_units = costing_entry.to_cost_units(&self.fee_table);
+        let cost_units = costing_entry.to_execution_cost_units(&self.fee_table);
 
         self.fee_reserve.consume_deferred(cost_units).map_err(|e| {
             RuntimeError::SystemModuleError(SystemModuleError::CostingError(
@@ -102,10 +102,32 @@ impl CostingModule {
         Ok(())
     }
 
-    pub fn apply_state_expansion_cost(
+    pub fn apply_finalization_cost(
         &mut self,
-        store_commit: &StoreCommit,
+        costing_entry: FinalizationCostingEntry,
     ) -> Result<(), RuntimeError> {
+        let cost_units = costing_entry.to_finalization_cost_units(&self.fee_table);
+
+        self.fee_reserve
+            .consume_finalization(cost_units)
+            .map_err(|e| {
+                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                    CostingError::FeeReserveError(e),
+                ))
+            })?;
+
+        if self.enable_cost_breakdown {
+            let key = costing_entry.to_trace_key();
+            self.costing_traces
+                .entry(key)
+                .or_default()
+                .add_assign(cost_units);
+        }
+
+        Ok(())
+    }
+
+    pub fn apply_storage_cost(&mut self, store_commit: &StoreCommit) -> Result<(), RuntimeError> {
         self.fee_reserve
             .consume_storage(store_commit)
             .map_err(|e| {
@@ -154,11 +176,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let costing = &mut api.kernel_get_system().modules.costing;
 
-        costing.apply_deferred_execution_cost(CostingEntry::TxBaseCost)?;
-        costing.apply_deferred_execution_cost(CostingEntry::TxPayloadCost {
-            size: costing.payload_len,
-        })?;
-        costing.apply_deferred_execution_cost(CostingEntry::TxSignatureVerification {
+        costing.apply_deferred_execution_cost(ExecutionCostingEntry::VerifySignature {
             num_signatures: costing.num_of_signatures,
         })?;
 
@@ -177,7 +195,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::BeforeInvoke {
+            .apply_execution_cost(ExecutionCostingEntry::BeforeInvoke {
                 actor: &invocation.call_frame_data,
                 input_size: invocation.len(),
             })?;
@@ -250,7 +268,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::CreateNode { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::CreateNode { event })?;
 
         Ok(())
     }
@@ -262,7 +280,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::DropNode { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::DropNode { event })?;
 
         Ok(())
     }
@@ -274,7 +292,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::MoveModule { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::MoveModule { event })?;
 
         Ok(())
     }
@@ -286,7 +304,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::OpenSubstate { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::OpenSubstate { event })?;
 
         Ok(())
     }
@@ -298,7 +316,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::ReadSubstate { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::ReadSubstate { event })?;
 
         Ok(())
     }
@@ -310,7 +328,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::WriteSubstate { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::WriteSubstate { event })?;
 
         Ok(())
     }
@@ -322,7 +340,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::CloseSubstate { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::CloseSubstate { event })?;
 
         Ok(())
     }
@@ -334,7 +352,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::SetSubstate { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::SetSubstate { event })?;
 
         Ok(())
     }
@@ -346,7 +364,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::RemoveSubstate { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::RemoveSubstate { event })?;
 
         Ok(())
     }
@@ -358,7 +376,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::ScanKeys { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::ScanKeys { event })?;
 
         Ok(())
     }
@@ -370,7 +388,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::DrainSubstates { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::DrainSubstates { event })?;
 
         Ok(())
     }
@@ -382,7 +400,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::ScanSortedSubstates { event })?;
+            .apply_execution_cost(ExecutionCostingEntry::ScanSortedSubstates { event })?;
 
         Ok(())
     }
@@ -394,7 +412,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::AllocateNodeId)?;
+            .apply_execution_cost(ExecutionCostingEntry::AllocateNodeId)?;
 
         Ok(())
     }

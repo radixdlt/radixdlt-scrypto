@@ -5,22 +5,19 @@ use crate::kernel::kernel_callback_api::{
     OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
+use crate::system::system_modules::transaction_runtime::Event;
 use crate::track::interface::StoreCommit;
 use crate::types::*;
 use radix_engine_interface::*;
 
 #[derive(Debug, IntoStaticStr)]
-pub enum CostingEntry<'a> {
-    /* TX */
-    TxBaseCost,
-    TxPayloadCost {
-        size: usize,
-    },
-    TxSignatureVerification {
+pub enum ExecutionCostingEntry<'a> {
+    /* verify signature */
+    VerifySignature {
         num_signatures: usize,
     },
 
-    /* execution */
+    /* run code */
     RunNativeCode {
         package_address: &'a PackageAddress,
         export_name: &'a str,
@@ -85,11 +82,6 @@ pub enum CostingEntry<'a> {
         event: &'a DrainSubstatesEvent<'a>,
     },
 
-    /* commit */
-    Commit {
-        store_commit: &'a StoreCommit,
-    },
-
     /* system */
     LockFee,
     QueryFeeReserve,
@@ -106,78 +98,94 @@ pub enum CostingEntry<'a> {
     Panic {
         size: usize,
     },
-
-    /* system modules */
-    RoyaltyModule {
-        direct_charge: u32,
-    },
-    AuthModule {
-        direct_charge: u32,
-    },
 }
 
-impl<'a> CostingEntry<'a> {
-    pub fn to_cost_units(&self, ft: &FeeTable) -> u32 {
+#[derive(Debug, IntoStaticStr)]
+pub enum FinalizationCostingEntry<'a> {
+    TransactionBase,
+    TransactionPayload { size: usize },
+    CommitStates { store_commit: &'a StoreCommit },
+    CommitEvents { events: &'a Vec<Event> },
+    CommitLogs { logs: &'a Vec<(Level, String)> },
+}
+
+impl<'a> ExecutionCostingEntry<'a> {
+    pub fn to_execution_cost_units(&self, ft: &FeeTable) -> u32 {
         match self {
-            CostingEntry::TxBaseCost => ft.tx_base_cost(),
-            CostingEntry::TxPayloadCost { size } => ft.tx_payload_cost(*size),
-            CostingEntry::TxSignatureVerification { num_signatures } => {
+            ExecutionCostingEntry::VerifySignature { num_signatures } => {
                 ft.tx_signature_verification_cost(*num_signatures)
             }
-            CostingEntry::RunNativeCode {
+            ExecutionCostingEntry::RunNativeCode {
                 package_address,
                 export_name,
                 input_size,
             } => ft.run_native_code_cost(package_address, export_name, input_size),
-            CostingEntry::RunWasmCode {
+            ExecutionCostingEntry::RunWasmCode {
                 package_address,
                 export_name,
                 wasm_execution_units,
             } => ft.run_wasm_code_cost(package_address, export_name, *wasm_execution_units),
-            CostingEntry::PrepareWasmCode { size } => ft.instantiate_wasm_code_cost(*size),
-            CostingEntry::BeforeInvoke { actor, input_size } => {
+            ExecutionCostingEntry::PrepareWasmCode { size } => ft.instantiate_wasm_code_cost(*size),
+            ExecutionCostingEntry::BeforeInvoke { actor, input_size } => {
                 ft.before_invoke_cost(actor, *input_size)
             }
-            CostingEntry::AfterInvoke { output_size } => ft.after_invoke_cost(*output_size),
-            CostingEntry::AllocateNodeId => ft.allocate_node_id_cost(),
-            CostingEntry::CreateNode { event } => ft.create_node_cost(event),
-            CostingEntry::DropNode { event } => ft.drop_node_cost(event),
-            CostingEntry::MoveModule { event } => ft.move_module_cost(event),
-            CostingEntry::OpenSubstate { event } => ft.open_substate_cost(event),
-            CostingEntry::ReadSubstate { event } => ft.read_substate_cost(event),
-            CostingEntry::WriteSubstate { event } => ft.write_substate_cost(event),
-            CostingEntry::CloseSubstate { event } => ft.close_substate_cost(event),
-            CostingEntry::SetSubstate { event } => ft.set_substate_cost(event),
-            CostingEntry::RemoveSubstate { event } => ft.remove_substate_cost(event),
-            CostingEntry::ScanKeys { event } => ft.scan_keys_cost(event),
-            CostingEntry::DrainSubstates { event } => ft.drain_substates_cost(event),
-            CostingEntry::ScanSortedSubstates { event } => ft.scan_sorted_substates_cost(event),
-            CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
-            CostingEntry::LockFee => ft.lock_fee_cost(),
-            CostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),
-            CostingEntry::QueryActor => ft.query_actor_cost(),
-            CostingEntry::QueryAuthZone => ft.query_auth_zone_cost(),
-            CostingEntry::QueryTransactionHash => ft.query_transaction_hash_cost(),
-            CostingEntry::GenerateRuid => ft.generate_ruid_cost(),
-            CostingEntry::EmitEvent { size } => ft.emit_event_cost(*size),
-            CostingEntry::EmitLog { size } => ft.emit_log_cost(*size),
-            CostingEntry::Panic { size } => ft.panic_cost(*size),
-            CostingEntry::RoyaltyModule { direct_charge } => *direct_charge,
-            CostingEntry::AuthModule { direct_charge } => *direct_charge,
+            ExecutionCostingEntry::AfterInvoke { output_size } => {
+                ft.after_invoke_cost(*output_size)
+            }
+            ExecutionCostingEntry::AllocateNodeId => ft.allocate_node_id_cost(),
+            ExecutionCostingEntry::CreateNode { event } => ft.create_node_cost(event),
+            ExecutionCostingEntry::DropNode { event } => ft.drop_node_cost(event),
+            ExecutionCostingEntry::MoveModule { event } => ft.move_module_cost(event),
+            ExecutionCostingEntry::OpenSubstate { event } => ft.open_substate_cost(event),
+            ExecutionCostingEntry::ReadSubstate { event } => ft.read_substate_cost(event),
+            ExecutionCostingEntry::WriteSubstate { event } => ft.write_substate_cost(event),
+            ExecutionCostingEntry::CloseSubstate { event } => ft.close_substate_cost(event),
+            ExecutionCostingEntry::SetSubstate { event } => ft.set_substate_cost(event),
+            ExecutionCostingEntry::RemoveSubstate { event } => ft.remove_substate_cost(event),
+            ExecutionCostingEntry::ScanKeys { event } => ft.scan_keys_cost(event),
+            ExecutionCostingEntry::DrainSubstates { event } => ft.drain_substates_cost(event),
+            ExecutionCostingEntry::ScanSortedSubstates { event } => {
+                ft.scan_sorted_substates_cost(event)
+            }
+            ExecutionCostingEntry::LockFee => ft.lock_fee_cost(),
+            ExecutionCostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),
+            ExecutionCostingEntry::QueryActor => ft.query_actor_cost(),
+            ExecutionCostingEntry::QueryAuthZone => ft.query_auth_zone_cost(),
+            ExecutionCostingEntry::QueryTransactionHash => ft.query_transaction_hash_cost(),
+            ExecutionCostingEntry::GenerateRuid => ft.generate_ruid_cost(),
+            ExecutionCostingEntry::EmitEvent { size } => ft.emit_event_cost(*size),
+            ExecutionCostingEntry::EmitLog { size } => ft.emit_log_cost(*size),
+            ExecutionCostingEntry::Panic { size } => ft.panic_cost(*size),
         }
     }
 }
 
-impl<'a> CostingEntry<'a> {
+impl<'a> FinalizationCostingEntry<'a> {
+    pub fn to_finalization_cost_units(&self, ft: &FeeTable) -> u32 {
+        match self {
+            FinalizationCostingEntry::TransactionBase => ft.transaction_base_cost(),
+            FinalizationCostingEntry::TransactionPayload { size } => {
+                ft.transaction_payload_cost(*size)
+            }
+            FinalizationCostingEntry::CommitStates { store_commit } => {
+                ft.commit_states_cost(store_commit)
+            }
+            FinalizationCostingEntry::CommitEvents { events } => ft.commit_events_cost(events),
+            FinalizationCostingEntry::CommitLogs { logs } => ft.commit_logs_cost(logs),
+        }
+    }
+}
+
+impl<'a> ExecutionCostingEntry<'a> {
     pub fn to_trace_key(&self) -> String {
         match self {
-            CostingEntry::RunNativeCode { export_name, .. } => {
+            ExecutionCostingEntry::RunNativeCode { export_name, .. } => {
                 format!("RunNativeCode::{}", export_name)
             }
-            CostingEntry::RunWasmCode { export_name, .. } => {
+            ExecutionCostingEntry::RunWasmCode { export_name, .. } => {
                 format!("RunWasmCode::{}", export_name)
             }
-            CostingEntry::OpenSubstate {
+            ExecutionCostingEntry::OpenSubstate {
                 event: OpenSubstateEvent::End { node_id, .. },
                 ..
             } => {
@@ -186,9 +194,17 @@ impl<'a> CostingEntry<'a> {
                     node_id.entity_type().map(|x| x.into()).unwrap_or("?")
                 )
             }
-            CostingEntry::Commit { store_commit } => {
+            x => Into::<&'static str>::into(x).to_string(),
+        }
+    }
+}
+
+impl<'a> FinalizationCostingEntry<'a> {
+    pub fn to_trace_key(&self) -> String {
+        match self {
+            FinalizationCostingEntry::CommitStates { store_commit } => {
                 format!(
-                    "Commit::{}",
+                    "CommitStates::{}",
                     store_commit
                         .node_id()
                         .entity_type()

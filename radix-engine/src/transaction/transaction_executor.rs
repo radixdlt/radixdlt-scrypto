@@ -600,14 +600,38 @@ where
                 executable.blobs(),
             )
             .and_then(|x| {
+                // Note that if a transactions fails during this phase, the costing is
+                // done as if it would succeed.
+
+                /* finalization costs */
+                system
+                    .modules
+                    .apply_finalization_cost(FinalizationCostingEntry::TransactionBase)?;
+                system.modules.apply_finalization_cost(
+                    FinalizationCostingEntry::TransactionPayload {
+                        size: executable.payload_size(),
+                    },
+                )?;
                 let info = track.get_commit_info();
-                for commit in &info {
-                    system.modules.apply_execution_cost(CostingEntry::Commit {
-                        store_commit: commit,
-                    })?;
+                for store_commit in &info {
+                    system.modules.apply_finalization_cost(
+                        FinalizationCostingEntry::CommitStates { store_commit },
+                    )?;
                 }
-                for commit in &info {
-                    system.modules.apply_state_expansion_cost(commit)?;
+                system
+                    .modules
+                    .apply_finalization_cost(FinalizationCostingEntry::CommitEvents {
+                        events: &system.modules.events().clone(),
+                    })?;
+                system
+                    .modules
+                    .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
+                        logs: &system.modules.logs().clone(),
+                    })?;
+
+                /* storage costs */
+                for store_commit in &info {
+                    system.modules.apply_storage_cost(store_commit)?;
                 }
 
                 Ok(x)

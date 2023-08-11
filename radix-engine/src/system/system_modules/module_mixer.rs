@@ -1,4 +1,4 @@
-use super::costing::CostingEntry;
+use super::costing::{ExecutionCostingEntry, FinalizationCostingEntry};
 use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
@@ -595,7 +595,7 @@ impl SystemModuleMixer {
 
     pub fn apply_execution_cost(
         &mut self,
-        costing_entry: CostingEntry,
+        costing_entry: ExecutionCostingEntry,
     ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             self.costing.apply_execution_cost(costing_entry)
@@ -604,12 +604,20 @@ impl SystemModuleMixer {
         }
     }
 
-    pub fn apply_state_expansion_cost(
+    pub fn apply_finalization_cost(
         &mut self,
-        store_commit: &StoreCommit,
+        costing_entry: FinalizationCostingEntry,
     ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
-            self.costing.apply_state_expansion_cost(store_commit)
+            self.costing.apply_finalization_cost(costing_entry)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn apply_storage_cost(&mut self, store_commit: &StoreCommit) -> Result<(), RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            self.costing.apply_storage_cost(store_commit)
         } else {
             Ok(())
         }
@@ -627,5 +635,13 @@ impl SystemModuleMixer {
         } else {
             Ok(locked_fee)
         }
+    }
+
+    pub fn events(&self) -> &Vec<Event> {
+        &self.transaction_runtime.events
+    }
+
+    pub fn logs(&self) -> &Vec<(Level, String)> {
+        &self.transaction_runtime.logs
     }
 }
