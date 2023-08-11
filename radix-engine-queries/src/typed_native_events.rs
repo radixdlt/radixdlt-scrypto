@@ -308,16 +308,15 @@ define_structure! {
     },
     Resource => {
         FungibleVault => [
-            LockFeeEvent,
-            WithdrawResourceEvent,
-            DepositResourceEvent,
-            RecallResourceEvent,
+            FungibleVaultLockFeeEvent,
+            FungibleVaultWithdrawEvent,
+            FungibleVaultDepositEvent,
+            FungibleVaultRecallEvent
         ],
         NonFungibleVault => [
-            LockFeeEvent,
-            WithdrawResourceEvent,
-            DepositResourceEvent,
-            RecallResourceEvent,
+            NonFungibleVaultWithdrawEvent,
+            NonFungibleVaultDepositEvent,
+            NonFungibleVaultRecallEvent
         ],
         FungibleResourceManager => [
             VaultCreationEvent,
@@ -374,6 +373,15 @@ type MultiResourcePoolContributionEvent = multi_resource_pool::ContributionEvent
 type MultiResourcePoolRedemptionEvent = multi_resource_pool::RedemptionEvent;
 type MultiResourcePoolWithdrawEvent = multi_resource_pool::WithdrawEvent;
 type MultiResourcePoolDepositEvent = multi_resource_pool::DepositEvent;
+
+type FungibleVaultLockFeeEvent = fungible_vault::LockFeeEvent;
+type FungibleVaultWithdrawEvent = fungible_vault::WithdrawEvent;
+type FungibleVaultDepositEvent = fungible_vault::DepositEvent;
+type FungibleVaultRecallEvent = fungible_vault::RecallEvent;
+
+type NonFungibleVaultWithdrawEvent = non_fungible_vault::WithdrawEvent;
+type NonFungibleVaultDepositEvent = non_fungible_vault::DepositEvent;
+type NonFungibleVaultRecallEvent = non_fungible_vault::RecallEvent;
 
 /// This enum uses some special syntax to define the structure of events. This makes the code for
 /// model definitions very compact, allows for very easy addition of more packages, blueprints or

@@ -6,6 +6,7 @@ use radix_engine::{
     types::*,
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto_unit::{is_auth_error, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
@@ -610,7 +611,9 @@ fn deposits_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "DepositEvent" {
+            if test_runner.test_runner.event_name(event_type_identifier) == "DepositEvent"
+                && is_pool_emitter(event_type_identifier)
+            {
                 Some(scrypto_decode(event_data).unwrap())
             } else {
                 None
@@ -646,7 +649,9 @@ fn withdraws_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent" {
+            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent"
+                && is_pool_emitter(event_type_identifier)
+            {
                 Some(scrypto_decode(event_data).unwrap())
             } else {
                 None
@@ -682,7 +687,9 @@ fn withdraws_with_rounding_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent" {
+            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent"
+                && is_pool_emitter(event_type_identifier)
+            {
                 Some(scrypto_decode(event_data).unwrap())
             } else {
                 None
@@ -741,6 +748,20 @@ fn cant_withdraw_without_proper_signature() {
 
     // Assert
     receipt.expect_specific_failure(is_auth_error)
+}
+
+fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {
+    match event_type_identifier.0 {
+        Emitter::Method(node_id, ObjectModuleId::Main) => match node_id.entity_type() {
+            Some(
+                EntityType::GlobalOneResourcePool
+                | EntityType::GlobalTwoResourcePool
+                | EntityType::GlobalMultiResourcePool,
+            ) => true,
+            _ => false,
+        },
+        _ => false,
+    }
 }
 
 struct TestEnvironment<const N: usize> {
