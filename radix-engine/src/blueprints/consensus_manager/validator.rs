@@ -377,6 +377,22 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
+    pub fn get_protocol_update_readiness<Y>(api: &mut Y) -> Result<Option<String>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::ProtocolUpdateReadinessSignal.into(),
+            LockFlags::read_only(),
+        )?;
+        let signal: ValidatorProtocolUpdateReadinessSignalSubstate =
+            api.field_read_typed(handle)?;
+        api.field_close(handle)?;
+
+        Ok(signal.protocol_version_name)
+    }
+
     fn register_update<Y>(new_registered: bool, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -465,6 +481,7 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
         let validator: ValidatorSubstate = api.field_read_typed(handle)?;
+        api.field_close(handle)?;
         let mut nft_resman = ResourceManager(validator.claim_nft);
         let resource_address = validator.claim_nft;
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
