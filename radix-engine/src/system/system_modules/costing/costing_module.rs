@@ -177,12 +177,11 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let costing = &mut api.kernel_get_system().modules.costing;
 
-        costing.apply_deferred_execution_cost(ExecutionCostingEntry::VerifyTxSignatures {
-            num_signatures: costing.tx_signature_size,
-        })?;
-
         costing.apply_deferred_execution_cost(ExecutionCostingEntry::ValidateTxPayload {
             size: costing.tx_payload_len,
+        })?;
+        costing.apply_deferred_execution_cost(ExecutionCostingEntry::VerifyTxSignatures {
+            num_signatures: costing.tx_signature_size,
         })?;
 
         Ok(())
