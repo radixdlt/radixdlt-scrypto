@@ -454,7 +454,7 @@ impl AccessControllerNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(roles_template!(
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template!(
                         roles {
                             "primary" => updaters: [SELF_ROLE];
                             "recovery" => updaters: [SELF_ROLE];

@@ -75,6 +75,9 @@ pub const MAX_ACCESS_RULE_DEPTH: usize = 8;
 /// The max number of access rule nodes in an access rule
 pub const MAX_ACCESS_RULE_NODES: usize = 64;
 
+/// The max number of roles in a Role Specification
+pub const MAX_ROLES: usize = 50;
+
 //==========================
 // TO BE DEFINED
 //==========================

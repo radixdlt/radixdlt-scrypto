@@ -322,13 +322,13 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
             &definition_init.auth_config.method_auth,
         ) {
             (_, MethodAuthTemplate::AllowAll) => {}
-            (blueprint_type, MethodAuthTemplate::StaticRoles(StaticRoles { roles, methods })) => {
+            (blueprint_type, MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition { roles, methods })) => {
                 let role_specification = match (blueprint_type, roles) {
                     (_, RoleSpecification::Normal(roles)) => roles,
                     (BlueprintType::Inner { outer_blueprint }, RoleSpecification::UseOuter) => {
                         if let Some(blueprint) = definition.blueprints.get(outer_blueprint) {
                             match &blueprint.auth_config.method_auth {
-                                MethodAuthTemplate::StaticRoles(StaticRoles {
+                                MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
                                     roles: RoleSpecification::Normal(roles),
                                     ..
                                 }) => roles,
@@ -448,7 +448,7 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
             }
         }
 
-        if let MethodAuthTemplate::StaticRoles(static_roles) = &bp_init.auth_config.method_auth {
+        if let MethodAuthTemplate::StaticRoleDefinition(static_roles) = &bp_init.auth_config.method_auth {
             if let RoleSpecification::Normal(list) = &static_roles.roles {
                 for (role_key, _) in list.iter() {
                     condition(&role_key.key)?;
@@ -1019,7 +1019,7 @@ impl PackageNativePackage {
                             PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                         )
                     ),
-                    method_auth: MethodAuthTemplate::StaticRoles(
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(
                         roles_template! {
                             roles {
                                 SECURIFY_OWNER_ROLE;

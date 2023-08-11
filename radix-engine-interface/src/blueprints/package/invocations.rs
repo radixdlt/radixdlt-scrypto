@@ -154,7 +154,7 @@ pub enum MethodAuthTemplate {
     /// All methods are accessible
     AllowAll,
     /// Methods are protected by a static method to roles mapping
-    StaticRoles(StaticRoles),
+    StaticRoleDefinition(StaticRoleDefinition),
 }
 
 impl Default for MethodAuthTemplate {
@@ -173,12 +173,12 @@ pub enum RoleSpecification {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct StaticRoles {
+pub struct StaticRoleDefinition {
     pub roles: RoleSpecification,
     pub methods: BTreeMap<MethodKey, MethodAccessibility>,
 }
 
-impl Default for StaticRoles {
+impl Default for StaticRoleDefinition {
     fn default() -> Self {
         Self {
             methods: BTreeMap::new(),
@@ -201,6 +201,28 @@ impl PackageDefinition {
                 false,
             )],
         )
+    }
+
+    // For testing only
+    pub fn new_roles_only_test_definition(
+        blueprint_name: &str,
+        roles: BTreeMap<RoleKey, RoleList>,
+    ) -> PackageDefinition {
+        let mut blueprints = BTreeMap::new();
+        blueprints.insert(
+            blueprint_name.to_string(),
+            BlueprintDefinitionInit {
+                auth_config: AuthConfig {
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
+                        roles: RoleSpecification::Normal(roles),
+                        ..Default::default()
+                    }),
+                },
+                ..Default::default()
+            },
+        );
+        PackageDefinition { blueprints }
     }
 
     // For testing only
