@@ -1,11 +1,15 @@
-use radix_engine::errors::{RuntimeError, SystemError};
+use radix_engine::blueprints::package::PackageError;
+use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::package::{PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT, PackageDefinition, PackagePublishNativeManifestInput};
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::package::{
+    PackageDefinition, PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,
+    PACKAGE_PUBLISH_NATIVE_IDENT,
+};
 use scrypto_unit::*;
 use transaction::model::{DynamicPackageAddress, InstructionV1};
 
@@ -24,8 +28,8 @@ fn cannot_define_more_than_50_roles() {
             _input: &IndexedScryptoValue,
             _api: &mut Y,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-            where
-                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        where
+            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
@@ -49,10 +53,10 @@ fn cannot_define_more_than_50_roles() {
                     BLUEPRINT_NAME,
                     roles
                 ),
-                    native_package_code_id: CUSTOM_PACKAGE_CODE_ID,
-                    metadata: MetadataInit::default(),
-                    package_address: None,
-                }),
+                native_package_code_id: CUSTOM_PACKAGE_CODE_ID,
+                metadata: MetadataInit::default(),
+                package_address: None,
+            }),
         }],
         btreeset!(AuthAddresses::system_role()),
     );
@@ -61,7 +65,9 @@ fn cannot_define_more_than_50_roles() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::GlobalAddressDoesNotExist,)
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::ExceededMaxRoles { .. }
+            ))
         )
     });
 }
