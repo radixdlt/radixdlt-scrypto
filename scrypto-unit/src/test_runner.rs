@@ -8,9 +8,10 @@ use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, CostingParameters, ExecutionConfig,
-    PreviewError, SystemReader, TransactionReceipt, TransactionResult,
+    PreviewError, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
@@ -1929,7 +1930,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             }
         };
 
-        let system_reader = SystemReader::new(self.substate_db());
+        let system_reader = SystemDatabaseReader::new(self.substate_db());
         let definition = system_reader
             .get_blueprint_definition(&blueprint_id)
             .unwrap();

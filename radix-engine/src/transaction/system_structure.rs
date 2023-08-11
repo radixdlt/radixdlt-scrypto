@@ -7,8 +7,8 @@ use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system_db_reader::{SystemDatabaseReader, SystemPartitionDescription};
 use crate::track::{ReadOnly, TrackedNode, TrackedSubstateValue};
-use crate::transaction::{SystemPartitionDescription, SystemReader};
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SubstateSystemStructure {
@@ -127,14 +127,14 @@ impl SystemStructure {
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
 pub struct SubstateSchemaMapper<'a, S: SubstateDatabase> {
-    system_reader: SystemReader<'a, S>,
+    system_reader: SystemDatabaseReader<'a, S>,
     tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
 impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
     pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
-            system_reader: SystemReader::new_with_overlay(substate_db, tracked),
+            system_reader: SystemDatabaseReader::new_with_overlay(substate_db, tracked),
             tracked,
         }
     }
@@ -385,7 +385,7 @@ impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
 pub struct EventSchemaMapper<'a, S: SubstateDatabase> {
-    system_reader: SystemReader<'a, S>,
+    system_reader: SystemDatabaseReader<'a, S>,
     application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
 }
 
@@ -396,7 +396,7 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
         application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
     ) -> Self {
         Self {
-            system_reader: SystemReader::new_with_overlay(substate_db, tracked),
+            system_reader: SystemDatabaseReader::new_with_overlay(substate_db, tracked),
             application_events,
         }
     }

@@ -1,5 +1,5 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::prelude::scrypto_encode;
+use radix_engine_common::prelude::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
@@ -22,12 +22,13 @@ pub enum SystemPartitionDescription {
     Module(ObjectModuleId, PartitionOffset),
 }
 
-pub struct SystemReader<'a, S: SubstateDatabase> {
+/// A System Layer (Layer 2) abstraction over an underlying substate database
+pub struct SystemDatabaseReader<'a, S: SubstateDatabase> {
     substate_db: &'a S,
     tracked: Option<&'a IndexMap<NodeId, TrackedNode>>,
 }
 
-impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
+impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
     pub fn new_with_overlay(
         substate_db: &'a S,
         tracked: &'a IndexMap<NodeId, TrackedNode>,
@@ -77,6 +78,47 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
         )
+    }
+
+    pub fn get_package_definition(
+        &self,
+        package_address: PackageAddress,
+    ) -> BTreeMap<BlueprintVersionKey, BlueprintDefinition> {
+        let entries = self.substate_db
+            .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<BlueprintDefinition>, MapKey>(
+                package_address.as_node_id(),
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                    .unwrap(),
+            );
+
+        let mut blueprints = BTreeMap::new();
+        for (key, blueprint_definition) in entries {
+            let bp_version_key: BlueprintVersionKey = match key {
+                SubstateKey::Map(v) => scrypto_decode(&v).unwrap(),
+                _ => panic!("Unexpected"),
+            };
+
+            blueprints.insert(bp_version_key, blueprint_definition.value.unwrap());
+        }
+
+        blueprints
+    }
+
+    pub fn get_object_info<A: Into<GlobalAddress>>(&self, address: A) -> Option<ObjectInfo> {
+        let type_info = self.fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+            address.into().as_node_id(),
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+        )?;
+
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => Some(object_info),
+            i @ _ => panic!(
+                "Inconsistent Substate Database, found invalid type_info: {:?}",
+                i
+            ),
+        }
     }
 
     pub fn get_blueprint_definition(

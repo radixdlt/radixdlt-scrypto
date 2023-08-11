@@ -59,6 +59,7 @@ use radix_engine::blueprints::consensus_manager::{
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -336,25 +337,9 @@ pub fn export_package_schema(
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
-    let entries = substate_db
-        .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<BlueprintDefinition>, MapKey>(
-            package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                .unwrap(),
-        );
-
-    let mut blueprints = BTreeMap::new();
-    for (key, blueprint_definition) in entries {
-        let bp_version_key: BlueprintVersionKey = match key {
-            SubstateKey::Map(v) => scrypto_decode(&v).unwrap(),
-            _ => panic!("Unexpected"),
-        };
-
-        blueprints.insert(bp_version_key, blueprint_definition.value.unwrap());
-    }
-
-    Ok(blueprints)
+    let system_reader = SystemDatabaseReader::new(&substate_db);
+    let package_definition = system_reader.get_package_definition(package_address);
+    Ok(package_definition)
 }
 
 pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectInfo, Error> {
@@ -364,17 +349,10 @@ pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectI
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
-    let type_info = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-            component_address.as_node_id(),
-            TYPE_INFO_FIELD_PARTITION,
-            &SubstateKey::Field(0u8),
-        )
-        .ok_or(Error::ComponentNotFound(component_address))?;
-    match type_info {
-        TypeInfoSubstate::Object(object_info) => Ok(object_info),
-        _ => Err(Error::ComponentNotFound(component_address)),
-    }
+    let system_reader = SystemDatabaseReader::new(&substate_db);
+    system_reader
+        .get_object_info(component_address)
+        .ok_or_else(|| Error::ComponentNotFound(component_address))
 }
 
 pub fn export_schema(node_id: &NodeId, schema_hash: Hash) -> Result<ScryptoSchema, Error> {
