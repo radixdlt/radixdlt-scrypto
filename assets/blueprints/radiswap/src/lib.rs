@@ -1,7 +1,6 @@
 use scrypto::prelude::*;
 
 #[blueprint]
-#[eventss()]
 mod radiswap {
     struct Radiswap {
         pool_component: Global<TwoResourcePool>,
