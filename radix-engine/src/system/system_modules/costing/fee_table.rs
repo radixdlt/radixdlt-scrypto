@@ -89,19 +89,19 @@ impl FeeTable {
 
     fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
         match store_access {
-            StoreAccess::ReadFromDb(size) => {
+            StoreAccess::ReadFromDb(_, size) => {
                 // Execution time (µs): 0.0009622109 * size + 389.5155
                 // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
                 // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
                 add(cast(*size) / 10, 40_000)
             }
-            StoreAccess::ReadFromDbNotFound => {
+            StoreAccess::ReadFromDbNotFound(_) => {
                 // Execution time (µs): varies, using max 1,600
                 // Execution cost: 1,600 * 100
                 // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
                 160_000
             }
-            StoreAccess::NewEntryInTrack => {
+            StoreAccess::NewEntryInTrack(_) => {
                 // The max number of entries is limited by limits module.
                 0
             }

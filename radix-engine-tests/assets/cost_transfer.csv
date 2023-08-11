@@ -13,11 +13,10 @@ Execution Cost Breakdown                                                   ,    
 - DropNode                                                                 ,          16925,      0.6%
 - EmitEvent                                                                ,           1720,      0.1%
 - LockFee                                                                  ,            500,      0.0%
-- OpenSubstate                                                             ,        2122724,     76.4%
-- OpenSubstate::GlobalAccount                                              ,          13397,      0.5%
-- OpenSubstate::GlobalFungibleResourceManager                              ,           7111,      0.3%
-- OpenSubstate::GlobalPackage                                              ,          81258,      2.9%
-- OpenSubstate::InternalFungibleVault                                      ,          11703,      0.4%
+- OpenSubstate::GlobalAccount                                              ,         573423,     20.6%
+- OpenSubstate::GlobalFungibleResourceManager                              ,         167128,      6.0%
+- OpenSubstate::GlobalPackage                                              ,        1323907,     47.6%
+- OpenSubstate::InternalFungibleVault                                      ,         171735,      6.2%
 - OpenSubstate::InternalGenericComponent                                   ,          29520,      1.1%
 - QueryActor                                                               ,           2500,      0.1%
 - ReadSubstate                                                             ,         105820,      3.8%

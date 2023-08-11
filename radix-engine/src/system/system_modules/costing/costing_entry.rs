@@ -185,10 +185,13 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::RunWasmCode { export_name, .. } => {
                 format!("RunWasmCode::{}", export_name)
             }
-            ExecutionCostingEntry::OpenSubstate {
-                event: OpenSubstateEvent::End { node_id, .. },
-                ..
-            } => {
+            ExecutionCostingEntry::OpenSubstate { event, .. } => {
+                let node_id = match event {
+                    OpenSubstateEvent::Start { node_id, .. } => **node_id,
+                    OpenSubstateEvent::StoreAccess(access) => access.node_id(),
+                    OpenSubstateEvent::End { node_id, .. } => **node_id,
+                };
+
                 format!(
                     "OpenSubstate::{}",
                     node_id.entity_type().map(|x| x.into()).unwrap_or("?")
