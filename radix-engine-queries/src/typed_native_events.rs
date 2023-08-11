@@ -3,6 +3,7 @@
 //! the toolkit and consumed by the gateway for some of its internal operations.
 
 use crate::typed_substate_layout::*;
+use radix_engine::blueprints::account;
 use radix_engine::blueprints::native_schema::*;
 use radix_engine::blueprints::pool::multi_resource_pool::*;
 use radix_engine::blueprints::pool::one_resource_pool::*;
@@ -17,11 +18,6 @@ use radix_engine_interface::blueprints::identity::*;
 
 /// Given an [`EventTypeIdentifier`] and the raw event data, this function attempts to convert the
 /// event data into a structured model provided that the event is registered to a native blueprint.
-///
-/// # Panics
-///
-/// This function panics if the even't [`TypePointer`] is of variant [`TypePointer::Instance`] as
-/// generics are not supported in events.
 pub fn to_typed_native_event(
     event_type_identifier: &EventTypeIdentifier,
     event_data: &[u8],
@@ -34,9 +30,8 @@ pub fn to_typed_native_event(
 fn resolve_typed_event_key_from_event_type_identifier(
     event_type_identifier: &EventTypeIdentifier,
 ) -> Result<TypedNativeEventKey, TypedNativeEventError> {
-    let local_type_index = match event_type_identifier.1 {
-        TypePointer::Package(type_identifier) => type_identifier.1,
-        TypePointer::Instance(..) => panic!("An event can not be generic"),
+    let TypePointer::Package(TypeIdentifier(_, local_type_index)) = event_type_identifier.1 else {
+        return Err(TypedNativeEventError::GenericTypePointer);
     };
 
     match &event_type_identifier.0 {
@@ -261,7 +256,16 @@ define_structure! {
         ],
     },
     Account => {
-        Account => []
+        Account => [
+            AccountWithdrawEvent,
+            AccountDepositEvent,
+            AccountRejectedDepositEvent,
+            AccountSetResourcePreferenceEvent,
+            AccountRemoveResourcePreferenceEvent,
+            AccountSetDefaultDepositRuleEvent,
+            AccountAddAuthorizedDepositorEvent,
+            AccountRemoveAuthorizedDepositorEvent
+        ]
     },
     Identity => {
         Identity => []
@@ -379,6 +383,15 @@ type FungibleVaultRecallEvent = fungible_vault::RecallEvent;
 type NonFungibleVaultWithdrawEvent = non_fungible_vault::WithdrawEvent;
 type NonFungibleVaultDepositEvent = non_fungible_vault::DepositEvent;
 type NonFungibleVaultRecallEvent = non_fungible_vault::RecallEvent;
+
+type AccountWithdrawEvent = account::WithdrawEvent;
+type AccountDepositEvent = account::DepositEvent;
+type AccountRejectedDepositEvent = account::RejectedDepositEvent;
+type AccountSetResourcePreferenceEvent = account::SetResourcePreferenceEvent;
+type AccountRemoveResourcePreferenceEvent = account::RemoveResourcePreferenceEvent;
+type AccountSetDefaultDepositRuleEvent = account::SetDefaultDepositRuleEvent;
+type AccountAddAuthorizedDepositorEvent = account::AddAuthorizedDepositorEvent;
+type AccountRemoveAuthorizedDepositorEvent = account::RemoveAuthorizedDepositorEvent;
 
 /// This enum uses some special syntax to define the structure of events. This makes the code for
 /// model definitions very compact, allows for very easy addition of more packages, blueprints or
@@ -638,6 +651,7 @@ pub enum TypedNativeEventError {
     },
     NotANativeBlueprint(EventTypeIdentifier),
     DecodeError(DecodeError),
+    GenericTypePointer,
 }
 
 impl From<DecodeError> for TypedNativeEventError {
