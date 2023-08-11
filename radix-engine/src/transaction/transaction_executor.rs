@@ -1004,22 +1004,10 @@ where
             }
         }
 
-        println!("{:-^100}", "Cost Totals");
+        println!("{:-^100}", "Fee Summary");
         println!(
             "{:<40}: {:>15}",
-            "Execution Cost Unit Price",
-            receipt
-                .costing_parameters
-                .execution_cost_unit_price
-                .to_string()
-        );
-        println!(
-            "{:<40}: {:>15}",
-            "Execution Cost Unit Limit", receipt.costing_parameters.execution_cost_unit_limit
-        );
-        println!(
-            "{:<40}: {:>15}",
-            "Execution Cost Unit Consumed",
+            "Execution Cost Units Consumed",
             receipt
                 .fee_summary
                 .total_execution_cost_units_consumed
@@ -1027,22 +1015,23 @@ where
         );
         println!(
             "{:<40}: {:>15}",
-            "Finalization Cost Unit Price",
+            "Finalization Cost Units Consumed",
             receipt
-                .costing_parameters
-                .finalization_cost_unit_price
+                .fee_summary
+                .total_finalization_cost_units_consumed
                 .to_string()
         );
         println!(
             "{:<40}: {:>15}",
-            "Finalization Cost Unit Limit", receipt.costing_parameters.finalization_cost_unit_limit
+            "Execution Cost in XRD",
+            receipt.fee_summary.total_execution_cost_in_xrd.to_string()
         );
         println!(
             "{:<40}: {:>15}",
-            "Finalization Cost Unit Consumed",
+            "Finalization Cost in XRD",
             receipt
                 .fee_summary
-                .total_finalization_cost_units_consumed
+                .total_finalization_cost_in_xrd
                 .to_string()
         );
         println!(

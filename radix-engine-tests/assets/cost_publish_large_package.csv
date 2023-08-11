@@ -1,6 +1,6 @@
-Total Cost (XRD)                                                           ,    21.85841196,    100.0%
+Total Cost (XRD)                                                           ,    21.84137246,    100.0%
 - Execution Cost (XRD)                                                     ,     0.86824296,      4.0%
-- Finalization Cost (XRD)                                                  ,       0.033879,      0.2%
+- Finalization Cost (XRD)                                                  ,      0.0168395,      0.1%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - State Expansion Cost (XRD)                                               ,       20.95629,     95.9%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
@@ -33,10 +33,10 @@ Execution Cost Breakdown                                                   ,    
 - ValidateTxPayload                                                        ,       41911800,     48.3%
 - VerifyTxSignatures                                                       ,              0,      0.0%
 - WriteSubstate                                                            ,           2934,      0.0%
-Finalization Cost Breakdown                                                ,        1693950,    100.0%
+Finalization Cost Breakdown                                                ,        1683950,    100.0%
 - BaseCost                                                                 ,          50000,      3.0%
-- CommitEvents                                                             ,          20018,      1.2%
+- CommitEvents                                                             ,          10018,      0.6%
 - CommitLogs                                                               ,              0,      0.0%
 - CommitStates::GlobalGenericComponent                                     ,         100018,      5.9%
-- CommitStates::GlobalPackage                                              ,        1123861,     66.3%
-- CommitStates::InternalFungibleVault                                      ,         400053,     23.6%
+- CommitStates::GlobalPackage                                              ,        1123861,     66.7%
+- CommitStates::InternalFungibleVault                                      ,         400053,     23.8%

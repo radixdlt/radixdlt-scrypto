@@ -1,6 +1,6 @@
-Total Cost (XRD)                                                           ,     0.03338597,    100.0%
-- Execution Cost (XRD)                                                     ,     0.02778503,     83.2%
-- Finalization Cost (XRD)                                                  ,     0.00560094,     16.8%
+Total Cost (XRD)                                                           ,      0.0304355,    100.0%
+- Execution Cost (XRD)                                                     ,     0.02778503,     91.3%
+- Finalization Cost (XRD)                                                  ,     0.00265047,      8.7%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - State Expansion Cost (XRD)                                               ,              0,      0.0%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
@@ -32,8 +32,8 @@ Execution Cost Breakdown                                                   ,    
 - ValidateTxPayload                                                        ,          10880,      0.4%
 - VerifyTxSignatures                                                       ,           7000,      0.3%
 - WriteSubstate                                                            ,           4306,      0.2%
-Finalization Cost Breakdown                                                ,         280047,    100.0%
-- BaseCost                                                                 ,          50000,     17.9%
-- CommitEvents                                                             ,          30027,     10.7%
+Finalization Cost Breakdown                                                ,         265047,    100.0%
+- BaseCost                                                                 ,          50000,     18.9%
+- CommitEvents                                                             ,          15027,      5.7%
 - CommitLogs                                                               ,              0,      0.0%
-- CommitStates::InternalFungibleVault                                      ,         200020,     71.4%
+- CommitStates::InternalFungibleVault                                      ,         200020,     75.5%

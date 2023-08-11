@@ -464,7 +464,7 @@ impl FeeTable {
     pub fn commit_events_cost(&self, events: &Vec<Event>) -> u32 {
         let mut sum = 0;
         for event in events {
-            sum += add(cast(event.payload.len()) / 4, 10_000)
+            sum += add(cast(event.payload.len()) / 4, 5_000)
         }
         sum
     }
@@ -473,7 +473,7 @@ impl FeeTable {
     pub fn commit_logs_cost(&self, logs: &Vec<(Level, String)>) -> u32 {
         let mut sum = 0;
         for log in logs {
-            sum += add(cast(log.1.len()) / 4, 10_000)
+            sum += add(cast(log.1.len()) / 4, 1_000)
         }
         sum
     }

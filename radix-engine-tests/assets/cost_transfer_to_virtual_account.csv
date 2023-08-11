@@ -1,8 +1,8 @@
-Total Cost (XRD)                                                           ,     0.08263462,    100.0%
-- Execution Cost (XRD)                                                     ,     0.04209934,     50.9%
-- Finalization Cost (XRD)                                                  ,     0.03200528,     38.7%
+Total Cost (XRD)                                                           ,     0.06638198,    100.0%
+- Execution Cost (XRD)                                                     ,     0.04209934,     63.4%
+- Finalization Cost (XRD)                                                  ,     0.01575264,     23.7%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
-- State Expansion Cost (XRD)                                               ,        0.00853,     10.3%
+- State Expansion Cost (XRD)                                               ,        0.00853,     12.8%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Royalty Cost (XRD)                                                       ,              0,      0.0%
 Execution Cost Breakdown                                                   ,        4209934,    100.0%
@@ -40,9 +40,9 @@ Execution Cost Breakdown                                                   ,    
 - ValidateTxPayload                                                        ,          10880,      0.3%
 - VerifyTxSignatures                                                       ,           7000,      0.2%
 - WriteSubstate                                                            ,           5700,      0.1%
-Finalization Cost Breakdown                                                ,        1600264,    100.0%
-- BaseCost                                                                 ,          50000,      3.1%
-- CommitEvents                                                             ,          50045,      3.1%
+Finalization Cost Breakdown                                                ,        1575264,    100.0%
+- BaseCost                                                                 ,          50000,      3.2%
+- CommitEvents                                                             ,          25045,      1.6%
 - CommitLogs                                                               ,              0,      0.0%
-- CommitStates::GlobalVirtualSecp256k1Account                              ,         800123,     50.0%
-- CommitStates::InternalFungibleVault                                      ,         700096,     43.7%
+- CommitStates::GlobalVirtualSecp256k1Account                              ,         800123,     50.8%
+- CommitStates::InternalFungibleVault                                      ,         700096,     44.4%

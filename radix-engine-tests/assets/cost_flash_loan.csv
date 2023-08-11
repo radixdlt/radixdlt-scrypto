@@ -1,6 +1,6 @@
-Total Cost (XRD)                                                           ,      0.1286451,    100.0%
-- Execution Cost (XRD)                                                     ,     0.11215244,     87.2%
-- Finalization Cost (XRD)                                                  ,     0.01640266,     12.8%
+Total Cost (XRD)                                                           ,     0.12009377,    100.0%
+- Execution Cost (XRD)                                                     ,     0.11215244,     93.4%
+- Finalization Cost (XRD)                                                  ,     0.00785133,      6.5%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - State Expansion Cost (XRD)                                               ,        0.00009,      0.1%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
@@ -57,10 +57,10 @@ Execution Cost Breakdown                                                   ,    
 - ValidateTxPayload                                                        ,          20680,      0.2%
 - VerifyTxSignatures                                                       ,           7000,      0.1%
 - WriteSubstate                                                            ,          19882,      0.2%
-Finalization Cost Breakdown                                                ,         820133,    100.0%
-- BaseCost                                                                 ,          50000,      6.1%
-- CommitEvents                                                             ,          70063,      8.5%
+Finalization Cost Breakdown                                                ,         785133,    100.0%
+- BaseCost                                                                 ,          50000,      6.4%
+- CommitEvents                                                             ,          35063,      4.5%
 - CommitLogs                                                               ,              0,      0.0%
-- CommitStates::GlobalGenericComponent                                     ,         100025,     12.2%
-- CommitStates::GlobalNonFungibleResourceManager                           ,         200012,     24.4%
-- CommitStates::InternalFungibleVault                                      ,         400033,     48.8%
+- CommitStates::GlobalGenericComponent                                     ,         100025,     12.7%
+- CommitStates::GlobalNonFungibleResourceManager                           ,         200012,     25.5%
+- CommitStates::InternalFungibleVault                                      ,         400033,     51.0%
