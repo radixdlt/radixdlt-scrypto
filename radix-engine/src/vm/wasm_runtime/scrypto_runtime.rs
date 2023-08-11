@@ -455,17 +455,18 @@ where
         self.allocate_buffer(scrypto_encode(&ruid).expect("Failed to encode RUID"))
     }
 
-    fn cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
-        let cost_unit_limit = self.api.cost_unit_limit()?;
+    fn execution_cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let execution_cost_unit_limit = self.api.execution_cost_unit_limit()?;
 
-        Ok(cost_unit_limit)
+        Ok(execution_cost_unit_limit)
     }
 
-    fn cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let cost_unit_price = self.api.cost_unit_price()?;
+    fn execution_cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let execution_cost_unit_price = self.api.execution_cost_unit_price()?;
 
         self.allocate_buffer(
-            scrypto_encode(&cost_unit_price).expect("Failed to encode cost_unit_price"),
+            scrypto_encode(&execution_cost_unit_price)
+                .expect("Failed to encode execution_cost_unit_price"),
         )
     }
 

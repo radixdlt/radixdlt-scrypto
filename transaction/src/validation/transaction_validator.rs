@@ -49,8 +49,6 @@ pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
 pub struct ValidationConfig {
     pub network_id: u8,
     pub max_notarized_payload_size: usize,
-    pub min_cost_unit_limit: u32,
-    pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
     pub max_epoch_range: u64,
@@ -62,8 +60,6 @@ impl ValidationConfig {
         Self {
             network_id,
             max_notarized_payload_size: MAX_TRANSACTION_SIZE,
-            min_cost_unit_limit: MIN_COST_UNIT_LIMIT,
-            max_cost_unit_limit: MAX_COST_UNIT_LIMIT,
             min_tip_percentage: MIN_TIP_PERCENTAGE,
             max_tip_percentage: MAX_TIP_PERCENTAGE,
             max_epoch_range: MAX_EPOCH_RANGE,

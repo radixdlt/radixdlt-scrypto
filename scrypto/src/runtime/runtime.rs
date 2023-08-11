@@ -105,12 +105,12 @@ impl Runtime {
         })
     }
 
-    pub fn cost_unit_limit() -> u32 {
-        ScryptoEnv.cost_unit_limit().unwrap()
+    pub fn execution_cost_unit_limit() -> u32 {
+        ScryptoEnv.execution_cost_unit_limit().unwrap()
     }
 
-    pub fn cost_unit_price() -> Decimal {
-        ScryptoEnv.cost_unit_price().unwrap()
+    pub fn execution_cost_unit_price() -> Decimal {
+        ScryptoEnv.execution_cost_unit_price().unwrap()
     }
 
     pub fn tip_percentage() -> u32 {

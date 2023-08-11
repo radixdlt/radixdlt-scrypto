@@ -2263,14 +2263,14 @@ where
             .credit_cost_units(vault_id, locked_fee, contingent)
     }
 
-    fn cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
+    fn execution_cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
             .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
-            Ok(fee_reserve.cost_unit_limit())
+            Ok(fee_reserve.execution_cost_unit_limit())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2278,14 +2278,14 @@ where
         }
     }
 
-    fn cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
+    fn execution_cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
             .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
-            Ok(fee_reserve.cost_unit_price())
+            Ok(fee_reserve.execution_cost_unit_price())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,

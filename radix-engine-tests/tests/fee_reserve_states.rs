@@ -27,12 +27,17 @@ fn test_fee_states() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    let (cost_unit_limit, cost_unit_price, tip_percentage, remaining_fee_balance) = receipt
+    let (
+        execution_cost_unit_limit,
+        execution_cost_unit_price,
+        tip_percentage,
+        remaining_fee_balance,
+    ) = receipt
         .expect_commit_success()
         .output::<(u32, Decimal, u32, Decimal)>(1);
-    assert_eq!(cost_unit_limit, EXECUTION_COST_UNIT_LIMIT);
+    assert_eq!(execution_cost_unit_limit, EXECUTION_COST_UNIT_LIMIT);
     assert_eq!(
-        cost_unit_price,
+        execution_cost_unit_price,
         Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD).unwrap()
     );
     assert_eq!(tip_percentage, DEFAULT_TIP_PERCENTAGE as u32);
