@@ -72,11 +72,9 @@ impl FeeTable {
         Self
     }
 
-    fn transient_data_cost(size: usize) -> u32 {
-        // Rationality:
-        // To limit transient data to 64 MB, the cost for a byte should be 100,000,000 / 64,000,000 = 1.56.
-        mul(cast(size), 2)
-    }
+    //======================
+    // Execution costs
+    //======================
 
     fn data_processing_cost(size: usize) -> u32 {
         // Based on benchmark `bench_decode_sbor`
@@ -88,40 +86,26 @@ impl FeeTable {
         mul(cast(size), 2)
     }
 
-    //======================
-    // Commit costs
-    //======================
-
     #[inline]
-    pub fn store_commit_cost(&self, store_commit: &StoreCommit) -> u32 {
-        // Execution time (µs): 0.0025 * size + 1000
-        // Execution cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000
-        // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-        match store_commit {
-            StoreCommit::Insert { size, .. } => add(cast(*size) / 4, 100_000),
-            StoreCommit::Update { size, .. } => add(cast(*size) / 4, 100_000),
-            StoreCommit::Delete { .. } => 100_000,
+    fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
+        match store_access {
+            StoreAccess::ReadFromDb(size) => {
+                // Execution time (µs): 0.0009622109 * size + 389.5155
+                // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                add(cast(*size) / 10, 40_000)
+            }
+            StoreAccess::ReadFromDbNotFound => {
+                // Execution time (µs): varies, using max 1,600
+                // Execution cost: 1,600 * 100
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                160_000
+            }
+            StoreAccess::NewEntryInTrack => {
+                // The max number of entries is limited by limits module.
+                0
+            }
         }
-    }
-
-    //======================
-    // Transaction costs
-    //======================
-
-    #[inline]
-    pub fn tx_base_cost(&self) -> u32 {
-        50_000
-    }
-
-    #[inline]
-    pub fn tx_payload_cost(&self, size: usize) -> u32 {
-        // Rational:
-        // Transaction payload is propagated over a P2P network.
-        // Larger size may slows down the network performance.
-        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 40 = 16,000 cost units
-        // The max size of a transaction is 1 MiB, and the cost will be 1,048,576 * 40 = 41,943,040 cost units
-        // This is roughly 1/24 of storing data in substate store per current setup.
-        mul(cast(size), 40)
     }
 
     #[inline]
@@ -130,10 +114,6 @@ impl FeeTable {
         // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7,000 cost units
         mul(cast(n), 7_000)
     }
-
-    //======================
-    // VM execution costs
-    //======================
 
     #[inline]
     pub fn run_native_code_cost(
@@ -179,10 +159,6 @@ impl FeeTable {
 
         mul(cast(size), 2)
     }
-
-    //======================
-    // Kernel costs
-    //======================
 
     #[inline]
     pub fn before_invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {
@@ -407,32 +383,6 @@ impl FeeTable {
     }
 
     #[inline]
-    fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
-        match store_access {
-            StoreAccess::ReadFromDb(size) => {
-                // Execution time (µs): 0.0009622109 * size + 389.5155
-                // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
-                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                add(cast(*size) / 10, 40_000)
-            }
-            StoreAccess::ReadFromDbNotFound => {
-                // Execution time (µs): varies, using max 1,600
-                // Execution cost: 1,600 * 100
-                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                160_000
-            }
-            StoreAccess::NewEntryInTrack => {
-                // The max number of entries is limited by limits module.
-                0
-            }
-        }
-    }
-
-    //======================
-    // System costs
-    //======================
-
-    #[inline]
     pub fn lock_fee_cost(&self) -> u32 {
         500
     }
@@ -464,17 +414,59 @@ impl FeeTable {
 
     #[inline]
     pub fn emit_event_cost(&self, size: usize) -> u32 {
-        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        500 + Self::data_processing_cost(size)
     }
 
     #[inline]
     pub fn emit_log_cost(&self, size: usize) -> u32 {
-        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        500 + Self::data_processing_cost(size)
     }
 
     #[inline]
     pub fn panic_cost(&self, size: usize) -> u32 {
-        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        500 + Self::data_processing_cost(size)
+    }
+
+    //======================
+    // Storage costs
+    //======================
+
+    #[inline]
+    pub fn store_commit_cost(&self, store_commit: &StoreCommit) -> u32 {
+        // Execution time (µs): 0.0025 * size + 1000
+        // Execution cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000
+        // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+        match store_commit {
+            StoreCommit::Insert { size, .. } => add(cast(*size) / 4, 100_000),
+            StoreCommit::Update { size, .. } => add(cast(*size) / 4, 100_000),
+            StoreCommit::Delete { .. } => 100_000,
+        }
+    }
+
+    //======================
+    // Finalization costs
+    //======================
+
+    #[inline]
+    pub fn tx_base_cost(&self) -> u32 {
+        50_000
+    }
+
+    #[inline]
+    pub fn tx_payload_cost(&self, size: usize) -> u32 {
+        // Rational:
+        // Transaction payload is propagated over a P2P network.
+        // Larger size may slows down the network performance.
+        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 40 = 16,000 cost units
+        // The max size of a transaction is 1 MiB, and the cost will be 1,048,576 * 40 = 41,943,040 cost units
+        // This is roughly 1/24 of storing data in substate store per current setup.
+        mul(cast(size), 40)
+    }
+
+    fn transient_data_cost(size: usize) -> u32 {
+        // Rationality:
+        // To limit transient data to 64 MB, the cost for a byte should be 100,000,000 / 64,000,000 = 1.56.
+        mul(cast(size), 2)
     }
 }
 
