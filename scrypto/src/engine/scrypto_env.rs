@@ -24,7 +24,6 @@ use radix_engine_interface::types::{Level, NodeId, SubstateHandle};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::KeyValueStoreTypeSubstitutions;
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -263,17 +262,6 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
     ) -> Result<NodeId, ClientApiError> {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { kv_store_new(schema.as_ptr(), schema.len()) });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn key_value_store_get_info(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<KeyValueStoreTypeSubstitutions, ClientApiError> {
-        let bytes = copy_buffer(unsafe {
-            kv_store_get_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
-        });
-
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 

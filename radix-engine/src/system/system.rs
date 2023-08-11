@@ -1616,21 +1616,6 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn key_value_store_get_info(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<KeyValueStoreTypeSubstitutions, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
-        let info = match type_info {
-            TypeInfoSubstate::KeyValueStore(info) => info,
-            _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
-        };
-
-        Ok(info.type_substitutions)
-    }
-
-    // Costing through kernel
-    #[trace_resources]
     fn key_value_store_open_entry(
         &mut self,
         node_id: &NodeId,

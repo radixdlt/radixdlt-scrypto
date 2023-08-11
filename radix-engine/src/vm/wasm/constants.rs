@@ -29,7 +29,6 @@ pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 // Key Value Store
 //=================
 pub const KEY_VALUE_STORE_NEW_FUNCTION_NAME: &str = "kv_store_new";
-pub const KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME: &str = "kv_store_get_info";
 pub const KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME: &str = "kv_store_open_entry";
 pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME: &str = "kv_store_remove_entry";
 
