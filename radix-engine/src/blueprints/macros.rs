@@ -57,17 +57,25 @@ pub trait SortedIndexEntryContent: Sized {
 /// * For collections, assumes the existence of types called:
 ///    * `<BlueprintIdent><CollectionIdent>ValueV1`
 ///
-/// In future, resolve the `x_type` fields as a $x:tt and then
-/// map in other macros into:
+/// The types should look something like
 /// ```
-///     StaticSingleVersioned,
-///     Static {
+///     {
+///         kind: StaticSingleVersioned,
+///     }
+///     {
+///         kind: Static,
 ///         the_type: x,
 ///     },
-///     Instance {
-///         ident:
+///     {
+///         kind: Instance,
+///         ident: GenericTypeParameterName,
 ///     },
-///     StaticMultiVersioned(V1, V2),
+///     // In future
+///     {
+///         kind: StaticMultiVersioned,
+///         previous_versions: [V1, V2],
+///         latest: V3,
+///     }
 /// ```
 #[allow(unused)]
 macro_rules! declare_native_blueprint_state {
@@ -119,6 +127,7 @@ macro_rules! declare_native_blueprint_state {
                 use super::*;
                 use sbor::*;
                 use $crate::types::*;
+                use $crate::track::interface::*;
                 use $crate::errors::RuntimeError;
                 use $crate::system::system::*;
                 use radix_engine_interface::api::*;
@@ -220,7 +229,7 @@ macro_rules! declare_native_blueprint_state {
                         PartitionOffset(*self as u8)
                     }
 
-                    pub const fn main_partition(&self) -> PartitionNumber {
+                    pub const fn as_main_partition(&self) -> PartitionNumber {
                         match MAIN_BASE_PARTITION.at_offset(self.offset()) {
                             // Work around .unwrap() on Option not being const
                             Some(x) => x,
@@ -307,7 +316,7 @@ macro_rules! declare_native_blueprint_state {
                 /// * IndexEntries (because the underlying new_object API doesn't support them)
                 pub struct [<$blueprint_ident StateInit>] {
                     $(
-                        pub $field_property_name: [<$blueprint_ident $field_ident FieldSubstate>],
+                        pub $field_property_name: Option<[<$blueprint_ident $field_ident FieldSubstate>]>,
                     )*
                     $(
                         pub $collection_property_name: IndexMap<
@@ -321,31 +330,111 @@ macro_rules! declare_native_blueprint_state {
                     pub fn into_system_substates(self) -> (Vec<FieldValue>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>) {
                         let mut field_values = vec![];
                         $(
-                            let field_content = scrypto_encode(&self.$field_property_name.value).unwrap();
-                            let locked = match &self.$field_property_name.mutability {
-                                SubstateMutability::Mutable => true,
-                                SubstateMutability::Immutable => false,
-                            };
-                            field_values.push(FieldValue {
-                                value: field_content,
-                                locked,
-                            });
+                            {
+                                let field = self.$field_property_name.expect(
+                                    concat!(
+                                        "The field `",
+                                        stringify!($field_property_name),
+                                        "` was None. Until the system and macro supports feature-based optional fields, all fields need to be present"
+                                    )
+                                );
+                                let field_content = scrypto_encode(&field.value).unwrap();
+                                let locked = match &field.mutability {
+                                    SubstateMutability::Mutable => true,
+                                    SubstateMutability::Immutable => false,
+                                };
+                                field_values.push(FieldValue {
+                                    value: field_content,
+                                    locked,
+                                });
+                            }
                         )*
                         let mut all_collection_entries = BTreeMap::new();
                         let mut collection_index: u8 = 0;
                         $(
-                            let this_collection_entries = self.$collection_property_name
-                                .into_iter()
-                                .map(|(key, entry_substate)| {
-                                    let key = scrypto_encode(&key).unwrap();
-                                    let value = map_entry_substate_to_kv_entry!($collection_type, entry_substate);
-                                    (key, value)
-                                })
-                                .collect();
-                            all_collection_entries.insert(collection_index, this_collection_entries);
-                            collection_index += 1;
+                            {
+                                let this_collection_entries = self.$collection_property_name
+                                    .into_iter()
+                                    .map(|(key, entry_substate)| {
+                                        let key = scrypto_encode(&key).unwrap();
+                                        let value = map_entry_substate_to_kv_entry!($collection_type, entry_substate);
+                                        (key, value)
+                                    })
+                                    .collect();
+                                all_collection_entries.insert(collection_index, this_collection_entries);
+                                collection_index += 1;
+                            }
                         )*
                         (field_values, all_collection_entries)
+                    }
+
+                    /// This is used mostly for flashing
+                    pub fn into_kernel_main_partitions(self) -> NodeSubstates {
+                        // PartitionNumber => SubstateKey => IndexedScryptoValue
+                        let mut partitions: NodeSubstates = BTreeMap::new();
+                        let (field_values, mut kv_entries) = self.into_system_substates();
+
+                        // Fields
+                        {
+                            let mut field_index = 0u8;
+                            let mut field_partition_substates = BTreeMap::new();
+                            $({
+                                let key = SubstateKey::from([<$blueprint_ident Field>]::$field_ident);
+                                let expected_field_index = u8::from([<$blueprint_ident Field>]::$field_ident);
+                                // Double-check they agree
+                                assert_eq!(field_index, expected_field_index);
+                                field_partition_substates.insert(
+                                    key,
+                                    IndexedScryptoValue::from_typed(&field_values[field_index as usize]),
+                                );
+                                field_index += 1;
+                            })*
+                            partitions.insert(
+                                [<$blueprint_ident Partition>]::Field.as_main_partition(),
+                                field_partition_substates,
+                            );
+                        }
+
+                        // Each Collection
+                        $({
+                            let mut collection_index = 0u8;
+                            let collection_kv_entries = kv_entries.remove(&collection_index).unwrap();
+                            let collection_partition = [<$blueprint_ident Partition>]::[<$collection_ident $collection_type>];
+                            let collection_partition_substates = collection_kv_entries
+                                .into_iter()
+                                .filter_map(|(key_bytes, kv_entry)| {
+                                    let substate = match kv_entry {
+                                        KVEntry { value: Some(value_bytes), locked: false } => {
+                                            KeyValueEntrySubstate::entry(
+                                                scrypto_decode::<ScryptoValue>(&value_bytes).unwrap()
+                                            )
+                                        }
+                                        KVEntry { value: Some(value_bytes), locked: true } => {
+                                            KeyValueEntrySubstate::locked_entry(
+                                                scrypto_decode::<ScryptoValue>(&value_bytes).unwrap()
+                                            )
+                                        }
+                                        KVEntry { value: None, locked: true } => {
+                                            KeyValueEntrySubstate::locked_empty_entry()
+                                        }
+                                        KVEntry { value: None, locked: false } => {
+                                            return None;
+                                        }
+                                    };
+
+                                    Some((
+                                        SubstateKey::Map(key_bytes),
+                                        IndexedScryptoValue::from_typed(&substate)
+                                    ))
+                                })
+                                .collect();
+                            partitions.insert(
+                                collection_partition.as_main_partition(),
+                                collection_partition_substates,
+                            );
+                        })*
+
+                        partitions
                     }
 
                     pub fn into_new_object<E, Y: ClientObjectApi<E>>(self, api: &mut Y) -> Result<NodeId, E> {
@@ -594,21 +683,21 @@ mod tests {
 
     // Check that the below compiles
     #[derive(Debug, PartialEq, Eq, Sbor)]
-    pub struct PackageRoyaltyFieldV1;
+    pub struct TestBlueprintRoyaltyFieldV1;
 
     #[derive(Debug, PartialEq, Eq, Sbor)]
-    pub struct PackageBlueprintDefinitionValueV1;
+    pub struct TestBlueprintMyCoolKeyValueStoreValueV1;
 
     #[derive(Debug, PartialEq, Eq, Sbor)]
-    pub struct PackageMyCoolIndexValueV1;
+    pub struct TestBlueprintMyCoolIndexValueV1;
 
     #[derive(Debug, PartialEq, Eq, Sbor)]
-    pub struct PackageMyCoolSortedIndexValueV1;
+    pub struct TestBlueprintMyCoolSortedIndexValueV1;
 
     use radix_engine_interface::blueprints::package::*;
 
     declare_native_blueprint_state! {
-        blueprint_ident: Package,
+        blueprint_ident: TestBlueprint,
         blueprint_snake_case: package,
         instance_schema_types: [],
         fields: {
@@ -621,8 +710,8 @@ mod tests {
             }
         },
         collections: {
-            blueprint_definitions: KeyValue {
-                entry_ident: BlueprintDefinition,
+            some_key_value_store: KeyValue {
+                entry_ident: MyCoolKeyValueStore,
                 key_type: {
                     kind: Static,
                     the_type: BlueprintVersion,

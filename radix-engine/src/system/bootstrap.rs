@@ -470,14 +470,14 @@ pub fn create_system_bootstrap_flash(
 
     for (address, definition, native_code_id, metadata_init) in package_flashes {
         let partitions = {
-            let package_structure = PackageNativePackage::validate_and_build_package_structure(
+            let package_state_init = PackageNativePackage::validate_and_build_package_state_init(
                 definition,
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
             )
             .expect("Invalid Package Package definition");
 
-            create_bootstrap_package_partitions(package_structure, metadata_init)
+            create_bootstrap_package_partitions(package_state_init, metadata_init)
         };
 
         for (partition_num, partition_substates) in partitions {
