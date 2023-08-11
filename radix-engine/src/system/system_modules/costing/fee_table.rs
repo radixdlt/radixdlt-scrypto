@@ -87,7 +87,6 @@ impl FeeTable {
         mul(cast(size), 2)
     }
 
-    #[inline]
     fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
         match store_access {
             StoreAccess::ReadFromDb(size) => {
@@ -110,10 +109,21 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn tx_signature_verification_cost(&self, n: usize) -> u32 {
+    pub fn verify_tx_signatures_cost(&self, n: usize) -> u32 {
         // Based on benchmark `bench_validate_secp256k1`
         // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7,000 cost units
         mul(cast(n), 7_000)
+    }
+
+    #[inline]
+    pub fn validate_tx_payload_cost(&self, size: usize) -> u32 {
+        // Rational:
+        // Transaction payload is propagated over a P2P network.
+        // Larger size may slows down the network performance.
+        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 40 = 16,000 cost units
+        // The max size of a transaction is 1 MiB, and the cost will be 1,048,576 * 40 = 41,943,040 cost units
+        // This is roughly 1/24 of storing data in substate store per current setup.
+        mul(cast(size), 40)
     }
 
     #[inline]
@@ -434,19 +444,8 @@ impl FeeTable {
     //======================
 
     #[inline]
-    pub fn transaction_base_cost(&self) -> u32 {
+    pub fn base_cost(&self) -> u32 {
         50_000
-    }
-
-    #[inline]
-    pub fn transaction_payload_cost(&self, size: usize) -> u32 {
-        // Rational:
-        // Transaction payload is propagated over a P2P network.
-        // Larger size may slows down the network performance.
-        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 40 = 16,000 cost units
-        // The max size of a transaction is 1 MiB, and the cost will be 1,048,576 * 40 = 41,943,040 cost units
-        // This is roughly 1/24 of storing data in substate store per current setup.
-        mul(cast(size), 40)
     }
 
     #[inline]

@@ -41,8 +41,8 @@ pub struct CostingModule {
     pub fee_reserve: SystemLoanFeeReserve,
     pub fee_table: FeeTable,
     pub max_call_depth: usize,
-    pub payload_len: usize,
-    pub num_of_signatures: usize,
+    pub tx_payload_len: usize,
+    pub tx_signature_size: usize,
     /// The maximum allowed method royalty in XRD allowed to be set by package and component owners
     pub max_per_function_royalty_in_xrd: Decimal,
     pub enable_cost_breakdown: bool,
@@ -177,8 +177,12 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let costing = &mut api.kernel_get_system().modules.costing;
 
-        costing.apply_deferred_execution_cost(ExecutionCostingEntry::VerifySignature {
-            num_signatures: costing.num_of_signatures,
+        costing.apply_deferred_execution_cost(ExecutionCostingEntry::VerifyTxSignatures {
+            num_signatures: costing.tx_signature_size,
+        })?;
+
+        costing.apply_deferred_execution_cost(ExecutionCostingEntry::ValidateTxPayload {
+            size: costing.tx_payload_len,
         })?;
 
         Ok(())

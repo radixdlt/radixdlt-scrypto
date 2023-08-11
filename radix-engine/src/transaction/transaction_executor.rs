@@ -610,12 +610,7 @@ where
                 /* finalization costs */
                 system
                     .modules
-                    .apply_finalization_cost(FinalizationCostingEntry::TransactionBase)?;
-                system.modules.apply_finalization_cost(
-                    FinalizationCostingEntry::TransactionPayload {
-                        size: executable.payload_size(),
-                    },
-                )?;
+                    .apply_finalization_cost(FinalizationCostingEntry::BaseCost)?;
                 let info = track.get_commit_info();
                 for store_commit in &info {
                     system.modules.apply_finalization_cost(

@@ -13,8 +13,11 @@ use radix_engine_interface::*;
 #[derive(Debug, IntoStaticStr)]
 pub enum ExecutionCostingEntry<'a> {
     /* verify signature */
-    VerifySignature {
+    VerifyTxSignatures {
         num_signatures: usize,
+    },
+    ValidateTxPayload {
+        size: usize,
     },
 
     /* run code */
@@ -102,8 +105,7 @@ pub enum ExecutionCostingEntry<'a> {
 
 #[derive(Debug, IntoStaticStr)]
 pub enum FinalizationCostingEntry<'a> {
-    TransactionBase,
-    TransactionPayload { size: usize },
+    BaseCost,
     CommitStates { store_commit: &'a StoreCommit },
     CommitEvents { events: &'a Vec<Event> },
     CommitLogs { logs: &'a Vec<(Level, String)> },
@@ -112,9 +114,10 @@ pub enum FinalizationCostingEntry<'a> {
 impl<'a> ExecutionCostingEntry<'a> {
     pub fn to_execution_cost_units(&self, ft: &FeeTable) -> u32 {
         match self {
-            ExecutionCostingEntry::VerifySignature { num_signatures } => {
-                ft.tx_signature_verification_cost(*num_signatures)
-            }
+            ExecutionCostingEntry::VerifyTxSignatures {
+                num_signatures: num_of_signatures,
+            } => ft.verify_tx_signatures_cost(*num_of_signatures),
+            ExecutionCostingEntry::ValidateTxPayload { size } => ft.validate_tx_payload_cost(*size),
             ExecutionCostingEntry::RunNativeCode {
                 package_address,
                 export_name,
@@ -163,10 +166,7 @@ impl<'a> ExecutionCostingEntry<'a> {
 impl<'a> FinalizationCostingEntry<'a> {
     pub fn to_finalization_cost_units(&self, ft: &FeeTable) -> u32 {
         match self {
-            FinalizationCostingEntry::TransactionBase => ft.transaction_base_cost(),
-            FinalizationCostingEntry::TransactionPayload { size } => {
-                ft.transaction_payload_cost(*size)
-            }
+            FinalizationCostingEntry::BaseCost => ft.base_cost(),
             FinalizationCostingEntry::CommitStates { store_commit } => {
                 ft.commit_states_cost(store_commit)
             }
