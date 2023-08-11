@@ -481,7 +481,6 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
         let validator: ValidatorSubstate = api.field_read_typed(handle)?;
-        api.field_close(handle)?;
         let mut nft_resman = ResourceManager(validator.claim_nft);
         let resource_address = validator.claim_nft;
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
