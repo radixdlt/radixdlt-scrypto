@@ -270,7 +270,7 @@ fn run_basic_transfer(mode: Mode) {
     );
     receipt.expect_commit(true);
 
-    mode.run(&receipt.fee_summary, &receipt.fee_details);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_basic_transfer_to_virtual_account(mode: Mode) {
@@ -295,7 +295,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
     );
     receipt.expect_commit(true);
 
-    mode.run(&receipt.fee_summary, &receipt.fee_details);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_radiswap(mode: Mode) {
@@ -395,7 +395,7 @@ fn run_radiswap(mode: Mode) {
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
     receipt.expect_commit(true);
 
-    mode.run(&receipt.fee_summary, &receipt.fee_details);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_flash_loan(mode: Mode) {
@@ -474,7 +474,7 @@ fn run_flash_loan(mode: Mode) {
             + receipt.fee_summary.total_royalty_cost_in_xrd
             + (repay_amount - loan_amount)
     );
-    mode.run(&receipt.fee_summary, &receipt.fee_details);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_publish_large_package(mode: Mode) {
@@ -507,7 +507,7 @@ fn run_publish_large_package(mode: Mode) {
 
     // Assert
     receipt.expect_commit_success();
-    mode.run(&receipt.fee_summary, &receipt.fee_details);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_mint_small_size_nfts_from_manifest(mode: Mode) {
@@ -598,7 +598,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
         scrypto_encode(&nft_data).unwrap().len()
     );
     println!("Managed to mint {} NFTs", n);
-    mode.run(&receipt.fee_summary, &receipt.fee_details);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 #[test]

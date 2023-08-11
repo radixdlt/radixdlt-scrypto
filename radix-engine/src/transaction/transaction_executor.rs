@@ -271,15 +271,19 @@ where
                     println!("{:?}", interpretation_result);
                 }
 
-                let execution_cost_breakdown = costing_module
-                    .costing_traces
-                    .into_iter()
-                    .map(|(k, v)| (k.to_string(), v))
-                    .collect();
-                let finalization_cost_breakdown = Default::default();
-                let fee_details = TransactionFeeDetails {
-                    execution_cost_breakdown,
-                    finalization_cost_breakdown,
+                let fee_details = if execution_config.enable_cost_breakdown {
+                    let execution_cost_breakdown = costing_module
+                        .costing_traces
+                        .into_iter()
+                        .map(|(k, v)| (k.to_string(), v))
+                        .collect();
+                    let finalization_cost_breakdown = Default::default();
+                    Some(TransactionFeeDetails {
+                        execution_cost_breakdown,
+                        finalization_cost_breakdown,
+                    })
+                } else {
+                    None
                 };
 
                 let result_type = Self::determine_result_type(
@@ -398,7 +402,14 @@ where
                                 application_events,
                                 application_logs,
                                 system_structure,
-                                execution_trace,
+                                execution_trace: if execution_config
+                                    .enabled_modules
+                                    .contains(EnabledModules::EXECUTION_TRACE)
+                                {
+                                    Some(execution_trace)
+                                } else {
+                                    None
+                                },
                             }),
                         )
                     }
@@ -417,7 +428,11 @@ where
             Err(reason) => (
                 // No execution is done, so add empty fee summary and details
                 TransactionFeeSummary::default(),
-                TransactionFeeDetails::default(),
+                if execution_config.enable_cost_breakdown {
+                    Some(TransactionFeeDetails::default())
+                } else {
+                    None
+                },
                 TransactionResult::Reject(RejectResult { reason }),
             ),
         };
@@ -425,9 +440,9 @@ where
         // Stop hardware resource usage tracker
         let resources_usage = match () {
             #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
-            () => ResourcesUsage::default(),
+            () => None,
             #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-            () => resources_tracker.end_measurement(),
+            () => Some(resources_tracker.end_measurement()),
         };
 
         // Produce final receipt
@@ -954,14 +969,16 @@ where
     fn print_execution_summary(receipt: &TransactionReceipt) {
         // NB - we use "to_string" to ensure they align correctly
 
-        println!("{:-^100}", "Execution Cost Breakdown");
-        for (k, v) in &receipt.fee_details.execution_cost_breakdown {
-            println!("{:<75}: {:>15}", k, v.to_string());
-        }
+        if let Some(fee_details) = &receipt.fee_details {
+            println!("{:-^100}", "Execution Cost Breakdown");
+            for (k, v) in &fee_details.execution_cost_breakdown {
+                println!("{:<75}: {:>15}", k, v.to_string());
+            }
 
-        println!("{:-^100}", "Finalization Cost Breakdown");
-        for (k, v) in &receipt.fee_details.finalization_cost_breakdown {
-            println!("{:<75}: {:>15}", k, v.to_string());
+            println!("{:-^100}", "Finalization Cost Breakdown");
+            for (k, v) in &fee_details.finalization_cost_breakdown {
+                println!("{:<75}: {:>15}", k, v.to_string());
+            }
         }
 
         println!("{:-^100}", "Cost Totals");

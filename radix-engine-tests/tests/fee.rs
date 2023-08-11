@@ -485,7 +485,7 @@ fn locked_fees_are_correct_in_execution_trace() {
     // Assert
     let commit = receipt.expect_commit_success();
     assert_eq!(
-        commit.execution_trace.fee_locks,
+        commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("104.676"),
             contingent_lock: Decimal::ZERO
@@ -515,7 +515,7 @@ fn multiple_locked_fees_are_correct_in_execution_trace() {
     // Assert
     let commit = receipt.expect_commit_success();
     assert_eq!(
-        commit.execution_trace.fee_locks,
+        commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("206.856"),
             contingent_lock: Decimal::ZERO
@@ -545,7 +545,7 @@ fn regular_and_contingent_fee_locks_are_correct_in_execution_trace() {
     // Assert
     let commit = receipt.expect_commit_success();
     assert_eq!(
-        commit.execution_trace.fee_locks,
+        commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("104.676"),
             contingent_lock: dec!("102.180")
