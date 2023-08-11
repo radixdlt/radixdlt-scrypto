@@ -54,13 +54,13 @@ macro_rules! pdec {
             let base = $crate::math::PreciseDecimal::try_from($base).unwrap();
             if $shift >= 0 {
                 base * $crate::math::PreciseDecimal::try_from(
-                    $crate::math::BnumI512::from(10u8)
+                    $crate::math::BnumI256::from(10u8)
                         .pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
                 base / $crate::math::PreciseDecimal::try_from(
-                    $crate::math::BnumI512::from(10u8)
+                    $crate::math::BnumI256::from(10u8)
                         .pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")

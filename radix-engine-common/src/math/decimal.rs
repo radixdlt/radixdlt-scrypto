@@ -696,8 +696,8 @@ impl TryFrom<PreciseDecimal> for Decimal {
     type Error = ParseDecimalError;
 
     fn try_from(val: PreciseDecimal) -> Result<Self, Self::Error> {
-        let val_i512 = val.0 / BnumI512::from(10i8).pow(PreciseDecimal::SCALE - Decimal::SCALE);
-        let result = BnumI192::try_from(val_i512);
+        let val_i256 = val.0 / BnumI256::from(10i8).pow(PreciseDecimal::SCALE - Decimal::SCALE);
+        let result = BnumI192::try_from(val_i256);
         match result {
             Ok(val_i192) => Ok(Self(val_i192)),
             Err(_) => Err(ParseDecimalError::Overflow),
@@ -1325,9 +1325,9 @@ mod tests {
     }
 
     test_from_into_precise_decimal_decimal! {
-        ("12345678.1234567890123456789012345678901234567890123456789012345678901234", "12345678.123456789012345678", 1),
-        ("0.0000000000000000000000000008901234567890123456789012345678901234", "0", 2),
-        ("-0.0000000000000000000000000008901234567890123456789012345678901234", "0", 3),
+        ("12345678.123456789012345678901234567890123456", "12345678.123456789012345678", 1),
+        ("0.000000000000000000000000008901234567", "0", 2),
+        ("-0.0000000000000000000000000008901234567", "0", 3),
         ("5", "5", 4),
         ("12345678.1", "12345678.1", 5)
     }
