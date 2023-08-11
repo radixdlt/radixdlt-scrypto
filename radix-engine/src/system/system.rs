@@ -2293,6 +2293,36 @@ where
         }
     }
 
+    fn finalization_cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.finalization_cost_unit_limit())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::CostingModuleNotEnabled,
+            ))
+        }
+    }
+
+    fn finalization_cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.finalization_cost_unit_price())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::CostingModuleNotEnabled,
+            ))
+        }
+    }
+
     fn usd_price(&mut self) -> Result<Decimal, RuntimeError> {
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.usd_price())

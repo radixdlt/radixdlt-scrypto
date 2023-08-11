@@ -275,6 +275,24 @@ fn execution_cost_unit_price(
     runtime.execution_cost_unit_price().map(|buffer| buffer.0)
 }
 
+fn finalization_cost_unit_limit(
+    caller: Caller<'_, HostState>,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.finalization_cost_unit_limit()
+}
+
+fn finalization_cost_unit_price(
+    caller: Caller<'_, HostState>,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime
+        .finalization_cost_unit_price()
+        .map(|buffer| buffer.0)
+}
+
 fn tip_percentage(caller: Caller<'_, HostState>) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
@@ -735,6 +753,20 @@ impl WasmiModule {
             },
         );
 
+        let host_finalization_cost_unit_limit = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u32, Trap> {
+                finalization_cost_unit_limit(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_finalization_cost_unit_price = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                finalization_cost_unit_price(caller).map_err(|e| e.into())
+            },
+        );
+
         let host_tip_percentage = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u32, Trap> {
@@ -1004,6 +1036,16 @@ impl WasmiModule {
             linker,
             EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME,
             host_execution_cost_unit_price
+        );
+        linker_define!(
+            linker,
+            FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME,
+            host_finalization_cost_unit_limit
+        );
+        linker_define!(
+            linker,
+            FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME,
+            host_finalization_cost_unit_price
         );
         linker_define!(linker, TIP_PERCENTAGE_FUNCTION_NAME, host_tip_percentage);
         linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);

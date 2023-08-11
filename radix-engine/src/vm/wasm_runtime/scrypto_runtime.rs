@@ -470,6 +470,21 @@ where
         )
     }
 
+    fn finalization_cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let finalization_cost_unit_limit = self.api.finalization_cost_unit_limit()?;
+
+        Ok(finalization_cost_unit_limit)
+    }
+
+    fn finalization_cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let finalization_cost_unit_price = self.api.finalization_cost_unit_price()?;
+
+        self.allocate_buffer(
+            scrypto_encode(&finalization_cost_unit_price)
+                .expect("Failed to encode finalization_cost_unit_price"),
+        )
+    }
+
     fn tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
         let tip_percentage = self.api.tip_percentage()?;
 

@@ -140,6 +140,10 @@ pub trait WasmRuntime {
 
     fn execution_cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
+    fn finalization_cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>>;
+
+    fn finalization_cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>>;
 
     fn fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;

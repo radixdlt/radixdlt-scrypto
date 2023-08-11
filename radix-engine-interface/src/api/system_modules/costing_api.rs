@@ -17,6 +17,10 @@ pub trait ClientCostingApi<E> {
 
     fn execution_cost_unit_price(&mut self) -> Result<Decimal, E>;
 
+    fn finalization_cost_unit_limit(&mut self) -> Result<u32, E>;
+
+    fn finalization_cost_unit_price(&mut self) -> Result<Decimal, E>;
+
     fn usd_price(&mut self) -> Result<Decimal, E>;
 
     fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, E>;

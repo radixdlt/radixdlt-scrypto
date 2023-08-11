@@ -43,6 +43,10 @@ extern "C" {
 
     pub fn execution_cost_unit_price() -> Buffer;
 
+    pub fn finalization_cost_unit_limit() -> u32;
+
+    pub fn finalization_cost_unit_price() -> Buffer;
+
     pub fn tip_percentage() -> u32;
 
     pub fn fee_balance() -> Buffer;
@@ -205,6 +209,16 @@ pub unsafe fn execution_cost_unit_limit() -> u32 {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn execution_cost_unit_price() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn finalization_cost_unit_limit() -> u32 {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn finalization_cost_unit_price() -> Buffer {
     unreachable!()
 }
 
