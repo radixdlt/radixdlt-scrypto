@@ -37,6 +37,6 @@ Finalization Cost Breakdown                                                ,    
 - BaseCost                                                                 ,          50000,      3.0%
 - CommitEvents                                                             ,          10018,      0.6%
 - CommitLogs                                                               ,              0,      0.0%
-- CommitStates::GlobalGenericComponent                                     ,         100018,      5.9%
-- CommitStates::GlobalPackage                                              ,        1123861,     66.7%
-- CommitStates::InternalFungibleVault                                      ,         400053,     23.8%
+- CommitStateUpdates::GlobalGenericComponent                               ,         100018,      5.9%
+- CommitStateUpdates::GlobalPackage                                        ,        1123861,     66.7%
+- CommitStateUpdates::InternalFungibleVault                                ,         400053,     23.8%

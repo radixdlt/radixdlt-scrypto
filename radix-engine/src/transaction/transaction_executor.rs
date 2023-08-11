@@ -614,7 +614,7 @@ where
                 let info = track.get_commit_info();
                 for store_commit in &info {
                     system.modules.apply_finalization_cost(
-                        FinalizationCostingEntry::CommitStates { store_commit },
+                        FinalizationCostingEntry::CommitStateUpdates { store_commit },
                     )?;
                 }
                 system

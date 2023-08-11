@@ -106,7 +106,7 @@ pub enum ExecutionCostingEntry<'a> {
 #[derive(Debug, IntoStaticStr)]
 pub enum FinalizationCostingEntry<'a> {
     BaseCost,
-    CommitStates { store_commit: &'a StoreCommit },
+    CommitStateUpdates { store_commit: &'a StoreCommit },
     CommitEvents { events: &'a Vec<Event> },
     CommitLogs { logs: &'a Vec<(Level, String)> },
 }
@@ -167,7 +167,7 @@ impl<'a> FinalizationCostingEntry<'a> {
     pub fn to_finalization_cost_units(&self, ft: &FeeTable) -> u32 {
         match self {
             FinalizationCostingEntry::BaseCost => ft.base_cost(),
-            FinalizationCostingEntry::CommitStates { store_commit } => {
+            FinalizationCostingEntry::CommitStateUpdates { store_commit } => {
                 ft.commit_states_cost(store_commit)
             }
             FinalizationCostingEntry::CommitEvents { events } => ft.commit_events_cost(events),
@@ -205,9 +205,9 @@ impl<'a> ExecutionCostingEntry<'a> {
 impl<'a> FinalizationCostingEntry<'a> {
     pub fn to_trace_key(&self) -> String {
         match self {
-            FinalizationCostingEntry::CommitStates { store_commit } => {
+            FinalizationCostingEntry::CommitStateUpdates { store_commit } => {
                 format!(
-                    "CommitStates::{}",
+                    "CommitStateUpdates::{}",
                     store_commit
                         .node_id()
                         .entity_type()

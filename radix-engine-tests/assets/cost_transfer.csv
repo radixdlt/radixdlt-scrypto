@@ -36,4 +36,4 @@ Finalization Cost Breakdown                                                ,    
 - BaseCost                                                                 ,          50000,     18.9%
 - CommitEvents                                                             ,          15027,      5.7%
 - CommitLogs                                                               ,              0,      0.0%
-- CommitStates::InternalFungibleVault                                      ,         200020,     75.5%
+- CommitStateUpdates::InternalFungibleVault                                ,         200020,     75.5%

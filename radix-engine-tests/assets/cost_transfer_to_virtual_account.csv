@@ -44,5 +44,5 @@ Finalization Cost Breakdown                                                ,    
 - BaseCost                                                                 ,          50000,      3.2%
 - CommitEvents                                                             ,          25045,      1.6%
 - CommitLogs                                                               ,              0,      0.0%
-- CommitStates::GlobalVirtualSecp256k1Account                              ,         800123,     50.8%
-- CommitStates::InternalFungibleVault                                      ,         700096,     44.4%
+- CommitStateUpdates::GlobalVirtualSecp256k1Account                        ,         800123,     50.8%
+- CommitStateUpdates::InternalFungibleVault                                ,         700096,     44.4%
