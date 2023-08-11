@@ -1214,6 +1214,18 @@ impl PackageNativePackage {
                     .cloned()
                     .unwrap_or_default();
 
+                let mut system_mappings = BTreeMap::new();
+                for system_instruction in system_instructions {
+                    match system_instruction {
+                        SystemInstruction::MapCollectionToPhysicalPartition {
+                            collection_index,
+                            partition_num,
+                        } => {
+                            system_mappings.insert(collection_index as usize, partition_num);
+                        }
+                    }
+                }
+
                 let definition = BlueprintDefinition {
                     interface: BlueprintInterface {
                         blueprint_type: definition_init.blueprint_type,
@@ -1225,7 +1237,7 @@ impl PackageNativePackage {
                         state: IndexedStateSchema::from_schema(
                             schema_hash,
                             definition_init.schema.state,
-                            system_instructions,
+                            system_mappings,
                         ),
                     },
                     function_exports,

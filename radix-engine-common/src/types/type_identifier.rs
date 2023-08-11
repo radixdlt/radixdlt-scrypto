@@ -11,6 +11,6 @@ pub struct TypeIdentifier(pub Hash, pub LocalTypeIndex);
 /// A reference to the type to substitute with for the case of
 /// generics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
-pub enum TypeSubstitutionRef {
+pub enum GenericSubstitution {
     Local(TypeIdentifier),
 }

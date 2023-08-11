@@ -11,8 +11,8 @@ use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreTypeSubstitutions {
-    pub key_type_substitution: TypeSubstitutionRef,
-    pub value_type_substitution: TypeSubstitutionRef,
+    pub key_type_substitution: GenericSubstitution,
+    pub value_type_substitution: GenericSubstitution,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 

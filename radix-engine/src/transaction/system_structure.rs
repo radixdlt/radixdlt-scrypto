@@ -223,11 +223,11 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                         ),
                         TypeInfoSubstate::KeyValueStore(info) => {
                             let key_type_id = match info.type_substitutions.key_type_substitution {
-                                TypeSubstitutionRef::Local(type_id) => type_id,
+                                GenericSubstitution::Local(type_id) => type_id,
                             };
                             let value_type_id =
                                 match info.type_substitutions.value_type_substitution {
-                                    TypeSubstitutionRef::Local(type_id) => type_id,
+                                    GenericSubstitution::Local(type_id) => type_id,
                                 };
                             return SubstateSystemStructure::KeyValueStoreEntry(
                                 KeyValueStoreEntryStructure {
@@ -336,14 +336,14 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
 pub struct ObjectSubstateTypeReferenceResolver<'a> {
     node_id: &'a NodeId,
     blueprint_id: &'a BlueprintId,
-    type_substitution_refs: &'a Vec<TypeSubstitutionRef>,
+    type_substitution_refs: &'a Vec<GenericSubstitution>,
 }
 
 impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
     pub fn new(
         node_id: &'a NodeId,
         blueprint_id: &'a BlueprintId,
-        type_substitution_refs: &'a Vec<TypeSubstitutionRef>,
+        type_substitution_refs: &'a Vec<GenericSubstitution>,
     ) -> Self {
         Self {
             node_id,
@@ -367,7 +367,7 @@ impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
                     .get(instance_type_index as usize)
                     .expect("Instance type index not valid");
                 match type_substition_ref {
-                    TypeSubstitutionRef::Local(type_id) => {
+                    GenericSubstitution::Local(type_id) => {
                         ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {
                             entity_address: (*self.node_id).try_into().unwrap(),
                             instance_type_index,

@@ -198,6 +198,12 @@ impl Publish {
                     })
                     .collect();
 
+                let state = IndexedStateSchema::from_schema(
+                    schema_hash,
+                    s.schema.state,
+                    Default::default(),
+                );
+
                 let def = BlueprintDefinition {
                     interface: BlueprintInterface {
                         generics: s.schema.generics,
@@ -206,7 +212,7 @@ impl Publish {
                         feature_set: s.feature_set,
                         functions,
                         events,
-                        state: IndexedStateSchema::from_schema(schema_hash, s.schema.state, vec![]),
+                        state,
                     },
                     function_exports,
                     hook_exports: BTreeMap::new(),

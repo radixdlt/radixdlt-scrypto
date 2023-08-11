@@ -23,14 +23,13 @@ use crate::system::node_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
 use crate::system::system_modules::limits::TransactionLimitsError;
+use crate::system::system_type_checker::TypeCheckError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ObjectHandle;
-use radix_engine_interface::blueprints::package::{
-    BlueprintPayloadIdentifier, CanonicalBlueprintId, KeyOrValue,
-};
+use radix_engine_interface::blueprints::package::CanonicalBlueprintId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -220,12 +219,12 @@ pub enum SystemError {
     NotAFieldHandle,
     NotAFieldWriteHandle,
     RootHasNoType,
+    TypeCheckError(TypeCheckError),
     FieldDoesNotExist(BlueprintId, u8),
     CollectionIndexDoesNotExist(BlueprintId, u8),
     MutatingImmutableSubstate,
     MutatingImmutableFieldSubstate(ObjectHandle, u8),
     ObjectModuleDoesNotExist(ObjectModuleId),
-    KeyValueStorePayloadValidationError(KeyOrValue, String),
     NotAKeyValueWriteLock,
     InvalidLockFlags,
     CannotGlobalize(CannotGlobalizeError),
@@ -245,7 +244,6 @@ pub enum SystemError {
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
-    PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -301,14 +299,6 @@ pub enum SystemModuleError {
     CostingError(CostingError),
     TransactionLimitsError(TransactionLimitsError),
     EventError(Box<EventError>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum PayloadValidationAgainstSchemaError {
-    PayloadDoesNotExist(Box<BlueprintInfo>, BlueprintPayloadIdentifier),
-    CollectionDoesNotExist,
-    PayloadValidationError(String),
-    InstanceSchemaDoesNotExist,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

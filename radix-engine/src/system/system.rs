@@ -2,8 +2,7 @@ use super::id_allocation::IDAllocation;
 use super::system_modules::costing::CostingEntry;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
-    InvalidGlobalizeAccess, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
-    SystemError, SystemModuleError,
+    InvalidGlobalizeAccess, InvalidModuleType, RuntimeError, SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
@@ -181,10 +180,11 @@ where
             }
 
             self.validate_bp_generic_args(
-                blueprint_id,
+                blueprint_interface,
                 &additional_schemas,
                 &generic_args.type_substitution_refs,
-            )?;
+            )
+            .map_err(|e| RuntimeError::SystemError(SystemError::TypeCheckError(e)))?;
 
             (generic_args.type_substitution_refs, additional_schemas)
         };
@@ -269,28 +269,20 @@ where
         // Collections
         {
             for (collection_index, entries) in kv_entries {
-                let mut partition = BTreeMap::new();
+                let payloads: Vec<(&Vec<u8>, &Vec<u8>)> = entries
+                    .iter()
+                    .filter_map(|(key, entry)| entry.value.as_ref().map(|e| (key, e)))
+                    .collect();
 
+                let partition_description = self.validate_blueprint_kv_collection(
+                    &validation_target,
+                    collection_index,
+                    &payloads,
+                )?;
+
+                let mut partition = BTreeMap::new();
                 for (key, kv_entry) in entries {
                     let kv_entry = if let Some(value) = kv_entry.value {
-                        self.validate_blueprint_payload(
-                            &validation_target,
-                            BlueprintPayloadIdentifier::KeyValueCollection(
-                                collection_index,
-                                KeyOrValue::Key,
-                            ),
-                            &key,
-                        )?;
-
-                        self.validate_blueprint_payload(
-                            &validation_target,
-                            BlueprintPayloadIdentifier::KeyValueCollection(
-                                collection_index,
-                                KeyOrValue::Value,
-                            ),
-                            &value,
-                        )?;
-
                         let value: ScryptoValue = scrypto_decode(&value).unwrap();
                         let kv_entry = if kv_entry.locked {
                             KeyValueEntrySubstate::locked_entry(value)
@@ -307,20 +299,8 @@ where
                     };
 
                     let value = IndexedScryptoValue::from_typed(&kv_entry);
-
                     partition.insert(SubstateKey::Map(key), value);
                 }
-
-                let partition_description = blueprint_interface
-                    .state
-                    .collections
-                    .get(collection_index as usize)
-                    .ok_or_else(|| {
-                        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::CollectionDoesNotExist,
-                        ))
-                    })?
-                    .0;
 
                 partitions.insert(partition_description, partition);
             }
@@ -680,6 +660,40 @@ where
         };
 
         Ok(info)
+    }
+
+    pub fn get_actor_type_target(&mut self) -> Result<BlueprintTypeTarget, RuntimeError> {
+        let actor = self.current_actor();
+        match actor {
+            Actor::Root => Err(RuntimeError::SystemError(SystemError::RootHasNoType)),
+            Actor::BlueprintHook(actor) => Ok(BlueprintTypeTarget {
+                blueprint_info: BlueprintInfo {
+                    blueprint_id: actor.blueprint_id.clone(),
+                    outer_obj_info: OuterObjectInfo::None,
+                    features: btreeset!(),
+                    type_substitutions_refs: vec![],
+                },
+                meta: SchemaValidationMeta::Blueprint,
+            }),
+            Actor::Function(actor) => Ok(BlueprintTypeTarget {
+                blueprint_info: BlueprintInfo {
+                    blueprint_id: actor.blueprint_id.clone(),
+                    outer_obj_info: OuterObjectInfo::None,
+                    features: btreeset!(),
+                    type_substitutions_refs: vec![],
+                },
+                meta: SchemaValidationMeta::Blueprint,
+            }),
+            Actor::Method(actor) => {
+                let blueprint_info = self.get_blueprint_info(&actor.node_id, actor.module_id)?;
+                Ok(BlueprintTypeTarget {
+                    blueprint_info,
+                    meta: SchemaValidationMeta::ExistingObject {
+                        additional_schemas: actor.node_id,
+                    },
+                })
+            }
+        }
     }
 
     fn get_actor_object_id(
@@ -1507,10 +1521,7 @@ where
             }) => {
                 self.validate_blueprint_payload(
                     &target,
-                    BlueprintPayloadIdentifier::KeyValueCollection(
-                        collection_index,
-                        KeyOrValue::Value,
-                    ),
+                    BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Value),
                     &buffer,
                 )?;
             }
@@ -1576,7 +1587,8 @@ where
             &additional_schemas,
             &generic_args.key_type,
             &generic_args.value_type,
-        )?;
+        )
+        .map_err(|e| RuntimeError::SystemError(SystemError::TypeCheckError(e)))?;
 
         let schema_partition = additional_schemas
             .into_iter()
@@ -1716,13 +1728,13 @@ where
 
         self.validate_blueprint_payload(
             &target,
-            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Key),
+            BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Key),
             &key,
         )?;
 
         self.validate_blueprint_payload(
             &target,
-            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Value),
+            BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Value),
             &buffer,
         )?;
 
@@ -1838,13 +1850,13 @@ where
 
         self.validate_blueprint_payload(
             &target,
-            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Key),
+            BlueprintPayloadIdentifier::SortedIndexEntry(collection_index, KeyOrValue::Key),
             &sorted_key.1,
         )?;
 
         self.validate_blueprint_payload(
             &target,
-            BlueprintPayloadIdentifier::SortedIndexCollection(collection_index, KeyOrValue::Value),
+            BlueprintPayloadIdentifier::SortedIndexEntry(collection_index, KeyOrValue::Value),
             &buffer,
         )?;
 
@@ -2298,7 +2310,7 @@ where
 
         self.validate_blueprint_payload(
             &target,
-            BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Key),
+            BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Key),
             &key,
         )?;
 

@@ -1,22 +1,18 @@
 use super::payload_validation::*;
-use crate::errors::{PayloadValidationAgainstSchemaError, RuntimeError, SystemError};
-use crate::kernel::actor::Actor;
+use crate::errors::{RuntimeError, SystemError};
 use crate::kernel::kernel_api::KernelApi;
 use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
+use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::KeyValueStoreTypeSubstitutions;
 use sbor::rust::vec::Vec;
 
-#[derive(Debug, Clone)]
-pub struct KVStoreValidationTarget {
-    pub kv_store_type: KeyValueStoreTypeSubstitutions,
-    pub meta: NodeId,
-}
-
+/// Metadata for schema validation to help with location of certain schemas
+/// since location of schemas are somewhat scattered
 #[derive(Debug, Clone)]
 pub enum SchemaValidationMeta {
     ExistingObject {
@@ -28,10 +24,31 @@ pub enum SchemaValidationMeta {
     Blueprint,
 }
 
+/// The blueprint type to check against along with any additional metadata
+/// required to perform validation
 #[derive(Debug, Clone)]
 pub struct BlueprintTypeTarget {
     pub blueprint_info: BlueprintInfo,
     pub meta: SchemaValidationMeta,
+}
+
+/// The key value store to check against along with any additional metadata
+/// required to perform validation
+#[derive(Debug, Clone)]
+pub struct KVStoreValidationTarget {
+    pub kv_store_type: KeyValueStoreTypeSubstitutions,
+    pub meta: NodeId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum TypeCheckError {
+    InvalidNumberOfGenericArgs { expected: usize, actual: usize },
+    InvalidCollectionIndex(Box<BlueprintInfo>, CollectionIndex),
+    BlueprintPayloadDoesNotExist(Box<BlueprintInfo>, BlueprintPayloadIdentifier),
+    BlueprintPayloadValidationError(Box<BlueprintInfo>, BlueprintPayloadIdentifier, String),
+    KeyValueStorePayloadValidationError(KeyOrValue, String),
+    InstanceSchemaNotFound,
+    MissingSchema,
 }
 
 impl<'a, Y, V> SystemService<'a, Y, V>
@@ -39,26 +56,28 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    /// Validate that the type substitutions match the generic definition of a given blueprint
     pub fn validate_bp_generic_args(
         &mut self,
-        blueprint_id: &BlueprintId,
+        blueprint_interface: &BlueprintInterface,
         schemas: &IndexMap<Hash, ScryptoSchema>,
-        type_substitution_refs: &Vec<TypeSubstitutionRef>,
-    ) -> Result<(), RuntimeError> {
-        let generics = self
-            .get_blueprint_default_interface(blueprint_id.clone())?
-            .generics;
+        type_substitution_refs: &Vec<GenericSubstitution>,
+    ) -> Result<(), TypeCheckError> {
+        let generics = &blueprint_interface.generics;
 
         if !generics.len().eq(&type_substitution_refs.len()) {
-            return Err(RuntimeError::SystemError(SystemError::InvalidGenericArgs));
+            return Err(TypeCheckError::InvalidNumberOfGenericArgs {
+                expected: generics.len(),
+                actual: type_substitution_refs.len(),
+            });
         }
 
         for type_substitution_ref in type_substitution_refs {
             match type_substitution_ref {
-                TypeSubstitutionRef::Local(type_id) => {
-                    let _schema = schemas.get(&type_id.0).ok_or_else(|| {
-                        RuntimeError::SystemError(SystemError::InvalidGenericArgs)
-                    })?;
+                GenericSubstitution::Local(type_id) => {
+                    let _schema = schemas
+                        .get(&type_id.0)
+                        .ok_or_else(|| TypeCheckError::MissingSchema)?;
                 }
             }
         }
@@ -66,31 +85,33 @@ where
         Ok(())
     }
 
+    /// Validate that the type substitutions for a kv store exist in a given schema
     pub fn validate_kv_store_generic_args(
         &mut self,
         schemas: &IndexMap<Hash, ScryptoSchema>,
-        key: &TypeSubstitutionRef,
-        value: &TypeSubstitutionRef,
-    ) -> Result<(), RuntimeError> {
+        key: &GenericSubstitution,
+        value: &GenericSubstitution,
+    ) -> Result<(), TypeCheckError> {
         match key {
-            TypeSubstitutionRef::Local(type_id) => {
+            GenericSubstitution::Local(type_id) => {
                 let _schema = schemas
                     .get(&type_id.0)
-                    .ok_or_else(|| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
+                    .ok_or_else(|| TypeCheckError::MissingSchema)?;
             }
         }
 
         match value {
-            TypeSubstitutionRef::Local(type_id) => {
+            GenericSubstitution::Local(type_id) => {
                 let _schema = schemas
                     .get(&type_id.0)
-                    .ok_or_else(|| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
+                    .ok_or_else(|| TypeCheckError::MissingSchema)?;
             }
         }
 
         Ok(())
     }
 
+    /// Validate that a blueprint payload matches the blueprint's definition of that payload
     pub fn validate_blueprint_payload(
         &mut self,
         target: &BlueprintTypeTarget,
@@ -103,14 +124,15 @@ where
         let (payload_def, allow_ownership, allow_non_global_ref) = blueprint_interface
             .get_payload_def(&payload_identifier)
             .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                    PayloadValidationAgainstSchemaError::PayloadDoesNotExist(
+                RuntimeError::SystemError(SystemError::TypeCheckError(
+                    TypeCheckError::BlueprintPayloadDoesNotExist(
                         Box::new(target.blueprint_info.clone()),
-                        payload_identifier,
+                        payload_identifier.clone(),
                     ),
                 ))
             })?;
 
+        // Given the payload definition, retrieve the info to be able to do schema validation on a payload
         let (schema, index, schema_origin) = match payload_def {
             BlueprintPayloadDef::Static(type_identifier) => {
                 let schema = self.get_schema(
@@ -133,28 +155,31 @@ where
                     .type_substitutions_refs
                     .get(instance_index as usize)
                     .ok_or_else(|| {
-                        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                            PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
+                        RuntimeError::SystemError(SystemError::TypeCheckError(
+                            TypeCheckError::InstanceSchemaNotFound,
                         ))
                     })?;
 
                 match type_substitution_ref {
-                    TypeSubstitutionRef::Local(type_id) => {
+                    GenericSubstitution::Local(type_id) => {
                         let schema = match &target.meta {
                             SchemaValidationMeta::ExistingObject { additional_schemas } => {
                                 self.get_schema(additional_schemas, &type_id.0)?
                             }
                             SchemaValidationMeta::NewObject { additional_schemas } => {
-                                additional_schemas.get(&type_id.0).ok_or_else(|| {
-                                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                                        PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
-                                    ))
-                                })?.clone() // TODO: Remove clone
+                                additional_schemas
+                                    .get(&type_id.0)
+                                    .ok_or_else(|| {
+                                        RuntimeError::SystemError(SystemError::TypeCheckError(
+                                            TypeCheckError::InstanceSchemaNotFound,
+                                        ))
+                                    })?
+                                    .clone()
                             }
                             SchemaValidationMeta::Blueprint => {
                                 return Err(RuntimeError::SystemError(
-                                    SystemError::PayloadValidationAgainstSchemaError(
-                                        PayloadValidationAgainstSchemaError::InstanceSchemaDoesNotExist,
+                                    SystemError::TypeCheckError(
+                                        TypeCheckError::InstanceSchemaNotFound,
                                     ),
                                 ));
                             }
@@ -175,8 +200,10 @@ where
             allow_non_global_ref,
         )
         .map_err(|err| {
-            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                PayloadValidationAgainstSchemaError::PayloadValidationError(
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::BlueprintPayloadValidationError(
+                    Box::new(target.blueprint_info.clone()),
+                    payload_identifier,
                     err.error_message(&schema),
                 ),
             ))
@@ -185,6 +212,48 @@ where
         Ok(())
     }
 
+    /// Validate that a blueprint kv collection payloads match the blueprint's definition
+    pub fn validate_blueprint_kv_collection(
+        &mut self,
+        target: &BlueprintTypeTarget,
+        collection_index: CollectionIndex,
+        payloads: &[(&Vec<u8>, &Vec<u8>)],
+    ) -> Result<PartitionDescription, RuntimeError> {
+        let blueprint_interface =
+            self.get_blueprint_default_interface(target.blueprint_info.blueprint_id.clone())?;
+
+        let partition_description = blueprint_interface
+            .state
+            .collections
+            .get(collection_index as usize)
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::TypeCheckError(
+                    TypeCheckError::InvalidCollectionIndex(
+                        Box::new(target.blueprint_info.clone()),
+                        collection_index,
+                    ),
+                ))
+            })?
+            .0;
+
+        for (key, value) in payloads {
+            self.validate_blueprint_payload(
+                &target,
+                BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Key),
+                key,
+            )?;
+
+            self.validate_blueprint_payload(
+                &target,
+                BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Value),
+                value,
+            )?;
+        }
+
+        Ok(partition_description)
+    }
+
+    /// Validate that a key value payload matches the key value store's definition of that payload
     pub fn validate_kv_store_payload(
         &mut self,
         target: &KVStoreValidationTarget,
@@ -202,7 +271,7 @@ where
         };
 
         match type_substition_ref {
-            TypeSubstitutionRef::Local(type_id) => {
+            GenericSubstitution::Local(type_id) => {
                 let schema = self.get_schema(&target.meta, &type_id.0)?;
 
                 self.validate_payload(
@@ -214,49 +283,17 @@ where
                     false,
                 )
                 .map_err(|err| {
-                    RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(
-                        payload_identifier,
-                        err.error_message(&schema),
+                    RuntimeError::SystemError(SystemError::TypeCheckError(
+                        TypeCheckError::KeyValueStorePayloadValidationError(
+                            payload_identifier,
+                            err.error_message(&schema),
+                        ),
                     ))
                 })?;
             }
         }
 
         Ok(())
-    }
-
-    pub fn get_actor_type_target(&mut self) -> Result<BlueprintTypeTarget, RuntimeError> {
-        let actor = self.current_actor();
-        match actor {
-            Actor::Root => Err(RuntimeError::SystemError(SystemError::RootHasNoType)),
-            Actor::BlueprintHook(actor) => Ok(BlueprintTypeTarget {
-                blueprint_info: BlueprintInfo {
-                    blueprint_id: actor.blueprint_id.clone(),
-                    outer_obj_info: OuterObjectInfo::None,
-                    features: btreeset!(),
-                    type_substitutions_refs: vec![],
-                },
-                meta: SchemaValidationMeta::Blueprint,
-            }),
-            Actor::Function(actor) => Ok(BlueprintTypeTarget {
-                blueprint_info: BlueprintInfo {
-                    blueprint_id: actor.blueprint_id.clone(),
-                    outer_obj_info: OuterObjectInfo::None,
-                    features: btreeset!(),
-                    type_substitutions_refs: vec![],
-                },
-                meta: SchemaValidationMeta::Blueprint,
-            }),
-            Actor::Method(actor) => {
-                let blueprint_info = self.get_blueprint_info(&actor.node_id, actor.module_id)?;
-                Ok(BlueprintTypeTarget {
-                    blueprint_info,
-                    meta: SchemaValidationMeta::ExistingObject {
-                        additional_schemas: actor.node_id,
-                    },
-                })
-            }
-        }
     }
 
     fn validate_payload<'s>(

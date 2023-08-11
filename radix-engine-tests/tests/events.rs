@@ -4,10 +4,9 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
-use radix_engine::errors::{
-    ApplicationError, PayloadValidationAgainstSchemaError, RuntimeError, SystemError,
-};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
+use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntry};
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -96,8 +95,8 @@ fn scrypto_cant_emit_unregistered_event() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-            PayloadValidationAgainstSchemaError::PayloadDoesNotExist(
+        RuntimeError::SystemError(SystemError::TypeCheckError(
+            TypeCheckError::BlueprintPayloadDoesNotExist(
                 _,
                 BlueprintPayloadIdentifier::Event(event),
             ),

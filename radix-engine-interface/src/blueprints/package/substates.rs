@@ -194,9 +194,9 @@ pub enum BlueprintPayloadIdentifier {
     Function(String, InputOrOutput),
     Event(String),
     Field(u8),
-    KeyValueCollection(u8, KeyOrValue),
-    IndexCollection(u8, KeyOrValue),
-    SortedIndexCollection(u8, KeyOrValue),
+    KeyValueEntry(u8, KeyOrValue),
+    IndexEntry(u8, KeyOrValue),
+    SortedIndexEntry(u8, KeyOrValue),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -275,36 +275,30 @@ impl BlueprintInterface {
                 let payload_def = self.get_field_payload_def(*field_index)?;
                 Some((payload_def, true, self.is_transient))
             }
-            BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Key) => {
+            BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Key) => {
                 let payload_def = self.get_kv_key_payload_def(*collection_index)?;
                 Some((payload_def, false, self.is_transient))
             }
-            BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value) => {
+            BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Value) => {
                 let (payload_def, allow_ownership) =
                     self.state.get_kv_value_payload_def(*collection_index)?;
                 Some((payload_def, allow_ownership, self.is_transient))
             }
-            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Key) => {
+            BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Key) => {
                 let type_pointer = self.state.get_index_type_pointer_key(*collection_index)?;
                 Some((type_pointer, false, self.is_transient))
             }
-            BlueprintPayloadIdentifier::IndexCollection(collection_index, KeyOrValue::Value) => {
+            BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Value) => {
                 let type_pointer = self.state.get_index_type_pointer_value(*collection_index)?;
                 Some((type_pointer, false, self.is_transient))
             }
-            BlueprintPayloadIdentifier::SortedIndexCollection(
-                collection_index,
-                KeyOrValue::Key,
-            ) => {
+            BlueprintPayloadIdentifier::SortedIndexEntry(collection_index, KeyOrValue::Key) => {
                 let type_pointer = self
                     .state
                     .get_sorted_index_type_pointer_key(*collection_index)?;
                 Some((type_pointer, false, self.is_transient))
             }
-            BlueprintPayloadIdentifier::SortedIndexCollection(
-                collection_index,
-                KeyOrValue::Value,
-            ) => {
+            BlueprintPayloadIdentifier::SortedIndexEntry(collection_index, KeyOrValue::Value) => {
                 let type_pointer = self
                     .state
                     .get_sorted_index_type_pointer_value(*collection_index)?;
@@ -346,20 +340,8 @@ impl IndexedStateSchema {
     pub fn from_schema(
         schema_hash: Hash,
         schema: BlueprintStateSchemaInit,
-        system_instructions: Vec<SystemInstruction>,
+        system_mappings: BTreeMap<usize, PartitionNumber>,
     ) -> Self {
-        let mut system_mappings = HashMap::new();
-        for system_instruction in system_instructions {
-            match system_instruction {
-                SystemInstruction::MapCollectionToPhysicalPartition {
-                    collection_index,
-                    partition_num,
-                } => {
-                    system_mappings.insert(collection_index as usize, partition_num);
-                }
-            }
-        }
-
         let mut partition_offset = 0u8;
 
         let mut fields = None;
@@ -395,7 +377,7 @@ impl IndexedStateSchema {
                 TypeRef::Static(type_index) => {
                     BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
                 }
-                TypeRef::Generic(instance_index) => BlueprintPayloadDef::Generic(instance_index),
+                TypeRef::Generic(generic_index) => BlueprintPayloadDef::Generic(generic_index),
             });
 
             if let Some(partition_num) = system_mappings.get(&collection_index) {

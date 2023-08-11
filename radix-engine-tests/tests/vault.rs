@@ -5,6 +5,7 @@ use radix_engine::errors::{
 use radix_engine::kernel::call_frame::{
     CreateNodeError, ProcessSubstateError, SubstateDiffError, WriteSubstateError,
 };
+use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::package::KeyOrValue;
@@ -36,7 +37,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
+            RuntimeError::SystemError(SystemError::TypeCheckError(..))
         )
     });
 }
@@ -68,7 +69,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
+            RuntimeError::SystemError(SystemError::TypeCheckError(..))
         )
     });
 }
@@ -95,9 +96,8 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(
-                KeyOrValue::Value,
-                _
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::KeyValueStorePayloadValidationError(KeyOrValue::Value, _)
             ))
         )
     });
@@ -130,9 +130,8 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::KeyValueStorePayloadValidationError(
-                KeyOrValue::Value,
-                _
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::KeyValueStorePayloadValidationError(KeyOrValue::Value, _)
             ))
         )
     });

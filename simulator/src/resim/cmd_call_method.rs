@@ -122,7 +122,7 @@ impl CallMethod {
                     .ok_or_else(|| Error::InstanceSchemaNot(component_address, generic_index))?;
 
                 match type_subst_ref {
-                    TypeSubstitutionRef::Local(type_id) => {
+                    GenericSubstitution::Local(type_id) => {
                         let schema = export_schema(bp_id.package_address.as_node_id(), type_id.0)?;
                         (schema, type_id.1)
                     }

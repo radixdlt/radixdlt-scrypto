@@ -398,7 +398,7 @@ pub fn test_fake_bucket() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(e))
+        RuntimeError::SystemError(SystemError::TypeCheckError(e))
             if format!("{:?}", e).contains("Expected = Own<IsBucket>") =>
         {
             true
