@@ -1006,7 +1006,7 @@ where
 
         println!("{:-^100}", "Cost Totals");
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
             "Execution Cost Unit Price",
             receipt
                 .costing_parameters
@@ -1014,11 +1014,11 @@ where
                 .to_string()
         );
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
             "Execution Cost Unit Limit", receipt.costing_parameters.execution_cost_unit_limit
         );
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
             "Execution Cost Unit Consumed",
             receipt
                 .fee_summary
@@ -1026,7 +1026,7 @@ where
                 .to_string()
         );
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
             "Finalization Cost Unit Price",
             receipt
                 .costing_parameters
@@ -1034,11 +1034,11 @@ where
                 .to_string()
         );
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
             "Finalization Cost Unit Limit", receipt.costing_parameters.finalization_cost_unit_limit
         );
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
             "Finalization Cost Unit Consumed",
             receipt
                 .fee_summary
@@ -1046,17 +1046,17 @@ where
                 .to_string()
         );
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
             "Tipping Cost in XRD",
             receipt.fee_summary.total_tipping_cost_in_xrd.to_string()
         );
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
             "Storage Cost in XRD",
             receipt.fee_summary.total_storage_cost_in_xrd.to_string()
         );
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
             "Royalty Costs in XRD",
             receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
         );
