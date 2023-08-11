@@ -67,8 +67,8 @@ use transaction::prelude::IntentHash;
 
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
-    Schema,
     TypeInfoModule(TypedTypeInfoModuleSubstateKey),
+    Schema(TypedSchemaSubstateKey),
     RoleAssignmentModule(TypedRoleAssignmentSubstateKey),
     RoyaltyModule(TypedRoyaltyModuleSubstateKey),
     MetadataModule(TypedMetadataModuleSubstateKey),
@@ -98,6 +98,11 @@ pub enum TypedTypeInfoModuleSubstateKey {
 }
 
 #[derive(Debug, Clone)]
+pub enum TypedSchemaSubstateKey {
+    SchemaKey(Hash),
+}
+
+#[derive(Debug, Clone)]
 pub enum TypedRoleAssignmentSubstateKey {
     RoleAssignmentField(RoleAssignmentField),
     Rule(ModuleRoleKey),
@@ -122,7 +127,6 @@ pub enum TypedMainModuleSubstateKey {
     PackageField(PackageField),
     PackageBlueprintKey(BlueprintVersionKey),
     PackageBlueprintDependenciesKey(BlueprintVersionKey),
-    PackageSchemaKey(Hash),
     PackageRoyaltyKey(BlueprintVersionKey),
     PackageAuthTemplateKey(BlueprintVersionKey),
     PackageVmTypeKey(Hash),
@@ -186,7 +190,14 @@ pub fn to_typed_substate_key(
                 TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
             ))
         }
-        SCHEMAS_PARTITION => TypedSubstateKey::Schema,
+        SCHEMAS_PARTITION => {
+            let key = substate_key
+                .for_map()
+                .ok_or_else(|| error("Schema key"))?;
+            TypedSubstateKey::Schema(TypedSchemaSubstateKey::SchemaKey(
+                scrypto_decode(key).map_err(|_| error("Schema key"))?,
+            ))
+        },
         METADATA_BASE_PARTITION => {
             TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(
                 scrypto_decode(
@@ -454,7 +465,7 @@ fn to_typed_object_substate_key_internal(
 #[derive(Debug)]
 pub enum TypedSubstateValue {
     TypeInfoModule(TypedTypeInfoModuleSubstateValue),
-    Schema,
+    Schema(KeyValueEntrySubstate<ScryptoSchema>),
     RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue),
     RoyaltyModule(TypedRoyaltyModuleSubstateValue),
     MetadataModule(TypedMetadataModuleSubstateValue),
@@ -490,7 +501,6 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     PackageBlueprint(KeyValueEntrySubstate<BlueprintDefinition>),
     PackageBlueprintDependencies(KeyValueEntrySubstate<BlueprintDependencies>),
-    PackageSchema(KeyValueEntrySubstate<ScryptoSchema>),
     PackageAuthTemplate(KeyValueEntrySubstate<AuthConfig>),
     PackageRoyalty(KeyValueEntrySubstate<PackageRoyaltyConfig>),
     PackageVmType(KeyValueEntrySubstate<PackageVmTypeSubstate>),
@@ -626,7 +636,7 @@ fn to_typed_substate_value_internal(
                 }
             })
         }
-        TypedSubstateKey::Schema => TypedSubstateValue::Schema,
+        TypedSubstateKey::Schema(..) => TypedSubstateValue::Schema(scrypto_decode(data)?),
         TypedSubstateKey::RoleAssignmentModule(role_assignment_key) => match role_assignment_key {
             TypedRoleAssignmentSubstateKey::RoleAssignmentField(role_assignment_field_offset) => {
                 match role_assignment_field_offset {
@@ -678,9 +688,6 @@ fn to_typed_object_substate_value(
         }
         TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(..) => {
             TypedMainModuleSubstateValue::PackageBlueprintDependencies(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::PackageSchemaKey(..) => {
-            TypedMainModuleSubstateValue::PackageSchema(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::PackageRoyaltyKey(_fn_key) => {
             TypedMainModuleSubstateValue::PackageRoyalty(scrypto_decode(data)?)

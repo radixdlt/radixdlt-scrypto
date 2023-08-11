@@ -1,10 +1,9 @@
-use crate::api::{CollectionIndex, GenericArgs};
+use crate::api::{CollectionIndex};
 use crate::blueprints::package::BlueprintType;
 use crate::schema::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::crypto::Hash;
-use radix_engine_common::prelude::ScryptoSchema;
 use radix_engine_interface::blueprints::resource::Vault;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
