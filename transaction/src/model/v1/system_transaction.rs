@@ -1,4 +1,4 @@
-use super::{ExecutionContext, FeePayment};
+use super::{ExecutionContext, TransactionCostingParameters};
 use crate::internal_prelude::*;
 use crate::model::{AuthZoneParams, Executable};
 
@@ -114,7 +114,7 @@ impl PreparedSystemTransactionV1 {
                     initial_proofs,
                     virtual_resources: BTreeSet::new(),
                 },
-                fee_payment: FeePayment {
+                costing_parameters: TransactionCostingParameters {
                     tip_percentage: 0,
                     free_credit_in_xrd: Decimal::ZERO,
                 },

@@ -59,12 +59,12 @@ use radix_engine::blueprints::consensus_manager::{
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
-use radix_engine::transaction::execute_and_commit_transaction;
+use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionReceiptDisplayContextBuilder;
 use radix_engine::transaction::TransactionResult;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
+use radix_engine::transaction::{execute_and_commit_transaction, CostingParameters};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
@@ -190,7 +190,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
     let receipt = execute_and_commit_transaction(
         &mut substate_db,
         vm,
-        &FeeReserveConfig::default(),
+        &CostingParameters::default(),
         &ExecutionConfig::for_system_transaction().with_kernel_trace(trace),
         &transaction
             .prepare()
@@ -262,7 +262,7 @@ pub fn handle_manifest<O: std::io::Write>(
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,
                 vm,
-                &FeeReserveConfig::default(),
+                &CostingParameters::default(),
                 &ExecutionConfig::for_test_transaction().with_kernel_trace(trace),
                 &transaction
                     .prepare()
@@ -288,7 +288,7 @@ pub fn handle_manifest<O: std::io::Write>(
 }
 
 pub fn process_receipt(receipt: TransactionReceipt) -> Result<TransactionReceipt, Error> {
-    match &receipt.transaction_result {
+    match &receipt.result {
         TransactionResult::Commit(commit) => {
             let mut configs = get_configs()?;
             configs.nonce = get_nonce()? + 1;
@@ -300,7 +300,7 @@ pub fn process_receipt(receipt: TransactionReceipt) -> Result<TransactionReceipt
             }
         }
         TransactionResult::Reject(rejection) => {
-            Err(Error::TransactionRejected(rejection.error.clone()))
+            Err(Error::TransactionRejected(rejection.reason.clone()))
         }
         TransactionResult::Abort(result) => Err(Error::TransactionAborted(result.reason.clone())),
     }

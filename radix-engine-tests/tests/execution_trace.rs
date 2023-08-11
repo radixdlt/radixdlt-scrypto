@@ -45,6 +45,8 @@ fn test_trace_resource_transfers() {
         receipt
             .expect_commit_success()
             .execution_trace
+            .as_ref()
+            .unwrap()
             .resource_changes
     );
     assert_eq!(
@@ -52,6 +54,8 @@ fn test_trace_resource_transfers() {
         receipt
             .expect_commit_success()
             .execution_trace
+            .as_ref()
+            .unwrap()
             .resource_changes
             .len()
     ); // Two instructions
@@ -60,6 +64,8 @@ fn test_trace_resource_transfers() {
         receipt
             .expect_commit_success()
             .execution_trace
+            .as_ref()
+            .unwrap()
             .resource_changes
             .get(&0)
             .unwrap()
@@ -70,19 +76,23 @@ fn test_trace_resource_transfers() {
         receipt
             .expect_commit_success()
             .execution_trace
+            .as_ref()
+            .unwrap()
             .resource_changes
             .get(&1)
             .unwrap()
             .len()
     ); // One resource change in the first instruction (lock fee)
 
-    let fee_summary = receipt.expect_commit(true).fee_summary.clone();
+    let fee_summary = receipt.fee_summary.clone();
     let total_fee_paid = fee_summary.total_cost();
 
     // Source vault withdrawal
     assert!(receipt
         .expect_commit_success()
         .execution_trace
+        .as_ref()
+        .unwrap()
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
@@ -94,6 +104,8 @@ fn test_trace_resource_transfers() {
     assert!(receipt
         .expect_commit_success()
         .execution_trace
+        .as_ref()
+        .unwrap()
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
@@ -105,6 +117,8 @@ fn test_trace_resource_transfers() {
     assert!(receipt
         .expect_commit_success()
         .execution_trace
+        .as_ref()
+        .unwrap()
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
@@ -156,8 +170,10 @@ fn test_trace_fee_payments() {
     let resource_changes = &receipt
         .expect_commit_success()
         .execution_trace
+        .as_ref()
+        .unwrap()
         .resource_changes;
-    let fee_summary = receipt.expect_commit(true).fee_summary.clone();
+    let fee_summary = receipt.fee_summary.clone();
     let total_fee_paid = fee_summary.total_cost();
 
     assert_eq!(1, resource_changes.len());
@@ -193,6 +209,8 @@ fn test_instruction_traces() {
     let mut traces: Vec<ExecutionTrace> = receipt
         .expect_commit_success()
         .execution_trace
+        .as_ref()
+        .unwrap()
         .execution_traces
         .clone();
 
@@ -430,6 +448,8 @@ fn test_worktop_changes() {
         let worktop_changes = receipt
             .expect_commit_success()
             .execution_trace
+            .as_ref()
+            .unwrap()
             .worktop_changes();
 
         // Lock fee

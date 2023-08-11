@@ -1,7 +1,7 @@
-use super::{BalanceChange, StateUpdateSummary};
+use super::{BalanceChange, CostingParameters, StateUpdateSummary};
 use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
-use crate::system::system_modules::costing::FeeSummary;
+use crate::system::system_modules::costing::{FeeReserveFinalizationSummary, RoyaltyRecipient};
 use crate::system::system_modules::execution_trace::{
     ExecutionTrace, ResourceChange, WorktopChange,
 };
@@ -15,13 +15,103 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_interface::data::scrypto::ScryptoDecode;
 use radix_engine_interface::types::*;
 use sbor::representations::*;
+use transaction::prelude::TransactionCostingParameters;
 use utils::ContextualDisplay;
 
+#[derive(Clone, ScryptoSbor)]
+pub struct TransactionReceipt {
+    /// Costing parameters
+    pub costing_parameters: CostingParameters,
+    /// Transaction costing parameters
+    pub transaction_costing_parameters: TransactionCostingParameters,
+    /// Transaction fee summary
+    pub fee_summary: TransactionFeeSummary,
+    /// Transaction fee detail
+    /// Available if `ExecutionConfig::enable_cost_breakdown` is enabled
+    pub fee_details: Option<TransactionFeeDetails>,
+    /// Transaction result
+    pub result: TransactionResult,
+    /// Hardware resources usage report
+    /// Available if `resources_usage` feature flag is enabled
+    pub resources_usage: Option<ResourcesUsage>,
+}
+
+#[derive(Default, Debug, Clone, ScryptoSbor)]
+pub struct TransactionFeeSummary {
+    /// Total execution cost units consumed.
+    pub total_execution_cost_units_consumed: u32,
+    /// Total finalization cost units consumed.
+    pub total_finalization_cost_units_consumed: u32,
+
+    /// Total execution cost in XRD.
+    pub total_execution_cost_in_xrd: Decimal,
+    /// Total finalization cost in XRD.
+    pub total_finalization_cost_in_xrd: Decimal,
+    /// Total tipping cost in XRD.
+    pub total_tipping_cost_in_xrd: Decimal,
+    /// Total storage cost in XRD.
+    pub total_storage_cost_in_xrd: Decimal,
+    /// Total royalty cost in XRD.
+    pub total_royalty_cost_in_xrd: Decimal,
+}
+
+#[derive(Default, Debug, Clone, ScryptoSbor)]
+pub struct TransactionFeeDetails {
+    /// Execution cost breakdown
+    pub execution_cost_breakdown: BTreeMap<String, u32>,
+    /// Finalization cost breakdown
+    pub finalization_cost_breakdown: BTreeMap<String, u32>,
+}
+
+/// Captures whether a transaction should be committed, and its other results
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum TransactionResult {
+    Commit(CommitResult),
+    Reject(RejectResult),
+    Abort(AbortResult),
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct CommitResult {
+    /// Substate updates
+    pub state_updates: StateUpdates,
+    /// Information extracted from the substate updates
+    pub state_update_summary: StateUpdateSummary,
+    /// The source of transaction fee
+    pub fee_source: FeeSource,
+    /// The destination of transaction fee
+    pub fee_destination: FeeDestination,
+    /// Transaction execution outcome
+    pub outcome: TransactionOutcome,
+    /// Events emitted
+    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+    /// Logs emitted
+    pub application_logs: Vec<(Level, String)>,
+    /// Additional annotation on substates and events
+    pub system_structure: SystemStructure,
+    /// Transaction execution traces
+    /// Available if `ExecutionTrace` module is enabled
+    pub execution_trace: Option<TransactionExecutionTrace>,
+}
+
 #[derive(Debug, Clone, Default, ScryptoSbor)]
-pub struct ResourcesUsage {
-    pub heap_allocations_sum: usize,
-    pub heap_peak_memory: usize,
-    pub cpu_cycles: u64,
+pub struct FeeSource {
+    pub paying_vaults: IndexMap<NodeId, Decimal>,
+}
+
+#[derive(Debug, Clone, Default, ScryptoSbor)]
+pub struct FeeDestination {
+    pub to_proposer: Decimal,
+    pub to_validator_set: Decimal,
+    pub to_burn: Decimal,
+    pub to_royalty_recipients: IndexMap<RoyaltyRecipient, Decimal>,
+}
+
+/// Captures whether a transaction's commit outcome is Success or Failure
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum TransactionOutcome {
+    Success(Vec<InstructionOutput>),
+    Failure(RuntimeError),
 }
 
 #[derive(Debug, Clone, ScryptoSbor, Default)]
@@ -29,6 +119,34 @@ pub struct TransactionExecutionTrace {
     pub execution_traces: Vec<ExecutionTrace>,
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub fee_locks: FeeLocks,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, Default)]
+pub struct FeeLocks {
+    pub lock: Decimal,
+    pub contingent_lock: Decimal,
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct RejectResult {
+    pub reason: RejectionReason,
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct AbortResult {
+    pub reason: AbortReason,
+}
+
+#[derive(Debug, Clone, Display, PartialEq, Eq, Sbor)]
+pub enum AbortReason {
+    ConfiguredAbortTriggeredOnFeeLoanRepayment,
+}
+
+#[derive(Debug, Clone, Default, ScryptoSbor)]
+pub struct ResourcesUsage {
+    pub heap_allocations_sum: usize,
+    pub heap_peak_memory: usize,
+    pub cpu_cycles: u64,
 }
 
 impl TransactionExecutionTrace {
@@ -41,20 +159,6 @@ impl TransactionExecutionTrace {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, Default)]
-pub struct FeeLocks {
-    pub lock: Decimal,
-    pub contingent_lock: Decimal,
-}
-
-/// Captures whether a transaction should be committed, and its other results
-#[derive(Debug, Clone, ScryptoSbor)]
-pub enum TransactionResult {
-    Commit(CommitResult),
-    Reject(RejectResult),
-    Abort(AbortResult),
-}
-
 impl TransactionResult {
     pub fn is_commit_success(&self) -> bool {
         match self {
@@ -64,27 +168,14 @@ impl TransactionResult {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct CommitResult {
-    pub state_updates: StateUpdates,
-    pub state_update_summary: StateUpdateSummary,
-    pub outcome: TransactionOutcome,
-    pub fee_summary: FeeSummary,
-    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
-    pub application_logs: Vec<(Level, String)>,
-    pub system_structure: SystemStructure,
-    /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
-    /// Mainly for transaction preview.
-    pub execution_trace: TransactionExecutionTrace,
-}
-
 impl CommitResult {
     pub fn empty_with_outcome(outcome: TransactionOutcome) -> Self {
         Self {
             state_updates: Default::default(),
             state_update_summary: Default::default(),
+            fee_source: Default::default(),
+            fee_destination: Default::default(),
             outcome,
-            fee_summary: Default::default(),
             application_events: Default::default(),
             application_logs: Default::default(),
             system_structure: Default::default(),
@@ -159,13 +250,6 @@ impl CommitResult {
     }
 }
 
-/// Captures whether a transaction's commit outcome is Success or Failure
-#[derive(Debug, Clone, ScryptoSbor)]
-pub enum TransactionOutcome {
-    Success(Vec<InstructionOutput>),
-    Failure(RuntimeError),
-}
-
 impl TransactionOutcome {
     pub fn is_success(&self) -> bool {
         matches!(self, Self::Success(_))
@@ -196,41 +280,22 @@ impl TransactionOutcome {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct RejectResult {
-    pub error: RejectionError,
-}
-
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct AbortResult {
-    pub reason: AbortReason,
-}
-
-#[derive(Debug, Clone, Display, PartialEq, Eq, Sbor)]
-pub enum AbortReason {
-    ConfiguredAbortTriggeredOnFeeLoanRepayment,
-}
-
-/// Represents a transaction receipt.
-#[derive(Clone, ScryptoSbor)]
-pub struct TransactionReceipt {
-    pub transaction_result: TransactionResult,
-    /// Optional, only when compile-time feature flag `resources_usage` is ON.
-    pub resources_usage: ResourcesUsage,
-}
-
 impl TransactionReceipt {
     /// An empty receipt for merging changes into.
     pub fn empty_with_commit(commit_result: CommitResult) -> Self {
         Self {
-            transaction_result: TransactionResult::Commit(commit_result),
+            costing_parameters: Default::default(),
+            transaction_costing_parameters: Default::default(),
+            fee_summary: Default::default(),
+            fee_details: Default::default(),
+            result: TransactionResult::Commit(commit_result),
             resources_usage: Default::default(),
         }
     }
 
     pub fn is_commit_success(&self) -> bool {
         matches!(
-            self.transaction_result,
+            self.result,
             TransactionResult::Commit(CommitResult {
                 outcome: TransactionOutcome::Success(_),
                 ..
@@ -240,7 +305,7 @@ impl TransactionReceipt {
 
     pub fn is_commit_failure(&self) -> bool {
         matches!(
-            self.transaction_result,
+            self.result,
             TransactionResult::Commit(CommitResult {
                 outcome: TransactionOutcome::Failure(_),
                 ..
@@ -249,11 +314,11 @@ impl TransactionReceipt {
     }
 
     pub fn is_rejection(&self) -> bool {
-        matches!(self.transaction_result, TransactionResult::Reject(_))
+        matches!(self.result, TransactionResult::Reject(_))
     }
 
-    pub fn expect_commit_ignore_result(&self) -> &CommitResult {
-        match &self.transaction_result {
+    pub fn expect_commit_ignore_outcome(&self) -> &CommitResult {
+        match &self.result {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
@@ -261,7 +326,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_commit(&self, success: bool) -> &CommitResult {
-        let c = self.expect_commit_ignore_result();
+        let c = self.expect_commit_ignore_outcome();
         if c.outcome.is_success() != success {
             panic!(
                 "Expected {} but was {}: {:?}",
@@ -285,16 +350,16 @@ impl TransactionReceipt {
         self.expect_commit(false)
     }
 
-    pub fn expect_rejection(&self) -> &RejectionError {
-        match &self.transaction_result {
+    pub fn expect_rejection(&self) -> &RejectionReason {
+        match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
-            TransactionResult::Reject(ref r) => &r.error,
+            TransactionResult::Reject(ref r) => &r.reason,
             TransactionResult::Abort(..) => panic!("Expected rejection but was abort"),
         }
     }
 
     pub fn expect_abortion(&self) -> &AbortReason {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(..) => panic!("Expected abortion but was commit"),
             TransactionResult::Reject(..) => panic!("Expected abortion but was reject"),
             TransactionResult::Abort(ref r) => &r.reason,
@@ -302,7 +367,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_not_success(&self) {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(c) => {
                 if c.outcome.is_success() {
                     panic!("Transaction succeeded unexpectedly")
@@ -315,12 +380,12 @@ impl TransactionReceipt {
 
     pub fn expect_specific_rejection<F>(&self, f: F)
     where
-        F: Fn(&RejectionError) -> bool,
+        F: Fn(&RejectionReason) -> bool,
     {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was committed"),
             TransactionResult::Reject(result) => {
-                if !f(&result.error) {
+                if !f(&result.reason) {
                     panic!(
                         "Expected specific rejection but was different error:\n{:?}",
                         self
@@ -332,7 +397,7 @@ impl TransactionReceipt {
     }
 
     pub fn expect_failure(&self) -> &RuntimeError {
-        match &self.transaction_result {
+        match &self.result {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
                 TransactionOutcome::Failure(error) => error,
@@ -379,6 +444,16 @@ impl TransactionReceipt {
                 RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
             )
         })
+    }
+
+    pub fn effective_execution_cost_unit_price(&self) -> Decimal {
+        self.costing_parameters.execution_cost_unit_price
+            * (1 + Decimal::from(self.transaction_costing_parameters.tip_percentage) / 100)
+    }
+
+    pub fn effective_finalization_cost_unit_price(&self) -> Decimal {
+        self.costing_parameters.finalization_cost_unit_price
+            * (1 + Decimal::from(self.transaction_costing_parameters.tip_percentage) / 100)
     }
 }
 
@@ -488,7 +563,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         f: &mut F,
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        let result = &self.transaction_result;
+        let result = &self.result;
         let scrypto_value_display_context = context.display_context();
         let address_display_context = context.address_display_context();
 
@@ -501,32 +576,41 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                     TransactionOutcome::Success(_) => "COMMITTED SUCCESS".green(),
                     TransactionOutcome::Failure(e) => format!("COMMITTED FAILURE: {}", e).red(),
                 },
-                TransactionResult::Reject(r) => format!("REJECTED: {}", r.error).red(),
+                TransactionResult::Reject(r) => format!("REJECTED: {}", r.reason).red(),
                 TransactionResult::Abort(a) => format!("ABORTED: {}", a.reason).bright_red(),
             },
         )?;
 
-        if let TransactionResult::Commit(c) = &result {
-            write!(
+        write!(
                 f,
-                "\n{} Execution => {} XRD, Tipping => {} XRD, State Expansion => {} XRD, Royalty => {} XRD",
+                "\n{} Network Execution: {} XRD, Network Finalization: {} XRD, Tip: {} XRD, Network Storage: {} XRD, Royalties: {} XRD",
                 "Transaction Cost:".bold().green(),
-                c.fee_summary.total_execution_cost_xrd,
-                c.fee_summary.total_tipping_cost_xrd,
-                c.fee_summary.total_state_expansion_cost_xrd,
-                c.fee_summary.total_royalty_cost_xrd,
+                self.fee_summary.total_execution_cost_in_xrd,
+                self.fee_summary.total_finalization_cost_in_xrd,
+                self.fee_summary.total_tipping_cost_in_xrd,
+                self.fee_summary.total_storage_cost_in_xrd,
+                self.fee_summary.total_royalty_cost_in_xrd,
             )?;
 
-            write!(
-                f,
-                "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
-                "Cost Units:".bold().green(),
-                c.fee_summary.cost_unit_limit,
-                c.fee_summary.execution_cost_sum,
-                c.fee_summary.cost_unit_price,
-                c.fee_summary.tip_percentage
-            )?;
+        write!(
+            f,
+            "\n{} {} limit, {} consumed, {} XRD per unit",
+            "Execution Cost Units:".bold().green(),
+            self.costing_parameters.execution_cost_unit_limit,
+            self.fee_summary.total_execution_cost_units_consumed,
+            self.costing_parameters.execution_cost_unit_price,
+        )?;
 
+        write!(
+            f,
+            "\n{} {} limit, {} consumed, {} XRD per unit",
+            "Finalization Cost Units:".bold().green(),
+            self.costing_parameters.finalization_cost_unit_limit,
+            self.fee_summary.total_finalization_cost_units_consumed,
+            self.costing_parameters.finalization_cost_unit_price,
+        )?;
+
+        if let TransactionResult::Commit(c) = &result {
             write!(
                 f,
                 "\n{} {}",
@@ -762,4 +846,61 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
         event
     )?;
     Ok(())
+}
+
+impl From<FeeReserveFinalizationSummary> for TransactionFeeSummary {
+    fn from(value: FeeReserveFinalizationSummary) -> Self {
+        Self {
+            total_execution_cost_units_consumed: value.total_execution_cost_units_consumed,
+            total_finalization_cost_units_consumed: value.total_finalization_cost_units_consumed,
+            total_execution_cost_in_xrd: value.total_execution_cost_in_xrd,
+            total_finalization_cost_in_xrd: value.total_finalization_cost_in_xrd,
+            total_tipping_cost_in_xrd: value.total_tipping_cost_in_xrd,
+            total_storage_cost_in_xrd: value.total_storage_cost_in_xrd,
+            total_royalty_cost_in_xrd: value.total_royalty_cost_in_xrd,
+        }
+    }
+}
+
+impl TransactionFeeSummary {
+    pub fn total_cost(&self) -> Decimal {
+        self.total_execution_cost_in_xrd
+            + self.total_finalization_cost_in_xrd
+            + self.total_tipping_cost_in_xrd
+            + self.total_storage_cost_in_xrd
+            + self.total_royalty_cost_in_xrd
+    }
+
+    pub fn network_fees(&self) -> Decimal {
+        self.total_execution_cost_in_xrd
+            + self.total_finalization_cost_in_xrd
+            + self.total_storage_cost_in_xrd
+    }
+
+    //===================
+    // For testing only
+    //===================
+
+    pub fn expected_reward_if_single_validator(&self) -> Decimal {
+        self.expected_reward_as_proposer_if_single_validator()
+            + self.expected_reward_as_active_validator_if_single_validator()
+    }
+
+    pub fn expected_reward_as_proposer_if_single_validator(&self) -> Decimal {
+        self.total_tipping_cost_in_xrd * (TIPS_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
+            + (self.total_execution_cost_in_xrd
+                + self.total_finalization_cost_in_xrd
+                + self.total_storage_cost_in_xrd)
+                * (NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE)
+                / dec!(100)
+    }
+
+    pub fn expected_reward_as_active_validator_if_single_validator(&self) -> Decimal {
+        self.total_tipping_cost_in_xrd * (TIPS_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
+            + (self.total_execution_cost_in_xrd
+                + self.total_finalization_cost_in_xrd
+                + self.total_storage_cost_in_xrd)
+                * (NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE)
+                / dec!(100)
+    }
 }

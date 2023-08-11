@@ -51,7 +51,7 @@ impl ValidatedNotarizedTransactionV1 {
                     initial_proofs: AuthAddresses::signer_set(&self.signer_keys),
                     virtual_resources: BTreeSet::new(),
                 },
-                fee_payment: FeePayment {
+                costing_parameters: TransactionCostingParameters {
                     tip_percentage: intent.header.inner.tip_percentage,
                     free_credit_in_xrd: Decimal::ZERO,
                 },

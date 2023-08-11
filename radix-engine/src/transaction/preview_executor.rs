@@ -31,7 +31,7 @@ pub fn execute_preview<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
     Ok(execute_transaction(
         substate_db,
         vm,
-        &FeeReserveConfig::default(),
+        &CostingParameters::default(),
         &ExecutionConfig::for_preview().with_kernel_trace(with_kernel_trace),
         &validated.get_executable(),
     ))

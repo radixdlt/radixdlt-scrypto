@@ -43,17 +43,17 @@ fn test_component_royalty() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit(true);
-    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("3"));
+    receipt.expect_commit(true);
+    assert_eq!(receipt.fee_summary.total_royalty_cost_in_xrd, dec!("3"));
     let account_post_balance = test_runner.get_component_balance(account, XRD);
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance - account_post_balance,
-        commit_result.fee_summary.total_cost()
+        receipt.fee_summary.total_cost()
     );
     assert_eq!(
         component_royalty,
-        commit_result.fee_summary.total_royalty_cost_xrd - dec!("2"),
+        receipt.fee_summary.total_royalty_cost_in_xrd - dec!("2"),
     );
 }
 
@@ -91,20 +91,20 @@ fn test_component_royalty_in_usd() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
     assert_eq!(
-        commit_result.fee_summary.total_royalty_cost_xrd,
+        receipt.fee_summary.total_royalty_cost_in_xrd,
         dec!(1) * Decimal::try_from(USD_PRICE_IN_XRD).unwrap()
     );
     let account_post_balance = test_runner.get_component_balance(account, XRD);
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance - account_post_balance,
-        commit_result.fee_summary.total_cost()
+        receipt.fee_summary.total_cost()
     );
     assert_eq!(
         component_royalty,
-        commit_result.fee_summary.total_royalty_cost_xrd
+        receipt.fee_summary.total_royalty_cost_in_xrd
     );
 }
 
@@ -128,9 +128,9 @@ fn test_package_royalty() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
     assert_eq!(
-        commit_result.fee_summary.total_royalty_cost_xrd,
+        receipt.fee_summary.total_royalty_cost_in_xrd,
         dec!(1) + dec!("2")
     );
     let account_post_balance = test_runner.get_component_balance(account, XRD);
@@ -140,7 +140,7 @@ fn test_package_royalty() {
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance - account_post_balance,
-        commit_result.fee_summary.total_cost()
+        receipt.fee_summary.total_cost()
     );
     assert_eq!(package_royalty, dec!("2"));
     assert_eq!(component_royalty, dec!(1));
