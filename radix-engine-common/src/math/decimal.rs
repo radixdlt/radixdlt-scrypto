@@ -271,8 +271,8 @@ impl Decimal {
         }
 
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
-        let self_384 = BnumI384::from(self.0);
-        let correct_nb = self_384 * BnumI384::from(Self::ONE.0).pow(2);
+        let self_320 = BnumI320::from(self.0);
+        let correct_nb = self_320 * BnumI320::from(Self::ONE.0).pow(2);
         let cbrt = BnumI192::try_from(correct_nb.cbrt()).expect("Overflow");
         Self(cbrt)
     }
