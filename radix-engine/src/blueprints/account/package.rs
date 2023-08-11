@@ -1,9 +1,9 @@
-use super::AccountSubstate;
+use super::*;
 use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::roles_template;
 use crate::types::*;
+use crate::{event_schema, roles_template};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
@@ -12,11 +12,7 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition,
 };
 use radix_engine_interface::hooks::OnVirtualizeInput;
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
-    BlueprintKeyValueSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
-    FunctionSchemaInit, ReceiverInfo, TypeRef,
-};
+use radix_engine_interface::schema::*;
 
 pub const ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
 
@@ -416,6 +412,20 @@ impl AccountNativePackage {
             },
         );
 
+        let events = event_schema! {
+            aggregator,
+            [
+                WithdrawEvent,
+                DepositEvent,
+                RejectedDepositEvent,
+                SetResourcePreferenceEvent,
+                RemoveResourcePreferenceEvent,
+                SetDefaultDepositRuleEvent,
+                AddAuthorizedDepositorEvent,
+                RemoveAuthorizedDepositorEvent,
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintDefinitionInit {
@@ -436,7 +446,7 @@ impl AccountNativePackage {
                         fields,
                         collections,
                     },
-                    events: BlueprintEventSchemaInit::default(),
+                    events: events,
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
