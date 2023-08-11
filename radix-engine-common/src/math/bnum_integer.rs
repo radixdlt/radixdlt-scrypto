@@ -122,12 +122,16 @@ macro_rules! types {
 types! {
     BnumI192, BInt::<3>,
     BnumI256, BInt::<4>,
+    BnumI320, BInt::<5>,
     BnumI384, BInt::<6>,
+    BnumI448, BInt::<7>,
     BnumI512, BInt::<8>,
     BnumI768, BInt::<12>,
     BnumU192, BUint::<3>,
     BnumU256, BUint::<4>,
+    BnumU320, BUint::<5>,
     BnumU384, BUint::<6>,
+    BnumU448, BUint::<7>,
     BnumU512, BUint::<8>,
     BnumU768, BUint::<12>
 }
@@ -371,12 +375,16 @@ macro_rules! op_impl {
 }
 op_impl! { BnumI192 }
 op_impl! { BnumI256 }
+op_impl! { BnumI320 }
 op_impl! { BnumI384 }
+op_impl! { BnumI448 }
 op_impl! { BnumI512 }
 op_impl! { BnumI768 }
 op_impl! { BnumU192 }
 op_impl! { BnumU256 }
+op_impl! { BnumU320 }
 op_impl! { BnumU384 }
+op_impl! { BnumU448 }
 op_impl! { BnumU512 }
 op_impl! { BnumU768 }
 
@@ -399,7 +407,9 @@ macro_rules! op_impl_unsigned {
 }
 op_impl_unsigned! { BnumU192 }
 op_impl_unsigned! { BnumU256 }
+op_impl_unsigned! { BnumU320 }
 op_impl_unsigned! { BnumU384 }
+op_impl_unsigned! { BnumU448 }
 op_impl_unsigned! { BnumU512 }
 op_impl_unsigned! { BnumU768 }
 
@@ -470,7 +480,9 @@ macro_rules! op_impl_signed {
 
 op_impl_signed! { BnumI192 }
 op_impl_signed! { BnumI256 }
+op_impl_signed! { BnumI320 }
 op_impl_signed! { BnumI384 }
+op_impl_signed! { BnumI448 }
 op_impl_signed! { BnumI512 }
 op_impl_signed! { BnumI768 }
 
@@ -502,12 +514,16 @@ macro_rules! error {
 error! {
     BnumI192,
     BnumI256,
+    BnumI320,
     BnumI384,
+    BnumI448,
     BnumI512,
     BnumI768,
     BnumU192,
     BnumU256,
+    BnumU320,
     BnumU384,
+    BnumU448,
     BnumU512,
     BnumU768
 }
