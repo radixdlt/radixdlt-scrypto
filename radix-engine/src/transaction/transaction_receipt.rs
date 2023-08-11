@@ -27,11 +27,13 @@ pub struct TransactionReceipt {
     /// Transaction fee summary
     pub fee_summary: TransactionFeeSummary,
     /// Transaction fee detail
-    pub fee_details: TransactionFeeDetails,
+    /// Available if `ExecutionConfig::enable_cost_breakdown` is enabled
+    pub fee_details: Option<TransactionFeeDetails>,
     /// Transaction result
     pub result: TransactionResult,
-    /// Optional, only when compile-time feature flag `resources_usage` is ON.
-    pub resources_usage: ResourcesUsage,
+    /// Hardware resources usage report
+    /// Available if `resources_usage` feature flag is enabled
+    pub resources_usage: Option<ResourcesUsage>,
 }
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
@@ -56,10 +58,8 @@ pub struct TransactionFeeSummary {
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct TransactionFeeDetails {
     /// Execution cost breakdown
-    /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
     pub execution_cost_breakdown: BTreeMap<String, u32>,
     /// Finalization cost breakdown
-    /// Available only if `ExecutionConfig::enable_cost_breakdown` is true
     pub finalization_cost_breakdown: BTreeMap<String, u32>,
 }
 
@@ -73,17 +73,25 @@ pub enum TransactionResult {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
+    /// Substate updates
     pub state_updates: StateUpdates,
+    /// Information extracted from the substate updates
     pub state_update_summary: StateUpdateSummary,
+    /// The source of transaction fee
     pub fee_source: FeeSource,
+    /// The destination of transaction fee
     pub fee_destination: FeeDestination,
+    /// Transaction execution outcome
     pub outcome: TransactionOutcome,
+    /// Events emitted
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+    /// Logs emitted
     pub application_logs: Vec<(Level, String)>,
+    /// Additional annotation on substates and events
     pub system_structure: SystemStructure,
-    /// Empty unless `EnabledModule::ExecutionTrace` is turned on.
-    /// Mainly for transaction preview.
-    pub execution_trace: TransactionExecutionTrace,
+    /// Transaction execution traces
+    /// Available if `ExecutionTrace` module is enabled
+    pub execution_trace: Option<TransactionExecutionTrace>,
 }
 
 #[derive(Debug, Clone, Default, ScryptoSbor)]
