@@ -578,12 +578,11 @@ impl AccountNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = match authorized_depositor_badge {
-                    Some(badge) => {
-                        AccountBlueprint::try_authorized_deposit_or_refund(bucket, badge, api)?
-                    }
-                    None => AccountBlueprint::try_deposit_or_refund(bucket, api)?,
-                };
+                let rtn = AccountBlueprint::try_deposit_or_refund(
+                    bucket,
+                    authorized_depositor_badge,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
@@ -594,12 +593,11 @@ impl AccountNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = match authorized_depositor_badge {
-                    Some(badge) => AccountBlueprint::try_authorized_deposit_batch_or_refund(
-                        buckets, badge, api,
-                    )?,
-                    None => AccountBlueprint::try_deposit_batch_or_refund(buckets, api)?,
-                };
+                let rtn = AccountBlueprint::try_deposit_batch_or_refund(
+                    buckets,
+                    authorized_depositor_badge,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => {
@@ -610,12 +608,11 @@ impl AccountNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = match authorized_depositor_badge {
-                    Some(badge) => {
-                        AccountBlueprint::try_authorized_deposit_or_abort(bucket, badge, api)?
-                    }
-                    None => AccountBlueprint::try_deposit_or_abort(bucket, api)?,
-                };
+                let rtn = AccountBlueprint::try_deposit_or_abort(
+                    bucket,
+                    authorized_depositor_badge,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => {
@@ -626,12 +623,11 @@ impl AccountNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = match authorized_depositor_badge {
-                    Some(badge) => AccountBlueprint::try_authorized_deposit_batch_or_abort(
-                        buckets, badge, api,
-                    )?,
-                    None => AccountBlueprint::try_deposit_batch_or_abort(buckets, api)?,
-                };
+                let rtn = AccountBlueprint::try_deposit_batch_or_abort(
+                    buckets,
+                    authorized_depositor_badge,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {

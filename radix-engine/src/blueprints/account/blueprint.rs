@@ -327,18 +327,22 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    /// Method is public to all - if the resource can't be deposited it is returned.
     pub fn try_deposit_or_refund<Y>(
         bucket: Bucket,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
     ) -> Result<Option<Bucket>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let resource_address = bucket.resource_address(api)?;
-
         let is_deposit_allowed = Self::is_deposit_allowed(&resource_address, api)?;
         if is_deposit_allowed {
+            Self::deposit(bucket, api)?;
+            Ok(None)
+        } else if let Some(badge) = authorized_depositor_badge {
+            Self::validate_badge_is_authorized_depositor(&badge, api)??;
+            Self::validate_badge_is_present(badge, api)?;
             Self::deposit(bucket, api)?;
             Ok(None)
         } else {
@@ -352,9 +356,9 @@ impl AccountBlueprint {
         }
     }
 
-    /// Method is public to all - if ANY of the resources can't be deposited then ALL are returned.
     pub fn try_deposit_batch_or_refund<Y>(
         buckets: Vec<Bucket>,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
     ) -> Result<Option<Vec<Bucket>>, RuntimeError>
     where
@@ -382,6 +386,11 @@ impl AccountBlueprint {
         if offending_buckets.is_empty() {
             Self::deposit_batch(buckets, api)?;
             Ok(None)
+        } else if let Some(badge) = authorized_depositor_badge {
+            Self::validate_badge_is_authorized_depositor(&badge, api)??;
+            Self::validate_badge_is_present(badge, api)?;
+            Self::deposit_batch(buckets, api)?;
+            Ok(None)
         } else {
             for bucket in offending_buckets {
                 let resource_address = bucket.resource_address(api)?;
@@ -396,12 +405,16 @@ impl AccountBlueprint {
         }
     }
 
-    /// Method is public to all - if the resources can't be deposited then the execution panics.
-    pub fn try_deposit_or_abort<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn try_deposit_or_abort<Y>(
+        bucket: Bucket,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        if let Some(bucket) = Self::try_deposit_or_refund(bucket, api)? {
+        if let Some(bucket) = Self::try_deposit_or_refund(bucket, authorized_depositor_badge, api)?
+        {
             let resource_address = bucket.resource_address(api)?;
             Err(AccountError::DepositIsDisallowed { resource_address }.into())
         } else {
@@ -413,89 +426,18 @@ impl AccountBlueprint {
     /// panics.
     pub fn try_deposit_batch_or_abort<Y>(
         buckets: Vec<Bucket>,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let buckets = Self::try_deposit_batch_or_refund(buckets, api)?;
+        let buckets = Self::try_deposit_batch_or_refund(buckets, authorized_depositor_badge, api)?;
         if let Some(_) = buckets {
             Err(AccountError::NotAllBucketsCouldBeDeposited.into())
         } else {
             Ok(())
         }
-    }
-
-    pub fn try_authorized_deposit_or_refund<Y>(
-        bucket: Bucket,
-        badge: ResourceOrNonFungible,
-        api: &mut Y,
-    ) -> Result<Option<Bucket>, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        // Check whether the passed badge is in the authorized depositors list, if not, return all
-        // of the passed resources back to the caller.
-        if Self::validate_badge_is_authorized_depositor(&badge, api)?.is_err() {
-            return Ok(Some(bucket));
-        } else {
-            // Validate that the badge is actually present in the auth zone.
-            Self::validate_badge_is_present(badge, api)?;
-
-            // Perform the deposit.
-            Self::deposit(bucket, api)?;
-            Ok(None)
-        }
-    }
-
-    pub fn try_authorized_deposit_batch_or_refund<Y>(
-        buckets: Vec<Bucket>,
-        badge: ResourceOrNonFungible,
-        api: &mut Y,
-    ) -> Result<Option<Vec<Bucket>>, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        // Check whether the passed badge is in the authorized depositors list, if not, return all
-        // of the passed resources back to the caller.
-        if Self::validate_badge_is_authorized_depositor(&badge, api)?.is_err() {
-            return Ok(Some(buckets));
-        } else {
-            // Validate that the badge is actually present in the auth zone.
-            Self::validate_badge_is_present(badge, api)?;
-
-            // Perform the deposit.
-            Self::deposit_batch(buckets, api)?;
-            Ok(None)
-        }
-    }
-
-    pub fn try_authorized_deposit_or_abort<Y>(
-        bucket: Bucket,
-        badge: ResourceOrNonFungible,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        Self::validate_badge_is_authorized_depositor(&badge, api)??;
-        Self::validate_badge_is_present(badge, api)?;
-        Self::deposit(bucket, api)?;
-        Ok(())
-    }
-
-    pub fn try_authorized_deposit_batch_or_abort<Y>(
-        buckets: Vec<Bucket>,
-        badge: ResourceOrNonFungible,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        Self::validate_badge_is_authorized_depositor(&badge, api)??;
-        Self::validate_badge_is_present(badge, api)?;
-        Self::deposit_batch(buckets, api)?;
-        Ok(())
     }
 
     // Returns a result of a result. The outer result's error type is [`RuntimeError`] and it's for
