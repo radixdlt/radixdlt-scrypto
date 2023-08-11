@@ -144,7 +144,8 @@ impl SystemModuleMixer {
                 num_of_signatures,
                 max_per_function_royalty_in_xrd: execution_config.max_per_function_royalty_in_xrd,
                 enable_cost_breakdown: execution_config.enable_cost_breakdown,
-                costing_traces: index_map_new(),
+                execution_cost_breakdown: index_map_new(),
+                finalization_cost_breakdown: index_map_new(),
             },
             auth: AuthModule {
                 params: auth_zone_params.clone(),

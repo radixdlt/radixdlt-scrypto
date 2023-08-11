@@ -273,11 +273,15 @@ where
 
                 let fee_details = if execution_config.enable_cost_breakdown {
                     let execution_cost_breakdown = costing_module
-                        .costing_traces
+                        .execution_cost_breakdown
                         .into_iter()
                         .map(|(k, v)| (k.to_string(), v))
                         .collect();
-                    let finalization_cost_breakdown = Default::default();
+                    let finalization_cost_breakdown = costing_module
+                        .finalization_cost_breakdown
+                        .into_iter()
+                        .map(|(k, v)| (k.to_string(), v))
+                        .collect();
                     Some(TransactionFeeDetails {
                         execution_cost_breakdown,
                         finalization_cost_breakdown,

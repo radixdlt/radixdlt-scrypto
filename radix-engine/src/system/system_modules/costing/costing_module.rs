@@ -46,7 +46,8 @@ pub struct CostingModule {
     /// The maximum allowed method royalty in XRD allowed to be set by package and component owners
     pub max_per_function_royalty_in_xrd: Decimal,
     pub enable_cost_breakdown: bool,
-    pub costing_traces: IndexMap<String, u32>,
+    pub execution_cost_breakdown: IndexMap<String, u32>,
+    pub finalization_cost_breakdown: IndexMap<String, u32>,
 }
 
 impl CostingModule {
@@ -70,7 +71,7 @@ impl CostingModule {
 
         if self.enable_cost_breakdown {
             let key = costing_entry.to_trace_key();
-            self.costing_traces
+            self.execution_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
@@ -93,7 +94,7 @@ impl CostingModule {
 
         if self.enable_cost_breakdown {
             let key = costing_entry.to_trace_key();
-            self.costing_traces
+            self.execution_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
@@ -118,7 +119,7 @@ impl CostingModule {
 
         if self.enable_cost_breakdown {
             let key = costing_entry.to_trace_key();
-            self.costing_traces
+            self.finalization_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
