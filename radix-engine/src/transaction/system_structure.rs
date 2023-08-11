@@ -206,9 +206,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     field_kind: SystemFieldKind::TypeInfo,
                 })
             }
-            SystemPartitionDescription::Schema => {
-                SubstateSystemStructure::SystemSchema
-            }
+            SystemPartitionDescription::Schema => SubstateSystemStructure::SystemSchema,
             SystemPartitionDescription::Module(module_id, partition_offset) => {
                 let (blueprint_id, type_substitution_refs) = if let ObjectModuleId::Main = module_id
                 {

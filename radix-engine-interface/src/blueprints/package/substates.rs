@@ -1,4 +1,4 @@
-use crate::api::{CollectionIndex};
+use crate::api::CollectionIndex;
 use crate::blueprints::package::BlueprintType;
 use crate::schema::*;
 use crate::types::*;

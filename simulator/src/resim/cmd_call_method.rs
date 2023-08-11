@@ -96,40 +96,37 @@ impl CallMethod {
         args: Vec<String>,
         account: Option<ComponentAddress>,
     ) -> Result<ManifestBuilder, Error> {
-        let bp_id = get_blueprint_id(component_address)?;
-        let bp_def = export_blueprint_interface(bp_id.package_address, &bp_id.blueprint_name)?;
+        let object_info = export_object_info(component_address)?;
+        let bp_info = object_info.blueprint_info;
+        let bp_id = bp_info.blueprint_id;
+        let bp_interface =
+            export_blueprint_interface(bp_id.package_address, &bp_id.blueprint_name)?;
 
-        let function_schema = bp_def.find_method(method_name.as_str()).ok_or_else(|| {
-            Error::TransactionConstructionError(BuildCallInstructionError::MethodNotFound(
-                method_name.clone(),
-            ))
-        })?;
+        let function_schema = bp_interface
+            .find_method(method_name.as_str())
+            .ok_or_else(|| {
+                Error::TransactionConstructionError(BuildCallInstructionError::MethodNotFound(
+                    method_name.clone(),
+                ))
+            })?;
 
         let (schema, index) = match function_schema.input {
             BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, index)) => {
-                let schema = export_schema(bp_id.package_address, schema_hash)?;
+                let schema = export_schema(bp_id.package_address.as_node_id(), schema_hash)?;
                 (schema, index)
             }
-            BlueprintPayloadDef::Generic(instance_index) => {
-                todo!()
-                /*
-                let object_info = export_object_info(component_address)?;
-                match object_info.blueprint_info.type_substitutions {
-                    None => {
-                        return Err(Error::InstanceSchemaNot(component_address, instance_index))
-                    }
-                    Some(instance_schema) => {
-                        let type_identifier = instance_schema
-                            .instance_type_lookup
-                            .get(instance_index as usize)
-                            .ok_or_else(|| {
-                                Error::InstanceSchemaNot(component_address, instance_index)
-                            })?
-                            .clone();
-                        (instance_schema.schema, type_identifier.1)
+            BlueprintPayloadDef::Generic(generic_index) => {
+                let type_subst_ref = bp_info
+                    .type_substitutions_refs
+                    .get(generic_index as usize)
+                    .ok_or_else(|| Error::InstanceSchemaNot(component_address, generic_index))?;
+
+                match type_subst_ref {
+                    TypeSubstitutionRef::Local(type_id) => {
+                        let schema = export_schema(bp_id.package_address.as_node_id(), type_id.0)?;
+                        (schema, type_id.1)
                     }
                 }
-                 */
             }
         };
 

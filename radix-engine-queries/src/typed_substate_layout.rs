@@ -191,13 +191,11 @@ pub fn to_typed_substate_key(
             ))
         }
         SCHEMAS_PARTITION => {
-            let key = substate_key
-                .for_map()
-                .ok_or_else(|| error("Schema key"))?;
+            let key = substate_key.for_map().ok_or_else(|| error("Schema key"))?;
             TypedSubstateKey::Schema(TypedSchemaSubstateKey::SchemaKey(
                 scrypto_decode(key).map_err(|_| error("Schema key"))?,
             ))
-        },
+        }
         METADATA_BASE_PARTITION => {
             TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(
                 scrypto_decode(

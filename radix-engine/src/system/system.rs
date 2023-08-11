@@ -203,7 +203,7 @@ where
             },
         };
 
-        let mut partitions = IndexMap::new();
+        let mut partitions = index_map_new();
 
         // Fields
         {

@@ -4,6 +4,7 @@ use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;
 use radix_engine_common::types::NodeId;
 use sbor::rust::fmt;
+use sbor::rust::string::String;
 use utils::ContextualDisplay;
 
 /// Identifies a specific event schema emitter by some emitter RENode.
@@ -35,9 +36,8 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
             Self::Function(blueprint_id) => {
                 write!(
                     f,
-                    "Function {{ package: {}, blueprint_name: {} }}",
-                    blueprint_id.package_address.display(*context),
-                    blueprint_id.blueprint_name,
+                    "Function {{ blueprint_id: {} }}",
+                    blueprint_id.display(*context),
                 )
             }
             Self::Method(node_id, module_id) => {

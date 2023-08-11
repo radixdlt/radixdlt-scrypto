@@ -112,7 +112,7 @@ impl CallFunction {
 
         let (schema, index) = match function_schema.input {
             BlueprintPayloadDef::Static(TypeIdentifier(hash, index)) => {
-                let schema = export_schema(package_address, hash)?;
+                let schema = export_schema(package_address.as_node_id(), hash)?;
                 (schema, index)
             }
             BlueprintPayloadDef::Generic(_instance_index) => {
