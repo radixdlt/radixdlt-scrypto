@@ -932,7 +932,7 @@ impl PackageNativePackage {
                 .into_iter()
                 .map(|(blueprint_name, blueprint_definition)| {
                     (
-                        BlueprintVersionKey::new_default(blueprint_name),
+                        BlueprintVersionKey::new_default(blueprint_name).into_key(),
                         blueprint_definition.into_locked_substate(),
                     )
                 })
@@ -941,7 +941,7 @@ impl PackageNativePackage {
                 .into_iter()
                 .map(|(blueprint_name, blueprint_dependencies)| {
                     (
-                        BlueprintVersionKey::new_default(blueprint_name),
+                        BlueprintVersionKey::new_default(blueprint_name).into_key(),
                         blueprint_dependencies.into_locked_substate(),
                     )
                 })
@@ -949,14 +949,17 @@ impl PackageNativePackage {
             schemas: schemas
                 .into_iter()
                 .map(|(schema_hash, schema)| {
-                    (SchemaHash::from(schema_hash), schema.into_locked_substate())
+                    (
+                        SchemaHash::from(schema_hash).into_key(),
+                        schema.into_locked_substate(),
+                    )
                 })
                 .collect(),
             blueprint_version_royalty_configs: package_royalties
                 .into_iter()
                 .map(|(blueprint_name, royalty_config)| {
                     (
-                        BlueprintVersionKey::new_default(blueprint_name),
+                        BlueprintVersionKey::new_default(blueprint_name).into_key(),
                         royalty_config.into_locked_substate(),
                     )
                 })
@@ -965,7 +968,7 @@ impl PackageNativePackage {
                 .into_iter()
                 .map(|(blueprint_name, auth_config)| {
                     (
-                        BlueprintVersionKey::new_default(blueprint_name),
+                        BlueprintVersionKey::new_default(blueprint_name).into_key(),
                         auth_config.into_locked_substate(),
                     )
                 })
@@ -974,7 +977,7 @@ impl PackageNativePackage {
                 .into_iter()
                 .map(|(code_hash, vm_type)| {
                     (
-                        CodeHash::from(code_hash),
+                        CodeHash::from(code_hash).into_key(),
                         PackageCodeVmTypeValue {
                             vm_type: vm_type.vm_type,
                         }
@@ -986,7 +989,7 @@ impl PackageNativePackage {
                 .into_iter()
                 .map(|(code_hash, original_code)| {
                     (
-                        CodeHash::from(code_hash),
+                        CodeHash::from(code_hash).into_key(),
                         PackageCodeOriginalCodeValue {
                             code: original_code.code,
                         }
@@ -998,7 +1001,7 @@ impl PackageNativePackage {
                 .into_iter()
                 .map(|(code_hash, instrumented_code)| {
                     (
-                        CodeHash::from(code_hash),
+                        CodeHash::from(code_hash).into_key(),
                         PackageCodeInstrumentedCodeValue {
                             code: instrumented_code.code,
                         }

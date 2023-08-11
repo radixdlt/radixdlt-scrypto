@@ -1,50 +1,40 @@
 use crate::system::system::*;
 use crate::types::*;
 
-pub trait FieldContent: Sized {
-    type ActualContent: From<Self>;
-
-    fn into_locked_substate(self) -> FieldSubstate<Self::ActualContent> {
+pub trait FieldContent<ActualContent: From<Self>>: Sized {
+    fn into_locked_substate(self) -> FieldSubstate<ActualContent> {
         FieldSubstate::new_locked_field(self.into())
     }
 
-    fn into_mutable_substate(self) -> FieldSubstate<Self::ActualContent> {
+    fn into_mutable_substate(self) -> FieldSubstate<ActualContent> {
         FieldSubstate::new_field(self.into())
     }
 }
 
-pub trait KeyContent: Sized {
-    type ActualContent: From<Self>;
-
-    fn into_key(self) -> Self::ActualContent {
+pub trait KeyContent<ActualContent: From<Self>>: Sized {
+    fn into_key(self) -> ActualContent {
         self.into()
     }
 }
 
-pub trait KeyValueEntryContent: Sized {
-    type ActualContent: From<Self>;
-
-    fn into_locked_substate(self) -> KeyValueEntrySubstate<Self::ActualContent> {
+pub trait KeyValueEntryContent<ActualContent: From<Self>>: Sized {
+    fn into_locked_substate(self) -> KeyValueEntrySubstate<ActualContent> {
         KeyValueEntrySubstate::entry(self.into())
     }
 
-    fn into_mutable_substate(self) -> KeyValueEntrySubstate<Self::ActualContent> {
+    fn into_mutable_substate(self) -> KeyValueEntrySubstate<ActualContent> {
         KeyValueEntrySubstate::locked_entry(self.into())
     }
 }
 
-pub trait IndexEntryContent: Sized {
-    type ActualContent: From<Self>;
-
-    fn into_substate(self) -> Self::ActualContent {
+pub trait IndexEntryContent<ActualContent: From<Self>>: Sized {
+    fn into_substate(self) -> ActualContent {
         self.into()
     }
 }
 
-pub trait SortedIndexEntryContent: Sized {
-    type ActualContent: From<Self>;
-
-    fn into_substate(self) -> Self::ActualContent {
+pub trait SortedIndexEntryContent<ActualContent: From<Self>>: Sized {
+    fn into_substate(self) -> ActualContent {
         self.into()
     }
 }
@@ -97,10 +87,10 @@ macro_rules! declare_native_blueprint_state {
                     ident: $field_ident:ident,
                     field_type: $field_type:tt,
                     condition: $field_condition:expr
-                    $(,)? // Optional trialing comma
+                    $(,)? // Optional trailing comma
                 }
             ),*
-            $(,)? // Optional trialing comma
+            $(,)? // Optional trailing comma
         },
         collections: {
             $(
@@ -112,10 +102,10 @@ macro_rules! declare_native_blueprint_state {
                     // Collection options for (eg) passing in a property name
                     // of the sorted index parameter for SortedIndex
                     $(, options: $collection_options:tt)?
-                    $(,)? // Optional trialing comma
+                    $(,)? // Optional trailing comma
                 }
             ),*
-            $(,)? // Optional trialing comma
+            $(,)? // Optional trailing comma
         }
         $(,)?
     ) => {
@@ -137,12 +127,19 @@ macro_rules! declare_native_blueprint_state {
 
                 // Generate models for each field
                 $(
-                    generate_content_type_aliases!(
+                    // Value
+                    // > Set up Versioned types (if relevant). Assumes __FieldV1 exists and then creates
+                    //   - Versioned__Field
+                    //   - __Field (alias for __FieldV1)
+                    // > Set up the (transparent) _FieldContent new type for the content of the field
+                    // > Set up the FieldContent trait for anything which can be resolved into the field content
+                    generate_content_type!(
                         content_trait: FieldContent,
                         ident_core: [<$blueprint_ident $field_ident Field>],
-                        type [<$blueprint_ident $field_ident FieldContent>] = $field_type
+                        #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
+                        struct [<$blueprint_ident $field_ident FieldContent>] = $field_type
                     );
-                    // Part 2 - Generate the common Substate type aliases for FieldContent
+                    // > Set up the _FieldSubstate alias for the system-wrapped substate
                     generate_system_substate_type_alias!(
                         Field,
                         type [<$blueprint_ident $field_ident FieldSubstate>] = WRAPPED [<$blueprint_ident $field_ident FieldContent>]
@@ -152,25 +149,32 @@ macro_rules! declare_native_blueprint_state {
                 // Generate models for each collection
                 $(
                     // Key
-                    // > Set up any Versioned types
-                    // > Set up the _KeyContent alias
-                    // > Set up the KeyContent traits
-                    generate_content_type_aliases!(
+                    // > Set up Versioned types (if relevant). Assumes __KeyInnerV1 exists and then creates
+                    //   - Versioned__KeyInner
+                    //   - __KeyInner (alias for __KeyInnerV1)
+                    // > Create the (transparent) _Key new type for the key
+                    // > Set up the KeyContent traits for anything which can be resolved into a key
+                    generate_content_type!(
                         content_trait: KeyContent,
                         ident_core: [<$blueprint_ident $collection_ident KeyInner>],
-                        type [<$blueprint_ident $collection_ident Key>] = $collection_key_type
+                        #[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
+                        #[sbor(transparent_name)]
+                        struct [<$blueprint_ident $collection_ident Key>] = $collection_key_type
                     );
 
                     // Values
-                    // > Set up any Versioned types
-                    // > Set up the _ValueContent alias
+                    // > Set up Versioned types (if relevant). Assumes __ValueV1 exists and then creates
+                    //   - Versioned__Value
+                    //   - __Value (alias for __ValueV1)
+                    // > Set up the (transparent) _ValueContent new type for the value content
                     // > Set up the _EntryContent traits
-                    generate_content_type_aliases!(
+                    generate_content_type!(
                         content_trait: [<$collection_type EntryContent>],
                         ident_core: [<$blueprint_ident $collection_ident Value>],
-                        type [<$blueprint_ident $collection_ident ValueContent>] = $collection_value_type
+                        #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
+                        struct [<$blueprint_ident $collection_ident ValueContent>] = $collection_value_type
                     );
-                    // > Set up the _EntrySubstate alias
+                    // > Set up the _EntrySubstate alias for the system-wrapped substate
                     generate_system_substate_type_alias!(
                         $collection_type,
                         type [<$blueprint_ident $collection_ident EntrySubstate>] = WRAPPED [<$blueprint_ident $collection_ident ValueContent>]
@@ -481,52 +485,66 @@ pub(crate) use declare_native_blueprint_state;
 pub(crate) use helper_macros::*;
 
 mod helper_macros {
-    macro_rules! generate_content_type_aliases {
+    macro_rules! generate_content_type {
         (
             content_trait: $content_trait:ident,
             ident_core: $ident_core:ident,
-            type $alias:ident = {
+            $(#[$attributes:meta])*
+            struct $content_type_name:ident = {
                 kind: StaticSingleVersioned
                 $(,)?
             }$(,)?
         ) => {
             paste::paste! {
                 sbor::define_single_versioned!(
-                    #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
+                    $(#[$attributes])*
                     pub enum [<Versioned $ident_core>] => $ident_core = [<$ident_core V1>]
                 );
-                pub type $alias = [<Versioned $ident_core>];
-                impl $content_trait for $ident_core {
-                    type ActualContent = $alias;
+                $(#[$attributes])*
+                #[sbor(transparent)]
+                pub struct $content_type_name(pub [<Versioned $ident_core>]);
+                impl From<[<Versioned $ident_core>]> for $content_type_name {
+                    fn from(value: [<Versioned $ident_core>]) -> Self {
+                        Self(value)
+                    }
                 }
-                impl $content_trait for $alias {
-                    type ActualContent = Self;
+                impl $content_trait<$content_type_name> for [<Versioned $ident_core>] {}
+                // Also add impls from the "latest" type
+                impl From<$ident_core> for $content_type_name {
+                    fn from(value: $ident_core) -> Self {
+                        Self(value.into())
+                    }
                 }
+                impl $content_trait<$content_type_name> for $ident_core {}
             }
         };
         (
             content_trait: $content_trait:ident,
             ident_core: $ident_core:ident,
-            type $alias:ident = {
+            $(#[$attributes:meta])*
+            struct $content_type_name:ident = {
                 kind: Static,
                 the_type: $static_type:ty
                 $(,)?
             }$(,)?
         ) => {
             paste::paste! {
-                pub type $alias = $static_type;
-                // TODO(David) - Fix this for eg BlueprintVersion being used in multiple keys
-                // - Maybe by making these aliases actually new-types(?)
-                // - Or by removing these traits completely perhaps...
-                // impl $content_trait for $alias {
-                //     type ActualContent = Self;
-                // }
+                $(#[$attributes])*
+                #[sbor(transparent)]
+                pub struct $content_type_name(pub $static_type);
+                impl From<$static_type> for $content_type_name {
+                    fn from(value: $static_type) -> Self {
+                        Self(value)
+                    }
+                }
+                impl $content_trait<$content_type_name> for $static_type {}
             }
         };
         (
             content_trait: $content_trait:ident,
             ident_core: $ident_core:ident,
-            type $alias:ident = {
+            $(#[$attributes:meta])*
+            struct $alias:ident = {
                 kind: Instance,
                 ident: $instance_ident:ident
                 $(,)?
@@ -537,7 +555,7 @@ mod helper_macros {
     }
 
     #[allow(unused)]
-    pub(crate) use generate_content_type_aliases;
+    pub(crate) use generate_content_type;
 
     macro_rules! generate_system_substate_type_alias {
         (SystemField, type $alias:ident = WRAPPED $content:ty$(,)?) => {
