@@ -218,12 +218,12 @@ pub struct BlueprintInterface {
 }
 
 impl BlueprintInterface {
-    pub fn get_field_payload_dev(&self, field_index: u8) -> Option<BlueprintPayloadDef> {
-        self.state.get_field_payload_dev(field_index)
+    pub fn get_field_payload_def(&self, field_index: u8) -> Option<BlueprintPayloadDef> {
+        self.state.get_field_payload_def(field_index)
     }
 
-    pub fn get_kv_key_payload_dev(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
-        self.state.get_kv_key_payload_dev(collection_index)
+    pub fn get_kv_key_payload_def(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
+        self.state.get_kv_key_payload_def(collection_index)
     }
 
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
@@ -272,11 +272,11 @@ impl BlueprintInterface {
                 Some((payload_def, true, true))
             }
             BlueprintPayloadIdentifier::Field(field_index) => {
-                let payload_def = self.get_field_payload_dev(*field_index)?;
+                let payload_def = self.get_field_payload_def(*field_index)?;
                 Some((payload_def, true, self.is_transient))
             }
             BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Key) => {
-                let payload_def = self.get_kv_key_payload_dev(*collection_index)?;
+                let payload_def = self.get_kv_key_payload_def(*collection_index)?;
                 Some((payload_def, false, self.is_transient))
             }
             BlueprintPayloadIdentifier::KeyValueCollection(collection_index, KeyOrValue::Value) => {
@@ -368,7 +368,6 @@ impl IndexedStateSchema {
                 .fields
                 .into_iter()
                 .map(|field_schema| {
-                    // FIXME: Verify that these are checked to be consistent
                     let pointer = match field_schema.field {
                         TypeRef::Static(type_index) => {
                             BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
@@ -448,13 +447,13 @@ impl IndexedStateSchema {
             })
     }
 
-    pub fn get_field_payload_dev(&self, field_index: u8) -> Option<BlueprintPayloadDef> {
+    pub fn get_field_payload_def(&self, field_index: u8) -> Option<BlueprintPayloadDef> {
         let (_partition, fields) = self.fields.clone()?;
         let field_schema = fields.get(field_index.clone() as usize)?;
         Some(field_schema.field.clone())
     }
 
-    pub fn get_kv_key_payload_dev(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
+    pub fn get_kv_key_payload_def(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
         let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
             BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
