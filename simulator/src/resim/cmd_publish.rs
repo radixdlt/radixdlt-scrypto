@@ -5,9 +5,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedStateSchema, PackageExport,
     TypePointer, VmType, *,
 };
-use radix_engine_interface::blueprints::package::{PackageDefinition, PackageOriginalCodeSubstate};
 use radix_engine_interface::schema::TypeRef;
-use radix_engine_queries::typed_substate_layout::PackageVmTypeSubstate;
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},

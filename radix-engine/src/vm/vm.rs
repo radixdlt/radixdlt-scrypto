@@ -1,4 +1,7 @@
-use crate::blueprints::package::{PackageError, VmType};
+use crate::blueprints::package::{
+    PackageCodeInstrumentedCodeEntrySubstate, PackageCodeOriginalCodeEntrySubstate,
+    PackageCodeVmTypeEntrySubstate, PackageError, VmType,
+};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::system::KeyValueEntrySubstate;
@@ -63,14 +66,14 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 SystemLockData::default(),
             )?;
             let vm_type = api.kernel_read_substate(handle)?;
-            let vm_type: KeyValueEntrySubstate<PackageVmTypeSubstate> = vm_type.as_typed().unwrap();
+            let vm_type: PackageCodeVmTypeEntrySubstate = vm_type.as_typed().unwrap();
             api.kernel_close_substate(handle)?;
             vm_type
                 .value
                 .expect(&format!("Vm type not found: {:?}", export))
         };
 
-        let output = match vm_type.vm_type {
+        let output = match vm_type.0.into_latest().vm_type {
             VmType::Native => {
                 let original_code = {
                     let handle = api.kernel_open_substate_with_default(
@@ -87,7 +90,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                         SystemLockData::default(),
                     )?;
                     let original_code = api.kernel_read_substate(handle)?;
-                    let original_code: KeyValueEntrySubstate<PackageOriginalCodeSubstate> =
+                    let original_code: PackageCodeOriginalCodeEntrySubstate =
                         original_code.as_typed().unwrap();
                     api.kernel_close_substate(handle)?;
                     original_code
@@ -99,7 +102,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     .kernel_get_system()
                     .callback_obj
                     .native_vm
-                    .create_instance(address, &original_code.code)?;
+                    .create_instance(address, &original_code.0.into_latest().code)?;
                 let output = { vm_instance.invoke(export.export_name.as_str(), input, api)? };
 
                 output
@@ -120,12 +123,14 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                         SystemLockData::default(),
                     )?;
                     let instrumented_code = api.kernel_read_substate(handle)?;
-                    let instrumented_code: KeyValueEntrySubstate<PackageInstrumentedCodeSubstate> =
+                    let instrumented_code: PackageCodeInstrumentedCodeEntrySubstate =
                         instrumented_code.as_typed().unwrap();
                     api.kernel_close_substate(handle)?;
                     instrumented_code
                         .value
                         .expect(&format!("Instrumented code not found: {:?}", export))
+                        .0
+                        .into_latest()
                 };
 
                 let mut scrypto_vm_instance = {

@@ -203,13 +203,13 @@ impl CustomSchema for ScryptoCustomSchema {
 }
 
 pub trait HasSchemaHash {
-    fn generate_schema_hash(&self) -> Hash;
+    fn generate_schema_hash(&self) -> SchemaHash;
 }
 
 // TODO(David) - change to hash the VersionedScryptoSchema when we use that in substates
 impl HasSchemaHash for ScryptoSchema {
-    fn generate_schema_hash(&self) -> Hash {
-        hash(scrypto_encode(self).unwrap())
+    fn generate_schema_hash(&self) -> SchemaHash {
+        SchemaHash::from(hash(scrypto_encode(self).unwrap()))
     }
 }
 

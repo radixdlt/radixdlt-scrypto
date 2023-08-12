@@ -3,7 +3,9 @@ use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::types::*;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::NoOpWasmRuntime;
-use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageDefinition};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinitionInit, CodeHash, PackageDefinition,
+};
 use sbor::rust::iter;
 
 #[derive(Debug)]
@@ -28,7 +30,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
 
     // Validate WASM
     let validator = WasmValidator::default();
-    let code_hash = Hash([0u8; 32]);
+    let code_hash = CodeHash(Hash([0u8; 32]));
     let instrumented_code = validator
         .validate(&code, iter::empty())
         .map_err(|e| ExtractSchemaError::InvalidWasm(e))?

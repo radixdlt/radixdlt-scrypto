@@ -28,8 +28,8 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinitionInit, PackageDefinition, PackagePublishNativeManifestInput,
-    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
-    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+    PackagePublishWasmAdvancedManifestInput, TypePointer, PACKAGE_BLUEPRINT,
+    PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
     PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
@@ -38,9 +38,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
-use radix_engine_queries::typed_substate_layout::{
-    BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-};
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::db_key_mapper::{
     MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
@@ -550,17 +548,17 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let output = self
             .database
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<PackageRoyaltyAccumulatorSubstate>>(
+            .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltyAccumulatorFieldSubstate>(
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION,
-                &PackageField::Royalty.into(),
+                &PackageField::RoyaltyAccumulator.into(),
             )?
             .value
             .0;
 
         self.database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
-                output.royalty_vault.0.as_node_id(),
+                output.0.into_latest().royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &FungibleVaultField::LiquidFungible.into(),
             )
@@ -609,7 +607,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn get_package_scrypto_schemas(
         &self,
         package_address: &PackageAddress,
-    ) -> IndexMap<Hash, ScryptoSchema> {
+    ) -> IndexMap<SchemaHash, ScryptoSchema> {
         let mut schemas = index_map_new();
         for entry in self
             .substate_db()
@@ -620,12 +618,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     .unwrap(),
             ))
         {
-            let hash: Hash =
+            let hash: SchemaHash =
                 scrypto_decode(&SpreadPrefixKeyMapper::map_from_db_sort_key(&entry.0)).unwrap();
-            let value: KeyValueEntrySubstate<ScryptoSchema> = scrypto_decode(&entry.1).unwrap();
+            let value: PackageSchemaEntrySubstate = scrypto_decode(&entry.1).unwrap();
             match value.value {
                 Some(schema) => {
-                    schemas.insert(hash, schema);
+                    schemas.insert(hash, schema.0.into_latest());
                 }
                 None => {}
             }

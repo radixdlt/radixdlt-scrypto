@@ -8,6 +8,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
+use radix_engine_queries::typed_substate_layout::PackageCodeOriginalCodeEntrySubstate;
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -31,7 +32,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
     let (_, substate) = substate_db
-        .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<PackageOriginalCodeSubstate>, MapKey>(
+        .list_mapped::<SpreadPrefixKeyMapper, PackageCodeOriginalCodeEntrySubstate, MapKey>(
             package_address.as_node_id(),
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET)
@@ -50,7 +51,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {} bytes",
         "Code size".green().bold(),
-        substate.value.unwrap().code.len()
+        substate.value.unwrap().0.into_latest().code.len()
     );
     Ok(())
 }

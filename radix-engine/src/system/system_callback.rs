@@ -85,7 +85,7 @@ impl SystemLockData {
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, BlueprintDefinition>,
-    pub schema_cache: NonIterMap<Hash, ScryptoSchema>,
+    pub schema_cache: NonIterMap<SchemaHash, ScryptoSchema>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
 }

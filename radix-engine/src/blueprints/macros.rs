@@ -139,6 +139,7 @@ macro_rules! declare_native_blueprint_state {
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
                         struct [<$blueprint_ident $field_ident FieldContent>] = $field_type
                     );
+
                     // > Set up the _FieldSubstate alias for the system-wrapped substate
                     generate_system_substate_type_alias!(
                         Field,
@@ -161,6 +162,18 @@ macro_rules! declare_native_blueprint_state {
                         #[sbor(transparent_name)]
                         struct [<$blueprint_ident $collection_ident Key>] = $collection_key_type
                     );
+
+                    // TODO(David) - Properly handle SortedIndex:
+                    // Fix Key types for SortedIndex to have a named u16 part of the key,
+                    // use a different key trait, and use .for_sorted_key in the below.
+                    impl TryFrom<&SubstateKey> for [<$blueprint_ident $collection_ident Key>] {
+                        type Error = ();
+
+                        fn try_from(substate_key: &SubstateKey) -> Result<Self, Self::Error> {
+                            let key = substate_key.for_map().ok_or(())?;
+                            scrypto_decode(&key).map_err(|_| ())?
+                        }
+                    }
 
                     // Values
                     // > Set up Versioned types (if relevant). Assumes __ValueV1 exists and then creates
@@ -248,6 +261,14 @@ macro_rules! declare_native_blueprint_state {
                     }
                 }
 
+                impl TryFrom<PartitionOffset> for [<$blueprint_ident Partition>] {
+                    type Error = ();
+
+                    fn try_from(offset: PartitionOffset) -> Result<Self, Self::Error> {
+                        Self::from_repr(offset.0).ok_or(())
+                    }
+                }
+
                 //---------------------------------
                 // Typed Substate - Keys and Values
                 //---------------------------------
@@ -255,6 +276,26 @@ macro_rules! declare_native_blueprint_state {
                 pub enum [<$blueprint_ident TypedSubstateKey>] {
                     Fields([<$blueprint_ident Field>]),
                     $([<$collection_ident $collection_type Entries>]([<$blueprint_ident $collection_ident Key>]),)*
+                }
+
+                impl [<$blueprint_ident TypedSubstateKey>] {
+                    pub fn for_key_in_partition(partition: &[<$blueprint_ident Partition>], substate_key: &SubstateKey) -> Result<Self, ()> {
+                        let key = match partition {
+                            [<$blueprint_ident Partition>]::Field => {
+                                [<$blueprint_ident TypedSubstateKey>]::Fields(
+                                    [<$blueprint_ident Field>]::try_from(substate_key)?
+                                )
+                            }
+                            $(
+                                [<$blueprint_ident Partition>]::[<$collection_ident $collection_type>] => {
+                                    [<$blueprint_ident TypedSubstateKey>]::[<$collection_ident $collection_type Entries>](
+                                        [<$blueprint_ident $collection_ident Key>]::try_from(substate_key)?,
+                                    )
+                                }
+                            )*
+                        };
+                        Ok(key)
+                    }
                 }
 
                 #[derive(Debug)]
@@ -266,6 +307,30 @@ macro_rules! declare_native_blueprint_state {
                 pub enum [<$blueprint_ident TypedSubstateValue>] {
                     Field([<$blueprint_ident TypedFieldSubstateValue>]),
                     $([<$collection_ident $collection_type>]([<$blueprint_ident $collection_ident EntrySubstate>]),)*
+                }
+
+                impl [<$blueprint_ident TypedSubstateValue>] {
+                    pub fn from_key_and_data(key: &[<$blueprint_ident TypedSubstateKey>], data: &[u8]) -> Result<Self, DecodeError> {
+                        let substate_value = match key {
+                            // Fields
+                            $(
+                                [<$blueprint_ident TypedSubstateKey>]::Fields([<$blueprint_ident Field>]::$field_ident) => {
+                                    [<$blueprint_ident TypedSubstateValue>]::Field(
+                                        [<$blueprint_ident TypedFieldSubstateValue>]::$field_ident(scrypto_decode(data)?)
+                                    )
+                                }
+                            )*
+                            // Collections
+                            $(
+                                [<$blueprint_ident TypedSubstateKey>]::[<$collection_ident $collection_type Entries>](_) => {
+                                    [<$blueprint_ident TypedSubstateValue>]::[<$collection_ident $collection_type>](
+                                        scrypto_decode(data)?
+                                    )
+                                }
+                            )*
+                        };
+                        Ok(substate_value)
+                    }
                 }
 
                 //----------------------
@@ -544,14 +609,17 @@ mod helper_macros {
             content_trait: $content_trait:ident,
             ident_core: $ident_core:ident,
             $(#[$attributes:meta])*
-            struct $alias:ident = {
+            struct $content_type_name:ident = {
                 kind: Instance,
                 ident: $instance_ident:ident
                 $(,)?
             }
         ) => {
-            // Don't output any types for an instance schema
-        }; // TODO - Add support for some kind of StaticMultiVersioned type here
+            $(#[$attributes])*
+            #[sbor(transparent)]
+            pub struct $content_type_name<$instance_ident = ScryptoValue>(pub $instance_ident);
+        };
+        // TODO - Add support for some kind of StaticMultiVersioned type here
     }
 
     #[allow(unused)]

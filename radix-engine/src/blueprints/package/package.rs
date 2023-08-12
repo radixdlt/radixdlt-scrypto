@@ -26,16 +26,11 @@ use syn::Ident;
 use crate::roles_template;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::royalty::RoyaltyUtil;
-use crate::system::system::{
-    FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
-};
+use crate::system::system::*;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 use crate::vm::VmPackageValidation;
-pub use radix_engine_interface::blueprints::package::{
-    PackageInstrumentedCodeSubstate, PackageOriginalCodeSubstate, PackageRoyaltyAccumulatorSubstate,
-};
 
 use super::*;
 
@@ -506,7 +501,7 @@ pub fn create_bootstrap_package_partitions(
             .get_mut(&PackagePartition::Field.as_main_partition())
             .unwrap();
         field_partition
-            .remove_entry(&PackageField::Royalty.into())
+            .remove_entry(&PackageField::RoyaltyAccumulator.into())
             .unwrap();
     }
 
@@ -597,17 +592,6 @@ where
     )?;
 
     Ok(PackageAddress::new_or_panic(address.into_node_id().0))
-}
-
-pub struct PackageStructure {
-    pub definitions: BTreeMap<String, BlueprintDefinition>,
-    pub dependencies: BTreeMap<String, BlueprintDependencies>,
-    pub schemas: BTreeMap<Hash, ScryptoSchema>,
-    pub vm_type: BTreeMap<Hash, PackageVmTypeSubstate>,
-    pub original_code: BTreeMap<Hash, PackageOriginalCodeSubstate>,
-    pub instrumented_code: BTreeMap<Hash, PackageInstrumentedCodeSubstate>,
-    pub auth_configs: BTreeMap<String, AuthConfig>,
-    pub package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
 }
 
 pub struct PackageNativePackage;
@@ -813,17 +797,17 @@ impl PackageNativePackage {
         let mut original_code_substates = BTreeMap::new();
         let mut instrumented_code_substates = BTreeMap::new();
 
-        let code_hash = hash(&original_code);
-        vm_type_substates.insert(code_hash, PackageVmTypeSubstate { vm_type });
+        let code_hash = CodeHash::from(hash(&original_code));
+        vm_type_substates.insert(code_hash, PackageCodeVmTypeValue { vm_type });
         original_code_substates.insert(
             code_hash,
-            PackageOriginalCodeSubstate {
+            PackageCodeOriginalCodeValue {
                 code: original_code,
             },
         );
         if let Some(code) = instrumented_code {
             instrumented_code_substates
-                .insert(code_hash, PackageInstrumentedCodeSubstate { code: code });
+                .insert(code_hash, PackageCodeInstrumentedCodeValue { code });
         };
 
         {
@@ -975,37 +959,20 @@ impl PackageNativePackage {
                 .collect(),
             code_vm_type: vm_type_substates
                 .into_iter()
-                .map(|(code_hash, vm_type)| {
-                    (
-                        CodeHash::from(code_hash).into_key(),
-                        PackageCodeVmTypeValue {
-                            vm_type: vm_type.vm_type,
-                        }
-                        .into_locked_substate(),
-                    )
-                })
+                .map(|(code_hash, vm_type)| (code_hash.into_key(), vm_type.into_locked_substate()))
                 .collect(),
             code_original_code: original_code_substates
                 .into_iter()
                 .map(|(code_hash, original_code)| {
-                    (
-                        CodeHash::from(code_hash).into_key(),
-                        PackageCodeOriginalCodeValue {
-                            code: original_code.code,
-                        }
-                        .into_locked_substate(),
-                    )
+                    (code_hash.into_key(), original_code.into_locked_substate())
                 })
                 .collect(),
             code_instrumented_code: instrumented_code_substates
                 .into_iter()
                 .map(|(code_hash, instrumented_code)| {
                     (
-                        CodeHash::from(code_hash).into_key(),
-                        PackageCodeInstrumentedCodeValue {
-                            code: instrumented_code.code,
-                        }
-                        .into_locked_substate(),
+                        code_hash.into_key(),
+                        instrumented_code.into_locked_substate(),
                     )
                 })
                 .collect(),
@@ -1164,15 +1131,15 @@ impl PackageRoyaltyNativeBlueprint {
             let handle = api.kernel_open_substate(
                 receiver,
                 MAIN_BASE_PARTITION,
-                &PackageField::Royalty.into(),
+                &PackageField::RoyaltyAccumulator.into(),
                 LockFlags::MUTABLE,
                 SystemLockData::default(),
             )?;
 
-            let substate: FieldSubstate<PackageRoyaltyAccumulatorSubstate> =
+            let substate: PackageRoyaltyAccumulatorFieldSubstate =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            let vault_id = substate.value.0.royalty_vault.0;
+            let vault_id = substate.value.0 .0.into_latest().royalty_vault.0;
             let package_address = PackageAddress::new_or_panic(receiver.0);
             apply_royalty_cost(
                 api,
@@ -1199,12 +1166,12 @@ impl PackageRoyaltyNativeBlueprint {
 
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            PackageField::Royalty.into(),
+            PackageField::RoyaltyAccumulator.into(),
             LockFlags::read_only(),
         )?;
 
-        let mut substate: PackageRoyaltyAccumulatorSubstate = api.field_read_typed(handle)?;
-        let bucket = substate.royalty_vault.take_all(api)?;
+        let mut substate: PackageRoyaltyAccumulatorFieldContent = api.field_read_typed(handle)?;
+        let bucket = substate.0.into_latest().royalty_vault.take_all(api)?;
 
         Ok(bucket)
     }

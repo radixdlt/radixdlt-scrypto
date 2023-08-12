@@ -62,37 +62,9 @@ pub enum ComponentField {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum PackageField {
-    Royalty,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum FungibleResourceManagerField {
     Divisibility,
     TotalSupply,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum PackagePartitionOffset {
-    Fields,
-    Blueprints,
-    BlueprintDependencies,
-    Schemas,
-    RoyaltyConfig,
-    AuthConfig,
-    VmType,
-    OriginalCode,
-    InstrumentedCode,
-}
-
-impl TryFrom<u8> for PackagePartitionOffset {
-    type Error = ();
-
-    fn try_from(offset: u8) -> Result<Self, Self::Error> {
-        Self::from_repr(offset).ok_or(())
-    }
 }
 
 #[repr(u8)]
@@ -321,7 +293,6 @@ substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
 substate_key!(RoleAssignmentField);
 substate_key!(ComponentField);
-substate_key!(PackageField);
 substate_key!(FungibleResourceManagerField);
 substate_key!(FungibleVaultField);
 substate_key!(FungibleBucketField);

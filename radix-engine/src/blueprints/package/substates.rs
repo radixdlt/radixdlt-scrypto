@@ -121,11 +121,6 @@ pub struct PackageRoyaltyAccumulatorFieldV1 {
 // Collection models - Schemas
 //---------------------------------------
 
-define_wrapped_hash!(
-    /// Represents a particular schema under a package
-    SchemaHash
-);
-
 // TODO(David): Change to VersionedSchema when can define a type as not-implicitly-versioned
 // TODO: Move to Schema partition when we have it
 pub type PackageSchemaValueV1 = ScryptoSchema;
@@ -143,25 +138,36 @@ pub type PackageBlueprintVersionAuthConfigValueV1 = AuthConfig;
 // Collection models - By Code
 //---------------------------------------
 
-define_wrapped_hash!(
-    /// Represents a particular instance of code under a package
-    CodeHash
-);
-
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct PackageCodeVmTypeValueV1 {
     pub vm_type: VmType,
 }
 
-#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
+#[derive(PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct PackageCodeOriginalCodeValueV1 {
     pub code: Vec<u8>,
 }
 
-#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
+impl Debug for PackageCodeOriginalCodeValueV1 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PackageCodeOriginalCodeValueV1")
+            .field("len", &self.code.len())
+            .finish()
+    }
+}
+
+#[derive(PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct PackageCodeInstrumentedCodeValueV1 {
     pub code: Vec<u8>,
+}
+
+impl Debug for PackageCodeInstrumentedCodeValueV1 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PackageCodeInstrumentedCodeValueV1")
+            .field("len", &self.code.len())
+            .finish()
+    }
 }

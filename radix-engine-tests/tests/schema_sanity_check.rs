@@ -159,7 +159,7 @@ fn check_type_pointers(
 }
 
 fn check_type_pointer(
-    schemas_by_hash: &IndexMap<Hash, ScryptoSchema>,
+    schemas_by_hash: &IndexMap<SchemaHash, ScryptoSchema>,
     type_pointer: &TypePointer,
 ) -> CheckResult {
     match type_pointer {

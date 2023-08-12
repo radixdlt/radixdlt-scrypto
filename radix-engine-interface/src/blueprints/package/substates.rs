@@ -1,12 +1,9 @@
 use crate::blueprints::package::BlueprintType;
+use crate::prelude::*;
 use crate::schema::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::crypto::Hash;
-use radix_engine_interface::blueprints::resource::Vault;
-use sbor::rust::fmt;
-use sbor::rust::fmt::{Debug, Formatter};
-use sbor::rust::prelude::*;
 
 pub const PACKAGE_CODE_ID: u64 = 0u64;
 pub const RESOURCE_CODE_ID: u64 = 1u64;
@@ -32,55 +29,15 @@ pub const PACKAGE_VM_TYPE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u
 pub const PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(7u8);
 pub const PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(8u8);
 
+define_wrapped_hash!(
+    /// Represents a particular instance of code under a package
+    CodeHash
+);
+
 #[derive(Copy, Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmType {
     Native,
     ScryptoV1,
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq)]
-pub struct PackageVmTypeSubstate {
-    pub vm_type: VmType,
-}
-
-#[derive(Clone, Sbor, PartialEq, Eq)]
-pub struct PackageOriginalCodeSubstate {
-    pub code: Vec<u8>,
-}
-
-#[derive(Clone, Sbor, PartialEq, Eq)]
-pub struct PackageInstrumentedCodeSubstate {
-    pub code: Vec<u8>,
-}
-
-impl Debug for PackageOriginalCodeSubstate {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PackageOriginalCodeSubstate")
-            .field("len", &self.code.len())
-            .finish()
-    }
-}
-
-impl Debug for PackageInstrumentedCodeSubstate {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PackageInstrumentedCodeSubstate")
-            .field("len", &self.code.len())
-            .finish()
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
-pub struct PackageRoyaltyAccumulatorSubstate {
-    /// The vault for collecting package royalties.
-    pub royalty_vault: Vault,
-}
-
-impl Clone for PackageRoyaltyAccumulatorSubstate {
-    fn clone(&self) -> Self {
-        Self {
-            royalty_vault: Vault(self.royalty_vault.0.clone()),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
@@ -143,7 +100,7 @@ pub struct BlueprintDependencies {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageExport {
-    pub code_hash: Hash,
+    pub code_hash: CodeHash,
     pub export_name: String,
 }
 
@@ -226,7 +183,7 @@ pub struct IndexedStateSchema {
 }
 
 impl IndexedStateSchema {
-    pub fn from_schema(schema_hash: Hash, schema: BlueprintStateSchemaInit) -> Self {
+    pub fn from_schema(schema_hash: SchemaHash, schema: BlueprintStateSchemaInit) -> Self {
         let mut partition_offset = 0u8;
 
         let mut fields = None;

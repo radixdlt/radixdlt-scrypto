@@ -1,3 +1,4 @@
+use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::mem::transmute;
 use sbor::rust::mem::MaybeUninit;
 #[cfg(not(feature = "radix_engine_fuzzing"))]
@@ -1230,9 +1231,9 @@ pub struct WasmiEngineOptions {
 pub struct WasmiEngine {
     // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
     #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
-    modules_cache: RefCell<lru::LruCache<Hash, Arc<WasmiModule>>>,
+    modules_cache: RefCell<lru::LruCache<CodeHash, Arc<WasmiModule>>>,
     #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
-    modules_cache: moka::sync::Cache<Hash, Arc<WasmiModule>>,
+    modules_cache: moka::sync::Cache<CodeHash, Arc<WasmiModule>>,
     #[cfg(feature = "radix_engine_fuzzing")]
     #[allow(dead_code)]
     modules_cache: usize,
@@ -1254,7 +1255,7 @@ impl WasmiEngine {
         ));
         #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
-            .weigher(|_key: &Hash, _value: &Arc<WasmiModule>| -> u32 {
+            .weigher(|_key: &CodeHash, _value: &Arc<WasmiModule>| -> u32 {
                 // No sophisticated weighing mechanism, just keep a fixed size cache
                 1u32
             })
@@ -1271,7 +1272,7 @@ impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
     #[allow(unused_variables)]
-    fn instantiate(&self, code_hash: Hash, instrumented_code: &[u8]) -> WasmiInstance {
+    fn instantiate(&self, code_hash: CodeHash, instrumented_code: &[u8]) -> WasmiInstance {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]

@@ -76,6 +76,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_queries::typed_substate_layout::PackageSchemaEntrySubstate;
 use radix_engine_store_interface::{
     db_key_mapper::{
         MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
@@ -377,7 +378,7 @@ pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectI
 
 pub fn export_schema(
     package_address: PackageAddress,
-    schema_hash: Hash,
+    schema_hash: SchemaHash,
 ) -> Result<ScryptoSchema, Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
@@ -386,7 +387,7 @@ pub fn export_schema(
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
     let schema = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+        .get_mapped::<SpreadPrefixKeyMapper, PackageSchemaEntrySubstate>(
             package_address.as_node_id(),
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
@@ -395,7 +396,9 @@ pub fn export_schema(
         )
         .ok_or(Error::SchemaNotFound(package_address, schema_hash))?
         .value
-        .unwrap();
+        .unwrap()
+        .0
+        .into_latest();
 
     Ok(schema)
 }

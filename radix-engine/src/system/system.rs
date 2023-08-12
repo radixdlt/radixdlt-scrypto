@@ -498,7 +498,7 @@ where
     pub fn get_schema(
         &mut self,
         package_address: PackageAddress,
-        schema_hash: &Hash,
+        schema_hash: &SchemaHash,
     ) -> Result<ScryptoSchema, RuntimeError> {
         let def = self
             .api
