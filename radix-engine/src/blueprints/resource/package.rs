@@ -16,7 +16,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::hooks::OnDropInput;
 use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema, Generic,
+    BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema, GenericBound,
 };
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit,
@@ -691,7 +691,7 @@ impl ResourceNativePackage {
                 ),
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
-                    generics: vec![Generic::Any],
+                    generics: vec![GenericBound::Any],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,

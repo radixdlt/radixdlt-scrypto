@@ -101,8 +101,9 @@ impl Clone for PackageRoyaltyAccumulatorSubstate {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum BlueprintPayloadDef {
-    Static(TypeIdentifier),
-    Generic(u8),
+    Static(TypeIdentifier), // Fully Resolved type is defined in package
+    Generic(u8), // Fully Resolved type is mapped directly to a generic defined by instance
+    // TODO: How to represent a structure containing a generic?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -210,7 +211,7 @@ pub enum BlueprintPartitionType {
 pub struct BlueprintInterface {
     pub blueprint_type: BlueprintType,
     pub is_transient: bool,
-    pub generics: Vec<Generic>,
+    pub generics: Vec<GenericBound>,
     pub feature_set: BTreeSet<String>,
     pub state: IndexedStateSchema,
     pub functions: BTreeMap<String, FunctionSchema>,

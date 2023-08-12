@@ -17,7 +17,7 @@ pub struct KeyValueStoreTypeSubstitutions {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum Generic {
+pub enum GenericBound {
     Any,
 }
 
@@ -30,7 +30,7 @@ pub enum BlueprintHook {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchemaInit {
-    pub generics: Vec<Generic>,
+    pub generics: Vec<GenericBound>,
     pub schema: ScryptoSchema,
     pub state: BlueprintStateSchemaInit,
     pub events: BlueprintEventSchemaInit,
@@ -99,8 +99,9 @@ impl BlueprintSchemaInit {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum TypeRef<T> {
-    Static(T),   // Type is defined by blueprint
-    Generic(u8), // Type bounds is defined by blueprint, the type itself is defined by the instance
+    Static(T),   // Fully Resolved type is defined in package
+    Generic(u8), // Fully Resolved type is mapped directly to a generic
+    // TODO: How to represent a structure containing a generic?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
