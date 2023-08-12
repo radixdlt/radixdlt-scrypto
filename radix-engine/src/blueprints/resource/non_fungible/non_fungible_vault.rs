@@ -58,7 +58,7 @@ impl NonFungibleVaultBlueprint {
         let ids = taken.into_ids();
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids))?;
+        Runtime::emit_event(api, events::non_fungible_vault::WithdrawEvent { ids })?;
 
         Ok(bucket)
     }
@@ -79,7 +79,7 @@ impl NonFungibleVaultBlueprint {
         let ids = taken.into_ids();
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids))?;
+        Runtime::emit_event(api, events::non_fungible_vault::WithdrawEvent { ids })?;
 
         Ok(bucket)
     }
@@ -97,7 +97,7 @@ impl NonFungibleVaultBlueprint {
         // Put
         Self::internal_put(other_bucket.liquid, api)?;
 
-        Runtime::emit_event(api, DepositResourceEvent::Ids(ids))?;
+        Runtime::emit_event(api, events::non_fungible_vault::DepositEvent { ids })?;
 
         Ok(())
     }
@@ -176,7 +176,7 @@ impl NonFungibleVaultBlueprint {
         let ids = taken.into_ids();
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(api, RecallResourceEvent::Ids(ids))?;
+        Runtime::emit_event(api, events::non_fungible_vault::RecallEvent { ids })?;
 
         Ok(bucket)
     }
@@ -232,7 +232,7 @@ impl NonFungibleVaultBlueprint {
         let ids = taken.into_ids();
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(api, RecallResourceEvent::Ids(ids))?;
+        Runtime::emit_event(api, events::non_fungible_vault::RecallEvent { ids })?;
 
         Ok(bucket)
     }

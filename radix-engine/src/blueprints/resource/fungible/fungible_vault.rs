@@ -65,7 +65,12 @@ impl FungibleVaultBlueprint {
         // Create node
         let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;
 
-        Runtime::emit_event(api, WithdrawResourceEvent::Amount(taken.amount()))?;
+        Runtime::emit_event(
+            api,
+            events::fungible_vault::WithdrawEvent {
+                amount: taken.amount(),
+            },
+        )?;
 
         Ok(bucket)
     }
@@ -83,7 +88,7 @@ impl FungibleVaultBlueprint {
         // Put
         Self::internal_put(other_bucket.liquid, api)?;
 
-        Runtime::emit_event(api, DepositResourceEvent::Amount(amount))?;
+        Runtime::emit_event(api, events::fungible_vault::DepositEvent { amount })?;
 
         Ok(())
     }
@@ -151,7 +156,7 @@ impl FungibleVaultBlueprint {
         api.field_close(vault_handle)?;
 
         // Emitting an event once the fee has been locked
-        Runtime::emit_event(api, LockFeeEvent { amount })?;
+        Runtime::emit_event(api, events::fungible_vault::LockFeeEvent { amount })?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -173,7 +178,7 @@ impl FungibleVaultBlueprint {
 
         let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;
 
-        Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
+        Runtime::emit_event(api, events::fungible_vault::RecallEvent { amount })?;
 
         Ok(bucket)
     }

@@ -3,17 +3,13 @@
 //! the toolkit and consumed by the gateway for some of its internal operations.
 
 use crate::typed_substate_layout::*;
+use radix_engine::blueprints::account;
 use radix_engine::blueprints::native_schema::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::*;
 
 /// Given an [`EventTypeIdentifier`] and the raw event data, this function attempts to convert the
 /// event data into a structured model provided that the event is registered to a native blueprint.
-///
-/// # Panics
-///
-/// This function panics if the even't [`BlueprintPayloadDef`] is of variant [`BlueprintPayloadDef::Generic`] as
-/// generics are not supported in events.
 pub fn to_typed_native_event(
     event_type_identifier: &EventTypeIdentifier,
     event_data: &[u8],
@@ -202,7 +198,16 @@ define_structure! {
         ],
     },
     Account => {
-        Account => []
+        Account => [
+            AccountWithdrawEvent,
+            AccountDepositEvent,
+            AccountRejectedDepositEvent,
+            AccountSetResourcePreferenceEvent,
+            AccountRemoveResourcePreferenceEvent,
+            AccountSetDefaultDepositRuleEvent,
+            AccountAddAuthorizedDepositorEvent,
+            AccountRemoveAuthorizedDepositorEvent
+        ]
     },
     Identity => {
         Identity => []
@@ -249,16 +254,15 @@ define_structure! {
     },
     Resource => {
         FungibleVault => [
-            LockFeeEvent,
-            WithdrawResourceEvent,
-            DepositResourceEvent,
-            RecallResourceEvent,
+            FungibleVaultLockFeeEvent,
+            FungibleVaultWithdrawEvent,
+            FungibleVaultDepositEvent,
+            FungibleVaultRecallEvent
         ],
         NonFungibleVault => [
-            LockFeeEvent,
-            WithdrawResourceEvent,
-            DepositResourceEvent,
-            RecallResourceEvent,
+            NonFungibleVaultWithdrawEvent,
+            NonFungibleVaultDepositEvent,
+            NonFungibleVaultRecallEvent
         ],
         FungibleResourceManager => [
             VaultCreationEvent,
@@ -282,11 +286,8 @@ define_structure! {
     RoleAssignment => {
         RoleAssignment => [
             SetRoleEvent,
-            LockRoleEvent,
-            SetAndLockRoleEvent,
             SetOwnerRoleEvent,
             LockOwnerRoleEvent,
-            SetAndLockOwnerRoleEvent,
         ]
     },
     Metadata => {
@@ -315,6 +316,24 @@ type MultiResourcePoolContributionEvent = multi_resource_pool::ContributionEvent
 type MultiResourcePoolRedemptionEvent = multi_resource_pool::RedemptionEvent;
 type MultiResourcePoolWithdrawEvent = multi_resource_pool::WithdrawEvent;
 type MultiResourcePoolDepositEvent = multi_resource_pool::DepositEvent;
+
+type FungibleVaultLockFeeEvent = fungible_vault::LockFeeEvent;
+type FungibleVaultWithdrawEvent = fungible_vault::WithdrawEvent;
+type FungibleVaultDepositEvent = fungible_vault::DepositEvent;
+type FungibleVaultRecallEvent = fungible_vault::RecallEvent;
+
+type NonFungibleVaultWithdrawEvent = non_fungible_vault::WithdrawEvent;
+type NonFungibleVaultDepositEvent = non_fungible_vault::DepositEvent;
+type NonFungibleVaultRecallEvent = non_fungible_vault::RecallEvent;
+
+type AccountWithdrawEvent = account::WithdrawEvent;
+type AccountDepositEvent = account::DepositEvent;
+type AccountRejectedDepositEvent = account::RejectedDepositEvent;
+type AccountSetResourcePreferenceEvent = account::SetResourcePreferenceEvent;
+type AccountRemoveResourcePreferenceEvent = account::RemoveResourcePreferenceEvent;
+type AccountSetDefaultDepositRuleEvent = account::SetDefaultDepositRuleEvent;
+type AccountAddAuthorizedDepositorEvent = account::AddAuthorizedDepositorEvent;
+type AccountRemoveAuthorizedDepositorEvent = account::RemoveAuthorizedDepositorEvent;
 
 /// This enum uses some special syntax to define the structure of events. This makes the code for
 /// model definitions very compact, allows for very easy addition of more packages, blueprints or
@@ -557,6 +576,7 @@ pub enum TypedNativeEventError {
     },
     NotANativeBlueprint(EventTypeIdentifier),
     DecodeError(DecodeError),
+    GenericTypePointer,
 }
 
 impl From<DecodeError> for TypedNativeEventError {

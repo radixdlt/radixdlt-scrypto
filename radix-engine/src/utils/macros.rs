@@ -1,6 +1,6 @@
 #[macro_export]
 macro_rules! event_schema {
-    ($aggregator: ident, [$($event_type: ty),*]) => {
+    ($aggregator: ident, [$($event_type: ty),* $(,)?]) => {
         {
             let mut event_schema = sbor::rust::collections::BTreeMap::new();
             $(
