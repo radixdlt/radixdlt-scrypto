@@ -1,3 +1,4 @@
+use super::*;
 use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignment};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -5,10 +6,10 @@ use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeFungibleVault;
 use native_sdk::resource::NativeNonFungibleVault;
 use native_sdk::resource::NativeVault;
+use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -20,6 +21,12 @@ use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::metadata_init;
+
+// =================================================================================================
+// Notes:
+// 1. All deposits should go through the `deposit` method since it emits the deposit events.
+// 2. The `try_deposit` methods are responsible for emitting the rejected deposit events.
+// =================================================================================================
 
 pub const ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID: u8 = 0u8;
 pub const ACCOUNT_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
@@ -294,12 +301,18 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resource_address = bucket.resource_address(api)?;
+        let event = if resource_address.is_fungible() {
+            DepositEvent::Fungible(resource_address, bucket.amount(api)?)
+        } else {
+            DepositEvent::NonFungible(resource_address, bucket.non_fungible_local_ids(api)?)
+        };
         Self::get_vault(
             resource_address,
             |vault, api| vault.put(bucket, api),
             true,
             api,
         )?;
+        Runtime::emit_event(api, event)?;
         Ok(())
     }
 
@@ -314,61 +327,100 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    /// Method is public to all - if the resource can't be deposited it is returned.
     pub fn try_deposit_or_refund<Y>(
         bucket: Bucket,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
     ) -> Result<Option<Bucket>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let resource_address = bucket.resource_address(api)?;
-
         let is_deposit_allowed = Self::is_deposit_allowed(&resource_address, api)?;
         if is_deposit_allowed {
-            Self::get_vault(
-                resource_address,
-                |vault, api| vault.put(bucket, api),
-                true,
-                api,
-            )?;
+            Self::deposit(bucket, api)?;
+            Ok(None)
+        } else if let Some(badge) = authorized_depositor_badge {
+            Self::validate_badge_is_authorized_depositor(&badge, api)??;
+            Self::validate_badge_is_present(badge, api)?;
+            Self::deposit(bucket, api)?;
             Ok(None)
         } else {
+            let event = if resource_address.is_fungible() {
+                RejectedDepositEvent::Fungible(resource_address, bucket.amount(api)?)
+            } else {
+                RejectedDepositEvent::NonFungible(
+                    resource_address,
+                    bucket.non_fungible_local_ids(api)?,
+                )
+            };
+            Runtime::emit_event(api, event)?;
             Ok(Some(bucket))
         }
     }
 
-    /// Method is public to all - if ANY of the resources can't be deposited then ALL are returned.
     pub fn try_deposit_batch_or_refund<Y>(
         buckets: Vec<Bucket>,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
     ) -> Result<Option<Vec<Bucket>>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let can_all_be_deposited = buckets
+        let offending_buckets = buckets
             .iter()
             .map(|bucket| {
                 bucket
                     .resource_address(api)
                     .and_then(|resource_address| Self::is_deposit_allowed(&resource_address, api))
+                    .map(|can_be_deposited| (bucket, can_be_deposited))
             })
-            .all(|item| item == Ok(true));
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .filter_map(|(bucket, can_be_deposited)| {
+                if !can_be_deposited {
+                    Some(Bucket(bucket.0))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
 
-        if can_all_be_deposited {
+        if offending_buckets.is_empty() {
+            Self::deposit_batch(buckets, api)?;
+            Ok(None)
+        } else if let Some(badge) = authorized_depositor_badge {
+            Self::validate_badge_is_authorized_depositor(&badge, api)??;
+            Self::validate_badge_is_present(badge, api)?;
             Self::deposit_batch(buckets, api)?;
             Ok(None)
         } else {
+            for bucket in offending_buckets {
+                let resource_address = bucket.resource_address(api)?;
+                let event = if resource_address.is_fungible() {
+                    RejectedDepositEvent::Fungible(resource_address, bucket.amount(api)?)
+                } else {
+                    RejectedDepositEvent::NonFungible(
+                        resource_address,
+                        bucket.non_fungible_local_ids(api)?,
+                    )
+                };
+                Runtime::emit_event(api, event)?;
+            }
             Ok(Some(buckets))
         }
     }
 
-    /// Method is public to all - if the resources can't be deposited then the execution panics.
-    pub fn try_deposit_or_abort<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn try_deposit_or_abort<Y>(
+        bucket: Bucket,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        if let Some(bucket) = Self::try_deposit_or_refund(bucket, api)? {
+        if let Some(bucket) = Self::try_deposit_or_refund(bucket, authorized_depositor_badge, api)?
+        {
             let resource_address = bucket.resource_address(api)?;
             Err(AccountError::DepositIsDisallowed { resource_address }.into())
         } else {
@@ -380,89 +432,18 @@ impl AccountBlueprint {
     /// panics.
     pub fn try_deposit_batch_or_abort<Y>(
         buckets: Vec<Bucket>,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let buckets = Self::try_deposit_batch_or_refund(buckets, api)?;
+        let buckets = Self::try_deposit_batch_or_refund(buckets, authorized_depositor_badge, api)?;
         if let Some(_) = buckets {
             Err(AccountError::NotAllBucketsCouldBeDeposited.into())
         } else {
             Ok(())
         }
-    }
-
-    pub fn try_authorized_deposit_or_refund<Y>(
-        bucket: Bucket,
-        badge: ResourceOrNonFungible,
-        api: &mut Y,
-    ) -> Result<Option<Bucket>, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        // Check whether the passed badge is in the authorized depositors list, if not, return all
-        // of the passed resources back to the caller.
-        if Self::validate_badge_is_authorized_depositor(&badge, api)?.is_err() {
-            return Ok(Some(bucket));
-        } else {
-            // Validate that the badge is actually present in the auth zone.
-            Self::validate_badge_is_present(badge, api)?;
-
-            // Perform the deposit.
-            Self::deposit(bucket, api)?;
-            Ok(None)
-        }
-    }
-
-    pub fn try_authorized_deposit_batch_or_refund<Y>(
-        buckets: Vec<Bucket>,
-        badge: ResourceOrNonFungible,
-        api: &mut Y,
-    ) -> Result<Option<Vec<Bucket>>, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        // Check whether the passed badge is in the authorized depositors list, if not, return all
-        // of the passed resources back to the caller.
-        if Self::validate_badge_is_authorized_depositor(&badge, api)?.is_err() {
-            return Ok(Some(buckets));
-        } else {
-            // Validate that the badge is actually present in the auth zone.
-            Self::validate_badge_is_present(badge, api)?;
-
-            // Perform the deposit.
-            Self::deposit_batch(buckets, api)?;
-            Ok(None)
-        }
-    }
-
-    pub fn try_authorized_deposit_or_abort<Y>(
-        bucket: Bucket,
-        badge: ResourceOrNonFungible,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        Self::validate_badge_is_authorized_depositor(&badge, api)??;
-        Self::validate_badge_is_present(badge, api)?;
-        Self::deposit(bucket, api)?;
-        Ok(())
-    }
-
-    pub fn try_authorized_deposit_batch_or_abort<Y>(
-        buckets: Vec<Bucket>,
-        badge: ResourceOrNonFungible,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        Self::validate_badge_is_authorized_depositor(&badge, api)??;
-        Self::validate_badge_is_present(badge, api)?;
-        Self::deposit_batch(buckets, api)?;
-        Ok(())
     }
 
     // Returns a result of a result. The outer result's error type is [`RuntimeError`] and it's for
@@ -528,6 +509,12 @@ impl AccountBlueprint {
             false,
             api,
         )?;
+        let event = if resource_address.is_fungible() {
+            WithdrawEvent::Fungible(resource_address, bucket.amount(api)?)
+        } else {
+            WithdrawEvent::NonFungible(resource_address, bucket.non_fungible_local_ids(api)?)
+        };
+        Runtime::emit_event(api, event)?;
 
         Ok(bucket)
     }
@@ -546,6 +533,9 @@ impl AccountBlueprint {
             false,
             api,
         )?;
+        let event =
+            WithdrawEvent::NonFungible(resource_address, bucket.non_fungible_local_ids(api)?);
+        Runtime::emit_event(api, event)?;
 
         Ok(bucket)
     }
@@ -676,6 +666,13 @@ impl AccountBlueprint {
         api.field_write_typed(handle, account)?;
         api.field_close(handle)?;
 
+        Runtime::emit_event(
+            api,
+            SetDefaultDepositRuleEvent {
+                default_deposit_rule: default,
+            },
+        )?;
+
         Ok(())
     }
 
@@ -696,6 +693,15 @@ impl AccountBlueprint {
         )?;
         api.key_value_entry_set_typed(kv_store_entry_lock_handle, &resource_preference)?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
+
+        Runtime::emit_event(
+            api,
+            SetResourcePreferenceEvent {
+                resource_address,
+                preference: resource_preference,
+            },
+        )?;
+
         Ok(())
     }
 
@@ -712,6 +718,9 @@ impl AccountBlueprint {
             ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX,
             &encoded_key,
         )?;
+
+        Runtime::emit_event(api, RemoveResourcePreferenceEvent { resource_address })?;
+
         Ok(())
     }
 
@@ -732,6 +741,14 @@ impl AccountBlueprint {
         )?;
         api.key_value_entry_set_typed(kv_store_entry_lock_handle, &())?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
+
+        Runtime::emit_event(
+            api,
+            AddAuthorizedDepositorEvent {
+                authorized_depositor_badge: badge,
+            },
+        )?;
+
         Ok(())
     }
 
@@ -749,6 +766,14 @@ impl AccountBlueprint {
             ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX,
             &encoded_key,
         )?;
+
+        Runtime::emit_event(
+            api,
+            RemoveAuthorizedDepositorEvent {
+                authorized_depositor_badge: badge,
+            },
+        )?;
+
         Ok(())
     }
 
