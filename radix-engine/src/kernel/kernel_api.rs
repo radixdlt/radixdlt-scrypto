@@ -1,12 +1,14 @@
-use super::call_frame::NodeVisibility;
+use super::call_frame::*;
+use super::id_allocator::*;
+use super::kernel::*;
+use super::substate_io::*;
 use crate::errors::*;
-use crate::kernel::kernel_callback_api::{CallFrameReferences, KernelCallbackObject};
-use crate::system::system_modules::execution_trace::BucketSnapshot;
-use crate::system::system_modules::execution_trace::ProofSnapshot;
-use crate::track::interface::NodeSubstates;
+use crate::kernel::kernel_callback_api::*;
+use crate::system::system_modules::execution_trace::*;
+use crate::track::interface::*;
 use crate::types::*;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_engine_interface::api::field_api::*;
+use radix_engine_store_interface::db_key_mapper::*;
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
@@ -197,4 +199,35 @@ pub trait KernelApi<M: KernelCallbackObject>:
     + KernelInvokeApi<M::CallFrameData>
     + KernelInternalApi<M>
 {
+}
+
+#[cfg(feature = "radix_engine_tests")]
+pub trait KernelTestingApi<'g, M, S>
+where
+    M: KernelCallbackObject,
+    S: SubstateStore,
+{
+    fn kernel_create_kernel_for_testing(
+        substate_io: SubstateIO<'g, S>,
+        id_allocator: &'g mut IdAllocator,
+        current_frame: CallFrame<M::CallFrameData, M::LockData>,
+        prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
+        callback: &'g mut M,
+    ) -> Kernel<'g, M, S>;
+
+    fn kernel_current_frame(&self) -> &CallFrame<M::CallFrameData, M::LockData>;
+    fn kernel_current_frame_mut(&mut self) -> &mut CallFrame<M::CallFrameData, M::LockData>;
+
+    fn kernel_prev_frame_stack(&self) -> &Vec<CallFrame<M::CallFrameData, M::LockData>>;
+    fn kernel_prev_frame_stack_mut(&mut self)
+        -> &mut Vec<CallFrame<M::CallFrameData, M::LockData>>;
+
+    fn kernel_substate_io(&self) -> &SubstateIO<'g, S>;
+    fn kernel_substate_io_mut(&mut self) -> &mut SubstateIO<'g, S>;
+
+    fn kernel_id_allocator(&self) -> &IdAllocator;
+    fn kernel_id_allocator_mut(&mut self) -> &mut &'g mut IdAllocator;
+
+    fn kernel_callback(&self) -> &M;
+    fn kernel_callback_mut(&mut self) -> &mut M;
 }
