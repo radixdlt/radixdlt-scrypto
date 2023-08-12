@@ -18,7 +18,7 @@ use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi, FieldValue};
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, Bucket, MethodAccessibility, OwnerRole, RolesInit,
+    AccessRule, Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit,
 };
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -192,7 +192,7 @@ impl<C: HasStub + HasMethods> Owned<C> {
             owner_role,
             metadata_config: None,
             royalty_config: None,
-            roles: RolesInit::new(),
+            roles: RoleAssignmentInit::new(),
             address_reservation: None,
         }
     }
@@ -244,7 +244,7 @@ pub struct Globalizing<C: HasStub> {
     pub royalty_config: Option<ModuleConfig<ComponentRoyaltyConfig>>,
     pub address_reservation: Option<GlobalAddressReservation>,
 
-    pub roles: RolesInit,
+    pub roles: RoleAssignmentInit,
 }
 
 impl<C: HasStub> Deref for Globalizing<C> {
@@ -256,7 +256,7 @@ impl<C: HasStub> Deref for Globalizing<C> {
 }
 
 impl<C: HasStub + HasMethods> Globalizing<C> {
-    pub fn roles(mut self, roles: RolesInit) -> Self {
+    pub fn roles(mut self, roles: RoleAssignmentInit) -> Self {
         self.roles = roles;
         self
     }
@@ -267,7 +267,10 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn enable_component_royalties(mut self, royalties: (C::Royalties, RolesInit)) -> Self {
+    pub fn enable_component_royalties(
+        mut self,
+        royalties: (C::Royalties, RoleAssignmentInit),
+    ) -> Self {
         let mut royalty_amounts = BTreeMap::new();
         for (method, (royalty, updatable)) in royalties.0.to_mapping() {
             royalty_amounts.insert(method, (royalty, !updatable));

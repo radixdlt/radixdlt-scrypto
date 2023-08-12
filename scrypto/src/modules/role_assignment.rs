@@ -11,7 +11,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, OwnerRoleEntry, RoleKey, RolesInit,
+    AccessRule, OwnerRoleEntry, RoleAssignmentInit, RoleKey,
 };
 use radix_engine_interface::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -34,7 +34,7 @@ pub struct RoleAssignment(pub ModuleHandle);
 impl RoleAssignment {
     pub fn new<R: Into<OwnerRoleEntry>>(
         owner_role: R,
-        roles: BTreeMap<ObjectModuleId, RolesInit>,
+        roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>,
     ) -> Self {
         let rtn = ScryptoEnv
             .call_function(

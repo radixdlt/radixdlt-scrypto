@@ -74,6 +74,10 @@ pub enum PackageError {
         limit: usize,
         actual: usize,
     },
+    ExceededMaxRoleNameLen {
+        limit: usize,
+        actual: usize,
+    },
     MissingRole(RoleKey),
     UnexpectedNumberOfMethodAuth {
         blueprint: String,
@@ -374,6 +378,14 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
 
                     for (role_key, role_list) in roles {
                         check_list(role_list)?;
+
+                        if role_key.key.len() > MAX_ROLE_NAME_LEN {
+                            return Err(PackageError::ExceededMaxRoleNameLen {
+                                limit: MAX_ROLE_NAME_LEN,
+                                actual: role_key.key.len(),
+                            });
+                        }
+
                         if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
                             return Err(PackageError::DefiningReservedRoleKey(
                                 blueprint.to_string(),

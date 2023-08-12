@@ -78,6 +78,9 @@ pub const MAX_ACCESS_RULE_NODES: usize = 64;
 /// The max number of roles in a Role Specification
 pub const MAX_ROLES: usize = 50;
 
+/// The max number of roles in a Role Specification
+pub const MAX_ROLE_NAME_LEN: usize = 100;
+
 //==========================
 // TO BE DEFINED
 //==========================

@@ -8,7 +8,7 @@ pub mod tests {
     use crate::manifest::*;
     use crate::signing::ed25519::Ed25519PrivateKey;
     use radix_engine_interface::api::node_modules::ModuleConfig;
-    use radix_engine_interface::blueprints::resource::RolesInit;
+    use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
     use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
     use radix_engine_interface::{metadata, metadata_init};
     use scrypto_derive::NonFungibleData;

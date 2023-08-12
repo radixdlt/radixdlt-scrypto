@@ -80,7 +80,7 @@ fn can_call_protected_function_with_auth() {
 #[test]
 fn roles_assignment_method_auth_cannot_be_mutated_when_locked() {
     // Arrange
-    let mut roles = RolesInit::new();
+    let mut roles = RoleAssignmentInit::new();
     roles.define_role("deposit_funds_auth_update", rule!(allow_all));
     roles.define_role("borrow_funds_auth", rule!(allow_all));
     roles.define_role("deposit_funds_auth", rule!(require(XRD)));
@@ -333,7 +333,7 @@ impl MutableRolesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
     pub fn create_component(
-        roles: RolesInit,
+        roles: RoleAssignmentInit,
         test_runner: &mut DefaultTestRunner,
     ) -> TransactionReceipt {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/role_assignment");
@@ -393,7 +393,7 @@ impl MutableRolesTestRunner {
         }
     }
 
-    pub fn new(roles: RolesInit) -> Self {
+    pub fn new(roles: RoleAssignmentInit) -> Self {
         let mut test_runner = TestRunnerBuilder::new().build();
         let receipt = Self::create_component(roles, &mut test_runner);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];

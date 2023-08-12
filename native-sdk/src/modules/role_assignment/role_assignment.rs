@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, OwnerRoleEntry, RoleKey, RolesInit,
+    AccessRule, OwnerRoleEntry, RoleAssignmentInit, RoleKey,
 };
 use radix_engine_interface::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
@@ -20,7 +20,7 @@ pub struct RoleAssignment(pub Own);
 impl RoleAssignment {
     pub fn create<Y, R: Into<OwnerRoleEntry>, E: Debug + ScryptoDecode>(
         owner_role: R,
-        roles: BTreeMap<ObjectModuleId, RolesInit>,
+        roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>,
         api: &mut Y,
     ) -> Result<Self, E>
     where

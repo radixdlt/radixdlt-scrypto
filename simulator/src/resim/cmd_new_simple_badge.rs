@@ -82,7 +82,7 @@ impl NewSimpleBadge {
                 NonFungibleResourceRoles::default(),
                 ModuleConfig {
                     init: metadata,
-                    roles: RolesInit::default(),
+                    roles: RoleAssignmentInit::default(),
                 },
                 Some(btreemap!(
                     NonFungibleLocalId::integer(1) => (),

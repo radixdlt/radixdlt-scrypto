@@ -16,7 +16,7 @@ pub trait SecurifiedRoleAssignment {
         owner_role: OwnerRole,
         api: &mut Y,
     ) -> Result<RoleAssignment, RuntimeError> {
-        let mut roles = RolesInit::new();
+        let mut roles = RoleAssignmentInit::new();
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
@@ -32,7 +32,7 @@ pub trait SecurifiedRoleAssignment {
     ) -> Result<(RoleAssignment, Bucket), RuntimeError> {
         let (bucket, owner_role) =
             Self::mint_securified_badge(owner_badge_data, non_fungible_local_id, api)?;
-        let mut roles = RolesInit::new();
+        let mut roles = RoleAssignmentInit::new();
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
@@ -70,7 +70,7 @@ pub trait PresecurifiedRoleAssignment: SecurifiedRoleAssignment {
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
     ) -> Result<RoleAssignment, RuntimeError> {
-        let mut roles = RolesInit::new();
+        let mut roles = RoleAssignmentInit::new();
         let owner_role = rule!(require(owner_id));
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_role(RoleKey::new(securify_role), owner_role.clone());

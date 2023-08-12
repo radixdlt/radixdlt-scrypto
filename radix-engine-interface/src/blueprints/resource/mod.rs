@@ -71,8 +71,8 @@ macro_rules! resource_roles {
         }
 
         impl $roles_struct<RoleDefinition> {
-            pub fn to_role_init(self) -> $crate::blueprints::resource::RolesInit {
-                let mut roles = $crate::blueprints::resource::RolesInit::new();
+            pub fn to_role_init(self) -> $crate::blueprints::resource::RoleAssignmentInit {
+                let mut roles = $crate::blueprints::resource::RoleAssignmentInit::new();
                 roles.define_role($actor_field_name, self.$actor_field);
                 roles.define_role($updater_field_name, self.$updater_field);
                 roles
