@@ -10,7 +10,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorRunInputEffici
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::{
-    CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs, PersistNodeHandler,
+    CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
     StoreAccessHandler,
 };
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
@@ -224,16 +224,6 @@ struct KernelHandler<
     callback: &'a mut M,
     prev_frame: Option<&'a CallFrame<M::CallFrameData, M::LockData>>,
     on_store_access: F,
-}
-
-impl<
-        M: KernelCallbackObject,
-        F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
-    > PersistNodeHandler<RuntimeError> for KernelHandler<'_, M, F>
-{
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError> {
-        self.callback.on_persist_node(heap, node_id)
-    }
 }
 
 impl<

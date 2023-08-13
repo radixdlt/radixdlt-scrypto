@@ -324,10 +324,6 @@ pub trait StoreAccessHandler<C, L, E> {
     ) -> Result<(), E>;
 }
 
-pub trait PersistNodeHandler<E> {
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
-}
-
 pub trait CallFrameSubstateReadHandler<C, L> {
     type Error;
 
@@ -341,19 +337,15 @@ pub trait CallFrameSubstateReadHandler<C, L> {
     ) -> Result<(), Self::Error>;
 }
 
-struct WrapperHandler<'g, C, L, E, H: StoreAccessHandler<C, L, E> + PersistNodeHandler<E>> {
+struct WrapperHandler<'g, C, L, E, H: StoreAccessHandler<C, L, E>> {
     handler: &'g mut H,
     call_frame: &'g CallFrame<C, L>,
     phantom: PhantomData<E>,
 }
 
-impl<'g, C, L, E, H: StoreAccessHandler<C, L, E> + PersistNodeHandler<E>> SubstateIOHandler<E>
+impl<'g, C, L, E, H: StoreAccessHandler<C, L, E>> SubstateIOHandler<E>
     for WrapperHandler<'g, C, L, E, H>
 {
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E> {
-        self.handler.on_persist_node(heap, node_id)
-    }
-
     fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E> {
         self.handler
             .on_store_access(self.call_frame, heap, store_access)
@@ -680,7 +672,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn create_node<'f, S: SubstateStore, E>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
+        handler: &mut impl StoreAccessHandler<C, L, E>,
         node_id: NodeId,
         node_substates: NodeSubstates,
         heap_mount: bool,
@@ -757,7 +749,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn move_partition<'f, S: SubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
+        handler: &mut impl StoreAccessHandler<C, L, E>,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
@@ -954,7 +946,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn write_substate<'f, S: SubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
+        handler: &mut impl StoreAccessHandler<C, L, E>,
         lock_handle: SubstateHandle,
         substate: IndexedScryptoValue,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
@@ -1280,7 +1272,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     fn process_substate_diff<S: SubstateStore, E>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
+        handler: &mut impl StoreAccessHandler<C, L, E>,
         device: SubstateDevice,
         diff: &SubstateDiff,
     ) -> Result<(), CallbackError<ProcessSubstateError, E>> {
@@ -1507,12 +1499,6 @@ impl<C, L> StoreAccessHandler<C, L, ()> for NullHandler<C, L> {
         _heap: &Heap,
         _store_access: StoreAccess,
     ) -> Result<(), ()> {
-        Ok(())
-    }
-}
-
-impl<C, L> PersistNodeHandler<()> for NullHandler<C, L> {
-    fn on_persist_node(&mut self, _heap: &Heap, _node_id: &NodeId) -> Result<(), ()> {
         Ok(())
     }
 }

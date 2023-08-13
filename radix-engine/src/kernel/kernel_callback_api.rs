@@ -1,6 +1,5 @@
 use super::call_frame::CallFrameMessage;
 use crate::errors::*;
-use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;
@@ -219,6 +218,4 @@ pub trait KernelCallbackObject: Sized {
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
-
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError>;
 }

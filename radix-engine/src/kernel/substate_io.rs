@@ -33,8 +33,6 @@ pub struct LockData {
 }
 
 pub trait SubstateIOHandler<E> {
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
-
     fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E>;
 }
 
@@ -151,11 +149,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             if self.heap_mounted.contains_key(&node_id) {
                 return Err(CallbackError::Error(PersistNodeError::CannotPersistHeapMountedNode(node_id)));
             }
-            /*
-            handler
-                .on_persist_node(&self.heap, &node_id)
-                .map_err(CallbackError::CallbackError)?;
-             */
 
             if self.non_global_node_refs.node_is_referenced(&node_id) {
                 return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(
