@@ -61,6 +61,7 @@ pub struct SubstateIO<'g, S: SubstateStore> {
     pub non_global_node_refs: NonGlobalNodeRefs,
     pub substate_locks: SubstateLocks<LockData>,
     pub heap_mounted: NonIterMap<NodeId, ()>,
+    pub substate_heap_mount: NonIterMap<(NodeId, PartitionNumber, SubstateKey), ()>,
 }
 
 impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
@@ -71,6 +72,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             non_global_node_refs: NonGlobalNodeRefs::new(),
             substate_locks: SubstateLocks::new(),
             heap_mounted: NonIterMap::new(),
+            substate_heap_mount: NonIterMap::new(),
         }
     }
 

@@ -7,6 +7,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
+use crate::errors::RuntimeError;
 
 use super::heap::{Heap, HeapRemoveModuleError};
 
@@ -474,6 +475,11 @@ pub enum MoveModuleError {
     SubstateBorrowed(NodeId),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum MountSubstateError {
+    NodeNotVisible(NodeId),
+}
+
 /// Represents an error when attempting to lock a substate.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum OpenSubstateError {
@@ -834,6 +840,21 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
+    pub fn mount_substate<S: SubstateStore>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Result<(), MountSubstateError> {
+        if !self.get_node_visibility(node_id).is_visible() {
+            return Err(MountSubstateError::NodeNotVisible(*node_id));
+        }
+        substate_io.substate_heap_mount.insert((*node_id, partition_num, substate_key.clone()), ());
+
+        Ok(())
+    }
+
     pub fn open_substate<S: SubstateStore, E, H: StoreAccessHandler<C, L, E>>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
@@ -845,12 +866,16 @@ impl<C, L: Clone> CallFrame<C, L> {
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
     ) -> Result<(SubstateHandle, usize), CallbackError<OpenSubstateError, E>> {
-        let (ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
+        let (ref_origin, mut device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(OpenSubstateError::NodeNotVisible(node_id.clone()))
         })?;
 
         self.process_input_substate_key(substate_key)
             .map_err(|e| CallbackError::Error(OpenSubstateError::ProcessSubstateKeyError(e)))?;
+
+        if substate_io.substate_heap_mount.contains_key(&(*node_id, partition_num, substate_key.clone())) {
+            device = SubstateDevice::Heap;
+        }
 
         let (global_substate_handle, substate_value) = substate_io.open_substate(
             device,

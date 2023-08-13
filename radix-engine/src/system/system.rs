@@ -2760,6 +2760,10 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    fn kernel_heap_mount_substate(&mut self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
+        self.api.kernel_heap_mount_substate(node_id, partition_num, substate_key)
+    }
+
     fn kernel_open_substate_with_default(
         &mut self,
         node_id: &NodeId,

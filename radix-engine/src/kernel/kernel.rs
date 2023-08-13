@@ -55,6 +55,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
                 heap_mounted: NonIterMap::new(),
+                substate_heap_mount: NonIterMap::new(),
             },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
@@ -83,6 +84,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
                 heap_mounted: NonIterMap::new(),
+                substate_heap_mount: NonIterMap::new(),
             },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
@@ -632,6 +634,13 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
+
+    #[trace_resources(log=node_id.entity_type())]
+    fn kernel_heap_mount_substate(&mut self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
+        self.current_frame.mount_substate(&mut self.substate_io, node_id, partition_num, substate_key)
+            .map_err(|e| RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MountSubstateError(e))))
+    }
+
     #[trace_resources(log=node_id.entity_type())]
     fn kernel_open_substate_with_default(
         &mut self,

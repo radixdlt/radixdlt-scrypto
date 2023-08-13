@@ -75,6 +75,8 @@ pub trait KernelSubstateApi<L> {
         )
     }
 
+    fn kernel_heap_mount_substate(&mut self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Result<(), RuntimeError>;
+
     /// Retrieves info related to a lock
     fn kernel_get_lock_data(&mut self, lock_handle: SubstateHandle) -> Result<L, RuntimeError>;
 
