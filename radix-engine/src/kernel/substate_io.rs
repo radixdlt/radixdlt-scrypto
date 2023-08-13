@@ -185,6 +185,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     let substate_id = (node_id, *partition_number, substate_key.clone());
                     if self.substate_heap_mount.contains_key(&substate_id) {
                         mounted.push(substate_id);
+                        continue;
                     }
 
                     for node_id in substate_value.owned_nodes() {

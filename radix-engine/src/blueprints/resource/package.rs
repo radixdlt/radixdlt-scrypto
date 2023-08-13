@@ -990,8 +990,9 @@ impl ResourceNativePackage {
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>(),
             ));
-            fields.push(FieldSchema::static_field(
+            fields.push(FieldSchema::transient_field(
                 aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
+                LockedNonFungibleResource::default(),
             ));
             fields.push(FieldSchema::if_outer_feature(
                 aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),
