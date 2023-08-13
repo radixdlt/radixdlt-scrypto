@@ -120,6 +120,7 @@ impl TransactionProcessorBlueprint {
                     })
                 )
             ),
+            true,
         )?;
         let worktop = Worktop(Own(worktop_node_id));
         let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)

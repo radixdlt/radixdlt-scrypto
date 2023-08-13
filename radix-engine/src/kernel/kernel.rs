@@ -54,6 +54,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 store: self.store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
+                heap_mounted: NonIterMap::new(),
             },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
@@ -81,6 +82,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 store: self.store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
+                heap_mounted: NonIterMap::new(),
             },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
@@ -314,6 +316,7 @@ where
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
+        heap_mount: bool,
     ) -> Result<(), RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_create_node(
@@ -330,7 +333,7 @@ where
         };
 
         self.current_frame
-            .create_node(&mut self.substate_io, &mut handler, node_id, node_substates)
+            .create_node(&mut self.substate_io, &mut handler, node_id, node_substates, heap_mount)
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
                     CallFrameError::CreateNodeError(e),

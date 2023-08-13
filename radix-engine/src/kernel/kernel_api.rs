@@ -21,6 +21,7 @@ pub trait KernelNodeApi {
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
+        heap_mount: bool,
     ) -> Result<(), RuntimeError>;
 
     /// Removes an RENode. Owned children will be possessed by the call frame.

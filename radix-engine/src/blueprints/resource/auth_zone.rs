@@ -105,6 +105,7 @@ impl AuthZoneBlueprint {
                             }
                         })),
                     ),
+                    true,
                 )?;
             }
             ComposedProof::NonFungible(..) => {
@@ -128,6 +129,7 @@ impl AuthZoneBlueprint {
                             instance_schema: None,
                         }
                     }))),
+                    true
                 )?;
             }
         }
@@ -177,6 +179,7 @@ impl AuthZoneBlueprint {
                     }
                 }))
             ),
+            true,
         )?;
 
         Ok(Proof(Own(node_id)))
@@ -227,6 +230,7 @@ impl AuthZoneBlueprint {
                     },
                 }))
             ),
+            true,
         )?;
 
         Ok(Proof(Own(node_id)))

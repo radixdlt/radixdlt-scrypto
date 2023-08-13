@@ -17,6 +17,7 @@ use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Vec;
 use sbor::rust::collections::LinkedList;
+use utils::prelude::NonIterMap;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SubstateDevice {
@@ -59,6 +60,7 @@ pub struct SubstateIO<'g, S: SubstateStore> {
     pub store: &'g mut S,
     pub non_global_node_refs: NonGlobalNodeRefs,
     pub substate_locks: SubstateLocks<LockData>,
+    pub heap_mounted: NonIterMap<NodeId, ()>,
 }
 
 impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
@@ -68,6 +70,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             store,
             non_global_node_refs: NonGlobalNodeRefs::new(),
             substate_locks: SubstateLocks::new(),
+            heap_mounted: NonIterMap::new(),
         }
     }
 
@@ -80,7 +83,12 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         device: SubstateDevice,
         node_id: NodeId,
         node_substates: NodeSubstates,
+        heap_mount: bool,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
+        if heap_mount {
+            self.heap_mounted.insert(node_id, ());
+        }
+
         match device {
             SubstateDevice::Heap => {
                 self.heap.create_node(node_id, node_substates);
@@ -138,9 +146,14 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         queue.push_back(node_id.clone());
 
         while let Some(node_id) = queue.pop_front() {
+            if self.heap_mounted.contains_key(&node_id) {
+                return Err(CallbackError::Error(PersistNodeError::CannotPersistHeapMountedNode(node_id)));
+            }
+            /*
             handler
                 .on_persist_node(&self.heap, &node_id)
                 .map_err(CallbackError::CallbackError)?;
+             */
 
             if self.non_global_node_refs.node_is_referenced(&node_id) {
                 return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(

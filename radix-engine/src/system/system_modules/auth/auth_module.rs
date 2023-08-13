@@ -318,6 +318,7 @@ impl AuthModule {
                     }
                 }))
             ),
+            true,
         )?;
 
         if let Some(parent_lock_handle) = parent_lock_handle {
