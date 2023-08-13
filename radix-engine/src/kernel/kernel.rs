@@ -13,7 +13,7 @@ use crate::kernel::call_frame::{
     CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
     StoreAccessHandler,
 };
-use crate::kernel::kernel_api::{CreateNodeOptions, KernelInvocation, SystemState};
+use crate::kernel::kernel_api::{KernelInvocation, StickTarget, SystemState};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -54,7 +54,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 store: self.store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
-                heap_mounted: NonIterMap::new(),
+                stick_to_heap: NonIterMap::new(),
                 substate_heap_mount: NonIterMap::new(),
             },
             id_allocator: self.id_allocator,
@@ -83,7 +83,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 store: self.store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
-                heap_mounted: NonIterMap::new(),
+                stick_to_heap: NonIterMap::new(),
                 substate_heap_mount: NonIterMap::new(),
             },
             id_allocator: self.id_allocator,
@@ -297,6 +297,14 @@ where
     S: SubstateStore,
 {
     #[trace_resources(log=entity_type)]
+    fn kernel_stick_to_heap(&mut self, target: StickTarget) -> Result<(), RuntimeError> {
+        self.current_frame.stick_to_heap(
+            &mut self.substate_io,
+            target,
+        ).map_err(|e| RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::StickToHeapError(e))))
+    }
+
+    #[trace_resources(log=entity_type)]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
         M::on_allocate_node_id(entity_type, self)?;
 
@@ -308,7 +316,6 @@ where
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        options: CreateNodeOptions,
     ) -> Result<(), RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_create_node(
@@ -325,7 +332,7 @@ where
         };
 
         self.current_frame
-            .create_node(&mut self.substate_io, &mut handler, node_id, node_substates, options)
+            .create_node(&mut self.substate_io, &mut handler, node_id, node_substates)
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
                     CallFrameError::CreateNodeError(e),
@@ -628,7 +635,7 @@ where
     #[trace_resources(log=node_id.entity_type())]
     fn kernel_heap_mount_substate(&mut self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
         self.current_frame.mount_substate(&mut self.substate_io, node_id, partition_num, substate_key)
-            .map_err(|e| RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MountSubstateError(e))))
+            .map_err(|e| RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::StickToHeapError(e))))
     }
 
     #[trace_resources(log=node_id.entity_type())]

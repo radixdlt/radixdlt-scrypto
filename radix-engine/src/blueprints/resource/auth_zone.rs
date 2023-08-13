@@ -1,6 +1,6 @@
 use crate::blueprints::resource::ComposedProof;
 use crate::errors::*;
-use crate::kernel::kernel_api::{CreateNodeOptions, KernelNodeApi, KernelSubstateApi, NodeMount};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, StickTarget};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
@@ -105,10 +105,8 @@ impl AuthZoneBlueprint {
                             }
                         })),
                     ),
-                    CreateNodeOptions {
-                        mount_options: Some(NodeMount::MountNode),
-                    },
                 )?;
+                api.kernel_stick_to_heap(StickTarget::Node(node_id))?;
             }
             ComposedProof::NonFungible(..) => {
                 api.kernel_create_node(
@@ -131,10 +129,8 @@ impl AuthZoneBlueprint {
                             instance_schema: None,
                         }
                     }))),
-                    CreateNodeOptions {
-                        mount_options: Some(NodeMount::MountNode),
-                    },
                 )?;
+                api.kernel_stick_to_heap(StickTarget::Node(node_id))?;
             }
         }
 
@@ -183,10 +179,8 @@ impl AuthZoneBlueprint {
                     }
                 }))
             ),
-            CreateNodeOptions {
-                mount_options: Some(NodeMount::MountNode),
-            },
         )?;
+        api.kernel_stick_to_heap(StickTarget::Node(node_id))?;
 
         Ok(Proof(Own(node_id)))
     }
@@ -236,10 +230,8 @@ impl AuthZoneBlueprint {
                     },
                 }))
             ),
-            CreateNodeOptions {
-                mount_options: Some(NodeMount::MountNode),
-            },
         )?;
+        api.kernel_stick_to_heap(StickTarget::Node(node_id))?;
 
         Ok(Proof(Own(node_id)))
     }

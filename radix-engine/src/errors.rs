@@ -11,7 +11,7 @@ use crate::blueprints::resource::{
     VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MountSubstateError, MoveModuleError, OpenSubstateError, PassMessageError, ReadSubstateError, WriteSubstateError};
+use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, StickToHeapError, MoveModuleError, OpenSubstateError, PassMessageError, ReadSubstateError, WriteSubstateError};
 use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::node_modules::role_assignment::RoleAssignmentError;
 use crate::system::node_modules::royalty::ComponentRoyaltyError;
@@ -185,7 +185,7 @@ pub enum CallFrameError {
     ListNodeModuleError(ListNodeModuleError),
     MoveModuleError(MoveModuleError),
 
-    MountSubstateError(MountSubstateError),
+    StickToHeapError(StickToHeapError),
     OpenSubstateError(OpenSubstateError),
     CloseSubstateError(CloseSubstateError),
     ReadSubstateError(ReadSubstateError),

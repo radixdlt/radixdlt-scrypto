@@ -7,7 +7,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use crate::kernel::kernel_api::CreateNodeOptions;
+use crate::kernel::kernel_api::{StickTarget};
 
 use super::heap::{Heap, HeapRemoveModuleError};
 
@@ -421,7 +421,6 @@ pub enum CreateNodeError {
     ProcessSubstateError(ProcessSubstateError),
     ProcessSubstateIOWriteError(ProcessSubstateIOWriteError),
     NonGlobalRefNotAllowed(NodeId),
-    MountNotAllowedOnCreateStoreNode,
     PersistNodeError(PersistNodeError),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
     SubstateDiffError(SubstateDiffError),
@@ -469,7 +468,7 @@ pub enum MoveModuleError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum MountSubstateError {
+pub enum StickToHeapError {
     NodeNotVisible(NodeId),
 }
 
@@ -671,13 +670,27 @@ impl<C, L: Clone> CallFrame<C, L> {
         &self.call_frame_data
     }
 
+
+    pub fn stick_to_heap<'f, S: SubstateStore>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+        target: StickTarget,
+    ) -> Result<(), StickToHeapError> {
+        let node_id = *target.node_id();
+        if !self.get_node_visibility(&node_id).is_visible() {
+            return Err(StickToHeapError::NodeNotVisible(node_id));
+        }
+        substate_io.stick_to_heap.insert(node_id, ());
+
+        Ok(())
+    }
+
     pub fn create_node<'f, S: SubstateStore, E>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
         handler: &mut impl StoreAccessHandler<C, L, E>,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        options: CreateNodeOptions,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
         // TODO: We need to protect transient blueprints from being globalized directly
         // into store. This isn't a problem for now since only native objects are allowed
@@ -718,7 +731,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             phantom: PhantomData::default(),
         };
 
-        substate_io.create_node(&mut handler, destination_device, node_id, node_substates, options)?;
+        substate_io.create_node(&mut handler, destination_device, node_id, node_substates)?;
 
         Ok(())
     }
@@ -839,9 +852,9 @@ impl<C, L: Clone> CallFrame<C, L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Result<(), MountSubstateError> {
+    ) -> Result<(), StickToHeapError> {
         if !self.get_node_visibility(node_id).is_visible() {
-            return Err(MountSubstateError::NodeNotVisible(*node_id));
+            return Err(StickToHeapError::NodeNotVisible(*node_id));
         }
         substate_io.substate_heap_mount.insert((*node_id, partition_num, substate_key.clone()), ());
 

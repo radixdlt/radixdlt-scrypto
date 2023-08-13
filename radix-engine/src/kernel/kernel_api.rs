@@ -12,22 +12,25 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 // all methods are prefixed by the subsystem of kernel.
 
 
-pub enum NodeMount {
-    MountNode,
-    MountPartitions(NonIterMap<PartitionNumber, PartitionMount>),
+pub enum StickTarget {
+    Node(NodeId),
+    Partition(NodeId, PartitionNumber),
+    Substate(NodeId, PartitionNumber, SubstateKey),
 }
 
-pub enum PartitionMount {
-    MountPartition,
-    MountSubstates(NonIterMap<SubstateKey, ()>),
-}
-
-pub struct CreateNodeOptions {
-    pub mount_options: Option<NodeMount>,
+impl StickTarget {
+    pub fn node_id(&self) -> &NodeId {
+        match self {
+            StickTarget::Node(node_id) | StickTarget::Partition(node_id, ..) | StickTarget::Substate(node_id, ..) => node_id,
+        }
+    }
 }
 
 /// API for managing nodes
 pub trait KernelNodeApi {
+
+    fn kernel_stick_to_heap(&mut self, target: StickTarget) -> Result<(), RuntimeError>;
+
     /// Allocates a new node id useable for create_node
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError>;
 
@@ -36,7 +39,6 @@ pub trait KernelNodeApi {
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        options: CreateNodeOptions,
     ) -> Result<(), RuntimeError>;
 
     /// Removes an RENode. Owned children will be possessed by the call frame.

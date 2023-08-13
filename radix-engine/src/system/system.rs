@@ -615,9 +615,6 @@ where
                     })
                 )
             ),
-            CreateNodeOptions {
-                mount_options: None,
-            },
         )?;
 
         // Create global address reservation
@@ -631,10 +628,9 @@ where
                     TypeInfoSubstate::GlobalAddressReservation(global_address.clone())
                 )
             ),
-            CreateNodeOptions {
-                mount_options: Some(NodeMount::MountNode)
-            },
         )?;
+
+        self.api.kernel_stick_to_heap(StickTarget::Node(global_address_reservation))?;
 
         Ok(GlobalAddressReservation(Own(global_address_reservation)))
     }
@@ -760,14 +756,11 @@ where
         self.api.kernel_create_node(
             node_id,
             node_substates,
-            CreateNodeOptions {
-                mount_options: if blueprint_interface.is_transient {
-                    Some(NodeMount::MountNode)
-                } else {
-                    None
-                }
-            }
         )?;
+
+        if blueprint_interface.is_transient {
+            self.api.kernel_stick_to_heap(StickTarget::Node(node_id))?;
+        }
 
         if let Some((partition_offset, fields)) = blueprint_interface.state.fields {
             for (index, field) in fields.iter().enumerate() {
@@ -1265,9 +1258,6 @@ where
             btreemap!(
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(object_info))
             ),
-            CreateNodeOptions {
-                mount_options: None,
-            },
         )?;
 
         // Move self modules to the newly created global node, and drop
@@ -1901,9 +1891,6 @@ where
                     })
                 ),
             ),
-            CreateNodeOptions {
-                mount_options: None,
-            },
         )?;
 
         Ok(node_id)
@@ -2766,6 +2753,10 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    fn kernel_stick_to_heap(&mut self, target: StickTarget) -> Result<(), RuntimeError> {
+        self.api.kernel_stick_to_heap(target)
+    }
+
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         self.api.kernel_drop_node(node_id)
     }
@@ -2778,9 +2769,8 @@ where
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        heap_mount: CreateNodeOptions,
     ) -> Result<(), RuntimeError> {
-        self.api.kernel_create_node(node_id, node_substates, heap_mount)
+        self.api.kernel_create_node(node_id, node_substates)
     }
 
     fn kernel_move_partition(
