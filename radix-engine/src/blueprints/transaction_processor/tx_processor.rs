@@ -1,7 +1,7 @@
 use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelNodeApi;
+use crate::kernel::kernel_api::{CreateNodeOptions, KernelNodeApi, NodeMount};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
@@ -120,7 +120,9 @@ impl TransactionProcessorBlueprint {
                     })
                 )
             ),
-            true,
+            CreateNodeOptions {
+                mount_options: Some(NodeMount::MountNode),
+            }
         )?;
         let worktop = Worktop(Own(worktop_node_id));
         let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)

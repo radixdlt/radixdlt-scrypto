@@ -11,6 +11,21 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
 
+
+pub enum NodeMount {
+    MountNode,
+    MountPartitions(NonIterMap<PartitionNumber, PartitionMount>),
+}
+
+pub enum PartitionMount {
+    MountPartition,
+    MountSubstates(NonIterMap<SubstateKey, ()>),
+}
+
+pub struct CreateNodeOptions {
+    pub mount_options: Option<NodeMount>,
+}
+
 /// API for managing nodes
 pub trait KernelNodeApi {
     /// Allocates a new node id useable for create_node
@@ -21,7 +36,7 @@ pub trait KernelNodeApi {
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        heap_mount: bool,
+        options: CreateNodeOptions,
     ) -> Result<(), RuntimeError>;
 
     /// Removes an RENode. Owned children will be possessed by the call frame.

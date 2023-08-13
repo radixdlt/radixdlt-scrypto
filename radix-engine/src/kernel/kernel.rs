@@ -13,7 +13,7 @@ use crate::kernel::call_frame::{
     CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
     StoreAccessHandler,
 };
-use crate::kernel::kernel_api::{KernelInvocation, SystemState};
+use crate::kernel::kernel_api::{CreateNodeOptions, KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -308,7 +308,7 @@ where
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        heap_mount: bool,
+        options: CreateNodeOptions,
     ) -> Result<(), RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_create_node(
@@ -325,7 +325,7 @@ where
         };
 
         self.current_frame
-            .create_node(&mut self.substate_io, &mut handler, node_id, node_substates, heap_mount)
+            .create_node(&mut self.substate_io, &mut handler, node_id, node_substates, options)
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
                     CallFrameError::CreateNodeError(e),

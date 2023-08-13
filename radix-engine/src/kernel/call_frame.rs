@@ -7,6 +7,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
+use crate::kernel::kernel_api::CreateNodeOptions;
 
 use super::heap::{Heap, HeapRemoveModuleError};
 
@@ -420,6 +421,7 @@ pub enum CreateNodeError {
     ProcessSubstateError(ProcessSubstateError),
     ProcessSubstateIOWriteError(ProcessSubstateIOWriteError),
     NonGlobalRefNotAllowed(NodeId),
+    MountNotAllowedOnCreateStoreNode,
     PersistNodeError(PersistNodeError),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
     SubstateDiffError(SubstateDiffError),
@@ -675,7 +677,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         handler: &mut impl StoreAccessHandler<C, L, E>,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        heap_mount: bool,
+        options: CreateNodeOptions,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
         // TODO: We need to protect transient blueprints from being globalized directly
         // into store. This isn't a problem for now since only native objects are allowed
@@ -716,7 +718,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             phantom: PhantomData::default(),
         };
 
-        substate_io.create_node(&mut handler, destination_device, node_id, node_substates, heap_mount)?;
+        substate_io.create_node(&mut handler, destination_device, node_id, node_substates, options)?;
 
         Ok(())
     }

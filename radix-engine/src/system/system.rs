@@ -615,7 +615,9 @@ where
                     })
                 )
             ),
-            false,
+            CreateNodeOptions {
+                mount_options: None,
+            },
         )?;
 
         // Create global address reservation
@@ -629,7 +631,9 @@ where
                     TypeInfoSubstate::GlobalAddressReservation(global_address.clone())
                 )
             ),
-            true,
+            CreateNodeOptions {
+                mount_options: Some(NodeMount::MountNode)
+            },
         )?;
 
         Ok(GlobalAddressReservation(Own(global_address_reservation)))
@@ -753,7 +757,17 @@ where
             node_substates.insert(partition_num, partition);
         }
 
-        self.api.kernel_create_node(node_id, node_substates, blueprint_interface.is_transient)?;
+        self.api.kernel_create_node(
+            node_id,
+            node_substates,
+            CreateNodeOptions {
+                mount_options: if blueprint_interface.is_transient {
+                    Some(NodeMount::MountNode)
+                } else {
+                    None
+                }
+            }
+        )?;
 
         if let Some((partition_offset, fields)) = blueprint_interface.state.fields {
             for (index, field) in fields.iter().enumerate() {
@@ -1251,7 +1265,9 @@ where
             btreemap!(
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(object_info))
             ),
-            false,
+            CreateNodeOptions {
+                mount_options: None,
+            },
         )?;
 
         // Move self modules to the newly created global node, and drop
@@ -1885,7 +1901,9 @@ where
                     })
                 ),
             ),
-            false,
+            CreateNodeOptions {
+                mount_options: None,
+            },
         )?;
 
         Ok(node_id)
@@ -2760,7 +2778,7 @@ where
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        heap_mount: bool,
+        heap_mount: CreateNodeOptions,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_create_node(node_id, node_substates, heap_mount)
     }

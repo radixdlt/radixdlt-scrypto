@@ -1,6 +1,6 @@
 use crate::blueprints::resource::ComposedProof;
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{CreateNodeOptions, KernelNodeApi, KernelSubstateApi, NodeMount};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
@@ -105,7 +105,9 @@ impl AuthZoneBlueprint {
                             }
                         })),
                     ),
-                    true,
+                    CreateNodeOptions {
+                        mount_options: Some(NodeMount::MountNode),
+                    },
                 )?;
             }
             ComposedProof::NonFungible(..) => {
@@ -129,7 +131,9 @@ impl AuthZoneBlueprint {
                             instance_schema: None,
                         }
                     }))),
-                    true
+                    CreateNodeOptions {
+                        mount_options: Some(NodeMount::MountNode),
+                    },
                 )?;
             }
         }
@@ -179,7 +183,9 @@ impl AuthZoneBlueprint {
                     }
                 }))
             ),
-            true,
+            CreateNodeOptions {
+                mount_options: Some(NodeMount::MountNode),
+            },
         )?;
 
         Ok(Proof(Own(node_id)))
@@ -230,7 +236,9 @@ impl AuthZoneBlueprint {
                     },
                 }))
             ),
-            true,
+            CreateNodeOptions {
+                mount_options: Some(NodeMount::MountNode),
+            },
         )?;
 
         Ok(Proof(Own(node_id)))

@@ -18,6 +18,7 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Vec;
 use sbor::rust::collections::LinkedList;
 use utils::prelude::NonIterMap;
+use crate::kernel::kernel_api::{CreateNodeOptions, NodeMount};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SubstateDevice {
@@ -58,7 +59,7 @@ pub struct SubstateIO<'g, S: SubstateStore> {
     pub store: &'g mut S,
     pub non_global_node_refs: NonGlobalNodeRefs,
     pub substate_locks: SubstateLocks<LockData>,
-    pub heap_mounted: NonIterMap<NodeId, ()>,
+    pub heap_mounted: NonIterMap<NodeId, NodeMount>,
     pub substate_heap_mount: NonIterMap<(NodeId, PartitionNumber, SubstateKey), ()>,
 }
 
@@ -83,17 +84,22 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         device: SubstateDevice,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        heap_mount: bool,
+        options: CreateNodeOptions,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
-        if heap_mount {
-            self.heap_mounted.insert(node_id, ());
-        }
 
         match device {
             SubstateDevice::Heap => {
+                if let Some(node_mount) = options.mount_options {
+                    self.heap_mounted.insert(node_id, node_mount);
+                }
+
                 self.heap.create_node(node_id, node_substates);
             }
             SubstateDevice::Store => {
+                if options.mount_options.is_some() {
+                    return Err(CallbackError::Error(CreateNodeError::MountNotAllowedOnCreateStoreNode));
+                }
+
                 self.store
                     .create_node(node_id, node_substates, &mut |store_access| {
                         handler.on_store_access(&self.heap, store_access)
