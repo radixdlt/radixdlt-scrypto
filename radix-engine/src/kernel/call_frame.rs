@@ -7,7 +7,6 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use crate::errors::RuntimeError;
 
 use super::heap::{Heap, HeapRemoveModuleError};
 

@@ -751,7 +751,7 @@ impl ResourceNativePackage {
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>(),
             ));
-            fields.push(FieldSchema::static_field(
+            fields.push(FieldSchema::transient_field(
                 aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
             ));
             fields.push(FieldSchema::if_outer_feature(

@@ -932,7 +932,7 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
         field_index: u8,
-    ) -> Result<(NodeId, PartitionNumber, TypePointer, BlueprintId), RuntimeError> {
+    ) -> Result<(NodeId, PartitionNumber, TypePointer, BlueprintId, bool), RuntimeError> {
         let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
 
         let (partition_offset, field_schema) =
@@ -978,7 +978,7 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, pointer, info.blueprint_id))
+        Ok((node_id, partition_num, pointer, info.blueprint_id, field_schema.is_transient))
     }
 
     fn get_actor_kv_partition(
@@ -2376,7 +2376,7 @@ where
     ) -> Result<SubstateHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, schema_pointer, blueprint_id) =
+        let (node_id, partition_num, schema_pointer, blueprint_id, is_transient) =
             self.get_actor_field(actor_object_type, field_index)?;
 
         // TODO: Remove
@@ -2398,13 +2398,27 @@ where
             FieldLockData::Read
         };
 
-        let handle = self.api.kernel_open_substate(
-            &node_id,
-            partition_num,
-            &SubstateKey::Field(field_index),
-            flags,
-            SystemLockData::Field(lock_data),
-        )?;
+        let handle = if is_transient {
+            self.api.kernel_heap_mount_substate(&node_id, partition_num, &SubstateKey::Field(field_index))?;
+            self.api.kernel_open_substate_with_default(
+                &node_id,
+                partition_num,
+                &SubstateKey::Field(field_index),
+                flags,
+                Some(|| {
+                    IndexedScryptoValue::from_typed(&FieldSubstate::new_field(LockedFungibleResource::default()))}
+                ),
+                SystemLockData::Field(lock_data),
+            )?
+        } else {
+            self.api.kernel_open_substate(
+                &node_id,
+                partition_num,
+                &SubstateKey::Field(field_index),
+                flags,
+                SystemLockData::Field(lock_data),
+            )?
+        };
 
         if flags.contains(LockFlags::MUTABLE) {
             let mutability = self.api.kernel_read_substate(handle).map(|v| {
