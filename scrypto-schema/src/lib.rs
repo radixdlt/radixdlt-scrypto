@@ -99,9 +99,9 @@ impl BlueprintSchemaInit {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum TypeRef<T> {
-    Static(T),   // Fully Resolved type is defined in package
+    Static(T), // Fully Resolved type is defined in package
     Generic(u8), // Fully Resolved type is mapped directly to a generic
-    // TODO: How to represent a structure containing a generic?
+               // TODO: How to represent a structure containing a generic?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

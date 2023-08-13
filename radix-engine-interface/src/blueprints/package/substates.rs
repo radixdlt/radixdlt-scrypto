@@ -103,7 +103,7 @@ impl Clone for PackageRoyaltyAccumulatorSubstate {
 pub enum BlueprintPayloadDef {
     Static(TypeIdentifier), // Fully Resolved type is defined in package
     Generic(u8), // Fully Resolved type is mapped directly to a generic defined by instance
-    // TODO: How to represent a structure containing a generic?
+                 // TODO: How to represent a structure containing a generic?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

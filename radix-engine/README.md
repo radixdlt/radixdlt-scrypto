@@ -2,10 +2,10 @@
 
 Radix Engine is the underlying execution engine designed to run DeFi-based Scrypto applications.
 
-The architecture is heavily influenced by modern Kernel design (though much simplified) and Rust's
+The architecture is heavily influenced by traditional Kernel design (though much simplified) and Rust's
 Ownership and Type-Checking paradigms (also much simplified). The novel idea here is in combining
-ideas from the two worlds (Operating System and Language) to create the best shared secure computing
-platform for the purpose of DeFi.
+ideas from the two worlds, Operating System and Language, or simply "Implement Rust
+Semantics at the System Layer".
 
 ## Architecture
 
