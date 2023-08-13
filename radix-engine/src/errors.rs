@@ -11,12 +11,7 @@ use crate::blueprints::resource::{
     VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::kernel::call_frame::{
-    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
-    CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
-    CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError,
-    OpenSubstateError, PassMessageError, ReadSubstateError, StickToHeapError, WriteSubstateError,
-};
+use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MovePartitionError, OpenSubstateError, PassMessageError, ReadSubstateError, HeapStickError, WriteSubstateError, HeapUnstickError};
 use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::node_modules::role_assignment::RoleAssignmentError;
 use crate::system::node_modules::royalty::ComponentRoyaltyError;
@@ -188,9 +183,10 @@ pub enum CallFrameError {
     DropNodeError(DropNodeError),
 
     ListNodeModuleError(ListNodeModuleError),
-    MoveModuleError(MoveModuleError),
+    MoveModuleError(MovePartitionError),
 
-    StickToHeapError(StickToHeapError),
+    HeapStickError(HeapStickError),
+    HeapUnstickError(HeapUnstickError),
     OpenSubstateError(OpenSubstateError),
     CloseSubstateError(CloseSubstateError),
     ReadSubstateError(ReadSubstateError),
@@ -555,8 +551,8 @@ impl From<PassMessageError> for CallFrameError {
     }
 }
 
-impl From<MoveModuleError> for CallFrameError {
-    fn from(value: MoveModuleError) -> Self {
+impl From<MovePartitionError> for CallFrameError {
+    fn from(value: MovePartitionError) -> Self {
         Self::MoveModuleError(value)
     }
 }

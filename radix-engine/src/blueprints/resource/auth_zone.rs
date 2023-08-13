@@ -106,7 +106,7 @@ impl AuthZoneBlueprint {
                         })),
                     ),
                 )?;
-                api.kernel_stick_to_heap(StickTarget::Node(node_id))?;
+                api.kernel_heap_stick(StickTarget::Node(node_id))?;
             }
             ComposedProof::NonFungible(..) => {
                 api.kernel_create_node(
@@ -130,7 +130,7 @@ impl AuthZoneBlueprint {
                         }
                     }))),
                 )?;
-                api.kernel_stick_to_heap(StickTarget::Node(node_id))?;
+                api.kernel_heap_stick(StickTarget::Node(node_id))?;
             }
         }
 
@@ -180,7 +180,7 @@ impl AuthZoneBlueprint {
                 }))
             ),
         )?;
-        api.kernel_stick_to_heap(StickTarget::Node(node_id))?;
+        api.kernel_heap_stick(StickTarget::Node(node_id))?;
 
         Ok(Proof(Own(node_id)))
     }
@@ -231,7 +231,7 @@ impl AuthZoneBlueprint {
                 }))
             ),
         )?;
-        api.kernel_stick_to_heap(StickTarget::Node(node_id))?;
+        api.kernel_heap_stick(StickTarget::Node(node_id))?;
 
         Ok(Proof(Own(node_id)))
     }

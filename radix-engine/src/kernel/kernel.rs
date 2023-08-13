@@ -9,9 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::{
-    CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs, StoreAccessHandler,
-};
+use crate::kernel::call_frame::{CallFrameMessage, CallFrameSubstateReadHandler, HeapStick, NonGlobalNodeRefs, StoreAccessHandler};
 use crate::kernel::kernel_api::{KernelInvocation, StickTarget, SystemState};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
@@ -53,8 +51,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 store: self.store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
-                stick_to_heap: NonIterMap::new(),
-                substate_heap_mount: NonIterMap::new(),
+                heap_stick: HeapStick::new(),
             },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
@@ -82,8 +79,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 store: self.store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
-                stick_to_heap: NonIterMap::new(),
-                substate_heap_mount: NonIterMap::new(),
+                heap_stick: HeapStick::new(),
             },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
@@ -295,13 +291,24 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=entity_type)]
-    fn kernel_stick_to_heap(&mut self, target: StickTarget) -> Result<(), RuntimeError> {
+    #[trace_resources]
+    fn kernel_heap_stick(&mut self, target: StickTarget) -> Result<(), RuntimeError> {
         self.current_frame
-            .stick_to_heap(&mut self.substate_io, target)
+            .heap_stick(&mut self.substate_io, target)
             .map_err(|e| {
                 RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::StickToHeapError(e),
+                    CallFrameError::HeapStickError(e),
+                ))
+            })
+    }
+
+    #[trace_resources]
+    fn kernel_heap_unstick(&mut self, target: &StickTarget) -> Result<(), RuntimeError> {
+        self.current_frame
+            .heap_unstick(&mut self.substate_io, target)
+            .map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::HeapUnstickError(e),
                 ))
             })
     }

@@ -631,7 +631,7 @@ where
         )?;
 
         self.api
-            .kernel_stick_to_heap(StickTarget::Node(global_address_reservation))?;
+            .kernel_heap_stick(StickTarget::Node(global_address_reservation))?;
 
         Ok(GlobalAddressReservation(Own(global_address_reservation)))
     }
@@ -757,13 +757,13 @@ where
         self.api.kernel_create_node(node_id, node_substates)?;
 
         if blueprint_interface.is_transient {
-            self.api.kernel_stick_to_heap(StickTarget::Node(node_id))?;
+            self.api.kernel_heap_stick(StickTarget::Node(node_id))?;
         }
 
         if let Some((partition_offset, fields)) = blueprint_interface.state.fields {
             for (index, field) in fields.iter().enumerate() {
                 if let Transient::Value(..) = field.transient {
-                    self.api.kernel_stick_to_heap(StickTarget::Substate(
+                    self.api.kernel_heap_stick(StickTarget::Substate(
                         node_id,
                         MAIN_BASE_PARTITION.at_offset(partition_offset).unwrap(),
                         SubstateKey::Field(index as u8),
@@ -1300,6 +1300,8 @@ where
                             }),
                         )));
                     }
+
+                    self.api.kernel_heap_unstick(&StickTarget::Node(node_id))?;
 
                     self.api
                         .kernel_get_system_state()
@@ -2429,7 +2431,7 @@ where
             )?,
             Transient::Value(default_value) => {
                 let default_value: ScryptoValue = scrypto_decode(&default_value).unwrap();
-                self.api.kernel_stick_to_heap(StickTarget::Substate(
+                self.api.kernel_heap_stick(StickTarget::Substate(
                     node_id,
                     partition_num,
                     SubstateKey::Field(field_index),
@@ -2763,8 +2765,12 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_stick_to_heap(&mut self, target: StickTarget) -> Result<(), RuntimeError> {
-        self.api.kernel_stick_to_heap(target)
+    fn kernel_heap_stick(&mut self, target: StickTarget) -> Result<(), RuntimeError> {
+        self.api.kernel_heap_stick(target)
+    }
+
+    fn kernel_heap_unstick(&mut self, target: &StickTarget) -> Result<(), RuntimeError> {
+        self.api.kernel_heap_unstick(target)
     }
 
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {

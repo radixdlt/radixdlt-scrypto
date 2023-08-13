@@ -1,5 +1,5 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::{MoveModuleError, PersistNodeError};
+use radix_engine::kernel::call_frame::{MovePartitionError, PersistNodeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -27,7 +27,7 @@ fn stored_bucket_in_committed_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(
+                CallFrameError::MoveModuleError(MovePartitionError::PersistNodeError(
                     PersistNodeError::CannotPersistHeapMountedNode(..)
                 ))
             ))
@@ -58,7 +58,7 @@ fn stored_bucket_in_owned_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(
+                CallFrameError::MoveModuleError(MovePartitionError::PersistNodeError(
                     PersistNodeError::CannotPersistHeapMountedNode(..)
                 ))
             ))

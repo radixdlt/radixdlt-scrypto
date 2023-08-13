@@ -323,7 +323,7 @@ impl AuthModule {
         )?;
         system
             .api
-            .kernel_stick_to_heap(StickTarget::Node(self_auth_zone))?;
+            .kernel_heap_stick(StickTarget::Node(self_auth_zone))?;
 
         if let Some(parent_lock_handle) = parent_lock_handle {
             system.kernel_close_substate(parent_lock_handle)?;

@@ -121,7 +121,7 @@ impl TransactionProcessorBlueprint {
                 )
             ),
         )?;
-        api.kernel_stick_to_heap(StickTarget::Node(worktop_node_id))?;
+        api.kernel_heap_stick(StickTarget::Node(worktop_node_id))?;
 
         let worktop = Worktop(Own(worktop_node_id));
         let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)

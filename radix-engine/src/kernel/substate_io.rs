@@ -1,9 +1,4 @@
-use crate::kernel::call_frame::{
-    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
-    CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
-    CreateNodeError, DropNodeError, MoveModuleError, NonGlobalNodeRefs, OpenSubstateError,
-    PersistNodeError, WriteSubstateError,
-};
+use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateNodeError, DropNodeError, HeapStick, MovePartitionError, NonGlobalNodeRefs, OpenSubstateError, PersistNodeError, StickyNode, WriteSubstateError};
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::{
@@ -17,7 +12,6 @@ use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Vec;
 use sbor::rust::collections::LinkedList;
-use utils::prelude::NonIterMap;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SubstateDevice {
@@ -58,8 +52,7 @@ pub struct SubstateIO<'g, S: SubstateStore> {
     pub store: &'g mut S,
     pub non_global_node_refs: NonGlobalNodeRefs,
     pub substate_locks: SubstateLocks<LockData>,
-    pub stick_to_heap: NonIterMap<NodeId, ()>,
-    pub substate_heap_mount: NonIterMap<(NodeId, PartitionNumber, SubstateKey), ()>,
+    pub heap_stick: HeapStick,
 }
 
 impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
@@ -69,8 +62,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             store,
             non_global_node_refs: NonGlobalNodeRefs::new(),
             substate_locks: SubstateLocks::new(),
-            stick_to_heap: NonIterMap::new(),
-            substate_heap_mount: NonIterMap::new(),
+            heap_stick: HeapStick::new(),
         }
     }
 
@@ -114,7 +106,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         }
 
         let node_substates = match device {
-            SubstateDevice::Heap => match self.heap.remove_node(node_id) {
+            SubstateDevice::Heap => match self.heap.remove_filter(node_id, None) {
                 Ok(substates) => substates,
                 Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
                     panic!("Frame owned node {:?} not found in heap", node_id)
@@ -141,29 +133,33 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         queue.push_back(node_id.clone());
 
         while let Some(node_id) = queue.pop_front() {
-            if self.stick_to_heap.contains_key(&node_id) {
-                return Err(CallbackError::Error(
-                    PersistNodeError::CannotPersistHeapMountedNode(node_id),
-                ));
-            }
-
             if self.non_global_node_refs.node_is_referenced(&node_id) {
                 return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(
                     node_id,
                 )));
             }
 
-            let mut node_substates = match self.heap.remove_node(&node_id) {
+            let retain_partitions = match self.heap_stick.get(&node_id) {
+                Some(StickyNode::StickyNode) => {
+                    return Err(CallbackError::Error(
+                        PersistNodeError::CannotPersistHeapMountedNode(node_id),
+                    ));
+                }
+                Some(StickyNode::StickyPartitions(sticky_partitions)) => {
+                    Some(sticky_partitions)
+                }
+                None => None,
+            };
+
+            let node_substates = match self.heap.remove_filter(&node_id, retain_partitions) {
                 Ok(substates) => substates,
                 Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
                     panic!("Frame owned node {:?} not found in heap", node_id)
                 }
             };
 
-            let mut mounted = Vec::new();
-
-            for (partition_number, module_substates) in &node_substates {
-                for (substate_key, substate_value) in module_substates {
+            for (_partition_num, module_substates) in &node_substates {
+                for (_substate_key, substate_value) in module_substates {
                     for reference in substate_value.references() {
                         if !reference.is_global() {
                             return Err(CallbackError::Error(
@@ -172,26 +168,10 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                         }
                     }
 
-                    let substate_id = (node_id, *partition_number, substate_key.clone());
-                    if self.substate_heap_mount.contains_key(&substate_id) {
-                        mounted.push(substate_id);
-                        continue;
-                    }
-
                     for node_id in substate_value.owned_nodes() {
                         queue.push_back(*node_id);
                     }
                 }
-            }
-
-            for (node_id, partition_num, key) in mounted {
-                let substate = node_substates
-                    .get_mut(&partition_num)
-                    .unwrap()
-                    .remove(&key)
-                    .unwrap();
-                self.heap
-                    .set_substate(node_id, partition_num, key, substate);
             }
 
             self.store
@@ -213,26 +193,32 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         dest_device: SubstateDevice,
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
-    ) -> Result<(), CallbackError<MoveModuleError, E>> {
+    ) -> Result<(), CallbackError<MovePartitionError, E>> {
         // TODO: Use more granular partition lock checks?
         if self.substate_locks.node_is_locked(src_node_id) {
-            return Err(CallbackError::Error(MoveModuleError::SubstateBorrowed(
+            return Err(CallbackError::Error(MovePartitionError::SubstateBorrowed(
                 *src_node_id,
             )));
         }
 
         // Move
-        let module = match src_device {
+        let partition_substates = match src_device {
             SubstateDevice::Heap => self
                 .heap
                 .remove_module(src_node_id, src_partition_number)
-                .map_err(|e| CallbackError::Error(MoveModuleError::HeapRemoveModuleErr(e)))?,
+                .map_err(|e| CallbackError::Error(MovePartitionError::HeapRemoveModuleErr(e)))?,
             SubstateDevice::Store => {
                 panic!("Partition moves from store not supported.");
             }
         };
 
-        for (substate_key, substate_value) in module {
+        if let SubstateDevice::Store = dest_device {
+            if self.heap_stick.partition_is_sticky(src_node_id, src_partition_number) {
+                return Err(CallbackError::Error(MovePartitionError::CannotMovePartitionOfStickyPartition(*src_node_id, src_partition_number)));
+            }
+        };
+
+        for (substate_key, substate_value) in partition_substates {
             match dest_device {
                 SubstateDevice::Heap => {
                     self.heap.set_substate(
@@ -243,24 +229,20 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     );
                 }
                 SubstateDevice::Store => {
-                    if self.substate_heap_mount.contains_key(&(
-                        *src_node_id,
-                        src_partition_number,
-                        substate_key.clone(),
-                    )) {
+                    if self.heap_stick.substate_is_sticky(src_node_id, src_partition_number, &substate_key) {
                         continue;
                     }
 
                     // Recursively move nodes to store
                     for own in substate_value.owned_nodes() {
                         self.move_node_from_heap_to_store(handler, own)
-                            .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
+                            .map_err(|e| e.map(|e| MovePartitionError::PersistNodeError(e)))?;
                     }
 
                     for reference in substate_value.references() {
                         if !reference.is_global() {
                             return Err(CallbackError::Error(
-                                MoveModuleError::NonGlobalRefNotAllowed(reference.clone()),
+                                MovePartitionError::NonGlobalRefNotAllowed(reference.clone()),
                             ));
                         }
                     }

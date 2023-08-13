@@ -29,7 +29,9 @@ impl StickTarget {
 
 /// API for managing nodes
 pub trait KernelNodeApi {
-    fn kernel_stick_to_heap(&mut self, target: StickTarget) -> Result<(), RuntimeError>;
+    fn kernel_heap_stick(&mut self, target: StickTarget) -> Result<(), RuntimeError>;
+
+    fn kernel_heap_unstick(&mut self, target: &StickTarget) -> Result<(), RuntimeError>;
 
     /// Allocates a new node id useable for create_node
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError>;
