@@ -3,8 +3,8 @@ use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
-use crate::errors::SystemUpstreamError;
 use crate::errors::RuntimeError;
+use crate::errors::SystemUpstreamError;
 use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
@@ -306,7 +306,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     blueprint_id.package_address,
                     &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
                 )?;
-
 
                 let input_type_pointer = definition
                     .interface

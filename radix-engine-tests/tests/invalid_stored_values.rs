@@ -26,7 +26,11 @@ fn stored_bucket_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(PersistNodeError::CannotPersistHeapMountedNode(..)))))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(
+                    PersistNodeError::CannotPersistHeapMountedNode(..)
+                ))
+            ))
         )
     });
 }
@@ -53,7 +57,11 @@ fn stored_bucket_in_owned_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(PersistNodeError::CannotPersistHeapMountedNode(..)))))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(
+                    PersistNodeError::CannotPersistHeapMountedNode(..)
+                ))
+            ))
         )
     });
 }

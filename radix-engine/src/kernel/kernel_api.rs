@@ -11,7 +11,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
 
-
 pub enum StickTarget {
     Node(NodeId),
     Partition(NodeId, PartitionNumber),
@@ -21,14 +20,15 @@ pub enum StickTarget {
 impl StickTarget {
     pub fn node_id(&self) -> &NodeId {
         match self {
-            StickTarget::Node(node_id) | StickTarget::Partition(node_id, ..) | StickTarget::Substate(node_id, ..) => node_id,
+            StickTarget::Node(node_id)
+            | StickTarget::Partition(node_id, ..)
+            | StickTarget::Substate(node_id, ..) => node_id,
         }
     }
 }
 
 /// API for managing nodes
 pub trait KernelNodeApi {
-
     fn kernel_stick_to_heap(&mut self, target: StickTarget) -> Result<(), RuntimeError>;
 
     /// Allocates a new node id useable for create_node
@@ -91,8 +91,6 @@ pub trait KernelSubstateApi<L> {
             lock_data,
         )
     }
-
-    fn kernel_heap_mount_substate(&mut self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Result<(), RuntimeError>;
 
     /// Retrieves info related to a lock
     fn kernel_get_lock_data(&mut self, lock_handle: SubstateHandle) -> Result<L, RuntimeError>;

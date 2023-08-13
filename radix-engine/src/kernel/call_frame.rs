@@ -1,3 +1,4 @@
+use crate::kernel::kernel_api::StickTarget;
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
     ProcessSubstateIOWriteError, SubstateDevice, SubstateIO, SubstateIOHandler, SubstateReadHandler,
@@ -7,7 +8,6 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use crate::kernel::kernel_api::{StickTarget};
 
 use super::heap::{Heap, HeapRemoveModuleError};
 
@@ -670,7 +670,6 @@ impl<C, L: Clone> CallFrame<C, L> {
         &self.call_frame_data
     }
 
-
     pub fn stick_to_heap<'f, S: SubstateStore>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
@@ -680,7 +679,19 @@ impl<C, L: Clone> CallFrame<C, L> {
         if !self.get_node_visibility(&node_id).is_visible() {
             return Err(StickToHeapError::NodeNotVisible(node_id));
         }
-        substate_io.stick_to_heap.insert(node_id, ());
+        match target {
+            StickTarget::Node(node_id) => {
+                substate_io.stick_to_heap.insert(node_id, ());
+            }
+            StickTarget::Partition(..) => {
+                todo!()
+            }
+            StickTarget::Substate(node_id, partition_num, substate_key) => {
+                substate_io
+                    .substate_heap_mount
+                    .insert((node_id, partition_num, substate_key), ());
+            }
+        }
 
         Ok(())
     }
@@ -846,22 +857,12 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
-    pub fn mount_substate<S: SubstateStore>(
-        &mut self,
-        substate_io: &mut SubstateIO<S>,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-    ) -> Result<(), StickToHeapError> {
-        if !self.get_node_visibility(node_id).is_visible() {
-            return Err(StickToHeapError::NodeNotVisible(*node_id));
-        }
-        substate_io.substate_heap_mount.insert((*node_id, partition_num, substate_key.clone()), ());
-
-        Ok(())
-    }
-
-    pub fn open_substate<S: SubstateStore, E, H: StoreAccessHandler<C, L, E>, F: FnOnce() -> IndexedScryptoValue>(
+    pub fn open_substate<
+        S: SubstateStore,
+        E,
+        H: StoreAccessHandler<C, L, E>,
+        F: FnOnce() -> IndexedScryptoValue,
+    >(
         &mut self,
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
@@ -879,7 +880,11 @@ impl<C, L: Clone> CallFrame<C, L> {
         self.process_input_substate_key(substate_key)
             .map_err(|e| CallbackError::Error(OpenSubstateError::ProcessSubstateKeyError(e)))?;
 
-        if substate_io.substate_heap_mount.contains_key(&(*node_id, partition_num, substate_key.clone())) {
+        if substate_io.substate_heap_mount.contains_key(&(
+            *node_id,
+            partition_num,
+            substate_key.clone(),
+        )) {
             device = SubstateDevice::Heap;
         }
 

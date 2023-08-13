@@ -228,7 +228,10 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         }
     }
 
-    pub fn transient_field<I: Into<LocalTypeIndex>, E: ScryptoEncode>(value: I, default_value: E) -> Self {
+    pub fn transient_field<I: Into<LocalTypeIndex>, E: ScryptoEncode>(
+        value: I,
+        default_value: E,
+    ) -> Self {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::Always,

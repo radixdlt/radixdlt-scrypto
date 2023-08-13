@@ -1,8 +1,8 @@
 use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{KernelNodeApi, StickTarget};
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::kernel_api::{KernelNodeApi, StickTarget};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;

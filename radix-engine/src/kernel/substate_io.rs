@@ -84,7 +84,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         node_id: NodeId,
         node_substates: NodeSubstates,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
-
         match device {
             SubstateDevice::Heap => {
                 self.heap.create_node(node_id, node_substates);
@@ -143,7 +142,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
 
         while let Some(node_id) = queue.pop_front() {
             if self.stick_to_heap.contains_key(&node_id) {
-                return Err(CallbackError::Error(PersistNodeError::CannotPersistHeapMountedNode(node_id)));
+                return Err(CallbackError::Error(
+                    PersistNodeError::CannotPersistHeapMountedNode(node_id),
+                ));
             }
 
             if self.non_global_node_refs.node_is_referenced(&node_id) {
@@ -184,8 +185,13 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             }
 
             for (node_id, partition_num, key) in mounted {
-                let substate = node_substates.get_mut(&partition_num).unwrap().remove(&key).unwrap();
-                self.heap.set_substate(node_id, partition_num, key, substate);
+                let substate = node_substates
+                    .get_mut(&partition_num)
+                    .unwrap()
+                    .remove(&key)
+                    .unwrap();
+                self.heap
+                    .set_substate(node_id, partition_num, key, substate);
             }
 
             self.store
@@ -237,7 +243,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     );
                 }
                 SubstateDevice::Store => {
-                    if self.substate_heap_mount.contains_key(&(*src_node_id,src_partition_number, substate_key.clone())) {
+                    if self.substate_heap_mount.contains_key(&(
+                        *src_node_id,
+                        src_partition_number,
+                        substate_key.clone(),
+                    )) {
                         continue;
                     }
 
@@ -271,7 +281,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(())
     }
 
-    pub fn open_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>, D: FnOnce() -> IndexedScryptoValue>(
+    pub fn open_substate<
+        E,
+        F: FnMut(&Heap, StoreAccess) -> Result<(), E>,
+        D: FnOnce() -> IndexedScryptoValue,
+    >(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,

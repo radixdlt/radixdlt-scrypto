@@ -630,7 +630,8 @@ where
             ),
         )?;
 
-        self.api.kernel_stick_to_heap(StickTarget::Node(global_address_reservation))?;
+        self.api
+            .kernel_stick_to_heap(StickTarget::Node(global_address_reservation))?;
 
         Ok(GlobalAddressReservation(Own(global_address_reservation)))
     }
@@ -753,10 +754,7 @@ where
             node_substates.insert(partition_num, partition);
         }
 
-        self.api.kernel_create_node(
-            node_id,
-            node_substates,
-        )?;
+        self.api.kernel_create_node(node_id, node_substates)?;
 
         if blueprint_interface.is_transient {
             self.api.kernel_stick_to_heap(StickTarget::Node(node_id))?;
@@ -765,7 +763,11 @@ where
         if let Some((partition_offset, fields)) = blueprint_interface.state.fields {
             for (index, field) in fields.iter().enumerate() {
                 if let Transient::Value(..) = field.transient {
-                    self.api.kernel_heap_mount_substate(&node_id, MAIN_BASE_PARTITION.at_offset(partition_offset).unwrap(), &SubstateKey::Field(index as u8))?;
+                    self.api.kernel_stick_to_heap(StickTarget::Substate(
+                        node_id,
+                        MAIN_BASE_PARTITION.at_offset(partition_offset).unwrap(),
+                        SubstateKey::Field(index as u8),
+                    ))?;
                 }
             }
         }
@@ -993,7 +995,13 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, pointer, info.blueprint_id, field_schema.transient))
+        Ok((
+            node_id,
+            partition_num,
+            pointer,
+            info.blueprint_id,
+            field_schema.transient,
+        ))
     }
 
     fn get_actor_kv_partition(
@@ -2412,18 +2420,20 @@ where
         };
 
         let handle = match transient {
-            Transient::NotTransient => {
-                self.api.kernel_open_substate(
-                    &node_id,
-                    partition_num,
-                    &SubstateKey::Field(field_index),
-                    flags,
-                    SystemLockData::Field(lock_data),
-                )?
-            }
+            Transient::NotTransient => self.api.kernel_open_substate(
+                &node_id,
+                partition_num,
+                &SubstateKey::Field(field_index),
+                flags,
+                SystemLockData::Field(lock_data),
+            )?,
             Transient::Value(default_value) => {
                 let default_value: ScryptoValue = scrypto_decode(&default_value).unwrap();
-                self.api.kernel_heap_mount_substate(&node_id, partition_num, &SubstateKey::Field(field_index))?;
+                self.api.kernel_stick_to_heap(StickTarget::Substate(
+                    node_id,
+                    partition_num,
+                    SubstateKey::Field(field_index),
+                ))?;
                 self.api.kernel_open_substate_with_default(
                     &node_id,
                     partition_num,
@@ -2794,10 +2804,6 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_heap_mount_substate(&mut self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
-        self.api.kernel_heap_mount_substate(node_id, partition_num, substate_key)
-    }
-
     fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,

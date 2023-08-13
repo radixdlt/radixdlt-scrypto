@@ -10,8 +10,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorRunInputEffici
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::{
-    CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
-    StoreAccessHandler,
+    CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs, StoreAccessHandler,
 };
 use crate::kernel::kernel_api::{KernelInvocation, StickTarget, SystemState};
 use crate::kernel::kernel_callback_api::{
@@ -298,10 +297,13 @@ where
 {
     #[trace_resources(log=entity_type)]
     fn kernel_stick_to_heap(&mut self, target: StickTarget) -> Result<(), RuntimeError> {
-        self.current_frame.stick_to_heap(
-            &mut self.substate_io,
-            target,
-        ).map_err(|e| RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::StickToHeapError(e))))
+        self.current_frame
+            .stick_to_heap(&mut self.substate_io, target)
+            .map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::StickToHeapError(e),
+                ))
+            })
     }
 
     #[trace_resources(log=entity_type)]
@@ -631,13 +633,6 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-
-    #[trace_resources(log=node_id.entity_type())]
-    fn kernel_heap_mount_substate(&mut self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
-        self.current_frame.mount_substate(&mut self.substate_io, node_id, partition_num, substate_key)
-            .map_err(|e| RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::StickToHeapError(e))))
-    }
-
     #[trace_resources(log=node_id.entity_type())]
     fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
