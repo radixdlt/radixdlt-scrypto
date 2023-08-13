@@ -194,6 +194,7 @@ pub enum Condition {
 pub struct FieldSchema<V> {
     pub field: V,
     pub condition: Condition,
+    pub is_transient: bool,
 }
 
 impl FieldSchema<TypeRef<LocalTypeIndex>> {
@@ -201,6 +202,7 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::IfFeature(feature.to_string()),
+            is_transient: false,
         }
     }
 
@@ -208,6 +210,7 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::IfOuterFeature(feature.to_string()),
+            is_transient: false,
         }
     }
 
@@ -215,6 +218,15 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::Always,
+            is_transient: false,
+        }
+    }
+
+    pub fn transient_field<I: Into<LocalTypeIndex>>(value: I) -> Self {
+        FieldSchema {
+            field: TypeRef::Static(value.into()),
+            condition: Condition::Always,
+            is_transient: true,
         }
     }
 }
