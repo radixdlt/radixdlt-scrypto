@@ -11,7 +11,13 @@ use crate::blueprints::resource::{
     VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MovePartitionError, OpenSubstateError, PassMessageError, ReadSubstateError, HeapStickError, WriteSubstateError, HeapUnstickError};
+use crate::kernel::call_frame::{
+    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
+    CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
+    CreateFrameError, CreateNodeError, DropNodeError, HeapStickError, HeapUnstickError,
+    ListNodeModuleError, MovePartitionError, OpenSubstateError, PassMessageError,
+    ReadSubstateError, WriteSubstateError,
+};
 use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::node_modules::role_assignment::RoleAssignmentError;
 use crate::system::node_modules::royalty::ComponentRoyaltyError;

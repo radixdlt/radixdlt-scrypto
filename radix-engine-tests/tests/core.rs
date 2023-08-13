@@ -146,38 +146,22 @@ fn cant_globalize_role_assignment() {
 
 #[test]
 fn cant_store_bucket() {
-    call_function_and_assert_error(
-        "GlobalizeTest",
-        "store_bucket",
-        "CannotPersistHeapMountedNode",
-    )
+    call_function_and_assert_error("GlobalizeTest", "store_bucket", "CannotPersistStickyNode")
 }
 
 #[test]
 fn cant_store_proof() {
-    call_function_and_assert_error(
-        "GlobalizeTest",
-        "store_proof",
-        "CannotPersistHeapMountedNode",
-    )
+    call_function_and_assert_error("GlobalizeTest", "store_proof", "CannotPersistStickyNode")
 }
 
 #[test]
 fn cant_store_metadata() {
-    call_function_and_assert_error(
-        "GlobalizeTest",
-        "store_metadata",
-        "CannotPersistHeapMountedNode",
-    )
+    call_function_and_assert_error("GlobalizeTest", "store_metadata", "CannotPersistStickyNode")
 }
 
 #[test]
 fn cant_store_royalty() {
-    call_function_and_assert_error(
-        "GlobalizeTest",
-        "store_royalty",
-        "CannotPersistHeapMountedNode",
-    )
+    call_function_and_assert_error("GlobalizeTest", "store_royalty", "CannotPersistStickyNode")
 }
 
 #[test]
@@ -185,7 +169,7 @@ fn cant_store_role_assignment() {
     call_function_and_assert_error(
         "GlobalizeTest",
         "store_role_assignment",
-        "CannotPersistHeapMountedNode",
+        "CannotPersistStickyNode",
     )
 }
 

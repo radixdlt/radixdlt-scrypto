@@ -50,6 +50,8 @@ pub enum PackageError {
 
     InvalidBlueprintSchema(SchemaValidationError),
     TooManySubstateSchemas,
+    FeatureDoesNotExist(String),
+    InvalidTransientField,
 
     FailedToResolveLocalSchema {
         local_type_index: LocalTypeIndex,
@@ -110,46 +112,87 @@ pub enum PackageError {
     RoyaltiesNotEnabled,
 }
 
-fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
-    blueprints: I,
+fn validate_package_schema(
+    blueprints: &BTreeMap<String, BlueprintDefinitionInit>,
 ) -> Result<(), PackageError> {
-    for bp_init in blueprints {
-        validate_schema(&bp_init.schema).map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
+    for bp_def in blueprints.values() {
+        let bp_schema = &bp_def.schema;
 
-        if bp_init.state.fields.len() > 0xff {
+        validate_schema(&bp_schema.schema).map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
+
+        if bp_schema.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
         }
 
         // FIXME: Also add validation for local_type_index in Instance and KVStore schema type references
 
-        for field in &bp_init.state.fields {
-            validate_package_schema_type_ref(bp_init, field.field)?;
+        for field in &bp_schema.state.fields {
+            validate_package_schema_type_ref(bp_schema, field.field)?;
+
+            match &field.condition {
+                Condition::IfFeature(feature) => {
+                    if !bp_def.feature_set.contains(feature) {
+                        return Err(PackageError::FeatureDoesNotExist(feature.clone()));
+                    }
+                }
+                Condition::IfOuterFeature(feature) => match &bp_def.blueprint_type {
+                    BlueprintType::Inner { outer_blueprint } => {
+                        if let Some(outer_bp_def) = blueprints.get(outer_blueprint) {
+                            if !outer_bp_def.feature_set.contains(feature) {
+                                return Err(PackageError::FeatureDoesNotExist(feature.clone()));
+                            }
+                        } else {
+                            return Err(PackageError::FeatureDoesNotExist(feature.clone()));
+                        }
+                    }
+                    _ => {
+                        return Err(PackageError::FeatureDoesNotExist(feature.clone()));
+                    }
+                },
+                Condition::Always => {}
+            }
+
+            match &field.transience {
+                FieldTransience::NotTransient => {}
+                FieldTransience::TransientStatic(default_value) => match field.field {
+                    TypeRef::Static(local_index) => {
+                        validate_payload_against_schema::<ScryptoCustomExtension, ()>(
+                            default_value,
+                            &bp_schema.schema,
+                            local_index,
+                            &mut (),
+                        )
+                        .map_err(|_| PackageError::InvalidTransientField)?;
+                    }
+                    TypeRef::Generic(..) => return Err(PackageError::InvalidTransientField),
+                },
+            }
         }
 
-        for collection in &bp_init.state.collections {
+        for collection in &bp_schema.state.collections {
             match collection {
                 BlueprintCollectionSchema::KeyValueStore(kv_store_schema) => {
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.key)?;
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.value)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.key)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.value)?;
                 }
                 BlueprintCollectionSchema::SortedIndex(kv_store_schema) => {
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.key)?;
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.value)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.key)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.value)?;
                 }
                 BlueprintCollectionSchema::Index(kv_store_schema) => {
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.key)?;
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.value)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.key)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.value)?;
                 }
             }
         }
 
-        for (_name, event) in &bp_init.events.event_schema {
-            validate_package_schema_type_ref(bp_init, *event)?;
+        for (_name, event) in &bp_schema.events.event_schema {
+            validate_package_schema_type_ref(bp_schema, *event)?;
         }
 
-        for (_name, function) in &bp_init.functions.functions {
-            validate_package_schema_type_ref(bp_init, function.input)?;
-            validate_package_schema_type_ref(bp_init, function.output)?;
+        for (_name, function) in &bp_schema.functions.functions {
+            validate_package_schema_type_ref(bp_schema, function.input)?;
+            validate_package_schema_type_ref(bp_schema, function.output)?;
         }
     }
 
@@ -1104,7 +1147,7 @@ impl PackageNativePackage {
         original_code: Vec<u8>,
     ) -> Result<PackageStructure, RuntimeError> {
         // Validate schema
-        validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
+        validate_package_schema(&definition.blueprints)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_package_event_schema(definition.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;

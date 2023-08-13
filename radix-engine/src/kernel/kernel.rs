@@ -9,7 +9,10 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::{CallFrameMessage, CallFrameSubstateReadHandler, HeapStick, NonGlobalNodeRefs, StoreAccessHandler};
+use crate::kernel::call_frame::{
+    CallFrameMessage, CallFrameSubstateReadHandler, HeapStick, NonGlobalNodeRefs,
+    StoreAccessHandler,
+};
 use crate::kernel::kernel_api::{KernelInvocation, StickTarget, SystemState};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,

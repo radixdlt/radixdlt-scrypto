@@ -440,7 +440,7 @@ pub enum DropNodeError {
 pub enum PersistNodeError {
     ContainsNonGlobalRef(NodeId),
     NodeBorrowed(NodeId),
-    CannotPersistHeapMountedNode(NodeId),
+    CannotPersistStickyNode(NodeId),
 }
 
 /// Represents an error when taking a node from current frame.
@@ -462,7 +462,7 @@ pub enum ListNodeModuleError {
 pub enum MovePartitionError {
     NodeNotAvailable(NodeId),
     HeapRemoveModuleErr(HeapRemoveModuleError),
-    CannotMovePartitionOfStickyPartition(NodeId, PartitionNumber),
+    CannotMoveStickyPartition(NodeId, PartitionNumber),
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
     SubstateBorrowed(NodeId),
@@ -706,7 +706,6 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
-
     pub fn create_node<'f, S: SubstateStore, E>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
@@ -891,7 +890,10 @@ impl<C, L: Clone> CallFrame<C, L> {
         self.process_input_substate_key(substate_key)
             .map_err(|e| CallbackError::Error(OpenSubstateError::ProcessSubstateKeyError(e)))?;
 
-        if substate_io.heap_stick.substate_is_sticky(node_id, partition_num, substate_key) {
+        if substate_io
+            .heap_stick
+            .substate_is_sticky(node_id, partition_num, substate_key)
+        {
             device = SubstateDevice::Heap;
         }
 
@@ -1532,7 +1534,7 @@ impl<C, L> StoreAccessHandler<C, L, ()> for NullHandler<C, L> {
 
 pub enum StickyNode {
     StickyNode,
-    StickyPartitions(BTreeMap<PartitionNumber, StickyPartition>)
+    StickyPartitions(BTreeMap<PartitionNumber, StickyPartition>),
 }
 
 pub enum StickyPartition {
@@ -1540,6 +1542,8 @@ pub enum StickyPartition {
     StickySubstates(BTreeSet<SubstateKey>),
 }
 
+/// Structure which keeps track of all sticky nodes/partitions/substates which
+/// are meant to "stick" to the heap.
 pub struct HeapStick {
     stick_to_heap: BTreeMap<NodeId, StickyNode>,
 }
@@ -1557,7 +1561,11 @@ impl HeapStick {
                 self.stick_to_heap.insert(node_id, StickyNode::StickyNode);
             }
             StickTarget::Partition(node_id, partition_num) => {
-                match self.stick_to_heap.entry(node_id).or_insert(StickyNode::StickyPartitions(Default::default())) {
+                match self
+                    .stick_to_heap
+                    .entry(node_id)
+                    .or_insert(StickyNode::StickyPartitions(Default::default()))
+                {
                     StickyNode::StickyNode => {}
                     StickyNode::StickyPartitions(sticky_paritions) => {
                         sticky_paritions.insert(partition_num, StickyPartition::StickyPartition);
@@ -1565,10 +1573,17 @@ impl HeapStick {
                 }
             }
             StickTarget::Substate(node_id, partition_num, substate_key) => {
-                match self.stick_to_heap.entry(node_id).or_insert(StickyNode::StickyPartitions(Default::default())) {
+                match self
+                    .stick_to_heap
+                    .entry(node_id)
+                    .or_insert(StickyNode::StickyPartitions(Default::default()))
+                {
                     StickyNode::StickyNode => {}
                     StickyNode::StickyPartitions(sticky_paritions) => {
-                        match sticky_paritions.entry(partition_num).or_insert(StickyPartition::StickySubstates(Default::default())) {
+                        match sticky_paritions
+                            .entry(partition_num)
+                            .or_insert(StickyPartition::StickySubstates(Default::default()))
+                        {
                             StickyPartition::StickyPartition => {}
                             StickyPartition::StickySubstates(sticky_substates) => {
                                 sticky_substates.insert(substate_key);
@@ -1622,24 +1637,31 @@ impl HeapStick {
             Some(StickyNode::StickyPartitions(sticky_partitions)) => {
                 match sticky_partitions.get(&partition_num) {
                     Some(StickyPartition::StickyPartition) => true,
-                    _ => false
+                    _ => false,
                 }
-            },
+            }
             None => false,
         }
     }
 
-    pub fn substate_is_sticky(&self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> bool {
+    pub fn substate_is_sticky(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> bool {
         match self.stick_to_heap.get(node_id) {
             Some(StickyNode::StickyNode) => true,
             Some(StickyNode::StickyPartitions(sticky_partitions)) => {
                 match sticky_partitions.get(&partition_num) {
                     Some(StickyPartition::StickyPartition) => true,
-                    Some(StickyPartition::StickySubstates(sticky_substates)) => sticky_substates.contains(substate_key),
+                    Some(StickyPartition::StickySubstates(sticky_substates)) => {
+                        sticky_substates.contains(substate_key)
+                    }
                     None => false,
                 }
             }
-            None => false
+            None => false,
         }
     }
 }

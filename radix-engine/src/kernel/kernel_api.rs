@@ -29,8 +29,13 @@ impl StickTarget {
 
 /// API for managing nodes
 pub trait KernelNodeApi {
+    /// Sticks a node/partition/substate to the heap.
+    /// If sticky, an error will occur if the target is attempted to be moved.
+    /// If the target's "parent" (e.g. a partition's node) is moved to store, the target
+    /// will remain "stuck" to the heap.
     fn kernel_heap_stick(&mut self, target: StickTarget) -> Result<(), RuntimeError>;
 
+    /// Unsticks a node/partition/substate to the heap
     fn kernel_heap_unstick(&mut self, target: &StickTarget) -> Result<(), RuntimeError>;
 
     /// Allocates a new node id useable for create_node

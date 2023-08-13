@@ -285,16 +285,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             system.kernel_close_substate(handle)?;
         }
 
-        /*
-        if let Actor::Method(actor) = actor {
-            let blueprint_id = actor.get_blueprint_id();
-            let definition = system.load_blueprint_definition(
-                blueprint_id.package_address,
-                &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-            )?;
-        }
-         */
-
         match &actor {
             Actor::Root => panic!("Root is invoked"),
             actor @ Actor::Method(MethodActor { ident, .. })

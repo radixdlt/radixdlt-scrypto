@@ -762,7 +762,7 @@ where
 
         if let Some((partition_offset, fields)) = blueprint_interface.state.fields {
             for (index, field) in fields.iter().enumerate() {
-                if let Transient::Value(..) = field.transient {
+                if let FieldTransience::TransientStatic(..) = field.transience {
                     self.api.kernel_heap_stick(StickTarget::Substate(
                         node_id,
                         MAIN_BASE_PARTITION.at_offset(partition_offset).unwrap(),
@@ -949,7 +949,16 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
         field_index: u8,
-    ) -> Result<(NodeId, PartitionNumber, TypePointer, BlueprintId, Transient), RuntimeError> {
+    ) -> Result<
+        (
+            NodeId,
+            PartitionNumber,
+            TypePointer,
+            BlueprintId,
+            FieldTransience,
+        ),
+        RuntimeError,
+    > {
         let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
 
         let (partition_offset, field_schema) =
@@ -1000,7 +1009,7 @@ where
             partition_num,
             pointer,
             info.blueprint_id,
-            field_schema.transient,
+            field_schema.transience,
         ))
     }
 
@@ -2422,14 +2431,14 @@ where
         };
 
         let handle = match transient {
-            Transient::NotTransient => self.api.kernel_open_substate(
+            FieldTransience::NotTransient => self.api.kernel_open_substate(
                 &node_id,
                 partition_num,
                 &SubstateKey::Field(field_index),
                 flags,
                 SystemLockData::Field(lock_data),
             )?,
-            Transient::Value(default_value) => {
+            FieldTransience::TransientStatic(default_value) => {
                 let default_value: ScryptoValue = scrypto_decode(&default_value).unwrap();
                 self.api.kernel_heap_stick(StickTarget::Substate(
                     node_id,

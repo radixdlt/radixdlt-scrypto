@@ -1,4 +1,9 @@
-use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateNodeError, DropNodeError, HeapStick, MovePartitionError, NonGlobalNodeRefs, OpenSubstateError, PersistNodeError, StickyNode, WriteSubstateError};
+use crate::kernel::call_frame::{
+    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
+    CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
+    CreateNodeError, DropNodeError, HeapStick, MovePartitionError, NonGlobalNodeRefs,
+    OpenSubstateError, PersistNodeError, StickyNode, WriteSubstateError,
+};
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::{
@@ -142,12 +147,10 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             let retain_partitions = match self.heap_stick.get(&node_id) {
                 Some(StickyNode::StickyNode) => {
                     return Err(CallbackError::Error(
-                        PersistNodeError::CannotPersistHeapMountedNode(node_id),
+                        PersistNodeError::CannotPersistStickyNode(node_id),
                     ));
                 }
-                Some(StickyNode::StickyPartitions(sticky_partitions)) => {
-                    Some(sticky_partitions)
-                }
+                Some(StickyNode::StickyPartitions(sticky_partitions)) => Some(sticky_partitions),
                 None => None,
             };
 
@@ -213,8 +216,16 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         };
 
         if let SubstateDevice::Store = dest_device {
-            if self.heap_stick.partition_is_sticky(src_node_id, src_partition_number) {
-                return Err(CallbackError::Error(MovePartitionError::CannotMovePartitionOfStickyPartition(*src_node_id, src_partition_number)));
+            if self
+                .heap_stick
+                .partition_is_sticky(src_node_id, src_partition_number)
+            {
+                return Err(CallbackError::Error(
+                    MovePartitionError::CannotMoveStickyPartition(
+                        *src_node_id,
+                        src_partition_number,
+                    ),
+                ));
             }
         };
 
@@ -229,7 +240,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     );
                 }
                 SubstateDevice::Store => {
-                    if self.heap_stick.substate_is_sticky(src_node_id, src_partition_number, &substate_key) {
+                    if self.heap_stick.substate_is_sticky(
+                        src_node_id,
+                        src_partition_number,
+                        &substate_key,
+                    ) {
                         continue;
                     }
 
