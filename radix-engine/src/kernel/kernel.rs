@@ -642,13 +642,13 @@ where
     }
 
     #[trace_resources(log=node_id.entity_type())]
-    fn kernel_open_substate_with_default(
+    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        default: Option<fn() -> IndexedScryptoValue>,
+        default: Option<F>,
         data: M::LockData,
     ) -> Result<SubstateHandle, RuntimeError> {
         let mut read_only = as_read_only!(self);
@@ -705,7 +705,7 @@ where
                             &substate_key,
                             flags,
                             &mut handler,
-                            None,
+                            None::<fn() -> IndexedScryptoValue>,
                             M::LockData::default(),
                         )
                         .map_err(|e| match e {

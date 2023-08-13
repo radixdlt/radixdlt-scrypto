@@ -755,6 +755,14 @@ where
 
         self.api.kernel_create_node(node_id, node_substates, blueprint_interface.is_transient)?;
 
+        if let Some((partition_offset, fields)) = blueprint_interface.state.fields {
+            for (index, field) in fields.iter().enumerate() {
+                if let Transient::Value(..) = field.transient {
+                    self.api.kernel_heap_mount_substate(&node_id, MAIN_BASE_PARTITION.at_offset(partition_offset).unwrap(), &SubstateKey::Field(index as u8))?;
+                }
+            }
+        }
+
         Ok(node_id.into())
     }
 
@@ -932,7 +940,7 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
         field_index: u8,
-    ) -> Result<(NodeId, PartitionNumber, TypePointer, BlueprintId, bool), RuntimeError> {
+    ) -> Result<(NodeId, PartitionNumber, TypePointer, BlueprintId, Transient), RuntimeError> {
         let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
 
         let (partition_offset, field_schema) =
@@ -978,7 +986,7 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, pointer, info.blueprint_id, field_schema.is_transient))
+        Ok((node_id, partition_num, pointer, info.blueprint_id, field_schema.transient))
     }
 
     fn get_actor_kv_partition(
@@ -2376,7 +2384,7 @@ where
     ) -> Result<SubstateHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, schema_pointer, blueprint_id, is_transient) =
+        let (node_id, partition_num, schema_pointer, blueprint_id, transient) =
             self.get_actor_field(actor_object_type, field_index)?;
 
         // TODO: Remove
@@ -2398,26 +2406,30 @@ where
             FieldLockData::Read
         };
 
-        let handle = if is_transient {
-            self.api.kernel_heap_mount_substate(&node_id, partition_num, &SubstateKey::Field(field_index))?;
-            self.api.kernel_open_substate_with_default(
-                &node_id,
-                partition_num,
-                &SubstateKey::Field(field_index),
-                flags,
-                Some(|| {
-                    IndexedScryptoValue::from_typed(&FieldSubstate::new_field(LockedFungibleResource::default()))}
-                ),
-                SystemLockData::Field(lock_data),
-            )?
-        } else {
-            self.api.kernel_open_substate(
-                &node_id,
-                partition_num,
-                &SubstateKey::Field(field_index),
-                flags,
-                SystemLockData::Field(lock_data),
-            )?
+        let handle = match transient {
+            Transient::NotTransient => {
+                self.api.kernel_open_substate(
+                    &node_id,
+                    partition_num,
+                    &SubstateKey::Field(field_index),
+                    flags,
+                    SystemLockData::Field(lock_data),
+                )?
+            }
+            Transient::Value(default_value) => {
+                let default_value: ScryptoValue = scrypto_decode(&default_value).unwrap();
+                self.api.kernel_heap_mount_substate(&node_id, partition_num, &SubstateKey::Field(field_index))?;
+                self.api.kernel_open_substate_with_default(
+                    &node_id,
+                    partition_num,
+                    &SubstateKey::Field(field_index),
+                    flags,
+                    Some(|| {
+                        IndexedScryptoValue::from_typed(&FieldSubstate::new_field(default_value))
+                    }),
+                    SystemLockData::Field(lock_data),
+                )?
+            }
         };
 
         if flags.contains(LockFlags::MUTABLE) {
@@ -2778,13 +2790,13 @@ where
         self.api.kernel_heap_mount_substate(node_id, partition_num, substate_key)
     }
 
-    fn kernel_open_substate_with_default(
+    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        default: Option<fn() -> IndexedScryptoValue>,
+        default: Option<F>,
         data: SystemLockData,
     ) -> Result<SubstateHandle, RuntimeError> {
         self.api.kernel_open_substate_with_default(

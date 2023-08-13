@@ -550,7 +550,7 @@ PUBLISH_PACKAGE_ADVANCED
                                     )
                                 ),
                                 Enum<0u8>(),
-                                false
+                                Enum<0u8>()
                             )
                         ),
                         Array<Enum>()

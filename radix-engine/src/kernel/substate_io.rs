@@ -163,14 +163,17 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 )));
             }
 
-            let node_substates = match self.heap.remove_node(&node_id) {
+            let mut node_substates = match self.heap.remove_node(&node_id) {
                 Ok(substates) => substates,
                 Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
                     panic!("Frame owned node {:?} not found in heap", node_id)
                 }
             };
-            for (_partition_number, module_substates) in &node_substates {
-                for (_substate_key, substate_value) in module_substates {
+
+            let mut mounted = Vec::new();
+
+            for (partition_number, module_substates) in &node_substates {
+                for (substate_key, substate_value) in module_substates {
                     for reference in substate_value.references() {
                         if !reference.is_global() {
                             return Err(CallbackError::Error(
@@ -179,10 +182,20 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                         }
                     }
 
+                    let substate_id = (node_id, *partition_number, substate_key.clone());
+                    if self.substate_heap_mount.contains_key(&substate_id) {
+                        mounted.push(substate_id);
+                    }
+
                     for node_id in substate_value.owned_nodes() {
                         queue.push_back(*node_id);
                     }
                 }
+            }
+
+            for (node_id, partition_num, key) in mounted {
+                let substate = node_substates.get_mut(&partition_num).unwrap().remove(&key).unwrap();
+                self.heap.set_substate(node_id, partition_num, key, substate);
             }
 
             self.store
@@ -234,6 +247,10 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     );
                 }
                 SubstateDevice::Store => {
+                    if self.substate_heap_mount.contains_key(&(*src_node_id,src_partition_number, substate_key.clone())) {
+                        continue;
+                    }
+
                     // Recursively move nodes to store
                     for own in substate_value.owned_nodes() {
                         self.move_node_from_heap_to_store(handler, own)
@@ -264,7 +281,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(())
     }
 
-    pub fn open_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
+    pub fn open_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>, D: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
@@ -272,7 +289,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         substate_key: &SubstateKey,
         flags: LockFlags,
         on_store_access: &mut F,
-        default: Option<fn() -> IndexedScryptoValue>,
+        default: Option<D>,
     ) -> Result<(u32, &IndexedScryptoValue), CallbackError<OpenSubstateError, E>> {
         match device {
             SubstateDevice::Heap => {

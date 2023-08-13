@@ -753,6 +753,7 @@ impl ResourceNativePackage {
             ));
             fields.push(FieldSchema::transient_field(
                 aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
+                LockedFungibleResource::default(),
             ));
             fields.push(FieldSchema::if_outer_feature(
                 aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),

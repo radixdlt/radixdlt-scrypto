@@ -190,11 +190,17 @@ pub enum Condition {
     IfOuterFeature(String),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum Transient {
+    NotTransient,
+    Value(Vec<u8>),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct FieldSchema<V> {
     pub field: V,
     pub condition: Condition,
-    pub is_transient: bool,
+    pub transient: Transient,
 }
 
 impl FieldSchema<TypeRef<LocalTypeIndex>> {
@@ -202,7 +208,7 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::IfFeature(feature.to_string()),
-            is_transient: false,
+            transient: Transient::NotTransient,
         }
     }
 
@@ -210,7 +216,7 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::IfOuterFeature(feature.to_string()),
-            is_transient: false,
+            transient: Transient::NotTransient,
         }
     }
 
@@ -218,15 +224,15 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::Always,
-            is_transient: false,
+            transient: Transient::NotTransient,
         }
     }
 
-    pub fn transient_field<I: Into<LocalTypeIndex>>(value: I) -> Self {
+    pub fn transient_field<I: Into<LocalTypeIndex>, E: ScryptoEncode>(value: I, default_value: E) -> Self {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::Always,
-            is_transient: true,
+            transient: Transient::Value(scrypto_encode(&default_value).unwrap()),
         }
     }
 }

@@ -245,7 +245,7 @@ impl IndexedStateSchema {
                     FieldSchema {
                         field: pointer,
                         condition: field_schema.condition,
-                        is_transient: field_schema.is_transient,
+                        transient: field_schema.transient,
                     }
                 })
                 .collect();

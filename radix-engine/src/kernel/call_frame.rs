@@ -854,7 +854,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
-    pub fn open_substate<S: SubstateStore, E, H: StoreAccessHandler<C, L, E>>(
+    pub fn open_substate<S: SubstateStore, E, H: StoreAccessHandler<C, L, E>, F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
@@ -862,7 +862,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_key: &SubstateKey,
         flags: LockFlags,
         handler: &mut H,
-        default: Option<fn() -> IndexedScryptoValue>,
+        default: Option<F>,
         data: L,
     ) -> Result<(SubstateHandle, usize), CallbackError<OpenSubstateError, E>> {
         let (ref_origin, mut device) = self.get_node_ref(node_id).ok_or_else(|| {
