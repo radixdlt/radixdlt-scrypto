@@ -1,5 +1,6 @@
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use core::cmp::Ordering;
 use num_bigint::BigInt;
 use num_traits::{Pow, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
@@ -128,7 +129,7 @@ impl PreciseDecimal {
         match mode {
             RoundingMode::ToPositiveInfinity => {
                 if self.0 % divisor == BnumI256::ZERO {
-                    self.clone()
+                    *self
                 } else if self.is_negative() {
                     Self(self.0 / divisor * divisor)
                 } else {
@@ -137,7 +138,7 @@ impl PreciseDecimal {
             }
             RoundingMode::ToNegativeInfinity => {
                 if self.0 % divisor == BnumI256::ZERO {
-                    self.clone()
+                    *self
                 } else if self.is_negative() {
                     Self((self.0 / divisor - BnumI256::ONE) * divisor)
                 } else {
@@ -146,14 +147,14 @@ impl PreciseDecimal {
             }
             RoundingMode::ToZero => {
                 if self.0 % divisor == BnumI256::ZERO {
-                    self.clone()
+                    *self
                 } else {
                     Self(self.0 / divisor * divisor)
                 }
             }
             RoundingMode::AwayFromZero => {
                 if self.0 % divisor == BnumI256::ZERO {
-                    self.clone()
+                    *self
                 } else if self.is_negative() {
                     Self((self.0 / divisor - BnumI256::ONE) * divisor)
                 } else {
@@ -163,7 +164,7 @@ impl PreciseDecimal {
             RoundingMode::ToNearestMidpointTowardZero => {
                 let remainder = (self.0 % divisor).abs();
                 if remainder == BnumI256::ZERO {
-                    self.clone()
+                    *self
                 } else {
                     let mid_point = divisor / BnumI256::from(2);
                     if remainder > mid_point {
@@ -180,7 +181,7 @@ impl PreciseDecimal {
             RoundingMode::ToNearestMidpointAwayFromZero => {
                 let remainder = (self.0 % divisor).abs();
                 if remainder == BnumI256::ZERO {
-                    self.clone()
+                    *self
                 } else {
                     let mid_point = divisor / BnumI256::from(2);
                     if remainder >= mid_point {
@@ -197,27 +198,27 @@ impl PreciseDecimal {
             RoundingMode::ToNearestMidpointToEven => {
                 let remainder = (self.0 % divisor).abs();
                 if remainder == BnumI256::ZERO {
-                    self.clone()
+                    *self
                 } else {
                     let mid_point = divisor / BnumI256::from(2);
-                    if remainder > mid_point {
-                        if self.is_negative() {
-                            Self((self.0 / divisor - BnumI256::ONE) * divisor)
-                        } else {
-                            Self((self.0 / divisor + BnumI256::ONE) * divisor)
-                        }
-                    } else if remainder == mid_point {
-                        if self.0 / divisor % BnumI256::from(2) == BnumI256::ZERO {
-                            Self(self.0 / divisor * divisor)
-                        } else {
+                    match remainder.cmp(&mid_point) {
+                        Ordering::Greater => {
                             if self.is_negative() {
                                 Self((self.0 / divisor - BnumI256::ONE) * divisor)
                             } else {
                                 Self((self.0 / divisor + BnumI256::ONE) * divisor)
                             }
                         }
-                    } else {
-                        Self(self.0 / divisor * divisor)
+                        Ordering::Equal => {
+                            if self.0 / divisor % BnumI256::from(2) == BnumI256::ZERO {
+                                Self(self.0 / divisor * divisor)
+                            } else if self.is_negative() {
+                                Self((self.0 / divisor - BnumI256::ONE) * divisor)
+                            } else {
+                                Self((self.0 / divisor + BnumI256::ONE) * divisor)
+                            }
+                        }
+                        Ordering::Less => Self(self.0 / divisor * divisor),
                     }
                 }
             }
@@ -235,7 +236,7 @@ impl PreciseDecimal {
         if exp < 0 {
             let sub_384 = one_384 * one_384 / base_384;
             let sub_256 = BnumI256::try_from(sub_384).expect("Overflow");
-            return PreciseDecimal(sub_256).powi(mul(exp, -1));
+            return Self(sub_256).powi(mul(exp, -1));
         }
         if exp == 0 {
             return Self::ONE;
@@ -246,11 +247,11 @@ impl PreciseDecimal {
         if exp % 2 == 0 {
             let sub_384 = base_384 * base_384 / one_384;
             let sub_256 = BnumI256::try_from(sub_384).expect("Overflow");
-            PreciseDecimal(sub_256).powi(div(exp, 2))
+            Self(sub_256).powi(div(exp, 2))
         } else {
             let sub_384 = base_384 * base_384 / one_384;
             let sub_256 = BnumI256::try_from(sub_384).expect("Overflow");
-            let sub_pdec = PreciseDecimal(sub_256);
+            let sub_pdec = Self(sub_256);
             *self * sub_pdec.powi(div(sub(exp, 1), 2))
         }
     }
@@ -268,9 +269,9 @@ impl PreciseDecimal {
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^32 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^36) = sqrt(d)*10^36
         let self_384 = BnumI384::from(self.0);
-        let correct_nb = self_384 * BnumI384::from(PreciseDecimal::one().0);
+        let correct_nb = self_384 * BnumI384::from(Self::ONE.0);
         let sqrt = BnumI256::try_from(correct_nb.sqrt()).expect("Overflow");
-        Some(PreciseDecimal(sqrt))
+        Some(Self(sqrt))
     }
 
     /// Cubic root of a PreciseDecimal
@@ -281,9 +282,9 @@ impl PreciseDecimal {
 
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
         let self_bigint = BigInt::from(self.0);
-        let correct_nb: BigInt = self_bigint * BigInt::from(PreciseDecimal::one().0).pow(2_u32);
+        let correct_nb: BigInt = self_bigint * BigInt::from(Self::ONE.0).pow(2_u32);
         let cbrt = BnumI256::try_from(correct_nb.cbrt()).unwrap();
-        PreciseDecimal(cbrt)
+        Self(cbrt)
     }
 
     /// Nth root of a PreciseDecimal
@@ -291,7 +292,7 @@ impl PreciseDecimal {
         if (self.is_negative() && n % 2 == 0) || n == 0 {
             None
         } else if n == 1 {
-            Some(self.clone())
+            Some(*self)
         } else {
             if self.is_zero() {
                 return Some(Self::ZERO);
@@ -300,9 +301,9 @@ impl PreciseDecimal {
             // By induction, we need to multiply by the (n-1)th power of 10^36.
             // To not overflow, we use BigInt
             let self_integer = BigInt::from(self.0);
-            let correct_nb = self_integer * BigInt::from(PreciseDecimal::one().0).pow(n - 1);
+            let correct_nb = self_integer * BigInt::from(Self::ONE.0).pow(n - 1);
             let nth_root = BnumI256::try_from(correct_nb.nth_root(n)).unwrap();
-            Some(PreciseDecimal(nth_root))
+            Some(Self(nth_root))
         }
     }
 }
