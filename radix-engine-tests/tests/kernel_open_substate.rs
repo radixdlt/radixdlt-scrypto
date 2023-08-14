@@ -13,9 +13,7 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::LockFlags;
-use radix_engine_queries::typed_substate_layout::{
-    BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
-};
+use radix_engine_queries::typed_substate_layout::{BlueprintVersionKey, PackagePartition};
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::prelude::*;
@@ -72,9 +70,7 @@ pub fn test_open_substate_of_invisible_package_address() {
     // Lock package substate
     let result = kernel.kernel_open_substate(
         PACKAGE_PACKAGE.as_node_id(),
-        MAIN_BASE_PARTITION
-            .at_offset(PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET)
-            .unwrap(),
+        PackagePartition::BlueprintVersionAuthConfigKeyValue.as_main_partition(),
         &SubstateKey::Map(scrypto_encode(&BlueprintVersionKey::new_default("Test")).unwrap()),
         LockFlags::read_only(),
         SystemLockData::default(),

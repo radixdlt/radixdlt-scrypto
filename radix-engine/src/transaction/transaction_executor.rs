@@ -1,4 +1,7 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
+use crate::blueprints::package::{
+    PackageBlueprintVersionDefinitionEntrySubstate, PackagePartition,
+};
 use crate::blueprints::resource::BurnFungibleResourceEvent;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
@@ -18,9 +21,7 @@ use crate::transaction::*;
 use crate::types::*;
 use radix_engine_common::constants::*;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-};
+use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
@@ -311,9 +312,8 @@ where
                         let substate = track
                             .read_substate(
                                 RESOURCE_PACKAGE.as_node_id(),
-                                MAIN_BASE_PARTITION
-                                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                                    .unwrap(),
+                                PackagePartition::BlueprintVersionDefinitionKeyValue
+                                    .as_main_partition(),
                                 &SubstateKey::Map(
                                     scrypto_encode(&BlueprintVersionKey::new_default(
                                         FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -322,11 +322,13 @@ where
                                 ),
                             )
                             .unwrap();
-                        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
+                        let substate: PackageBlueprintVersionDefinitionEntrySubstate =
                             substate.as_typed().unwrap();
                         let type_pointer = substate
                             .value
                             .unwrap()
+                            .0
+                            .into_latest()
                             .interface
                             .get_event_type_pointer("BurnFungibleResourceEvent")
                             .unwrap();

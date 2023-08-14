@@ -1045,9 +1045,7 @@ impl PackageRoyaltyNativeBlueprint {
 
         let handle = api.kernel_open_substate_with_default(
             receiver,
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET)
-                .unwrap(),
+            PackagePartition::BlueprintVersionRoyaltyConfigKeyValue.as_main_partition(),
             &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
@@ -1057,13 +1055,13 @@ impl PackageRoyaltyNativeBlueprint {
             SystemLockData::default(),
         )?;
 
-        let substate: KeyValueEntrySubstate<PackageRoyaltyConfig> =
+        let substate: PackageBlueprintVersionRoyaltyConfigEntrySubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_close_substate(handle)?;
 
         let royalty_charge = substate
             .value
-            .and_then(|royalty_config| match royalty_config {
+            .and_then(|royalty_config| match royalty_config.0.into_latest() {
                 PackageRoyaltyConfig::Enabled(royalty_amounts) => {
                     royalty_amounts.get(ident).cloned()
                 }
@@ -1074,7 +1072,7 @@ impl PackageRoyaltyNativeBlueprint {
         if royalty_charge.is_non_zero() {
             let handle = api.kernel_open_substate(
                 receiver,
-                MAIN_BASE_PARTITION,
+                PackagePartition::Field.as_main_partition(),
                 &PackageField::RoyaltyAccumulator.into(),
                 LockFlags::MUTABLE,
                 SystemLockData::default(),
@@ -1189,9 +1187,7 @@ impl PackageAuthNativeBlueprint {
 
         let handle = api.kernel_open_substate_with_default(
             receiver,
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET)
-                .unwrap(),
+            PackagePartition::BlueprintVersionAuthConfigKeyValue.as_main_partition(),
             &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
@@ -1201,12 +1197,12 @@ impl PackageAuthNativeBlueprint {
             SystemLockData::default(),
         )?;
 
-        let auth_template: KeyValueEntrySubstate<AuthConfig> =
+        let auth_template: PackageBlueprintVersionAuthConfigEntrySubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_close_substate(handle)?;
 
         let template = match auth_template.value {
-            Some(template) => template,
+            Some(template) => template.0.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(
                     SystemError::AuthTemplateDoesNotExist(package_bp_version_id),

@@ -3,6 +3,7 @@ use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
+use crate::blueprints::package::PackagePartition;
 use crate::errors::SystemUpstreamError;
 use crate::errors::{RuntimeError, SystemError};
 use crate::kernel::actor::Actor;
@@ -271,9 +272,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let handle = system.kernel_open_substate_with_default(
                 blueprint_id.package_address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
-                    .unwrap(),
+                PackagePartition::BlueprintVersionDependenciesKeyValue.as_main_partition(),
                 &SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {

@@ -1,6 +1,9 @@
 use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::costing::CostingEntry;
+use crate::blueprints::package::{
+    PackageBlueprintVersionDefinitionEntrySubstate, PackagePartition, PackageSchemaEntrySubstate,
+};
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
     InvalidGlobalizeAccess, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
@@ -512,9 +515,7 @@ where
 
         let handle = self.api.kernel_open_substate_with_default(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                .unwrap(),
+            PackagePartition::SchemaKeyValue.as_main_partition(),
             &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
             LockFlags::read_only(),
             Some(|| {
@@ -524,11 +525,11 @@ where
             SystemLockData::default(),
         )?;
 
-        let substate: KeyValueEntrySubstate<ScryptoSchema> =
+        let substate: PackageSchemaEntrySubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
-        let schema = substate.value.unwrap();
+        let schema = substate.value.unwrap().0.into_latest();
 
         self.api
             .kernel_get_system_state()
@@ -572,9 +573,7 @@ where
 
         let handle = self.api.kernel_open_substate_with_default(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                .unwrap(),
+            PackagePartition::BlueprintVersionDefinitionKeyValue.as_main_partition(),
             &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
@@ -584,12 +583,12 @@ where
             SystemLockData::default(),
         )?;
 
-        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
+        let substate: PackageBlueprintVersionDefinitionEntrySubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
         let definition = match substate.value {
-            Some(definition) => definition,
+            Some(definition) => definition.0.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(
                     SystemError::BlueprintDoesNotExist(canonical_bp_id),

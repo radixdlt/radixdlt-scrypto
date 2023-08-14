@@ -71,12 +71,11 @@ use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, TypePointer,
-    PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_queries::typed_substate_layout::PackageSchemaEntrySubstate;
+use radix_engine_queries::typed_substate_layout::{PackagePartition, PackageSchemaEntrySubstate};
 use radix_engine_store_interface::{
     db_key_mapper::{
         MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
@@ -389,9 +388,7 @@ pub fn export_schema(
     let schema = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, PackageSchemaEntrySubstate>(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                .unwrap(),
+            PackagePartition::SchemaKeyValue.as_main_partition(),
             &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
         )
         .ok_or(Error::SchemaNotFound(package_address, schema_hash))?
@@ -478,16 +475,16 @@ pub fn get_event_schema<S: SubstateDatabase>(
     match schema_pointer {
         TypePointer::Package(TypeIdentifier(schema_hash, index)) => {
             let schema = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+                .get_mapped::<SpreadPrefixKeyMapper, PackageSchemaEntrySubstate>(
                     package_address.as_node_id(),
-                    MAIN_BASE_PARTITION
-                        .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                        .unwrap(),
+                    PackagePartition::SchemaKeyValue.as_main_partition(),
                     &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
                 )
                 .unwrap()
                 .value
-                .unwrap();
+                .unwrap()
+                .0
+                .into_latest();
 
             Some((index, schema))
         }

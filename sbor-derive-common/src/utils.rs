@@ -187,7 +187,6 @@ pub fn extract_typed_attributes(
                 }
             }
         }
-        return Ok(fields);
     }
 
     Ok(fields)
@@ -827,9 +826,13 @@ mod tests {
         let attr: Attribute = parse_quote! {
             #[sbor(skip, custom_value_kind = "NoCustomValueKind")]
         };
-        let extracted = extract_typed_attributes(&[attr], "sbor").unwrap();
+        let attr2: Attribute = parse_quote! {
+            #[sbor(skip3)]
+        };
+        let extracted = extract_typed_attributes(&[attr, attr2], "sbor").unwrap();
         assert_eq!(extracted.get_bool_value("skip").unwrap(), true);
         assert_eq!(extracted.get_bool_value("skip2").unwrap(), false);
+        assert_eq!(extracted.get_bool_value("skip3").unwrap(), true);
         assert!(matches!(
             extracted.get_bool_value("custom_value_kind"),
             Err(_)

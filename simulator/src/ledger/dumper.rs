@@ -7,8 +7,8 @@ use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_queries::query::ResourceAccounter;
 use radix_engine_queries::typed_substate_layout::PackageCodeOriginalCodeEntrySubstate;
+use radix_engine_queries::{query::ResourceAccounter, typed_substate_layout::PackagePartition};
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -34,9 +34,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     let (_, substate) = substate_db
         .list_mapped::<SpreadPrefixKeyMapper, PackageCodeOriginalCodeEntrySubstate, MapKey>(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET)
-                .unwrap(),
+            PackagePartition::CodeOriginalCodeKeyValue.as_main_partition(),
         )
         .next()
         .ok_or(EntityDumpError::PackageNotFound)?;

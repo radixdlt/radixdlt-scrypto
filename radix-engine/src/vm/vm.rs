@@ -1,6 +1,6 @@
 use crate::blueprints::package::{
     PackageCodeInstrumentedCodeEntrySubstate, PackageCodeOriginalCodeEntrySubstate,
-    PackageCodeVmTypeEntrySubstate, PackageError, VmType,
+    PackageCodeVmTypeEntrySubstate, PackageError, PackagePartition, VmType,
 };
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
@@ -54,9 +54,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
         let vm_type = {
             let handle = api.kernel_open_substate_with_default(
                 address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_VM_TYPE_PARTITION_OFFSET)
-                    .unwrap(),
+                PackagePartition::CodeVmTypeKeyValue.as_main_partition(),
                 &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
@@ -78,9 +76,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 let original_code = {
                     let handle = api.kernel_open_substate_with_default(
                         address.as_node_id(),
-                        MAIN_BASE_PARTITION
-                            .at_offset(PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET)
-                            .unwrap(),
+                        PackagePartition::CodeOriginalCodeKeyValue.as_main_partition(),
                         &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
                         LockFlags::read_only(),
                         Some(|| {
@@ -111,9 +107,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 let instrumented_code = {
                     let handle = api.kernel_open_substate_with_default(
                         address.as_node_id(),
-                        MAIN_BASE_PARTITION
-                            .at_offset(PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET)
-                            .unwrap(),
+                        PackagePartition::CodeInstrumentedCodeKeyValue.as_main_partition(),
                         &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
                         LockFlags::read_only(),
                         Some(|| {

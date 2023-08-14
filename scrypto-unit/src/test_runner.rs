@@ -30,7 +30,6 @@ use radix_engine_interface::blueprints::package::{
     BlueprintDefinitionInit, PackageDefinition, PackagePublishNativeManifestInput,
     PackagePublishWasmAdvancedManifestInput, TypePointer, PACKAGE_BLUEPRINT,
     PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-    PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::math::Decimal;
@@ -613,9 +612,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .substate_db()
             .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
                 package_address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                    .unwrap(),
+                PackagePartition::SchemaKeyValue.as_main_partition(),
             ))
         {
             let hash: SchemaHash =
@@ -641,18 +638,16 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .substate_db()
             .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
                 package_address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                    .unwrap(),
+                PackagePartition::BlueprintVersionDefinitionKeyValue.as_main_partition(),
             ))
         {
             let key: BlueprintVersionKey =
                 scrypto_decode(&SpreadPrefixKeyMapper::map_from_db_sort_key(&entry.0)).unwrap();
-            let value: KeyValueEntrySubstate<BlueprintDefinition> =
+            let value: PackageBlueprintVersionDefinitionEntrySubstate =
                 scrypto_decode(&entry.1).unwrap();
             match value.value {
                 Some(definition) => {
-                    definitions.insert(key, definition);
+                    definitions.insert(key, definition.0.into_latest());
                 }
                 None => {}
             }
@@ -1936,16 +1931,16 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             TypePointer::Package(type_identifier) => {
                 let schema = self
                     .substate_db()
-                    .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+                    .get_mapped::<SpreadPrefixKeyMapper, PackageSchemaEntrySubstate>(
                         package_address.as_node_id(),
-                        MAIN_BASE_PARTITION
-                            .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                            .unwrap(),
+                        PackagePartition::SchemaKeyValue.as_main_partition(),
                         &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
                     )
                     .unwrap()
                     .value
-                    .unwrap();
+                    .unwrap()
+                    .0
+                    .into_latest();
 
                 (type_identifier.1, schema)
             }

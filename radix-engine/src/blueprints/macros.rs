@@ -5,7 +5,7 @@ use crate::types::*;
 // TODO(David) - Move this, features and content stuff under a `models` module?
 // TODO(David) - Create an internal_prelude in `blueprints`
 // and an internal_prelude and prelud in engine
-pub trait FeatureSetResolver {
+pub trait FeatureSetResolver: Debug {
     fn feature_names_str(&self) -> Vec<&'static str>;
 
     fn feature_names_str_set(&self) -> BTreeSet<&'static str> {
@@ -28,6 +28,7 @@ pub trait FeatureSetResolver {
 }
 
 /// For feature checks against a non-inner object
+#[derive(Debug)]
 pub enum FeatureChecks<TOwn: FeatureSetResolver> {
     None,
     RequireAllSubstates,
@@ -205,7 +206,21 @@ pub trait SortedIndexEntryContent<ActualContent: From<Self>>: Sized {
 /// See the below structure for detail on how it should look - or check
 /// out [../package/substates.rs](the package substates definition).
 ///
-/// Each type token-tree should look something like the following.
+/// For each field, the following types will be created:
+/// * `<BlueprintIdent><FieldIdent>FieldContent` - a transparent new type for the full content
+/// * `<BlueprintIdent><FieldIdent>FieldSubstate` - a type for the full system-wrapped substate
+///
+/// For each collection value, the following types will be created:
+/// * `<BlueprintIdent><CollectionIdent>EntryContent` - a transparent new type for the full content
+/// * `<BlueprintIdent><CollectionIdent>EntrySubstate` - a type for the full system-wrapped substate
+///
+/// For each collection key, the following types will be created:
+/// * `<BlueprintIdent><CollectionIdent>KeyContent` - a transparent new type for the full key content
+/// * `<BlueprintIdent><CollectionIdent>Key` - a type for the full key (eg includes the u16 for a sorted index key)
+///
+/// The content of each of the above can take a number of forms.
+/// This is configured via specifying the type as one of the following.
+/// By default, choose StaticSingleVersioned for fields and collection values.
 /// ```
 ///     {
 ///         kind: StaticSingleVersioned,
@@ -226,28 +241,22 @@ pub trait SortedIndexEntryContent<ActualContent: From<Self>>: Sized {
 ///     }
 /// ```
 ///
-/// By default, choose  `StaticSingleVersioned`, which will create a
-/// forward-compatible enum wrapper with a single version.
+/// Choosing  `StaticSingleVersioned`, which will create a
+/// forward-compatible enum wrapper with a single version for the content.
 /// For Fields, it will assume the existence of a type called
 /// `<BlueprintIdent><FieldIdent>V1` and will generate the following types:
 /// * `<BlueprintIdent><FieldIdent>` - a type alias for the latest version (V1).
-/// * `Versioned<BlueprintIdent><FieldIdent>` - the enum wrapper with a single version.
-/// * `<BlueprintIdent><FieldIdent>FieldContent` - a transparent new type for the full content (wrapping the versioned enum)
-/// * `<BlueprintIdent><FieldIdent>FieldSubstate` - a type for the full system-wrapped substate
+/// * `Versioned<BlueprintIdent><FieldIdent>` - the enum wrapper with a single version. This will be the content of `<BlueprintIdent><FieldIdent>FieldContent`.
 ///
 /// For collection values, it will assume the existence of `<BlueprintIdent><CollectionIdent>V1`
 /// and generate the following types:
 /// * `<BlueprintIdent><CollectionIdent>` - a type alias for the latest version (V1).
-/// * `Versioned<BlueprintIdent><CollectionIdent>` - the enum wrapper with a single version.
-/// * `<BlueprintIdent><CollectionIdent>EntryContent` - a transparent new type for the full content (wrapping the versioned enum)
-/// * `<BlueprintIdent><CollectionIdent>EntrySubstate` - a type for the full system-wrapped substate
+/// * `Versioned<BlueprintIdent><CollectionIdent>` - the enum wrapper with a single version. This will be the content of `<BlueprintIdent><CollectionIdent>EntryContent`.
 ///
 /// For collection keys, it will assume the existence of `<BlueprintIdent><CollectionIdent>KeyInnerV1`
 /// and generate the following types:
 /// * `<BlueprintIdent><CollectionIdent>KeyInner` - a type alias for the latest version (V1)
-/// * `Versioned<BlueprintIdent><CollectionIdent>KeyInner` - the enum wrapper with a single version.
-/// * `<BlueprintIdent><CollectionIdent>KeyContent` - a transparent new type for the full key content (wrapping the versioned enum)
-/// * `<BlueprintIdent><CollectionIdent>Key` - a type for the full key (eg includes the u16 for a sorted index key)
+/// * `Versioned<BlueprintIdent><CollectionIdent>KeyInner` - the enum wrapper with a single version. This will be the content of `<BlueprintIdent><CollectionIdent>KeyContent`.
 #[allow(unused)]
 macro_rules! declare_native_blueprint_state {
     (
@@ -495,7 +504,7 @@ macro_rules! declare_native_blueprint_state {
                     fn feature_name(&self) -> &'static str {
                         match *self {
                             $(
-                                Self::$feature_ident => stringify!(Self::$feature_property_name),
+                                Self::$feature_ident => stringify!($feature_property_name),
                             )*
                         }
                     }
