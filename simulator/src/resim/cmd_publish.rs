@@ -1,15 +1,15 @@
 use clap::Parser;
 use colored::*;
+use radix_engine::blueprints::macros::*;
+use radix_engine::track::IntoDatabaseUpdates;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedStateSchema, PackageExport,
     TypePointer, VmType, *,
 };
 use radix_engine_interface::schema::TypeRef;
-use radix_engine_store_interface::{
-    db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
-    interface::{CommittableSubstateDatabase, DatabaseUpdate},
-};
+use radix_engine_queries::typed_substate_layout::*;
+use radix_engine_store_interface::interface::CommittableSubstateDatabase;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -72,91 +72,51 @@ impl Publish {
 
             let node_id: NodeId = package_address.0.into();
 
-            let blueprints_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                &node_id,
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                    .unwrap(),
-            );
-            let schemas_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                &node_id,
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                    .unwrap(),
-            );
-            let dependencies_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                &node_id,
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
-                    .unwrap(),
-            );
-            let vm_type_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                &node_id,
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_VM_TYPE_PARTITION_OFFSET)
-                    .unwrap(),
-            );
-            let original_code_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                &node_id,
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET)
-                    .unwrap(),
-            );
-            let instrumented_code_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                &node_id,
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET)
-                    .unwrap(),
-            );
-            let mut blueprint_updates = index_map_new();
-            let mut dependency_updates = index_map_new();
-            let mut schema_updates = index_map_new();
-            let mut vm_type_updates = index_map_new();
-            let mut original_code_updates = index_map_new();
-            let mut instrumented_code_updates = index_map_new();
-
-            let code_hash = hash(&code);
+            let code_hash = CodeHash::from(hash(&code));
             let instrumented_code = WasmValidator::default()
                 .validate(&code, package_definition.blueprints.values())
                 .map_err(Error::InvalidPackage)?
                 .0;
-            let vm_type = PackageVmTypeSubstate {
-                vm_type: VmType::ScryptoV1,
+
+            let mut package_state_to_set = PackageStateInit {
+                royalty: None, // No change
+                // To be set later in this function
+                blueprint_version_definitions: indexmap!(),
+                blueprint_version_dependencies: indexmap!(),
+                schemas: indexmap!(),
+                blueprint_version_royalty_configs: indexmap!(),
+                blueprint_version_auth_configs: indexmap!(),
+                // Code set now
+                code_vm_type: indexmap! {
+                    code_hash.into_key() => PackageCodeVmType {
+                        vm_type: VmType::ScryptoV1
+                    }.into_locked_substate()
+                },
+                code_original_code: indexmap! {
+                    code_hash.into_key() => PackageCodeOriginalCode {
+                        code
+                    }.into_locked_substate()
+                },
+                code_instrumented_code: indexmap! {
+                    code_hash.into_key() => PackageCodeInstrumentedCode {
+                        instrumented_code
+                    }.into_locked_substate()
+                },
             };
-            let original_code = PackageOriginalCodeSubstate { code };
-            let instrumented_code = PackageOriginalCodeSubstate {
-                code: instrumented_code,
-            };
-            {
-                let key =
-                    SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
-                let update = DatabaseUpdate::Set(scrypto_encode(&vm_type).unwrap());
-                vm_type_updates.insert(key, update);
 
-                let key =
-                    SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
-                let update = DatabaseUpdate::Set(scrypto_encode(&original_code).unwrap());
-                original_code_updates.insert(key, update);
-
-                let key =
-                    SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
-                let update = DatabaseUpdate::Set(scrypto_encode(&instrumented_code).unwrap());
-                instrumented_code_updates.insert(key, update);
-            }
-
-            for (b, s) in package_definition.blueprints {
+            for (blueprint_name, blueprint_definition) in package_definition.blueprints {
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
 
-                let blueprint_schema = s.schema.clone();
+                let blueprint_version_key = BlueprintVersionKey::new_default(blueprint_name);
+                let blueprint_schema = blueprint_definition.schema.clone();
                 let schema_hash = blueprint_schema.schema.generate_schema_hash();
-                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(
-                    &scrypto_encode(&schema_hash).unwrap(),
+                package_state_to_set.schemas.insert(
+                    schema_hash.into_key(),
+                    blueprint_schema.schema.into_locked_substate(),
                 );
-                let update = DatabaseUpdate::Set(scrypto_encode(&blueprint_schema).unwrap());
-                schema_updates.insert(key, update);
 
-                for (function, setup) in s.schema.functions.functions {
+                for (function, setup) in blueprint_definition.schema.functions.functions {
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
@@ -182,7 +142,7 @@ impl Publish {
                     function_exports.insert(function, export);
                 }
 
-                let events = s
+                let events = blueprint_definition
                     .schema
                     .events
                     .event_schema
@@ -202,40 +162,47 @@ impl Publish {
 
                 let def = BlueprintDefinition {
                     interface: BlueprintInterface {
-                        generics: s.schema.generics,
-                        blueprint_type: s.blueprint_type,
+                        generics: blueprint_definition.schema.generics,
+                        blueprint_type: blueprint_definition.blueprint_type,
                         is_transient: false,
-                        feature_set: s.feature_set,
+                        feature_set: blueprint_definition.feature_set,
                         functions,
                         events,
-                        state: IndexedStateSchema::from_schema(schema_hash, s.schema.state),
+                        state: IndexedStateSchema::from_schema(
+                            schema_hash,
+                            blueprint_definition.schema.state,
+                        ),
                     },
                     function_exports,
                     hook_exports: BTreeMap::new(),
                 };
-                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
-                let update = DatabaseUpdate::Set(scrypto_encode(&def).unwrap());
-                blueprint_updates.insert(key, update);
-
-                let config = BlueprintDependencies {
-                    dependencies: s.dependencies,
-                };
-                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
-                let update = DatabaseUpdate::Set(
-                    scrypto_encode(&KeyValueEntrySubstate::entry(config)).unwrap(),
+                package_state_to_set.blueprint_version_definitions.insert(
+                    blueprint_version_key.clone().into_key(),
+                    def.into_locked_substate(),
                 );
-                dependency_updates.insert(key, update);
+                package_state_to_set.blueprint_version_dependencies.insert(
+                    blueprint_version_key.clone().into_key(),
+                    BlueprintDependencies {
+                        dependencies: blueprint_definition.dependencies,
+                    }
+                    .into_locked_substate(),
+                );
+                package_state_to_set.blueprint_version_auth_configs.insert(
+                    blueprint_version_key.clone().into_key(),
+                    blueprint_definition.auth_config.into_locked_substate(),
+                );
+                package_state_to_set
+                    .blueprint_version_royalty_configs
+                    .insert(
+                        blueprint_version_key.clone().into_key(),
+                        blueprint_definition.royalty_config.into_locked_substate(),
+                    );
             }
 
-            let database_updates = indexmap!(
-                blueprints_partition_key => blueprint_updates,
-                dependencies_partition_key => dependency_updates,
-                schemas_partition_key => schema_updates,
-                vm_type_partition_key => vm_type_updates,
-                original_code_partition_key => original_code_updates,
-                instrumented_code_partition_key => instrumented_code_updates,
-            );
-
+            let database_updates = package_state_to_set
+                .into_kernel_main_partitions(FeatureChecks::None)
+                .unwrap()
+                .into_database_updates::<SpreadPrefixKeyMapper>(&node_id);
             substate_db.commit(&database_updates);
 
             writeln!(out, "Package updated!").map_err(Error::IOError)?;

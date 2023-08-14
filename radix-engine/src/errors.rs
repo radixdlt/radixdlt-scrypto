@@ -254,6 +254,7 @@ pub enum SystemError {
     TransactionRuntimeModuleNotEnabled,
     PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError),
     EventError(EventError),
+    InvalidNativeSubstatesForFeature(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

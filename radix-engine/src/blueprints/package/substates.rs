@@ -5,14 +5,20 @@ use crate::types::*;
 declare_native_blueprint_state! {
     blueprint_ident: Package,
     blueprint_snake_case: package,
-    instance_schema_types: [],
+    features: {
+        package_royalty: {
+            ident: PackageRoyalty,
+            description: "Enables the package royalty substate",
+        }
+    },
+    instance_schema_types: {},
     fields: {
         royalty:  {
             ident: RoyaltyAccumulator,
             field_type: {
                 kind: StaticSingleVersioned,
             },
-            condition: Condition::Always,
+            condition: Condition::if_feature(PackageFeature::PackageRoyalty),
         }
     },
     collections: {
@@ -112,7 +118,7 @@ declare_native_blueprint_state! {
 //-------------
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
-pub struct PackageRoyaltyAccumulatorFieldV1 {
+pub struct PackageRoyaltyAccumulatorV1 {
     /// The vault for collecting package royalties.
     pub royalty_vault: Vault,
 }
@@ -123,16 +129,16 @@ pub struct PackageRoyaltyAccumulatorFieldV1 {
 
 // TODO(David): Change to VersionedSchema when can define a type as not-implicitly-versioned
 // TODO: Move to Schema partition when we have it
-pub type PackageSchemaValueV1 = ScryptoSchema;
+pub type PackageSchemaV1 = ScryptoSchema;
 
 //---------------------------------------
 // Collection models - By BlueprintVersion
 //---------------------------------------
 
-pub type PackageBlueprintVersionDefinitionValueV1 = BlueprintDefinition;
-pub type PackageBlueprintVersionDependenciesValueV1 = BlueprintDependencies;
-pub type PackageBlueprintVersionRoyaltyConfigValueV1 = PackageRoyaltyConfig;
-pub type PackageBlueprintVersionAuthConfigValueV1 = AuthConfig;
+pub type PackageBlueprintVersionDefinitionV1 = BlueprintDefinition;
+pub type PackageBlueprintVersionDependenciesV1 = BlueprintDependencies;
+pub type PackageBlueprintVersionRoyaltyConfigV1 = PackageRoyaltyConfig;
+pub type PackageBlueprintVersionAuthConfigV1 = AuthConfig;
 
 //---------------------------------------
 // Collection models - By Code
@@ -140,17 +146,17 @@ pub type PackageBlueprintVersionAuthConfigValueV1 = AuthConfig;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
-pub struct PackageCodeVmTypeValueV1 {
+pub struct PackageCodeVmTypeV1 {
     pub vm_type: VmType,
 }
 
 #[derive(PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
-pub struct PackageCodeOriginalCodeValueV1 {
+pub struct PackageCodeOriginalCodeV1 {
     pub code: Vec<u8>,
 }
 
-impl Debug for PackageCodeOriginalCodeValueV1 {
+impl Debug for PackageCodeOriginalCodeV1 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("PackageCodeOriginalCodeValueV1")
             .field("len", &self.code.len())
@@ -160,14 +166,14 @@ impl Debug for PackageCodeOriginalCodeValueV1 {
 
 #[derive(PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
-pub struct PackageCodeInstrumentedCodeValueV1 {
-    pub code: Vec<u8>,
+pub struct PackageCodeInstrumentedCodeV1 {
+    pub instrumented_code: Vec<u8>,
 }
 
-impl Debug for PackageCodeInstrumentedCodeValueV1 {
+impl Debug for PackageCodeInstrumentedCodeV1 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("PackageCodeInstrumentedCodeValueV1")
-            .field("len", &self.code.len())
+            .field("len", &self.instrumented_code.len())
             .finish()
     }
 }

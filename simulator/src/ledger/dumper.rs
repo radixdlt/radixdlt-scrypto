@@ -3,7 +3,7 @@ use crate::utils::*;
 use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::network::NetworkDefinition;

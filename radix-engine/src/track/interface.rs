@@ -29,6 +29,38 @@ impl<E, C> CallbackError<E, C> {
 
 pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
+pub use database_update_conversion::*;
+
+mod database_update_conversion {
+    // This is for resim, but it makes sense to put it here alongside NodeSubstates
+    use super::*;
+    use radix_engine_store_interface::db_key_mapper::*;
+    use radix_engine_store_interface::interface::*;
+
+    pub trait IntoDatabaseUpdates {
+        fn into_database_updates<M: DatabaseKeyMapper>(self, node_id: &NodeId) -> DatabaseUpdates;
+    }
+
+    impl IntoDatabaseUpdates for NodeSubstates {
+        fn into_database_updates<M: DatabaseKeyMapper>(self, node_id: &NodeId) -> DatabaseUpdates {
+            self.into_iter()
+                .map(|(partition_number, substates)| {
+                    let db_partition_key = M::to_db_partition_key(node_id, partition_number);
+                    let partition_updates = substates
+                        .into_iter()
+                        .map(|(substate_key, value)| {
+                            let db_sort_key = M::to_db_sort_key(&substate_key);
+                            let update = DatabaseUpdate::Set(value.as_vec_ref().clone());
+                            (db_sort_key, update)
+                        })
+                        .collect();
+                    (db_partition_key, partition_updates)
+                })
+                .collect()
+        }
+    }
+}
+
 pub enum TrackedSubstateInfo {
     New,
     Updated,

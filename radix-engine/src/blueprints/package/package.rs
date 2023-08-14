@@ -470,40 +470,21 @@ impl SecurifiedRoleAssignment for SecurifiedPackage {
 }
 
 pub fn create_bootstrap_package_partitions(
-    mut package_state_init: PackageStateInit,
+    package_state_init: PackageStateInit,
     metadata: MetadataInit,
 ) -> NodeSubstates {
+    // No features necessary
+    let own_features = PackageFeatureSet {
+        package_royalty: false,
+    };
+
     //-----------------
     // MAIN PARTITIONS:
     //-----------------
 
-    // TODO:
-    // - Improve the System ObjectAPI to take field indices (and so support optional) fields
-    // - Improve the declare_native_blueprint_state! macro to support features
-    //   and so optional field substates, if/when that feature is disabled
-    {
-        // Native packages disable the package royalty feature
-        // Due to (current) restrictions on the into_kernel_main_partitions() method, we need to
-        // temporarily add in a faked royalty substate - to be removed a few lines later
-        package_state_init.royalty = Some(
-            PackageRoyaltyAccumulatorField {
-                royalty_vault: Vault(Own(NodeId([0; NodeId::LENGTH]))),
-            }
-            .into_locked_substate(),
-        );
-    }
-
-    let mut partitions = package_state_init.into_kernel_main_partitions();
-
-    {
-        // Remove the Royalty field because that feature is turned off
-        let field_partition = partitions
-            .get_mut(&PackagePartition::Field.as_main_partition())
-            .unwrap();
-        field_partition
-            .remove_entry(&PackageField::RoyaltyAccumulator.into())
-            .unwrap();
-    }
+    let mut partitions = package_state_init
+        .into_kernel_main_partitions(own_features.into())
+        .expect("Expected that correct substates are present for given features");
 
     //-------------------
     // MODULE PARTITIONS:
@@ -546,7 +527,7 @@ pub fn create_bootstrap_package_partitions(
                 blueprint_info: BlueprintInfo {
                     blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
                     outer_obj_info: OuterObjectInfo::default(),
-                    features: btreeset!(),
+                    features: own_features.feature_names_string_set(),
                     instance_schema: None,
                 },
             })),
@@ -567,19 +548,17 @@ where
     Y: ClientApi<RuntimeError>,
 {
     package_state_init.royalty = Some(
-        PackageRoyaltyAccumulatorField {
+        PackageRoyaltyAccumulator {
             royalty_vault: Vault(ResourceManager(XRD).new_empty_vault(api)?),
         }
         .into_locked_substate(),
     );
-    let (fields, kv_entries) = package_state_init.into_system_substates();
-
-    let package_object = api.new_object(
-        PACKAGE_BLUEPRINT,
-        vec![PACKAGE_ROYALTY_FEATURE],
+    let package_object = package_state_init.into_new_object(
+        api,
+        PackageFeatureSet {
+            package_royalty: true,
+        },
         None,
-        fields,
-        kv_entries,
     )?;
 
     let address = api.globalize(
@@ -788,35 +767,49 @@ impl PackageNativePackage {
             VmPackageValidation::validate(&definition, vm_type, &original_code)?;
 
         // Build Package structure
-        let mut definitions = BTreeMap::new();
-        let mut dependencies = BTreeMap::new();
-        let mut schemas = BTreeMap::new();
-        let mut package_royalties = BTreeMap::new();
-        let mut auth_configs = BTreeMap::new();
-        let mut vm_type_substates = BTreeMap::new();
-        let mut original_code_substates = BTreeMap::new();
-        let mut instrumented_code_substates = BTreeMap::new();
+        let mut blueprint_version_definitions = IndexMap::default();
+        let mut blueprint_version_dependencies = IndexMap::default();
+        let mut schemas = IndexMap::default();
+        let mut blueprint_version_royalty_configs = IndexMap::default();
+        let mut blueprint_version_auth_configs = IndexMap::default();
+        let mut vm_type_substates = IndexMap::default();
+        let mut original_code_substates = IndexMap::default();
+        let mut instrumented_code_substates = IndexMap::default();
 
         let code_hash = CodeHash::from(hash(&original_code));
-        vm_type_substates.insert(code_hash, PackageCodeVmTypeValue { vm_type });
-        original_code_substates.insert(
-            code_hash,
-            PackageCodeOriginalCodeValue {
-                code: original_code,
-            },
+        vm_type_substates.insert(
+            code_hash.into_key(),
+            PackageCodeVmType { vm_type }.into_locked_substate(),
         );
-        if let Some(code) = instrumented_code {
-            instrumented_code_substates
-                .insert(code_hash, PackageCodeInstrumentedCodeValue { code });
+        original_code_substates.insert(
+            code_hash.into_key(),
+            PackageCodeOriginalCode {
+                code: original_code,
+            }
+            .into_locked_substate(),
+        );
+        if let Some(instrumented_code) = instrumented_code {
+            instrumented_code_substates.insert(
+                code_hash.into_key(),
+                PackageCodeInstrumentedCode { instrumented_code }.into_locked_substate(),
+            );
         };
 
         {
-            for (blueprint, definition_init) in definition.blueprints {
-                auth_configs.insert(blueprint.clone(), definition_init.auth_config);
+            for (blueprint_name, definition_init) in definition.blueprints {
+                let blueprint_version_key = BlueprintVersionKey::new_default(blueprint_name);
+
+                blueprint_version_auth_configs.insert(
+                    blueprint_version_key.clone().into_key(),
+                    definition_init.auth_config.into_locked_substate(),
+                );
 
                 let blueprint_schema = definition_init.schema.schema.clone();
                 let schema_hash = blueprint_schema.generate_schema_hash();
-                schemas.insert(schema_hash, blueprint_schema);
+                schemas.insert(
+                    schema_hash.into_key(),
+                    blueprint_schema.into_locked_substate(),
+                );
 
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
@@ -899,86 +892,37 @@ impl PackageNativePackage {
                             .collect()
                     },
                 };
-                definitions.insert(blueprint.clone(), definition);
+                blueprint_version_definitions.insert(
+                    blueprint_version_key.clone().into_key(),
+                    definition.into_locked_substate(),
+                );
 
-                let minor_version_config = BlueprintDependencies {
-                    dependencies: definition_init.dependencies,
-                };
-                dependencies.insert(blueprint.clone(), minor_version_config);
+                blueprint_version_dependencies.insert(
+                    blueprint_version_key.clone().into_key(),
+                    BlueprintDependencies {
+                        dependencies: definition_init.dependencies,
+                    }
+                    .into_locked_substate(),
+                );
 
-                package_royalties.insert(blueprint.clone(), definition_init.royalty_config);
+                blueprint_version_royalty_configs.insert(
+                    blueprint_version_key.into_key(),
+                    definition_init.royalty_config.into_locked_substate(),
+                );
             }
         };
 
-        let package_state_init = PackageStateInit {
-            royalty: None, // This is added later, for globalized packages,
-            blueprint_version_definitions: definitions
-                .into_iter()
-                .map(|(blueprint_name, blueprint_definition)| {
-                    (
-                        BlueprintVersionKey::new_default(blueprint_name).into_key(),
-                        blueprint_definition.into_locked_substate(),
-                    )
-                })
-                .collect(),
-            blueprint_version_dependencies: dependencies
-                .into_iter()
-                .map(|(blueprint_name, blueprint_dependencies)| {
-                    (
-                        BlueprintVersionKey::new_default(blueprint_name).into_key(),
-                        blueprint_dependencies.into_locked_substate(),
-                    )
-                })
-                .collect(),
-            schemas: schemas
-                .into_iter()
-                .map(|(schema_hash, schema)| {
-                    (
-                        SchemaHash::from(schema_hash).into_key(),
-                        schema.into_locked_substate(),
-                    )
-                })
-                .collect(),
-            blueprint_version_royalty_configs: package_royalties
-                .into_iter()
-                .map(|(blueprint_name, royalty_config)| {
-                    (
-                        BlueprintVersionKey::new_default(blueprint_name).into_key(),
-                        royalty_config.into_locked_substate(),
-                    )
-                })
-                .collect(),
-            blueprint_version_auth_configs: auth_configs
-                .into_iter()
-                .map(|(blueprint_name, auth_config)| {
-                    (
-                        BlueprintVersionKey::new_default(blueprint_name).into_key(),
-                        auth_config.into_locked_substate(),
-                    )
-                })
-                .collect(),
-            code_vm_type: vm_type_substates
-                .into_iter()
-                .map(|(code_hash, vm_type)| (code_hash.into_key(), vm_type.into_locked_substate()))
-                .collect(),
-            code_original_code: original_code_substates
-                .into_iter()
-                .map(|(code_hash, original_code)| {
-                    (code_hash.into_key(), original_code.into_locked_substate())
-                })
-                .collect(),
-            code_instrumented_code: instrumented_code_substates
-                .into_iter()
-                .map(|(code_hash, instrumented_code)| {
-                    (
-                        code_hash.into_key(),
-                        instrumented_code.into_locked_substate(),
-                    )
-                })
-                .collect(),
-        };
-
-        Ok(package_state_init)
+        Ok(PackageStateInit {
+            royalty: None, // This is added later, if the feature is turned on
+            blueprint_version_definitions,
+            blueprint_version_dependencies,
+            schemas,
+            blueprint_version_royalty_configs,
+            blueprint_version_auth_configs,
+            code_vm_type: vm_type_substates,
+            code_original_code: original_code_substates,
+            code_instrumented_code: instrumented_code_substates,
+        })
     }
 
     pub(crate) fn publish_native<Y>(
@@ -1170,7 +1114,7 @@ impl PackageRoyaltyNativeBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let mut substate: PackageRoyaltyAccumulatorFieldContent = api.field_read_typed(handle)?;
+        let substate: PackageRoyaltyAccumulatorFieldContent = api.field_read_typed(handle)?;
         let bucket = substate.0.into_latest().royalty_vault.take_all(api)?;
 
         Ok(bucket)

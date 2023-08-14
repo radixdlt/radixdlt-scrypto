@@ -137,11 +137,15 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     api.kernel_get_system()
                         .callback_obj
                         .scrypto_vm
-                        .create_instance(address, export.code_hash, &instrumented_code.code)
+                        .create_instance(
+                            address,
+                            export.code_hash,
+                            &instrumented_code.instrumented_code,
+                        )
                 };
 
                 api.consume_cost_units(ClientCostingEntry::PrepareWasmCode {
-                    size: instrumented_code.code.len(),
+                    size: instrumented_code.instrumented_code.len(),
                 })?;
 
                 let output =

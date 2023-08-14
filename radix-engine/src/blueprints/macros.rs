@@ -1,5 +1,164 @@
+use crate::errors::*;
 use crate::system::system::*;
 use crate::types::*;
+
+// TODO(David) - Move this, features and content stuff under a `models` module?
+// TODO(David) - Create an internal_prelude in `blueprints`
+// and an internal_prelude and prelud in engine
+pub trait FeatureSetResolver {
+    fn feature_names_str(&self) -> Vec<&'static str>;
+
+    fn feature_names_str_set(&self) -> BTreeSet<&'static str> {
+        self.feature_names_str().into_iter().collect()
+    }
+
+    fn feature_names_string(&self) -> Vec<String> {
+        self.feature_names_str()
+            .into_iter()
+            .map(|s| s.to_owned())
+            .collect()
+    }
+
+    fn feature_names_string_set(&self) -> BTreeSet<String> {
+        self.feature_names_str()
+            .into_iter()
+            .map(|s| s.to_owned())
+            .collect()
+    }
+}
+
+/// For feature checks against a non-inner object
+pub enum FeatureChecks<TOwn: FeatureSetResolver> {
+    None,
+    RequireAllSubstates,
+    ForFeatures { own_features: TOwn },
+}
+
+impl<T: FeatureSetResolver> From<T> for FeatureChecks<T> {
+    fn from(value: T) -> Self {
+        FeatureChecks::ForFeatures {
+            own_features: value,
+        }
+    }
+}
+
+impl<TOwn: FeatureSetResolver> FeatureChecks<TOwn> {
+    pub fn assert_valid(
+        &self,
+        substate_name: &'static str,
+        condition: &Condition,
+        is_present: bool,
+    ) -> Result<(), RuntimeError> {
+        let is_valid = match self {
+            FeatureChecks::None => Ok(()),
+            FeatureChecks::RequireAllSubstates => {
+                if is_present {
+                    Ok(())
+                } else {
+                    Err(format!("Required all substates to be present, but {} was not present", substate_name))
+                }
+            },
+            FeatureChecks::ForFeatures { own_features } => {
+                match condition {
+                    Condition::Always => {
+                        if is_present {
+                            Ok(())
+                        } else {
+                            Err(format!("Substate condition for {} required it to be always present, but it was not", substate_name))
+                        }
+                    }
+                    Condition::IfFeature(feature) => {
+                        let feature_enabled = own_features.feature_names_str().contains(&feature.as_str());
+                        if feature_enabled && !is_present {
+                            Err(format!("Substate condition for {} required it to be present when the feature {} was enabled, but it was absent", substate_name, feature))
+                        } else if !feature_enabled && is_present {
+                            Err(format!("Substate condition for {} required it to be absent when the feature {} was disabled, but it was present", substate_name, feature))
+                        } else {
+                            Ok(())
+                        }
+                    },
+                    Condition::IfOuterFeature(_) => {
+                        Err(format!("Substate condition for {} required an outer object feature, but the blueprint does not have an outer blueprint defined", substate_name))
+                    }
+                }
+            },
+        };
+        is_valid.map_err(|error_message| {
+            RuntimeError::SystemError(SystemError::InvalidNativeSubstatesForFeature(error_message))
+        })
+    }
+}
+
+/// For feature checks against an inner object
+pub enum InnerObjectFeatureChecks<TOwn, TOuter> {
+    None,
+    RequireAllSubstates,
+    ForFeatures {
+        own_features: TOwn,
+        outer_object_features: TOuter,
+    },
+}
+
+impl<TOwn: FeatureSetResolver, TOuter: FeatureSetResolver> InnerObjectFeatureChecks<TOwn, TOuter> {
+    pub fn assert_valid(
+        &self,
+        substate_name: &'static str,
+        condition: &Condition,
+        is_present: bool,
+    ) -> Result<(), RuntimeError> {
+        let is_valid = match self {
+            Self::None => Ok(()),
+            Self::RequireAllSubstates => {
+                if is_present {
+                    Ok(())
+                } else {
+                    Err(format!(
+                        "Required all substates to be present, but {} was not present",
+                        substate_name
+                    ))
+                }
+            }
+            Self::ForFeatures {
+                own_features,
+                outer_object_features,
+            } => match condition {
+                Condition::Always => {
+                    if is_present {
+                        Ok(())
+                    } else {
+                        Err(format!("Substate condition for {} required it to be always present, but it was not", substate_name))
+                    }
+                }
+                Condition::IfFeature(feature) => {
+                    let feature_enabled =
+                        own_features.feature_names_str().contains(&feature.as_str());
+                    if feature_enabled && !is_present {
+                        Err(format!("Substate condition for {} required it to be present when the feature {} was enabled, but it was absent", substate_name, feature))
+                    } else if !feature_enabled && is_present {
+                        Err(format!("Substate condition for {} required it to be absent when the feature {} was disabled, but it was present", substate_name, feature))
+                    } else {
+                        Ok(())
+                    }
+                }
+                Condition::IfOuterFeature(feature) => {
+                    let feature_enabled = outer_object_features
+                        .feature_names_str()
+                        .contains(&feature.as_str());
+                    if feature_enabled && !is_present {
+                        Err(format!("Substate condition for {} required it to be present when the outer object feature {} was enabled, but it was absent", substate_name, feature))
+                    } else if !feature_enabled && is_present {
+                        Err(format!("Substate condition for {} required it to be absent when the outer object feature {} was disabled, but it was present", substate_name, feature))
+                    } else {
+                        Ok(())
+                    }
+                }
+            },
+        };
+        is_valid.map_err(|error_message| {
+            RuntimeError::SystemError(SystemError::InvalidNativeSubstatesForFeature(error_message))
+        })
+    }
+}
 
 pub trait FieldContent<ActualContent: From<Self>>: Sized {
     fn into_locked_substate(self) -> FieldSubstate<ActualContent> {
@@ -39,15 +198,14 @@ pub trait SortedIndexEntryContent<ActualContent: From<Self>>: Sized {
     }
 }
 
-/// Generates types and typed-interfaces for native blueprints and their
-/// interaction with the substate store.
+/// Generates types and typed-interfaces for native blueprints, their
+/// state models, features, partitions, and their interaction with
+/// the substate store.
 ///
-/// * For fields, assumes the existence of a type called:
-///    * `<BlueprintIdent><FieldIdent>FieldV1`
-/// * For collections, assumes the existence of types called:
-///    * `<BlueprintIdent><CollectionIdent>ValueV1`
+/// See the below structure for detail on how it should look - or check
+/// out [../package/substates.rs](the package substates definition).
 ///
-/// The types should look something like
+/// Each type token-tree should look something like the following.
 /// ```
 ///     {
 ///         kind: StaticSingleVersioned,
@@ -67,12 +225,50 @@ pub trait SortedIndexEntryContent<ActualContent: From<Self>>: Sized {
 ///         latest: V3,
 ///     }
 /// ```
+///
+/// By default, choose  `StaticSingleVersioned`, which will create a
+/// forward-compatible enum wrapper with a single version.
+/// For Fields, it will assume the existence of a type called
+/// `<BlueprintIdent><FieldIdent>V1` and will generate the following types:
+/// * `<BlueprintIdent><FieldIdent>` - a type alias for the latest version (V1).
+/// * `Versioned<BlueprintIdent><FieldIdent>` - the enum wrapper with a single version.
+/// * `<BlueprintIdent><FieldIdent>FieldContent` - a transparent new type for the full content (wrapping the versioned enum)
+/// * `<BlueprintIdent><FieldIdent>FieldSubstate` - a type for the full system-wrapped substate
+///
+/// For collection values, it will assume the existence of `<BlueprintIdent><CollectionIdent>V1`
+/// and generate the following types:
+/// * `<BlueprintIdent><CollectionIdent>` - a type alias for the latest version (V1).
+/// * `Versioned<BlueprintIdent><CollectionIdent>` - the enum wrapper with a single version.
+/// * `<BlueprintIdent><CollectionIdent>EntryContent` - a transparent new type for the full content (wrapping the versioned enum)
+/// * `<BlueprintIdent><CollectionIdent>EntrySubstate` - a type for the full system-wrapped substate
+///
+/// For collection keys, it will assume the existence of `<BlueprintIdent><CollectionIdent>KeyInnerV1`
+/// and generate the following types:
+/// * `<BlueprintIdent><CollectionIdent>KeyInner` - a type alias for the latest version (V1)
+/// * `Versioned<BlueprintIdent><CollectionIdent>KeyInner` - the enum wrapper with a single version.
+/// * `<BlueprintIdent><CollectionIdent>KeyContent` - a transparent new type for the full key content (wrapping the versioned enum)
+/// * `<BlueprintIdent><CollectionIdent>Key` - a type for the full key (eg includes the u16 for a sorted index key)
 #[allow(unused)]
 macro_rules! declare_native_blueprint_state {
     (
         blueprint_ident: $blueprint_ident:ident,
         blueprint_snake_case: $blueprint_property_name:ident,
-        instance_schema_types: [
+        $(
+            outer_blueprint: {
+                ident: $outer_blueprint_ident:ident
+                $(,)?
+            },
+        )?
+        features: {
+            $(
+                $feature_property_name:ident: {
+                    ident: $feature_ident:ident,
+                    description: $feature_description:expr,
+                }
+            ),*
+            $(,)?
+        },
+        instance_schema_types: {
             // If no types => instance schema disabled
             $(
                 $instance_type_property_name:ident: {
@@ -80,7 +276,7 @@ macro_rules! declare_native_blueprint_state {
                 }
             ),*
             $(,)?
-        ],
+        },
         fields: {
             $(
                 $field_property_name:ident: {
@@ -118,7 +314,7 @@ macro_rules! declare_native_blueprint_state {
                 use sbor::*;
                 use $crate::types::*;
                 use $crate::track::interface::*;
-                use $crate::errors::RuntimeError;
+                use $crate::errors::*;
                 use $crate::system::system::*;
                 use radix_engine_interface::api::*;
                 //--------------------------------------------------------
@@ -135,7 +331,7 @@ macro_rules! declare_native_blueprint_state {
                     // > Set up the FieldContent trait for anything which can be resolved into the field content
                     generate_content_type!(
                         content_trait: FieldContent,
-                        ident_core: [<$blueprint_ident $field_ident Field>],
+                        ident_core: [<$blueprint_ident $field_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
                         struct [<$blueprint_ident $field_ident FieldContent>] = $field_type
                     );
@@ -158,15 +354,19 @@ macro_rules! declare_native_blueprint_state {
                     generate_content_type!(
                         content_trait: KeyContent,
                         ident_core: [<$blueprint_ident $collection_ident KeyInner>],
-                        #[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
+                        #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
                         #[sbor(transparent_name)]
-                        struct [<$blueprint_ident $collection_ident Key>] = $collection_key_type
+                        struct [<$blueprint_ident $collection_ident KeyContent>] = $collection_key_type
                     );
+
+                    // TODO(David): Tweak when I work out the right strategy for keys. Probably just want a single new-type.
+                    // So probably just don't use generate_content_type but use generate_key_type or something instead?
+                    pub type [<$blueprint_ident $collection_ident Key>] = [<$blueprint_ident $collection_ident KeyContent>];
 
                     // TODO(David) - Properly handle SortedIndex:
                     // Fix Key types for SortedIndex to have a named u16 part of the key,
                     // use a different key trait, and use .for_sorted_key in the below.
-                    impl TryFrom<&SubstateKey> for [<$blueprint_ident $collection_ident Key>] {
+                    impl TryFrom<&SubstateKey> for [<$blueprint_ident $collection_ident KeyContent>] {
                         type Error = ();
 
                         fn try_from(substate_key: &SubstateKey) -> Result<Self, Self::Error> {
@@ -183,14 +383,14 @@ macro_rules! declare_native_blueprint_state {
                     // > Set up the _EntryContent traits
                     generate_content_type!(
                         content_trait: [<$collection_type EntryContent>],
-                        ident_core: [<$blueprint_ident $collection_ident Value>],
+                        ident_core: [<$blueprint_ident $collection_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
-                        struct [<$blueprint_ident $collection_ident ValueContent>] = $collection_value_type
+                        struct [<$blueprint_ident $collection_ident EntryContent>] = $collection_value_type
                     );
                     // > Set up the _EntrySubstate alias for the system-wrapped substate
                     generate_system_substate_type_alias!(
                         $collection_type,
-                        type [<$blueprint_ident $collection_ident EntrySubstate>] = WRAPPED [<$blueprint_ident $collection_ident ValueContent>]
+                        type [<$blueprint_ident $collection_ident EntrySubstate>] = WRAPPED [<$blueprint_ident $collection_ident EntryContent>]
                     );
                 )*
 
@@ -266,6 +466,38 @@ macro_rules! declare_native_blueprint_state {
 
                     fn try_from(offset: PartitionOffset) -> Result<Self, Self::Error> {
                         Self::from_repr(offset.0).ok_or(())
+                    }
+                }
+
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
+                pub struct [<$blueprint_ident FeatureSet>] {
+                    $(pub [<$feature_property_name>]: bool,)*
+                }
+
+                impl FeatureSetResolver for [<$blueprint_ident FeatureSet>] {
+                    fn feature_names_str(&self) -> Vec<&'static str> {
+                        let mut names = vec![];
+                        $(
+                            if self.[<$feature_property_name>] {
+                                names.push(stringify!($feature_property_name));
+                            }
+                        )*
+                        names
+                    }
+                }
+
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
+                pub enum [<$blueprint_ident Feature>] {
+                    $($feature_ident,)*
+                }
+
+                impl BlueprintFeature for [<$blueprint_ident Feature>] {
+                    fn feature_name(&self) -> &'static str {
+                        match *self {
+                            $(
+                                Self::$feature_ident => stringify!(Self::$feature_property_name),
+                            )*
+                        }
                     }
                 }
 
@@ -347,7 +579,7 @@ macro_rules! declare_native_blueprint_state {
                             // TODO(David) - Implement instance schema
                             fields.push(FieldSchema {
                                 field: TypeRef::Static(
-                                    type_aggregator.add_child_type_and_descendents::<[<Versioned $blueprint_ident $field_ident Field>]>()
+                                    type_aggregator.add_child_type_and_descendents::<[<$blueprint_ident $field_ident FieldContent>]>()
                                 ),
                                 condition: $field_condition,
                             });
@@ -359,9 +591,9 @@ macro_rules! declare_native_blueprint_state {
                                 $collection_type,
                                 type_aggregator,
                                 $collection_key_type,
-                                [<$blueprint_ident $collection_ident Key>],
+                                [<$blueprint_ident $collection_ident KeyContent>],
                                 $collection_value_type,
-                                [<$blueprint_ident $collection_ident ValueContent>],
+                                [<$blueprint_ident $collection_ident EntryContent>],
                                 $collection_can_own
                             ));
                         )*
@@ -383,6 +615,7 @@ macro_rules! declare_native_blueprint_state {
                 /// * Instance schemas
                 /// * Feature-dependent fields
                 /// * IndexEntries (because the underlying new_object API doesn't support them)
+                #[derive(Debug, Default)]
                 pub struct [<$blueprint_ident StateInit>] {
                     $(
                         pub $field_property_name: Option<[<$blueprint_ident $field_ident FieldSubstate>]>,
@@ -395,27 +628,35 @@ macro_rules! declare_native_blueprint_state {
                     )*
                 }
 
+                type [<$blueprint_ident FeatureChecks>] = [<$(ignore_arg!($outer_blueprint_ident) InnerObject)? FeatureChecks>]::<
+                    [<$blueprint_ident FeatureSet>],
+                    $([<$outer_blueprint_ident FeatureSet>],)?
+                >;
+
                 impl [<$blueprint_ident StateInit>] {
-                    pub fn into_system_substates(self) -> (Vec<FieldValue>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>) {
-                        let mut field_values = vec![];
+                    pub fn into_system_substates(self, feature_checks: [<$blueprint_ident FeatureChecks>]) -> Result<(BTreeMap<u8, FieldValue>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>), RuntimeError> {
+                        let mut field_values = BTreeMap::new();
                         $(
                             {
-                                let field = self.$field_property_name.expect(
-                                    concat!(
-                                        "The field `",
-                                        stringify!($field_property_name),
-                                        "` was None. Until the system and macro supports feature-based optional fields, all fields need to be present"
-                                    )
-                                );
-                                let field_content = scrypto_encode(&field.value).unwrap();
-                                let locked = match &field.mutability {
-                                    SubstateMutability::Mutable => true,
-                                    SubstateMutability::Immutable => false,
-                                };
-                                field_values.push(FieldValue {
-                                    value: field_content,
-                                    locked,
-                                });
+                                feature_checks.assert_valid(
+                                    stringify!($field_ident),
+                                    &$field_condition,
+                                    self.$field_property_name.is_some(),
+                                )?;
+                                if let Some(field) = self.$field_property_name {
+                                    let field_content = scrypto_encode(&field.value).unwrap();
+                                    let locked = match &field.mutability {
+                                        SubstateMutability::Mutable => true,
+                                        SubstateMutability::Immutable => false,
+                                    };
+                                    field_values.insert(
+                                        [<$blueprint_ident Field>]::$field_ident.into(),
+                                        FieldValue {
+                                            value: field_content,
+                                            locked,
+                                        }
+                                    );
+                                }
                             }
                         )*
                         let mut all_collection_entries = BTreeMap::new();
@@ -434,30 +675,45 @@ macro_rules! declare_native_blueprint_state {
                                 collection_index += 1;
                             }
                         )*
-                        (field_values, all_collection_entries)
+                        Ok((field_values, all_collection_entries))
+                    }
+
+                    // TODO: Remove this when the new object api supports non-vec field values
+                    pub fn into_system_substates_legacy(self, feature_checks: [<$blueprint_ident FeatureChecks>]) -> Result<(Vec<FieldValue>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>), RuntimeError> {
+                        let (mut field_values, collection_entries) = self.into_system_substates(feature_checks)?;
+                        let mut field_values_vec = vec![];
+                        let mut field_index = 0;
+                        $(
+                            {
+                                let field_value = field_values.remove(&field_index).expect(
+                                    concat!(
+                                        "The field `",
+                                        stringify!($field_property_name),
+                                        "` was None. Until the system and macro supports feature-based optional fields, all fields need to be present"
+                                    )
+                                );
+                                field_values_vec.push(field_value);
+                                field_index += 1;
+                            }
+                        )*
+                        Ok((field_values_vec, collection_entries))
                     }
 
                     /// This is used mostly for flashing
-                    pub fn into_kernel_main_partitions(self) -> NodeSubstates {
+                    pub fn into_kernel_main_partitions(self, feature_checks: [<$blueprint_ident FeatureChecks>]) -> Result<NodeSubstates, RuntimeError> {
                         // PartitionNumber => SubstateKey => IndexedScryptoValue
                         let mut partitions: NodeSubstates = BTreeMap::new();
-                        let (field_values, mut kv_entries) = self.into_system_substates();
+                        let (mut field_values, mut kv_entries) = self.into_system_substates(feature_checks)?;
 
                         // Fields
                         {
-                            let mut field_index = 0u8;
                             let mut field_partition_substates = BTreeMap::new();
-                            $({
-                                let key = SubstateKey::from([<$blueprint_ident Field>]::$field_ident);
-                                let expected_field_index = u8::from([<$blueprint_ident Field>]::$field_ident);
-                                // Double-check they agree
-                                assert_eq!(field_index, expected_field_index);
+                            for (field_index, field_value) in field_values {
                                 field_partition_substates.insert(
-                                    key,
-                                    IndexedScryptoValue::from_typed(&field_values[field_index as usize]),
+                                    SubstateKey::Field(field_index),
+                                    IndexedScryptoValue::from_typed(&field_value),
                                 );
-                                field_index += 1;
-                            })*
+                            }
                             partitions.insert(
                                 [<$blueprint_ident Partition>]::Field.as_main_partition(),
                                 field_partition_substates,
@@ -465,8 +721,8 @@ macro_rules! declare_native_blueprint_state {
                         }
 
                         // Each Collection
+                        let mut collection_index = 0u8;
                         $({
-                            let mut collection_index = 0u8;
                             let collection_kv_entries = kv_entries.remove(&collection_index).unwrap();
                             let collection_partition = [<$blueprint_ident Partition>]::[<$collection_ident $collection_type>];
                             let collection_partition_substates = collection_kv_entries
@@ -501,19 +757,31 @@ macro_rules! declare_native_blueprint_state {
                                 collection_partition.as_main_partition(),
                                 collection_partition_substates,
                             );
+                            collection_index += 1;
                         })*
 
-                        partitions
+                        Ok(partitions)
                     }
 
-                    pub fn into_new_object<E, Y: ClientObjectApi<E>>(self, api: &mut Y) -> Result<NodeId, E> {
-                        let (field_values, all_collection_entries) = self.into_system_substates();
+                    pub fn into_new_object<Y: ClientObjectApi<RuntimeError>>(
+                        self,
+                        api: &mut Y,
+                        own_features: [<$blueprint_ident FeatureSet>],
+                        $(outer_object_features: [<$outer_blueprint_ident FeatureSet>],)?
+                        instance_schema: Option<InstanceSchemaInit>,
+                    ) -> Result<NodeId, RuntimeError> {
+                        let (field_values, all_collection_entries) = self.into_system_substates_legacy(
+                            [<$blueprint_ident FeatureChecks>]::ForFeatures {
+                                own_features,
+                                $(ignore_arg!($outer_blueprint_ident) outer_object_features,)?
+                            }
+                        )?;
                         api.new_object(
                             stringify!($blueprint_ident),
-                            vec![], // Features
-                            None, // Instance schema
-                            field_values,
-                            all_collection_entries,
+                            own_features.feature_names_str(),
+                            instance_schema,
+                            field_values, // TODO: Change to take the IndexMap and get rid of into_system_substates_legacy
+                            all_collection_entries, // TODO: Change to take other collections, not just KVEntry
                         )
                     }
                 }
@@ -549,7 +817,14 @@ pub(crate) use declare_native_blueprint_state;
 
 pub(crate) use helper_macros::*;
 
+#[allow(unused_macros)]
 mod helper_macros {
+    macro_rules! ignore_arg {
+        ($($ignored:tt)*) => {};
+    }
+    #[allow(unused)]
+    pub(crate) use ignore_arg;
+
     macro_rules! generate_content_type {
         (
             content_trait: $content_trait:ident,
@@ -769,23 +1044,24 @@ mod tests {
 
     // Check that the below compiles
     #[derive(Debug, PartialEq, Eq, Sbor)]
-    pub struct TestBlueprintRoyaltyFieldV1;
+    pub struct TestBlueprintRoyaltyV1;
 
     #[derive(Debug, PartialEq, Eq, Sbor)]
-    pub struct TestBlueprintMyCoolKeyValueStoreValueV1;
+    pub struct TestBlueprintMyCoolKeyValueStoreV1;
 
     #[derive(Debug, PartialEq, Eq, Sbor)]
-    pub struct TestBlueprintMyCoolIndexValueV1;
+    pub struct TestBlueprintMyCoolIndexV1;
 
     #[derive(Debug, PartialEq, Eq, Sbor)]
-    pub struct TestBlueprintMyCoolSortedIndexValueV1;
+    pub struct TestBlueprintMyCoolSortedIndexV1;
 
     use radix_engine_interface::blueprints::package::*;
 
     declare_native_blueprint_state! {
         blueprint_ident: TestBlueprint,
         blueprint_snake_case: package,
-        instance_schema_types: [],
+        features: {},
+        instance_schema_types: {},
         fields: {
             royalty:  {
                 ident: Royalty,

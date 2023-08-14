@@ -146,7 +146,7 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
 }
 
 fn check_type_pointers(
-    schemas_by_hash: &IndexMap<Hash, ScryptoSchema>,
+    schemas_by_hash: &IndexMap<SchemaHash, ScryptoSchema>,
     type_pointers: &[TypePointer],
 ) -> CheckResult {
     for ty in type_pointers {
