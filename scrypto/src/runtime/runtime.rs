@@ -75,6 +75,11 @@ impl Runtime {
         ScryptoEnv.get_transaction_hash().unwrap()
     }
 
+    /// Returns the transaction hash.
+    pub fn generate_ruid() -> [u8; 32] {
+        ScryptoEnv.generate_ruid().unwrap()
+    }
+
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
         ScryptoEnv

@@ -182,21 +182,6 @@ mod move_test {
 }
 
 #[blueprint]
-mod runtime_test {
-    struct RuntimeTest;
-
-    impl RuntimeTest {
-        pub fn query() -> (PackageAddress, Hash, Epoch) {
-            (
-                Runtime::package_address(),
-                Runtime::transaction_hash(),
-                Runtime::current_epoch(),
-            )
-        }
-    }
-}
-
-#[blueprint]
 mod recursive_test {
     struct RecursiveTest {
         own: Own,
