@@ -1,4 +1,4 @@
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, Criterion};
 mod decimal;
 #[cfg(feature = "full_math_benches")]
 mod integer;
@@ -25,7 +25,7 @@ criterion_group! {
         bench_decimal_from_string,
         bench_decimal_to_string,
 }
-criterion_group!{
+criterion_group! {
     name = bench_precise_decimal;
     config = Criterion::default()
                 .sample_size(10)
@@ -41,7 +41,7 @@ criterion_group!{
     bench_precisedecimal_to_string,
 }
 #[cfg(feature = "full_math_benches")]
-criterion_group!{
+criterion_group! {
     name = bench_bigint;
     config = Criterion::default()
                 .sample_size(10)
@@ -57,7 +57,7 @@ criterion_group!{
     bench_bigint_to_string,
 }
 #[cfg(feature = "full_math_benches")]
-criterion_group!{
+criterion_group! {
     name = bench_rug;
     config = Criterion::default()
                 .sample_size(10)
@@ -73,7 +73,7 @@ criterion_group!{
     bench_integer_to_string,
 }
 #[cfg(feature = "full_math_benches")]
-criterion_group!{
+criterion_group! {
     name = bench_bnumbint;
     config = Criterion::default()
                 .sample_size(10)
@@ -89,7 +89,7 @@ criterion_group!{
     bench_bnumbint256_to_string,
 }
 #[cfg(feature = "full_math_benches")]
-criterion_group!{
+criterion_group! {
     name = bench_ethnumi256;
     config = Criterion::default()
                 .sample_size(10)
