@@ -1,16 +1,12 @@
-use radix_engine::blueprints::resource::ResourceNativePackage;
-use radix_engine::errors::{RuntimeError, SystemError, SystemModuleError};
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::node_modules::auth::{
-    RoleAssignmentSetInput, ROLE_ASSIGNMENT_SET_IDENT,
-};
 use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltiesInput, PackageDefinition, PACKAGE_CLAIM_ROYALTIES_IDENT, RESOURCE_CODE_ID,
+    PackageClaimRoyaltiesInput, PackageDefinition, PACKAGE_CLAIM_ROYALTIES_IDENT,
 };
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
