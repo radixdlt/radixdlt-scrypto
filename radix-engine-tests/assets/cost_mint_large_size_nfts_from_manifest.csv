@@ -1,28 +1,28 @@
-Total Cost (XRD)                                                           ,    11.49034728,    100.0%
-- Execution Cost (XRD)                                                     ,     0.52528754,      4.6%
+Total Cost (XRD)                                                           ,    11.49012104,    100.0%
+- Execution Cost (XRD)                                                     ,      0.5250613,      4.6%
 - Finalization Cost (XRD)                                                  ,     0.49737974,      4.3%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - State Expansion Cost (XRD)                                               ,       10.46768,     91.1%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Royalty Cost (XRD)                                                       ,              0,      0.0%
-Execution Cost Breakdown                                                   ,       52528754,    100.0%
+Execution Cost Breakdown                                                   ,       52506130,    100.0%
 - AllocateNodeId                                                           ,           2288,      0.0%
 - BeforeInvoke                                                             ,        2094290,      4.0%
 - CloseSubstate                                                            ,          51555,      0.1%
-- CreateNode                                                               ,        2108421,      4.0%
+- CreateNode                                                               ,        2107183,      4.0%
 - DropNode                                                                 ,          29374,      0.1%
 - EmitEvent                                                                ,          15386,      0.0%
 - LockFee                                                                  ,            500,      0.0%
 - MoveModule                                                               ,          20916,      0.0%
-- OpenSubstate::GlobalAccount                                              ,         406946,      0.8%
-- OpenSubstate::GlobalFungibleResourceManager                              ,         121468,      0.2%
-- OpenSubstate::GlobalGenericComponent                                     ,          43387,      0.1%
-- OpenSubstate::GlobalNonFungibleResourceManager                           ,          12767,      0.0%
-- OpenSubstate::GlobalPackage                                              ,        3290365,      6.3%
-- OpenSubstate::InternalFungibleVault                                      ,          85270,      0.2%
-- OpenSubstate::InternalGenericComponent                                   ,          46234,      0.1%
-- OpenSubstate::InternalKeyValueStore                                      ,          40762,      0.1%
-- OpenSubstate::InternalNonFungibleVault                                   ,         129546,      0.2%
+- OpenSubstate::GlobalAccount                                              ,         406436,      0.8%
+- OpenSubstate::GlobalFungibleResourceManager                              ,         121580,      0.2%
+- OpenSubstate::GlobalGenericComponent                                     ,          43212,      0.1%
+- OpenSubstate::GlobalNonFungibleResourceManager                           ,          12273,      0.0%
+- OpenSubstate::GlobalPackage                                              ,        3276214,      6.2%
+- OpenSubstate::InternalFungibleVault                                      ,          85558,      0.2%
+- OpenSubstate::InternalGenericComponent                                   ,          51181,      0.1%
+- OpenSubstate::InternalKeyValueStore                                      ,          40474,      0.1%
+- OpenSubstate::InternalNonFungibleVault                                   ,         118431,      0.2%
 - PrepareWasmCode                                                          ,         653350,      1.2%
 - QueryActor                                                               ,           2000,      0.0%
 - ReadSubstate                                                             ,         926534,      1.8%
