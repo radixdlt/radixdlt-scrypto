@@ -8,11 +8,14 @@ use sbor::*;
 use utils::copy_u8_array;
 
 use crate::data::manifest::*;
+use crate::math::Decimal;
 use crate::*;
+
+const DECIMAL_SIZE: usize = Decimal::BITS / 8;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestDecimal(pub [u8; 32]);
+pub struct ManifestDecimal(pub [u8; DECIMAL_SIZE]);
 
 //========
 // error
@@ -42,7 +45,7 @@ impl TryFrom<&[u8]> for ManifestDecimal {
     type Error = ParseManifestDecimalError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != 32 {
+        if slice.len() != DECIMAL_SIZE {
             return Err(Self::Error::InvalidLength);
         }
         Ok(Self(copy_u8_array(slice)))
@@ -55,4 +58,8 @@ impl ManifestDecimal {
     }
 }
 
-manifest_type!(ManifestDecimal, ManifestCustomValueKind::Decimal, 32);
+manifest_type!(
+    ManifestDecimal,
+    ManifestCustomValueKind::Decimal,
+    DECIMAL_SIZE
+);

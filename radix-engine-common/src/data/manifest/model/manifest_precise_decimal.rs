@@ -8,11 +8,14 @@ use sbor::*;
 use utils::copy_u8_array;
 
 use crate::data::manifest::*;
+use crate::math::PreciseDecimal;
 use crate::*;
+
+const PRECISE_DECIMAL_SIZE: usize = PreciseDecimal::BITS / 8;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestPreciseDecimal(pub [u8; 64]);
+pub struct ManifestPreciseDecimal(pub [u8; PRECISE_DECIMAL_SIZE]);
 
 //========
 // error
@@ -42,7 +45,7 @@ impl TryFrom<&[u8]> for ManifestPreciseDecimal {
     type Error = ParseManifestPreciseDecimalError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != 64 {
+        if slice.len() != PRECISE_DECIMAL_SIZE {
             return Err(Self::Error::InvalidLength);
         }
         Ok(Self(copy_u8_array(slice)))
@@ -58,5 +61,5 @@ impl ManifestPreciseDecimal {
 manifest_type!(
     ManifestPreciseDecimal,
     ManifestCustomValueKind::PreciseDecimal,
-    64
+    PRECISE_DECIMAL_SIZE
 );
