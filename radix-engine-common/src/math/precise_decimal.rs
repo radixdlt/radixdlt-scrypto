@@ -27,6 +27,11 @@ use crate::*;
 /// The finite set of values are of the form `m / 10^36`, where `m` is
 /// an integer such that `-2^(256 - 1) <= m < 2^(256 - 1)`.
 ///
+/// Fractional part: 120 bits / 36 digits
+/// Integer part   : 136 bits / 41 digits
+/// Max            :  57896044618658097711785492504343953926634.992332820282019728792003956564819967
+/// Min            : -57896044618658097711785492504343953926634.992332820282019728792003956564819968
+///
 /// Unless otherwise specified, all operations will panic if underflow/overflow.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

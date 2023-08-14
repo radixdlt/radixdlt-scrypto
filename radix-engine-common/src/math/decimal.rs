@@ -1,7 +1,6 @@
-use core::cmp::Ordering;
-
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use core::cmp::Ordering;
 use num_bigint::BigInt;
 use num_traits::{Pow, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
@@ -24,6 +23,11 @@ use crate::*;
 ///
 /// The finite set of values are of the form `m / 10^18`, where `m` is
 /// an integer such that `-2^(192 - 1) <= m < 2^(192 - 1)`.
+///
+/// Fractional part: 60 bits/18 digits
+/// Integer part   : 132 bits /40 digits
+/// Max            :  3138550867693340381917894711603833208051.177722232017256447
+/// Min            : -3138550867693340381917894711603833208051.177722232017256448
 ///
 /// Unless otherwise specified, all operations will panic if underflow/overflow.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -291,7 +295,7 @@ impl Decimal {
             // By induction, we need to multiply by the (n-1)th power of 10^18.
             // To not overflow, we use BigInts
             let self_bigint = BigInt::from(self.0);
-            let correct_nb = self_bigint * BigInt::from(Decimal::ONE.0).pow(n - 1);
+            let correct_nb = self_bigint * BigInt::from(Self::ONE.0).pow(n - 1);
             let nth_root = BnumI192::try_from(correct_nb.nth_root(n)).unwrap();
             Some(Decimal(nth_root))
         }
