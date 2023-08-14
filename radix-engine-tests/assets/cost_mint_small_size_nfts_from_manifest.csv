@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,      0.6160884,    100.0%
-- Execution Cost (XRD)                                                     ,      0.0669529,     10.9%
+Total Cost (XRD)                                                           ,      0.6160848,    100.0%
+- Execution Cost (XRD)                                                     ,      0.0669493,     10.9%
 - Finalization Cost (XRD)                                                  ,      0.4987755,     81.0%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - State Expansion Cost (XRD)                                               ,        0.05036,      8.2%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Royalty Cost (XRD)                                                       ,              0,      0.0%
-Execution Cost Breakdown                                                   ,        6695290,    100.0%
+Execution Cost Breakdown                                                   ,        6694930,    100.0%
 - AllocateNodeId                                                           ,           2288,      0.0%
 - BeforeInvoke                                                             ,          10818,      0.2%
 - CloseSubstate                                                            ,          51765,      0.8%
@@ -25,7 +25,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::InternalNonFungibleVault                                   ,         130598,      2.0%
 - PrepareWasmCode                                                          ,         653350,      9.8%
 - QueryActor                                                               ,           2000,      0.0%
-- ReadSubstate                                                             ,         927294,     13.8%
+- ReadSubstate                                                             ,         927294,     13.9%
 - RunNativeCode::Worktop_drain                                             ,          13505,      0.2%
 - RunNativeCode::Worktop_drop                                              ,          15385,      0.2%
 - RunNativeCode::Worktop_put                                               ,          18262,      0.3%
@@ -40,7 +40,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::try_deposit_batch_or_abort                                ,          76963,      1.1%
 - RunWasmCode::Faucet_lock_fee                                             ,          18320,      0.3%
 - SetSubstate                                                              ,          57112,      0.9%
-- ValidateTxPayload                                                        ,         171800,      2.6%
+- ValidateTxPayload                                                        ,         171440,      2.6%
 - VerifyTxSignatures                                                       ,              0,      0.0%
 - WriteSubstate                                                            ,           5528,      0.1%
 Finalization Cost Breakdown                                                ,       49877550,    100.0%
