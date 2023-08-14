@@ -209,3 +209,19 @@ mod preallocation_component {
         }
     }
 }
+
+#[blueprint]
+mod manifest_global_addresses {
+    struct ManifestGlobalAddresses {}
+
+    impl ManifestGlobalAddresses {
+        pub fn accept_global_addresses(
+            a: GlobalAddress,
+            b: PackageAddress,
+            c: ComponentAddress,
+            d: ResourceAddress,
+        ) {
+            info!("{:?}, {:?}, {:?}, {:?}", a, b, c, d);
+        }
+    }
+}

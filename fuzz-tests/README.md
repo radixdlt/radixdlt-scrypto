@@ -130,7 +130,7 @@ or
     RUST_BACKTRACE=1 cargo run --release --no-default-features --features std,simple-fuzzer --bin transaction -- -v artifacts/transaction/crash-0734fdddb6de62d6d954c06c65b310d185656e10
     ```
 
-# TODO
+# Future considerations
 - Implement more smart mutations in 'transaction' fuzz test
 - Add more fuzz tests
 - any ideas?

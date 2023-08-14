@@ -10,19 +10,19 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1t59geqf3ewdcktu4h2jwc3744ackcnfua3s6ct40jupk299rw4t85u")
+    Address("resource_sim1th6f09c8axkr4k5tmy6kg75js6jyf3djy5d00nlrk93qarslcdstwf")
     Decimal("7000")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1thdz9s9wj92jy94nxav4tw8jmp695dhywxy33ww8ajt06s3ld6ep27")
+    Address("resource_sim1t5t3yx5uyhlf8zfdwuntw89ay4atexz47uptajhxs5e5axg70d87um")
     Decimal("5000")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1t49ljjj5rhu54l3gs2dr5643jafuqcp7s5mv9myww0e8m9xy7spcx0")
+    Address("resource_sim1t4fxcc8elzpn4pa0jjfz4vg0a5jtpr88v9hguyts5ewcw6vv753jn2")
     Decimal("8000")
 ;
 TAKE_ALL_FROM_WORKTOP
@@ -30,25 +30,25 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("pool_1_resource_1")
 ;
 TAKE_ALL_FROM_WORKTOP
-    Address("resource_sim1t59geqf3ewdcktu4h2jwc3744ackcnfua3s6ct40jupk299rw4t85u")
+    Address("resource_sim1th6f09c8axkr4k5tmy6kg75js6jyf3djy5d00nlrk93qarslcdstwf")
     Bucket("pool_1_resource_2")
 ;
 CALL_METHOD
-    Address("component_sim1crzsxdq3jjlhxhzvz4ud02qve4ndvknp35u0r3walpxv4nrz3pynk7")
+    Address("component_sim1cz0q8qdutuw4smq3h4aq3mes5w6we28k24umk2ym47uekgsvs9d2v6")
     "add_liquidity"
     Bucket("pool_1_resource_1")
     Bucket("pool_1_resource_2")
 ;
 TAKE_ALL_FROM_WORKTOP
-    Address("resource_sim1thdz9s9wj92jy94nxav4tw8jmp695dhywxy33ww8ajt06s3ld6ep27")
+    Address("resource_sim1t5t3yx5uyhlf8zfdwuntw89ay4atexz47uptajhxs5e5axg70d87um")
     Bucket("pool_2_resource_1")
 ;
 TAKE_ALL_FROM_WORKTOP
-    Address("resource_sim1t49ljjj5rhu54l3gs2dr5643jafuqcp7s5mv9myww0e8m9xy7spcx0")
+    Address("resource_sim1t4fxcc8elzpn4pa0jjfz4vg0a5jtpr88v9hguyts5ewcw6vv753jn2")
     Bucket("pool_2_resource_2")
 ;
 CALL_METHOD
-    Address("component_sim1cpjn6usupp8hha7tmlg8eqflapr70669evvwwev3xv4vjdqml4agyq")
+    Address("component_sim1cprk3syk3v5d7tnu66d3ktyfull68kcy4wah9xmjw65pfkz85w6vpe")
     "add_liquidity"
     Bucket("pool_2_resource_1")
     Bucket("pool_2_resource_2")
