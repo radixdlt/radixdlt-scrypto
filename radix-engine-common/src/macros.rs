@@ -12,17 +12,23 @@ macro_rules! dec {
         {
             let base = $crate::math::Decimal::try_from($base).unwrap();
             if $shift >= 0 {
-                base * $crate::math::Decimal::try_from(
-                    $crate::math::I192::from(10u8)
-                        .pow(u32::try_from($shift).expect("Shift overflow")),
+                base.safe_mul(
+                    $crate::math::Decimal::try_from(
+                        $crate::math::I192::from(10u8)
+                            .pow(u32::try_from($shift).expect("Shift overflow")),
+                    )
+                    .expect("Shift overflow"),
                 )
-                .expect("Shift overflow")
+                .expect("Overflow")
             } else {
-                base / $crate::math::Decimal::try_from(
-                    $crate::math::I192::from(10u8)
-                        .pow(u32::try_from(-$shift).expect("Shift overflow")),
+                base.safe_div(
+                    $crate::math::Decimal::try_from(
+                        $crate::math::I192::from(10u8)
+                            .pow(u32::try_from(-$shift).expect("Shift overflow")),
+                    )
+                    .expect("Shift overflow"),
                 )
-                .expect("Shift overflow")
+                .expect("Overflow")
             }
         }
     };
@@ -53,17 +59,23 @@ macro_rules! pdec {
         {
             let base = $crate::math::PreciseDecimal::try_from($base).unwrap();
             if $shift >= 0 {
-                base * $crate::math::PreciseDecimal::try_from(
-                    $crate::math::I256::from(10u8)
-                        .pow(u32::try_from($shift).expect("Shift overflow")),
+                base.safe_mul(
+                    $crate::math::PreciseDecimal::try_from(
+                        $crate::math::I256::from(10u8)
+                            .pow(u32::try_from($shift).expect("Shift overflow")),
+                    )
+                    .expect("Shift overflow"),
                 )
-                .expect("Shift overflow")
+                .expect("Overflow")
             } else {
-                base / $crate::math::PreciseDecimal::try_from(
-                    $crate::math::I256::from(10u8)
-                        .pow(u32::try_from(-$shift).expect("Shift overflow")),
+                base.safe_div(
+                    $crate::math::PreciseDecimal::try_from(
+                        $crate::math::I256::from(10u8)
+                            .pow(u32::try_from(-$shift).expect("Shift overflow")),
+                    )
+                    .expect("Shift overflow"),
                 )
-                .expect("Shift overflow")
+                .expect("Overflow")
             }
         }
     };

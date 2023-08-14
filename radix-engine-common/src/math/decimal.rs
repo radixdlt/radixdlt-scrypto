@@ -3,7 +3,7 @@ use arbitrary::Arbitrary;
 use core::cmp::Ordering;
 use num_bigint::BigInt;
 use num_traits::{Pow, Zero};
-use sbor::rust::convert::{TryFrom, TryInto};
+use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::iter;
@@ -15,6 +15,7 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::math::bnum_integer::*;
 use crate::math::rounding_mode::*;
+use crate::math::traits::*;
 use crate::math::PreciseDecimal;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
@@ -43,7 +44,7 @@ impl Default for Decimal {
 impl iter::Sum for Decimal {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         let mut sum = Decimal::zero();
-        iter.for_each(|d| sum += d);
+        iter.for_each(|d| sum = sum.safe_add(d).expect("Overflow"));
         sum
     }
 }
@@ -223,30 +224,34 @@ impl Decimal {
     }
 
     /// Calculates power using exponentiation by squaring".
-    pub fn powi(&self, exp: i64) -> Self {
+    pub fn safe_powi(&self, exp: i64) -> Option<Self> {
         let one_256 = I256::from(Self::ONE.0);
         let base_256 = I256::from(self.0);
-        let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
-        let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
-        let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
+        let div = |x: i64, y: i64| x.checked_div(y);
+        let sub = |x: i64, y: i64| x.checked_sub(y);
+        let mul = |x: i64, y: i64| x.checked_mul(y);
 
         if exp < 0 {
-            let dec_192 = I192::try_from(one_256 * one_256 / base_256).expect("Overflow");
-            return Self(dec_192).powi(mul(exp, -1));
+            let dec_192 = I192::try_from(one_256 * one_256 / base_256).ok()?;
+            let exp = mul(exp, -1)?;
+            return Self(dec_192).safe_powi(exp);
         }
         if exp == 0 {
-            return Self::ONE;
+            return Some(Self::ONE);
         }
         if exp == 1 {
-            return *self;
+            return Some(*self);
         }
         if exp % 2 == 0 {
-            let dec_192 = I192::try_from(base_256 * base_256 / one_256).expect("Overflow");
-            Self(dec_192).powi(div(exp, 2))
+            let dec_192 = I192::try_from(base_256 * base_256 / one_256).ok()?;
+            let exp = div(exp, 2)?;
+            Self(dec_192).safe_powi(exp)
         } else {
             let dec_192 = I192::try_from(base_256 * base_256 / one_256).expect("Overflow");
             let sub_dec = Self(dec_192);
-            *self * sub_dec.powi(div(sub(exp, 1), 2))
+            let exp = div(sub(exp, 1)?, 2)?;
+            let b = sub_dec.safe_powi(exp)?;
+            self.safe_mul(b)
         }
     }
 
@@ -300,6 +305,52 @@ impl Decimal {
             Some(Decimal(nth_root))
         }
     }
+
+    // accurate ops - alternative to safe ops return PreciseDecimal to avoid rounding
+    #[inline]
+    pub fn accurate_add(self, other: Self) -> Option<PreciseDecimal> {
+        let a = PreciseDecimal::from(self);
+        let b = PreciseDecimal::from(other);
+        a.safe_add(b)
+    }
+
+    #[inline]
+    pub fn accurate_sub(self, other: Self) -> Option<PreciseDecimal> {
+        let a = PreciseDecimal::from(self);
+        let b = PreciseDecimal::from(other);
+        a.safe_sub(b)
+    }
+
+    #[inline]
+    pub fn accurate_mul(self, other: Self) -> Option<PreciseDecimal> {
+        let a = PreciseDecimal::from(self);
+        let b = PreciseDecimal::from(other);
+        a.safe_mul(b)
+    }
+
+    #[inline]
+    pub fn accurate_div(self, other: Self) -> Option<PreciseDecimal> {
+        let a = PreciseDecimal::from(self);
+        let b = PreciseDecimal::from(other);
+        a.safe_div(b)
+    }
+
+    // Arithmetic ops with PreciseDecimal, they shall produce PreciseDecimal
+    pub fn safe_add_pdec(self, other: PreciseDecimal) -> Option<PreciseDecimal> {
+        PreciseDecimal::from(self).safe_add(other)
+    }
+
+    pub fn safe_sub_pdec(self, other: PreciseDecimal) -> Option<PreciseDecimal> {
+        PreciseDecimal::from(self).safe_sub(other)
+    }
+
+    pub fn safe_mul_pdec(self, other: PreciseDecimal) -> Option<PreciseDecimal> {
+        PreciseDecimal::from(self).safe_mul(other)
+    }
+
+    pub fn safe_div_pdec(self, other: PreciseDecimal) -> Option<PreciseDecimal> {
+        PreciseDecimal::from(self).safe_div(other)
+    }
 }
 
 macro_rules! from_int {
@@ -351,71 +402,90 @@ impl From<bool> for Decimal {
     }
 }
 
-impl Add<Decimal> for Decimal {
-    type Output = Decimal;
+impl SafeNeg<Decimal> for Decimal {
+    type Output = Self;
 
     #[inline]
-    fn add(self, other: Decimal) -> Self::Output {
-        let a = self.0;
-        let b = other.0;
-        Decimal(a + b)
+    fn safe_neg(self) -> Option<Self::Output> {
+        let c = self.0.safe_neg();
+        c.map(Self)
     }
 }
 
-impl Sub<Decimal> for Decimal {
-    type Output = Decimal;
+impl SafeAdd<Decimal> for Decimal {
+    type Output = Self;
 
     #[inline]
-    fn sub(self, other: Decimal) -> Self::Output {
+    fn safe_add(self, other: Self) -> Option<Self::Output> {
         let a = self.0;
         let b = other.0;
-        Decimal(a - b)
+        let c = a.safe_add(b);
+        c.map(Self)
     }
 }
 
-impl Mul<Decimal> for Decimal {
-    type Output = Decimal;
+impl SafeSub<Decimal> for Decimal {
+    type Output = Self;
 
     #[inline]
-    fn mul(self, other: Decimal) -> Self::Output {
+    fn safe_sub(self, other: Self) -> Option<Self::Output> {
+        let a = self.0;
+        let b = other.0;
+        let c = a.safe_sub(b);
+        c.map(Self)
+    }
+}
+
+impl SafeMul<Decimal> for Decimal {
+    type Output = Self;
+
+    #[inline]
+    fn safe_mul(self, other: Self) -> Option<Self> {
         // Use I256 (BInt<4>) to not overflow.
         let a = I256::from(self.0);
         let b = I256::from(other.0);
-        let c = a * b / I256::from(Self::ONE.0);
-        let c_192 = I192::try_from(c).expect("Overflow");
-        Decimal(c_192)
+        let mut c = a.safe_mul(b)?;
+        c = c.safe_div(I256::from(Self::ONE.0))?;
+
+        let c_192 = I192::try_from(c).ok();
+        c_192.map(Self)
     }
 }
 
-impl Div<Decimal> for Decimal {
-    type Output = Decimal;
+impl SafeDiv<Decimal> for Decimal {
+    type Output = Self;
 
     #[inline]
-    fn div(self, other: Decimal) -> Self::Output {
+    fn safe_div(self, other: Self) -> Option<Self> {
         // Use I256 (BInt<4>) to not overflow.
         let a = I256::from(self.0);
         let b = I256::from(other.0);
-        let c = a * I256::from(Self::ONE.0) / b;
-        let c_192 = I192::try_from(c).expect("Overflow");
-        Decimal(c_192)
+        let mut c = a.safe_mul(I256::from(Self::ONE.0))?;
+        c = c.safe_div(b)?;
+
+        let c_192 = I192::try_from(c).ok();
+        c_192.map(Self)
     }
 }
 
+// TODO below should be safe ops as well, but cannot overload safe_ops for primitived type
+// eg. below is not working, safe_sub expects i32
+// 1_i32.safe_sub(d: Decimal) -> Option<Decimal>
 macro_rules! impl_arith_ops {
     ($type:ident) => {
         impl Add<$type> for Decimal {
-            type Output = Decimal;
+            type Output = Self;
 
             fn add(self, other: $type) -> Self::Output {
-                self + Decimal::from(other)
+                self.safe_add(Self::from(other)).unwrap()
             }
         }
 
         impl Sub<$type> for Decimal {
-            type Output = Decimal;
+            type Output = Self;
 
             fn sub(self, other: $type) -> Self::Output {
-                self - Decimal::from(other)
+                self.safe_sub(Self::from(other)).unwrap()
             }
         }
 
@@ -423,7 +493,7 @@ macro_rules! impl_arith_ops {
             type Output = Decimal;
 
             fn mul(self, other: $type) -> Self::Output {
-                self * Decimal::from(other)
+                self.safe_mul(Self::from(other)).unwrap()
             }
         }
 
@@ -431,7 +501,7 @@ macro_rules! impl_arith_ops {
             type Output = Decimal;
 
             fn div(self, other: $type) -> Self::Output {
-                self / Decimal::from(other)
+                self.safe_div(Self::from(other)).unwrap()
             }
         }
 
@@ -448,7 +518,7 @@ macro_rules! impl_arith_ops {
             type Output = Decimal;
 
             fn sub(self, other: Decimal) -> Self::Output {
-                Decimal::from(self) - other
+                Decimal::from(self).safe_sub(other).unwrap()
             }
         }
 
@@ -465,7 +535,7 @@ macro_rules! impl_arith_ops {
             type Output = Decimal;
 
             fn div(self, other: Decimal) -> Self::Output {
-                Decimal::from(self) / other
+                Decimal::from(self).safe_div(other).unwrap()
             }
         }
     };
@@ -482,87 +552,6 @@ impl_arith_ops!(i32);
 impl_arith_ops!(i64);
 impl_arith_ops!(i128);
 impl_arith_ops!(isize);
-
-// Arithmetic ops with PreciseDecimal, they shall produce PreciseDecimal
-impl Add<PreciseDecimal> for Decimal {
-    type Output = PreciseDecimal;
-
-    fn add(self, other: PreciseDecimal) -> Self::Output {
-        PreciseDecimal::from(self) + other
-    }
-}
-
-impl Sub<PreciseDecimal> for Decimal {
-    type Output = PreciseDecimal;
-
-    fn sub(self, other: PreciseDecimal) -> Self::Output {
-        PreciseDecimal::from(self) - other
-    }
-}
-
-impl Mul<PreciseDecimal> for Decimal {
-    type Output = PreciseDecimal;
-
-    fn mul(self, other: PreciseDecimal) -> Self::Output {
-        PreciseDecimal::from(self) * other
-    }
-}
-
-impl Div<PreciseDecimal> for Decimal {
-    type Output = PreciseDecimal;
-
-    fn div(self, other: PreciseDecimal) -> Self::Output {
-        PreciseDecimal::from(self) / other
-    }
-}
-
-impl<T: TryInto<Decimal>> AddAssign<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
-    fn add_assign(&mut self, other: T) {
-        let other: Decimal = other.try_into().expect("Overflow");
-        self.0 += other.0;
-    }
-}
-
-impl<T: TryInto<Decimal>> SubAssign<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
-    fn sub_assign(&mut self, other: T) {
-        let other: Decimal = other.try_into().expect("Overflow");
-        self.0 -= other.0;
-    }
-}
-
-impl<T: TryInto<Decimal>> MulAssign<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
-    fn mul_assign(&mut self, other: T) {
-        let other: Decimal = other.try_into().expect("Overflow");
-        self.0 *= other.0;
-    }
-}
-
-impl<T: TryInto<Decimal>> DivAssign<T> for Decimal
-where
-    <T as TryInto<Decimal>>::Error: fmt::Debug,
-{
-    fn div_assign(&mut self, other: T) {
-        let other: Decimal = other.try_into().expect("Overflow");
-        self.0 /= other.0;
-    }
-}
-
-impl Neg for Decimal {
-    type Output = Decimal;
-
-    fn neg(self) -> Self::Output {
-        Decimal(-self.0)
-    }
-}
 
 //========
 // binary
@@ -718,7 +707,7 @@ macro_rules! try_from_integer {
                 fn try_from(val: $t) -> Result<Self, Self::Error> {
                     match I192::try_from(val) {
                         Ok(val) => {
-                            match val.checked_mul(Self::ONE.0) {
+                            match val.safe_mul(Self::ONE.0) {
                                 Some(mul) => Ok(Self(mul)),
                                 None => Err(ParseDecimalError::Overflow),
                             }
@@ -797,56 +786,64 @@ mod tests {
     fn test_add_decimal() {
         let a = Decimal::from(5u32);
         let b = Decimal::from(7u32);
-        assert_eq!((a + b).to_string(), "12");
+        assert_eq!(a.safe_add(b).unwrap().to_string(), "12");
     }
 
     #[test]
     #[should_panic(expected = "Overflow")]
     fn test_add_overflow_decimal() {
-        let _ = Decimal::MAX + 1;
+        let _ = Decimal::MAX.safe_add(Decimal::ONE).expect("Overflow");
     }
 
     #[test]
     fn test_sub_decimal() {
         let a = Decimal::from(5u32);
         let b = Decimal::from(7u32);
-        assert_eq!((a - b).to_string(), "-2");
-        assert_eq!((b - a).to_string(), "2");
+        assert_eq!(a.safe_sub(b).unwrap().to_string(), "-2");
+        assert_eq!(b.safe_sub(a).unwrap().to_string(), "2");
     }
 
     #[test]
     #[should_panic(expected = "Overflow")]
     fn test_sub_overflow_decimal() {
-        let _ = Decimal::MIN - 1;
+        let _ = Decimal::MIN.safe_sub(Decimal::ONE).expect("Overflow");
     }
 
     #[test]
     fn test_mul_decimal() {
         let a = Decimal::from(5u32);
         let b = Decimal::from(7u32);
-        assert_eq!((a * b).to_string(), "35");
+        assert_eq!(a.safe_mul(b).unwrap().to_string(), "35");
         let a = Decimal::from_str("1000000000").unwrap();
         let b = Decimal::from_str("1000000000").unwrap();
-        assert_eq!((a * b).to_string(), "1000000000000000000");
-        let _ = Decimal::MAX * dec!(1);
+        assert_eq!(a.safe_mul(b).unwrap().to_string(), "1000000000000000000");
+        let a = Decimal::MAX;
+        let b = dec!(1);
+        assert_eq!(a.safe_mul(b).unwrap(), Decimal::MAX);
     }
 
     #[test]
     #[should_panic(expected = "Overflow")]
     fn test_mul_overflow_by_small_decimal() {
-        let _ = Decimal::MAX * dec!("1.000000000000000001");
+        let _ = Decimal::MAX
+            .safe_mul(dec!("1.000000000000000001"))
+            .expect("Overflow");
     }
 
     #[test]
     #[should_panic(expected = "Overflow")]
     fn test_mul_overflow_by_a_lot_decimal() {
-        let _ = Decimal::MAX * dec!("1.1");
+        let _ = Decimal::MAX.safe_mul(dec!("1.1")).expect("Overflow");
     }
 
     #[test]
     #[should_panic(expected = "Overflow")]
     fn test_mul_neg_overflow_decimal() {
-        let _ = (-Decimal::MAX) * dec!("-1.000000000000000001");
+        let _ = Decimal::MAX
+            .safe_neg()
+            .unwrap()
+            .safe_mul(dec!("-1.000000000000000001"))
+            .expect("Overflow");
     }
 
     #[test]
@@ -854,7 +851,7 @@ mod tests {
     fn test_div_by_zero_decimal() {
         let a = Decimal::from(5u32);
         let b = Decimal::from(0u32);
-        assert_eq!((a / b).to_string(), "0");
+        a.safe_div(b).unwrap();
     }
 
     #[test]
@@ -862,166 +859,172 @@ mod tests {
     fn test_powi_exp_overflow_decimal() {
         let a = Decimal::from(5u32);
         let b = i64::MIN;
-        assert_eq!(a.powi(b).to_string(), "0");
+        assert_eq!(a.safe_powi(b).unwrap().to_string(), "0");
     }
 
     #[test]
     fn test_1_powi_max_decimal() {
         let a = Decimal::from(1u32);
         let b = i64::MAX;
-        assert_eq!(a.powi(b).to_string(), "1");
+        assert_eq!(a.safe_powi(b).unwrap().to_string(), "1");
     }
 
     #[test]
     fn test_1_powi_min_decimal() {
         let a = Decimal::from(1u32);
         let b = i64::MAX - 1;
-        assert_eq!(a.powi(b).to_string(), "1");
+        assert_eq!(a.safe_powi(b).unwrap().to_string(), "1");
     }
 
     #[test]
     fn test_powi_max_decimal() {
-        let _max = Decimal::MAX.powi(1);
+        let _max = Decimal::MAX.safe_powi(1);
         let _max_sqrt = Decimal::MAX.sqrt().unwrap();
         let _max_cbrt = Decimal::MAX.cbrt();
-        let _max_dec_2 = _max_sqrt.powi(2);
-        let _max_dec_3 = _max_cbrt.powi(3);
+        let _max_dec_2 = _max_sqrt.safe_powi(2).unwrap();
+        let _max_dec_3 = _max_cbrt.safe_powi(3).unwrap();
     }
 
     #[test]
     fn test_div_decimal() {
         let a = Decimal::from(5u32);
         let b = Decimal::from(7u32);
-        assert_eq!((a / b).to_string(), "0.714285714285714285");
-        assert_eq!((b / a).to_string(), "1.4");
-        let _ = Decimal::MAX / 1;
+        assert_eq!(a.safe_div(b).unwrap().to_string(), "0.714285714285714285");
+        assert_eq!(b.safe_div(a).unwrap().to_string(), "1.4");
+        assert_eq!(Decimal::MAX.safe_div(dec!(1)).unwrap(), Decimal::MAX);
     }
 
     #[test]
     fn test_div_negative_decimal() {
         let a = Decimal::from(-42);
         let b = Decimal::from(2);
-        assert_eq!((a / b).to_string(), "-21");
+        assert_eq!(a.safe_div(b).unwrap().to_string(), "-21");
     }
 
     #[test]
     fn test_0_pow_0_decimal() {
         let a = dec!("0");
-        assert_eq!((a.powi(0)).to_string(), "1");
+        assert_eq!((a.safe_powi(0).unwrap()).to_string(), "1");
     }
 
     #[test]
     fn test_0_powi_1_decimal() {
         let a = dec!("0");
-        assert_eq!((a.powi(1)).to_string(), "0");
+        assert_eq!((a.safe_powi(1).unwrap()).to_string(), "0");
     }
 
     #[test]
     fn test_0_powi_10_decimal() {
         let a = dec!("0");
-        assert_eq!((a.powi(10)).to_string(), "0");
+        assert_eq!((a.safe_powi(10).unwrap()).to_string(), "0");
     }
 
     #[test]
     fn test_1_powi_0_decimal() {
         let a = dec!(1);
-        assert_eq!((a.powi(0)).to_string(), "1");
+        assert_eq!((a.safe_powi(0).unwrap()).to_string(), "1");
     }
 
     #[test]
     fn test_1_powi_1_decimal() {
         let a = dec!(1);
-        assert_eq!((a.powi(1)).to_string(), "1");
+        assert_eq!((a.safe_powi(1).unwrap()).to_string(), "1");
     }
 
     #[test]
     fn test_1_powi_10_decimal() {
         let a = dec!(1);
-        assert_eq!((a.powi(10)).to_string(), "1");
+        assert_eq!((a.safe_powi(10).unwrap()).to_string(), "1");
     }
 
     #[test]
     fn test_2_powi_0_decimal() {
         let a = dec!("2");
-        assert_eq!((a.powi(0)).to_string(), "1");
+        assert_eq!(a.safe_powi(0).unwrap().to_string(), "1");
     }
 
     #[test]
     fn test_2_powi_3724_decimal() {
         let a = dec!("1.000234891009084238");
-        assert_eq!((a.powi(3724)).to_string(), "2.397991232254669619");
+        assert_eq!(
+            a.safe_powi(3724).unwrap().to_string(),
+            "2.397991232254669619"
+        );
     }
 
     #[test]
     fn test_2_powi_2_decimal() {
         let a = dec!("2");
-        assert_eq!((a.powi(2)).to_string(), "4");
+        assert_eq!(a.safe_powi(2).unwrap().to_string(), "4");
     }
 
     #[test]
     fn test_2_powi_3_decimal() {
         let a = dec!("2");
-        assert_eq!((a.powi(3)).to_string(), "8");
+        assert_eq!(a.safe_powi(3).unwrap().to_string(), "8");
     }
 
     #[test]
     fn test_10_powi_3_decimal() {
         let a = dec!("10");
-        assert_eq!((a.powi(3)).to_string(), "1000");
+        assert_eq!(a.safe_powi(3).unwrap().to_string(), "1000");
     }
 
     #[test]
     fn test_5_powi_2_decimal() {
         let a = dec!("5");
-        assert_eq!((a.powi(2)).to_string(), "25");
+        assert_eq!(a.safe_powi(2).unwrap().to_string(), "25");
     }
 
     #[test]
     fn test_5_powi_minus2_decimal() {
         let a = dec!("5");
-        assert_eq!((a.powi(-2)).to_string(), "0.04");
+        assert_eq!(a.safe_powi(-2).unwrap().to_string(), "0.04");
     }
 
     #[test]
     fn test_10_powi_minus3_decimal() {
         let a = dec!("10");
-        assert_eq!((a.powi(-3)).to_string(), "0.001");
+        assert_eq!(a.safe_powi(-3).unwrap().to_string(), "0.001");
     }
 
     #[test]
     fn test_minus10_powi_minus3_decimal() {
         let a = dec!("-10");
-        assert_eq!((a.powi(-3)).to_string(), "-0.001");
+        assert_eq!(a.safe_powi(-3).unwrap().to_string(), "-0.001");
     }
 
     #[test]
     fn test_minus10_powi_minus2_decimal() {
         let a = dec!("-10");
-        assert_eq!((a.powi(-2)).to_string(), "0.01");
+        assert_eq!(a.safe_powi(-2).unwrap().to_string(), "0.01");
     }
 
     #[test]
     fn test_minus05_powi_minus2_decimal() {
         let a = dec!("-0.5");
-        assert_eq!((a.powi(-2)).to_string(), "4");
+        assert_eq!(a.safe_powi(-2).unwrap().to_string(), "4");
     }
     #[test]
     fn test_minus05_powi_minus3_decimal() {
         let a = dec!("-0.5");
-        assert_eq!((a.powi(-3)).to_string(), "-8");
+        assert_eq!(a.safe_powi(-3).unwrap().to_string(), "-8");
     }
 
     #[test]
     fn test_10_powi_15_decimal() {
         let a = dec!(10i128);
-        assert_eq!(a.powi(15).to_string(), "1000000000000000");
+        assert_eq!(a.safe_powi(15).unwrap().to_string(), "1000000000000000");
     }
 
     #[test]
     #[should_panic]
     fn test_10_powi_16_decimal() {
         let a = Decimal(10i128.into());
-        assert_eq!(a.powi(16).to_string(), "1000000000000000000000");
+        assert_eq!(
+            a.safe_powi(16).unwrap().to_string(),
+            "1000000000000000000000"
+        );
     }
 
     #[test]
@@ -1353,8 +1356,8 @@ mod tests {
     test_from_precise_decimal_decimal_overflow! {
         (PreciseDecimal::MAX, 1),
         (PreciseDecimal::MIN, 2),
-        (PreciseDecimal::from(Decimal::MAX) + 1, 3),
-        (PreciseDecimal::from(Decimal::MIN) - 1, 4)
+        (PreciseDecimal::from(Decimal::MAX).safe_add_dec(Decimal::ONE).unwrap(), 3),
+        (PreciseDecimal::from(Decimal::MIN).safe_sub_dec(Decimal::ONE).unwrap(), 4)
     }
 
     macro_rules! test_try_from_integer_overflow {

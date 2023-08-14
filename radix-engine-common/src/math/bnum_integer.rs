@@ -1,5 +1,6 @@
 //! Definitions of safe integers and uints.
 
+use crate::math::traits::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use bnum::{BInt, BUint};
@@ -146,18 +147,6 @@ pub trait Cbrt {
 
 pub trait NthRoot {
     fn nth_root(self, n: u32) -> Self;
-}
-
-pub trait CheckedSub {
-    fn checked_sub(self, other: Self) -> Option<Self>
-    where
-        Self: Sized;
-}
-
-pub trait CheckedMul {
-    fn checked_mul(self, other: Self) -> Option<Self>
-    where
-        Self: Sized;
 }
 
 macro_rules! forward_ref_unop {
@@ -354,18 +343,42 @@ macro_rules! op_impl {
                     }
                 }
 
-                impl CheckedSub for $t
+                impl SafeAdd for $t
                 {
-                    fn checked_sub(self, other: Self) -> Option<Self> {
+                    type Output = $t;
+
+                    fn safe_add(self, other: Self) -> Option<Self::Output> {
+                        let opt = self.0.checked_add(other.0);
+                        opt.map(|v| Self(v))
+                    }
+                }
+
+                impl SafeSub for $t
+                {
+                    type Output = $t;
+
+                    fn safe_sub(self, other: Self) -> Option<Self::Output> {
                         let opt = self.0.checked_sub(other.0);
                         opt.map(|v| Self(v))
                     }
                 }
 
-                impl CheckedMul for $t
+                impl SafeMul for $t
                 {
-                    fn checked_mul(self, other: Self) -> Option<Self> {
+                    type Output = $t;
+
+                    fn safe_mul(self, other: Self) -> Option<Self::Output> {
                         let opt = self.0.checked_mul(other.0);
+                        opt.map(|v| Self(v))
+                    }
+                }
+
+                impl SafeDiv for $t
+                {
+                    type Output = $t;
+
+                    fn safe_div(self, other: Self) -> Option<Self::Output> {
+                        let opt = self.0.checked_div(other.0);
                         opt.map(|v| Self(v))
                     }
                 }
@@ -424,7 +437,16 @@ macro_rules! op_impl_signed {
                         Self(self.0.neg())
                     }
                 }
-                forward_ref_unop! { impl Neg, neg for $t }
+
+                impl SafeNeg for $t {
+                    type Output = Self;
+
+                    #[inline]
+                    fn safe_neg(self) -> Option<Self::Output> {
+                        let c = self.0.checked_neg();
+                        c.map(Self)
+                    }
+                }
 
 
                 impl $t {
