@@ -497,7 +497,7 @@ fn errors_if_assigns_same_address_to_two_components() {
 }
 
 #[test]
-fn test_pass_global_addresses() {
+fn test_pass_named_global_addresses() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
@@ -555,4 +555,30 @@ fn test_pass_global_addresses() {
         RuntimeError::KernelError(KernelError::OrphanedNodes(nodes)) if nodes.len() == 4 => true,
         _ => false,
     })
+}
+
+#[test]
+fn test_pass_static_global_addresses() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, _) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ManifestGlobalAddresses",
+            "accept_global_addresses",
+            manifest_args!(FAUCET_COMPONENT, RESOURCE_PACKAGE, CONSENSUS_MANAGER, XRD),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
 }
