@@ -11,7 +11,7 @@ use crate::data::manifest::*;
 use crate::math::Decimal;
 use crate::*;
 
-const DECIMAL_SIZE: usize = Decimal::BITS / 8;
+pub const DECIMAL_SIZE: usize = Decimal::BITS / 8;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
