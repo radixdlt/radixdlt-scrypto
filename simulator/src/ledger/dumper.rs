@@ -8,6 +8,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
+use radix_engine_queries::typed_substate_layout::MetadataEntrySubstate;
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -52,6 +53,9 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         "Code size".green().bold(),
         substate.value.unwrap().code.len()
     );
+
+    dump_entity_metadata(package_address.as_node_id(), substate_db, output);
+
     Ok(())
 }
 
@@ -107,7 +111,12 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         blueprint_name
     );
 
-    writeln!(output, "{}", "Fungible Resources".green().bold());
+    writeln!(
+        output,
+        "{}: {}",
+        "Fungible Resources".green().bold(),
+        resources.balances.len()
+    );
     for (last, (component_address, amount)) in resources.balances.iter().identify_last() {
         writeln!(
             output,
@@ -118,7 +127,12 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         );
     }
 
-    writeln!(output, "{}", "Non-fungibles Resources".green().bold());
+    writeln!(
+        output,
+        "{}: {}",
+        "Non-fungibles Resources".green().bold(),
+        resources.non_fungibles.len()
+    );
     for (last, (component_address, ids)) in resources.non_fungibles.iter().identify_last() {
         writeln!(
             output,
@@ -130,6 +144,8 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             writeln!(output, "   {} {}", list_item_prefix(last), id);
         }
     }
+
+    dump_entity_metadata(component_address.as_node_id(), substate_db, output);
 
     Ok(())
 }
@@ -246,5 +262,32 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             );
         }
     }
+
+    dump_entity_metadata(resource_address.as_node_id(), substate_db, output);
+
     Ok(())
+}
+
+fn dump_entity_metadata<T: SubstateDatabase, O: std::io::Write>(
+    entity_node_id: &NodeId,
+    substate_db: &T,
+    output: &mut O,
+) {
+    writeln!(output, "{}", "Metadata".green().bold());
+    for (last, (substate_key, substate_value)) in substate_db
+        .list_mapped::<SpreadPrefixKeyMapper, MetadataEntrySubstate, MapKey>(
+            entity_node_id,
+            METADATA_BASE_PARTITION
+                .at_offset(METADATA_KV_STORE_PARTITION_OFFSET)
+                .unwrap(),
+        )
+        .identify_last()
+    {
+        if let SubstateKey::Map(key) = substate_key {
+            if let Some(value) = substate_value.value {
+                let key = scrypto_decode::<String>(&key).unwrap();
+                writeln!(output, "{} {}: {:?}", list_item_prefix(last), key, value);
+            }
+        }
+    }
 }
