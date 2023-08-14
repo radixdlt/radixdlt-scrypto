@@ -1,6 +1,6 @@
 use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
-use super::system_modules::costing::CostingEntry;
+use super::system_modules::costing::ExecutionCostingEntry;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
     InvalidGlobalizeAccess, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
@@ -762,12 +762,11 @@ where
         event_name: String,
         event_data: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(CostingEntry::EmitEvent {
+        self.api.kernel_get_system().modules.apply_execution_cost(
+            ExecutionCostingEntry::EmitEvent {
                 size: event_data.len(),
-            })?;
+            },
+        )?;
 
         // Locking the package info substate associated with the emitter's package
         let type_pointer = {
@@ -1722,7 +1721,6 @@ where
     }
 
     // Costing through kernel
-    // FIXME: Should this release lock or continue allow to mutate entry until lock released?
     fn key_value_entry_lock(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
         match data {
@@ -2226,7 +2224,7 @@ where
                     package_address,
                     export_name,
                     input_size,
-                } => CostingEntry::RunNativeCode {
+                } => ExecutionCostingEntry::RunNativeCode {
                     package_address,
                     export_name,
                     input_size,
@@ -2235,13 +2233,13 @@ where
                     package_address,
                     export_name,
                     wasm_execution_units,
-                } => CostingEntry::RunWasmCode {
+                } => ExecutionCostingEntry::RunWasmCode {
                     package_address,
                     export_name,
                     wasm_execution_units,
                 },
                 ClientCostingEntry::PrepareWasmCode { size } => {
-                    CostingEntry::PrepareWasmCode { size }
+                    ExecutionCostingEntry::PrepareWasmCode { size }
                 }
             })
     }
@@ -2256,7 +2254,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::LockFee)?;
+            .apply_execution_cost(ExecutionCostingEntry::LockFee)?;
 
         self.api
             .kernel_get_system()
@@ -2264,14 +2262,14 @@ where
             .credit_cost_units(vault_id, locked_fee, contingent)
     }
 
-    fn cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
+    fn execution_cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::QueryFeeReserve)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
-            Ok(fee_reserve.cost_unit_limit())
+            Ok(fee_reserve.execution_cost_unit_limit())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2279,14 +2277,44 @@ where
         }
     }
 
-    fn cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
+    fn execution_cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::QueryFeeReserve)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
-            Ok(fee_reserve.cost_unit_price())
+            Ok(fee_reserve.execution_cost_unit_price())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::CostingModuleNotEnabled,
+            ))
+        }
+    }
+
+    fn finalization_cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.finalization_cost_unit_limit())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::CostingModuleNotEnabled,
+            ))
+        }
+    }
+
+    fn finalization_cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.finalization_cost_unit_price())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2318,7 +2346,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::QueryFeeReserve)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.tip_percentage())
@@ -2333,7 +2361,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::QueryFeeReserve)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.fee_balance())
@@ -2355,7 +2383,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::QueryActor)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
 
         self.current_actor()
             .blueprint_id()
@@ -2423,7 +2451,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::QueryActor)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
 
         let node_id = self
             .current_actor()
@@ -2440,7 +2468,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::QueryActor)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
 
         let actor = self.current_actor();
         if !actor.is_direct_access() {
@@ -2464,7 +2492,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::QueryActor)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
 
         let (node_id, module_id) = self.get_actor_object_id(ActorObjectType::SELF)?;
         match module_id {
@@ -2504,7 +2532,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::QueryActor)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
 
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
@@ -2601,7 +2629,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::QueryAuthZone)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryAuthZone)?;
 
         if let Some(auth_zone_id) = self.current_actor().self_auth_zone() {
             Ok(auth_zone_id.into())
@@ -2640,12 +2668,11 @@ where
 
     #[trace_resources]
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(CostingEntry::EmitLog {
+        self.api.kernel_get_system().modules.apply_execution_cost(
+            ExecutionCostingEntry::EmitLog {
                 size: message.len(),
-            })?;
+            },
+        )?;
 
         self.api
             .kernel_get_system()
@@ -2656,12 +2683,11 @@ where
     }
 
     fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(CostingEntry::Panic {
+        self.api.kernel_get_system().modules.apply_execution_cost(
+            ExecutionCostingEntry::Panic {
                 size: message.len(),
-            })?;
+            },
+        )?;
 
         self.api
             .kernel_get_system()
@@ -2678,7 +2704,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::QueryTransactionHash)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryTransactionHash)?;
 
         if let Some(hash) = self.api.kernel_get_system().modules.transaction_hash() {
             Ok(hash)
@@ -2694,7 +2720,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(CostingEntry::GenerateRuid)?;
+            .apply_execution_cost(ExecutionCostingEntry::GenerateRuid)?;
 
         if let Some(ruid) = self.api.kernel_get_system().modules.generate_ruid() {
             Ok(ruid)

@@ -441,7 +441,7 @@ impl WasmModule {
                         }
                     }
 
-                    COST_UNIT_LIMIT_FUNCTION_NAME => {
+                    EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -453,12 +453,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
+                                    EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    COST_UNIT_PRICE_FUNCTION_NAME => {
+                    EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -470,7 +470,41 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
+                                    EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
+                    FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![],
+                                vec![ValType::I32],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
+                    FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }

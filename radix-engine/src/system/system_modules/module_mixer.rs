@@ -1,4 +1,4 @@
-use super::costing::CostingEntry;
+use super::costing::{ExecutionCostingEntry, FinalizationCostingEntry};
 use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
@@ -140,11 +140,12 @@ impl SystemModuleMixer {
                 fee_reserve,
                 fee_table,
                 max_call_depth: execution_config.max_call_depth,
-                payload_len,
-                num_of_signatures,
+                tx_payload_len: payload_len,
+                tx_signature_size: num_of_signatures,
                 max_per_function_royalty_in_xrd: execution_config.max_per_function_royalty_in_xrd,
                 enable_cost_breakdown: execution_config.enable_cost_breakdown,
-                costing_traces: index_map_new(),
+                execution_cost_breakdown: index_map_new(),
+                finalization_cost_breakdown: index_map_new(),
             },
             auth: AuthModule {
                 params: auth_zone_params.clone(),
@@ -595,7 +596,7 @@ impl SystemModuleMixer {
 
     pub fn apply_execution_cost(
         &mut self,
-        costing_entry: CostingEntry,
+        costing_entry: ExecutionCostingEntry,
     ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             self.costing.apply_execution_cost(costing_entry)
@@ -604,12 +605,20 @@ impl SystemModuleMixer {
         }
     }
 
-    pub fn apply_state_expansion_cost(
+    pub fn apply_finalization_cost(
         &mut self,
-        store_commit: &StoreCommit,
+        costing_entry: FinalizationCostingEntry,
     ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
-            self.costing.apply_state_expansion_cost(store_commit)
+            self.costing.apply_finalization_cost(costing_entry)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn apply_storage_cost(&mut self, store_commit: &StoreCommit) -> Result<(), RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            self.costing.apply_storage_cost(store_commit)
         } else {
             Ok(())
         }
@@ -627,5 +636,13 @@ impl SystemModuleMixer {
         } else {
             Ok(locked_fee)
         }
+    }
+
+    pub fn events(&self) -> &Vec<Event> {
+        &self.transaction_runtime.events
+    }
+
+    pub fn logs(&self) -> &Vec<(Level, String)> {
+        &self.transaction_runtime.logs
     }
 }

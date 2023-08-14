@@ -928,10 +928,10 @@ impl ResourceNativePackage {
             let event_schema = event_schema! {
                 aggregator,
                 [
-                    LockFeeEvent,
-                    WithdrawResourceEvent,
-                    DepositResourceEvent,
-                    RecallResourceEvent
+                    fungible_vault::LockFeeEvent,
+                    fungible_vault::WithdrawEvent,
+                    fungible_vault::DepositEvent,
+                    fungible_vault::RecallEvent
                 ]
             };
 
@@ -1219,10 +1219,9 @@ impl ResourceNativePackage {
             let event_schema = event_schema! {
                 aggregator,
                 [
-                    LockFeeEvent,
-                    WithdrawResourceEvent,
-                    DepositResourceEvent,
-                    RecallResourceEvent
+                    non_fungible_vault::WithdrawEvent,
+                    non_fungible_vault::DepositEvent,
+                    non_fungible_vault::RecallEvent
                 ]
             };
 

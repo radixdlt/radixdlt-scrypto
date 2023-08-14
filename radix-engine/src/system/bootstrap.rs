@@ -1012,8 +1012,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Genesis helper package
     {
-        // FIXME: Add authorization rules around preventing anyone else from
-        // calling genesis helper code
         let genesis_helper_code = include_bytes!("../../../assets/genesis_helper.wasm").to_vec();
         let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.rpd").to_vec();
         let genesis_helper_code_hash = hash(&genesis_helper_code);

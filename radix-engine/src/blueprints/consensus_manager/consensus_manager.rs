@@ -750,12 +750,40 @@ impl ConsensusManagerBlueprint {
                 .collect(),
         };
 
+        let mut next_validator_set_total_stake = Decimal::zero();
+        let mut significant_protocol_update_readiness: IndexMap<String, Decimal> = index_map_new();
+        for (validator_address, validator) in
+            next_active_validator_set.validators_by_stake_desc.iter()
+        {
+            next_validator_set_total_stake += validator.stake;
+            let rtn = api.call_method(
+                validator_address.as_node_id(),
+                VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT,
+                scrypto_encode(&ValidatorGetProtocolUpdateReadinessInput {}).unwrap(),
+            )?;
+            if let Some(protocol_update_readiness) = scrypto_decode::<Option<String>>(&rtn).unwrap()
+            {
+                *significant_protocol_update_readiness
+                    .entry(protocol_update_readiness)
+                    .or_insert(Decimal::zero()) += validator.stake;
+            }
+        }
+
+        // Only store protocol updates that have been signalled by at
+        // least 10% of the new epoch's validator set total stake.
+        let significant_protocol_update_readiness_stake_threshold =
+            next_validator_set_total_stake * dec!("0.1");
+        significant_protocol_update_readiness.retain(|_, stake_signalled| {
+            *stake_signalled >= significant_protocol_update_readiness_stake_threshold
+        });
+
         // Emit epoch change event
         Runtime::emit_event(
             api,
             EpochChangeEvent {
                 epoch: next_epoch,
                 validator_set: next_active_validator_set.clone(),
+                significant_protocol_update_readiness,
             },
         )?;
 

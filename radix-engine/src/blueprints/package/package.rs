@@ -29,7 +29,9 @@ use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::system::node_modules::role_assignment::{
+    OwnerRoleSubstate, RoleAssignmentNativePackage,
+};
 use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::{
     FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
@@ -674,6 +676,7 @@ pub fn create_bootstrap_package_partitions(
         );
     }
 
+    // Metadata
     {
         let mut metadata_partition = BTreeMap::new();
         for (key, value) in metadata.data {
@@ -693,6 +696,26 @@ pub fn create_bootstrap_package_partitions(
             );
         }
         partitions.insert(METADATA_BASE_PARTITION, metadata_partition);
+    }
+
+    // Role Assignment
+    {
+        let mut role_assignment_fields_partition = BTreeMap::new();
+
+        let owner_role_substate = FieldSubstate::new_field(OwnerRoleSubstate {
+            owner_role_entry: OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
+        });
+        role_assignment_fields_partition.insert(
+            SubstateKey::Field(0u8),
+            IndexedScryptoValue::from_typed(&owner_role_substate),
+        );
+
+        partitions.insert(
+            ROLE_ASSIGNMENT_BASE_PARTITION
+                .at_offset(ROLE_ASSIGNMENT_FIELDS_PARTITION_OFFSET)
+                .unwrap(),
+            role_assignment_fields_partition,
+        );
     }
 
     {
