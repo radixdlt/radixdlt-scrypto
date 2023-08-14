@@ -178,7 +178,7 @@ impl ScenarioInstance for MetadataScenario {
                                 },
                                 ModuleConfig {
                                     init: create_metadata().into(),
-                                    roles: RolesInit::default(),
+                                    roles: RoleAssignmentInit::default(),
                                 },
                                 Some(100_000_000_000u64.into()),
                             )

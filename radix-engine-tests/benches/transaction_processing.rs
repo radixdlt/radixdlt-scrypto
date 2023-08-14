@@ -5,7 +5,7 @@ use radix_engine::types::{NetworkDefinition, NonFungibleIdType, NonFungibleLocal
 use radix_engine_common::types::Epoch;
 use radix_engine_common::ManifestSbor;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::blueprints::resource::RolesInit;
+use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
 use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
 use radix_engine_interface::{metadata, metadata_init, ScryptoSbor};
 use scrypto::prelude::ComponentAddress;

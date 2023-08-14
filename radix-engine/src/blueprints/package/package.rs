@@ -29,7 +29,9 @@ use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::system::node_modules::role_assignment::{
+    OwnerRoleSubstate, RoleAssignmentNativePackage,
+};
 use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::{
     FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
@@ -71,6 +73,14 @@ pub enum PackageError {
 
     InvalidAuthSetup,
     DefiningReservedRoleKey(String, RoleKey),
+    ExceededMaxRoles {
+        limit: usize,
+        actual: usize,
+    },
+    ExceededMaxRoleNameLen {
+        limit: usize,
+        actual: usize,
+    },
     MissingRole(RoleKey),
     UnexpectedNumberOfMethodAuth {
         blueprint: String,
@@ -323,16 +333,21 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
             &definition_init.auth_config.method_auth,
         ) {
             (_, MethodAuthTemplate::AllowAll) => {}
-            (blueprint_type, MethodAuthTemplate::StaticRoles(StaticRoles { roles, methods })) => {
+            (
+                blueprint_type,
+                MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition { roles, methods }),
+            ) => {
                 let role_specification = match (blueprint_type, roles) {
                     (_, RoleSpecification::Normal(roles)) => roles,
                     (BlueprintType::Inner { outer_blueprint }, RoleSpecification::UseOuter) => {
                         if let Some(blueprint) = definition.blueprints.get(outer_blueprint) {
                             match &blueprint.auth_config.method_auth {
-                                MethodAuthTemplate::StaticRoles(StaticRoles {
-                                    roles: RoleSpecification::Normal(roles),
-                                    ..
-                                }) => roles,
+                                MethodAuthTemplate::StaticRoleDefinition(
+                                    StaticRoleDefinition {
+                                        roles: RoleSpecification::Normal(roles),
+                                        ..
+                                    },
+                                ) => roles,
                                 _ => return Err(PackageError::InvalidAuthSetup),
                             }
                         } else {
@@ -357,8 +372,23 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                 };
 
                 if let RoleSpecification::Normal(roles) = roles {
+                    if roles.len() > MAX_ROLES {
+                        return Err(PackageError::ExceededMaxRoles {
+                            limit: MAX_ROLES,
+                            actual: roles.len(),
+                        });
+                    }
+
                     for (role_key, role_list) in roles {
                         check_list(role_list)?;
+
+                        if role_key.key.len() > MAX_ROLE_NAME_LEN {
+                            return Err(PackageError::ExceededMaxRoleNameLen {
+                                limit: MAX_ROLE_NAME_LEN,
+                                actual: role_key.key.len(),
+                            });
+                        }
+
                         if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
                             return Err(PackageError::DefiningReservedRoleKey(
                                 blueprint.to_string(),
@@ -449,7 +479,9 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
             }
         }
 
-        if let MethodAuthTemplate::StaticRoles(static_roles) = &bp_init.auth_config.method_auth {
+        if let MethodAuthTemplate::StaticRoleDefinition(static_roles) =
+            &bp_init.auth_config.method_auth
+        {
             if let RoleSpecification::Normal(list) = &static_roles.roles {
                 for (role_key, _) in list.iter() {
                     condition(&role_key.key)?;
@@ -640,6 +672,7 @@ pub fn create_bootstrap_package_partitions(
         );
     }
 
+    // Metadata
     {
         let mut metadata_partition = BTreeMap::new();
         for (key, value) in metadata.data {
@@ -659,6 +692,26 @@ pub fn create_bootstrap_package_partitions(
             );
         }
         partitions.insert(METADATA_BASE_PARTITION, metadata_partition);
+    }
+
+    // Role Assignment
+    {
+        let mut role_assignment_fields_partition = BTreeMap::new();
+
+        let owner_role_substate = FieldSubstate::new_field(OwnerRoleSubstate {
+            owner_role_entry: OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
+        });
+        role_assignment_fields_partition.insert(
+            SubstateKey::Field(0u8),
+            IndexedScryptoValue::from_typed(&owner_role_substate),
+        );
+
+        partitions.insert(
+            ROLE_ASSIGNMENT_BASE_PARTITION
+                .at_offset(ROLE_ASSIGNMENT_FIELDS_PARTITION_OFFSET)
+                .unwrap(),
+            role_assignment_fields_partition,
+        );
     }
 
     {
@@ -1027,7 +1080,7 @@ impl PackageNativePackage {
                             PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                         )
                     ),
-                    method_auth: MethodAuthTemplate::StaticRoles(
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(
                         roles_template! {
                             roles {
                                 SECURIFY_OWNER_ROLE;

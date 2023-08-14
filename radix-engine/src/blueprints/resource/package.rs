@@ -10,7 +10,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
-    PackageDefinition, RoleSpecification, StaticRoles,
+    PackageDefinition, RoleSpecification, StaticRoleDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::hooks::OnDropInput;
@@ -371,7 +371,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
                         roles {
                             MINTER_ROLE => updaters: [MINTER_UPDATER_ROLE];
                             MINTER_UPDATER_ROLE => updaters: [MINTER_UPDATER_ROLE];
@@ -705,7 +705,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
                         roles {
                             MINTER_ROLE => updaters: [MINTER_UPDATER_ROLE];
                             MINTER_UPDATER_ROLE => updaters: [MINTER_UPDATER_ROLE];
@@ -960,7 +960,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
                         roles: RoleSpecification::UseOuter,
                         methods: method_auth_template! {
                             VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
@@ -1250,7 +1250,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
                         roles: RoleSpecification::UseOuter,
                         methods: method_auth_template! {
                             VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
@@ -1442,7 +1442,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
                         methods: method_auth_template! {
                             BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
@@ -1656,7 +1656,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
                         methods: method_auth_template! {
                             BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;

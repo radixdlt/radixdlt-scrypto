@@ -49,12 +49,21 @@ impl ClientCostingApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not exposed to scrypto")
     }
 
-    fn cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
-        Ok(unsafe { cost_unit_limit() })
+    fn execution_cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
+        Ok(unsafe { execution_cost_unit_limit() })
     }
 
-    fn cost_unit_price(&mut self) -> Result<math::Decimal, ClientApiError> {
-        let bytes = copy_buffer(unsafe { cost_unit_price() });
+    fn execution_cost_unit_price(&mut self) -> Result<math::Decimal, ClientApiError> {
+        let bytes = copy_buffer(unsafe { execution_cost_unit_price() });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn finalization_cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
+        Ok(unsafe { finalization_cost_unit_limit() })
+    }
+
+    fn finalization_cost_unit_price(&mut self) -> Result<math::Decimal, ClientApiError> {
+        let bytes = copy_buffer(unsafe { finalization_cost_unit_price() });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 

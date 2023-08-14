@@ -463,12 +463,12 @@ macro_rules! enable_method_auth {
                 internal_add_role!(roles, $role => updatable_by: [$($updaters),*]);
             )*
 
-            let static_roles = scrypto::blueprints::package::StaticRoles {
+            let static_roles = scrypto::blueprints::package::StaticRoleDefinition {
                 methods,
                 roles: scrypto::blueprints::package::RoleSpecification::Normal(roles),
             };
 
-            scrypto::blueprints::package::MethodAuthTemplate::StaticRoles(static_roles)
+            scrypto::blueprints::package::MethodAuthTemplate::StaticRoleDefinition(static_roles)
         }
     );
 
@@ -485,12 +485,12 @@ macro_rules! enable_method_auth {
                 $($method => $accessibility $(: [$($allow_role),+])?;)*
             );
 
-            let roles = scrypto::blueprints::package::StaticRoles {
+            let roles = scrypto::blueprints::package::StaticRoleDefinition {
                 methods,
                 roles: scrypto::blueprints::package::RoleSpecification::Normal(BTreeMap::new()),
             };
 
-            scrypto::blueprints::package::MethodAuthTemplate::StaticRoles(roles)
+            scrypto::blueprints::package::MethodAuthTemplate::StaticRoleDefinition(roles)
         }
     );
 }
@@ -543,7 +543,7 @@ macro_rules! component_royalties {
         }
     } => ({
         let royalties = component_royalty_config!($($init)*);
-        (royalties, RolesInit::new())
+        (royalties, RoleAssignmentInit::new())
     })
 }
 

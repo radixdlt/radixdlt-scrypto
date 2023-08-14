@@ -5,7 +5,7 @@ pub const EXECUTION_COST_UNIT_LOAN: u32 = 10_000_000;
 pub const EXECUTION_COST_UNIT_LIMIT: u32 = 100_000_000;
 
 /// The finalization cost unit limit.
-pub const FINALIZATION_COST_UNIT_LIMIT: u32 = 20_000_000;
+pub const FINALIZATION_COST_UNIT_LIMIT: u32 = 50_000_000;
 
 /// The free credit, for preview only.
 pub const FREE_CREDIT_IN_XRD: &str = "100";
@@ -75,6 +75,12 @@ pub const MAX_ACCESS_RULE_DEPTH: usize = 8;
 /// The max number of access rule nodes in an access rule
 pub const MAX_ACCESS_RULE_NODES: usize = 64;
 
+/// The max number of roles in a Role Specification
+pub const MAX_ROLES: usize = 50;
+
+/// The max number of roles in a Role Specification
+pub const MAX_ROLE_NAME_LEN: usize = 100;
+
 //==========================
 // TO BE DEFINED
 //==========================
@@ -83,7 +89,7 @@ pub const MAX_ACCESS_RULE_NODES: usize = 64;
 pub const EXECUTION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
 
 /// The price of finalization cost unit, in XRD.
-pub const FINALIZATION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000002";
+pub const FINALIZATION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
 
 /// The price for adding a single byte to the substate store, in XRD.
 pub const STORAGE_PRICE_IN_XRD: &str = "0.00001";

@@ -27,7 +27,6 @@ pub const ALL_RESOURCE_AUTH_KEYS: [TestResourceAction; 7] = [
 ];
 
 impl TestResourceAction {
-    // FIXME: Clean out ObjectModuleId
     pub fn action_role_key(&self) -> RoleKey {
         match self {
             Self::Mint => RoleKey::new(MINTER_ROLE),

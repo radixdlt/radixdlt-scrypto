@@ -269,7 +269,7 @@ mod genesis_helper {
                 })
                 .metadata(ModuleConfig {
                     init: metadata.into(),
-                    roles: RolesInit::default(),
+                    roles: RoleAssignmentInit::default(),
                 })
                 .with_address(resource.address_reservation)
                 .create_with_no_initial_supply();
