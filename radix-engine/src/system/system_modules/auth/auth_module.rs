@@ -61,7 +61,7 @@ pub enum AuthorityListAuthorizationResult {
 
 pub enum ResolvedPermission {
     RoleList {
-        role_assignment_of: NodeId,
+        role_assignment_of: GlobalAddress,
         module_id: ObjectModuleId,
         role_list: RoleList,
     },
@@ -452,11 +452,10 @@ impl AuthModule {
                             return Ok(ResolvedPermission::AllowAll);
                         }
 
-                        receiver.clone()
+                        GlobalAddress::new_or_panic(receiver.0)
                     }
                     RoleSpecification::UseOuter => {
-                        let role_assignment_of = receiver_object_info.get_outer_object();
-                        role_assignment_of.into_node_id()
+                        receiver_object_info.get_outer_object()
                     }
                 };
 
