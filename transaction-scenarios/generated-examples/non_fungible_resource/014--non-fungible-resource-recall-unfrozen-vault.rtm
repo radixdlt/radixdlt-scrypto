@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 RECALL_NON_FUNGIBLES_FROM_VAULT
-    Address("internal_vault_sim1nrvs5mvj7g3hph50ufuumajvd05jnw3l9ezl08jdfwccsywq7492y9")
+    Address("internal_vault_sim1np3haxqlc8xwx08j9wt0k8nkzgmq43csg2xwqg686c76lgg5dst70f")
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#130#")
     )
