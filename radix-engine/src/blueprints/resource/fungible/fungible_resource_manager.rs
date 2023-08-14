@@ -9,7 +9,7 @@ use num_traits::pow::Pow;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::FungibleResourceManagerField;
@@ -111,7 +111,7 @@ impl FungibleResourceManagerBlueprint {
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
-            None,
+            GenericArgs::default(),
             vec![FieldValue::immutable(&divisibility), total_supply_field],
             btreemap!(),
         )?;
@@ -169,7 +169,7 @@ impl FungibleResourceManagerBlueprint {
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
-            None,
+            GenericArgs::default(),
             vec![FieldValue::immutable(&divisibility), total_supply_field],
             btreemap!(),
         )?;

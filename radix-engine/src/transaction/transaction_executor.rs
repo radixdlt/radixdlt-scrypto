@@ -18,9 +18,6 @@ use crate::transaction::*;
 use crate::types::*;
 use radix_engine_common::constants::*;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
@@ -338,32 +335,10 @@ where
                             Otherwise, we won't be able to commit failed transactions.
                             May also cache the information for better performance.
                         */
-                        let substate = track
-                            .read_substate(
-                                RESOURCE_PACKAGE.as_node_id(),
-                                MAIN_BASE_PARTITION
-                                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                                    .unwrap(),
-                                &SubstateKey::Map(
-                                    scrypto_encode(&BlueprintVersionKey::new_default(
-                                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                                    ))
-                                    .unwrap(),
-                                ),
-                            )
-                            .unwrap();
-                        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
-                            substate.as_typed().unwrap();
-                        let type_pointer = substate
-                            .value
-                            .unwrap()
-                            .interface
-                            .get_event_type_pointer("BurnFungibleResourceEvent")
-                            .unwrap();
                         application_events.push((
                             EventTypeIdentifier(
                                 Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
-                                type_pointer,
+                                "BurnFungibleResourceEvent".to_string(),
                             ),
                             scrypto_encode(&BurnFungibleResourceEvent {
                                 amount: fee_destination.to_burn,

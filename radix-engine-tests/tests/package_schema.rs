@@ -31,7 +31,7 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
+                    RuntimeError::SystemError(SystemError::TypeCheckError(..))
                 )
             });
         }
@@ -39,7 +39,7 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
+                    RuntimeError::SystemError(SystemError::TypeCheckError(..))
                 )
             });
         }

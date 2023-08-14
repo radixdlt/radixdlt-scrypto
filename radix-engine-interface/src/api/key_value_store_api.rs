@@ -1,15 +1,59 @@
+use radix_engine_common::prelude::{
+    replace_self_package_address, HasSchemaHash, ScryptoCustomTypeKind, ScryptoDescribe,
+    ScryptoSchema,
+};
 use radix_engine_common::types::*;
+use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::LockFlags;
 use sbor::rust::prelude::*;
-use scrypto_schema::{KeyValueStoreSchema, KeyValueStoreSchemaInit};
+use sbor::{generate_full_schema, TypeAggregator};
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct KeyValueStoreGenericArgs {
+    pub additional_schema: Option<ScryptoSchema>,
+    pub key_type: GenericSubstitution,
+    pub value_type: GenericSubstitution,
+    pub allow_ownership: bool,
+}
+
+impl KeyValueStoreGenericArgs {
+    pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(allow_ownership: bool) -> Self {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let key_type_index = aggregator.add_child_type_and_descendents::<K>();
+        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
+        let schema = generate_full_schema(aggregator);
+        let schema_hash = schema.generate_schema_hash();
+        Self {
+            additional_schema: Some(schema),
+            key_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, key_type_index)),
+            value_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, value_type_index)),
+            allow_ownership,
+        }
+    }
+
+    pub fn new_with_self_package<K: ScryptoDescribe, V: ScryptoDescribe>(
+        allow_ownership: bool,
+        package_address: PackageAddress,
+    ) -> Self {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let key_type_index = aggregator.add_child_type_and_descendents::<K>();
+        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
+        let mut schema = generate_full_schema(aggregator);
+        replace_self_package_address(&mut schema, package_address);
+        let schema_hash = schema.generate_schema_hash();
+        Self {
+            additional_schema: Some(schema),
+            key_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, key_type_index)),
+            value_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, value_type_index)),
+            allow_ownership,
+        }
+    }
+}
 
 pub trait ClientKeyValueStoreApi<E> {
     /// Creates a new key value store with a given schema
-    fn key_value_store_new(&mut self, schema: KeyValueStoreSchemaInit) -> Result<NodeId, E>;
-
-    /// Get info regarding a visible key value store
-    fn key_value_store_get_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreSchema, E>;
+    fn key_value_store_new(&mut self, generic_args: KeyValueStoreGenericArgs) -> Result<NodeId, E>;
 
     /// Lock a key value store entry for reading/writing
     fn key_value_store_open_entry(
