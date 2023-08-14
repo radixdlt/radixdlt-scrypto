@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,     0.61643842,    100.0%
-- Execution Cost (XRD)                                                     ,     0.06619281,     10.7%
+Total Cost (XRD)                                                           ,     0.61643482,    100.0%
+- Execution Cost (XRD)                                                     ,     0.06618921,     10.7%
 - Finalization Cost (XRD)                                                  ,     0.49977561,     81.1%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - State Expansion Cost (XRD)                                               ,        0.05047,      8.2%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Royalty Cost (XRD)                                                       ,              0,      0.0%
-Execution Cost Breakdown                                                   ,        6619281,    100.0%
+Execution Cost Breakdown                                                   ,        6618921,    100.0%
 - AllocateNodeId                                                           ,           2288,      0.0%
 - BeforeInvoke                                                             ,          10850,      0.2%
 - CloseSubstate                                                            ,          50925,      0.8%
@@ -40,7 +40,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::try_deposit_batch_or_abort                                ,          76963,      1.2%
 - RunWasmCode::Faucet_lock_fee                                             ,          18320,      0.3%
 - SetSubstate                                                              ,          57354,      0.9%
-- ValidateTxPayload                                                        ,         172440,      2.6%
+- ValidateTxPayload                                                        ,         172080,      2.6%
 - VerifyTxSignatures                                                       ,              0,      0.0%
 - WriteSubstate                                                            ,           5528,      0.1%
 Finalization Cost Breakdown                                                ,       49977561,    100.0%
