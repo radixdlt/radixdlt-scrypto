@@ -27,7 +27,7 @@ pub enum TransactionLimitsError {
 
 pub struct TransactionLimitsConfig {
     pub max_number_of_substates_in_track: usize,
-    pub max_number_of_substates_in_heap: usize, // FIXME: enforce this limits in heap!
+    pub max_number_of_substates_in_heap: usize, // TODO: enforce this limits in heap!
     pub max_substate_key_size: usize,
     pub max_substate_size: usize,
     pub max_invoke_payload_size: usize,

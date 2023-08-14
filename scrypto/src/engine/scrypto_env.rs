@@ -85,8 +85,6 @@ impl ClientCostingApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-// FIXME: finalize API
-
 impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_simple_object(
         &mut self,

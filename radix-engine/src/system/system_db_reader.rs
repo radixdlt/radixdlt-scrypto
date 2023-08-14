@@ -144,10 +144,6 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         partition_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
-        // FIXME: explore if we can avoid loading from substate database
-        // - Part of the engine still reads/writes substates without touching the TypeInfo;
-        // - Track does not store the initial value of substate.
-
         self.fetch_substate_from_state_updates::<M, D>(node_id, partition_num, key)
             .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, partition_num, key))
     }

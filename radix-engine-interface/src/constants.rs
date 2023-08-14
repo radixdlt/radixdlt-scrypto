@@ -11,7 +11,7 @@ pub use radix_engine_common::constants::*;
 // To avoid creating references from various places, a list of well-known nodes is crafted
 // and added to every call frame, as a temporary solution.
 //
-// FIXME: to remove it, we will have to:
+// To remove it, we will have to:
 // - Add Scrypto support for declaring dependencies
 // - Split bootstrapping into state flushing and transaction execution (the "chicken-and-egg" problem)
 //
