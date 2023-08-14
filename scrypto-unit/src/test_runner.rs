@@ -168,60 +168,42 @@ impl CustomGenesis {
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
-        let genesis_validator: GenesisValidator = validator_public_key.clone().into();
-        let genesis_data_chunks = vec![
-            GenesisDataChunk::Validators(vec![genesis_validator]),
-            GenesisDataChunk::Stakes {
-                accounts: vec![staker_account],
-                allocations: vec![(
-                    validator_public_key,
-                    vec![GenesisStakeAllocation {
-                        account_index: 0,
-                        xrd_amount: stake_xrd_amount,
-                    }],
-                )],
-            },
-        ];
-        CustomGenesis {
-            genesis_data_chunks,
+        Self::validators_and_single_staker(
+            vec![(validator_public_key, stake_xrd_amount)],
+            staker_account,
             genesis_epoch,
             initial_config,
-            initial_time_ms: 0,
-            initial_current_leader: Some(0),
-            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
-        }
+        )
     }
 
-    pub fn two_validators_and_single_staker(
-        validator1_public_key: Secp256k1PublicKey,
-        validator2_public_key: Secp256k1PublicKey,
-        stake_xrd_amount: (Decimal, Decimal),
+    pub fn validators_and_single_staker(
+        validators_and_stakes: Vec<(Secp256k1PublicKey, Decimal)>,
         staker_account: ComponentAddress,
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
-        let genesis_validator1: GenesisValidator = validator1_public_key.clone().into();
-        let genesis_validator2: GenesisValidator = validator2_public_key.clone().into();
+        let genesis_validators: Vec<GenesisValidator> = validators_and_stakes
+            .iter()
+            .map(|(key, _)| key.clone().into())
+            .collect();
+        let stake_allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)> =
+            validators_and_stakes
+                .into_iter()
+                .map(|(key, stake_xrd_amount)| {
+                    (
+                        key,
+                        vec![GenesisStakeAllocation {
+                            account_index: 0,
+                            xrd_amount: stake_xrd_amount,
+                        }],
+                    )
+                })
+                .collect();
         let genesis_data_chunks = vec![
-            GenesisDataChunk::Validators(vec![genesis_validator1, genesis_validator2]),
+            GenesisDataChunk::Validators(genesis_validators),
             GenesisDataChunk::Stakes {
                 accounts: vec![staker_account],
-                allocations: vec![
-                    (
-                        validator1_public_key,
-                        vec![GenesisStakeAllocation {
-                            account_index: 0,
-                            xrd_amount: stake_xrd_amount.0,
-                        }],
-                    ),
-                    (
-                        validator2_public_key,
-                        vec![GenesisStakeAllocation {
-                            account_index: 0,
-                            xrd_amount: stake_xrd_amount.1,
-                        }],
-                    ),
-                ],
+                allocations: stake_allocations,
             },
         ];
         CustomGenesis {
@@ -1074,13 +1056,29 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
+        self.execute_manifest_with_costing_params(
+            manifest,
+            initial_proofs,
+            CostingParameters::default(),
+        )
+    }
+
+    pub fn execute_manifest_with_costing_params<T>(
+        &mut self,
+        manifest: TransactionManifestV1,
+        initial_proofs: T,
+        costing_parameters: CostingParameters,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
         let nonce = self.next_transaction_nonce();
         self.execute_transaction(
             TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            CostingParameters::default(),
+            costing_parameters,
             ExecutionConfig::for_test_transaction(),
         )
     }

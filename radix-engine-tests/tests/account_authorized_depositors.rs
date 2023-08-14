@@ -1,10 +1,8 @@
+use radix_engine::blueprints::account::AccountError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_queries::typed_substate_layout::{
-    AccountError, FungibleResourceManagerError, NonFungibleResourceManagerError,
-};
 use scrypto_unit::TestRunnerBuilder;
 use transaction::prelude::*;
 
@@ -69,6 +67,13 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
             ManifestBuilder::new()
                 .call_method(
                     account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
+                .call_method(
+                    account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
@@ -100,7 +105,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
         .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
-    receipt.expect_specific_failure(is_drop_non_empty_bucket_error);
+    receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
 }
 
 #[test]
@@ -115,6 +120,13 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
+                .call_method(
+                    account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
@@ -163,6 +175,13 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
             ManifestBuilder::new()
                 .call_method(
                     account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
+                .call_method(
+                    account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
@@ -207,6 +226,13 @@ fn authorized_depositor_can_be_removed_later() {
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
+                .call_method(
+                    account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
@@ -274,7 +300,7 @@ fn authorized_depositor_can_be_removed_later() {
         .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert 2
-    receipt.expect_specific_failure(is_drop_non_empty_bucket_error);
+    receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
 }
 
 #[test]
@@ -288,6 +314,13 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
+                .call_method(
+                    account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
@@ -321,7 +354,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
         .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
-    receipt.expect_specific_failure(is_drop_non_empty_bucket_error);
+    receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
 }
 
 #[test]
@@ -336,6 +369,13 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
+                .call_method(
+                    account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
@@ -384,6 +424,13 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
             ManifestBuilder::new()
                 .call_method(
                     account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
+                .call_method(
+                    account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
@@ -428,6 +475,13 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
+                .call_method(
+                    account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
@@ -478,6 +532,13 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
             ManifestBuilder::new()
                 .call_method(
                     account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
+                .call_method(
+                    account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
@@ -524,6 +585,13 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
             ManifestBuilder::new()
                 .call_method(
                     account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
+                .call_method(
+                    account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
@@ -568,6 +636,13 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
+                .call_method(
+                    account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
@@ -618,6 +693,13 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
             ManifestBuilder::new()
                 .call_method(
                     account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
+                .call_method(
+                    account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
@@ -664,6 +746,13 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
             ManifestBuilder::new()
                 .call_method(
                     account1,
+                    ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                    AccountSetDefaultDepositRuleInput {
+                        default: DefaultDepositRule::Reject,
+                    },
+                )
+                .call_method(
+                    account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
@@ -697,25 +786,167 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
     receipt.expect_commit_success();
 }
 
+#[test]
+fn authorized_depositor_badge_is_ignored_when_deposit_batch_is_permitted_without_it() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk, _, account) = test_runner.new_account(false);
+
+    // Act
+    for method_name in [
+        ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
+        ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
+    ] {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET, 10)
+            .call_method(FAUCET, "free", ())
+            .call_method(
+                account,
+                method_name,
+                manifest_args!(
+                    ManifestExpression::EntireWorktop,
+                    Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(XRD))
+                ),
+            )
+            .build();
+        let receipt =
+            test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+        // Assert
+        receipt.expect_commit_success();
+    }
+}
+
+#[test]
+fn authorized_depositor_badge_is_ignored_when_deposit_is_permitted_without_it() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk, _, account) = test_runner.new_account(false);
+
+    // Act
+    for method_name in [
+        ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
+        ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+    ] {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET, 10)
+            .call_method(FAUCET, "free", ())
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account,
+                    method_name,
+                    manifest_args!(
+                        bucket,
+                        Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(XRD))
+                    ),
+                )
+            })
+            .build();
+        let receipt =
+            test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+        // Assert
+        receipt.expect_commit_success();
+    }
+}
+
+#[test]
+fn authorized_depositor_badge_is_checked_when_deposit_cant_go_without_it() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk, _, account) = test_runner.new_account(false);
+
+    // Act
+    for method_name in [
+        ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
+        ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+    ] {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET, 10)
+            .call_method(
+                account,
+                ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                AccountSetDefaultDepositRuleInput {
+                    default: DefaultDepositRule::Reject,
+                },
+            )
+            .call_method(FAUCET, "free", ())
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account,
+                    method_name,
+                    manifest_args!(
+                        bucket,
+                        Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(XRD))
+                    ),
+                )
+            })
+            .build();
+        let receipt =
+            test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+        // Assert
+        receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
+    }
+}
+
+#[test]
+fn authorized_depositor_badge_permits_caller_to_deposit() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk, _, account) = test_runner.new_account(false);
+
+    // Act
+    for method_name in [
+        ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
+        ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+    ] {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET, 10)
+            .call_method(
+                account,
+                ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                AccountSetDefaultDepositRuleInput {
+                    default: DefaultDepositRule::Reject,
+                },
+            )
+            .call_method(
+                account,
+                ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                AccountAddAuthorizedDepositorInput {
+                    badge: ResourceOrNonFungible::Resource(XRD),
+                },
+            )
+            .create_proof_from_account_of_amount(account, XRD, 1)
+            .call_method(FAUCET, "free", ())
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account,
+                    method_name,
+                    manifest_args!(
+                        bucket,
+                        Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(XRD))
+                    ),
+                )
+            })
+            .build();
+        let receipt =
+            test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+        // Assert
+        receipt.expect_commit_success();
+    }
+}
+
 fn is_account_not_an_authorized_depositor_error(error: &RuntimeError) -> bool {
     matches!(
         error,
         RuntimeError::ApplicationError(ApplicationError::AccountError(
             AccountError::NotAnAuthorizedDepositor { .. }
         ))
-    )
-}
-
-fn is_drop_non_empty_bucket_error(error: &RuntimeError) -> bool {
-    matches!(
-        error,
-        RuntimeError::ApplicationError(
-            ApplicationError::FungibleResourceManagerError(
-                FungibleResourceManagerError::DropNonEmptyBucket
-            ) | ApplicationError::NonFungibleResourceManagerError(
-                NonFungibleResourceManagerError::DropNonEmptyBucket
-            )
-        )
     )
 }
 

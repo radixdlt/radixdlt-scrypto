@@ -523,6 +523,15 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         }
                     }
                 }
+                // None of the attributes to apply at the top-level of blueprint macros matched. So,
+                // we provide an error to the user that they're using an incorrect attribute macro
+                // that has no effect.
+                else {
+                    return Err(Error::new(
+                        attribute.path.span(),
+                        format!("Attribute is invalid for blueprints."),
+                    ));
+                }
             }
             (
                 paths.keys().into_iter().cloned().collect::<Vec<_>>(),

@@ -2,7 +2,10 @@ use radix_engine::types::*;
 
 // Import and re-export these types so they are available easily with a single import
 pub use radix_engine::blueprints::access_controller::*;
-pub use radix_engine::blueprints::account::*;
+pub use radix_engine::blueprints::account::{
+    AccountAuthorizedDepositorEntryContents, AccountBlueprint, AccountError, AccountNativePackage,
+    AccountResourcePreferenceEntryContents, AccountSubstate, AccountVaultEntryContents,
+};
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
 pub use radix_engine::blueprints::pool::multi_resource_pool;

@@ -12,4 +12,9 @@ pub struct EpochChangeEvent {
     pub epoch: Epoch,
     /// The *new* epoch's validator set.
     pub validator_set: ActiveValidatorSet,
+    /// A mapping of protocol version name to a total stake (using the *new* epoch's validator set)
+    /// that has signalled the readiness for the given protocol update.
+    /// The mapping only contains entries with associated stake of at least 10%
+    /// of the total stake (in the *new* epoch's validator set).
+    pub significant_protocol_update_readiness: IndexMap<String, Decimal>,
 }
