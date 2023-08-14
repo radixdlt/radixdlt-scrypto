@@ -113,19 +113,27 @@ fn execute_with_time_logging(
     (receipt, 0)
 }
 
-pub fn load_cost_breakdown(content: &str) -> BTreeMap<String, u32> {
-    let mut breakdown = BTreeMap::<String, u32>::new();
-    content
-        .split("\n")
-        .filter(|x| x.len() > 0)
-        .skip(6)
-        .for_each(|x| {
-            let mut tokens = x.split(",");
-            let entry = tokens.next().unwrap().trim();
+pub fn load_cost_breakdown(content: &str) -> (BTreeMap<String, u32>, BTreeMap<String, u32>) {
+    let mut execution_breakdown = BTreeMap::<String, u32>::new();
+    let mut finalization_breakdown = BTreeMap::<String, u32>::new();
+    let lines: Vec<String> = content.split("\n").map(String::from).collect();
+    let mut is_execution = true;
+    for i in 8..lines.len() {
+        if lines[i].starts_with("-") {
+            let mut tokens = lines[i].split(",");
+            let entry = tokens.next().unwrap().trim()[2..].to_string();
             let cost = tokens.next().unwrap().trim();
-            breakdown.insert(entry.to_string(), u32::from_str(cost).unwrap());
-        });
-    breakdown
+            if is_execution {
+                &mut execution_breakdown
+            } else {
+                &mut finalization_breakdown
+            }
+            .insert(entry, u32::from_str(cost).unwrap());
+        } else {
+            is_execution = false;
+        }
+    }
+    (execution_breakdown, finalization_breakdown)
 }
 
 #[cfg(feature = "alloc")]
@@ -162,7 +170,7 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ Execution Cost (XRD)",
+            "- Execution Cost (XRD)",
             fee_summary.total_execution_cost_in_xrd.to_string(),
             decimal_to_float(
                 fee_summary.total_execution_cost_in_xrd / fee_summary.total_cost() * 100
@@ -173,7 +181,18 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ Tipping Cost (XRD)",
+            "- Finalization Cost (XRD)",
+            fee_summary.total_finalization_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary.total_finalization_cost_in_xrd / fee_summary.total_cost() * 100
+            )
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<75},{:>15}, {:8.1}%\n",
+            "- Tipping Cost (XRD)",
             fee_summary.total_tipping_cost_in_xrd.to_string(),
             decimal_to_float(
                 fee_summary.total_tipping_cost_in_xrd / fee_summary.total_cost() * 100
@@ -184,7 +203,7 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ State Expansion Cost (XRD)",
+            "- State Expansion Cost (XRD)",
             fee_summary.total_storage_cost_in_xrd.to_string(),
             decimal_to_float(
                 fee_summary.total_storage_cost_in_xrd / fee_summary.total_cost() * 100
@@ -195,7 +214,18 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ Royalty Cost (XRD)",
+            "- Tipping Cost (XRD)",
+            fee_summary.total_tipping_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary.total_tipping_cost_in_xrd / fee_summary.total_cost() * 100
+            )
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<75},{:>15}, {:8.1}%\n",
+            "- Royalty Cost (XRD)",
             fee_summary.total_royalty_cost_in_xrd.to_string(),
             decimal_to_float(
                 fee_summary.total_royalty_cost_in_xrd / fee_summary.total_cost() * 100
@@ -206,7 +236,7 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "Total Cost Units Consumed",
+            "Execution Cost Breakdown",
             fee_details.execution_cost_breakdown.values().sum::<u32>(),
             100.0
         )
@@ -215,12 +245,39 @@ pub fn write_cost_breakdown(
     for (k, v) in &fee_details.execution_cost_breakdown {
         buffer.push_str(
             format!(
-                "{:<75},{:>15}, {:8.1}%\n",
+                "- {:<73},{:>15}, {:8.1}%\n",
                 k,
                 v,
                 decimal_to_float(
                     Decimal::from(*v)
                         / Decimal::from(fee_summary.total_execution_cost_units_consumed)
+                        * 100
+                )
+            )
+            .as_str(),
+        );
+    }
+    buffer.push_str(
+        format!(
+            "{:<75},{:>15}, {:8.1}%\n",
+            "Finalization Cost Breakdown",
+            fee_details
+                .finalization_cost_breakdown
+                .values()
+                .sum::<u32>(),
+            100.0
+        )
+        .as_str(),
+    );
+    for (k, v) in &fee_details.finalization_cost_breakdown {
+        buffer.push_str(
+            format!(
+                "- {:<73},{:>15}, {:8.1}%\n",
+                k,
+                v,
+                decimal_to_float(
+                    Decimal::from(*v)
+                        / Decimal::from(fee_summary.total_finalization_cost_units_consumed)
                         * 100
                 )
             )
@@ -234,7 +291,7 @@ pub fn write_cost_breakdown(
 
 pub enum Mode {
     OutputCosting(String),
-    AssertCosting(BTreeMap<String, u32>),
+    AssertCosting((BTreeMap<String, u32>, BTreeMap<String, u32>)),
 }
 
 impl Mode {
@@ -244,7 +301,8 @@ impl Mode {
                 write_cost_breakdown(fee_summary, fee_details, file.as_str());
             }
             Mode::AssertCosting(expected) => {
-                assert_eq!(&fee_details.execution_cost_breakdown, expected);
+                assert_eq!(&fee_details.execution_cost_breakdown, &expected.0);
+                assert_eq!(&fee_details.finalization_cost_breakdown, &expected.1);
             }
         }
     }
@@ -468,11 +526,7 @@ fn run_flash_loan(mode: Mode) {
         .is_zero());
     assert_eq!(
         old_balance - new_balance,
-        receipt.fee_summary.total_execution_cost_in_xrd
-            + receipt.fee_summary.total_tipping_cost_in_xrd
-            + receipt.fee_summary.total_storage_cost_in_xrd
-            + receipt.fee_summary.total_royalty_cost_in_xrd
-            + (repay_amount - loan_amount)
+        receipt.fee_summary.total_cost() + (repay_amount - loan_amount)
     );
     mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }

@@ -249,14 +249,9 @@ fn test_fee_accounting_success() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &receipt.fee_summary;
     assert_eq!(
         account1_new_balance,
-        account1_balance
-            - 66
-            - receipt.effective_execution_cost_unit_price()
-                * summary.total_execution_cost_units_consumed
-            - summary.total_storage_cost_in_xrd
+        account1_balance - 66 - receipt.fee_summary.total_cost()
     );
     assert_eq!(account2_new_balance, account2_balance + 66);
 }
@@ -310,12 +305,9 @@ fn test_fee_accounting_failure() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &receipt.fee_summary;
     assert_eq!(
         account1_new_balance,
-        account1_balance
-            - receipt.effective_execution_cost_unit_price()
-                * summary.total_execution_cost_units_consumed
+        account1_balance - receipt.fee_summary.total_cost()
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
@@ -398,6 +390,8 @@ fn test_contingent_fee_accounting_success() {
         account1_balance
             - receipt.effective_execution_cost_unit_price()
                 * receipt.fee_summary.total_execution_cost_units_consumed
+            - receipt.effective_finalization_cost_unit_price()
+                * receipt.fee_summary.total_finalization_cost_units_consumed
             - receipt.fee_summary.total_storage_cost_in_xrd
             + contingent_fee
     );

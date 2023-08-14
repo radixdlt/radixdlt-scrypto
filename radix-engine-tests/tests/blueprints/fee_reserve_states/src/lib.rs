@@ -5,10 +5,12 @@ mod fee_reserve {
     struct FeeReserveChecker {}
 
     impl FeeReserveChecker {
-        pub fn check() -> (u32, Decimal, u32, Decimal) {
+        pub fn check() -> (u32, Decimal, u32, Decimal, u32, Decimal) {
             (
-                Runtime::cost_unit_limit(),
-                Runtime::cost_unit_price(),
+                Runtime::execution_cost_unit_limit(),
+                Runtime::execution_cost_unit_price(),
+                Runtime::finalization_cost_unit_limit(),
+                Runtime::finalization_cost_unit_price(),
                 Runtime::tip_percentage(),
                 Runtime::fee_balance(),
             )
