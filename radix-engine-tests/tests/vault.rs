@@ -14,6 +14,39 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
+fn test_deposit_event_when_creating_vault_with_bucket() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, _) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ComponentWithVault",
+            "create_vault_with_bucket",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    println!("{:?}", receipt);
+
+    receipt
+        .expect_commit_ignore_outcome()
+        .application_events
+        .iter()
+        .map(|event| test_runner.event_name(&event.0))
+        .filter(|name| name.eq("DepositEvent"))
+        .next()
+        .expect("Missing deposit event");
+}
+
+#[test]
 fn non_existent_vault_in_component_creation_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
