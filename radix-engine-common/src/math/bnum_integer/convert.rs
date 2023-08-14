@@ -36,34 +36,34 @@ macro_rules! impl_to_primitive {
         }
     }
 }
-impl_from_primitive! { BnumI192, BInt::<3>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumI256, BInt::<4>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumI320, BInt::<5>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumI384, BInt::<6>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumI448, BInt::<7>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumI512, BInt::<8>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumI768, BInt::<12>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumU192, BUint::<3>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumU256, BUint::<4>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumU320, BUint::<5>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumU384, BUint::<6>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumU448, BUint::<7>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumU512, BUint::<8>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_from_primitive! { BnumU768, BUint::<12>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumI192, BInt::<3>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumI256, BInt::<4>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumI320, BInt::<5>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumI384, BInt::<6>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumI448, BInt::<7>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumI512, BInt::<8>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumI768, BInt::<12>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumU192, BUint::<3>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumU256, BUint::<4>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumU320, BUint::<5>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumU384, BUint::<6>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumU448, BUint::<7>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumU512, BUint::<8>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
-impl_to_primitive! { BnumU768, BUint::<12>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { I192, BInt::<3>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { I256, BInt::<4>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { I320, BInt::<5>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { I384, BInt::<6>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { I448, BInt::<7>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { I512, BInt::<8>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { I768, BInt::<12>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { U192, BUint::<3>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { U256, BUint::<4>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { U320, BUint::<5>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { U384, BUint::<6>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { U448, BUint::<7>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { U512, BUint::<8>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_from_primitive! { U768, BUint::<12>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { I192, BInt::<3>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { I256, BInt::<4>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { I320, BInt::<5>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { I384, BInt::<6>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { I448, BInt::<7>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { I512, BInt::<8>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { I768, BInt::<12>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { U192, BUint::<3>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { U256, BUint::<4>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { U320, BUint::<5>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { U384, BUint::<6>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { U448, BUint::<7>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { U512, BUint::<8>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
+impl_to_primitive! { U768, BUint::<12>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
 
 macro_rules! impl_from_builtin{
     ($t:ident, $wrapped:ty, ($($o:ident),*)) => {
@@ -122,43 +122,43 @@ macro_rules! impl_to_builtin{
     };
 }
 
-impl_from_builtin! { BnumI192, BInt::<3>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumI256, BInt::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumI320, BInt::<5>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumI384, BInt::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumI448, BInt::<7>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumI512, BInt::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumI768, BInt::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU192, BUint::<3>, (u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU256, BUint::<4>, (u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU320, BUint::<5>, (u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU384, BUint::<6>, (u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU448, BUint::<7>, (u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU512, BUint::<8>, (u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU768, BUint::<12>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { I192, BInt::<3>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { I256, BInt::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { I320, BInt::<5>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { I384, BInt::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { I448, BInt::<7>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { I512, BInt::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { I768, BInt::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { U192, BUint::<3>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { U256, BUint::<4>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { U320, BUint::<5>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { U384, BUint::<6>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { U448, BUint::<7>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { U512, BUint::<8>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { U768, BUint::<12>, (u8, u16, u32, u64, u128, usize)}
 
-impl_try_from_builtin! { BnumU192, BUint::<3>, (i8, i16, i32, i64, i128, isize)}
-impl_try_from_builtin! { BnumU256, BUint::<4>, (i8, i16, i32, i64, i128, isize)}
-impl_try_from_builtin! { BnumU320, BUint::<5>, (i8, i16, i32, i64, i128, isize)}
-impl_try_from_builtin! { BnumU384, BUint::<6>, (i8, i16, i32, i64, i128, isize)}
-impl_try_from_builtin! { BnumU448, BUint::<7>, (i8, i16, i32, i64, i128, isize)}
-impl_try_from_builtin! { BnumU512, BUint::<8>, (i8, i16, i32, i64, i128, isize)}
-impl_try_from_builtin! { BnumU768, BUint::<12>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { U192, BUint::<3>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { U256, BUint::<4>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { U320, BUint::<5>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { U384, BUint::<6>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { U448, BUint::<7>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { U512, BUint::<8>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { U768, BUint::<12>, (i8, i16, i32, i64, i128, isize)}
 
-impl_to_builtin! { BnumI192, BInt::<3>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumI256, BInt::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumI320, BInt::<5>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumI384, BInt::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumI448, BInt::<7>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumI512, BInt::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumI768, BInt::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumU192, BUint::<3>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumU256, BUint::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumU320, BUint::<5>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumU384, BUint::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumU448, BUint::<7>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumU512, BUint::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_to_builtin! { BnumU768, BUint::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { I192, BInt::<3>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { I256, BInt::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { I320, BInt::<5>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { I384, BInt::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { I448, BInt::<7>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { I512, BInt::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { I768, BInt::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { U192, BUint::<3>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { U256, BUint::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { U320, BUint::<5>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { U384, BUint::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { U448, BUint::<7>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { U512, BUint::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_to_builtin! { U768, BUint::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 
 macro_rules! impl_try_from_bigint {
     ($($t:ident, $wrapped:ty),*) => {
@@ -194,34 +194,34 @@ macro_rules! impl_to_bigint {
         }
     };
 }
-impl_try_from_bigint! { BnumI192, BInt::<3>  }
-impl_try_from_bigint! { BnumI256, BInt::<4>  }
-impl_try_from_bigint! { BnumI320, BInt::<5>  }
-impl_try_from_bigint! { BnumI384, BInt::<6>  }
-impl_try_from_bigint! { BnumI448, BInt::<7>  }
-impl_try_from_bigint! { BnumI512, BInt::<8>  }
-impl_try_from_bigint! { BnumI768, BInt::<12> }
-impl_try_from_bigint! { BnumU192, BUint::<3> }
-impl_try_from_bigint! { BnumU256, BUint::<4> }
-impl_try_from_bigint! { BnumU320, BUint::<5> }
-impl_try_from_bigint! { BnumU384, BUint::<6> }
-impl_try_from_bigint! { BnumU448, BUint::<7> }
-impl_try_from_bigint! { BnumU512, BUint::<8> }
-impl_try_from_bigint! { BnumU768, BUint::<12> }
-impl_to_bigint! { BnumI192, BInt::<3> }
-impl_to_bigint! { BnumI256, BInt::<4> }
-impl_to_bigint! { BnumI320, BInt::<5> }
-impl_to_bigint! { BnumI384, BInt::<6> }
-impl_to_bigint! { BnumI448, BInt::<7> }
-impl_to_bigint! { BnumI512, BInt::<8> }
-impl_to_bigint! { BnumI768, BInt::<12> }
-impl_to_bigint! { BnumU192, BUint::<3> }
-impl_to_bigint! { BnumU256, BUint::<4> }
-impl_to_bigint! { BnumU320, BUint::<5> }
-impl_to_bigint! { BnumU384, BUint::<6> }
-impl_to_bigint! { BnumU448, BUint::<7> }
-impl_to_bigint! { BnumU512, BUint::<8> }
-impl_to_bigint! { BnumU768, BUint::<12> }
+impl_try_from_bigint! { I192, BInt::<3>  }
+impl_try_from_bigint! { I256, BInt::<4>  }
+impl_try_from_bigint! { I320, BInt::<5>  }
+impl_try_from_bigint! { I384, BInt::<6>  }
+impl_try_from_bigint! { I448, BInt::<7>  }
+impl_try_from_bigint! { I512, BInt::<8>  }
+impl_try_from_bigint! { I768, BInt::<12> }
+impl_try_from_bigint! { U192, BUint::<3> }
+impl_try_from_bigint! { U256, BUint::<4> }
+impl_try_from_bigint! { U320, BUint::<5> }
+impl_try_from_bigint! { U384, BUint::<6> }
+impl_try_from_bigint! { U448, BUint::<7> }
+impl_try_from_bigint! { U512, BUint::<8> }
+impl_try_from_bigint! { U768, BUint::<12> }
+impl_to_bigint! { I192, BInt::<3> }
+impl_to_bigint! { I256, BInt::<4> }
+impl_to_bigint! { I320, BInt::<5> }
+impl_to_bigint! { I384, BInt::<6> }
+impl_to_bigint! { I448, BInt::<7> }
+impl_to_bigint! { I512, BInt::<8> }
+impl_to_bigint! { I768, BInt::<12> }
+impl_to_bigint! { U192, BUint::<3> }
+impl_to_bigint! { U256, BUint::<4> }
+impl_to_bigint! { U320, BUint::<5> }
+impl_to_bigint! { U384, BUint::<6> }
+impl_to_bigint! { U448, BUint::<7> }
+impl_to_bigint! { U512, BUint::<8> }
+impl_to_bigint! { U768, BUint::<12> }
 
 macro_rules! impl_from_string {
     ($($t:ident, $wrapped:ty),*) => {
@@ -241,20 +241,20 @@ macro_rules! impl_from_string {
     };
 }
 
-impl_from_string! { BnumI192, BInt::<3> }
-impl_from_string! { BnumI256, BInt::<4> }
-impl_from_string! { BnumI320, BInt::<5> }
-impl_from_string! { BnumI384, BInt::<6> }
-impl_from_string! { BnumI448, BInt::<7> }
-impl_from_string! { BnumI512, BInt::<8> }
-impl_from_string! { BnumI768, BInt::<12> }
-impl_from_string! { BnumU192, BUint::<3> }
-impl_from_string! { BnumU256, BUint::<4> }
-impl_from_string! { BnumU320, BUint::<5> }
-impl_from_string! { BnumU384, BUint::<6> }
-impl_from_string! { BnumU448, BUint::<7> }
-impl_from_string! { BnumU512, BUint::<8> }
-impl_from_string! { BnumU768, BUint::<12> }
+impl_from_string! { I192, BInt::<3> }
+impl_from_string! { I256, BInt::<4> }
+impl_from_string! { I320, BInt::<5> }
+impl_from_string! { I384, BInt::<6> }
+impl_from_string! { I448, BInt::<7> }
+impl_from_string! { I512, BInt::<8> }
+impl_from_string! { I768, BInt::<12> }
+impl_from_string! { U192, BUint::<3> }
+impl_from_string! { U256, BUint::<4> }
+impl_from_string! { U320, BUint::<5> }
+impl_from_string! { U384, BUint::<6> }
+impl_from_string! { U448, BUint::<7> }
+impl_from_string! { U512, BUint::<8> }
+impl_from_string! { U768, BUint::<12> }
 
 macro_rules! impl_try_from_bnum {
     ($t:ident, $wrapped:ty, ($($into:ident, $into_wrap:ty),*)) => {
@@ -327,303 +327,303 @@ macro_rules! impl_from_bnum {
 }
 
 impl_try_from_bnum! {
-    BnumI192, BInt::<3>, (
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    I192, BInt::<3>, (
+        U192, BUint::<3>,
+        U256, BUint::<4>,
+        U320, BUint::<5>,
+        U384, BUint::<6>,
+        U448, BUint::<7>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 impl_from_bnum! {
-    BnumI192, BInt::<3>, (
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>
+    I192, BInt::<3>, (
+        I256, BInt::<4>,
+        I320, BInt::<5>,
+        I384, BInt::<6>,
+        I448, BInt::<7>,
+        I512, BInt::<8>,
+        I768, BInt::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumI256, BInt::<4>, (
-        BnumI192, BInt::<3>,
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    I256, BInt::<4>, (
+        I192, BInt::<3>,
+        U192, BUint::<3>,
+        U256, BUint::<4>,
+        U320, BUint::<5>,
+        U384, BUint::<6>,
+        U448, BUint::<7>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 impl_from_bnum! {
-    BnumI256, BInt::<4>, (
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>
+    I256, BInt::<4>, (
+        I320, BInt::<5>,
+        I384, BInt::<6>,
+        I448, BInt::<7>,
+        I512, BInt::<8>,
+        I768, BInt::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumI320, BInt::<5>, (
-        BnumI192, BInt::<3>,
-        BnumI256, BInt::<4>,
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    I320, BInt::<5>, (
+        I192, BInt::<3>,
+        I256, BInt::<4>,
+        U192, BUint::<3>,
+        U256, BUint::<4>,
+        U320, BUint::<5>,
+        U384, BUint::<6>,
+        U448, BUint::<7>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 impl_from_bnum! {
-    BnumI320, BInt::<5>, (
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>
+    I320, BInt::<5>, (
+        I384, BInt::<6>,
+        I448, BInt::<7>,
+        I512, BInt::<8>,
+        I768, BInt::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumI384, BInt::<6>, (
-        BnumI192, BInt::<3>,
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    I384, BInt::<6>, (
+        I192, BInt::<3>,
+        I256, BInt::<4>,
+        I320, BInt::<5>,
+        U192, BUint::<3>,
+        U256, BUint::<4>,
+        U320, BUint::<5>,
+        U384, BUint::<6>,
+        U448, BUint::<7>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 impl_from_bnum! {
-    BnumI384, BInt::<6>, (
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>
+    I384, BInt::<6>, (
+        I448, BInt::<7>,
+        I512, BInt::<8>,
+        I768, BInt::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumI448, BInt::<7>, (
-        BnumI192, BInt::<3>,
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    I448, BInt::<7>, (
+        I192, BInt::<3>,
+        I256, BInt::<4>,
+        I320, BInt::<5>,
+        I384, BInt::<6>,
+        U192, BUint::<3>,
+        U256, BUint::<4>,
+        U320, BUint::<5>,
+        U384, BUint::<6>,
+        U448, BUint::<7>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 impl_from_bnum! {
-    BnumI448, BInt::<7>, (
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>
+    I448, BInt::<7>, (
+        I512, BInt::<8>,
+        I768, BInt::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumI512, BInt::<8>, (
-        BnumI192, BInt::<3>,
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    I512, BInt::<8>, (
+        I192, BInt::<3>,
+        I256, BInt::<4>,
+        I320, BInt::<5>,
+        I384, BInt::<6>,
+        I448, BInt::<7>,
+        U192, BUint::<3>,
+        U256, BUint::<4>,
+        U320, BUint::<5>,
+        U384, BUint::<6>,
+        U448, BUint::<7>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 impl_from_bnum! {
-    BnumI512, BInt::<8>, (
-        BnumI768, BInt::<12>
+    I512, BInt::<8>, (
+        I768, BInt::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumI768, BInt::<12>, (
-        BnumI192, BInt::<3>,
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    I768, BInt::<12>, (
+        I192, BInt::<3>,
+        I256, BInt::<4>,
+        I320, BInt::<5>,
+        I384, BInt::<6>,
+        I448, BInt::<7>,
+        I512, BInt::<8>,
+        U192, BUint::<3>,
+        U256, BUint::<4>,
+        U320, BUint::<5>,
+        U384, BUint::<6>,
+        U448, BUint::<7>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 
 // must fit 0 - MAX
 impl_try_from_bnum! {
-    BnumU192, BUint::<3>, (
-        BnumI192, BInt::<3>
+    U192, BUint::<3>, (
+        I192, BInt::<3>
     )
 }
 impl_from_bnum! {
-    BnumU192, BUint::<3>, (
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    U192, BUint::<3>, (
+        I256, BInt::<4>,
+        I320, BInt::<5>,
+        I384, BInt::<6>,
+        I448, BInt::<7>,
+        I512, BInt::<8>,
+        I768, BInt::<12>,
+        U256, BUint::<4>,
+        U320, BUint::<5>,
+        U384, BUint::<6>,
+        U448, BUint::<7>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumU256, BUint::<4>, (
-        BnumI192, BInt::<3>,
-        BnumU192, BUint::<3>,
-        BnumI256, BInt::<4>
+    U256, BUint::<4>, (
+        I192, BInt::<3>,
+        U192, BUint::<3>,
+        I256, BInt::<4>
     )
 }
 impl_from_bnum! {
-    BnumU256, BUint::<4>, (
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    U256, BUint::<4>, (
+        I320, BInt::<5>,
+        I384, BInt::<6>,
+        I448, BInt::<7>,
+        I512, BInt::<8>,
+        I768, BInt::<12>,
+        U320, BUint::<5>,
+        U384, BUint::<6>,
+        U448, BUint::<7>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumU320, BUint::<5>, (
-        BnumI192, BInt::<3>,
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>
+    U320, BUint::<5>, (
+        I192, BInt::<3>,
+        I256, BInt::<4>,
+        I320, BInt::<5>,
+        U192, BUint::<3>,
+        U256, BUint::<4>
     )
 }
 impl_from_bnum! {
-    BnumU320, BUint::<5>, (
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    U320, BUint::<5>, (
+        I384, BInt::<6>,
+        I448, BInt::<7>,
+        I512, BInt::<8>,
+        I768, BInt::<12>,
+        U384, BUint::<6>,
+        U448, BUint::<7>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumU384, BUint::<6>, (
-        BnumI192, BInt::<3>,
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>
+    U384, BUint::<6>, (
+        I192, BInt::<3>,
+        I256, BInt::<4>,
+        I320, BInt::<5>,
+        I384, BInt::<6>,
+        U192, BUint::<3>,
+        U256, BUint::<4>,
+        U320, BUint::<5>
     )
 }
 impl_from_bnum! {
-    BnumU384, BUint::<6>, (
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    U384, BUint::<6>, (
+        I448, BInt::<7>,
+        I512, BInt::<8>,
+        I768, BInt::<12>,
+        U448, BUint::<7>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumU448, BUint::<7>, (
-        BnumI192, BInt::<3>,
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>
+    U448, BUint::<7>, (
+        I192, BInt::<3>,
+        I256, BInt::<4>,
+        I320, BInt::<5>,
+        I384, BInt::<6>,
+        I448, BInt::<7>,
+        U192, BUint::<3>,
+        U256, BUint::<4>,
+        U320, BUint::<5>,
+        U384, BUint::<6>
     )
 }
 impl_from_bnum! {
-    BnumU448, BUint::<7>, (
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+    U448, BUint::<7>, (
+        I512, BInt::<8>,
+        I768, BInt::<12>,
+        U512, BUint::<8>,
+        U768, BUint::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumU512, BUint::<8>, (
-        BnumI192, BInt::<3>,
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>
+    U512, BUint::<8>, (
+        I192, BInt::<3>,
+        I256, BInt::<4>,
+        I320, BInt::<5>,
+        I384, BInt::<6>,
+        I448, BInt::<7>,
+        I512, BInt::<8>,
+        U192, BUint::<3>,
+        U256, BUint::<4>,
+        U320, BUint::<5>,
+        U384, BUint::<6>,
+        U448, BUint::<7>
     )
 }
 impl_from_bnum! {
-    BnumU512, BUint::<8>, (
-        BnumI768, BInt::<12>,
-        BnumU768, BUint::<12>
+    U512, BUint::<8>, (
+        I768, BInt::<12>,
+        U768, BUint::<12>
     )
 }
 
 impl_try_from_bnum! {
-    BnumU768, BUint::<12>, (
-        BnumI192, BInt::<3>,
-        BnumI256, BInt::<4>,
-        BnumI320, BInt::<5>,
-        BnumI384, BInt::<6>,
-        BnumI448, BInt::<7>,
-        BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
-        BnumU192, BUint::<3>,
-        BnumU256, BUint::<4>,
-        BnumU320, BUint::<5>,
-        BnumU384, BUint::<6>,
-        BnumU448, BUint::<7>,
-        BnumU512, BUint::<8>
+    U768, BUint::<12>, (
+        I192, BInt::<3>,
+        I256, BInt::<4>,
+        I320, BInt::<5>,
+        I384, BInt::<6>,
+        I448, BInt::<7>,
+        I512, BInt::<8>,
+        I768, BInt::<12>,
+        U192, BUint::<3>,
+        U256, BUint::<4>,
+        U320, BUint::<5>,
+        U384, BUint::<6>,
+        U448, BUint::<7>,
+        U512, BUint::<8>
     )
 }
 
@@ -693,34 +693,34 @@ macro_rules! impl_to_bytes {
     };
 }
 
-impl_from_bytes! { BnumI192, BInt::<3> }
-impl_from_bytes! { BnumI256, BInt::<4> }
-impl_from_bytes! { BnumI320, BInt::<5> }
-impl_from_bytes! { BnumI384, BInt::<6> }
-impl_from_bytes! { BnumI448, BInt::<7> }
-impl_from_bytes! { BnumI512, BInt::<8> }
-impl_from_bytes! { BnumI768, BInt::<12> }
-impl_from_bytes! { BnumU192, BUint::<3> }
-impl_from_bytes! { BnumU256, BUint::<4> }
-impl_from_bytes! { BnumU320, BUint::<5> }
-impl_from_bytes! { BnumU384, BUint::<6> }
-impl_from_bytes! { BnumU448, BUint::<7> }
-impl_from_bytes! { BnumU512, BUint::<8> }
-impl_from_bytes! { BnumU768, BUint::<12> }
-impl_to_bytes! { BnumI192, BInt::<3> }
-impl_to_bytes! { BnumI256, BInt::<4> }
-impl_to_bytes! { BnumI320, BInt::<5> }
-impl_to_bytes! { BnumI384, BInt::<6> }
-impl_to_bytes! { BnumI448, BInt::<7> }
-impl_to_bytes! { BnumI512, BInt::<8> }
-impl_to_bytes! { BnumI768, BInt::<12> }
-impl_to_bytes! { BnumU192, BUint::<3> }
-impl_to_bytes! { BnumU256, BUint::<4> }
-impl_to_bytes! { BnumU320, BUint::<5> }
-impl_to_bytes! { BnumU384, BUint::<6> }
-impl_to_bytes! { BnumU448, BUint::<7> }
-impl_to_bytes! { BnumU512, BUint::<8> }
-impl_to_bytes! { BnumU768, BUint::<12> }
+impl_from_bytes! { I192, BInt::<3> }
+impl_from_bytes! { I256, BInt::<4> }
+impl_from_bytes! { I320, BInt::<5> }
+impl_from_bytes! { I384, BInt::<6> }
+impl_from_bytes! { I448, BInt::<7> }
+impl_from_bytes! { I512, BInt::<8> }
+impl_from_bytes! { I768, BInt::<12> }
+impl_from_bytes! { U192, BUint::<3> }
+impl_from_bytes! { U256, BUint::<4> }
+impl_from_bytes! { U320, BUint::<5> }
+impl_from_bytes! { U384, BUint::<6> }
+impl_from_bytes! { U448, BUint::<7> }
+impl_from_bytes! { U512, BUint::<8> }
+impl_from_bytes! { U768, BUint::<12> }
+impl_to_bytes! { I192, BInt::<3> }
+impl_to_bytes! { I256, BInt::<4> }
+impl_to_bytes! { I320, BInt::<5> }
+impl_to_bytes! { I384, BInt::<6> }
+impl_to_bytes! { I448, BInt::<7> }
+impl_to_bytes! { I512, BInt::<8> }
+impl_to_bytes! { I768, BInt::<12> }
+impl_to_bytes! { U192, BUint::<3> }
+impl_to_bytes! { U256, BUint::<4> }
+impl_to_bytes! { U320, BUint::<5> }
+impl_to_bytes! { U384, BUint::<6> }
+impl_to_bytes! { U448, BUint::<7> }
+impl_to_bytes! { U512, BUint::<8> }
+impl_to_bytes! { U768, BUint::<12> }
 
 macro_rules! impl_from_u64_arr_signed {
     ($($t:ident, $wrapped:ty),*) => {
@@ -753,18 +753,18 @@ macro_rules! from_u64_arr_unsigned {
     };
 }
 
-impl_from_u64_arr_signed! { BnumI192, BInt::<3> }
-impl_from_u64_arr_signed! { BnumI256, BInt::<4> }
-impl_from_u64_arr_signed! { BnumI320, BInt::<5> }
-impl_from_u64_arr_signed! { BnumI384, BInt::<6> }
-impl_from_u64_arr_signed! { BnumI448, BInt::<7> }
-impl_from_u64_arr_signed! { BnumI512, BInt::<8> }
-impl_from_u64_arr_signed! { BnumI768, BInt::<12> }
+impl_from_u64_arr_signed! { I192, BInt::<3> }
+impl_from_u64_arr_signed! { I256, BInt::<4> }
+impl_from_u64_arr_signed! { I320, BInt::<5> }
+impl_from_u64_arr_signed! { I384, BInt::<6> }
+impl_from_u64_arr_signed! { I448, BInt::<7> }
+impl_from_u64_arr_signed! { I512, BInt::<8> }
+impl_from_u64_arr_signed! { I768, BInt::<12> }
 
-from_u64_arr_unsigned! { BnumU192, BUint::<3> }
-from_u64_arr_unsigned! { BnumU256, BUint::<4> }
-from_u64_arr_unsigned! { BnumU320, BUint::<5> }
-from_u64_arr_unsigned! { BnumU384, BUint::<6> }
-from_u64_arr_unsigned! { BnumU448, BUint::<7> }
-from_u64_arr_unsigned! { BnumU512, BUint::<8> }
-from_u64_arr_unsigned! { BnumU768, BUint::<12> }
+from_u64_arr_unsigned! { U192, BUint::<3> }
+from_u64_arr_unsigned! { U256, BUint::<4> }
+from_u64_arr_unsigned! { U320, BUint::<5> }
+from_u64_arr_unsigned! { U384, BUint::<6> }
+from_u64_arr_unsigned! { U448, BUint::<7> }
+from_u64_arr_unsigned! { U512, BUint::<8> }
+from_u64_arr_unsigned! { U768, BUint::<12> }

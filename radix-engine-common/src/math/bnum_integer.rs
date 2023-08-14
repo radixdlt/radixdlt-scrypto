@@ -120,20 +120,20 @@ macro_rules! types {
     };
 }
 types! {
-    BnumI192, BInt::<3>,
-    BnumI256, BInt::<4>,
-    BnumI320, BInt::<5>,
-    BnumI384, BInt::<6>,
-    BnumI448, BInt::<7>,
-    BnumI512, BInt::<8>,
-    BnumI768, BInt::<12>,
-    BnumU192, BUint::<3>,
-    BnumU256, BUint::<4>,
-    BnumU320, BUint::<5>,
-    BnumU384, BUint::<6>,
-    BnumU448, BUint::<7>,
-    BnumU512, BUint::<8>,
-    BnumU768, BUint::<12>
+    I192, BInt::<3>,
+    I256, BInt::<4>,
+    I320, BInt::<5>,
+    I384, BInt::<6>,
+    I448, BInt::<7>,
+    I512, BInt::<8>,
+    I768, BInt::<12>,
+    U192, BUint::<3>,
+    U256, BUint::<4>,
+    U320, BUint::<5>,
+    U384, BUint::<6>,
+    U448, BUint::<7>,
+    U512, BUint::<8>,
+    U768, BUint::<12>
 }
 
 pub trait Sqrt {
@@ -373,20 +373,20 @@ macro_rules! op_impl {
         }
     };
 }
-op_impl! { BnumI192 }
-op_impl! { BnumI256 }
-op_impl! { BnumI320 }
-op_impl! { BnumI384 }
-op_impl! { BnumI448 }
-op_impl! { BnumI512 }
-op_impl! { BnumI768 }
-op_impl! { BnumU192 }
-op_impl! { BnumU256 }
-op_impl! { BnumU320 }
-op_impl! { BnumU384 }
-op_impl! { BnumU448 }
-op_impl! { BnumU512 }
-op_impl! { BnumU768 }
+op_impl! { I192 }
+op_impl! { I256 }
+op_impl! { I320 }
+op_impl! { I384 }
+op_impl! { I448 }
+op_impl! { I512 }
+op_impl! { I768 }
+op_impl! { U192 }
+op_impl! { U256 }
+op_impl! { U320 }
+op_impl! { U384 }
+op_impl! { U448 }
+op_impl! { U512 }
+op_impl! { U768 }
 
 macro_rules! op_impl_unsigned {
     ($($t:ty),*) => {
@@ -405,13 +405,13 @@ macro_rules! op_impl_unsigned {
         }
     };
 }
-op_impl_unsigned! { BnumU192 }
-op_impl_unsigned! { BnumU256 }
-op_impl_unsigned! { BnumU320 }
-op_impl_unsigned! { BnumU384 }
-op_impl_unsigned! { BnumU448 }
-op_impl_unsigned! { BnumU512 }
-op_impl_unsigned! { BnumU768 }
+op_impl_unsigned! { U192 }
+op_impl_unsigned! { U256 }
+op_impl_unsigned! { U320 }
+op_impl_unsigned! { U384 }
+op_impl_unsigned! { U448 }
+op_impl_unsigned! { U512 }
+op_impl_unsigned! { U768 }
 
 macro_rules! op_impl_signed {
     ($($t:ty),*) => {
@@ -478,13 +478,13 @@ macro_rules! op_impl_signed {
     }
 }
 
-op_impl_signed! { BnumI192 }
-op_impl_signed! { BnumI256 }
-op_impl_signed! { BnumI320 }
-op_impl_signed! { BnumI384 }
-op_impl_signed! { BnumI448 }
-op_impl_signed! { BnumI512 }
-op_impl_signed! { BnumI768 }
+op_impl_signed! { I192 }
+op_impl_signed! { I256 }
+op_impl_signed! { I320 }
+op_impl_signed! { I384 }
+op_impl_signed! { I448 }
+op_impl_signed! { I512 }
+op_impl_signed! { I768 }
 
 macro_rules! error {
     ($($t:ident),*) => {
@@ -512,18 +512,18 @@ macro_rules! error {
     };
 }
 error! {
-    BnumI192,
-    BnumI256,
-    BnumI320,
-    BnumI384,
-    BnumI448,
-    BnumI512,
-    BnumI768,
-    BnumU192,
-    BnumU256,
-    BnumU320,
-    BnumU384,
-    BnumU448,
-    BnumU512,
-    BnumU768
+    I192,
+    I256,
+    I320,
+    I384,
+    I448,
+    I512,
+    I768,
+    U192,
+    U256,
+    U320,
+    U384,
+    U448,
+    U512,
+    U768
 }
