@@ -4,6 +4,7 @@ use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use sbor::{Decoder, Encoder};
 
 /*
 =================================================================================
@@ -42,10 +43,66 @@ TAKE_FROM_WORKTOP
 ```
 */
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DynamicGlobalAddress {
     Static(GlobalAddress),
     Named(u32),
+}
+
+impl Categorize<ManifestCustomValueKind> for DynamicGlobalAddress {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Custom(ManifestCustomValueKind::Address)
+    }
+}
+
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
+    for DynamicGlobalAddress
+{
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        match self {
+            Self::Static(address) => {
+                encoder.write_discriminator(0)?;
+                encoder.write_slice(address.as_node_id().as_bytes())?;
+            }
+            Self::Named(address_id) => {
+                encoder.write_discriminator(1)?;
+                encoder.write_slice(&address_id.to_le_bytes())?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
+    for DynamicGlobalAddress
+{
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ManifestCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        match decoder.read_discriminator()? {
+            0 => {
+                let slice = decoder.read_slice(NodeId::LENGTH)?;
+                Ok(Self::Static(
+                    GlobalAddress::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)?,
+                ))
+            }
+            1 => {
+                let slice = decoder.read_slice(4)?;
+                let id = u32::from_le_bytes(slice.try_into().unwrap());
+                Ok(Self::Named(id))
+            }
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
 }
 
 impl DynamicGlobalAddress {
@@ -155,10 +212,66 @@ impl TryFrom<ManifestAddress> for DynamicGlobalAddress {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DynamicPackageAddress {
     Static(PackageAddress),
     Named(u32),
+}
+
+impl Categorize<ManifestCustomValueKind> for DynamicPackageAddress {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Custom(ManifestCustomValueKind::Address)
+    }
+}
+
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
+    for DynamicPackageAddress
+{
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        match self {
+            Self::Static(address) => {
+                encoder.write_discriminator(0)?;
+                encoder.write_slice(address.as_node_id().as_bytes())?;
+            }
+            Self::Named(address_id) => {
+                encoder.write_discriminator(1)?;
+                encoder.write_slice(&address_id.to_le_bytes())?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
+    for DynamicPackageAddress
+{
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ManifestCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        match decoder.read_discriminator()? {
+            0 => {
+                let slice = decoder.read_slice(NodeId::LENGTH)?;
+                Ok(Self::Static(
+                    PackageAddress::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)?,
+                ))
+            }
+            1 => {
+                let slice = decoder.read_slice(4)?;
+                let id = u32::from_le_bytes(slice.try_into().unwrap());
+                Ok(Self::Named(id))
+            }
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
 }
 
 impl DynamicPackageAddress {
@@ -218,10 +331,67 @@ impl TryFrom<ManifestAddress> for DynamicPackageAddress {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DynamicComponentAddress {
     Static(ComponentAddress),
     Named(u32),
+}
+
+impl Categorize<ManifestCustomValueKind> for DynamicComponentAddress {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Custom(ManifestCustomValueKind::Address)
+    }
+}
+
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
+    for DynamicComponentAddress
+{
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        match self {
+            Self::Static(address) => {
+                encoder.write_discriminator(0)?;
+                encoder.write_slice(address.as_node_id().as_bytes())?;
+            }
+            Self::Named(address_id) => {
+                encoder.write_discriminator(1)?;
+                encoder.write_slice(&address_id.to_le_bytes())?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
+    for DynamicComponentAddress
+{
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ManifestCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        match decoder.read_discriminator()? {
+            0 => {
+                let slice = decoder.read_slice(NodeId::LENGTH)?;
+                Ok(Self::Static(
+                    ComponentAddress::try_from(slice)
+                        .map_err(|_| DecodeError::InvalidCustomValue)?,
+                ))
+            }
+            1 => {
+                let slice = decoder.read_slice(4)?;
+                let id = u32::from_le_bytes(slice.try_into().unwrap());
+                Ok(Self::Named(id))
+            }
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
 }
 
 impl From<ComponentAddress> for DynamicComponentAddress {
@@ -257,10 +427,67 @@ impl TryFrom<ManifestAddress> for DynamicComponentAddress {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DynamicResourceAddress {
     Static(ResourceAddress),
     Named(u32),
+}
+
+impl Categorize<ManifestCustomValueKind> for DynamicResourceAddress {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Custom(ManifestCustomValueKind::Address)
+    }
+}
+
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
+    for DynamicResourceAddress
+{
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        match self {
+            Self::Static(address) => {
+                encoder.write_discriminator(0)?;
+                encoder.write_slice(address.as_node_id().as_bytes())?;
+            }
+            Self::Named(address_id) => {
+                encoder.write_discriminator(1)?;
+                encoder.write_slice(&address_id.to_le_bytes())?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
+    for DynamicResourceAddress
+{
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ManifestCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        match decoder.read_discriminator()? {
+            0 => {
+                let slice = decoder.read_slice(NodeId::LENGTH)?;
+                Ok(Self::Static(
+                    ResourceAddress::try_from(slice)
+                        .map_err(|_| DecodeError::InvalidCustomValue)?,
+                ))
+            }
+            1 => {
+                let slice = decoder.read_slice(4)?;
+                let id = u32::from_le_bytes(slice.try_into().unwrap());
+                Ok(Self::Named(id))
+            }
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
 }
 
 impl From<ResourceAddress> for DynamicResourceAddress {
