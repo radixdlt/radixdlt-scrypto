@@ -571,7 +571,12 @@ fn test_pass_static_global_addresses() {
             package_address,
             "ManifestGlobalAddresses",
             "accept_global_addresses",
-            manifest_args!(FAUCET_COMPONENT, RESOURCE_PACKAGE, CONSENSUS_MANAGER, XRD),
+            manifest_args!(
+                DynamicGlobalAddress::Static(FAUCET_COMPONENT.into()),
+                DynamicPackageAddress::Static(RESOURCE_PACKAGE),
+                DynamicComponentAddress::Static(CONSENSUS_MANAGER),
+                DynamicResourceAddress::Static(XRD)
+            ),
         )
         .build();
     let receipt = test_runner.execute_manifest(
