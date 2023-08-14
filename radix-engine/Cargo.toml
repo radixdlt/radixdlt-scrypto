@@ -44,6 +44,15 @@ lazy_static = { version = "1.4.0" }
 
 [dev-dependencies]
 wabt = { version = "0.10.0" }
+criterion = { version = "0.3", features = ["html_reports"] }
+wasm-benchmarks-lib = { path = "./wasm-benchmarks-lib", default-features = false }
+
+wasmer = { version = "2.2.1"}
+wasmer-compiler-singlepass = { version = "2.2.1" }
+
+[[bench]]
+name = "wasm_benchmarks"
+harness = false
 
 [features]
 # You should enable either `std` or `alloc`
@@ -72,6 +81,8 @@ radix_engine_fuzzing = []
 # This flag enables code parts used only for testing. Using "test" config option is not enough in cases,
 # when external crate is used for tests (eg. radix-engine-tests)
 radix_engine_tests = []
+
+full_wasm_benchmarks = []
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

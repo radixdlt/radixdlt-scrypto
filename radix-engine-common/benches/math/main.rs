@@ -1,10 +1,12 @@
 use criterion::{criterion_group, criterion_main};
 mod decimal;
+#[cfg(feature = "full_math_benches")]
 mod integer;
 mod macros;
 mod precise_decimal;
 
 use decimal::*;
+#[cfg(feature = "full_math_benches")]
 use integer::*;
 use precise_decimal::*;
 
@@ -30,6 +32,7 @@ criterion_group!(
     bench_precisedecimal_from_string,
     bench_precisedecimal_to_string,
 );
+#[cfg(feature = "full_math_benches")]
 criterion_group!(
     bench_bigint,
     bench_bigint_add,
@@ -41,6 +44,7 @@ criterion_group!(
     bench_bigint_from_string,
     bench_bigint_to_string,
 );
+#[cfg(feature = "full_math_benches")]
 criterion_group!(
     bench_rug,
     bench_integer_add,
@@ -52,6 +56,7 @@ criterion_group!(
     bench_integer_from_string,
     bench_integer_to_string,
 );
+#[cfg(feature = "full_math_benches")]
 criterion_group!(
     bench_bnumbint,
     bench_bnumbint256_add,
@@ -63,6 +68,7 @@ criterion_group!(
     bench_bnumbint256_from_string,
     bench_bnumbint256_to_string,
 );
+#[cfg(feature = "full_math_benches")]
 criterion_group!(
     bench_ethnumi256,
     bench_ethnumi256_add,
@@ -74,15 +80,18 @@ criterion_group!(
     bench_ethnumi256_from_string,
     bench_ethnumi256_to_string,
 );
+
+#[cfg(not(feature = "full_math_benches"))]
 criterion_main!(bench_decimal, bench_precise_decimal);
 
-// criterion_main!(
-//     bench_decimal,
-//     bench_precise_decimal,
-//     bench_i256,
-//     bench_i512,
-//     bench_bigint,
-//     bench_rug,
-//     bench_bnumbint,
-//     bench_ethnumi256
-// );
+#[cfg(feature = "full_math_benches")]
+criterion_main!(
+    bench_decimal,
+    bench_precise_decimal,
+    bench_i256,
+    bench_i512,
+    bench_bigint,
+    bench_rug,
+    bench_bnumbint,
+    bench_ethnumi256
+);
