@@ -431,7 +431,9 @@ impl AuthModule {
         let method_key = MethodKey::new(ident);
 
         if let ObjectModuleId::RoleAssignment = module_id {
-            return RoleAssignmentNativePackage::authorization(receiver, ident, args, api);
+            // Only global objects have role assignment modules
+            let global_address = GlobalAddress::new_or_panic(receiver.0);
+            return RoleAssignmentNativePackage::authorization(&global_address, ident, args, api);
         }
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
@@ -454,9 +456,7 @@ impl AuthModule {
 
                         GlobalAddress::new_or_panic(receiver.0)
                     }
-                    RoleSpecification::UseOuter => {
-                        receiver_object_info.get_outer_object()
-                    }
+                    RoleSpecification::UseOuter => receiver_object_info.get_outer_object(),
                 };
 
                 (role_assignment_of, static_roles.methods)

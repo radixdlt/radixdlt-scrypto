@@ -43,6 +43,7 @@ pub struct KVStoreValidationTarget {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TypeCheckError {
     InvalidNumberOfGenericArgs { expected: usize, actual: usize },
+    InvalidLocalTypeIndex(LocalTypeIndex),
     InvalidCollectionIndex(Box<BlueprintInfo>, CollectionIndex),
     BlueprintPayloadDoesNotExist(Box<BlueprintInfo>, BlueprintPayloadIdentifier),
     BlueprintPayloadValidationError(Box<BlueprintInfo>, BlueprintPayloadIdentifier, String),
@@ -73,13 +74,7 @@ where
         }
 
         for generic_substitution in generic_substitutions {
-            match generic_substitution {
-                GenericSubstitution::Local(type_id) => {
-                    let _schema = schemas
-                        .get(&type_id.0)
-                        .ok_or_else(|| TypeCheckError::MissingSchema)?;
-                }
-            }
+            Self::validate_generic_arg(schemas, generic_substitution)?;
         }
 
         Ok(())
@@ -92,19 +87,25 @@ where
         key: &GenericSubstitution,
         value: &GenericSubstitution,
     ) -> Result<(), TypeCheckError> {
-        match key {
-            GenericSubstitution::Local(type_id) => {
-                let _schema = schemas
-                    .get(&type_id.0)
-                    .ok_or_else(|| TypeCheckError::MissingSchema)?;
-            }
-        }
+        Self::validate_generic_arg(schemas, key)?;
+        Self::validate_generic_arg(schemas, value)?;
 
-        match value {
+        Ok(())
+    }
+
+    fn validate_generic_arg(
+        schemas: &IndexMap<Hash, ScryptoSchema>,
+        substitution: &GenericSubstitution,
+    ) -> Result<(), TypeCheckError> {
+        match substitution {
             GenericSubstitution::Local(type_id) => {
-                let _schema = schemas
+                let schema = schemas
                     .get(&type_id.0)
                     .ok_or_else(|| TypeCheckError::MissingSchema)?;
+
+                if schema.resolve_type_kind(type_id.1).is_none() {
+                    return Err(TypeCheckError::InvalidLocalTypeIndex(type_id.1));
+                }
             }
         }
 

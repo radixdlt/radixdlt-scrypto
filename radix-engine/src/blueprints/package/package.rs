@@ -131,8 +131,6 @@ fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
             return Err(PackageError::TooManySubstateSchemas);
         }
 
-        // FIXME: Also add validation for local_type_index in Instance and KVStore schema type references
-
         for field in &bp_init.state.fields {
             validate_package_schema_type_ref(bp_init, field.field)?;
         }
