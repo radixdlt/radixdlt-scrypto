@@ -196,40 +196,12 @@ impl FeeTable {
     #[inline]
     pub fn create_node_cost(&self, event: &CreateNodeEvent) -> u32 {
         match event {
-            CreateNodeEvent::Start(node_id, node_substates) => {
-                let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
-                    match entity_type {
-                        EntityType::GlobalAccessController => 9370,
-                        EntityType::GlobalAccount => 8504,
-                        EntityType::GlobalConsensusManager => 6527,
-                        EntityType::GlobalFungibleResourceManager => 6858,
-                        EntityType::GlobalGenericComponent => 6591,
-                        EntityType::GlobalIdentity => 8740,
-                        EntityType::GlobalMultiResourcePool => 8826,
-                        EntityType::GlobalNonFungibleResourceManager => 6589,
-                        EntityType::GlobalOneResourcePool => 8463,
-                        EntityType::GlobalPackage => 6367,
-                        EntityType::GlobalTransactionTracker => 6631,
-                        EntityType::GlobalTwoResourcePool => 8456,
-                        EntityType::GlobalValidator => 8225,
-                        EntityType::GlobalVirtualEd25519Account => 7262,
-                        EntityType::GlobalVirtualEd25519Identity => 0, // FIXME: cover that in tests
-                        EntityType::GlobalVirtualSecp256k1Account => 6538,
-                        EntityType::GlobalVirtualSecp256k1Identity => 9012,
-                        EntityType::InternalAccount => 5662,
-                        EntityType::InternalFungibleVault => 4661,
-                        EntityType::InternalGenericComponent => 6978,
-                        EntityType::InternalKeyValueStore => 1204,
-                        EntityType::InternalNonFungibleVault => 4532,
-                    }
-                } else {
-                    0
-                };
+            CreateNodeEvent::Start(_, node_substates) => {
+                let base_cost: u32 = 5000;
                 let total_substate_size = node_substates
                     .values()
                     .map(|x| x.values().map(|x| x.len()).sum::<usize>())
                     .sum::<usize>();
-
                 add(
                     base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
                     Self::data_processing_cost(total_substate_size),
@@ -272,35 +244,8 @@ impl FeeTable {
         match event {
             OpenSubstateEvent::Start { .. } => 0,
             OpenSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
-            OpenSubstateEvent::End { size, node_id, .. } => {
-                let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
-                    match entity_type {
-                        EntityType::GlobalAccessController => 9256,
-                        EntityType::GlobalAccount => 9146,
-                        EntityType::GlobalConsensusManager => 7034,
-                        EntityType::GlobalFungibleResourceManager => 7054,
-                        EntityType::GlobalGenericComponent => 8856,
-                        EntityType::GlobalIdentity => 9421,
-                        EntityType::GlobalMultiResourcePool => 9244,
-                        EntityType::GlobalNonFungibleResourceManager => 8906,
-                        EntityType::GlobalOneResourcePool => 9445,
-                        EntityType::GlobalPackage => 13410,
-                        EntityType::GlobalTransactionTracker => 6582,
-                        EntityType::GlobalTwoResourcePool => 9218,
-                        EntityType::GlobalValidator => 7306,
-                        EntityType::GlobalVirtualEd25519Account => 6953,
-                        EntityType::GlobalVirtualEd25519Identity => 0, // FIXME: cover that in tests
-                        EntityType::GlobalVirtualSecp256k1Account => 8884,
-                        EntityType::GlobalVirtualSecp256k1Identity => 9855,
-                        EntityType::InternalAccount => 6152,
-                        EntityType::InternalFungibleVault => 7202,
-                        EntityType::InternalGenericComponent => 6289,
-                        EntityType::InternalKeyValueStore => 17812,
-                        EntityType::InternalNonFungibleVault => 9545,
-                    }
-                } else {
-                    0
-                };
+            OpenSubstateEvent::End { size, .. } => {
+                let base_cost: u32 = 8000;
                 add(
                     base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
                     Self::data_processing_cost(*size),
