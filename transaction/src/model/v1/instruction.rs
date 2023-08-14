@@ -68,11 +68,11 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             Self::Static(address) => {
-                encoder.write_discriminator(0)?;
+                encoder.write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_STATIC)?;
                 encoder.write_slice(address.as_node_id().as_bytes())?;
             }
             Self::Named(address_id) => {
-                encoder.write_discriminator(1)?;
+                encoder.write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_NAMED)?;
                 encoder.write_slice(&address_id.to_le_bytes())?;
             }
         }
@@ -89,13 +89,13 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         match decoder.read_discriminator()? {
-            0 => {
+            MANIFEST_ADDRESS_DISCRIMINATOR_STATIC => {
                 let slice = decoder.read_slice(NodeId::LENGTH)?;
                 Ok(Self::Static(
                     GlobalAddress::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)?,
                 ))
             }
-            1 => {
+            MANIFEST_ADDRESS_DISCRIMINATOR_NAMED => {
                 let slice = decoder.read_slice(4)?;
                 let id = u32::from_le_bytes(slice.try_into().unwrap());
                 Ok(Self::Named(id))
@@ -258,13 +258,13 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         match decoder.read_discriminator()? {
-            0 => {
+            MANIFEST_ADDRESS_DISCRIMINATOR_STATIC => {
                 let slice = decoder.read_slice(NodeId::LENGTH)?;
                 Ok(Self::Static(
                     PackageAddress::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)?,
                 ))
             }
-            1 => {
+            MANIFEST_ADDRESS_DISCRIMINATOR_NAMED => {
                 let slice = decoder.read_slice(4)?;
                 let id = u32::from_le_bytes(slice.try_into().unwrap());
                 Ok(Self::Named(id))
@@ -356,11 +356,11 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             Self::Static(address) => {
-                encoder.write_discriminator(0)?;
+                encoder.write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_STATIC)?;
                 encoder.write_slice(address.as_node_id().as_bytes())?;
             }
             Self::Named(address_id) => {
-                encoder.write_discriminator(1)?;
+                encoder.write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_NAMED)?;
                 encoder.write_slice(&address_id.to_le_bytes())?;
             }
         }
@@ -377,14 +377,14 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         match decoder.read_discriminator()? {
-            0 => {
+            MANIFEST_ADDRESS_DISCRIMINATOR_STATIC => {
                 let slice = decoder.read_slice(NodeId::LENGTH)?;
                 Ok(Self::Static(
                     ComponentAddress::try_from(slice)
                         .map_err(|_| DecodeError::InvalidCustomValue)?,
                 ))
             }
-            1 => {
+            MANIFEST_ADDRESS_DISCRIMINATOR_NAMED => {
                 let slice = decoder.read_slice(4)?;
                 let id = u32::from_le_bytes(slice.try_into().unwrap());
                 Ok(Self::Named(id))
@@ -452,11 +452,11 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             Self::Static(address) => {
-                encoder.write_discriminator(0)?;
+                encoder.write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_STATIC)?;
                 encoder.write_slice(address.as_node_id().as_bytes())?;
             }
             Self::Named(address_id) => {
-                encoder.write_discriminator(1)?;
+                encoder.write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_NAMED)?;
                 encoder.write_slice(&address_id.to_le_bytes())?;
             }
         }
@@ -473,14 +473,14 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         match decoder.read_discriminator()? {
-            0 => {
+            MANIFEST_ADDRESS_DISCRIMINATOR_STATIC => {
                 let slice = decoder.read_slice(NodeId::LENGTH)?;
                 Ok(Self::Static(
                     ResourceAddress::try_from(slice)
                         .map_err(|_| DecodeError::InvalidCustomValue)?,
                 ))
             }
-            1 => {
+            MANIFEST_ADDRESS_DISCRIMINATOR_NAMED => {
                 let slice = decoder.read_slice(4)?;
                 let id = u32::from_le_bytes(slice.try_into().unwrap());
                 Ok(Self::Named(id))
