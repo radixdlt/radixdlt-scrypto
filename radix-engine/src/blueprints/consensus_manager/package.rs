@@ -415,6 +415,17 @@ impl ConsensusManagerNativePackage {
                 },
             );
             functions.insert(
+                VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ValidatorGetProtocolUpdateReadinessInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ValidatorGetProtocolUpdateReadinessOutput>()),
+                    export: VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT.to_string(),
+                },
+            );
+            functions.insert(
                 VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -535,6 +546,7 @@ impl ConsensusManagerNativePackage {
                             VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
                             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
                             VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS => [OWNER_ROLE];
+                            VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT => MethodAccessibility::OuterObjectOnly;
                             VALIDATOR_APPLY_EMISSION_IDENT => MethodAccessibility::OuterObjectOnly;
                             VALIDATOR_APPLY_REWARD_IDENT => MethodAccessibility::OuterObjectOnly;
                         }
@@ -743,6 +755,14 @@ impl ConsensusManagerNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::signal_protocol_update_readiness(input.vote, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT => {
+                let _input: ValidatorGetProtocolUpdateReadinessInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = ValidatorBlueprint::get_protocol_update_readiness(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => {

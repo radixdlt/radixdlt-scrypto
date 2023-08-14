@@ -4,6 +4,7 @@ use radix_engine::blueprints::consensus_manager::{
 use radix_engine::blueprints::resource::BucketError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
+use radix_engine::transaction::CostingParameters;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -2820,10 +2821,11 @@ fn test_tips_and_fee_distribution_two_validators() {
     let validator2_key = Secp256k1PrivateKey::from_u64(6u64).unwrap().public_key();
     let staker_key = Secp256k1PrivateKey::from_u64(7u64).unwrap().public_key();
     let staker_account = ComponentAddress::virtual_account_from_public_key(&staker_key);
-    let genesis = CustomGenesis::two_validators_and_single_staker(
-        validator1_key,
-        validator2_key,
-        (initial_stake_amount1, initial_stake_amount2),
+    let genesis = CustomGenesis::validators_and_single_staker(
+        vec![
+            (validator1_key, initial_stake_amount1),
+            (validator2_key, initial_stake_amount2),
+        ],
         staker_account,
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
@@ -2863,5 +2865,120 @@ fn test_tips_and_fee_distribution_two_validators() {
         events[1].amount,
         result1.fee_destination.to_validator_set * initial_stake_amount2
             / (initial_stake_amount1 + initial_stake_amount2)
+    );
+}
+
+#[test]
+fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
+    // Arrange
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
+    let rounds_per_epoch = 2;
+    let validators_keys: Vec<Secp256k1PublicKey> = (0..4)
+        .map(|n| {
+            Secp256k1PrivateKey::from_u64(2u64 + n)
+                .unwrap()
+                .public_key()
+        })
+        .collect();
+    let validators_owner_badge_holders: Vec<ComponentAddress> = validators_keys
+        .iter()
+        .map(|key| {
+            // Validator owner defaults to a virtual account
+            // corresponding to its public key
+            ComponentAddress::virtual_account_from_public_key(key)
+        })
+        .collect();
+    let staker_key = Secp256k1PrivateKey::from_u64(10u64).unwrap().public_key();
+    let genesis = CustomGenesis::validators_and_single_staker(
+        vec![
+            (validators_keys[0], dec!("10")),
+            (validators_keys[1], dec!("10")),
+            (validators_keys[2], dec!("10")),
+            (validators_keys[3], dec!("3")), // 3/33 == just below 10% stake
+        ],
+        ComponentAddress::virtual_account_from_public_key(&staker_key),
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_total_emission_xrd_per_epoch(Decimal::zero())
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            }),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .without_trace()
+        .build();
+
+    let validators_addresses: Vec<ComponentAddress> = validators_keys
+        .iter()
+        .map(|key| test_runner.get_active_validator_with_key(key))
+        .collect();
+
+    let manifest = ManifestBuilder::new()
+        // Validators 0 and 1 (10 units of stake each) signal the readiness for protocol update "a...aa"
+        .create_proof_from_account_of_non_fungibles(
+            validators_owner_badge_holders[0],
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validators_addresses[0].as_node_id().0).unwrap()),
+        )
+        .signal_protocol_update_readiness(validators_addresses[0], "a".repeat(32).as_str())
+        .create_proof_from_account_of_non_fungibles(
+            validators_owner_badge_holders[1],
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validators_addresses[1].as_node_id().0).unwrap()),
+        )
+        .signal_protocol_update_readiness(validators_addresses[1], "a".repeat(32).as_str())
+        // Validator 2 (10 units of stake) signals the readiness for protocol update "b..bb"
+        .create_proof_from_account_of_non_fungibles(
+            validators_owner_badge_holders[2],
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validators_addresses[2].as_node_id().0).unwrap()),
+        )
+        .signal_protocol_update_readiness(validators_addresses[2], "b".repeat(32).as_str())
+        // Validator 3 (3 units of stake) signals the readiness for protocol update "c..cc"
+        .create_proof_from_account_of_non_fungibles(
+            validators_owner_badge_holders[3],
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validators_addresses[3].as_node_id().0).unwrap()),
+        )
+        .signal_protocol_update_readiness(validators_addresses[3], "c".repeat(32).as_str())
+        .build();
+
+    // Disable fees for easier stake calculation
+    let mut costing_params = CostingParameters::default();
+    costing_params.execution_cost_unit_price = Decimal::zero();
+    costing_params.finalization_cost_unit_price = Decimal::zero();
+    costing_params.storage_price = Decimal::zero();
+
+    let receipt = test_runner.execute_manifest_with_costing_params(
+        manifest,
+        validators_keys
+            .iter()
+            .map(|key| NonFungibleGlobalId::from_public_key(key)),
+        costing_params,
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
+    assert_eq!(next_epoch.epoch, initial_epoch.next());
+    let significant_readiness = next_epoch.significant_protocol_update_readiness;
+    // Expecting just two entries (readiness signal for protocol update c..cc is below the
+    // threshold).
+    assert_eq!(significant_readiness.len(), 2);
+    assert_eq!(
+        significant_readiness["a".repeat(32).as_str()],
+        Decimal::from(20)
+    );
+    assert_eq!(
+        significant_readiness["b".repeat(32).as_str()],
+        Decimal::from(10)
     );
 }
