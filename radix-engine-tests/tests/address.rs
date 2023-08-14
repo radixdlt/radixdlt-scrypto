@@ -1,6 +1,8 @@
-use radix_engine::errors::{RuntimeError, SystemError};
+use radix_engine::errors::{KernelError, RuntimeError, SystemError};
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
+use radix_engine_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -492,4 +494,65 @@ fn errors_if_assigns_same_address_to_two_components() {
         vec![],
     );
     receipt.expect_commit_failure();
+}
+
+#[test]
+fn test_pass_global_addresses() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, _) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .allocate_global_address(
+            ACCOUNT_PACKAGE,
+            ACCOUNT_BLUEPRINT,
+            "account_address_reservation",
+            "account_address",
+        )
+        .allocate_global_address(
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            "package_address_reservation",
+            "package_address",
+        )
+        .allocate_global_address(
+            package_address,
+            "Garbage",
+            "component_address_reservation",
+            "component_address",
+        )
+        .allocate_global_address(
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            "resource_address_reservation",
+            "resource_address",
+        )
+        .call_function_with_name_lookup(
+            package_address,
+            "ManifestGlobalAddresses",
+            "accept_global_addresses",
+            |lookup| {
+                (
+                    lookup.named_address("account_address"),
+                    lookup.named_address("package_address"),
+                    lookup.named_address("component_address"),
+                    lookup.named_address("resource_address"),
+                )
+            },
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        // 4 address reservations are left
+        RuntimeError::KernelError(KernelError::OrphanedNodes(nodes)) if nodes.len() == 4 => true,
+        _ => false,
+    })
 }
