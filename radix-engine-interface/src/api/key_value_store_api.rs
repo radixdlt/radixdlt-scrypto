@@ -14,11 +14,11 @@ pub struct KeyValueStoreGenericArgs {
     pub additional_schema: Option<ScryptoSchema>,
     pub key_type: GenericSubstitution,
     pub value_type: GenericSubstitution,
-    pub can_own: bool,
+    pub allow_ownership: bool,
 }
 
 impl KeyValueStoreGenericArgs {
-    pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
+    pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(allow_ownership: bool) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
         let value_type_index = aggregator.add_child_type_and_descendents::<V>();
@@ -28,12 +28,12 @@ impl KeyValueStoreGenericArgs {
             additional_schema: Some(schema),
             key_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, key_type_index)),
             value_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, value_type_index)),
-            can_own,
+            allow_ownership,
         }
     }
 
     pub fn new_with_self_package<K: ScryptoDescribe, V: ScryptoDescribe>(
-        can_own: bool,
+        allow_ownership: bool,
         package_address: PackageAddress,
     ) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -46,7 +46,7 @@ impl KeyValueStoreGenericArgs {
             additional_schema: Some(schema),
             key_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, key_type_index)),
             value_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, value_type_index)),
-            can_own,
+            allow_ownership,
         }
     }
 }

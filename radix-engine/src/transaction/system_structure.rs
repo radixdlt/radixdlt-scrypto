@@ -208,7 +208,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
             }
             SystemPartitionDescription::Schema => SubstateSystemStructure::SystemSchema,
             SystemPartitionDescription::Module(module_id, partition_offset) => {
-                let (blueprint_id, type_substitution_refs) = if let ObjectModuleId::Main = module_id
+                let (blueprint_id, generic_substitutions) = if let ObjectModuleId::Main = module_id
                 {
                     let main_type_info =
                         self.system_reader
@@ -219,14 +219,15 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     match main_type_info {
                         TypeInfoSubstate::Object(info) => (
                             info.blueprint_info.blueprint_id,
-                            info.blueprint_info.type_substitutions_refs,
+                            info.blueprint_info.generic_substitutions,
                         ),
                         TypeInfoSubstate::KeyValueStore(info) => {
-                            let key_type_id = match info.type_substitutions.key_type_substitution {
-                                GenericSubstitution::Local(type_id) => type_id,
-                            };
+                            let key_type_id =
+                                match info.generic_substitutions.key_generic_substitutions {
+                                    GenericSubstitution::Local(type_id) => type_id,
+                                };
                             let value_type_id =
-                                match info.type_substitutions.value_type_substitution {
+                                match info.generic_substitutions.value_generic_substitutions {
                                     GenericSubstitution::Local(type_id) => type_id,
                                 };
                             return SubstateSystemStructure::KeyValueStoreEntry(
@@ -255,7 +256,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                 let resolver = ObjectSubstateTypeReferenceResolver::new(
                     &node_id,
                     &blueprint_id,
-                    &type_substitution_refs,
+                    &generic_substitutions,
                 );
                 self.resolve_object_substate_structure(
                     &resolver,
@@ -325,7 +326,9 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                         }
                     }
                 }
-                PartitionDescription::Physical(..) => {}
+                PartitionDescription::Physical(..) => {
+                    // Anything physically mapped should have been resolved earlier in the process
+                }
             }
         }
 
@@ -336,19 +339,19 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
 pub struct ObjectSubstateTypeReferenceResolver<'a> {
     node_id: &'a NodeId,
     blueprint_id: &'a BlueprintId,
-    type_substitution_refs: &'a Vec<GenericSubstitution>,
+    generic_substitutions: &'a Vec<GenericSubstitution>,
 }
 
 impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
     pub fn new(
         node_id: &'a NodeId,
         blueprint_id: &'a BlueprintId,
-        type_substitution_refs: &'a Vec<GenericSubstitution>,
+        generic_substitutions: &'a Vec<GenericSubstitution>,
     ) -> Self {
         Self {
             node_id,
             blueprint_id,
-            type_substitution_refs,
+            generic_substitutions,
         }
     }
 
@@ -363,7 +366,7 @@ impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
             }
             BlueprintPayloadDef::Generic(instance_type_index) => {
                 let type_substition_ref = *self
-                    .type_substitution_refs
+                    .generic_substitutions
                     .get(instance_type_index as usize)
                     .expect("Instance type index not valid");
                 match type_substition_ref {
@@ -429,7 +432,7 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
 
             let type_pointer = blueprint_definition
                 .interface
-                .get_event_type_pointer(event_type_identifier.1.as_str())
+                .get_event_payload_def(event_type_identifier.1.as_str())
                 .unwrap();
 
             let BlueprintPayloadDef::Static(type_identifier) = type_pointer else {

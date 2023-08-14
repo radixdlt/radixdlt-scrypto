@@ -8,7 +8,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::schema::KeyValueStoreTypeSubstitutions;
+use radix_engine_interface::schema::KeyValueStoreGenericSubstitutions;
 use sbor::rust::vec::Vec;
 
 /// Metadata for schema validation to help with location of certain schemas
@@ -36,7 +36,7 @@ pub struct BlueprintTypeTarget {
 /// required to perform validation
 #[derive(Debug, Clone)]
 pub struct KVStoreValidationTarget {
-    pub kv_store_type: KeyValueStoreTypeSubstitutions,
+    pub kv_store_type: KeyValueStoreGenericSubstitutions,
     pub meta: NodeId,
 }
 
@@ -61,19 +61,19 @@ where
         &mut self,
         blueprint_interface: &BlueprintInterface,
         schemas: &IndexMap<Hash, ScryptoSchema>,
-        type_substitution_refs: &Vec<GenericSubstitution>,
+        generic_substitutions: &Vec<GenericSubstitution>,
     ) -> Result<(), TypeCheckError> {
         let generics = &blueprint_interface.generics;
 
-        if !generics.len().eq(&type_substitution_refs.len()) {
+        if !generics.len().eq(&generic_substitutions.len()) {
             return Err(TypeCheckError::InvalidNumberOfGenericArgs {
                 expected: generics.len(),
-                actual: type_substitution_refs.len(),
+                actual: generic_substitutions.len(),
             });
         }
 
-        for type_substitution_ref in type_substitution_refs {
-            match type_substitution_ref {
+        for generic_substitution in generic_substitutions {
+            match generic_substitution {
                 GenericSubstitution::Local(type_id) => {
                     let _schema = schemas
                         .get(&type_id.0)
@@ -150,9 +150,9 @@ where
                 )
             }
             BlueprintPayloadDef::Generic(instance_index) => {
-                let type_substitution_ref = target
+                let generic_substitution = target
                     .blueprint_info
-                    .type_substitutions_refs
+                    .generic_substitutions
                     .get(instance_index as usize)
                     .ok_or_else(|| {
                         RuntimeError::SystemError(SystemError::TypeCheckError(
@@ -160,7 +160,7 @@ where
                         ))
                     })?;
 
-                match type_substitution_ref {
+                match generic_substitution {
                     GenericSubstitution::Local(type_id) => {
                         let schema = match &target.meta {
                             SchemaValidationMeta::ExistingObject { additional_schemas } => {
@@ -261,13 +261,13 @@ where
         payload: &[u8],
     ) -> Result<(), RuntimeError> {
         let type_substition_ref = match payload_identifier {
-            KeyOrValue::Key => target.kv_store_type.key_type_substitution,
-            KeyOrValue::Value => target.kv_store_type.value_type_substitution,
+            KeyOrValue::Key => target.kv_store_type.key_generic_substitutions,
+            KeyOrValue::Value => target.kv_store_type.value_generic_substitutions,
         };
 
         let allow_ownership = match payload_identifier {
             KeyOrValue::Key => false,
-            KeyOrValue::Value => target.kv_store_type.can_own,
+            KeyOrValue::Value => target.kv_store_type.allow_ownership,
         };
 
         match type_substition_ref {

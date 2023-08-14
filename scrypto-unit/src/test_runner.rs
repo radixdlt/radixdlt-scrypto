@@ -1934,7 +1934,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .unwrap();
         let schema_pointer = definition
             .interface
-            .get_event_type_pointer(name.as_str())
+            .get_event_payload_def(name.as_str())
             .unwrap();
 
         match schema_pointer {

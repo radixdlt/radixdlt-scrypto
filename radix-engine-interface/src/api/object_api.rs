@@ -101,7 +101,7 @@ impl FieldValue {
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct GenericArgs {
     pub additional_schema: Option<ScryptoSchema>,
-    pub type_substitution_refs: Vec<GenericSubstitution>,
+    pub generic_substitutions: Vec<GenericSubstitution>,
 }
 
 pub struct KVEntry {

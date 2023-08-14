@@ -104,7 +104,7 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             println!("Checking blueprint {:?}", key.blueprint);
             if let Some(fields) = definition.interface.state.fields {
                 for (i, f) in fields.1.iter().enumerate() {
-                    let result = check_type_pointer(&schemas_by_hash, &f.field);
+                    let result = check_payload_def(&schemas_by_hash, &f.field);
                     if result.is_not_safe() {
                         println!("Field {:?} is {:?}", i, result);
                     }
@@ -114,7 +114,7 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             for (partition, collection_schema) in collections {
                 match collection_schema {
                     BlueprintCollectionSchema::KeyValueStore(kv) => {
-                        let result = check_type_pointers(&schemas_by_hash, &[kv.key, kv.value]);
+                        let result = check_payload_defs(&schemas_by_hash, &[kv.key, kv.value]);
                         if result.is_not_safe() {
                             println!("Partition {:?} is {:?}", partition, result);
                         }
@@ -129,14 +129,14 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             }
             let functions = definition.interface.functions;
             for (name, func) in functions {
-                let result = check_type_pointers(&schemas_by_hash, &[func.input, func.output]);
+                let result = check_payload_defs(&schemas_by_hash, &[func.input, func.output]);
                 if result.is_not_safe() {
                     println!("Function {:?} is {:?}", name, result);
                 }
             }
             let events = definition.interface.events;
             for (name, ty) in events {
-                let result = check_type_pointer(&schemas_by_hash, &ty);
+                let result = check_payload_def(&schemas_by_hash, &ty);
                 if result.is_not_safe() {
                     println!("Event {:?} is {:?}", name, result);
                 }
@@ -145,12 +145,12 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
     }
 }
 
-fn check_type_pointers(
+fn check_payload_defs(
     schemas_by_hash: &IndexMap<Hash, ScryptoSchema>,
     type_pointers: &[BlueprintPayloadDef],
 ) -> CheckResult {
     for ty in type_pointers {
-        let result = check_type_pointer(schemas_by_hash, ty);
+        let result = check_payload_def(schemas_by_hash, ty);
         if result.is_not_safe() {
             return result;
         }
@@ -158,7 +158,7 @@ fn check_type_pointers(
     return CheckResult::Safe;
 }
 
-fn check_type_pointer(
+fn check_payload_def(
     schemas_by_hash: &IndexMap<Hash, ScryptoSchema>,
     type_pointer: &BlueprintPayloadDef,
 ) -> CheckResult {

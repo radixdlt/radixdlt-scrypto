@@ -117,7 +117,7 @@ impl CallMethod {
             }
             BlueprintPayloadDef::Generic(generic_index) => {
                 let type_subst_ref = bp_info
-                    .type_substitutions_refs
+                    .generic_substitutions
                     .get(generic_index as usize)
                     .ok_or_else(|| Error::InstanceSchemaNot(component_address, generic_index))?;
 

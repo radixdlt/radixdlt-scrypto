@@ -35,7 +35,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{Condition, KeyValueStoreTypeSubstitutions};
+use radix_engine_interface::schema::{Condition, KeyValueStoreGenericSubstitutions};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -169,7 +169,7 @@ where
         RuntimeError,
     > {
         // Validate generic arguments
-        let (type_substitutions, additional_schemas) = {
+        let (generic_substitutions, additional_schemas) = {
             let mut additional_schemas = index_map_new();
 
             if let Some(schema) = generic_args.additional_schema {
@@ -182,18 +182,18 @@ where
             self.validate_bp_generic_args(
                 blueprint_interface,
                 &additional_schemas,
-                &generic_args.type_substitution_refs,
+                &generic_args.generic_substitutions,
             )
             .map_err(|e| RuntimeError::SystemError(SystemError::TypeCheckError(e)))?;
 
-            (generic_args.type_substitution_refs, additional_schemas)
+            (generic_args.generic_substitutions, additional_schemas)
         };
 
         let blueprint_info = BlueprintInfo {
             outer_obj_info,
             features: features.clone(),
             blueprint_id: blueprint_id.clone(),
-            type_substitutions_refs: type_substitutions.clone(),
+            generic_substitutions: generic_substitutions.clone(),
         };
 
         let validation_target = BlueprintTypeTarget {
@@ -654,7 +654,7 @@ where
                 blueprint_id: module_id.static_blueprint().unwrap(),
                 outer_obj_info: OuterObjectInfo::None,
                 features: BTreeSet::default(),
-                type_substitutions_refs: vec![],
+                generic_substitutions: vec![],
             },
         };
 
@@ -670,7 +670,7 @@ where
                     blueprint_id: actor.blueprint_id.clone(),
                     outer_obj_info: OuterObjectInfo::None,
                     features: btreeset!(),
-                    type_substitutions_refs: vec![],
+                    generic_substitutions: vec![],
                 },
                 meta: SchemaValidationMeta::Blueprint,
             }),
@@ -679,7 +679,7 @@ where
                     blueprint_id: actor.blueprint_id.clone(),
                     outer_obj_info: OuterObjectInfo::None,
                     features: btreeset!(),
-                    type_substitutions_refs: vec![],
+                    generic_substitutions: vec![],
                 },
                 meta: SchemaValidationMeta::Blueprint,
             }),
@@ -1598,10 +1598,10 @@ where
             })
             .collect();
 
-        let type_substitutions = KeyValueStoreTypeSubstitutions {
-            key_type_substitution: generic_args.key_type,
-            value_type_substitution: generic_args.value_type,
-            can_own: generic_args.can_own,
+        let generic_substitutions = KeyValueStoreGenericSubstitutions {
+            key_generic_substitutions: generic_args.key_type,
+            value_generic_substitutions: generic_args.value_type,
+            allow_ownership: generic_args.allow_ownership,
         };
 
         let node_id = self
@@ -1614,7 +1614,7 @@ where
                 MAIN_BASE_PARTITION => btreemap!(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::KeyValueStore(KeyValueStoreInfo {
-                        type_substitutions,
+                        generic_substitutions,
                     })
                 ),
                 SCHEMAS_PARTITION => schema_partition,
@@ -1643,7 +1643,7 @@ where
         };
 
         let target = KVStoreValidationTarget {
-            kv_store_type: info.type_substitutions,
+            kv_store_type: info.generic_substitutions,
             meta: *node_id,
         };
 
