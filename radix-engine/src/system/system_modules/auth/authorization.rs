@@ -316,18 +316,15 @@ impl Authorization {
         L: Default,
     >(
         auth_zone: &NodeId,
-        role_assignment_of: &NodeId,
+        role_assignment_of: &GlobalAddress,
         key: &ModuleRoleKey,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         let access_rule = if key.key.key.eq(SELF_ROLE) {
-            // FIXME: Prevent panics of node id, this may be triggered by vaults and auth zone
-            rule!(require(global_caller(GlobalAddress::new_or_panic(
-                role_assignment_of.0
-            ))))
+            rule!(require(global_caller(role_assignment_of.clone())))
         } else {
             let handle = api.kernel_open_substate_with_default(
-                role_assignment_of,
+                role_assignment_of.as_node_id(),
                 ROLE_ASSIGNMENT_BASE_PARTITION
                     .at_offset(ROLE_ASSIGNMENT_ROLE_DEF_PARTITION_OFFSET)
                     .unwrap(),
@@ -347,7 +344,7 @@ impl Authorization {
                 Some(access_rule) => access_rule,
                 None => {
                     let handle = api.kernel_open_substate(
-                        role_assignment_of,
+                        role_assignment_of.as_node_id(),
                         ROLE_ASSIGNMENT_BASE_PARTITION
                             .at_offset(ROLE_ASSIGNMENT_FIELDS_PARTITION_OFFSET)
                             .unwrap(),
@@ -396,7 +393,7 @@ impl Authorization {
         L: Default,
     >(
         auth_zone: &NodeId,
-        role_assignment_of: &NodeId,
+        role_assignment_of: &GlobalAddress,
         module: ObjectModuleId,
         role_list: &RoleList,
         api: &mut Y,
