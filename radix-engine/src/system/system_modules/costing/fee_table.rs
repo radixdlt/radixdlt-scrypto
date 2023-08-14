@@ -48,7 +48,7 @@ lazy_static! {
         costs
             .entry(PACKAGE_PACKAGE)
             .or_default()
-            // FIXME: publish_wasm_advanced is too expensinve, dividing by 3 to let large package (1MiB) to be published
+            // TODO: publish_wasm_advanced is too expensinve, dividing by 3 to let large package (1MiB) to be published
             .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (3273 / 3, 10224507));
     costs
     };
@@ -64,7 +64,6 @@ lazy_static! {
 /// - Baseline: 1 microsecond = 100 cost units
 /// - Non-time based costing will make the actual execution time less than anticipated
 ///
-/// FIXME: fee table is actively adjusted at this point of time!
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct FeeTable;
 

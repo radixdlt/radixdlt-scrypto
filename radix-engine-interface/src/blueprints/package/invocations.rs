@@ -319,7 +319,7 @@ impl PackageDefinition {
                             BlueprintKeyValueSchema {
                                 key: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
                                 value: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
-                                can_own: true,
+                                allow_ownership: true,
                             },
                         )],
                         ..Default::default()

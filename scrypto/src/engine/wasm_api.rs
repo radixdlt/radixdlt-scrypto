@@ -79,11 +79,6 @@ extern "C" {
 
     pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
-    pub fn kv_store_get_info(
-        key_value_store_id_ptr: *const u8,
-        key_value_store_id_len: usize,
-    ) -> Buffer;
-
     pub fn kv_store_open_entry(
         key_value_store_id_ptr: *const u8,
         key_value_store_id_len: usize,
@@ -277,14 +272,6 @@ pub unsafe fn get_reservation_address(_node_id_ptr: *const u8, _node_id_len: usi
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn kv_store_new(_schema_ptr: *const u8, _schema_len: usize) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_store_get_info(
-    _key_value_store_id_ptr: *const u8,
-    _key_value_store_id_len: usize,
-) -> Buffer {
     unreachable!()
 }
 

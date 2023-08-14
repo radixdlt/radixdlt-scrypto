@@ -16,7 +16,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::hooks::OnDropInput;
 use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema, Generic,
+    BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema, GenericBound,
 };
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit,
@@ -431,7 +431,7 @@ impl ResourceNativePackage {
                         aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
                     ),
                     value: TypeRef::Generic(0u8),
-                    can_own: false,
+                    allow_ownership: false,
                 },
             ));
 
@@ -691,7 +691,7 @@ impl ResourceNativePackage {
                 ),
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
-                    generics: vec![Generic::Any],
+                    generics: vec![GenericBound::Any],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
@@ -1003,7 +1003,7 @@ impl ResourceNativePackage {
                     aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
                 ),
                 value: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
-                can_own: false,
+                allow_ownership: false,
             }));
 
             let mut functions = BTreeMap::new();

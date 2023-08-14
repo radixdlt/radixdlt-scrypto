@@ -2,7 +2,9 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
-use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
+use radix_engine_interface::api::key_value_store_api::{
+    ClientKeyValueStoreApi, KeyValueStoreGenericArgs,
+};
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
     own_key_value_store_type_data, OWN_KEY_VALUE_STORE_TYPE,
@@ -13,7 +15,6 @@ use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::*;
-use scrypto_schema::KeyValueStoreSchemaInit;
 
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::Runtime;
@@ -39,8 +40,10 @@ impl<
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
 
-        let mut store_schema = KeyValueStoreSchemaInit::new::<K, V>(true);
-        store_schema.replace_self_package_address(Runtime::package_address());
+        let store_schema = KeyValueStoreGenericArgs::new_with_self_package::<K, V>(
+            true,
+            Runtime::package_address(),
+        );
 
         Self {
             id: Own(env.key_value_store_new(store_schema).unwrap()),

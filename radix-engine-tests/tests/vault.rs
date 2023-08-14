@@ -5,13 +5,48 @@ use radix_engine::errors::{
 use radix_engine::kernel::call_frame::{
     CreateNodeError, ProcessSubstateError, SubstateDiffError, WriteSubstateError,
 };
+use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::blueprints::package::KeyOrValue;
 use radix_engine_interface::{metadata, metadata_init};
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::prelude::*;
+
+#[test]
+fn test_deposit_event_when_creating_vault_with_bucket() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, _) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ComponentWithVault",
+            "create_vault_with_bucket",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    println!("{:?}", receipt);
+
+    receipt
+        .expect_commit_ignore_outcome()
+        .application_events
+        .iter()
+        .map(|event| test_runner.event_name(&event.0))
+        .filter(|name| name.eq("DepositEvent"))
+        .next()
+        .expect("Missing deposit event");
+}
 
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {
@@ -35,7 +70,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
+            RuntimeError::SystemError(SystemError::TypeCheckError(..))
         )
     });
 }
@@ -67,7 +102,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
+            RuntimeError::SystemError(SystemError::TypeCheckError(..))
         )
     });
 }
@@ -94,7 +129,9 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::InvalidSubstateWrite(_))
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::KeyValueStorePayloadValidationError(KeyOrValue::Value, _)
+            ))
         )
     });
 }
@@ -126,7 +163,9 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::InvalidSubstateWrite(_))
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::KeyValueStorePayloadValidationError(KeyOrValue::Value, _)
+            ))
         )
     });
 }

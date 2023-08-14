@@ -5,16 +5,8 @@
 use crate::typed_substate_layout::*;
 use radix_engine::blueprints::account;
 use radix_engine::blueprints::native_schema::*;
-use radix_engine::blueprints::pool::multi_resource_pool::*;
-use radix_engine::blueprints::pool::one_resource_pool::*;
-use radix_engine::blueprints::pool::two_resource_pool::*;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::identity::*;
 
 /// Given an [`EventTypeIdentifier`] and the raw event data, this function attempts to convert the
 /// event data into a structured model provided that the event is registered to a native blueprint.
@@ -30,105 +22,92 @@ pub fn to_typed_native_event(
 fn resolve_typed_event_key_from_event_type_identifier(
     event_type_identifier: &EventTypeIdentifier,
 ) -> Result<TypedNativeEventKey, TypedNativeEventError> {
-    let TypePointer::Package(TypeIdentifier(_, local_type_index)) = event_type_identifier.1 else {
-        return Err(TypedNativeEventError::GenericTypePointer);
-    };
+    let event_name = &event_type_identifier.1;
 
     match &event_type_identifier.0 {
         /* Method or Function emitter on a known node module */
         Emitter::Method(_, ObjectModuleId::RoleAssignment) => {
-            TypedRoleAssignmentBlueprintEventKey::new(
-                &ROLE_ASSIGNMENT_PACKAGE_DEFINITION,
-                ROLE_ASSIGNMENT_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from)
+            TypedRoleAssignmentBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
         }
-        Emitter::Method(_, ObjectModuleId::Metadata) => TypedMetadataBlueprintEventKey::new(
-            &METADATA_PACKAGE_DEFINITION,
-            METADATA_BLUEPRINT,
-            &local_type_index,
-        )
-        .map(TypedNativeEventKey::from),
-        Emitter::Method(_, ObjectModuleId::Royalty) => TypedComponentRoyaltyBlueprintEventKey::new(
-            &ROYALTY_PACKAGE_DEFINITION,
-            COMPONENT_ROYALTY_BLUEPRINT,
-            &local_type_index,
-        )
-        .map(TypedNativeEventKey::from),
+        Emitter::Method(_, ObjectModuleId::Metadata) => {
+            TypedMetadataBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
+        }
+        Emitter::Method(_, ObjectModuleId::Royalty) => {
+            TypedComponentRoyaltyBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
+        }
 
         /* Functions on well-known packages */
         Emitter::Function(blueprint_id) => match blueprint_id.package_address {
             PACKAGE_PACKAGE => TypedPackagePackageEventKey::new(
                 &PACKAGE_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             RESOURCE_PACKAGE => TypedResourcePackageEventKey::new(
                 &RESOURCE_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             ACCOUNT_PACKAGE => TypedAccountPackageEventKey::new(
                 &ACCOUNT_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             IDENTITY_PACKAGE => TypedIdentityPackageEventKey::new(
                 &IDENTITY_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             CONSENSUS_MANAGER_PACKAGE => TypedConsensusManagerPackageEventKey::new(
                 &CONSENSUS_MANAGER_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             ACCESS_CONTROLLER_PACKAGE => TypedAccessControllerPackageEventKey::new(
                 &ACCESS_CONTROLLER_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             POOL_PACKAGE => TypedPoolPackageEventKey::new(
                 &POOL_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             TRANSACTION_PROCESSOR_PACKAGE => TypedTransactionProcessorPackageEventKey::new(
                 &TRANSACTION_PROCESSOR_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             METADATA_MODULE_PACKAGE => TypedMetadataPackageEventKey::new(
                 &METADATA_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             ROYALTY_MODULE_PACKAGE => TypedRoyaltyPackageEventKey::new(
                 &ROYALTY_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             ROLE_ASSIGNMENT_MODULE_PACKAGE => TypedRoleAssignmentPackageEventKey::new(
                 &ROLE_ASSIGNMENT_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             TRANSACTION_TRACKER_PACKAGE => TypedTransactionTrackerPackageEventKey::new(
                 &TRANSACTION_TRACKER_PACKAGE_DEFINITION,
                 &blueprint_id.blueprint_name,
-                &local_type_index,
+                &event_name,
             )
             .map(TypedNativeEventKey::from),
             _ => Err(TypedNativeEventError::NotANativeBlueprint(
@@ -138,99 +117,62 @@ fn resolve_typed_event_key_from_event_type_identifier(
 
         /* Methods on non-generic components */
         Emitter::Method(node_id, ObjectModuleId::Main) => match node_id.entity_type().unwrap() {
-            EntityType::GlobalPackage => TypedPackageBlueprintEventKey::new(
-                &PACKAGE_PACKAGE_DEFINITION,
-                &PACKAGE_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
-            EntityType::GlobalConsensusManager => TypedConsensusManagerBlueprintEventKey::new(
-                &CONSENSUS_MANAGER_PACKAGE_DEFINITION,
-                &CONSENSUS_MANAGER_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
-            EntityType::GlobalValidator => TypedValidatorBlueprintEventKey::new(
-                &CONSENSUS_MANAGER_PACKAGE_DEFINITION,
-                &VALIDATOR_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
-            EntityType::GlobalTransactionTracker => TypedTransactionTrackerBlueprintEventKey::new(
-                &TRANSACTION_TRACKER_PACKAGE_DEFINITION,
-                &TRANSACTION_TRACKER_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
+            EntityType::GlobalPackage => {
+                TypedPackageBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
+            }
+            EntityType::GlobalConsensusManager => {
+                TypedConsensusManagerBlueprintEventKey::new(&event_name)
+                    .map(TypedNativeEventKey::from)
+            }
+            EntityType::GlobalValidator => {
+                TypedValidatorBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
+            }
+            EntityType::GlobalTransactionTracker => {
+                TypedTransactionTrackerBlueprintEventKey::new(&event_name)
+                    .map(TypedNativeEventKey::from)
+            }
             EntityType::GlobalAccount
             | EntityType::InternalAccount
             | EntityType::GlobalVirtualSecp256k1Account
-            | EntityType::GlobalVirtualEd25519Account => TypedAccountBlueprintEventKey::new(
-                &ACCOUNT_PACKAGE_DEFINITION,
-                &ACCOUNT_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
+            | EntityType::GlobalVirtualEd25519Account => {
+                TypedAccountBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
+            }
             EntityType::GlobalIdentity
             | EntityType::GlobalVirtualSecp256k1Identity
-            | EntityType::GlobalVirtualEd25519Identity => TypedIdentityBlueprintEventKey::new(
-                &IDENTITY_PACKAGE_DEFINITION,
-                &IDENTITY_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
-            EntityType::GlobalAccessController => TypedAccessControllerBlueprintEventKey::new(
-                &ACCESS_CONTROLLER_PACKAGE_DEFINITION,
-                &ACCESS_CONTROLLER_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
-            EntityType::GlobalOneResourcePool => TypedOneResourcePoolBlueprintEventKey::new(
-                &POOL_PACKAGE_DEFINITION,
-                &ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
-            EntityType::GlobalTwoResourcePool => TypedTwoResourcePoolBlueprintEventKey::new(
-                &POOL_PACKAGE_DEFINITION,
-                &TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
-            EntityType::GlobalMultiResourcePool => TypedMultiResourcePoolBlueprintEventKey::new(
-                &POOL_PACKAGE_DEFINITION,
-                &MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
+            | EntityType::GlobalVirtualEd25519Identity => {
+                TypedIdentityBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
+            }
+            EntityType::GlobalAccessController => {
+                TypedAccessControllerBlueprintEventKey::new(&event_name)
+                    .map(TypedNativeEventKey::from)
+            }
+            EntityType::GlobalOneResourcePool => {
+                TypedOneResourcePoolBlueprintEventKey::new(&event_name)
+                    .map(TypedNativeEventKey::from)
+            }
+            EntityType::GlobalTwoResourcePool => {
+                TypedTwoResourcePoolBlueprintEventKey::new(&event_name)
+                    .map(TypedNativeEventKey::from)
+            }
+            EntityType::GlobalMultiResourcePool => {
+                TypedMultiResourcePoolBlueprintEventKey::new(&event_name)
+                    .map(TypedNativeEventKey::from)
+            }
             EntityType::GlobalFungibleResourceManager => {
-                TypedFungibleResourceManagerBlueprintEventKey::new(
-                    &RESOURCE_PACKAGE_DEFINITION,
-                    &FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from)
+                TypedFungibleResourceManagerBlueprintEventKey::new(&event_name)
+                    .map(TypedNativeEventKey::from)
             }
             EntityType::GlobalNonFungibleResourceManager => {
-                TypedNonFungibleResourceManagerBlueprintEventKey::new(
-                    &RESOURCE_PACKAGE_DEFINITION,
-                    &NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    &local_type_index,
-                )
-                .map(TypedNativeEventKey::from)
+                TypedNonFungibleResourceManagerBlueprintEventKey::new(&event_name)
+                    .map(TypedNativeEventKey::from)
             }
-            EntityType::InternalFungibleVault => TypedFungibleVaultBlueprintEventKey::new(
-                &RESOURCE_PACKAGE_DEFINITION,
-                &FUNGIBLE_VAULT_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
-            EntityType::InternalNonFungibleVault => TypedNonFungibleVaultBlueprintEventKey::new(
-                &RESOURCE_PACKAGE_DEFINITION,
-                &NON_FUNGIBLE_VAULT_BLUEPRINT,
-                &local_type_index,
-            )
-            .map(TypedNativeEventKey::from),
+            EntityType::InternalFungibleVault => {
+                TypedFungibleVaultBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
+            }
+            EntityType::InternalNonFungibleVault => {
+                TypedNonFungibleVaultBlueprintEventKey::new(&event_name)
+                    .map(TypedNativeEventKey::from)
+            }
             EntityType::GlobalGenericComponent
             | EntityType::InternalGenericComponent
             | EntityType::InternalKeyValueStore => Err(TypedNativeEventError::NotANativeBlueprint(
@@ -516,25 +458,8 @@ macro_rules! define_structure {
 
                     impl [< Typed $blueprint_ident BlueprintEventKey >] {
                         pub fn new(
-                            package_definition: &PackageDefinition,
-                            blueprint_ident: &str,
-                            local_type_index: &LocalTypeIndex,
+                            name: &String,
                         ) -> Result<Self, TypedNativeEventError> {
-                            let blueprint_schema = package_definition.blueprints.get(blueprint_ident).ok_or(
-                                TypedNativeEventError::BlueprintNotFound {
-                                    package_definition: package_definition.clone(),
-                                    blueprint_name: blueprint_ident.to_owned(),
-                                },
-                            )?;
-                            let name = blueprint_schema
-                                .schema
-                                .schema
-                                .resolve_type_name_from_metadata(*local_type_index)
-                                .ok_or(TypedNativeEventError::TypeHasNoName {
-                                    package_definition: package_definition.clone(),
-                                    blueprint_name: blueprint_ident.to_owned(),
-                                    local_type_index: local_type_index.clone(),
-                                })?;
                             Self::from_str(name)
                         }
 
@@ -561,12 +486,12 @@ macro_rules! define_structure {
                     pub fn new(
                         package_definition: &PackageDefinition,
                         blueprint_ident: &str,
-                        local_type_index: &LocalTypeIndex,
+                        event_name: &String,
                     ) -> Result<Self, TypedNativeEventError> {
                         match blueprint_ident {
                             $(
                                 stringify!($blueprint_ident) => Ok(Self::$blueprint_ident([< Typed $blueprint_ident BlueprintEventKey >]::new(
-                                    package_definition, blueprint_ident, local_type_index)?
+                                    event_name)?
                                 )),
                             )*
                             _ => Err(TypedNativeEventError::BlueprintNotFound {

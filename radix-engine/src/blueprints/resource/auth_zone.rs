@@ -101,7 +101,7 @@ impl AuthZoneBlueprint {
                                     outer_object: resource_address.into(),
                                 },
                                 features: btreeset!(),
-                                instance_schema: None,
+                                generic_substitutions: vec![],
                             }
                         })),
                     ),
@@ -125,7 +125,7 @@ impl AuthZoneBlueprint {
                                 outer_object: resource_address.into(),
                             },
                             features: btreeset!(),
-                            instance_schema: None,
+                            generic_substitutions: vec![],
                         }
                     }))),
                 )?;
@@ -173,7 +173,7 @@ impl AuthZoneBlueprint {
                             outer_object: resource_address.into(),
                         },
                         features: btreeset!(),
-                        instance_schema: None,
+                        generic_substitutions: vec![],
                     }
                 }))
             ),
@@ -223,7 +223,7 @@ impl AuthZoneBlueprint {
                             outer_object: resource_address.into(),
                         },
                         features: btreeset!(),
-                        instance_schema: None,
+                        generic_substitutions: vec![],
                     },
                 }))
             ),
@@ -307,7 +307,6 @@ impl AuthZoneBlueprint {
         let auth_result =
             Authorization::check_authorization_against_access_rule(api, &node_id, &access_rule)?;
 
-        // FIXME: Use app layer errors
         match auth_result {
             AuthorizationCheckResult::Authorized => Ok(()),
             AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(

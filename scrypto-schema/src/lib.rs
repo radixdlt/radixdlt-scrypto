@@ -10,54 +10,14 @@ use radix_engine_common::prelude::*;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct KeyValueStoreSchema {
-    pub schema: ScryptoSchema,
-    pub key: TypeIdentifier,
-    pub value: TypeIdentifier,
-    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
+pub struct KeyValueStoreGenericSubstitutions {
+    pub key_generic_substitutions: GenericSubstitution,
+    pub value_generic_substitutions: GenericSubstitution,
+    pub allow_ownership: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct KeyValueStoreSchemaInit {
-    pub schema: ScryptoSchema,
-    pub key: LocalTypeIndex,
-    pub value: LocalTypeIndex,
-    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
-}
-
-impl KeyValueStoreSchemaInit {
-    pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let key_type_index = aggregator.add_child_type_and_descendents::<K>();
-        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
-        let schema = generate_full_schema(aggregator);
-        Self {
-            schema,
-            key: key_type_index,
-            value: value_type_index,
-            can_own,
-        }
-    }
-
-    pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
-        replace_self_package_address(&mut self.schema, package_address);
-    }
-}
-
-impl From<KeyValueStoreSchemaInit> for KeyValueStoreSchema {
-    fn from(schema: KeyValueStoreSchemaInit) -> Self {
-        let schema_hash = schema.schema.generate_schema_hash();
-        KeyValueStoreSchema {
-            schema: schema.schema,
-            key: TypeIdentifier(schema_hash, schema.key),
-            value: TypeIdentifier(schema_hash, schema.value),
-            can_own: schema.can_own,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum Generic {
+pub enum GenericBound {
     Any,
 }
 
@@ -70,7 +30,7 @@ pub enum BlueprintHook {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchemaInit {
-    pub generics: Vec<Generic>,
+    pub generics: Vec<GenericBound>,
     pub schema: ScryptoSchema,
     pub state: BlueprintStateSchemaInit,
     pub events: BlueprintEventSchemaInit,
@@ -139,15 +99,16 @@ impl BlueprintSchemaInit {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum TypeRef<T> {
-    Static(T),   // Type is defined by blueprint
-    Generic(u8), // Type bounds is defined by blueprint, the type itself is defined by the instance
+    Static(T), // Fully Resolved type is defined in package
+    Generic(u8), // Fully Resolved type is mapped directly to a generic
+               // TODO: How to represent a structure containing a generic?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintKeyValueSchema<T> {
     pub key: T,
     pub value: T,
-    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
+    pub allow_ownership: bool,
 }
 
 impl<T> BlueprintKeyValueSchema<T> {
@@ -155,7 +116,7 @@ impl<T> BlueprintKeyValueSchema<T> {
         BlueprintKeyValueSchema {
             key: f(self.key),
             value: f(self.value),
-            can_own: self.can_own,
+            allow_ownership: self.allow_ownership,
         }
     }
 }
@@ -253,36 +214,4 @@ impl ReceiverInfo {
 pub enum Receiver {
     SelfRef,
     SelfRefMut,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InstanceSchemaInit {
-    pub schema: ScryptoSchema,
-    pub instance_type_lookup: Vec<LocalTypeIndex>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InstanceSchema {
-    pub schema: ScryptoSchema,
-    pub instance_type_lookup: Vec<TypeIdentifier>,
-}
-
-impl From<InstanceSchemaInit> for InstanceSchema {
-    fn from(
-        InstanceSchemaInit {
-            schema,
-            instance_type_lookup,
-        }: InstanceSchemaInit,
-    ) -> Self {
-        let schema_hash = schema.generate_schema_hash();
-        let instance_type_lookup = instance_type_lookup
-            .into_iter()
-            .map(|t| TypeIdentifier(schema_hash, t))
-            .collect();
-
-        Self {
-            schema,
-            instance_type_lookup,
-        }
-    }
 }

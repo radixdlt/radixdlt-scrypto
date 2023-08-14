@@ -12,9 +12,9 @@ use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::FieldSubstate;
+use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::track::TrackedSubstateValue;
 use crate::track::{TrackedNode, Write};
-use crate::transaction::SystemReader;
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
@@ -104,14 +104,14 @@ impl BalanceChange {
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
 pub struct BalanceAccounter<'a, S: SubstateDatabase> {
-    system_reader: SystemReader<'a, S>,
+    system_reader: SystemDatabaseReader<'a, S>,
     tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
 impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
-            system_reader: SystemReader::new(substate_db, tracked),
+            system_reader: SystemDatabaseReader::new_with_overlay(substate_db, tracked),
             tracked,
         }
     }

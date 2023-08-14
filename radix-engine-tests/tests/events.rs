@@ -4,18 +4,22 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::{account, resource::*};
-use radix_engine::errors::{
-    ApplicationError, PayloadValidationAgainstSchemaError, RuntimeError, SystemError,
-};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
+use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::blueprints::account::ResourcePreference;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntry};
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::consensus_manager::*;
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
+    CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
+};
+use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
@@ -96,8 +100,11 @@ fn scrypto_cant_emit_unregistered_event() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-            PayloadValidationAgainstSchemaError::EventDoesNotExist(event),
+        RuntimeError::SystemError(SystemError::TypeCheckError(
+            TypeCheckError::BlueprintPayloadDoesNotExist(
+                _,
+                BlueprintPayloadIdentifier::Event(event),
+            ),
         )) if event.eq("UnregisteredEvent") => true,
         _ => false,
     });

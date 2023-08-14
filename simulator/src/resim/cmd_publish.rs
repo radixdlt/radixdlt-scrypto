@@ -2,8 +2,8 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedStateSchema, PackageExport,
-    TypePointer, VmType, *,
+    BlueprintDefinition, BlueprintDependencies, BlueprintPayloadDef, FunctionSchema,
+    IndexedStateSchema, PackageExport, VmType, *,
 };
 use radix_engine_interface::blueprints::package::{PackageDefinition, PackageOriginalCodeSubstate};
 use radix_engine_interface::schema::TypeRef;
@@ -80,12 +80,8 @@ impl Publish {
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
                     .unwrap(),
             );
-            let schemas_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                &node_id,
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                    .unwrap(),
-            );
+            let schemas_partition_key =
+                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, SCHEMAS_PARTITION);
             let dependencies_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,
                 MAIN_BASE_PARTITION
@@ -164,16 +160,16 @@ impl Publish {
                         FunctionSchema {
                             receiver: setup.receiver,
                             input: match setup.input {
-                                TypeRef::Static(type_index) => {
-                                    TypePointer::Package(TypeIdentifier(schema_hash, type_index))
-                                }
-                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                                TypeRef::Static(type_index) => BlueprintPayloadDef::Static(
+                                    TypeIdentifier(schema_hash, type_index),
+                                ),
+                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                             },
                             output: match setup.output {
-                                TypeRef::Static(type_index) => {
-                                    TypePointer::Package(TypeIdentifier(schema_hash, type_index))
-                                }
-                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                                TypeRef::Static(type_index) => BlueprintPayloadDef::Static(
+                                    TypeIdentifier(schema_hash, type_index),
+                                ),
+                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                             },
                         },
                     );
@@ -194,13 +190,19 @@ impl Publish {
                             key,
                             match index {
                                 TypeRef::Static(index) => {
-                                    TypePointer::Package(TypeIdentifier(schema_hash, index))
+                                    BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, index))
                                 }
-                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                             },
                         )
                     })
                     .collect();
+
+                let state = IndexedStateSchema::from_schema(
+                    schema_hash,
+                    s.schema.state,
+                    Default::default(),
+                );
 
                 let def = BlueprintDefinition {
                     interface: BlueprintInterface {
@@ -210,7 +212,7 @@ impl Publish {
                         feature_set: s.feature_set,
                         functions,
                         events,
-                        state: IndexedStateSchema::from_schema(schema_hash, s.schema.state),
+                        state,
                     },
                     function_exports,
                     hook_exports: BTreeMap::new(),

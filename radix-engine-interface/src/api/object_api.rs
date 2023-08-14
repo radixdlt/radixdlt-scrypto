@@ -6,14 +6,13 @@ use crate::constants::{
 use crate::types::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode};
+use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode, ScryptoSchema};
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
-use scrypto_schema::InstanceSchemaInit;
 
 #[repr(u8)]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -99,6 +98,12 @@ impl FieldValue {
     }
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct GenericArgs {
+    pub additional_schema: Option<ScryptoSchema>,
+    pub generic_substitutions: Vec<GenericSubstitution>,
+}
+
 pub struct KVEntry {
     pub value: Option<Vec<u8>>,
     pub locked: bool,
@@ -112,7 +117,13 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         fields: Vec<FieldValue>,
     ) -> Result<NodeId, E> {
-        self.new_object(blueprint_ident, vec![], None, fields, btreemap![])
+        self.new_object(
+            blueprint_ident,
+            vec![],
+            GenericArgs::default(),
+            fields,
+            btreemap![],
+        )
     }
 
     /// Creates a new object of a given blueprint type
@@ -120,7 +131,7 @@ pub trait ClientObjectApi<E> {
         &mut self,
         blueprint_ident: &str,
         features: Vec<&str>,
-        schema: Option<InstanceSchemaInit>,
+        generic_args: GenericArgs,
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;

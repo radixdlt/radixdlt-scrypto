@@ -9,7 +9,6 @@ macro_rules! known_enum {
     };
 }
 
-// FIXME: we need a final sanity check before mainnet launch!
 lazy_static! {
     pub static ref KNOWN_ENUM_DISCRIMINATORS: NonIterMap<&'static str, u8> = {
         let mut m = NonIterMap::new();
