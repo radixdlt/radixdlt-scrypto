@@ -72,6 +72,14 @@ pub enum PackageError {
 
     InvalidAuthSetup,
     DefiningReservedRoleKey(String, RoleKey),
+    ExceededMaxRoles {
+        limit: usize,
+        actual: usize,
+    },
+    ExceededMaxRoleNameLen {
+        limit: usize,
+        actual: usize,
+    },
     MissingRole(RoleKey),
     UnexpectedNumberOfMethodAuth {
         blueprint: String,
@@ -324,16 +332,21 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
             &definition_init.auth_config.method_auth,
         ) {
             (_, MethodAuthTemplate::AllowAll) => {}
-            (blueprint_type, MethodAuthTemplate::StaticRoles(StaticRoles { roles, methods })) => {
+            (
+                blueprint_type,
+                MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition { roles, methods }),
+            ) => {
                 let role_specification = match (blueprint_type, roles) {
                     (_, RoleSpecification::Normal(roles)) => roles,
                     (BlueprintType::Inner { outer_blueprint }, RoleSpecification::UseOuter) => {
                         if let Some(blueprint) = definition.blueprints.get(outer_blueprint) {
                             match &blueprint.auth_config.method_auth {
-                                MethodAuthTemplate::StaticRoles(StaticRoles {
-                                    roles: RoleSpecification::Normal(roles),
-                                    ..
-                                }) => roles,
+                                MethodAuthTemplate::StaticRoleDefinition(
+                                    StaticRoleDefinition {
+                                        roles: RoleSpecification::Normal(roles),
+                                        ..
+                                    },
+                                ) => roles,
                                 _ => return Err(PackageError::InvalidAuthSetup),
                             }
                         } else {
@@ -358,8 +371,23 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                 };
 
                 if let RoleSpecification::Normal(roles) = roles {
+                    if roles.len() > MAX_ROLES {
+                        return Err(PackageError::ExceededMaxRoles {
+                            limit: MAX_ROLES,
+                            actual: roles.len(),
+                        });
+                    }
+
                     for (role_key, role_list) in roles {
                         check_list(role_list)?;
+
+                        if role_key.key.len() > MAX_ROLE_NAME_LEN {
+                            return Err(PackageError::ExceededMaxRoleNameLen {
+                                limit: MAX_ROLE_NAME_LEN,
+                                actual: role_key.key.len(),
+                            });
+                        }
+
                         if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
                             return Err(PackageError::DefiningReservedRoleKey(
                                 blueprint.to_string(),
@@ -450,7 +478,9 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
             }
         }
 
-        if let MethodAuthTemplate::StaticRoles(static_roles) = &bp_init.auth_config.method_auth {
+        if let MethodAuthTemplate::StaticRoleDefinition(static_roles) =
+            &bp_init.auth_config.method_auth
+        {
             if let RoleSpecification::Normal(list) = &static_roles.roles {
                 for (role_key, _) in list.iter() {
                     condition(&role_key.key)?;
@@ -1042,7 +1072,7 @@ impl PackageNativePackage {
                             PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                         )
                     ),
-                    method_auth: MethodAuthTemplate::StaticRoles(
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(
                         roles_template! {
                             roles {
                                 SECURIFY_OWNER_ROLE;

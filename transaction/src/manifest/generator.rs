@@ -1739,7 +1739,7 @@ mod tests {
                     BTreeMap::<String, BlueprintStateSchemaInit>::new(),
                     BTreeMap::<String, PackageRoyaltyConfig>::new(),
                     BTreeMap::<String, MetadataValue>::new(),
-                    RolesInit::new()
+                    RoleAssignmentInit::new()
                 )
                 .into(),
             },

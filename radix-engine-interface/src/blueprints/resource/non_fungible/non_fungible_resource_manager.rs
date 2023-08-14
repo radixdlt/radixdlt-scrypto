@@ -65,9 +65,9 @@ impl NonFungibleResourceRoles {
         }
     }
 
-    pub fn to_features_and_roles(self) -> (Vec<&'static str>, RolesInit) {
+    pub fn to_features_and_roles(self) -> (Vec<&'static str>, RoleAssignmentInit) {
         let mut features = Vec::new();
-        let mut roles = RolesInit::new();
+        let mut roles = RoleAssignmentInit::new();
 
         if self.mint_roles.is_some() {
             features.push(MINT_FEATURE);

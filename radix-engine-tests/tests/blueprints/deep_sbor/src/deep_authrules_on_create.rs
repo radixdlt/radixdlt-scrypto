@@ -19,7 +19,10 @@ mod deep_auth_rules_on_create {
     }
 }
 
-fn generate_deep_access_rules(resource_address: ResourceAddress, exceed_depth: usize) -> RolesInit {
+fn generate_deep_access_rules(
+    resource_address: ResourceAddress,
+    exceed_depth: usize,
+) -> RoleAssignmentInit {
     let mut access_rule_node = AccessRuleNode::ProofRule(ProofRule::Require(
         ResourceOrNonFungible::Resource(resource_address),
     ));

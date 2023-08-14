@@ -444,7 +444,7 @@ impl AuthModule {
         let receiver_object_info = api.get_object_info(&receiver)?;
 
         let (role_assignment_of, method_permissions) = match auth_template {
-            MethodAuthTemplate::StaticRoles(static_roles) => {
+            MethodAuthTemplate::StaticRoleDefinition(static_roles) => {
                 let role_assignment_of = match static_roles.roles {
                     RoleSpecification::Normal(..) => {
                         // Non-globalized objects do not have access rules module

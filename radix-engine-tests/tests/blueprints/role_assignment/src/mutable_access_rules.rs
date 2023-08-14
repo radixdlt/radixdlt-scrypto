@@ -17,7 +17,7 @@ mod mutable_role_assignment_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
-        pub fn new(roles: RolesInit) -> Global<MutableAccessRulesComponent> {
+        pub fn new(roles: RoleAssignmentInit) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
