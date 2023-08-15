@@ -177,7 +177,7 @@ pub struct CanonicalPartition {
 pub struct CanonicalSubstateKey {
     pub node_id: NodeId,
     pub partition_number: PartitionNumber,
-    pub substate_key: SubstateKey,
+    pub substate_key: SubstateKey, // TODO: use reference if this turns out to be costly
 }
 
 impl CanonicalSubstateKey {
