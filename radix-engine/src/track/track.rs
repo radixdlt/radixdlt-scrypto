@@ -912,7 +912,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
         partition_number: PartitionNumber,
         limit: u32,
         on_store_access: &mut F,
-    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, E> {
+    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, E> {
         // TODO: ensure we abort if any substates are write locked.
         let limit: usize = limit.try_into().unwrap();
 
@@ -934,7 +934,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
             Box::new(empty()) // optimization: avoid touching the database altogether
         } else {
             let partition_key = M::to_db_partition_key(node_id, partition_number);
-            Box::new(Self::list_entries_from_db::<E, F, SortedU16Key>(
+            Box::new(Self::list_entries_from_db::<E, F, SortedKey>(
                 self.substate_db,
                 &partition_key,
                 on_store_access,

@@ -969,7 +969,7 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
-    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError> {
         self.callback
             .on_scan_sorted_substates(ScanSortedSubstatesEvent::Start)?;
 

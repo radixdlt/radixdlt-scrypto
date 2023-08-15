@@ -9,7 +9,6 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
@@ -1018,7 +1017,7 @@ impl ValidatorBlueprint {
         if !registered || stake.is_zero() {
             None
         } else {
-            Some(SortedKey::new(
+            Some((
                 create_sort_prefix_from_stake(stake),
                 scrypto_encode(&address).unwrap(),
             ))

@@ -1160,7 +1160,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         count: u32,
         on_store_access: &mut F,
     ) -> Result<
-        Vec<(SortedU16Key, IndexedScryptoValue)>,
+        Vec<(SortedKey, IndexedScryptoValue)>,
         CallbackError<CallFrameScanSortedSubstatesError, E>,
     > {
         // Check node visibility

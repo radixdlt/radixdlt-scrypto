@@ -4,7 +4,7 @@ use crate::interface::{
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
-use radix_engine_common::types::{FieldKey, MapKey, PartitionNumber, SortedU16Key};
+use radix_engine_common::types::{FieldKey, MapKey, PartitionNumber, SortedKey};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::types::{NodeId, SubstateKey};
 use sbor::rust::prelude::*;
@@ -54,8 +54,8 @@ pub trait DatabaseKeyMapper {
     fn map_to_db_sort_key(map_key: &MapKey) -> DbSortKey;
     fn map_from_db_sort_key(db_sort_key: &DbSortKey) -> MapKey;
 
-    fn sorted_to_db_sort_key(sorted_key: &SortedU16Key) -> DbSortKey;
-    fn sorted_from_db_sort_key(db_sort_key: &DbSortKey) -> SortedU16Key;
+    fn sorted_to_db_sort_key(sorted_key: &SortedKey) -> DbSortKey;
+    fn sorted_from_db_sort_key(db_sort_key: &DbSortKey) -> SortedKey;
 }
 
 /// A [`DatabaseKeyMapper`] tailored for databases which cannot tolerate long common prefixes
@@ -103,7 +103,7 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
         SpreadPrefixKeyMapper::from_hash_prefixed(&db_sort_key.0).to_vec()
     }
 
-    fn sorted_to_db_sort_key(sorted_key: &SortedU16Key) -> DbSortKey {
+    fn sorted_to_db_sort_key(sorted_key: &SortedKey) -> DbSortKey {
         DbSortKey(
             [
                 sorted_key.0.as_slice(),
@@ -113,7 +113,7 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
         )
     }
 
-    fn sorted_from_db_sort_key(db_sort_key: &DbSortKey) -> SortedU16Key {
+    fn sorted_from_db_sort_key(db_sort_key: &DbSortKey) -> SortedKey {
         (
             copy_u8_array(&db_sort_key.0[..2]),
             SpreadPrefixKeyMapper::from_hash_prefixed(&db_sort_key.0[2..]).to_vec(),
@@ -248,7 +248,7 @@ impl SubstateKeyContent for FieldKey {
     }
 }
 
-impl SubstateKeyContent for SortedU16Key {
+impl SubstateKeyContent for SortedKey {
     fn get_type() -> SubstateKeyTypeContentType {
         SubstateKeyTypeContentType::Sorted
     }

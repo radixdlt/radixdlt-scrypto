@@ -158,7 +158,7 @@ pub trait SubstateStore {
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: &mut F,
-    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, E>;
+    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, E>;
 
     /// Note: unstable interface, for intent transaction tracker only
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);

@@ -23,7 +23,6 @@ use crate::system::system_type_checker::{
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
-use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_api::{FieldHandle, LockFlags};
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
@@ -1917,7 +1916,7 @@ where
             .api
             .kernel_scan_sorted_substates(&node_id, partition_num, limit)?
             .into_iter()
-            .map(|(key, value)| (SortedKey(key.0, key.1), value.into()))
+            .map(|(key, value)| (key, value.into()))
             .collect();
 
         Ok(substates)
@@ -2626,7 +2625,7 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
-    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError> {
         self.api
             .kernel_scan_sorted_substates(node_id, partition_num, limit)
     }
