@@ -789,7 +789,7 @@ fn display_event_with_network_context<'a, F: fmt::Write>(
         IndexedScryptoValue::from_slice(&event_data).expect("Event must be decodable!");
     write!(
         f,
-        "\n{} Emitter: {}\n   Local Type Index: {:?}\n   Data: {}",
+        "\n{} Emitter: {}\n   Name: {:?}\n   Data: {}",
         prefix,
         event_type_identifier
             .0

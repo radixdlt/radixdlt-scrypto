@@ -29,7 +29,7 @@ pub struct TransactionLimitsConfig {
     pub max_number_of_substates_in_track: usize,
     pub max_number_of_substates_in_heap: usize, // TODO: enforce this limits in heap!
     pub max_substate_key_size: usize,
-    pub max_substate_size: usize,
+    pub max_substate_value_size: usize,
     pub max_invoke_payload_size: usize,
     pub max_event_size: usize,
     pub max_log_size: usize,
@@ -136,10 +136,10 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for LimitsModule {
 
         match event {
             CreateNodeEvent::Start(_node_id, node_substates) => {
-                let max_substate_size = limits.config.max_substate_size;
+                let max_substate_value_size = limits.config.max_substate_value_size;
                 for partitions in node_substates.values() {
                     for (key, value) in partitions {
-                        if value.len() > max_substate_size {
+                        if value.len() > max_substate_value_size {
                             return Err(RuntimeError::SystemModuleError(
                                 SystemModuleError::TransactionLimitsError(
                                     TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
@@ -213,7 +213,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for LimitsModule {
                     .process_store_access(store_access)?;
             }
             WriteSubstateEvent::Start { value, .. } => {
-                if value.len() > limits.max_substate_size {
+                if value.len() > limits.max_substate_value_size {
                     return Err(RuntimeError::SystemModuleError(
                         SystemModuleError::TransactionLimitsError(
                             TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
