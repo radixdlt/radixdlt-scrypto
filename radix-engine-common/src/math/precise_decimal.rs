@@ -315,22 +315,6 @@ impl PreciseDecimal {
             Some(Self(nth_root))
         }
     }
-    // Arithmetic ops with Decimal, they shall produce PreciseDecimal
-    pub fn safe_add_dec(self, other: Decimal) -> Option<PreciseDecimal> {
-        other.safe_add_pdec(self)
-    }
-
-    pub fn safe_sub_dec(self, other: Decimal) -> Option<PreciseDecimal> {
-        self.safe_sub(PreciseDecimal::from(other))
-    }
-
-    pub fn safe_mul_dec(self, other: Decimal) -> Option<PreciseDecimal> {
-        other.safe_mul_pdec(self)
-    }
-
-    pub fn safe_div_dec(self, other: Decimal) -> Option<PreciseDecimal> {
-        self.safe_div(PreciseDecimal::from(other))
-    }
 }
 
 macro_rules! from_int {
@@ -449,6 +433,39 @@ impl SafeDiv<PreciseDecimal> for PreciseDecimal {
         c_256.map(Self)
     }
 }
+/*
+impl SafeAdd<Decimal> for PreciseDecimal {
+    type Output = Self;
+
+    fn safe_add(self, other: Self) -> Option<Self::Output> {
+        self.safe_add(Self::from(other))
+    }
+}
+
+impl SafeSub<PreciseDecimal> for Decimal {
+    type Output = PreciseDecimal;
+
+    fn safe_sub(self, other: Self) -> Option<Self::Output> {
+        PreciseDecimal::from(self).safe_sub(other)
+    }
+}
+
+impl SafeMul<PreciseDecimal> for Decimal {
+    type Output = PreciseDecimal;
+
+    fn safe_mul(self, other: Self) -> Option<Self> {
+        PreciseDecimal::from(self).safe_mul(other)
+    }
+}
+
+impl SafeDiv<PreciseDecimal> for Decimal {
+    type Output = PreciseDecimal;
+
+    fn safe_div(self, other: Self) -> Option<Self> {
+        PreciseDecimal::from(self).safe_div(other)
+    }
+}
+*/
 
 // TODO below should be checked ops as well, but cannot overload safe_ops for primitived type
 // eg. below is not working, safe_sub expects i32
@@ -534,6 +551,7 @@ impl_arith_ops!(i32);
 impl_arith_ops!(i64);
 impl_arith_ops!(i128);
 impl_arith_ops!(isize);
+impl_arith_ops!(Decimal);
 
 //========
 // binary
@@ -1567,46 +1585,46 @@ mod tests {
         let d1 = Decimal::from(2);
         let d2 = Decimal::MAX;
         let p2 = PreciseDecimal::from(2);
-        assert_eq!(p1.safe_mul_dec(d1).unwrap(), d2.safe_mul_pdec(p2).unwrap());
-        assert_eq!(p1.safe_div_dec(d1).unwrap(), d2.safe_div_pdec(p2).unwrap());
-        assert_eq!(p1.safe_add_dec(d1).unwrap(), d2.safe_add_pdec(p2).unwrap());
-        assert_eq!(p1.safe_sub_dec(d1).unwrap(), d2.safe_sub_pdec(p2).unwrap());
+        assert_eq!(p1.safe_mul(d1).unwrap(), d2.safe_mul(p2).unwrap());
+        assert_eq!(p1.safe_div(d1).unwrap(), d2.safe_div(p2).unwrap());
+        assert_eq!(p1.safe_add(d1).unwrap(), d2.safe_add(p2).unwrap());
+        assert_eq!(p1.safe_sub(d1).unwrap(), d2.safe_sub(p2).unwrap());
 
         let p1 = PreciseDecimal::from(Decimal::MIN);
         let d1 = Decimal::from(2);
         let d2 = Decimal::MIN;
         let p2 = PreciseDecimal::from(2);
-        assert_eq!(p1.safe_mul_dec(d1).unwrap(), d2.safe_mul_pdec(p2).unwrap());
-        assert_eq!(p1.safe_div_dec(d1).unwrap(), d2.safe_div_pdec(p2).unwrap());
-        assert_eq!(p1.safe_add_dec(d1).unwrap(), d2.safe_add_pdec(p2).unwrap());
-        assert_eq!(p1.safe_sub_dec(d1).unwrap(), d2.safe_sub_pdec(p2).unwrap());
+        assert_eq!(p1.safe_mul(d1).unwrap(), d2.safe_mul(p2).unwrap());
+        assert_eq!(p1.safe_div(d1).unwrap(), d2.safe_div(p2).unwrap());
+        assert_eq!(p1.safe_add(d1).unwrap(), d2.safe_add(p2).unwrap());
+        assert_eq!(p1.safe_sub(d1).unwrap(), d2.safe_sub(p2).unwrap());
 
         let p1 = pdec!("0.000001");
         let d1 = dec!("0.001");
         let d2 = dec!("0.000001");
         let p2 = pdec!("0.001");
-        assert_eq!(p1.safe_mul_dec(d1).unwrap(), d2.safe_mul_pdec(p2).unwrap());
-        assert_eq!(p1.safe_div_dec(d1).unwrap(), d2.safe_div_pdec(p2).unwrap());
-        assert_eq!(p1.safe_add_dec(d1).unwrap(), d2.safe_add_pdec(p2).unwrap());
-        assert_eq!(p1.safe_sub_dec(d1).unwrap(), d2.safe_sub_pdec(p2).unwrap());
+        assert_eq!(p1.safe_mul(d1).unwrap(), d2.safe_mul(p2).unwrap());
+        assert_eq!(p1.safe_div(d1).unwrap(), d2.safe_div(p2).unwrap());
+        assert_eq!(p1.safe_add(d1).unwrap(), d2.safe_add(p2).unwrap());
+        assert_eq!(p1.safe_sub(d1).unwrap(), d2.safe_sub(p2).unwrap());
 
         let p1 = pdec!("0.000000000000000001");
         let d1 = Decimal::MIN;
         let d2 = dec!("0.000000000000000001");
         let p2 = PreciseDecimal::from(Decimal::MIN);
-        assert_eq!(p1.safe_mul_dec(d1).unwrap(), d2.safe_mul_pdec(p2).unwrap());
-        assert_eq!(p1.safe_div_dec(d1).unwrap(), d2.safe_div_pdec(p2).unwrap());
-        assert_eq!(p1.safe_add_dec(d1).unwrap(), d2.safe_add_pdec(p2).unwrap());
-        assert_eq!(p1.safe_sub_dec(d1).unwrap(), d2.safe_sub_pdec(p2).unwrap());
+        assert_eq!(p1.safe_mul(d1).unwrap(), d2.safe_mul(p2).unwrap());
+        assert_eq!(p1.safe_div(d1).unwrap(), d2.safe_div(p2).unwrap());
+        assert_eq!(p1.safe_add(d1).unwrap(), d2.safe_add(p2).unwrap());
+        assert_eq!(p1.safe_sub(d1).unwrap(), d2.safe_sub(p2).unwrap());
 
         let p1 = PreciseDecimal::ZERO;
         let d1 = Decimal::ONE;
         let d2 = Decimal::ZERO;
         let p2 = PreciseDecimal::ONE;
-        assert_eq!(p1.safe_mul_dec(d1).unwrap(), d2.safe_mul_pdec(p2).unwrap());
-        assert_eq!(p1.safe_div_dec(d1).unwrap(), d2.safe_div_pdec(p2).unwrap());
-        assert_eq!(p1.safe_add_dec(d1).unwrap(), d2.safe_add_pdec(p2).unwrap());
-        assert_eq!(p1.safe_sub_dec(d1).unwrap(), d2.safe_sub_pdec(p2).unwrap());
+        assert_eq!(p1.safe_mul(d1).unwrap(), d2.safe_mul(p2).unwrap());
+        assert_eq!(p1.safe_div(d1).unwrap(), d2.safe_div(p2).unwrap());
+        assert_eq!(p1.safe_add(d1).unwrap(), d2.safe_add(p2).unwrap());
+        assert_eq!(p1.safe_sub(d1).unwrap(), d2.safe_sub(p2).unwrap());
     }
 
     // These tests make sure that any basic arithmetic operation

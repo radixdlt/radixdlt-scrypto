@@ -333,23 +333,6 @@ impl Decimal {
         let b = PreciseDecimal::from(other);
         a.safe_div(b)
     }
-
-    // Arithmetic ops with PreciseDecimal, they shall produce PreciseDecimal
-    pub fn safe_add_pdec(self, other: PreciseDecimal) -> Option<PreciseDecimal> {
-        PreciseDecimal::from(self).safe_add(other)
-    }
-
-    pub fn safe_sub_pdec(self, other: PreciseDecimal) -> Option<PreciseDecimal> {
-        PreciseDecimal::from(self).safe_sub(other)
-    }
-
-    pub fn safe_mul_pdec(self, other: PreciseDecimal) -> Option<PreciseDecimal> {
-        PreciseDecimal::from(self).safe_mul(other)
-    }
-
-    pub fn safe_div_pdec(self, other: PreciseDecimal) -> Option<PreciseDecimal> {
-        PreciseDecimal::from(self).safe_div(other)
-    }
 }
 
 macro_rules! from_int {
@@ -1355,8 +1338,8 @@ mod tests {
     test_from_precise_decimal_decimal_overflow! {
         (PreciseDecimal::MAX, 1),
         (PreciseDecimal::MIN, 2),
-        (PreciseDecimal::from(Decimal::MAX).safe_add_dec(Decimal::ONE).unwrap(), 3),
-        (PreciseDecimal::from(Decimal::MIN).safe_sub_dec(Decimal::ONE).unwrap(), 4)
+        (PreciseDecimal::from(Decimal::MAX).safe_add(Decimal::ONE).unwrap(), 3),
+        (PreciseDecimal::from(Decimal::MIN).safe_sub(Decimal::ONE).unwrap(), 4)
     }
 
     macro_rules! test_try_from_integer_overflow {
