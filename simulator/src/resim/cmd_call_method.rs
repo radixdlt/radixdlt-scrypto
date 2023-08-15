@@ -15,10 +15,10 @@ pub struct CallMethod {
     /// The method name
     pub method_name: String,
 
-    /// The call arguments, such as "5", "hello", "<amount>,<resource_address>" and "<resource_address>:<nf_local_id1>,<nf_local_id2>"
+    /// The call arguments, such as "5", "hello", "<amount>:<resource_address>" and "<resource_address>:<nf_local_id1>,<nf_local_id2>"
     pub arguments: Vec<String>,
 
-    /// The proofs to add to the auth zone, in form of "<amount>,<resource_address>" or "<resource_address>:<nf_local_id1>,<nf_local_id2>"
+    /// The proofs to add to the auth zone, in form of "<amount>:<resource_address>" or "<resource_address>:<nf_local_id1>,<nf_local_id2>"
     #[clap(short, long, multiple = true)]
     pub proofs: Option<Vec<String>>,
 
