@@ -362,7 +362,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
         Ok(result)
     }
 
-    fn list_sorted_entries_from_db<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
+    fn list_entries_from_db<
+        'x,
+        E: 'x,
+        F: FnMut(StoreAccess) -> Result<(), E> + 'x,
+        K: SubstateKeyContent + 'static,
+    >(
         substate_db: &'x S,
         partition_key: &DbPartitionKey,
         on_store_access: &'x mut F,
@@ -373,16 +378,23 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
             E,
             F: FnMut(StoreAccess) -> Result<(), E>,
             M: DatabaseKeyMapper + 'static,
+            K: SubstateKeyContent + 'static,
         > {
             iterator: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
             on_store_access: &'a mut F,
             canonical_partition: CanonicalPartition,
             errored_out: bool,
-            phantom: PhantomData<M>,
+            phantom1: PhantomData<M>,
+            phantom2: PhantomData<K>,
         }
 
-        impl<'a, E, F: FnMut(StoreAccess) -> Result<(), E>, M: DatabaseKeyMapper + 'static> Iterator
-            for TracedIterator<'a, E, F, M>
+        impl<
+                'a,
+                E,
+                F: FnMut(StoreAccess) -> Result<(), E>,
+                M: DatabaseKeyMapper + 'static,
+                K: SubstateKeyContent + 'static,
+            > Iterator for TracedIterator<'a, E, F, M, K>
         {
             type Item = Result<(SubstateKey, IndexedScryptoValue), E>;
 
@@ -393,7 +405,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
 
                 let result = self.iterator.next();
                 if let Some(x) = result {
-                    let substate_key = M::from_db_sort_key::<SortedU16Key>(&x.0);
+                    let substate_key = M::from_db_sort_key::<K>(&x.0);
                     let store_access = StoreAccess::ReadFromDb(
                         CanonicalSubstateKey::of(self.canonical_partition, substate_key.clone()),
                         x.1.len(),
@@ -420,7 +432,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
             on_store_access,
             canonical_partition,
             errored_out: false,
-            phantom: PhantomData::<M>,
+            phantom1: PhantomData::<M>,
+            phantom2: PhantomData::<K>,
         })
     }
 
@@ -724,7 +737,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
         Ok(value)
     }
 
-    fn scan_keys<K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn scan_keys<K: SubstateKeyContent + 'static, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
@@ -760,7 +773,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
         }
 
         let db_partition_key = M::to_db_partition_key(node_id, partition_number);
-        let mut tracked_iter = TrackedIter::new(Self::list_sorted_entries_from_db(
+        let mut tracked_iter = TrackedIter::new(Self::list_entries_from_db::<E, F, K>(
             self.substate_db,
             &db_partition_key,
             on_store_access,
@@ -796,7 +809,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
         Ok(items)
     }
 
-    fn drain_substates<K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn drain_substates<
+        K: SubstateKeyContent + 'static,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
@@ -835,7 +852,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
 
         // Read from database
         let db_partition_key = M::to_db_partition_key(node_id, partition_number);
-        let mut tracked_iter = TrackedIter::new(Self::list_sorted_entries_from_db(
+        let mut tracked_iter = TrackedIter::new(Self::list_entries_from_db::<E, F, K>(
             self.substate_db,
             &db_partition_key,
             on_store_access,
@@ -918,7 +935,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
             Box::new(empty()) // optimization: avoid touching the database altogether
         } else {
             let partition_key = M::to_db_partition_key(node_id, partition_number);
-            Box::new(Self::list_sorted_entries_from_db(
+            Box::new(Self::list_entries_from_db::<E, F, SortedU16Key>(
                 self.substate_db,
                 &partition_key,
                 on_store_access,

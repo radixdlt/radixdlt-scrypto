@@ -1064,7 +1064,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     pub fn scan_keys<
         'f,
-        K: SubstateKeyContent,
+        K: SubstateKeyContent + 'static,
         S: SubstateStore,
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,
@@ -1100,7 +1100,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     pub fn drain_substates<
         'f,
-        K: SubstateKeyContent,
+        K: SubstateKeyContent + 'static,
         S: SubstateStore,
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,

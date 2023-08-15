@@ -901,7 +901,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_scan_keys<K: SubstateKeyContent>(
+    fn kernel_scan_keys<K: SubstateKeyContent + 'static>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -932,7 +932,7 @@ where
     }
 
     #[trace_resources(log=limit)]
-    fn kernel_drain_substates<K: SubstateKeyContent>(
+    fn kernel_drain_substates<K: SubstateKeyContent + 'static>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

@@ -2631,7 +2631,7 @@ where
             .kernel_scan_sorted_substates(node_id, partition_num, limit)
     }
 
-    fn kernel_scan_keys<K: SubstateKeyContent>(
+    fn kernel_scan_keys<K: SubstateKeyContent + 'static>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -2641,7 +2641,7 @@ where
             .kernel_scan_keys::<K>(node_id, partition_num, limit)
     }
 
-    fn kernel_drain_substates<K: SubstateKeyContent>(
+    fn kernel_drain_substates<K: SubstateKeyContent + 'static>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

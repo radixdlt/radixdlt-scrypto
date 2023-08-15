@@ -514,7 +514,12 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(removed)
     }
 
-    pub fn scan_keys<'f, K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn scan_keys<
+        'f,
+        K: SubstateKeyContent + 'static + 'static,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
@@ -533,7 +538,12 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(keys)
     }
 
-    pub fn drain_substates<'f, K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn drain_substates<
+        'f,
+        K: SubstateKeyContent + 'static + 'static,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
