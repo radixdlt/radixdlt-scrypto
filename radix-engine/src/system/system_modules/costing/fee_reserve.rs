@@ -124,7 +124,7 @@ pub struct SystemLoanFeeReserve {
     royalty_cost: u128,
     royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, u128>,
 
-    /// State expansion costs
+    /// Storage Costs
     storage_cost: u128,
 
     /// Payments made during the execution of a transaction.

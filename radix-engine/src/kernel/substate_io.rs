@@ -516,7 +516,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
 
     pub fn scan_keys<
         'f,
-        K: SubstateKeyContent + 'static + 'static,
+        K: SubstateKeyContent + 'static,
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,
     >(
@@ -540,7 +540,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
 
     pub fn drain_substates<
         'f,
-        K: SubstateKeyContent + 'static + 'static,
+        K: SubstateKeyContent + 'static,
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,
     >(
