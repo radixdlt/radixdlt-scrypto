@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "basic_swap",
     "faucet",
     "metadata",
     "radiswap",
