@@ -349,7 +349,10 @@ pub fn export_package_schema(
             _ => panic!("Unexpected"),
         };
 
-        blueprints.insert(bp_version_key, blueprint_definition.value.unwrap().0.into_latest());
+        blueprints.insert(
+            bp_version_key,
+            blueprint_definition.value.unwrap().0.into_latest(),
+        );
     }
 
     Ok(blueprints)

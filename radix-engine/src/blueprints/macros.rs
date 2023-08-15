@@ -161,40 +161,40 @@ impl<TOwn: FeatureSetResolver, TOuter: FeatureSetResolver> InnerObjectFeatureChe
     }
 }
 
-pub trait FieldContent<ActualContent: From<Self>>: Sized {
-    fn into_locked_substate(self) -> FieldSubstate<ActualContent> {
+pub trait FieldContent<FieldPayload: From<Self>>: Sized {
+    fn into_locked_substate(self) -> FieldSubstate<FieldPayload> {
         FieldSubstate::new_locked_field(self.into())
     }
 
-    fn into_mutable_substate(self) -> FieldSubstate<ActualContent> {
+    fn into_mutable_substate(self) -> FieldSubstate<FieldPayload> {
         FieldSubstate::new_field(self.into())
     }
 }
 
-pub trait KeyContent<ActualContent: From<Self>>: Sized {
-    fn into_key(self) -> ActualContent {
+pub trait KeyContent<KeyPayload: From<Self>>: Sized {
+    fn into_key(self) -> KeyPayload {
         self.into()
     }
 }
 
-pub trait KeyValueEntryContent<ActualContent: From<Self>>: Sized {
-    fn into_locked_substate(self) -> KeyValueEntrySubstate<ActualContent> {
+pub trait KeyValueEntryContent<EntryPayload: From<Self>>: Sized {
+    fn into_locked_substate(self) -> KeyValueEntrySubstate<EntryPayload> {
         KeyValueEntrySubstate::entry(self.into())
     }
 
-    fn into_mutable_substate(self) -> KeyValueEntrySubstate<ActualContent> {
+    fn into_mutable_substate(self) -> KeyValueEntrySubstate<EntryPayload> {
         KeyValueEntrySubstate::locked_entry(self.into())
     }
 }
 
-pub trait IndexEntryContent<ActualContent: From<Self>>: Sized {
-    fn into_substate(self) -> ActualContent {
+pub trait IndexEntryContent<EntryPayload: From<Self>>: Sized {
+    fn into_substate(self) -> EntryPayload {
         self.into()
     }
 }
 
-pub trait SortedIndexEntryContent<ActualContent: From<Self>>: Sized {
-    fn into_substate(self) -> ActualContent {
+pub trait SortedIndexEntryContent<EntryPayload: From<Self>>: Sized {
+    fn into_substate(self) -> EntryPayload {
         self.into()
     }
 }
@@ -207,15 +207,15 @@ pub trait SortedIndexEntryContent<ActualContent: From<Self>>: Sized {
 /// out [../package/substates.rs](the package substates definition).
 ///
 /// For each field, the following types will be created:
-/// * `<BlueprintIdent><FieldIdent>FieldContent` - a transparent new type for the full content
+/// * `<BlueprintIdent><FieldIdent>FieldPayload` - a transparent new type for the field content
 /// * `<BlueprintIdent><FieldIdent>FieldSubstate` - a type for the full system-wrapped substate
 ///
 /// For each collection value, the following types will be created:
-/// * `<BlueprintIdent><CollectionIdent>EntryContent` - a transparent new type for the full content
+/// * `<BlueprintIdent><CollectionIdent>EntryPayload` - a transparent new type for the entry content
 /// * `<BlueprintIdent><CollectionIdent>EntrySubstate` - a type for the full system-wrapped substate
 ///
 /// For each collection key, the following types will be created:
-/// * `<BlueprintIdent><CollectionIdent>KeyContent` - a transparent new type for the full key content
+/// * `<BlueprintIdent><CollectionIdent>KeyPayload` - a transparent new type for the key content
 /// * `<BlueprintIdent><CollectionIdent>SubstateKey` - a type for the full key (eg includes the u16 for a sorted index key)
 ///
 /// The content of each of the above can take a number of forms.
@@ -246,17 +246,17 @@ pub trait SortedIndexEntryContent<ActualContent: From<Self>>: Sized {
 /// For Fields, it will assume the existence of a type called
 /// `<BlueprintIdent><FieldIdent>V1` and will generate the following types:
 /// * `<BlueprintIdent><FieldIdent>` - a type alias for the latest version (V1).
-/// * `Versioned<BlueprintIdent><FieldIdent>` - the enum wrapper with a single version. This will be the content of `<BlueprintIdent><FieldIdent>FieldContent`.
+/// * `Versioned<BlueprintIdent><FieldIdent>` - the enum wrapper with a single version. This will be the content of `<BlueprintIdent><FieldIdent>FieldPayload`.
 ///
 /// For collection values, it will assume the existence of `<BlueprintIdent><CollectionIdent>V1`
 /// and generate the following types:
 /// * `<BlueprintIdent><CollectionIdent>` - a type alias for the latest version (V1).
-/// * `Versioned<BlueprintIdent><CollectionIdent>` - the enum wrapper with a single version. This will be the content of `<BlueprintIdent><CollectionIdent>EntryContent`.
+/// * `Versioned<BlueprintIdent><CollectionIdent>` - the enum wrapper with a single version. This will be the content of `<BlueprintIdent><CollectionIdent>EntryPayload`.
 ///
 /// For collection keys, it will assume the existence of `<BlueprintIdent><CollectionIdent>KeyInnerV1`
 /// and generate the following types:
 /// * `<BlueprintIdent><CollectionIdent>KeyInner` - a type alias for the latest version (V1)
-/// * `Versioned<BlueprintIdent><CollectionIdent>KeyInner` - the enum wrapper with a single version. This will be the content of `<BlueprintIdent><CollectionIdent>KeyContent`.
+/// * `Versioned<BlueprintIdent><CollectionIdent>KeyInner` - the enum wrapper with a single version. This will be the content of `<BlueprintIdent><CollectionIdent>KeyPayload`.
 #[allow(unused)]
 macro_rules! declare_native_blueprint_state {
     (
@@ -336,19 +336,19 @@ macro_rules! declare_native_blueprint_state {
                     // > Set up Versioned types (if relevant). Assumes __FieldV1 exists and then creates
                     //   - Versioned__Field
                     //   - __Field (alias for __FieldV1)
-                    // > Set up the (transparent) _FieldContent new type for the content of the field
-                    // > Set up the FieldContent trait for anything which can be resolved into the field content
+                    // > Set up the (transparent) _FieldPayload new type for the content of the field
+                    // > Set up the FieldContent trait for anything which can be resolved into the field payload
                     generate_content_type!(
                         content_trait: FieldContent,
                         ident_core: [<$blueprint_ident $field_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
-                        struct [<$blueprint_ident $field_ident FieldContent>] = $field_type
+                        struct [<$blueprint_ident $field_ident FieldPayload>] = $field_type
                     );
 
                     // > Set up the _FieldSubstate alias for the system-wrapped substate
                     generate_system_substate_type_alias!(
                         Field,
-                        type [<$blueprint_ident $field_ident FieldSubstate>] = WRAPPED [<$blueprint_ident $field_ident FieldContent>]
+                        type [<$blueprint_ident $field_ident FieldSubstate>] = WRAPPED [<$blueprint_ident $field_ident FieldPayload>]
                     );
                 );*
 
@@ -365,12 +365,12 @@ macro_rules! declare_native_blueprint_state {
                         ident_core: [<$blueprint_ident $collection_ident KeyInner>],
                         #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
                         #[sbor(transparent_name)]
-                        struct [<$blueprint_ident $collection_ident KeyContent>] = $collection_key_type
+                        struct [<$blueprint_ident $collection_ident KeyPayload>] = $collection_key_type
                     );
 
                     // TODO(David): Tweak when I work out the right strategy for keys. Probably just want a single new-type.
                     // So probably just don't use generate_content_type but use generate_key_type or something instead?
-                    pub type [<$blueprint_ident $collection_ident SubstateKey>] = [<$blueprint_ident $collection_ident KeyContent>];
+                    pub type [<$blueprint_ident $collection_ident SubstateKey>] = [<$blueprint_ident $collection_ident KeyPayload>];
 
                     // TODO(David) - Properly handle SortedIndex:
                     // Fix Key types for SortedIndex to have a named u16 part of the key,
@@ -394,12 +394,12 @@ macro_rules! declare_native_blueprint_state {
                         content_trait: [<$collection_type EntryContent>],
                         ident_core: [<$blueprint_ident $collection_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
-                        struct [<$blueprint_ident $collection_ident EntryContent>] = $collection_value_type
+                        struct [<$blueprint_ident $collection_ident EntryPayload>] = $collection_value_type
                     );
                     // > Set up the _EntrySubstate alias for the system-wrapped substate
                     generate_system_substate_type_alias!(
                         $collection_type,
-                        type [<$blueprint_ident $collection_ident EntrySubstate>] = WRAPPED [<$blueprint_ident $collection_ident EntryContent>]
+                        type [<$blueprint_ident $collection_ident EntrySubstate>] = WRAPPED [<$blueprint_ident $collection_ident EntryPayload>]
                     );
                 )*
 
@@ -588,7 +588,7 @@ macro_rules! declare_native_blueprint_state {
                             // TODO(David) - Implement instance schema
                             fields.push(FieldSchema {
                                 field: TypeRef::Static(
-                                    type_aggregator.add_child_type_and_descendents::<[<$blueprint_ident $field_ident FieldContent>]>()
+                                    type_aggregator.add_child_type_and_descendents::<[<$blueprint_ident $field_ident FieldPayload>]>()
                                 ),
                                 condition: $field_condition,
                             });
@@ -600,9 +600,9 @@ macro_rules! declare_native_blueprint_state {
                                 $collection_type,
                                 type_aggregator,
                                 $collection_key_type,
-                                [<$blueprint_ident $collection_ident KeyContent>],
+                                [<$blueprint_ident $collection_ident KeyPayload>],
                                 $collection_value_type,
-                                [<$blueprint_ident $collection_ident EntryContent>],
+                                [<$blueprint_ident $collection_ident EntryPayload>],
                                 $collection_can_own
                             ));
                         )*

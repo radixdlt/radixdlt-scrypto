@@ -1112,7 +1112,7 @@ impl PackageRoyaltyNativeBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate: PackageRoyaltyAccumulatorFieldContent = api.field_read_typed(handle)?;
+        let substate: PackageRoyaltyAccumulatorFieldPayload = api.field_read_typed(handle)?;
         let bucket = substate.0.into_latest().royalty_vault.take_all(api)?;
 
         Ok(bucket)
