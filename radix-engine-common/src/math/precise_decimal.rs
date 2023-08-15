@@ -7,7 +7,6 @@ use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::iter;
-use sbor::rust::ops::*;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -456,69 +455,69 @@ impl SafeDiv<PreciseDecimal> for PreciseDecimal {
 // 1_i32.safe_sub(d: Decimal) -> Option<Decimal>
 macro_rules! impl_arith_ops {
     ($type:ident) => {
-        impl Add<$type> for PreciseDecimal {
+        impl SafeAdd<$type> for PreciseDecimal {
             type Output = Self;
 
-            fn add(self, other: $type) -> Self::Output {
-                self.safe_add(Self::from(other)).unwrap()
+            fn safe_add(self, other: $type) -> Option<Self::Output> {
+                self.safe_add(Self::from(other))
             }
         }
 
-        impl Sub<$type> for PreciseDecimal {
+        impl SafeSub<$type> for PreciseDecimal {
             type Output = Self;
 
-            fn sub(self, other: $type) -> Self::Output {
-                self.safe_sub(Self::from(other)).unwrap()
+            fn safe_sub(self, other: $type) -> Option<Self::Output> {
+                self.safe_sub(Self::from(other))
             }
         }
 
-        impl Mul<$type> for PreciseDecimal {
-            type Output = PreciseDecimal;
+        impl SafeMul<$type> for PreciseDecimal {
+            type Output = Self;
 
-            fn mul(self, other: $type) -> Self::Output {
-                self.safe_mul(Self::from(other)).unwrap()
+            fn safe_mul(self, other: $type) -> Option<Self::Output> {
+                self.safe_mul(Self::from(other))
             }
         }
 
-        impl Div<$type> for PreciseDecimal {
-            type Output = PreciseDecimal;
+        impl SafeDiv<$type> for PreciseDecimal {
+            type Output = Self;
 
-            fn div(self, other: $type) -> Self::Output {
-                self.safe_div(Self::from(other)).unwrap()
+            fn safe_div(self, other: $type) -> Option<Self::Output> {
+                self.safe_div(Self::from(other))
             }
         }
 
-        impl Add<PreciseDecimal> for $type {
+        impl SafeAdd<PreciseDecimal> for $type {
             type Output = PreciseDecimal;
 
             #[inline]
-            fn add(self, other: PreciseDecimal) -> Self::Output {
-                other + self
+            fn safe_add(self, other: PreciseDecimal) -> Option<Self::Output> {
+                other.safe_add(self)
             }
         }
 
-        impl Sub<PreciseDecimal> for $type {
+        impl SafeSub<PreciseDecimal> for $type {
             type Output = PreciseDecimal;
 
-            fn sub(self, other: PreciseDecimal) -> Self::Output {
-                PreciseDecimal::from(self).safe_sub(other).unwrap()
+            fn safe_sub(self, other: PreciseDecimal) -> Option<Self::Output> {
+                PreciseDecimal::from(self).safe_sub(other)
             }
         }
 
-        impl Mul<PreciseDecimal> for $type {
+        impl SafeMul<PreciseDecimal> for $type {
             type Output = PreciseDecimal;
 
             #[inline]
-            fn mul(self, other: PreciseDecimal) -> Self::Output {
-                other * self
+            fn safe_mul(self, other: PreciseDecimal) -> Option<Self::Output> {
+                other.safe_mul(self)
             }
         }
 
-        impl Div<PreciseDecimal> for $type {
+        impl SafeDiv<PreciseDecimal> for $type {
             type Output = PreciseDecimal;
 
-            fn div(self, other: PreciseDecimal) -> Self::Output {
-                PreciseDecimal::from(self).safe_div(other).unwrap()
+            fn safe_div(self, other: PreciseDecimal) -> Option<Self::Output> {
+                PreciseDecimal::from(self).safe_div(other)
             }
         }
     };
@@ -757,12 +756,7 @@ mod tests {
             "1"
         );
         assert_eq!(
-            PreciseDecimal(
-                I256::from(10)
-                    .pow(PreciseDecimal::SCALE)
-                    .mul(I256::from(123))
-            )
-            .to_string(),
+            PreciseDecimal(I256::from(10).pow(PreciseDecimal::SCALE) * I256::from(123)).to_string(),
             "123"
         );
         assert_eq!(
@@ -791,7 +785,7 @@ mod tests {
         );
         assert_eq!(
             PreciseDecimal::from_str("0.123456789123456789").unwrap(),
-            PreciseDecimal(I256::from(123456789123456789i128).mul(I256::from(10i8).pow(18))),
+            PreciseDecimal(I256::from(123456789123456789i128) * I256::from(10i8).pow(18)),
         );
         assert_eq!(
             PreciseDecimal::from_str("1").unwrap(),
@@ -800,7 +794,7 @@ mod tests {
         assert_eq!(
             PreciseDecimal::from_str("123456789123456789").unwrap(),
             PreciseDecimal(
-                I256::from(123456789123456789i128).mul(I256::from(10).pow(PreciseDecimal::SCALE))
+                I256::from(123456789123456789i128) * I256::from(10).pow(PreciseDecimal::SCALE)
             ),
         );
         assert_eq!(
@@ -1631,28 +1625,28 @@ mod tests {
                     let u1 = 2 as $type;
                     let u2 = 1 as $type;
                     let d2 = PreciseDecimal::from(2);
-                    assert_eq!(d1 * u1, u2 * d2);
-                    assert_eq!(d1 / u1, u2 / d2);
-                    assert_eq!(d1 + u1, u2 + d2);
-                    assert_eq!(d1 - u1, u2 - d2);
+                    assert_eq!(d1.safe_mul(u1).unwrap(), u2.safe_mul(d2).unwrap());
+                    assert_eq!(d1.safe_div(u1).unwrap(), u2.safe_div(d2).unwrap());
+                    assert_eq!(d1.safe_add(u1).unwrap(), u2.safe_add(d2).unwrap());
+                    assert_eq!(d1.safe_sub(u1).unwrap(), u2.safe_sub(d2).unwrap());
 
                     let d1 = pdec!("2");
                     let u1 = $type::MAX;
                     let u2 = 2 as $type;
                     let d2 = PreciseDecimal::from($type::MAX);
-                    assert_eq!(d1 * u1, u2 * d2);
-                    assert_eq!(d1 / u1, u2 / d2);
-                    assert_eq!(d1 + u1, u2 + d2);
-                    assert_eq!(d1 - u1, u2 - d2);
+                    assert_eq!(d1.safe_mul(u1).unwrap(), u2.safe_mul(d2).unwrap());
+                    assert_eq!(d1.safe_div(u1).unwrap(), u2.safe_div(d2).unwrap());
+                    assert_eq!(d1.safe_add(u1).unwrap(), u2.safe_add(d2).unwrap());
+                    assert_eq!(d1.safe_sub(u1).unwrap(), u2.safe_sub(d2).unwrap());
 
                     let d1 = PreciseDecimal::from($type::MIN);
                     let u1 = 2 as $type;
                     let u2 = $type::MIN;
                     let d2 = pdec!("2");
-                    assert_eq!(d1 * u1, u2 * d2);
-                    assert_eq!(d1 / u1, u2 / d2);
-                    assert_eq!(d1 + u1, u2 + d2);
-                    assert_eq!(d1 - u1, u2 - d2);
+                    assert_eq!(d1.safe_mul(u1).unwrap(), u2.safe_mul(d2).unwrap());
+                    assert_eq!(d1.safe_div(u1).unwrap(), u2.safe_div(d2).unwrap());
+                    assert_eq!(d1.safe_add(u1).unwrap(), u2.safe_add(d2).unwrap());
+                    assert_eq!(d1.safe_sub(u1).unwrap(), u2.safe_sub(d2).unwrap());
                 }
             }
         };

@@ -7,7 +7,6 @@ use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::iter;
-use sbor::rust::ops::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 
@@ -473,69 +472,69 @@ impl SafeDiv<Decimal> for Decimal {
 // 1_i32.safe_sub(d: Decimal) -> Option<Decimal>
 macro_rules! impl_arith_ops {
     ($type:ident) => {
-        impl Add<$type> for Decimal {
+        impl SafeAdd<$type> for Decimal {
             type Output = Self;
 
-            fn add(self, other: $type) -> Self::Output {
-                self.safe_add(Self::from(other)).unwrap()
+            fn safe_add(self, other: $type) -> Option<Self::Output> {
+                self.safe_add(Self::from(other))
             }
         }
 
-        impl Sub<$type> for Decimal {
+        impl SafeSub<$type> for Decimal {
             type Output = Self;
 
-            fn sub(self, other: $type) -> Self::Output {
-                self.safe_sub(Self::from(other)).unwrap()
+            fn safe_sub(self, other: $type) -> Option<Self::Output> {
+                self.safe_sub(Self::from(other))
             }
         }
 
-        impl Mul<$type> for Decimal {
-            type Output = Decimal;
+        impl SafeMul<$type> for Decimal {
+            type Output = Self;
 
-            fn mul(self, other: $type) -> Self::Output {
-                self.safe_mul(Self::from(other)).unwrap()
+            fn safe_mul(self, other: $type) -> Option<Self::Output> {
+                self.safe_mul(Self::from(other))
             }
         }
 
-        impl Div<$type> for Decimal {
-            type Output = Decimal;
+        impl SafeDiv<$type> for Decimal {
+            type Output = Self;
 
-            fn div(self, other: $type) -> Self::Output {
-                self.safe_div(Self::from(other)).unwrap()
+            fn safe_div(self, other: $type) -> Option<Self::Output> {
+                self.safe_div(Self::from(other))
             }
         }
 
-        impl Add<Decimal> for $type {
+        impl SafeAdd<Decimal> for $type {
             type Output = Decimal;
 
             #[inline]
-            fn add(self, other: Decimal) -> Self::Output {
-                other + self
+            fn safe_add(self, other: Decimal) -> Option<Self::Output> {
+                other.safe_add(self)
             }
         }
 
-        impl Sub<Decimal> for $type {
+        impl SafeSub<Decimal> for $type {
             type Output = Decimal;
 
-            fn sub(self, other: Decimal) -> Self::Output {
-                Decimal::from(self).safe_sub(other).unwrap()
+            fn safe_sub(self, other: Decimal) -> Option<Self::Output> {
+                Decimal::from(self).safe_sub(other)
             }
         }
 
-        impl Mul<Decimal> for $type {
+        impl SafeMul<Decimal> for $type {
             type Output = Decimal;
 
             #[inline]
-            fn mul(self, other: Decimal) -> Self::Output {
-                other * self
+            fn safe_mul(self, other: Decimal) -> Option<Self::Output> {
+                other.safe_mul(self)
             }
         }
 
-        impl Div<Decimal> for $type {
+        impl SafeDiv<Decimal> for $type {
             type Output = Decimal;
 
-            fn div(self, other: Decimal) -> Self::Output {
-                Decimal::from(self).safe_div(other).unwrap()
+            fn safe_div(self, other: Decimal) -> Option<Self::Output> {
+                Decimal::from(self).safe_div(other)
             }
         }
     };
@@ -1500,28 +1499,28 @@ mod tests {
                     let u1 = 2 as $type;
                     let u2 = 1 as $type;
                     let d2 = Decimal::from(2);
-                    assert_eq!(d1 * u1, u2 * d2);
-                    assert_eq!(d1 / u1, u2 / d2);
-                    assert_eq!(d1 + u1, u2 + d2);
-                    assert_eq!(d1 - u1, u2 - d2);
+                    assert_eq!(d1.safe_mul(u1).unwrap(), u2.safe_mul(d2).unwrap());
+                    assert_eq!(d1.safe_div(u1).unwrap(), u2.safe_div(d2).unwrap());
+                    assert_eq!(d1.safe_add(u1).unwrap(), u2.safe_add(d2).unwrap());
+                    assert_eq!(d1.safe_sub(u1).unwrap(), u2.safe_sub(d2).unwrap());
 
                     let d1 = dec!("2");
                     let u1 = $type::MAX;
                     let u2 = 2 as $type;
                     let d2 = Decimal::from($type::MAX);
-                    assert_eq!(d1 * u1, u2 * d2);
-                    assert_eq!(d1 / u1, u2 / d2);
-                    assert_eq!(d1 + u1, u2 + d2);
-                    assert_eq!(d1 - u1, u2 - d2);
+                    assert_eq!(d1.safe_mul(u1).unwrap(), u2.safe_mul(d2).unwrap());
+                    assert_eq!(d1.safe_div(u1).unwrap(), u2.safe_div(d2).unwrap());
+                    assert_eq!(d1.safe_add(u1).unwrap(), u2.safe_add(d2).unwrap());
+                    assert_eq!(d1.safe_sub(u1).unwrap(), u2.safe_sub(d2).unwrap());
 
                     let d1 = Decimal::from($type::MIN);
                     let u1 = 2 as $type;
                     let u2 = $type::MIN;
                     let d2 = dec!("2");
-                    assert_eq!(d1 * u1, u2 * d2);
-                    assert_eq!(d1 / u1, u2 / d2);
-                    assert_eq!(d1 + u1, u2 + d2);
-                    assert_eq!(d1 - u1, u2 - d2);
+                    assert_eq!(d1.safe_mul(u1).unwrap(), u2.safe_mul(d2).unwrap());
+                    assert_eq!(d1.safe_div(u1).unwrap(), u2.safe_div(d2).unwrap());
+                    assert_eq!(d1.safe_add(u1).unwrap(), u2.safe_add(d2).unwrap());
+                    assert_eq!(d1.safe_sub(u1).unwrap(), u2.safe_sub(d2).unwrap());
                 }
             }
         };
