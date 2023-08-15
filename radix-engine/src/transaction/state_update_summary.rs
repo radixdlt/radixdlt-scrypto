@@ -323,10 +323,10 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 let mut added = BTreeSet::new();
                 let mut removed = BTreeSet::new();
 
-                for (substate_key,  value) in &tracked_module.substates {
-                    let id: NonFungibleLocalId = scrypto_decode(substate_key.clone().for_map().unwrap()).unwrap();
+                for (_db_sort_key,  tracked_substate) in &tracked_module.substates {
+                    let id: NonFungibleLocalId = scrypto_decode(tracked_substate.substate_key.for_map().unwrap()).unwrap();
 
-                    match &value.substate_value {
+                    match &tracked_substate.substate_value {
                         TrackedSubstateValue::New(..)
                         | TrackedSubstateValue::ReadNonExistAndWrite(..) => {
                             added.insert(id);

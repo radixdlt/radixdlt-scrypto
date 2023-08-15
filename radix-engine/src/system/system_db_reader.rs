@@ -168,7 +168,11 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             tracked
                 .get(node_id)
                 .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
-                .and_then(|tracked_module| tracked_module.substates.get(substate_key))
+                .and_then(|tracked_module| {
+                    tracked_module
+                        .substates
+                        .get(&M::to_db_sort_key(&substate_key))
+                })
                 .and_then(|tracked_key| {
                     tracked_key
                         .substate_value

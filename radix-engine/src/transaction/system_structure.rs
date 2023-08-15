@@ -146,7 +146,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         let mut substate_structures = index_map_new();
         for (node_id, tracked_node) in self.tracked {
             for (partition_num, tracked_partition) in &tracked_node.tracked_partitions {
-                for (substate_key, tracked_substate) in &tracked_partition.substates {
+                for (_, tracked_substate) in &tracked_partition.substates {
                     match &tracked_substate.substate_value {
                         TrackedSubstateValue::New(_)
                         | TrackedSubstateValue::ReadExistAndWrite(_, _)
@@ -175,7 +175,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     let system_substate_structure = self.resolve_substate_structure(
                         node_id,
                         partition_description,
-                        &substate_key,
+                        &tracked_substate.substate_key,
                     );
 
                     substate_structures
@@ -183,7 +183,10 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                         .or_insert(index_map_new())
                         .entry(partition_num.clone())
                         .or_insert(index_map_new())
-                        .insert(substate_key.clone(), system_substate_structure);
+                        .insert(
+                            tracked_substate.substate_key.clone(),
+                            system_substate_structure,
+                        );
                 }
             }
         }

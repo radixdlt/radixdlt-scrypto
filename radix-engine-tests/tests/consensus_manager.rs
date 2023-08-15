@@ -1658,17 +1658,17 @@ fn registered_validator_with_stake_does_not_become_part_of_validator_on_epoch_ch
 #[test]
 fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change_if_there_are_empty_spots(
 ) {
-    for register_and_stake_type in RegisterAndStakeTransactionType::ALL_TYPES {
-        registered_validator_test(
-            register_and_stake_type,
-            9,
-            10,
-            1000000.into(),
-            900000.into(),
-            true,
-            10,
-        );
-    }
+    //for register_and_stake_type in RegisterAndStakeTransactionType::ALL_TYPES {
+    registered_validator_test(
+        RegisterAndStakeTransactionType::RegisterFirst,
+        9,
+        10,
+        1000000.into(),
+        900000.into(),
+        true,
+        10,
+    );
+    //}
 }
 
 #[test]

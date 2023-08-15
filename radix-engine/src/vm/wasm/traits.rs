@@ -193,6 +193,6 @@ pub trait WasmEngine {
 
     /// Instantiate a Scrypto module.
     ///
-    /// The code must have been validated and instrumented!!!
+    /// The code must have been validated and instrumented!
     fn instantiate(&self, code_hash: Hash, instrumented_code: &[u8]) -> Self::WasmInstance;
 }
