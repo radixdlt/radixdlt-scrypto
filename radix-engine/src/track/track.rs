@@ -247,7 +247,7 @@ impl TrackedNode {
     }
 }
 
-pub fn to_state_updates<M: DatabaseKeyMapper>(
+pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
     index: IndexMap<NodeId, TrackedNode>,
     deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 ) -> StateUpdates {
@@ -321,7 +321,7 @@ impl<'a, E> Iterator for TrackedIter<'a, E> {
 }
 
 /// Transaction-wide states and side effects
-pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper> {
+pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> {
     /// Substate database, use `get_substate_from_db` and `list_entries_from_db` for access
     substate_db: &'s S,
 
@@ -333,7 +333,7 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper> {
     phantom_data: PhantomData<M>,
 }
 
-impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
+impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     pub fn new(substate_db: &'s S) -> Self {
         Self {
             substate_db,
@@ -367,8 +367,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         partition_key: &DbPartitionKey,
         on_store_access: &'x mut F,
         canonical_partition: CanonicalPartition,
-    ) -> Box<dyn Iterator<Item = Result<(SubstateKey, IndexedScryptoValue), E>>> {
-        struct TracedIterator<'a, E, F: FnMut(StoreAccess) -> Result<(), E>, M: DatabaseKeyMapper> {
+    ) -> Box<dyn Iterator<Item = Result<(SubstateKey, IndexedScryptoValue), E>> + 'x> {
+        struct TracedIterator<
+            'a,
+            E,
+            F: FnMut(StoreAccess) -> Result<(), E>,
+            M: DatabaseKeyMapper + 'static,
+        > {
             iterator: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
             on_store_access: &'a mut F,
             canonical_partition: CanonicalPartition,
@@ -376,7 +381,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             phantom: PhantomData<M>,
         }
 
-        impl<'a, E, F: FnMut(StoreAccess) -> Result<(), E>, M: DatabaseKeyMapper> Iterator
+        impl<'a, E, F: FnMut(StoreAccess) -> Result<(), E>, M: DatabaseKeyMapper + 'static> Iterator
             for TracedIterator<'a, E, F, M>
         {
             type Item = Result<(SubstateKey, IndexedScryptoValue), E>;
@@ -536,7 +541,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
     }
 }
 
-impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, S, M> {
+impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for Track<'s, S, M> {
     fn create_node<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
