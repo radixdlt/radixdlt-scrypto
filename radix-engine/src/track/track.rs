@@ -12,7 +12,7 @@ use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;
 
-use super::interface::{StoreCommit, StoreCommitInfo};
+use super::interface::{CanonicalPartition, CanonicalSubstateKey, StoreCommit, StoreCommitInfo};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct StateUpdates {
@@ -297,13 +297,15 @@ pub fn to_state_updates<M: DatabaseKeyMapper>(
 }
 
 struct TrackedIter<'a, E> {
-    iter: Box<dyn Iterator<Item = Result<(DbSortKey, IndexedScryptoValue), E>> + 'a>,
+    iter: Box<dyn Iterator<Item = Result<(DbSortKey, SubstateKey, IndexedScryptoValue), E>> + 'a>,
     num_iterations: u32,
 }
 
 impl<'a, E> TrackedIter<'a, E> {
     fn new(
-        iter: Box<dyn Iterator<Item = Result<(DbSortKey, IndexedScryptoValue), E>> + 'a>,
+        iter: Box<
+            dyn Iterator<Item = Result<(DbSortKey, SubstateKey, IndexedScryptoValue), E>> + 'a,
+        >,
     ) -> Self {
         Self {
             iter,
@@ -313,7 +315,7 @@ impl<'a, E> TrackedIter<'a, E> {
 }
 
 impl<'a, E> Iterator for TrackedIter<'a, E> {
-    type Item = Result<(DbSortKey, IndexedScryptoValue), E>;
+    type Item = Result<(DbSortKey, SubstateKey, IndexedScryptoValue), E>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.num_iterations = self.num_iterations + 1;
@@ -350,34 +352,38 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
         on_store_access: &mut F,
-        node_id: NodeId,
+        canonical_substate_key: CanonicalSubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, E> {
         let result = substate_db
             .get_substate(partition_key, sort_key)
             .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
         if let Some(x) = &result {
-            on_store_access(StoreAccess::ReadFromDb(node_id, x.len()))?;
+            on_store_access(StoreAccess::ReadFromDb(canonical_substate_key, x.len()))?;
         } else {
-            on_store_access(StoreAccess::ReadFromDbNotFound(node_id))?;
+            on_store_access(StoreAccess::ReadFromDbNotFound(canonical_substate_key))?;
         }
         Ok(result)
     }
 
-    fn list_entries_from_db<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
+    fn list_sorted_entries_from_db<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
         substate_db: &'x S,
         partition_key: &DbPartitionKey,
         on_store_access: &'x mut F,
-        node_id: NodeId,
-    ) -> Box<dyn Iterator<Item = Result<(DbSortKey, IndexedScryptoValue), E>> + 'x> {
-        struct TracedIterator<'a, E, F: FnMut(StoreAccess) -> Result<(), E>> {
+        canonical_partition: CanonicalPartition,
+    ) -> Box<dyn Iterator<Item = Result<(DbSortKey, SubstateKey, IndexedScryptoValue), E>> + 'x>
+    {
+        struct TracedIterator<'a, E, F: FnMut(StoreAccess) -> Result<(), E>, M: DatabaseKeyMapper> {
             iterator: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
             on_store_access: &'a mut F,
-            node_id: NodeId,
+            canonical_partition: CanonicalPartition,
             errored_out: bool,
+            phantom: PhantomData<M>,
         }
 
-        impl<'a, E, F: FnMut(StoreAccess) -> Result<(), E>> Iterator for TracedIterator<'a, E, F> {
-            type Item = Result<(DbSortKey, IndexedScryptoValue), E>;
+        impl<'a, E, F: FnMut(StoreAccess) -> Result<(), E>, M: DatabaseKeyMapper> Iterator
+            for TracedIterator<'a, E, F, M>
+        {
+            type Item = Result<(DbSortKey, SubstateKey, IndexedScryptoValue), E>;
 
             fn next(&mut self) -> Option<Self::Item> {
                 if self.errored_out {
@@ -386,12 +392,16 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
 
                 let result = self.iterator.next();
                 if let Some(x) = result {
-                    let store_access = StoreAccess::ReadFromDb(self.node_id, x.1.len());
-
+                    let substate_key = M::from_db_sort_key::<SortedU16Key>(&x.0);
+                    let store_access = StoreAccess::ReadFromDb(
+                        CanonicalSubstateKey::of(self.canonical_partition, substate_key),
+                        x.1.len(),
+                    );
                     let result = (self.on_store_access)(store_access);
                     match result {
                         Ok(()) => Some(Ok((
                             x.0,
+                            substate_key,
                             IndexedScryptoValue::from_vec(x.1).expect("Failed to decode substate"),
                         ))),
                         Err(e) => {
@@ -400,15 +410,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                         }
                     }
                 } else {
-                    let result =
-                        (self.on_store_access)(StoreAccess::ReadFromDbNotFound(self.node_id));
-                    match result {
-                        Ok(()) => None,
-                        Err(e) => {
-                            self.errored_out = true;
-                            Some(Err(e))
-                        }
-                    }
+                    None
                 }
             }
         }
@@ -416,8 +418,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         Box::new(TracedIterator {
             iterator: substate_db.list_entries(partition_key),
             on_store_access,
-            node_id,
+            canonical_partition,
             errored_out: false,
+            phantom: PhantomData::<M>,
         })
     }
 
@@ -480,7 +483,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
     fn get_tracked_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
-        partition_num: PartitionNumber,
+        partition_number: PartitionNumber,
         substate_key: SubstateKey,
         on_store_access: &mut F,
     ) -> Result<&mut TrackedSubstateValue, E> {
@@ -491,22 +494,33 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             .entry(*node_id)
             .or_insert(TrackedNode::new(false))
             .tracked_partitions
-            .entry(partition_num)
+            .entry(partition_number)
             .or_insert(TrackedPartition::new())
             .substates;
         let entry = partition.entry(db_sort_key.clone());
 
         match entry {
             Entry::Vacant(e) => {
-                let db_partition_key = M::to_db_partition_key(node_id, partition_num);
+                let db_partition_key = M::to_db_partition_key(node_id, partition_number);
                 let value = Self::get_substate_from_db(
                     self.substate_db,
                     &db_partition_key,
                     &db_sort_key,
                     on_store_access,
-                    *node_id,
+                    CanonicalSubstateKey {
+                        node_id: *node_id,
+                        partition_number,
+                        substate_key,
+                    },
                 )?;
-                on_store_access(StoreAccess::NewEntryInTrack(*node_id))?;
+                on_store_access(StoreAccess::NewEntryInTrack(
+                    CanonicalSubstateKey {
+                        node_id: *node_id,
+                        partition_number,
+                        substate_key,
+                    },
+                    value.as_ref().map(|x| x.len()).unwrap_or_default(),
+                ))?;
 
                 if let Some(value) = value {
                     let tracked = TrackedSubstate {
@@ -540,10 +554,17 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
     ) -> Result<(), E> {
         let mut tracked_partitions = index_map_new();
 
-        for (partition_num, partition) in node_substates {
+        for (partition_number, partition) in node_substates {
             let mut partition_substates = BTreeMap::new();
             for (substate_key, value) in partition {
-                on_store_access(StoreAccess::NewEntryInTrack(node_id))?;
+                on_store_access(StoreAccess::NewEntryInTrack(
+                    CanonicalSubstateKey {
+                        node_id,
+                        partition_number,
+                        substate_key,
+                    },
+                    value.len(),
+                ))?;
                 let db_sort_key = M::to_db_sort_key(&substate_key);
                 let tracked = TrackedSubstate {
                     substate_key,
@@ -552,7 +573,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 partition_substates.insert(db_sort_key, tracked);
             }
             let tracked_partition = TrackedPartition::new_with_substates(partition_substates);
-            tracked_partitions.insert(partition_num, tracked_partition);
+            tracked_partitions.insert(partition_number, tracked_partition);
         }
 
         self.tracked_nodes.insert(
@@ -617,7 +638,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
     fn set_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
-        partition_num: PartitionNumber,
+        partition_number: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
         on_store_access: &mut F,
@@ -628,14 +649,21 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .entry(node_id)
             .or_insert(TrackedNode::new(false))
             .tracked_partitions
-            .entry(partition_num)
+            .entry(partition_number)
             .or_insert(TrackedPartition::new());
 
         let entry = tracked_partition.substates.entry(db_sort_key);
 
         match entry {
             Entry::Vacant(e) => {
-                on_store_access(StoreAccess::NewEntryInTrack(node_id))?;
+                on_store_access(StoreAccess::NewEntryInTrack(
+                    CanonicalSubstateKey {
+                        node_id,
+                        partition_number,
+                        substate_key,
+                    },
+                    substate_value.len(),
+                ))?;
                 let tracked = TrackedSubstate {
                     substate_key,
                     substate_value: TrackedSubstateValue::WriteOnly(Write::Update(
@@ -712,7 +740,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
     fn scan_keys<K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
-        partition_num: PartitionNumber,
+        partition_number: PartitionNumber,
         limit: u32,
         on_store_access: &mut F,
     ) -> Result<Vec<SubstateKey>, E> {
@@ -723,7 +751,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         let is_new = node_updates
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
-        let tracked_partition = node_updates.and_then(|n| n.tracked_partitions.get(&partition_num));
+        let tracked_partition =
+            node_updates.and_then(|n| n.tracked_partitions.get(&partition_number));
 
         if let Some(tracked_partition) = tracked_partition {
             for tracked in tracked_partition.substates.values() {
@@ -743,16 +772,19 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             return Ok(items);
         }
 
-        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
-        let mut tracked_iter = TrackedIter::new(Self::list_entries_from_db(
+        let db_partition_key = M::to_db_partition_key(node_id, partition_number);
+        let mut tracked_iter = TrackedIter::new(Self::list_sorted_entries_from_db(
             self.substate_db,
             &db_partition_key,
             on_store_access,
-            *node_id,
+            CanonicalPartition {
+                node_id: *node_id,
+                partition_number,
+            },
         ));
 
         for result in &mut tracked_iter {
-            let (db_sort_key, _value) = result?;
+            let (db_sort_key, substate_key, _value) = result?;
 
             if items.len() == limit {
                 break;
@@ -765,14 +797,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 continue;
             }
 
-            let substate_key = M::from_db_sort_key::<K>(&db_sort_key);
-
             items.push(substate_key);
         }
 
         // Update track
         let num_iterations = tracked_iter.num_iterations;
-        let tracked_partition = self.get_tracked_partition(node_id, partition_num);
+        let tracked_partition = self.get_tracked_partition(node_id, partition_number);
         tracked_partition.range_read = u32::max(tracked_partition.range_read, num_iterations);
 
         drop(tracked_iter);
@@ -782,7 +812,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
     fn drain_substates<K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
-        partition_num: PartitionNumber,
+        partition_number: PartitionNumber,
         limit: u32,
         on_store_access: &mut F,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E> {
@@ -797,7 +827,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // Check what we've currently got so far without going into database
         let mut tracked_partition =
-            node_updates.and_then(|n| n.tracked_partitions.get_mut(&partition_num));
+            node_updates.and_then(|n| n.tracked_partitions.get_mut(&partition_number));
         if let Some(tracked_partition) = tracked_partition.as_mut() {
             for tracked in tracked_partition.substates.values_mut() {
                 if items.len() == limit {
@@ -817,17 +847,20 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         }
 
         // Read from database
-        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
-        let mut tracked_iter = TrackedIter::new(Self::list_entries_from_db(
+        let db_partition_key = M::to_db_partition_key(node_id, partition_number);
+        let mut tracked_iter = TrackedIter::new(Self::list_sorted_entries_from_db(
             self.substate_db,
             &db_partition_key,
             on_store_access,
-            *node_id,
+            CanonicalPartition {
+                node_id: *node_id,
+                partition_number,
+            },
         ));
         let new_updates = {
             let mut new_updates = Vec::new();
             for result in &mut tracked_iter {
-                let (db_sort_key, value) = result?;
+                let (db_sort_key, substate_key, value) = result?;
 
                 if items.len() == limit {
                     break;
@@ -841,7 +874,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                     continue;
                 }
 
-                let substate_key = M::from_db_sort_key::<K>(&db_sort_key);
                 let tracked = TrackedSubstate {
                     substate_key: substate_key.clone(),
                     substate_value: TrackedSubstateValue::ReadExistAndWrite(
@@ -859,7 +891,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         // Update track
         {
             let num_iterations = tracked_iter.num_iterations;
-            let tracked_partition = self.get_tracked_partition(node_id, partition_num);
+            let tracked_partition = self.get_tracked_partition(node_id, partition_number);
             tracked_partition.range_read = u32::max(tracked_partition.range_read, num_iterations);
 
             for (db_sort_key, tracked) in new_updates {
@@ -874,7 +906,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
     fn scan_sorted_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
-        partition_num: PartitionNumber,
+        partition_number: PartitionNumber,
         limit: u32,
         on_store_access: &mut F,
     ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, E> {
@@ -888,23 +920,27 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .or_insert(TrackedNode::new(false));
         let tracked_partition = tracked_node
             .tracked_partitions
-            .entry(partition_num)
+            .entry(partition_number)
             .or_insert(TrackedPartition::new());
 
         // initialize the "from db" iterator: use `dyn`, since we want to skip it altogether if the node is marked as `is_new` in our track
         let mut db_values_count = 0u32;
-        let raw_db_entries: Box<dyn Iterator<Item = Result<(DbSortKey, IndexedScryptoValue), E>>> =
-            if tracked_node.is_new {
-                Box::new(empty()) // optimization: avoid touching the database altogether
-            } else {
-                let partition_key = M::to_db_partition_key(node_id, partition_num);
-                Box::new(Self::list_entries_from_db(
-                    self.substate_db,
-                    &partition_key,
-                    on_store_access,
-                    *node_id,
-                ))
-            };
+        let raw_db_entries: Box<
+            dyn Iterator<Item = Result<(DbSortKey, SubstateKey, IndexedScryptoValue), E>>,
+        > = if tracked_node.is_new {
+            Box::new(empty()) // optimization: avoid touching the database altogether
+        } else {
+            let partition_key = M::to_db_partition_key(node_id, partition_number);
+            Box::new(Self::list_sorted_entries_from_db(
+                self.substate_db,
+                &partition_key,
+                on_store_access,
+                CanonicalPartition {
+                    node_id: *node_id,
+                    partition_number,
+                },
+            ))
+        };
         let db_read_entries = raw_db_entries.inspect(|_| {
             db_values_count += 1;
         });
@@ -924,8 +960,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         for result in
             OverlayingResultIterator::new(db_read_entries, tracked_entry_changes).take(limit)
         {
-            let (db_sort_key, value) = result?;
-            let substate_key = M::from_db_sort_key::<SortedU16Key>(&db_sort_key);
+            let (db_sort_key, substate_key, value) = result?;
             let sorted_key = match substate_key {
                 SubstateKey::Sorted(sorted) => sorted,
                 _ => panic!("Should be a sorted key"),

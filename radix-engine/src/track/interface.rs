@@ -168,22 +168,45 @@ pub trait SubstateStore {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub struct CanonicalPartition {
+    pub node_id: NodeId,
+    pub partition_number: PartitionNumber,
+}
+
+#[derive(Debug, Clone)]
+pub struct CanonicalSubstateKey {
+    pub node_id: NodeId,
+    pub partition_number: PartitionNumber,
+    pub substate_key: SubstateKey,
+}
+
+impl CanonicalSubstateKey {
+    pub fn of(partition: CanonicalPartition, substate_key: SubstateKey) -> Self {
+        Self {
+            node_id: partition.node_id,
+            partition_number: partition.partition_number,
+            substate_key,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum StoreAccess {
     /// Some substate was read from database.
-    ReadFromDb(NodeId, usize),
+    ReadFromDb(CanonicalSubstateKey, usize),
     /// Non-existent substate was read from database.
-    ReadFromDbNotFound(NodeId),
+    ReadFromDbNotFound(CanonicalSubstateKey),
     /// A new entry has been added to track
     /// System limits how many items that can be tracked.
-    NewEntryInTrack(NodeId),
+    NewEntryInTrack(CanonicalSubstateKey, usize),
 }
 
 impl StoreAccess {
     pub fn node_id(&self) -> NodeId {
         match self {
-            StoreAccess::ReadFromDb(node_id, _)
-            | StoreAccess::ReadFromDbNotFound(node_id)
-            | StoreAccess::NewEntryInTrack(node_id) => *node_id,
+            StoreAccess::ReadFromDb(key, _)
+            | StoreAccess::ReadFromDbNotFound(key)
+            | StoreAccess::NewEntryInTrack(key, _) => key.node_id,
         }
     }
 }
