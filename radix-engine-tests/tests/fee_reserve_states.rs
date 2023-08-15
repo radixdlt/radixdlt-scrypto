@@ -51,7 +51,10 @@ fn test_fee_states() {
     // At the time checking fee balance, it should be still using system loan. This is because
     // loan is designed to be slightly more than what it takes to `lock_fee` from a component.
     // Therefore, the balance should be between `fee_locked` and `fee_locked + loan_in_xrd`.
-    let loan_in_xrd = receipt.effective_execution_cost_unit_price() * EXECUTION_COST_UNIT_LOAN;
+    let loan_in_xrd = receipt
+        .effective_execution_cost_unit_price()
+        .safe_mul(EXECUTION_COST_UNIT_LOAN)
+        .unwrap();
     assert!(fee_locked < remaining_fee_balance);
-    assert!(remaining_fee_balance < fee_locked + loan_in_xrd);
+    assert!(remaining_fee_balance < fee_locked.safe_add(loan_in_xrd).unwrap());
 }

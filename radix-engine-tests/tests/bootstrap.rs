@@ -510,7 +510,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     let mut total_xrd_supply = Decimal::ZERO;
     for component in components {
         let xrd_balance = test_runner.get_component_balance(component, XRD);
-        total_xrd_supply += xrd_balance;
+        total_xrd_supply = total_xrd_supply.safe_add(xrd_balance).unwrap();
         println!("{:?}, {}", component, xrd_balance);
     }
 
@@ -527,14 +527,22 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
             let actual_type_name = test_runner.event_name(&event.0);
             match actual_type_name.as_str() {
                 "MintFungibleResourceEvent" => {
-                    total_mint_amount += scrypto_decode::<MintFungibleResourceEvent>(&event.1)
-                        .unwrap()
-                        .amount;
+                    total_mint_amount = total_mint_amount
+                        .safe_add(
+                            scrypto_decode::<MintFungibleResourceEvent>(&event.1)
+                                .unwrap()
+                                .amount,
+                        )
+                        .unwrap();
                 }
                 "BurnFungibleResourceEvent" => {
-                    total_burn_amount += scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
-                        .unwrap()
-                        .amount;
+                    total_burn_amount = total_burn_amount
+                        .safe_add(
+                            scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
+                                .unwrap()
+                                .amount,
+                        )
+                        .unwrap();
                 }
                 _ => {}
             }
@@ -543,5 +551,8 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     println!("Total XRD supply: {}", total_xrd_supply);
     println!("Total mint amount: {}", total_mint_amount);
     println!("Total burn amount: {}", total_burn_amount);
-    assert_eq!(total_xrd_supply, total_mint_amount - total_burn_amount);
+    assert_eq!(
+        total_xrd_supply,
+        total_mint_amount.safe_sub(total_burn_amount).unwrap()
+    );
 }

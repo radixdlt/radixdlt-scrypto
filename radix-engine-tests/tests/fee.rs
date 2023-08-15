@@ -251,9 +251,13 @@ fn test_fee_accounting_success() {
         .unwrap();
     assert_eq!(
         account1_new_balance,
-        account1_balance - 66 - receipt.fee_summary.total_cost()
+        account1_balance
+            .safe_sub(Decimal::from(66))
+            .unwrap()
+            .safe_sub(receipt.fee_summary.total_cost())
+            .unwrap()
     );
-    assert_eq!(account2_new_balance, account2_balance + 66);
+    assert_eq!(account2_new_balance, account2_balance.safe_add(66).unwrap());
 }
 
 #[test]
@@ -307,7 +311,9 @@ fn test_fee_accounting_failure() {
         .unwrap();
     assert_eq!(
         account1_new_balance,
-        account1_balance - receipt.fee_summary.total_cost()
+        account1_balance
+            .safe_sub(receipt.fee_summary.total_cost())
+            .unwrap()
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
@@ -388,14 +394,29 @@ fn test_contingent_fee_accounting_success() {
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - receipt.effective_execution_cost_unit_price()
-                * receipt.fee_summary.total_execution_cost_units_consumed
-            - receipt.effective_finalization_cost_unit_price()
-                * receipt.fee_summary.total_finalization_cost_units_consumed
-            - receipt.fee_summary.total_storage_cost_in_xrd
-            + contingent_fee
+            .safe_sub(
+                receipt
+                    .effective_execution_cost_unit_price()
+                    .safe_mul(receipt.fee_summary.total_execution_cost_units_consumed)
+                    .unwrap()
+            )
+            .unwrap()
+            .safe_sub(
+                receipt
+                    .effective_finalization_cost_unit_price()
+                    .safe_mul(receipt.fee_summary.total_finalization_cost_units_consumed)
+                    .unwrap()
+            )
+            .unwrap()
+            .safe_sub(receipt.fee_summary.total_storage_cost_in_xrd)
+            .unwrap()
+            .safe_add(contingent_fee)
+            .unwrap()
     );
-    assert_eq!(account2_new_balance, account2_balance - contingent_fee);
+    assert_eq!(
+        account2_new_balance,
+        account2_balance.safe_sub(contingent_fee).unwrap()
+    );
 }
 
 #[test]
@@ -453,8 +474,13 @@ fn test_contingent_fee_accounting_failure() {
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - receipt.effective_execution_cost_unit_price()
-                * summary.total_execution_cost_units_consumed
+            .safe_sub(
+                receipt
+                    .effective_execution_cost_unit_price()
+                    .safe_mul(summary.total_execution_cost_units_consumed)
+                    .unwrap()
+            )
+            .unwrap()
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
