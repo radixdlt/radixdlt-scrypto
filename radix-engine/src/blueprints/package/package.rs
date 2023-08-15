@@ -81,6 +81,18 @@ pub enum PackageError {
         limit: usize,
         actual: usize,
     },
+    ExceededMaxEventNameLen {
+        limit: usize,
+        actual: usize,
+    },
+    ExceededMaxFunctionNameLen {
+        limit: usize,
+        actual: usize,
+    },
+    ExceededMaxFeatureNameLen {
+        limit: usize,
+        actual: usize,
+    },
     MissingRole(RoleKey),
     UnexpectedNumberOfMethodAuth {
         blueprint: String,
@@ -380,13 +392,6 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                     for (role_key, role_list) in roles {
                         check_list(role_list)?;
 
-                        if role_key.key.len() > MAX_ROLE_NAME_LEN {
-                            return Err(PackageError::ExceededMaxRoleNameLen {
-                                limit: MAX_ROLE_NAME_LEN,
-                                actual: role_key.key.len(),
-                            });
-                        }
-
                         if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
                             return Err(PackageError::DefiningReservedRoleKey(
                                 blueprint.to_string(),
@@ -450,18 +455,39 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
         condition(bp_name)?;
 
         for (name, _) in bp_init.schema.events.event_schema.iter() {
+            if name.len() > MAX_EVENT_NAME_LEN {
+                return Err(PackageError::ExceededMaxEventNameLen {
+                    limit: MAX_EVENT_NAME_LEN,
+                    actual: name.len(),
+                });
+            }
+
             condition(name)?;
         }
 
         for (name, _) in bp_init.schema.functions.functions.iter() {
+            if name.len() > MAX_FUNCTION_NAME_LEN {
+                return Err(PackageError::ExceededMaxFunctionNameLen {
+                    limit: MAX_FUNCTION_NAME_LEN,
+                    actual: name.len(),
+                });
+            }
+
             condition(name)?;
         }
 
-        for (_, name) in bp_init.schema.hooks.hooks.iter() {
-            condition(name)?;
+        for (_, export_name) in bp_init.schema.hooks.hooks.iter() {
+            condition(export_name)?;
         }
 
         for name in bp_init.feature_set.iter() {
+            if name.len() > MAX_FEATURE_NAME_LEN {
+                return Err(PackageError::ExceededMaxFeatureNameLen {
+                    limit: MAX_FEATURE_NAME_LEN,
+                    actual: name.len(),
+                });
+            }
+
             condition(name)?;
         }
 
@@ -482,9 +508,16 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
         {
             if let RoleSpecification::Normal(list) = &static_roles.roles {
                 for (role_key, _) in list.iter() {
+                    if role_key.key.len() > MAX_ROLE_NAME_LEN {
+                        return Err(PackageError::ExceededMaxRoleNameLen {
+                            limit: MAX_ROLE_NAME_LEN,
+                            actual: role_key.key.len(),
+                        });
+                    }
                     condition(&role_key.key)?;
                 }
             }
+
             for (key, accessibility) in static_roles.methods.iter() {
                 condition(&key.ident)?;
                 if let MethodAccessibility::RoleProtected(role_list) = accessibility {
