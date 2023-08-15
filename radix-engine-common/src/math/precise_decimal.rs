@@ -433,43 +433,7 @@ impl SafeDiv<PreciseDecimal> for PreciseDecimal {
         c_256.map(Self)
     }
 }
-/*
-impl SafeAdd<Decimal> for PreciseDecimal {
-    type Output = Self;
 
-    fn safe_add(self, other: Self) -> Option<Self::Output> {
-        self.safe_add(Self::from(other))
-    }
-}
-
-impl SafeSub<PreciseDecimal> for Decimal {
-    type Output = PreciseDecimal;
-
-    fn safe_sub(self, other: Self) -> Option<Self::Output> {
-        PreciseDecimal::from(self).safe_sub(other)
-    }
-}
-
-impl SafeMul<PreciseDecimal> for Decimal {
-    type Output = PreciseDecimal;
-
-    fn safe_mul(self, other: Self) -> Option<Self> {
-        PreciseDecimal::from(self).safe_mul(other)
-    }
-}
-
-impl SafeDiv<PreciseDecimal> for Decimal {
-    type Output = PreciseDecimal;
-
-    fn safe_div(self, other: Self) -> Option<Self> {
-        PreciseDecimal::from(self).safe_div(other)
-    }
-}
-*/
-
-// TODO below should be checked ops as well, but cannot overload safe_ops for primitived type
-// eg. below is not working, safe_sub expects i32
-// 1_i32.safe_sub(d: Decimal) -> Option<Decimal>
 macro_rules! impl_arith_ops {
     ($type:ident) => {
         impl SafeAdd<$type> for PreciseDecimal {

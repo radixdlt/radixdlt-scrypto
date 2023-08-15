@@ -450,9 +450,6 @@ impl SafeDiv<Decimal> for Decimal {
     }
 }
 
-// TODO below should be safe ops as well, but cannot overload safe_ops for primitived type
-// eg. below is not working, safe_sub expects i32
-// 1_i32.safe_sub(d: Decimal) -> Option<Decimal>
 macro_rules! impl_arith_ops {
     ($type:ident) => {
         impl SafeAdd<$type> for Decimal {
