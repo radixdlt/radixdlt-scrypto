@@ -52,7 +52,7 @@ use transaction::prelude::IntentHash;
 //   => Iteration exposed to engine via the MapKey's database key (ie hash of the key)
 //   => Is versioned / locked in its entirety
 // - SortedU16Index
-//   => Has key: SortedKey(U16, Vec<u8>)
+//   => Has key: SortedKey([u8; 2], Vec<u8>)
 //   => Iteration exposed to engine via the user-controlled U16 prefix and then the MapKey's database key (ie hash of the key)
 //   => Is versioned / locked in its entirety
 //
