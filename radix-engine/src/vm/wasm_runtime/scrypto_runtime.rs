@@ -3,6 +3,7 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::api::field_api::LockFlags;
+use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, FieldValue};
 use radix_engine_interface::types::ClientCostingEntry;
@@ -228,7 +229,7 @@ where
         &mut self,
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let schema = scrypto_decode::<KeyValueStoreSchemaInit>(&schema)
+        let schema = scrypto_decode::<KeyValueStoreGenericArgs>(&schema)
             .map_err(WasmRuntimeError::InvalidKeyValueStoreSchema)?;
 
         let key_value_store_id = self.api.key_value_store_new(schema)?;
@@ -455,17 +456,33 @@ where
         self.allocate_buffer(scrypto_encode(&ruid).expect("Failed to encode RUID"))
     }
 
-    fn cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
-        let cost_unit_limit = self.api.cost_unit_limit()?;
+    fn execution_cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let execution_cost_unit_limit = self.api.execution_cost_unit_limit()?;
 
-        Ok(cost_unit_limit)
+        Ok(execution_cost_unit_limit)
     }
 
-    fn cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let cost_unit_price = self.api.cost_unit_price()?;
+    fn execution_cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let execution_cost_unit_price = self.api.execution_cost_unit_price()?;
 
         self.allocate_buffer(
-            scrypto_encode(&cost_unit_price).expect("Failed to encode cost_unit_price"),
+            scrypto_encode(&execution_cost_unit_price)
+                .expect("Failed to encode execution_cost_unit_price"),
+        )
+    }
+
+    fn finalization_cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let finalization_cost_unit_limit = self.api.finalization_cost_unit_limit()?;
+
+        Ok(finalization_cost_unit_limit)
+    }
+
+    fn finalization_cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let finalization_cost_unit_price = self.api.finalization_cost_unit_price()?;
+
+        self.allocate_buffer(
+            scrypto_encode(&finalization_cost_unit_price)
+                .expect("Failed to encode finalization_cost_unit_price"),
         )
     }
 

@@ -34,7 +34,7 @@ impl AccountNativePackage {
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
                 value: TypeRef::Static(aggregator.add_child_type_and_descendents::<Own>()),
-                can_own: true,
+                allow_ownership: true,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -45,7 +45,7 @@ impl AccountNativePackage {
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ResourcePreference>(),
                 ),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -54,7 +54,7 @@ impl AccountNativePackage {
                     aggregator.add_child_type_and_descendents::<ResourceOrNonFungible>(),
                 ),
                 value: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
 
@@ -456,7 +456,7 @@ impl AccountNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(roles_template!(
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template!(
                         roles {
                             SECURIFY_ROLE => updaters: [SELF_ROLE];
                         },

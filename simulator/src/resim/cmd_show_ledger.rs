@@ -49,8 +49,6 @@ impl ShowLedger {
         )
         .map_err(Error::IOError)?;
 
-        writeln!(out, "").map_err(Error::IOError)?;
-
         Ok(())
     }
 

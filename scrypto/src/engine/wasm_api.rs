@@ -39,9 +39,13 @@ extern "C" {
     // Costing API
     //===============
 
-    pub fn cost_unit_limit() -> u32;
+    pub fn execution_cost_unit_limit() -> u32;
 
-    pub fn cost_unit_price() -> Buffer;
+    pub fn execution_cost_unit_price() -> Buffer;
+
+    pub fn finalization_cost_unit_limit() -> u32;
+
+    pub fn finalization_cost_unit_price() -> Buffer;
 
     pub fn tip_percentage() -> u32;
 
@@ -74,11 +78,6 @@ extern "C" {
     pub fn get_reservation_address(node_id_ptr: *const u8, node_id_len: usize) -> Buffer;
 
     pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
-
-    pub fn kv_store_get_info(
-        key_value_store_id_ptr: *const u8,
-        key_value_store_id_len: usize,
-    ) -> Buffer;
 
     pub fn kv_store_open_entry(
         key_value_store_id_ptr: *const u8,
@@ -199,12 +198,22 @@ pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn cost_unit_limit() -> u32 {
+pub unsafe fn execution_cost_unit_limit() -> u32 {
     unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn cost_unit_price() -> Buffer {
+pub unsafe fn execution_cost_unit_price() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn finalization_cost_unit_limit() -> u32 {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn finalization_cost_unit_price() -> Buffer {
     unreachable!()
 }
 
@@ -263,14 +272,6 @@ pub unsafe fn get_reservation_address(_node_id_ptr: *const u8, _node_id_len: usi
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn kv_store_new(_schema_ptr: *const u8, _schema_len: usize) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_store_get_info(
-    _key_value_store_id_ptr: *const u8,
-    _key_value_store_id_len: usize,
-) -> Buffer {
     unreachable!()
 }
 

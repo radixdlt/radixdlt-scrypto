@@ -233,12 +233,20 @@ impl SystemLoanFeeReserve {
         }
     }
 
-    pub fn cost_unit_limit(&self) -> u32 {
+    pub fn execution_cost_unit_limit(&self) -> u32 {
         self.execution_cost_unit_limit
     }
 
-    pub fn cost_unit_price(&self) -> Decimal {
+    pub fn execution_cost_unit_price(&self) -> Decimal {
         transmute_u128_as_decimal(self.execution_cost_unit_price)
+    }
+
+    pub fn finalization_cost_unit_limit(&self) -> u32 {
+        self.finalization_cost_unit_limit
+    }
+
+    pub fn finalization_cost_unit_price(&self) -> Decimal {
+        transmute_u128_as_decimal(self.finalization_cost_unit_price)
     }
 
     pub fn usd_price(&self) -> Decimal {

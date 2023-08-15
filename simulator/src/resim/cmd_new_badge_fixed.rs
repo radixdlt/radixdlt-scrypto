@@ -73,7 +73,7 @@ impl NewBadgeFixed {
 
         let metadata = ModuleConfig {
             init: metadata.into(),
-            roles: RolesInit::default(),
+            roles: RoleAssignmentInit::default(),
         };
 
         let manifest = ManifestBuilder::new()

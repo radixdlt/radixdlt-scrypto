@@ -592,9 +592,9 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.9.8"
+version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19ca9b167ed904bc89a2f64c4be5014615c26fd9c4ddd2042c6094744c7df11a"
+checksum = "b28455ac4363046076054a7e9cfbd7f168019c29dba32a625f59fc0aeffaaea4"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-epoch",

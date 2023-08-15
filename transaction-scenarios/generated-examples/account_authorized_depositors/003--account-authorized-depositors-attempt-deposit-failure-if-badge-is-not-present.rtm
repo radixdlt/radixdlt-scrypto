@@ -17,7 +17,7 @@ CALL_METHOD
     Bucket("bucket")
     Enum<1u8>(
         Enum<1u8>(
-            Address("resource_sim1thmh6935clsc7mq4atkwmnzg8d7seluvdrm4uqpcny9f9xe22r0u67")
+            Address("resource_sim1tkrw89v36cqhckr3uarnvava7n479hwy4g84h037msrcljw3fw3erk")
         )
     )
 ;

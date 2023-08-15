@@ -1,3 +1,4 @@
+use scrypto::api::key_value_store_api::KeyValueStoreGenericArgs;
 use scrypto::api::object_api::ObjectModuleId;
 use scrypto::api::ClientBlueprintApi;
 use scrypto::api::ClientObjectApi;
@@ -182,21 +183,6 @@ mod move_test {
 }
 
 #[blueprint]
-mod runtime_test {
-    struct RuntimeTest;
-
-    impl RuntimeTest {
-        pub fn query() -> (PackageAddress, Hash, Epoch) {
-            (
-                Runtime::package_address(),
-                Runtime::transaction_hash(),
-                Runtime::current_epoch(),
-            )
-        }
-    }
-}
-
-#[blueprint]
 mod recursive_test {
     struct RecursiveTest {
         own: Own,
@@ -205,7 +191,7 @@ mod recursive_test {
     impl RecursiveTest {
         pub fn create_own_at_depth(depth: u32) {
             // Can be further optimized by pre-computation
-            let schema = scrypto_encode(&KeyValueStoreSchemaInit::new::<u32, Own>(true)).unwrap();
+            let schema = scrypto_encode(&KeyValueStoreGenericArgs::new::<u32, Own>(true)).unwrap();
             let key_payload = scrypto_encode(&0u32).unwrap();
             let mut value_payload = scrypto_encode(&Own(NodeId([0u8; NodeId::LENGTH]))).unwrap();
 

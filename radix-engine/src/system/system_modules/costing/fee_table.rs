@@ -4,6 +4,7 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::kernel::substate_io::SubstateDevice;
+use crate::system::system_modules::transaction_runtime::Event;
 use crate::{
     blueprints::package::*,
     kernel::actor::Actor,
@@ -47,7 +48,7 @@ lazy_static! {
         costs
             .entry(PACKAGE_PACKAGE)
             .or_default()
-            // FIXME: publish_wasm_advanced is too expensinve, dividing by 3 to let large package (1MiB) to be published
+            // TODO: publish_wasm_advanced is too expensinve, dividing by 3 to let large package (1MiB) to be published
             .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (3273 / 3, 10224507));
     costs
     };
@@ -63,7 +64,6 @@ lazy_static! {
 /// - Baseline: 1 microsecond = 100 cost units
 /// - Non-time based costing will make the actual execution time less than anticipated
 ///
-/// FIXME: fee table is actively adjusted at this point of time!
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct FeeTable;
 
@@ -72,11 +72,9 @@ impl FeeTable {
         Self
     }
 
-    fn transient_data_cost(size: usize) -> u32 {
-        // Rationality:
-        // To limit transient data to 64 MB, the cost for a byte should be 100,000,000 / 64,000,000 = 1.56.
-        mul(cast(size), 2)
-    }
+    //======================
+    // Execution costs
+    //======================
 
     fn data_processing_cost(size: usize) -> u32 {
         // Based on benchmark `bench_decode_sbor`
@@ -88,33 +86,36 @@ impl FeeTable {
         mul(cast(size), 2)
     }
 
-    //======================
-    // Commit costs
-    //======================
-
-    #[inline]
-    pub fn store_commit_cost(&self, store_commit: &StoreCommit) -> u32 {
-        // Execution time (µs): 0.0025 * size + 1000
-        // Execution cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000
-        // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-        match store_commit {
-            StoreCommit::Insert { size, .. } => add(cast(*size) / 4, 100_000),
-            StoreCommit::Update { size, .. } => add(cast(*size) / 4, 100_000),
-            StoreCommit::Delete { .. } => 100_000,
+    fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
+        match store_access {
+            StoreAccess::ReadFromDb(_, size) => {
+                // Execution time (µs): 0.0009622109 * size + 389.5155
+                // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                add(cast(*size) / 10, 40_000)
+            }
+            StoreAccess::ReadFromDbNotFound(_) => {
+                // Execution time (µs): varies, using max 1,600
+                // Execution cost: 1,600 * 100
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                160_000
+            }
+            StoreAccess::NewEntryInTrack(_) => {
+                // The max number of entries is limited by limits module.
+                0
+            }
         }
     }
 
-    //======================
-    // Transaction costs
-    //======================
-
     #[inline]
-    pub fn tx_base_cost(&self) -> u32 {
-        50_000
+    pub fn verify_tx_signatures_cost(&self, n: usize) -> u32 {
+        // Based on benchmark `bench_validate_secp256k1`
+        // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7,000 cost units
+        mul(cast(n), 7_000)
     }
 
     #[inline]
-    pub fn tx_payload_cost(&self, size: usize) -> u32 {
+    pub fn validate_tx_payload_cost(&self, size: usize) -> u32 {
         // Rational:
         // Transaction payload is propagated over a P2P network.
         // Larger size may slows down the network performance.
@@ -123,17 +124,6 @@ impl FeeTable {
         // This is roughly 1/24 of storing data in substate store per current setup.
         mul(cast(size), 40)
     }
-
-    #[inline]
-    pub fn tx_signature_verification_cost(&self, n: usize) -> u32 {
-        // Based on benchmark `bench_validate_secp256k1`
-        // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7,000 cost units
-        mul(cast(n), 7_000)
-    }
-
-    //======================
-    // VM execution costs
-    //======================
 
     #[inline]
     pub fn run_native_code_cost(
@@ -180,10 +170,6 @@ impl FeeTable {
         mul(cast(size), 2)
     }
 
-    //======================
-    // Kernel costs
-    //======================
-
     #[inline]
     pub fn before_invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {
         // used max cpu instruction counts
@@ -210,40 +196,12 @@ impl FeeTable {
     #[inline]
     pub fn create_node_cost(&self, event: &CreateNodeEvent) -> u32 {
         match event {
-            CreateNodeEvent::Start(node_id, node_substates) => {
-                let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
-                    match entity_type {
-                        EntityType::GlobalAccessController => 9370,
-                        EntityType::GlobalAccount => 8504,
-                        EntityType::GlobalConsensusManager => 6527,
-                        EntityType::GlobalFungibleResourceManager => 6858,
-                        EntityType::GlobalGenericComponent => 6591,
-                        EntityType::GlobalIdentity => 8740,
-                        EntityType::GlobalMultiResourcePool => 8826,
-                        EntityType::GlobalNonFungibleResourceManager => 6589,
-                        EntityType::GlobalOneResourcePool => 8463,
-                        EntityType::GlobalPackage => 6367,
-                        EntityType::GlobalTransactionTracker => 6631,
-                        EntityType::GlobalTwoResourcePool => 8456,
-                        EntityType::GlobalValidator => 8225,
-                        EntityType::GlobalVirtualEd25519Account => 7262,
-                        EntityType::GlobalVirtualEd25519Identity => 0, // FIXME: cover that in tests
-                        EntityType::GlobalVirtualSecp256k1Account => 6538,
-                        EntityType::GlobalVirtualSecp256k1Identity => 9012,
-                        EntityType::InternalAccount => 5662,
-                        EntityType::InternalFungibleVault => 4661,
-                        EntityType::InternalGenericComponent => 6978,
-                        EntityType::InternalKeyValueStore => 1204,
-                        EntityType::InternalNonFungibleVault => 4532,
-                    }
-                } else {
-                    0
-                };
+            CreateNodeEvent::Start(_, node_substates) => {
+                let base_cost: u32 = 5000;
                 let total_substate_size = node_substates
                     .values()
                     .map(|x| x.values().map(|x| x.len()).sum::<usize>())
                     .sum::<usize>();
-
                 add(
                     base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
                     Self::data_processing_cost(total_substate_size),
@@ -286,35 +244,8 @@ impl FeeTable {
         match event {
             OpenSubstateEvent::Start { .. } => 0,
             OpenSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
-            OpenSubstateEvent::End { size, node_id, .. } => {
-                let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
-                    match entity_type {
-                        EntityType::GlobalAccessController => 9256,
-                        EntityType::GlobalAccount => 9146,
-                        EntityType::GlobalConsensusManager => 7034,
-                        EntityType::GlobalFungibleResourceManager => 7054,
-                        EntityType::GlobalGenericComponent => 8856,
-                        EntityType::GlobalIdentity => 9421,
-                        EntityType::GlobalMultiResourcePool => 9244,
-                        EntityType::GlobalNonFungibleResourceManager => 8906,
-                        EntityType::GlobalOneResourcePool => 9445,
-                        EntityType::GlobalPackage => 13410,
-                        EntityType::GlobalTransactionTracker => 6582,
-                        EntityType::GlobalTwoResourcePool => 9218,
-                        EntityType::GlobalValidator => 7306,
-                        EntityType::GlobalVirtualEd25519Account => 6953,
-                        EntityType::GlobalVirtualEd25519Identity => 0, // FIXME: cover that in tests
-                        EntityType::GlobalVirtualSecp256k1Account => 8884,
-                        EntityType::GlobalVirtualSecp256k1Identity => 9855,
-                        EntityType::InternalAccount => 6152,
-                        EntityType::InternalFungibleVault => 7202,
-                        EntityType::InternalGenericComponent => 6289,
-                        EntityType::InternalKeyValueStore => 17812,
-                        EntityType::InternalNonFungibleVault => 9545,
-                    }
-                } else {
-                    0
-                };
+            OpenSubstateEvent::End { size, .. } => {
+                let base_cost: u32 = 8000;
                 add(
                     base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
                     Self::data_processing_cost(*size),
@@ -407,32 +338,6 @@ impl FeeTable {
     }
 
     #[inline]
-    fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
-        match store_access {
-            StoreAccess::ReadFromDb(size) => {
-                // Execution time (µs): 0.0009622109 * size + 389.5155
-                // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
-                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                add(cast(*size) / 10, 40_000)
-            }
-            StoreAccess::ReadFromDbNotFound => {
-                // Execution time (µs): varies, using max 1,600
-                // Execution cost: 1,600 * 100
-                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                160_000
-            }
-            StoreAccess::NewEntryInTrack => {
-                // The max number of entries is limited by limits module.
-                0
-            }
-        }
-    }
-
-    //======================
-    // System costs
-    //======================
-
-    #[inline]
     pub fn lock_fee_cost(&self) -> u32 {
         500
     }
@@ -464,17 +369,57 @@ impl FeeTable {
 
     #[inline]
     pub fn emit_event_cost(&self, size: usize) -> u32 {
-        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        500 + Self::data_processing_cost(size)
     }
 
     #[inline]
     pub fn emit_log_cost(&self, size: usize) -> u32 {
-        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        500 + Self::data_processing_cost(size)
     }
 
     #[inline]
     pub fn panic_cost(&self, size: usize) -> u32 {
-        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        500 + Self::data_processing_cost(size)
+    }
+
+    //======================
+    // Finalization costs
+    // This is primarily to account for the additional work on the Node side
+    //======================
+
+    #[inline]
+    pub fn base_cost(&self) -> u32 {
+        50_000
+    }
+
+    #[inline]
+    pub fn commit_state_updates_cost(&self, store_commit: &StoreCommit) -> u32 {
+        // Committing state time (µs): 0.0025 * size + 1000
+        // Finalization cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000
+        // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+        match store_commit {
+            StoreCommit::Insert { size, .. } => add(cast(*size) / 4, 100_000),
+            StoreCommit::Update { size, .. } => add(cast(*size) / 4, 100_000),
+            StoreCommit::Delete { .. } => 100_000,
+        }
+    }
+
+    #[inline]
+    pub fn commit_events_cost(&self, events: &Vec<Event>) -> u32 {
+        let mut sum = 0;
+        for event in events {
+            sum += add(cast(event.payload.len()) / 4, 5_000)
+        }
+        sum
+    }
+
+    #[inline]
+    pub fn commit_logs_cost(&self, logs: &Vec<(Level, String)>) -> u32 {
+        let mut sum = 0;
+        for log in logs {
+            sum += add(cast(log.1.len()) / 4, 1_000)
+        }
+        sum
     }
 }
 

@@ -213,13 +213,13 @@ impl Into<OwnerRoleEntry> for OwnerRole {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
-pub struct RolesInit {
+pub struct RoleAssignmentInit {
     pub data: BTreeMap<RoleKey, Option<AccessRule>>,
 }
 
-impl RolesInit {
+impl RoleAssignmentInit {
     pub fn new() -> Self {
-        RolesInit {
+        RoleAssignmentInit {
             data: BTreeMap::new(),
         }
     }

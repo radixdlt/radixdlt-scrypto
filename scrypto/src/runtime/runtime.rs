@@ -75,6 +75,11 @@ impl Runtime {
         ScryptoEnv.get_transaction_hash().unwrap()
     }
 
+    /// Returns the transaction hash.
+    pub fn generate_ruid() -> [u8; 32] {
+        ScryptoEnv.generate_ruid().unwrap()
+    }
+
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
         ScryptoEnv
@@ -105,12 +110,20 @@ impl Runtime {
         })
     }
 
-    pub fn cost_unit_limit() -> u32 {
-        ScryptoEnv.cost_unit_limit().unwrap()
+    pub fn execution_cost_unit_limit() -> u32 {
+        ScryptoEnv.execution_cost_unit_limit().unwrap()
     }
 
-    pub fn cost_unit_price() -> Decimal {
-        ScryptoEnv.cost_unit_price().unwrap()
+    pub fn execution_cost_unit_price() -> Decimal {
+        ScryptoEnv.execution_cost_unit_price().unwrap()
+    }
+
+    pub fn finalization_cost_unit_limit() -> u32 {
+        ScryptoEnv.finalization_cost_unit_limit().unwrap()
+    }
+
+    pub fn finalization_cost_unit_price() -> Decimal {
+        ScryptoEnv.finalization_cost_unit_price().unwrap()
     }
 
     pub fn tip_percentage() -> u32 {

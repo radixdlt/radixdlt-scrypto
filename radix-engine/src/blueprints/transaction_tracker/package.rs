@@ -52,7 +52,7 @@ impl TransactionTrackerNativePackage {
                 BlueprintKeyValueSchema {
                     key: TypeRef::Static(key_type_index),
                     value: TypeRef::Static(value_type_index),
-                    can_own: false,
+                    allow_ownership: false,
                 },
             ))
         }

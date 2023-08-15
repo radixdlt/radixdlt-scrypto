@@ -7,8 +7,10 @@ pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
 // Costing
 //=================
 pub const CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME: &str = "gas";
-pub const COST_UNIT_LIMIT_FUNCTION_NAME: &str = "cost_unit_limit";
-pub const COST_UNIT_PRICE_FUNCTION_NAME: &str = "cost_unit_price";
+pub const EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME: &str = "execution_cost_unit_limit";
+pub const EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME: &str = "execution_cost_unit_price";
+pub const FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME: &str = "finalization_cost_unit_limit";
+pub const FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME: &str = "finalization_cost_unit_price";
 pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
 pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
 
@@ -29,7 +31,6 @@ pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 // Key Value Store
 //=================
 pub const KEY_VALUE_STORE_NEW_FUNCTION_NAME: &str = "kv_store_new";
-pub const KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME: &str = "kv_store_get_info";
 pub const KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME: &str = "kv_store_open_entry";
 pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME: &str = "kv_store_remove_entry";
 
