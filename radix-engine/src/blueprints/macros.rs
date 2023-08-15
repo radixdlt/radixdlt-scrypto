@@ -216,7 +216,7 @@ pub trait SortedIndexEntryContent<ActualContent: From<Self>>: Sized {
 ///
 /// For each collection key, the following types will be created:
 /// * `<BlueprintIdent><CollectionIdent>KeyContent` - a transparent new type for the full key content
-/// * `<BlueprintIdent><CollectionIdent>Key` - a type for the full key (eg includes the u16 for a sorted index key)
+/// * `<BlueprintIdent><CollectionIdent>SubstateKey` - a type for the full key (eg includes the u16 for a sorted index key)
 ///
 /// The content of each of the above can take a number of forms.
 /// This is configured via specifying the type as one of the following.
@@ -370,7 +370,7 @@ macro_rules! declare_native_blueprint_state {
 
                     // TODO(David): Tweak when I work out the right strategy for keys. Probably just want a single new-type.
                     // So probably just don't use generate_content_type but use generate_key_type or something instead?
-                    pub type [<$blueprint_ident $collection_ident Key>] = [<$blueprint_ident $collection_ident KeyContent>];
+                    pub type [<$blueprint_ident $collection_ident SubstateKey>] = [<$blueprint_ident $collection_ident KeyContent>];
 
                     // TODO(David) - Properly handle SortedIndex:
                     // Fix Key types for SortedIndex to have a named u16 part of the key,
@@ -516,7 +516,7 @@ macro_rules! declare_native_blueprint_state {
                 #[derive(Debug, Clone)]
                 pub enum [<$blueprint_ident TypedSubstateKey>] {
                     Fields([<$blueprint_ident Field>]),
-                    $([<$collection_ident $collection_type Entries>]([<$blueprint_ident $collection_ident Key>]),)*
+                    $([<$collection_ident $collection_type Entries>]([<$blueprint_ident $collection_ident SubstateKey>]),)*
                 }
 
                 impl [<$blueprint_ident TypedSubstateKey>] {
@@ -530,7 +530,7 @@ macro_rules! declare_native_blueprint_state {
                             $(
                                 [<$blueprint_ident Partition>]::[<$collection_ident $collection_type>] => {
                                     [<$blueprint_ident TypedSubstateKey>]::[<$collection_ident $collection_type Entries>](
-                                        [<$blueprint_ident $collection_ident Key>]::try_from(substate_key)?,
+                                        [<$blueprint_ident $collection_ident SubstateKey>]::try_from(substate_key)?,
                                     )
                                 }
                             )*
@@ -631,7 +631,7 @@ macro_rules! declare_native_blueprint_state {
                     )*
                     $(
                         pub $collection_property_name: IndexMap<
-                            [<$blueprint_ident $collection_ident Key>],
+                            [<$blueprint_ident $collection_ident SubstateKey>],
                             [<$blueprint_ident $collection_ident EntrySubstate>]
                         >,
                     )*
@@ -653,7 +653,7 @@ macro_rules! declare_native_blueprint_state {
                                     self.$field_property_name.is_some(),
                                 )?;
                                 if let Some(field) = self.$field_property_name {
-                                    let field_content = scrypto_encode(&field.value).unwrap();
+                                    let field_content = scrypto_encode(&field.field_content()).unwrap();
                                     let locked = match &field.mutability {
                                         SubstateMutability::Mutable => true,
                                         SubstateMutability::Immutable => false,

@@ -81,6 +81,10 @@ impl<V> FieldSubstate<V> {
             mutability: SubstateMutability::Immutable,
         }
     }
+
+    pub fn field_content(&self) -> &V {
+        &self.value.0
+    }
 }
 
 pub type KeyValueEntrySubstate<V> = DynSubstate<Option<V>>;
