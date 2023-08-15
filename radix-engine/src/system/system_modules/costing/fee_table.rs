@@ -57,12 +57,11 @@ lazy_static! {
 /// Fee table specifies how each costing entry should be costed.
 ///
 /// ## High Level Guideline
-/// - Max cost unit limit: 100,000,000
-/// - Cost unit price: 0.000001 XRD per cost unit
-/// - Max execution costing: 100 XRD + tipping + state expansion + royalty
+/// - Max execution cost unit limit: 100,000,000
+/// - Max execution cost unit limit: 50,000,000
+/// - Transaction fee = Network Execution + Network Finalization + Tip + Network Storage + Royalties
 /// - Execution time for 100,000,000 cost units' worth of computation: <= 1 second
 /// - Baseline: 1 microsecond = 100 cost units
-/// - Non-time based costing will make the actual execution time less than anticipated
 ///
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct FeeTable;

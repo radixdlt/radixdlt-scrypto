@@ -16,7 +16,7 @@ pub struct FeeReserveFinalizationSummary {
     pub total_finalization_cost_in_xrd: Decimal,
     /// The total cost for tipping
     pub total_tipping_cost_in_xrd: Decimal,
-    /// The total cost for state expansion
+    /// The total cost for storage
     pub total_storage_cost_in_xrd: Decimal,
     /// The total cost for royalty
     pub total_royalty_cost_in_xrd: Decimal,
