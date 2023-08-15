@@ -1,5 +1,5 @@
 use crate::track::interface::{NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo};
-use crate::track::utils::OverlayingResultIterator;
+use radix_engine_store_interface::utils::OverlayingResultIterator;
 use crate::types::*;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;

@@ -7,3 +7,4 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 pub mod db_key_mapper;
 pub mod interface;
+pub mod utils;
