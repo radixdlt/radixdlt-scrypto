@@ -172,7 +172,7 @@ impl TryFrom<SortedU16Key> for ValidatorByStakeKey {
     fn try_from(value: SortedU16Key) -> Result<Self, Self::Error> {
         // See to_sorted_key in validator.rs
         Ok(Self {
-            divided_stake: u16::MAX - value.0,
+            divided_stake: u16::MAX - u16::from_be_bytes(value.0),
             validator_address: scrypto_decode(&value.1)?,
         })
     }

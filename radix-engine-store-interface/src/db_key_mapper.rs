@@ -106,7 +106,7 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
     fn sorted_to_db_sort_key(sorted_key: &SortedU16Key) -> DbSortKey {
         DbSortKey(
             [
-                sorted_key.0.to_be_bytes().as_slice(),
+                sorted_key.0.as_slice(),
                 &SpreadPrefixKeyMapper::to_hash_prefixed(&sorted_key.1),
             ]
             .concat(),
@@ -115,7 +115,7 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
 
     fn sorted_from_db_sort_key(db_sort_key: &DbSortKey) -> SortedU16Key {
         (
-            u16::from_be_bytes(copy_u8_array(&db_sort_key.0[..2])),
+            copy_u8_array(&db_sort_key.0[..2]),
             SpreadPrefixKeyMapper::from_hash_prefixed(&db_sort_key.0[2..]).to_vec(),
         )
     }

@@ -8,17 +8,17 @@ use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct SortedKey(pub u16, pub Vec<u8>);
+pub struct SortedKey(pub [u8; 2], pub Vec<u8>);
 
 impl SortedKey {
-    pub fn new(sorted: u16, key: Vec<u8>) -> Self {
+    pub fn new(sorted: [u8; 2], key: Vec<u8>) -> Self {
         Self(sorted, key)
     }
 }
 
 impl Into<Vec<u8>> for SortedKey {
     fn into(self) -> Vec<u8> {
-        let mut bytes = self.0.to_be_bytes().to_vec();
+        let mut bytes = self.0.to_vec();
         bytes.extend(self.1);
         bytes
     }

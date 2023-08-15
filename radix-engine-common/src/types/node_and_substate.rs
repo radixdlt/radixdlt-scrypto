@@ -254,4 +254,4 @@ impl SubstateKey {
 
 pub type FieldKey = u8;
 pub type MapKey = Vec<u8>;
-pub type SortedU16Key = (u16, Vec<u8>);
+pub type SortedU16Key = ([u8; 2], Vec<u8>);
