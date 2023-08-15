@@ -236,8 +236,8 @@ pub fn to_typed_object_module_substate_key(
     return to_typed_object_substate_key_internal(entity_type, partition_offset, substate_key)
         .map_err(|_| {
             format!(
-                "Could not convert {:?} {:?} key to TypedObjectSubstateKey",
-                entity_type, substate_key
+                "Could not convert {:?} (partition offset {}) {:?} key to TypedObjectSubstateKey",
+                entity_type, partition_offset, substate_key
             )
         });
 }

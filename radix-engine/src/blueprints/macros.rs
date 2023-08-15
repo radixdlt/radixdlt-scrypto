@@ -375,12 +375,12 @@ macro_rules! declare_native_blueprint_state {
                     // TODO(David) - Properly handle SortedIndex:
                     // Fix Key types for SortedIndex to have a named u16 part of the key,
                     // use a different key trait, and use .for_sorted_key in the below.
-                    impl TryFrom<&SubstateKey> for [<$blueprint_ident $collection_ident KeyContent>] {
+                    impl TryFrom<&SubstateKey> for [<$blueprint_ident $collection_ident SubstateKey>] {
                         type Error = ();
 
                         fn try_from(substate_key: &SubstateKey) -> Result<Self, Self::Error> {
                             let key = substate_key.for_map().ok_or(())?;
-                            scrypto_decode(&key).map_err(|_| ())?
+                            scrypto_decode::<Self>(&key).map_err(|_| ())
                         }
                     }
 

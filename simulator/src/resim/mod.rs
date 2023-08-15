@@ -58,7 +58,7 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system::FieldSubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -75,7 +75,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_queries::typed_substate_layout::{PackagePartition, PackageSchemaEntrySubstate};
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::{
     db_key_mapper::{
         MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
@@ -337,9 +337,9 @@ pub fn export_package_schema(
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
     let entries = substate_db
-        .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<BlueprintDefinition>, MapKey>(
+        .list_mapped::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate, MapKey>(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+            PackagePartition::BlueprintVersionDefinitionKeyValue.as_main_partition(),
         );
 
     let mut blueprints = BTreeMap::new();
@@ -349,7 +349,7 @@ pub fn export_package_schema(
             _ => panic!("Unexpected"),
         };
 
-        blueprints.insert(bp_version_key, blueprint_definition.value.unwrap());
+        blueprints.insert(bp_version_key, blueprint_definition.value.unwrap().0.into_latest());
     }
 
     Ok(blueprints)
