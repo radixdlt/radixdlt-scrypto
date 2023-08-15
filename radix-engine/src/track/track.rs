@@ -973,10 +973,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
         for (node_id, node) in &self.tracked_nodes {
             for (partition_number, partition) in &node.tracked_partitions {
                 for (substate_key, substate) in &partition.substates {
+                    let canonical_substate_key = CanonicalSubstateKey {
+                        node_id: *node_id,
+                        partition_number: *partition_number,
+                        substate_key: substate_key.clone(),
+                    };
                     match &substate.substate_value {
                         TrackedSubstateValue::New(v) => {
                             store_commit.push(StoreCommit::Insert {
-                                node_id: node_id.clone(),
+                                canonical_substate_key,
                                 size: v.value.len(),
                             });
                         }
@@ -986,21 +991,21 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
                         TrackedSubstateValue::ReadExistAndWrite(old_value, write) => match write {
                             Write::Update(x) => {
                                 store_commit.push(StoreCommit::Update {
-                                    node_id: node_id.clone(),
+                                    canonical_substate_key,
                                     size: x.value.len(),
                                     old_size: old_value.len(),
                                 });
                             }
                             Write::Delete => {
                                 store_commit.push(StoreCommit::Delete {
-                                    node_id: node_id.clone(),
+                                    canonical_substate_key,
                                     old_size: old_value.len(),
                                 });
                             }
                         },
                         TrackedSubstateValue::ReadNonExistAndWrite(value) => {
                             store_commit.push(StoreCommit::Insert {
-                                node_id: node_id.clone(),
+                                canonical_substate_key,
                                 size: value.value.len(),
                             });
                         }
@@ -1016,20 +1021,20 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
                             match (old_size, write) {
                                 (Some(old_size), Write::Update(x)) => {
                                     store_commit.push(StoreCommit::Update {
-                                        node_id: node_id.clone(),
+                                        canonical_substate_key,
                                         size: x.value.len(),
                                         old_size,
                                     });
                                 }
                                 (Some(old_size), Write::Delete) => {
                                     store_commit.push(StoreCommit::Delete {
-                                        node_id: node_id.clone(),
+                                        canonical_substate_key,
                                         old_size,
                                     });
                                 }
                                 (None, Write::Update(x)) => {
                                     store_commit.push(StoreCommit::Insert {
-                                        node_id: node_id.clone(),
+                                        canonical_substate_key,
                                         size: x.value.len(),
                                     });
                                 }

@@ -190,6 +190,18 @@ impl CanonicalSubstateKey {
     }
 }
 
+impl CanonicalSubstateKey {
+    pub fn logical_size(&self) -> usize {
+        self.node_id.as_bytes().len()
+            + 1
+            + match &self.substate_key {
+                SubstateKey::Field(_) => 1,
+                SubstateKey::Map(k) => k.len(),
+                SubstateKey::Sorted(k) => 2 + k.1.len(),
+            }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum StoreAccess {
     /// Some substate was read from database.
@@ -216,26 +228,53 @@ pub type StoreCommitInfo = Vec<StoreCommit>;
 #[derive(Debug, Clone)]
 pub enum StoreCommit {
     Insert {
-        node_id: NodeId,
+        canonical_substate_key: CanonicalSubstateKey,
         size: usize,
     },
     Update {
-        node_id: NodeId,
+        canonical_substate_key: CanonicalSubstateKey,
         size: usize,
         old_size: usize,
     },
     Delete {
-        node_id: NodeId,
+        canonical_substate_key: CanonicalSubstateKey,
         old_size: usize,
     },
 }
 
 impl StoreCommit {
-    pub fn node_id(&self) -> &NodeId {
+    pub fn node_id(&self) -> NodeId {
         match self {
-            StoreCommit::Insert { node_id, .. }
-            | StoreCommit::Update { node_id, .. }
-            | StoreCommit::Delete { node_id, .. } => node_id,
+            StoreCommit::Insert {
+                canonical_substate_key,
+                ..
+            }
+            | StoreCommit::Update {
+                canonical_substate_key,
+                ..
+            }
+            | StoreCommit::Delete {
+                canonical_substate_key,
+                ..
+            } => canonical_substate_key.node_id,
+        }
+    }
+
+    pub fn logical_size_increase(&self) -> usize {
+        match self {
+            StoreCommit::Insert {
+                canonical_substate_key,
+                size,
+                ..
+            } => canonical_substate_key.logical_size() + *size,
+            StoreCommit::Update { size, old_size, .. } => {
+                if *size > *old_size {
+                    *size - *old_size
+                } else {
+                    0
+                }
+            }
+            StoreCommit::Delete { .. } => 0, // TODO: refund?
         }
     }
 }
