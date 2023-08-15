@@ -504,8 +504,7 @@ impl NonFungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            let amount: Decimal = entries.len().into();
-            total_supply += amount;
+            total_supply = total_supply.safe_add(entries.len()).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
@@ -565,7 +564,7 @@ impl NonFungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply += 1;
+            total_supply = total_supply.safe_add(1).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
@@ -626,8 +625,7 @@ impl NonFungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            let amount: Decimal = entries.len().into();
-            total_supply += amount;
+            total_supply = total_supply.safe_add(entries.len()).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
@@ -830,7 +828,7 @@ impl NonFungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply -= other_bucket.liquid.amount();
+            total_supply = total_supply.safe_sub(other_bucket.liquid.amount()).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 

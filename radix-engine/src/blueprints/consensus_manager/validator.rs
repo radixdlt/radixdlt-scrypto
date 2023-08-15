@@ -512,7 +512,7 @@ impl ValidatorBlueprint {
                     ApplicationError::ValidatorError(ValidatorError::EpochUnlockHasNotOccurredYet),
                 ));
             }
-            unstake_amount += data.claim_amount;
+            unstake_amount = unstake_amount.safe_add(data.claim_amount).unwrap();
         }
         nft_resman.burn(bucket, api)?;
 
@@ -789,7 +789,11 @@ impl ValidatorBlueprint {
         substate
             .pending_owner_stake_unit_withdrawals
             .entry(current_epoch.after(config_substate.config.num_owner_stake_units_unlock_epochs))
-            .and_modify(|pending_amount| pending_amount.add_assign(requested_stake_unit_amount))
+            .and_modify(|pending_amount| {
+                *pending_amount = pending_amount
+                    .safe_add(requested_stake_unit_amount)
+                    .unwrap()
+            })
             .or_insert(requested_stake_unit_amount);
 
         // ...end the read+modify+write of the validator substate
@@ -871,7 +875,10 @@ impl ValidatorBlueprint {
                 .pending_owner_stake_unit_withdrawals
                 .remove(&available_withdrawal_epoch)
                 .expect("key was just returned by the iterator");
-            substate.already_unlocked_owner_stake_unit_amount += available_amount;
+            substate.already_unlocked_owner_stake_unit_amount = substate
+                .already_unlocked_owner_stake_unit_amount
+                .safe_add(available_amount)
+                .unwrap();
         }
     }
     /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
@@ -904,7 +911,9 @@ impl ValidatorBlueprint {
 
         // - calculate the validator fee and subtract it from the emission bucket
         let total_emission_xrd = xrd_bucket.amount(api)?;
-        let validator_fee_xrd = effective_validator_fee_factor * total_emission_xrd;
+        let validator_fee_xrd = effective_validator_fee_factor
+            .safe_mul(total_emission_xrd)
+            .unwrap();
         let fee_xrd_bucket = xrd_bucket.take(validator_fee_xrd, api)?;
 
         // - put the net emission XRDs into the stake pool
@@ -914,8 +923,10 @@ impl ValidatorBlueprint {
 
         // - stake the validator fee XRDs (effectively same as regular staking)
         let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
-        let stake_pool_added_xrd = total_emission_xrd - validator_fee_xrd;
-        let post_emission_stake_pool_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
+        let stake_pool_added_xrd = total_emission_xrd.safe_sub(validator_fee_xrd).unwrap();
+        let post_emission_stake_pool_xrd = starting_stake_pool_xrd
+            .safe_add(stake_pool_added_xrd)
+            .unwrap();
         let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
         let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
             validator_fee_xrd,
@@ -929,7 +940,9 @@ impl ValidatorBlueprint {
         Vault(substate.locked_owner_stake_unit_vault_id).put(fee_stake_unit_bucket, api)?;
 
         // - update the index, since the stake increased (because of net emission + staking of the validator fee)
-        let new_stake_xrd = starting_stake_pool_xrd + total_emission_xrd;
+        let new_stake_xrd = starting_stake_pool_xrd
+            .safe_add(total_emission_xrd)
+            .unwrap();
         let new_index_key =
             Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
 
@@ -990,7 +1003,7 @@ impl ValidatorBlueprint {
         Vault(substate.locked_owner_stake_unit_vault_id).put(new_stake_unit_bucket, api)?;
 
         // Update the index, since the stake increased (because of staking of the reward)
-        let new_stake_xrd = starting_stake_pool_xrd + total_reward_xrd;
+        let new_stake_xrd = starting_stake_pool_xrd.safe_add(total_reward_xrd).unwrap();
         let new_index_key =
             Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
 
@@ -1106,7 +1119,11 @@ impl ValidatorBlueprint {
         let xrd_amount = if total_stake_unit_supply.is_zero() {
             Decimal::zero()
         } else {
-            amount_of_stake_units * active_stake_amount / total_stake_unit_supply
+            amount_of_stake_units
+                .safe_mul(active_stake_amount)
+                .unwrap()
+                .safe_div(total_stake_unit_supply)
+                .unwrap()
         };
 
         Ok(xrd_amount)
@@ -1121,7 +1138,11 @@ impl ValidatorBlueprint {
         if total_stake_xrd_amount.is_zero() {
             xrd_amount
         } else {
-            xrd_amount * total_stake_unit_supply / total_stake_xrd_amount
+            xrd_amount
+                .safe_mul(total_stake_unit_supply)
+                .unwrap()
+                .safe_div(total_stake_xrd_amount)
+                .unwrap()
         }
     }
 }
@@ -1141,8 +1162,11 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
     // 24bn / MAX::16 = 366210.9375 - so 100k as a divisor here is sensible.
     // If all available XRD was staked to one validator, they'd have 3.6 * u16::MAX * 100k stake
     // In reality, validators will have far less than u16::MAX * 100k stake, but let's handle that case just in case
-    let stake_100k = stake / Decimal::from(100000);
-    let stake_100k_whole_units = (stake_100k / Decimal::from(10).powi(Decimal::SCALE.into())).0;
+    let stake_100k: Decimal = stake.safe_div(100000).unwrap();
+    let stake_100k_whole_units = stake_100k
+        .safe_div(Decimal::from(10).safe_powi(Decimal::SCALE.into()).unwrap())
+        .unwrap()
+        .0;
     let stake_u16 = if stake_100k_whole_units > I192::from(u16::MAX) {
         u16::MAX
     } else {
@@ -1342,7 +1366,7 @@ mod tests {
         assert_eq!(create_sort_prefix_from_stake(dec!(199_999)), u16::MAX - 1);
         assert_eq!(create_sort_prefix_from_stake(dec!(200_000)), u16::MAX - 2);
         // https://learn.radixdlt.com/article/start-here-radix-tokens-and-tokenomics
-        let max_xrd_supply = dec!(24) * dec!(10).powi(12);
+        let max_xrd_supply = dec!(24).safe_mul(dec!(10).safe_powi(12).unwrap()).unwrap();
         assert_eq!(create_sort_prefix_from_stake(max_xrd_supply), 0);
     }
 }
