@@ -305,30 +305,30 @@ impl Decimal {
         }
     }
 
-    // accurate ops - alternative to safe ops return PreciseDecimal to avoid rounding
+    // Precise ops - alternative to safe ops return PreciseDecimal to avoid rounding
     #[inline]
-    pub fn accurate_add(self, other: Self) -> Option<PreciseDecimal> {
+    pub fn precise_add(self, other: Self) -> Option<PreciseDecimal> {
         let a = PreciseDecimal::from(self);
         let b = PreciseDecimal::from(other);
         a.safe_add(b)
     }
 
     #[inline]
-    pub fn accurate_sub(self, other: Self) -> Option<PreciseDecimal> {
+    pub fn precise_sub(self, other: Self) -> Option<PreciseDecimal> {
         let a = PreciseDecimal::from(self);
         let b = PreciseDecimal::from(other);
         a.safe_sub(b)
     }
 
     #[inline]
-    pub fn accurate_mul(self, other: Self) -> Option<PreciseDecimal> {
+    pub fn precise_mul(self, other: Self) -> Option<PreciseDecimal> {
         let a = PreciseDecimal::from(self);
         let b = PreciseDecimal::from(other);
         a.safe_mul(b)
     }
 
     #[inline]
-    pub fn accurate_div(self, other: Self) -> Option<PreciseDecimal> {
+    pub fn precise_div(self, other: Self) -> Option<PreciseDecimal> {
         let a = PreciseDecimal::from(self);
         let b = PreciseDecimal::from(other);
         a.safe_div(b)
@@ -1517,4 +1517,32 @@ mod tests {
     test_arith_decimal_primitive!(i64);
     test_arith_decimal_primitive!(i128);
     test_arith_decimal_primitive!(isize);
+
+    #[test]
+    fn test_decimal_precise_ops() {
+        let a = Decimal::from(4);
+        let b = Decimal::ONE;
+        assert_eq!(a.precise_add(b).unwrap(), pdec!(5));
+        assert_eq!(a.precise_sub(b).unwrap(), pdec!(3));
+        assert_eq!(a.precise_mul(b).unwrap(), pdec!(4));
+        assert_eq!(a.precise_div(b).unwrap(), pdec!(4));
+
+        let a = Decimal::MAX;
+        let b = Decimal::MAX;
+        let p = PreciseDecimal::from(Decimal::MAX).safe_mul(2).unwrap();
+        assert_eq!(a.precise_add(b).unwrap(), p);
+        assert_eq!(a.precise_sub(b).unwrap(), pdec!(0));
+        assert!(a.precise_mul(b).is_none());
+        assert_eq!(a.precise_div(b).unwrap(), pdec!(1));
+
+        let a = Decimal::MIN;
+        let b = Decimal::MAX;
+        assert_eq!(a.precise_add(b).unwrap(), pdec!("-0.000000000000000001"));
+        assert_eq!(
+            a.precise_sub(b).unwrap(),
+            pdec!("-6277101735386680763835789423207666416102.355444464034512895")
+        );
+        assert!(a.precise_mul(b).is_none());
+        assert_eq!(a.precise_div(b).unwrap(), pdec!(-1));
+    }
 }
