@@ -22,7 +22,7 @@ pub enum AuthZoneError {
 pub struct AuthZoneBlueprint;
 
 impl AuthZoneBlueprint {
-    pub(crate) fn pop<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
+    pub fn pop<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -42,7 +42,7 @@ impl AuthZoneBlueprint {
         Ok(proof)
     }
 
-    pub(crate) fn push<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn push<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -61,7 +61,7 @@ impl AuthZoneBlueprint {
         Ok(())
     }
 
-    pub(crate) fn create_proof_of_amount<Y>(
+    pub fn create_proof_of_amount<Y>(
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
@@ -135,7 +135,7 @@ impl AuthZoneBlueprint {
         Ok(Proof(Own(node_id)))
     }
 
-    pub(crate) fn create_proof_of_non_fungibles<Y>(
+    pub fn create_proof_of_non_fungibles<Y>(
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -182,7 +182,7 @@ impl AuthZoneBlueprint {
         Ok(Proof(Own(node_id)))
     }
 
-    pub(crate) fn create_proof_of_all<Y>(
+    pub fn create_proof_of_all<Y>(
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
@@ -232,7 +232,7 @@ impl AuthZoneBlueprint {
         Ok(Proof(Own(node_id)))
     }
 
-    pub(crate) fn drop_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub fn drop_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -241,7 +241,7 @@ impl AuthZoneBlueprint {
         Ok(())
     }
 
-    pub(crate) fn drop_signature_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub fn drop_signature_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -258,7 +258,7 @@ impl AuthZoneBlueprint {
         Ok(())
     }
 
-    pub(crate) fn drop_regular_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub fn drop_regular_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -279,7 +279,7 @@ impl AuthZoneBlueprint {
         Ok(())
     }
 
-    pub(crate) fn drain<Y>(api: &mut Y) -> Result<Vec<Proof>, RuntimeError>
+    pub fn drain<Y>(api: &mut Y) -> Result<Vec<Proof>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
