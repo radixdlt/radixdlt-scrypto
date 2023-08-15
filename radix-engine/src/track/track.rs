@@ -406,16 +406,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                 let result = self.iterator.next();
                 if let Some(x) = result {
                     let substate_key = M::from_db_sort_key::<K>(&x.0);
+                    let substate_value =
+                        IndexedScryptoValue::from_vec(x.1).expect("Failed to decode substate");
                     let store_access = StoreAccess::ReadFromDb(
                         CanonicalSubstateKey::of(self.canonical_partition, substate_key.clone()),
-                        x.1.len(),
+                        substate_value.len(),
                     );
                     let result = (self.on_store_access)(store_access);
                     match result {
-                        Ok(()) => Some(Ok((
-                            substate_key,
-                            IndexedScryptoValue::from_vec(x.1).expect("Failed to decode substate"),
-                        ))),
+                        Ok(()) => Some(Ok((substate_key, substate_value))),
                         Err(e) => {
                             self.errored_out = true;
                             Some(Err(e))

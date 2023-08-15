@@ -2,7 +2,7 @@ use crate::types::*;
 use sbor::rust::cmp::*;
 use sbor::rust::iter::*;
 
-/// An iterator overlaying a "change on a value" (coming from the [`overlaid`] iterator) over a
+/// An iterator overlaying a "change on a value" (coming from the [`overlaying`] iterator) over a
 /// "base value" (coming from the [`underlying`] iterator) which may error.
 /// The one is matched to another by a `K` part (of the iterated tuple `(K, V)`), which both
 /// iterators are assumed to be ordered by.
@@ -12,7 +12,7 @@ where
     O: Iterator,
 {
     underlying: Peekable<U>,
-    overlaid: Peekable<O>,
+    overlaying: Peekable<O>,
     errored_out: bool,
 }
 
@@ -24,14 +24,14 @@ where
 {
     /// Creates an overlaying iterator.
     /// The [`underlying`] iterator provides the "base values" from some I/O.
-    /// The [`overlaid`] one provides the "changes" to those values, represented as `Option<V>`:
+    /// The [`overlaying`] one provides the "changes" to those values, represented as `Option<V>`:
     /// - A [`Some`] is an upsert, i.e. it may override an existing base value, or "insert" a
     ///   completely new one to the iterated results.
     /// - A [`None`] is a delete, which causes the base value to be omitted in the iterated results.
-    pub fn new(underlying: U, overlaid: O) -> impl Iterator<Item = Result<(K, V), E>> {
+    pub fn new(underlying: U, overlaying: O) -> impl Iterator<Item = Result<(K, V), E>> {
         Self {
             underlying: underlying.peekable(),
-            overlaid: overlaid.peekable(),
+            overlaying: overlaying.peekable(),
             errored_out: false,
         }
     }
@@ -51,11 +51,11 @@ where
         }
 
         loop {
-            if let Some(overlaid_key) = self.overlaid.peek_key() {
+            if let Some(overlaying_key) = self.overlaying.peek_key() {
                 if let Some(underlying) = self.underlying.peek() {
                     match underlying {
                         Ok((underlying_key, _)) => {
-                            match underlying_key.cmp(overlaid_key) {
+                            match underlying_key.cmp(overlaying_key) {
                                 Ordering::Less => {
                                     return self.underlying.next(); // return and move it forward
                                 }
@@ -74,9 +74,9 @@ where
                     }
                 }
 
-                let (overlaid_key, overlaid_change) = self.overlaid.next().unwrap();
-                match overlaid_change {
-                    Some(value) => return Some(Ok((overlaid_key, value))),
+                let (overlaying_key, overlaying_change) = self.overlaying.next().unwrap();
+                match overlaying_change {
+                    Some(value) => return Some(Ok((overlaying_key, value))),
                     None => continue, // we may need to skip over an unbounded number of deletes
                 }
             } else {
@@ -90,7 +90,7 @@ where
     }
 }
 
-/// An iterator overlaying a "change on a value" (coming from the [`overlaid`] iterator) over a
+/// An iterator overlaying a "change on a value" (coming from the [`overlaying`] iterator) over a
 /// "base value" (coming from the [`underlying`] iterator).
 /// The one is matched to another by a `K` part (of the iterated tuple `(K, V)`), which both
 /// iterators are assumed to be ordered by.
@@ -100,7 +100,7 @@ where
     O: Iterator,
 {
     underlying: Peekable<U>,
-    overlaid: Peekable<O>,
+    overlaying: Peekable<O>,
 }
 
 impl<K, V, U, O> OverlayingIterator<U, O>
@@ -111,14 +111,14 @@ where
 {
     /// Creates an overlaying iterator.
     /// The [`underlying`] iterator provides the "base values".
-    /// The [`overlaid`] one provides the "changes" to those values, represented as `Option<V>`:
+    /// The [`overlaying`] one provides the "changes" to those values, represented as `Option<V>`:
     /// - A [`Some`] is an upsert, i.e. it may override an existing base value, or "insert" a
     ///   completely new one to the iterated results.
     /// - A [`None`] is a delete, which causes the base value to be omitted in the iterated results.
-    pub fn new(underlying: U, overlaid: O) -> impl Iterator<Item = (K, V)> {
+    pub fn new(underlying: U, overlaying: O) -> impl Iterator<Item = (K, V)> {
         Self {
             underlying: underlying.peekable(),
-            overlaid: overlaid.peekable(),
+            overlaying: overlaying.peekable(),
         }
     }
 }
@@ -133,9 +133,9 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some(overlaid_key) = self.overlaid.peek_key() {
+            if let Some(overlaying_key) = self.overlaying.peek_key() {
                 if let Some(underlying_key) = self.underlying.peek_key() {
-                    match underlying_key.cmp(overlaid_key) {
+                    match underlying_key.cmp(overlaying_key) {
                         Ordering::Less => {
                             return self.underlying.next(); // return and move it forward
                         }
@@ -147,9 +147,9 @@ where
                         }
                     };
                 }
-                let (overlaid_key, overlaid_change) = self.overlaid.next().unwrap();
-                match overlaid_change {
-                    Some(value) => return Some((overlaid_key, value)),
+                let (overlaying_key, overlaying_change) = self.overlaying.next().unwrap();
+                match overlaying_change {
+                    Some(value) => return Some((overlaying_key, value)),
                     None => continue, // we may need to skip over an unbounded number of deletes
                 }
             } else {
