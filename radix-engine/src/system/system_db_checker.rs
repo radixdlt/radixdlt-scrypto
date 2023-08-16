@@ -21,7 +21,13 @@ use crate::system::system_db_reader::{
 use crate::types::Condition;
 
 #[derive(Debug)]
-pub enum SystemNodeCheckerState {
+pub struct SystemNodeCheckerState {
+    node_id: NodeId,
+    node_type: SystemNodeType,
+}
+
+#[derive(Debug)]
+pub enum SystemNodeType {
     Object {
         object_info: ObjectInfo,
         bp_definition: BlueprintDefinition,
@@ -32,17 +38,19 @@ pub enum SystemNodeCheckerState {
 }
 
 impl SystemNodeCheckerState {
-    pub fn finish(&self) {
-        match self {
-            SystemNodeCheckerState::Object {
+    pub fn finish(&self) -> Result<(), SystemNodeCheckError> {
+        match &self.node_type {
+            SystemNodeType::Object {
                 expected_fields, ..
             } => {
                 if !expected_fields.is_empty() {
-                    panic!("Missing expected fields: {:?}", expected_fields);
+                    return Err(SystemNodeCheckError::MissingExpectedFields);
                 }
             }
-            SystemNodeCheckerState::KeyValueStore => {}
+            SystemNodeType::KeyValueStore => {}
         }
+
+        Ok(())
     }
 }
 
@@ -99,6 +107,7 @@ pub enum SystemNodeCheckError {
     NoTypeInfo,
     NoMappedEntityType,
     MissingOuterObject,
+    MissingExpectedFields,
     InvalidCondition,
     MissingBlueprint,
     InvalidOuterObject,
@@ -126,13 +135,14 @@ impl SystemDatabaseChecker {
         let mut node_count = 0usize;
         let mut partition_count = 0usize;
         let mut substate_count = 0usize;
-        let mut last_node: Option<(NodeId, SystemNodeCheckerState)> = None;
+
+        let mut last_node: Option<SystemNodeCheckerState> = None;
 
         let reader = SystemDatabaseReader::new(substate_db);
         for (node_id, partition_number) in reader.partitions_iter() {
             let new_node = match &mut last_node {
                 Some(last_info) => {
-                    if node_id.ne(&last_info.0) {
+                    if node_id.ne(&last_info.node_id) {
                         None
                     } else {
                         Some(last_info)
@@ -141,10 +151,10 @@ impl SystemDatabaseChecker {
                 None => None,
             };
 
-            let node_check_state = match new_node {
+            let node_checker_state = match new_node {
                 None => {
-                    if let Some((node_id, finished_node)) = &last_node {
-                        finished_node.finish();
+                    if let Some(last_node_checker_state) = &last_node {
+                        last_node_checker_state.finish().unwrap();
                     }
 
                     if node_id.is_global_package() {
@@ -155,7 +165,7 @@ impl SystemDatabaseChecker {
                     }
 
                     let new_node_check_state = self.check_node(&reader, &node_id).unwrap();
-                    if let SystemNodeCheckerState::Object { object_info, .. } = &new_node_check_state {
+                    if let SystemNodeType::Object { object_info, .. } = &new_node_check_state.node_type {
                         if object_info.global {
                             global_node_count += 1;
                         } else {
@@ -166,22 +176,22 @@ impl SystemDatabaseChecker {
                     }
 
                     node_count += 1;
-                    last_node = Some((node_id, new_node_check_state));
+                    last_node = Some(new_node_check_state);
 
-                    &mut last_node.as_mut().unwrap().1
+                    last_node.as_mut().unwrap()
                 }
-                Some((_, stored_type_info)) => stored_type_info,
+                Some(stored_type_info) => stored_type_info,
             };
 
             let partition_results =
-                self.check_partition(&reader, node_check_state, &node_id, partition_number).unwrap();
+                self.check_partition(&reader, node_checker_state, partition_number).unwrap();
 
             substate_count += partition_results.substate_count;
             partition_count += 1;
         }
 
-        if let Some((_, finished_node)) = &last_node {
-            finished_node.finish();
+        if let Some(finished_node) = &last_node {
+            finished_node.finish().unwrap();
         }
 
         SystemDatabaseCheckerResults {
@@ -306,14 +316,22 @@ impl SystemDatabaseChecker {
                     };
                 }
 
-                SystemNodeCheckerState::Object {
-                    object_info,
-                    bp_definition,
-                    expected_fields,
-                    excluded_fields,
+                SystemNodeCheckerState {
+                    node_id: *node_id,
+                    node_type: SystemNodeType::Object {
+                        object_info,
+                        bp_definition,
+                        expected_fields,
+                        excluded_fields,
+                    }
                 }
             }
-            TypeInfoSubstate::KeyValueStore(..) => SystemNodeCheckerState::KeyValueStore,
+            TypeInfoSubstate::KeyValueStore(..) => {
+                SystemNodeCheckerState {
+                    node_id: *node_id,
+                    node_type: SystemNodeType::KeyValueStore
+                }
+            },
             TypeInfoSubstate::GlobalAddressPhantom(..) => {
                 return Err(SystemNodeCheckError::FoundGlobalAddressPhantom);
             }
@@ -328,11 +346,10 @@ impl SystemDatabaseChecker {
     fn check_partition<S: SubstateDatabase + ListableSubstateDatabase>(
         &self,
         reader: &SystemDatabaseReader<S>,
-        node_check_state: &mut SystemNodeCheckerState,
-        node_id: &NodeId,
+        node_checker_state: &mut SystemNodeCheckerState,
         partition_number: PartitionNumber,
     ) -> Result<SystemPartitionCheckResults, SystemPartitionCheckError> {
-        let partition_descriptors = reader.get_partition_descriptors(node_id, &partition_number);
+        let partition_descriptors = reader.get_partition_descriptors(&node_checker_state.node_id, &partition_number);
         if partition_descriptors.is_empty() {
             return Err(SystemPartitionCheckError::NoPartitionDescription);
         }
@@ -342,7 +359,7 @@ impl SystemDatabaseChecker {
         for partition_descriptor in partition_descriptors {
             match partition_descriptor {
                 SystemPartitionDescriptor::TypeInfo => {
-                    for (key, value) in reader.substates_iter::<FieldKey>(node_id, partition_number) {
+                    for (key, value) in reader.substates_iter::<FieldKey>(&node_checker_state.node_id, partition_number) {
                         match key {
                             SubstateKey::Field(0u8) => {}
                             _ => return Err(SystemPartitionCheckError::InvalidTypeInfoKey),
@@ -355,7 +372,7 @@ impl SystemDatabaseChecker {
                     }
                 }
                 SystemPartitionDescriptor::Schema => {
-                    for (key, value) in reader.substates_iter::<MapKey>(node_id, partition_number) {
+                    for (key, value) in reader.substates_iter::<MapKey>(&node_checker_state.node_id, partition_number) {
                         let map_key = match key {
                             SubstateKey::Map(map_key) => map_key,
                             _ => return Err(SystemPartitionCheckError::InvalidSchemaKey),
@@ -369,14 +386,14 @@ impl SystemDatabaseChecker {
                     }
                 }
                 SystemPartitionDescriptor::KeyValueStore => {
-                    let type_target = reader.get_kv_store_type_target(node_id)
+                    let type_target = reader.get_kv_store_type_target(&node_checker_state.node_id)
                         .ok_or_else(|| SystemPartitionCheckError::MissingKeyValueStoreTarget)?;
                     let key_schema = reader.get_kv_store_payload_schema(&type_target, KeyOrValue::Key)
                         .ok_or_else(|| SystemPartitionCheckError::MissingKeyValueStoreKeySchema)?;
                     let value_schema = reader.get_kv_store_payload_schema(&type_target, KeyOrValue::Value)
                         .ok_or_else(|| SystemPartitionCheckError::MissingKeyValueStoreValueSchema)?;
 
-                    for (key, value) in reader.substates_iter::<MapKey>(node_id, partition_number) {
+                    for (key, value) in reader.substates_iter::<MapKey>(&node_checker_state.node_id, partition_number) {
                         // Key Check
                         {
                             let map_key = match key {
@@ -407,17 +424,17 @@ impl SystemDatabaseChecker {
                     object_partition_descriptor,
                 ) => {
                     let type_target = reader
-                        .get_blueprint_type_target(node_id, module_id).ok_or_else(|| SystemPartitionCheckError::MissingObjectTypeTarget)?;
+                        .get_blueprint_type_target(&node_checker_state.node_id, module_id).ok_or_else(|| SystemPartitionCheckError::MissingObjectTypeTarget)?;
 
                     match object_partition_descriptor {
                         ObjectPartitionDescriptor::Field => {
-                            for (key, value) in reader.substates_iter::<FieldKey>(node_id, partition_number) {
+                            for (key, value) in reader.substates_iter::<FieldKey>(&node_checker_state.node_id, partition_number) {
                                 let field_index = match key {
                                     SubstateKey::Field(field_index) => field_index,
                                     _ => return Err(SystemPartitionCheckError::InvalidFieldKey)
                                 };
-                                match &mut *node_check_state {
-                                    SystemNodeCheckerState::Object {
+                                match &mut node_checker_state.node_type {
+                                    SystemNodeType::Object {
                                         expected_fields,
                                         excluded_fields,
                                         ..
@@ -466,7 +483,7 @@ impl SystemDatabaseChecker {
                                     .ok_or_else(|| SystemPartitionCheckError::MissingIndexCollectionValueSchema)?
                             };
 
-                            for (key, value) in reader.substates_iter::<MapKey>(node_id, partition_number) {
+                            for (key, value) in reader.substates_iter::<MapKey>(&node_checker_state.node_id, partition_number) {
                                 let map_key = match key {
                                     SubstateKey::Map(map_key) => map_key,
                                     _ => return Err(SystemPartitionCheckError::InvalidIndexCollectionKey),
@@ -499,7 +516,7 @@ impl SystemDatabaseChecker {
                                     .ok_or_else(|| SystemPartitionCheckError::MissingKeyValueCollectionValueSchema)?
                             };
 
-                            for (key, value) in reader.substates_iter::<MapKey>(node_id, partition_number) {
+                            for (key, value) in reader.substates_iter::<MapKey>(&node_checker_state.node_id, partition_number) {
                                 // Key check
                                 {
                                     let map_key = match key {
@@ -544,7 +561,7 @@ impl SystemDatabaseChecker {
                                     .ok_or_else(|| SystemPartitionCheckError::MissingSortedIndexCollectionValueSchema)?
                             };
 
-                            for (key, value) in reader.substates_iter::<SortedU16Key>(node_id, partition_number)
+                            for (key, value) in reader.substates_iter::<SortedU16Key>(&node_checker_state.node_id, partition_number)
                             {
                                 let sorted_key = match key {
                                     SubstateKey::Sorted(sorted_key) => sorted_key,
