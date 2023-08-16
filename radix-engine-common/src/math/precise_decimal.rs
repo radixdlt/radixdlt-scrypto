@@ -275,16 +275,16 @@ impl PreciseDecimal {
     }
 
     /// Cubic root of a PreciseDecimal
-    pub fn cbrt(&self) -> Self {
+    pub fn cbrt(&self) -> Option<Self> {
         if self.is_zero() {
-            return Self::ZERO;
+            return Some(Self::ZERO);
         }
 
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
         let self_bigint = BigInt::from(self.0);
         let correct_nb: BigInt = self_bigint * BigInt::from(Self::ONE.0).pow(2_u32);
-        let cbrt = I256::try_from(correct_nb.cbrt()).unwrap();
-        Self(cbrt)
+        let cbrt = I256::try_from(correct_nb.cbrt()).ok()?;
+        Some(Self(cbrt))
     }
 
     /// Nth root of a PreciseDecimal
@@ -895,7 +895,7 @@ mod tests {
     fn test_powi_max_precise_decimal() {
         let _max = PreciseDecimal::MAX.safe_powi(1).unwrap();
         let _max_sqrt = PreciseDecimal::MAX.sqrt().unwrap();
-        let _max_cbrt = PreciseDecimal::MAX.cbrt();
+        let _max_cbrt = PreciseDecimal::MAX.cbrt().unwrap();
         let _max_dec_2 = _max_sqrt.safe_powi(2).unwrap();
         let _max_dec_3 = _max_cbrt.safe_powi(3).unwrap();
     }
@@ -1450,9 +1450,9 @@ mod tests {
 
     #[test]
     fn test_cbrt() {
-        let cbrt_of_42 = pdec!(42).cbrt();
-        let cbrt_of_0 = pdec!(0).cbrt();
-        let cbrt_of_negative_42 = pdec!("-42").cbrt();
+        let cbrt_of_42 = pdec!(42).cbrt().unwrap();
+        let cbrt_of_0 = pdec!(0).cbrt().unwrap();
+        let cbrt_of_negative_42 = pdec!("-42").cbrt().unwrap();
         assert_eq!(cbrt_of_42, pdec!("3.476026644886449786739865219004537434"));
         assert_eq!(cbrt_of_0, pdec!("0"));
         assert_eq!(

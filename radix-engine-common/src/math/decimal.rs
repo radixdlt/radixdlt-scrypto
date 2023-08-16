@@ -264,16 +264,16 @@ impl Decimal {
     }
 
     /// Cubic root of a Decimal
-    pub fn cbrt(&self) -> Self {
+    pub fn cbrt(&self) -> Option<Self> {
         if self.is_zero() {
-            return Self::ZERO;
+            return Some(Self::ZERO);
         }
 
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
         let self_320 = I320::from(self.0);
         let correct_nb = self_320 * I320::from(Self::ONE.0).pow(2);
-        let cbrt = I192::try_from(correct_nb.cbrt()).expect("Overflow");
-        Self(cbrt)
+        let cbrt = I192::try_from(correct_nb.cbrt()).ok()?;
+        Some(Self(cbrt))
     }
 
     /// Nth root of a Decimal
@@ -849,7 +849,7 @@ mod tests {
     fn test_powi_max_decimal() {
         let _max = Decimal::MAX.safe_powi(1);
         let _max_sqrt = Decimal::MAX.sqrt().unwrap();
-        let _max_cbrt = Decimal::MAX.cbrt();
+        let _max_cbrt = Decimal::MAX.cbrt().unwrap();
         let _max_dec_2 = _max_sqrt.safe_powi(2).unwrap();
         let _max_dec_3 = _max_cbrt.safe_powi(3).unwrap();
     }
@@ -1390,10 +1390,10 @@ mod tests {
 
     #[test]
     fn test_cbrt() {
-        let cbrt_of_42 = dec!(42).cbrt();
-        let cbrt_of_0 = dec!(0).cbrt();
-        let cbrt_of_negative_42 = dec!("-42").cbrt();
-        let cbrt_max = Decimal::MAX.cbrt();
+        let cbrt_of_42 = dec!(42).cbrt().unwrap();
+        let cbrt_of_0 = dec!(0).cbrt().unwrap();
+        let cbrt_of_negative_42 = dec!("-42").cbrt().unwrap();
+        let cbrt_max = Decimal::MAX.cbrt().unwrap();
         assert_eq!(cbrt_of_42, dec!("3.476026644886449786"));
         assert_eq!(cbrt_of_0, dec!("0"));
         assert_eq!(cbrt_of_negative_42, dec!("-3.476026644886449786"));
