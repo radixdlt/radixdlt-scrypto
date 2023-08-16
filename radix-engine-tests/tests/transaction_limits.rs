@@ -47,7 +47,7 @@ fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
     let prepared = transactions.prepare().unwrap();
     let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
     let mut execution_config = ExecutionConfig::for_test_transaction();
-    execution_config.max_track_substates_total_bytes = code_len * 2 + definition_len + 10 * 1024;
+    execution_config.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
     let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,
@@ -105,7 +105,7 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
     let prepared = transactions.prepare().unwrap();
     let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
     let mut execution_config = ExecutionConfig::for_test_transaction();
-    execution_config.max_track_substates_total_bytes = code_len * 2 + definition_len + 10 * 1024;
+    execution_config.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
     let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,

@@ -15,11 +15,11 @@ pub const MAX_EXECUTION_TRACE_DEPTH: usize = 16;
 /// The max call depth, used by transaction executor.
 pub const MAX_CALL_DEPTH: usize = 8;
 
-/// The max number of substates in heap.
-pub const MAX_HEAP_SUBSTATES_TOTAL_BYTES: usize = 64 * 1024 * 1024;
+/// The max total heap substate size.
+pub const MAX_HEAP_SUBSTATE_TOTAL_BYTES: usize = 64 * 1024 * 1024;
 
-/// The max number of substates in track.
-pub const MAX_TRACK_SUBSTATES_TOTAL_BYTES: usize = 64 * 1024 * 1024;
+/// The max total track substate size.
+pub const MAX_TRACK_SUBSTATE_TOTAL_BYTES: usize = 64 * 1024 * 1024;
 
 /// The maximum substate key read and write size
 pub const MAX_SUBSTATE_KEY_SIZE: usize = 1024;

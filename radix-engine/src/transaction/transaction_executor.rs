@@ -72,8 +72,8 @@ pub struct ExecutionConfig {
     pub enable_cost_breakdown: bool,
     pub max_execution_trace_depth: usize,
     pub max_call_depth: usize,
-    pub max_heap_substates_total_bytes: usize,
-    pub max_track_substates_total_bytes: usize,
+    pub max_heap_substate_total_bytes: usize,
+    pub max_track_substate_total_bytes: usize,
     pub max_substate_key_size: usize,
     pub max_substate_value_size: usize,
     pub max_invoke_input_size: usize,
@@ -95,8 +95,8 @@ impl ExecutionConfig {
             enable_cost_breakdown: false,
             max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
             max_call_depth: MAX_CALL_DEPTH,
-            max_heap_substates_total_bytes: MAX_HEAP_SUBSTATES_TOTAL_BYTES,
-            max_track_substates_total_bytes: MAX_TRACK_SUBSTATES_TOTAL_BYTES,
+            max_heap_substate_total_bytes: MAX_HEAP_SUBSTATE_TOTAL_BYTES,
+            max_track_substate_total_bytes: MAX_TRACK_SUBSTATE_TOTAL_BYTES,
             max_substate_key_size: MAX_SUBSTATE_KEY_SIZE,
             max_substate_value_size: MAX_SUBSTATE_VALUE_SIZE,
             max_invoke_input_size: MAX_INVOKE_PAYLOAD_SIZE,
@@ -113,8 +113,8 @@ impl ExecutionConfig {
     pub fn for_genesis_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_genesis_transaction(),
-            max_heap_substates_total_bytes: 512 * 1024 * 1024,
-            max_track_substates_total_bytes: 512 * 1024 * 1024,
+            max_heap_substate_total_bytes: 512 * 1024 * 1024,
+            max_track_substate_total_bytes: 512 * 1024 * 1024,
             max_number_of_events: 1024 * 1024,
             ..Self::default()
         }

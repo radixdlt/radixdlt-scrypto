@@ -27,8 +27,8 @@ pub enum TransactionLimitsError {
 }
 
 pub struct TransactionLimitsConfig {
-    pub max_heap_substates_total_bytes: usize,
-    pub max_track_substates_total_bytes: usize,
+    pub max_heap_substate_total_bytes: usize,
+    pub max_track_substate_total_bytes: usize,
     pub max_substate_key_size: usize,
     pub max_substate_value_size: usize,
     pub max_invoke_payload_size: usize,
@@ -45,16 +45,16 @@ pub struct TransactionLimitsConfig {
 /// Stores boundary values of the limits and returns them in transaction receipt.
 pub struct LimitsModule {
     config: TransactionLimitsConfig,
-    heap_substates_total_bytes: usize,
-    track_substates_total_bytes: usize,
+    heap_substate_total_bytes: usize,
+    track_substate_total_bytes: usize,
 }
 
 impl LimitsModule {
     pub fn new(limits_config: TransactionLimitsConfig) -> Self {
         LimitsModule {
             config: limits_config,
-            heap_substates_total_bytes: 0,
-            track_substates_total_bytes: 0,
+            heap_substate_total_bytes: 0,
+            track_substate_total_bytes: 0,
         }
     }
 
@@ -90,18 +90,18 @@ impl LimitsModule {
                 new_size,
             } => {
                 if old_size.is_none() {
-                    self.heap_substates_total_bytes += canonical_substate_key.logical_size();
+                    self.heap_substate_total_bytes += canonical_substate_key.logical_size();
                 }
                 if new_size.is_none() {
-                    self.heap_substates_total_bytes -= canonical_substate_key.logical_size();
+                    self.heap_substate_total_bytes -= canonical_substate_key.logical_size();
                 }
 
                 let old_size = old_size.unwrap_or_default();
                 let new_size = new_size.unwrap_or_default();
                 if new_size > old_size {
-                    self.heap_substates_total_bytes += new_size - old_size;
+                    self.heap_substate_total_bytes += new_size - old_size;
                 } else {
-                    self.heap_substates_total_bytes -= old_size - new_size;
+                    self.heap_substate_total_bytes -= old_size - new_size;
                 }
             }
             StoreAccess::UpdateSubstateInTrack {
@@ -110,39 +110,39 @@ impl LimitsModule {
                 new_size,
             } => {
                 if old_size.is_none() {
-                    self.track_substates_total_bytes += canonical_substate_key.logical_size();
+                    self.track_substate_total_bytes += canonical_substate_key.logical_size();
                 }
                 if new_size.is_none() {
-                    self.track_substates_total_bytes -= canonical_substate_key.logical_size();
+                    self.track_substate_total_bytes -= canonical_substate_key.logical_size();
                 }
 
                 let old_size = old_size.unwrap_or_default();
                 let new_size = new_size.unwrap_or_default();
                 if new_size > old_size {
-                    self.track_substates_total_bytes += new_size - old_size;
+                    self.track_substate_total_bytes += new_size - old_size;
                 } else {
-                    self.track_substates_total_bytes -= old_size - new_size;
+                    self.track_substate_total_bytes -= old_size - new_size;
                 }
             }
         }
 
-        if self.heap_substates_total_bytes > self.config.max_heap_substates_total_bytes {
+        if self.heap_substate_total_bytes > self.config.max_heap_substate_total_bytes {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::HeapSubstateSizeExceeded {
-                        actual: self.heap_substates_total_bytes,
-                        max: self.config.max_heap_substates_total_bytes,
+                        actual: self.heap_substate_total_bytes,
+                        max: self.config.max_heap_substate_total_bytes,
                     },
                 ),
             ));
         }
 
-        if self.track_substates_total_bytes > self.config.max_track_substates_total_bytes {
+        if self.track_substate_total_bytes > self.config.max_track_substate_total_bytes {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::TrackSubstateSizeExceeded {
-                        actual: self.track_substates_total_bytes,
-                        max: self.config.max_track_substates_total_bytes,
+                        actual: self.track_substate_total_bytes,
+                        max: self.config.max_track_substate_total_bytes,
                     },
                 ),
             ));
