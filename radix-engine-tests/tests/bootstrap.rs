@@ -6,6 +6,7 @@ use radix_engine::system::bootstrap::{
     GenesisStakeAllocation, DEFAULT_TESTING_FAUCET_SUPPLY,
 };
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system_db_checker::SystemDatabaseChecker;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
@@ -92,6 +93,9 @@ fn test_bootstrap_receipt_should_match_constants() {
         .expect("There should be a new epoch.");
 
     assert_eq!(wrap_up_epoch_change.epoch, genesis_epoch.next());
+
+    let checker = SystemDatabaseChecker::new();
+    checker.check_db(&substate_db);
 }
 
 fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
@@ -137,7 +141,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, true);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,

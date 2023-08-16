@@ -10,3 +10,4 @@ pub mod system_callback_api;
 pub mod system_db_reader;
 pub mod system_modules;
 pub mod system_type_checker;
+pub mod system_db_checker;
