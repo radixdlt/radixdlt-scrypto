@@ -323,7 +323,7 @@ where
         allow_ownership: bool,
         allow_non_global_ref: bool,
     ) -> Result<(), LocatedValidationError<'s, ScryptoCustomExtension>> {
-        let validation_context: Box<dyn ValidationContext<Error=RuntimeError>> =
+        let validation_context: Box<dyn ValidationContext<Error = RuntimeError>> =
             Box::new(SystemServiceTypeInfoLookup::new(
                 self,
                 schema_origin,

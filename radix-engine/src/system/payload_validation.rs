@@ -163,7 +163,7 @@ impl TypeInfoForValidation {
 // VALIDATION
 //==================
 
-type Lookup<'a, E> = Box<dyn ValidationContext<Error=E> + 'a>;
+type Lookup<'a, E> = Box<dyn ValidationContext<Error = E> + 'a>;
 
 impl<'a, E: ToString> ValidatableCustomExtension<Lookup<'a, E>> for ScryptoCustomExtension {
     fn apply_validation_for_custom_value<'de>(

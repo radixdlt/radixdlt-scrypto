@@ -1,7 +1,10 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_common::prelude::{scrypto_decode, scrypto_encode, Hash, ScryptoSchema};
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintPartitionType, BlueprintPayloadDef, BlueprintPayloadIdentifier, BlueprintVersionKey, PartitionDescription, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, KeyOrValue};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintPayloadDef, BlueprintPayloadIdentifier, BlueprintVersionKey,
+    KeyOrValue, PartitionDescription, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+};
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
@@ -16,7 +19,9 @@ use sbor::LocalTypeIndex;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::SchemaOrigin;
 use crate::system::system::KeyValueEntrySubstate;
-use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta};
+use crate::system::system_type_checker::{
+    BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta,
+};
 use crate::track::TrackedNode;
 use crate::types::BlueprintCollectionSchema;
 
@@ -143,7 +148,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             ),
         };
 
-        if let Some(version) = object_info.module_versions.get(&module_id) {
+        if let Some(_version) = object_info.module_versions.get(&module_id) {
             match module_id {
                 ObjectModuleId::Main => Some(object_info.blueprint_info.blueprint_id),
                 _ => Some(module_id.static_blueprint().unwrap()),
@@ -170,10 +175,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         definition.value
     }
 
-    pub fn get_kv_store_type_target(
-        &self,
-        node_id: &NodeId,
-    ) -> Option<KVStoreTypeTarget> {
+    pub fn get_kv_store_type_target(&self, node_id: &NodeId) -> Option<KVStoreTypeTarget> {
         let type_info = self.fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
             node_id,
             TYPE_INFO_FIELD_PARTITION,
@@ -204,7 +206,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
         let object_info = match type_info {
             TypeInfoSubstate::Object(object_info) => object_info,
-            i @ _ => return None,
+            _ => return None,
         };
 
         if let Some(_version) = object_info.module_versions.get(&module_id) {
@@ -245,8 +247,16 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         key_or_value: KeyOrValue,
     ) -> Option<ResolvedPayloadSchema> {
         let (substs, allow_ownership, allow_non_global_refs) = match key_or_value {
-            KeyOrValue::Key => (&target.kv_store_type.key_generic_substitutions, false, false),
-            KeyOrValue::Value => (&target.kv_store_type.value_generic_substitutions, target.kv_store_type.allow_ownership, false),
+            KeyOrValue::Key => (
+                &target.kv_store_type.key_generic_substitutions,
+                false,
+                false,
+            ),
+            KeyOrValue::Value => (
+                &target.kv_store_type.value_generic_substitutions,
+                target.kv_store_type.allow_ownership,
+                false,
+            ),
         };
 
         match substs {
