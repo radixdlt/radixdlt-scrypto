@@ -89,15 +89,19 @@ impl LimitsModule {
                 old_size,
                 new_size,
             } => {
-                if let Some(old_size) = old_size {
-                    if new_size > old_size {
-                        self.heap_substates_total_bytes += new_size - old_size;
-                    } else {
-                        self.heap_substates_total_bytes -= old_size - new_size;
-                    }
-                } else {
+                if old_size.is_none() {
                     self.heap_substates_total_bytes += canonical_substate_key.logical_size();
-                    self.heap_substates_total_bytes += new_size;
+                }
+                if new_size.is_none() {
+                    self.heap_substates_total_bytes -= canonical_substate_key.logical_size();
+                }
+
+                let old_size = old_size.unwrap_or_default();
+                let new_size = new_size.unwrap_or_default();
+                if new_size > old_size {
+                    self.heap_substates_total_bytes += new_size - old_size;
+                } else {
+                    self.heap_substates_total_bytes -= old_size - new_size;
                 }
             }
             StoreAccess::UpdateSubstateInTrack {
@@ -105,15 +109,19 @@ impl LimitsModule {
                 old_size,
                 new_size,
             } => {
-                if let Some(old_size) = old_size {
-                    if new_size > old_size {
-                        self.track_substates_total_bytes += new_size - old_size;
-                    } else {
-                        self.track_substates_total_bytes -= old_size - new_size;
-                    }
-                } else {
+                if old_size.is_none() {
                     self.track_substates_total_bytes += canonical_substate_key.logical_size();
-                    self.track_substates_total_bytes += new_size;
+                }
+                if new_size.is_none() {
+                    self.track_substates_total_bytes -= canonical_substate_key.logical_size();
+                }
+
+                let old_size = old_size.unwrap_or_default();
+                let new_size = new_size.unwrap_or_default();
+                if new_size > old_size {
+                    self.track_substates_total_bytes += new_size - old_size;
+                } else {
+                    self.track_substates_total_bytes -= old_size - new_size;
                 }
             }
         }
@@ -133,6 +141,7 @@ impl LimitsModule {
                 ),
             ));
         }
+
         Ok(())
     }
 }

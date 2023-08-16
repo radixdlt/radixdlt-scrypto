@@ -215,8 +215,8 @@ pub enum StoreAccess {
         canonical_substate_key: CanonicalSubstateKey,
         /// Previous size of the substate, or `None` if it's a new entry
         old_size: Option<usize>,
-        /// The new substate size
-        new_size: usize,
+        /// The new substate size, or `None` if it's removed
+        new_size: Option<usize>,
     },
 
     /// A substate in track has been updated
@@ -225,8 +225,8 @@ pub enum StoreAccess {
         canonical_substate_key: CanonicalSubstateKey,
         /// Previous size of the substate, or `None` if it's a new entry
         old_size: Option<usize>,
-        /// The new substate size
-        new_size: usize,
+        /// The new substate size, or `None` if it's removed
+        new_size: Option<usize>,
     },
 }
 
