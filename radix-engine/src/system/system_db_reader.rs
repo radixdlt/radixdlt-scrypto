@@ -20,12 +20,14 @@ use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget,
 use crate::track::TrackedNode;
 use crate::types::BlueprintCollectionSchema;
 
+#[derive(Clone, Debug)]
 pub enum SystemPartitionDescription {
     TypeInfo,
     Schema,
     Module(ObjectModuleId, PartitionOffset),
 }
 
+#[derive(Clone, Debug)]
 pub enum ObjectPartitionDescriptor {
     Field,
     KeyValueCollection(u8),
@@ -33,6 +35,7 @@ pub enum ObjectPartitionDescriptor {
     SortedIndexCollection(u8),
 }
 
+#[derive(Clone, Debug)]
 pub enum SystemPartitionDescriptor {
     TypeInfo,
     Schema,
