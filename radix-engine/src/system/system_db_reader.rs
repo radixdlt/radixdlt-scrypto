@@ -53,8 +53,6 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         if partition_num.ge(&MAIN_BASE_PARTITION) {
             let partition_offset = PartitionOffset(partition_num.0 - MAIN_BASE_PARTITION.0);
             SystemPartitionDescription::Module(ObjectModuleId::Main, partition_offset)
-        } else if partition_num.ge(&SCHEMAS_PARTITION) {
-            SystemPartitionDescription::Schema
         } else if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
             let partition_offset =
                 PartitionOffset(partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0);
@@ -65,6 +63,8 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         } else if partition_num.ge(&METADATA_BASE_PARTITION) {
             let partition_offset = PartitionOffset(partition_num.0 - METADATA_BASE_PARTITION.0);
             SystemPartitionDescription::Module(ObjectModuleId::Metadata, partition_offset)
+        } else if partition_num.ge(&SCHEMAS_PARTITION) {
+            SystemPartitionDescription::Schema
         } else if partition_num.eq(&TYPE_INFO_FIELD_PARTITION) {
             SystemPartitionDescription::TypeInfo
         } else {
