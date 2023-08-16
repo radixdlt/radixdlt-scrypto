@@ -42,8 +42,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
     let prepared = transactions.prepare().unwrap();
     let fee_config = CostingParameters::default();
     let mut execution_config = ExecutionConfig::for_test_transaction();
-    // lower substate reads limit to avoid Fee limit transaction result
-    execution_config.max_number_of_substates_in_track = 150;
+    execution_config.max_track_substates_total_bytes = 4 * 1024 * 1024;
     let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,
@@ -55,7 +54,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
         matches!(
             e,
             RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-                TransactionLimitsError::TooManyEntriesInTrack
+                TransactionLimitsError::TrackSubstateSizeExceeded
             ))
         )
     });
@@ -96,8 +95,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
     let prepared = transactions.prepare().unwrap();
     let fee_config = CostingParameters::default();
     let mut execution_config = ExecutionConfig::for_test_transaction();
-    // lower substate writes limit to avoid Fee limit transaction result
-    execution_config.max_number_of_substates_in_track = 100;
+    execution_config.max_track_substates_total_bytes = 4 * 1024 * 1024;
     let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,
@@ -109,7 +107,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
         matches!(
             e,
             RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-                TransactionLimitsError::TooManyEntriesInTrack
+                TransactionLimitsError::TrackSubstateSizeExceeded
             ))
         )
     });

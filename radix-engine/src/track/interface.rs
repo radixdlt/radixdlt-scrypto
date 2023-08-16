@@ -208,9 +208,26 @@ pub enum StoreAccess {
     ReadFromDb(CanonicalSubstateKey, usize),
     /// Non-existent substate was read from database.
     ReadFromDbNotFound(CanonicalSubstateKey),
-    /// A new entry has been added to track
-    /// System limits how many items that can be tracked.
-    NewEntryInTrack(CanonicalSubstateKey, usize),
+
+    /// A substate in track has been updated
+    UpdateSubstateInTrack {
+        /// The canonical substate key
+        canonical_substate_key: CanonicalSubstateKey,
+        /// Previous size of the substate, or `None` if it's a new entry
+        old_size: Option<usize>,
+        /// The new substate size
+        new_size: usize,
+    },
+
+    /// A substate in track has been updated
+    UpdateSubstateInHeap {
+        /// The canonical substate key
+        canonical_substate_key: CanonicalSubstateKey,
+        /// Previous size of the substate, or `None` if it's a new entry
+        old_size: Option<usize>,
+        /// The new substate size
+        new_size: usize,
+    },
 }
 
 impl StoreAccess {
@@ -218,7 +235,14 @@ impl StoreAccess {
         match self {
             StoreAccess::ReadFromDb(key, _)
             | StoreAccess::ReadFromDbNotFound(key)
-            | StoreAccess::NewEntryInTrack(key, _) => key.node_id,
+            | StoreAccess::UpdateSubstateInTrack {
+                canonical_substate_key: key,
+                ..
+            }
+            | StoreAccess::UpdateSubstateInHeap {
+                canonical_substate_key: key,
+                ..
+            } => key.node_id,
         }
     }
 }
