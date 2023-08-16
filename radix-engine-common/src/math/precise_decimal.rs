@@ -6,7 +6,6 @@ use num_traits::{Pow, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::format;
-use sbor::rust::iter;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -40,14 +39,6 @@ pub struct PreciseDecimal(pub I256);
 impl Default for PreciseDecimal {
     fn default() -> Self {
         Self::zero()
-    }
-}
-
-impl iter::Sum for PreciseDecimal {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        let mut sum = PreciseDecimal::zero();
-        iter.for_each(|d| sum = sum.safe_add(d).expect("Overflow"));
-        sum
     }
 }
 
@@ -721,7 +712,6 @@ mod tests {
     use crate::math::precise_decimal::RoundingMode;
     use crate::pdec;
     use paste::paste;
-    use sbor::rust::vec;
 
     #[test]
     fn test_format_precise_decimal() {
@@ -1297,16 +1287,6 @@ mod tests {
         assert_eq!(num.round(1, mode).to_string(), "-2.5");
         assert_eq!(num.round(2, mode).to_string(), "-2.46");
         assert_eq!(num.round(3, mode).to_string(), "-2.46");
-    }
-
-    #[test]
-    fn test_sum_precise_decimal() {
-        let decimals = vec![pdec!(1), pdec!("2"), pdec!("3")];
-        // two syntax
-        let sum1: PreciseDecimal = decimals.iter().copied().sum();
-        let sum2: PreciseDecimal = decimals.into_iter().sum();
-        assert_eq!(sum1, pdec!("6"));
-        assert_eq!(sum2, pdec!("6"));
     }
 
     #[test]

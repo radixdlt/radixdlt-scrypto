@@ -106,10 +106,15 @@ impl ActiveValidatorSet {
 
     /// Note for performance - this is calculated by iterating over the whole validator set.
     pub fn total_active_stake_xrd(&self) -> Decimal {
-        self.validators_by_stake_desc
+        let mut sum = Decimal::ZERO;
+        for v in self
+            .validators_by_stake_desc
             .iter()
             .map(|(_, validator)| validator.stake)
-            .sum()
+        {
+            sum = sum.safe_add(v).unwrap();
+        }
+        sum
     }
 
     pub fn validator_count(&self) -> usize {
@@ -851,10 +856,17 @@ impl ConsensusManagerBlueprint {
             return Ok(());
         }
 
-        let stake_sum_xrd = validator_infos
-            .values()
-            .map(|validator_info| validator_info.stake_xrd)
-            .sum::<Decimal>();
+        let stake_sum_xrd = {
+            let mut sum = Decimal::ZERO;
+
+            for v in validator_infos
+                .values()
+                .map(|validator_info| validator_info.stake_xrd)
+            {
+                sum = sum.safe_add(v).unwrap();
+            }
+            sum
+        };
 
         //======================
         // Distribute emissions
@@ -866,15 +878,19 @@ impl ConsensusManagerBlueprint {
             .total_emission_xrd_per_epoch
             .safe_div(stake_sum_xrd)
             .unwrap();
-        let effective_total_emission_xrd = validator_infos
-            .values()
-            .map(|validator_info| {
+        let effective_total_emission_xrd = {
+            let mut sum = Decimal::ZERO;
+
+            for v in validator_infos.values().map(|validator_info| {
                 validator_info
                     .effective_stake_xrd
                     .safe_mul(emission_per_staked_xrd)
                     .unwrap()
-            })
-            .sum::<Decimal>();
+            }) {
+                sum = sum.safe_add(v).unwrap();
+            }
+            sum
+        };
 
         let total_emission_xrd_bucket =
             ResourceManager(XRD).mint_fungible(effective_total_emission_xrd, api)?;
@@ -904,8 +920,15 @@ impl ConsensusManagerBlueprint {
         //===========================
         // Distribute rewards (fees)
         //===========================
-        let total_individual_amount: Decimal =
-            validator_rewards.proposer_rewards.values().cloned().sum();
+        let total_individual_amount: Decimal = {
+            let mut sum = Decimal::ZERO;
+
+            for v in validator_rewards.proposer_rewards.values() {
+                sum = sum.safe_add(*v).unwrap();
+            }
+            sum
+        };
+
         let reward_per_staked_xrd = (validator_rewards
             .rewards_vault
             .amount(api)?

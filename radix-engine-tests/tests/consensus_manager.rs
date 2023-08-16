@@ -2260,7 +2260,13 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         .expect_commit_success();
 
     // Act (start unlock multiple times in a single epoch)
-    let stake_units_to_unlock_total_amount = stake_units_to_unlock_amounts.iter().cloned().sum();
+    let stake_units_to_unlock_total_amount = {
+        let mut sum = Decimal::ZERO;
+        for v in stake_units_to_unlock_amounts.iter() {
+            sum = sum.safe_add(*v).unwrap();
+        }
+        sum
+    };
     for stake_units_to_unlock_amount in stake_units_to_unlock_amounts {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()

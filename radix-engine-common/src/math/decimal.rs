@@ -6,7 +6,6 @@ use num_traits::{Pow, Zero};
 use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
 use sbor::rust::format;
-use sbor::rust::iter;
 use sbor::rust::prelude::*;
 use sbor::*;
 
@@ -37,14 +36,6 @@ pub struct Decimal(pub I192);
 impl Default for Decimal {
     fn default() -> Self {
         Self::zero()
-    }
-}
-
-impl iter::Sum for Decimal {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        let mut sum = Decimal::zero();
-        iter.for_each(|d| sum = sum.safe_add(d).expect("Overflow"));
-        sum
     }
 }
 
@@ -705,7 +696,6 @@ mod tests {
     use super::*;
     use crate::dec;
     use paste::paste;
-    use sbor::rust::vec;
 
     #[test]
     fn test_format_decimal() {
@@ -1248,16 +1238,6 @@ mod tests {
         assert_eq!(num.round(1, mode).to_string(), "-2.5");
         assert_eq!(num.round(2, mode).to_string(), "-2.46");
         assert_eq!(num.round(3, mode).to_string(), "-2.46");
-    }
-
-    #[test]
-    fn test_sum_decimal() {
-        let decimals = vec![dec!(1), dec!("2"), dec!("3")];
-        // two syntax
-        let sum1: Decimal = decimals.iter().copied().sum();
-        let sum2: Decimal = decimals.into_iter().sum();
-        assert_eq!(sum1, dec!("6"));
-        assert_eq!(sum2, dec!("6"));
     }
 
     #[test]
