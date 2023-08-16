@@ -1143,7 +1143,7 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
     // In reality, validators will have far less than u16::MAX * 100k stake, but let's handle that case just in case
     let stake_100k = stake / Decimal::from(100000);
     let stake_100k_whole_units = (stake_100k / Decimal::from(10).powi(Decimal::SCALE.into())).0;
-    let stake_u16 = if stake_100k_whole_units > BnumI192::from(u16::MAX) {
+    let stake_u16 = if stake_100k_whole_units > I192::from(u16::MAX) {
         u16::MAX
     } else {
         stake_100k_whole_units.try_into().unwrap()

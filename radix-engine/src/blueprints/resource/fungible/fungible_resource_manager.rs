@@ -18,7 +18,7 @@ use radix_engine_interface::*;
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
 lazy_static! {
-    static ref MAX_MINT_AMOUNT: Decimal = Decimal(BnumI192::from(2).pow(160)); // 2^160 subunits
+    static ref MAX_MINT_AMOUNT: Decimal = Decimal(I192::from(2).pow(160)); // 2^160 subunits
 }
 
 /// Represents an error when accessing a bucket.
