@@ -222,7 +222,7 @@ impl Decimal {
         let mul = |x: i64, y: i64| x.checked_mul(y);
 
         if exp < 0 {
-            let dec_192 = I192::try_from(one_256 * one_256 / base_256).ok()?;
+            let dec_192 = I192::try_from((one_256 * one_256).safe_div(base_256)?).ok()?;
             let exp = mul(exp, -1)?;
             return Self(dec_192).safe_powi(exp);
         }
@@ -233,11 +233,11 @@ impl Decimal {
             return Some(*self);
         }
         if exp % 2 == 0 {
-            let dec_192 = I192::try_from(base_256 * base_256 / one_256).ok()?;
+            let dec_192 = I192::try_from(base_256.safe_mul(base_256)? / one_256).ok()?;
             let exp = div(exp, 2)?;
             Self(dec_192).safe_powi(exp)
         } else {
-            let dec_192 = I192::try_from(base_256 * base_256 / one_256).expect("Overflow");
+            let dec_192 = I192::try_from(base_256.safe_mul(base_256)? / one_256).ok()?;
             let sub_dec = Self(dec_192);
             let exp = div(sub(exp, 1)?, 2)?;
             let b = sub_dec.safe_powi(exp)?;
@@ -259,7 +259,7 @@ impl Decimal {
         // To get the right precision, we compute : sqrt(i*10^18) = sqrt(d)*10^18
         let self_256 = I256::from(self.0);
         let correct_nb = self_256 * I256::from(Self::ONE.0);
-        let sqrt = I192::try_from(correct_nb.sqrt()).expect("Overflow");
+        let sqrt = I192::try_from(correct_nb.sqrt()).ok()?;
         Some(Self(sqrt))
     }
 

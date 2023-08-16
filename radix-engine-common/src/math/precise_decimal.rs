@@ -230,7 +230,7 @@ impl PreciseDecimal {
         let mul = |x: i64, y: i64| x.checked_mul(y);
 
         if exp < 0 {
-            let sub_384 = one_384 * one_384 / base_384;
+            let sub_384 = (one_384 * one_384).safe_div(base_384)?;
             let sub_256 = I256::try_from(sub_384).ok()?;
             let exp = mul(exp, -1)?;
             return Self(sub_256).safe_powi(exp);
@@ -242,12 +242,12 @@ impl PreciseDecimal {
             return Some(*self);
         }
         if exp % 2 == 0 {
-            let sub_384 = base_384 * base_384 / one_384;
+            let sub_384 = base_384.safe_mul(base_384)? / one_384;
             let sub_256 = I256::try_from(sub_384).ok()?;
             let exp = div(exp, 2)?;
             Self(sub_256).safe_powi(exp)
         } else {
-            let sub_384 = base_384 * base_384 / one_384;
+            let sub_384 = base_384.safe_mul(base_384)? / one_384;
             let sub_256 = I256::try_from(sub_384).ok()?;
             let sub_pdec = Self(sub_256);
             let exp = div(sub(exp, 1)?, 2)?;
@@ -270,7 +270,7 @@ impl PreciseDecimal {
         // To get the right precision, we compute : sqrt(i*10^36) = sqrt(d)*10^36
         let self_384 = I384::from(self.0);
         let correct_nb = self_384 * I384::from(Self::ONE.0);
-        let sqrt = I256::try_from(correct_nb.sqrt()).expect("Overflow");
+        let sqrt = I256::try_from(correct_nb.sqrt()).ok()?;
         Some(Self(sqrt))
     }
 
