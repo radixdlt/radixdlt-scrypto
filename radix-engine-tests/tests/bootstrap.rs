@@ -95,7 +95,8 @@ fn test_bootstrap_receipt_should_match_constants() {
     assert_eq!(wrap_up_epoch_change.epoch, genesis_epoch.next());
 
     let checker = SystemDatabaseChecker::new();
-    checker.check_db(&substate_db);
+    let results = checker.check_db(&substate_db);
+    println!("{:?}", results);
 }
 
 fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
