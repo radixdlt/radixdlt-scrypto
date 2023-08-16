@@ -221,7 +221,7 @@ impl FungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply += amount;
+            total_supply = total_supply.safe_add(amount).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
             api.field_close(total_supply_handle)?;
         }
@@ -270,7 +270,7 @@ impl FungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply -= other_bucket.liquid.amount();
+            total_supply = total_supply.safe_sub(other_bucket.liquid.amount()).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
             api.field_close(total_supply_handle)?;
         }

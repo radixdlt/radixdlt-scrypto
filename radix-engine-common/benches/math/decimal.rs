@@ -2,7 +2,7 @@ use std::concat;
 use std::str::FromStr;
 
 use criterion::{BenchmarkId, Criterion};
-use radix_engine_common::math::Decimal;
+use radix_engine_common::math::*;
 
 use crate::macros::QUICK;
 use crate::{bench_ops, ops_fn, ops_root_fn, process_op};
@@ -96,7 +96,7 @@ const FROM_STRING_OPERANDS: [&str; 4] = [
     "9",
 ];
 
-ops_fn!(Decimal, powi, i64, "clone");
+ops_fn!(Decimal, safe_powi, i64, "clone");
 ops_root_fn!(Decimal, nth_root, "clone");
 bench_ops!(Decimal, "add");
 bench_ops!(Decimal, "sub");
