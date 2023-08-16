@@ -35,7 +35,7 @@ pub struct BlueprintTypeTarget {
 /// The key value store to check against along with any additional metadata
 /// required to perform validation
 #[derive(Debug, Clone)]
-pub struct KVStoreValidationTarget {
+pub struct KVStoreTypeTarget {
     pub kv_store_type: KeyValueStoreGenericSubstitutions,
     pub meta: NodeId,
 }
@@ -274,7 +274,7 @@ where
     /// Validate that a key value payload matches the key value store's definition of that payload
     pub fn validate_kv_store_payload(
         &mut self,
-        target: &KVStoreValidationTarget,
+        target: &KVStoreTypeTarget,
         payload_identifier: KeyOrValue,
         payload: &[u8],
     ) -> Result<(), RuntimeError> {

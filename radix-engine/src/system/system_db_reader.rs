@@ -1,10 +1,7 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_common::prelude::{scrypto_decode, scrypto_encode, Hash, ScryptoSchema};
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintPartitionType, BlueprintPayloadDef, BlueprintPayloadIdentifier,
-    BlueprintVersionKey, PartitionDescription, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintPartitionType, BlueprintPayloadDef, BlueprintPayloadIdentifier, BlueprintVersionKey, PartitionDescription, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, KeyOrValue};
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
@@ -19,7 +16,7 @@ use sbor::LocalTypeIndex;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::SchemaOrigin;
 use crate::system::system::KeyValueEntrySubstate;
-use crate::system::system_type_checker::{BlueprintTypeTarget, SchemaValidationMeta};
+use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta};
 use crate::track::TrackedNode;
 use crate::types::BlueprintCollectionSchema;
 
@@ -170,7 +167,28 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         definition.value
     }
 
-    pub fn get_type_target(
+    pub fn get_kv_store_type_target(
+        &self,
+        node_id: &NodeId,
+    ) -> Option<KVStoreTypeTarget> {
+        let type_info = self.fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+            node_id,
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+        )?;
+
+        let kv_store_info = match type_info {
+            TypeInfoSubstate::KeyValueStore(kv_store_info) => kv_store_info,
+            _ => return None,
+        };
+
+        Some(KVStoreTypeTarget {
+            kv_store_type: kv_store_info.generic_substitutions,
+            meta: *node_id,
+        })
+    }
+
+    pub fn get_blueprint_type_target(
         &self,
         node_id: &NodeId,
         module_id: ObjectModuleId,
@@ -218,10 +236,35 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         }
     }
 
+    pub fn get_kv_store_payload_schema(
+        &self,
+        target: &KVStoreTypeTarget,
+        key_or_value: KeyOrValue,
+    ) -> Option<ResolvedPayloadSchema> {
+        let (substs, allow_ownership, allow_non_global_refs) = match key_or_value {
+            KeyOrValue::Key => (&target.kv_store_type.key_generic_substitutions, false, false),
+            KeyOrValue::Value => (&target.kv_store_type.value_generic_substitutions, target.kv_store_type.allow_ownership, false),
+        };
+
+        match substs {
+            GenericSubstitution::Local(type_identifier) => {
+                let schema = self.get_schema(&target.meta, &type_identifier.0)?;
+
+                Some(ResolvedPayloadSchema {
+                    schema,
+                    type_index: type_identifier.1,
+                    allow_ownership,
+                    allow_non_global_refs,
+                    schema_origin: SchemaOrigin::KeyValueStore,
+                })
+            }
+        }
+    }
+
     // TODO: The logic here is currently copied from system_type_checker.rs get_payload_schema().
     // It would be nice to use the same underlying code but currently too many refactors are required
     // to make that happen.
-    pub fn get_payload_schema(
+    pub fn get_blueprint_payload_schema(
         &self,
         target: &BlueprintTypeTarget,
         payload_identifier: &BlueprintPayloadIdentifier,
