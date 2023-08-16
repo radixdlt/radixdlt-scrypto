@@ -1,15 +1,18 @@
+use radix_engine_common::prelude::{scrypto_decode, ScryptoSchema};
 use radix_engine_interface::api::{FieldIndex, ObjectModuleId};
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintType};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintPayloadIdentifier, BlueprintType, KeyOrValue};
 use radix_engine_store_interface::{
     interface::SubstateDatabase,
 };
 use radix_engine_store_interface::interface::{DbPartitionKey, ListableSubstateDatabase};
 use sbor::rust::prelude::*;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system::KeyValueEntrySubstate;
 
 use crate::system::system_db_reader::{ObjectPartitionDescriptor, SystemDatabaseReader, SystemPartitionDescriptor};
+use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::types::Condition;
 
 #[derive(Debug)]
@@ -250,9 +253,7 @@ impl SystemDatabaseChecker {
         let mut substate_count = 0;
 
         match partition_descriptors[0] {
-            SystemPartitionDescriptor::KeyValueStore
-            | SystemPartitionDescriptor::Object(.., ObjectPartitionDescriptor::IndexCollection(..)
-            | ObjectPartitionDescriptor::KeyValueCollection(..)) => {
+            SystemPartitionDescriptor::KeyValueStore => {
                 for (key, value) in reader.substates_iter::<MapKey>(node_id, partition_number) {
                     let _map_key = match key {
                         SubstateKey::Map(map_key) => map_key,
@@ -264,7 +265,49 @@ impl SystemDatabaseChecker {
                     substate_count += 1;
                 }
             }
-            SystemPartitionDescriptor::Object(.., ObjectPartitionDescriptor::SortedIndexCollection(..)) => {
+            SystemPartitionDescriptor::Object(module_id, ObjectPartitionDescriptor::IndexCollection(collection_index)) => {
+                let type_target = reader.get_type_target(node_id, module_id).expect("Missing type target");
+                let key_identifier = BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Key);
+                reader.get_payload_schema(&type_target, &key_identifier).expect("Missing key schema");
+                let value_identifier = BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Value);
+                reader.get_payload_schema(&type_target, &value_identifier).expect("Missing value schema");
+
+                for (key, value) in reader.substates_iter::<MapKey>(node_id, partition_number) {
+                    let _map_key = match key {
+                        SubstateKey::Map(map_key) => map_key,
+                        _ => panic!("Invalid map key"),
+                    };
+
+                    // TODO: Check against schema
+
+                    substate_count += 1;
+                }
+            }
+            SystemPartitionDescriptor::Object(module_id, ObjectPartitionDescriptor::KeyValueCollection(collection_index)) => {
+                let type_target = reader.get_type_target(node_id, module_id).expect("Missing type target");
+                let key_identifier = BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Key);
+                reader.get_payload_schema(&type_target, &key_identifier).expect("Missing key schema");
+                let value_identifier = BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Value);
+                reader.get_payload_schema(&type_target, &value_identifier).expect("Missing value schema");
+
+                for (key, value) in reader.substates_iter::<MapKey>(node_id, partition_number) {
+                    let _map_key = match key {
+                        SubstateKey::Map(map_key) => map_key,
+                        _ => panic!("Invalid map key"),
+                    };
+
+                    // TODO: Check against schema
+
+                    substate_count += 1;
+                }
+            }
+            SystemPartitionDescriptor::Object(module_id, ObjectPartitionDescriptor::SortedIndexCollection(collection_index)) => {
+                let type_target = reader.get_type_target(node_id, module_id).expect("Missing type target");
+                let key_identifier = BlueprintPayloadIdentifier::SortedIndexEntry(collection_index, KeyOrValue::Key);
+                reader.get_payload_schema(&type_target, &key_identifier).expect("Missing key schema");
+                let value_identifier = BlueprintPayloadIdentifier::SortedIndexEntry(collection_index, KeyOrValue::Value);
+                reader.get_payload_schema(&type_target, &value_identifier).expect("Missing value schema");
+
                 for (key, value) in reader.substates_iter::<SortedU16Key>(node_id, partition_number) {
                     let _sorted_key = match key {
                         SubstateKey::Sorted(sorted_key) => sorted_key,
@@ -277,6 +320,8 @@ impl SystemDatabaseChecker {
                 }
             }
             SystemPartitionDescriptor::Object(module_id, ObjectPartitionDescriptor::Field) => {
+                let type_target = reader.get_type_target(node_id, module_id).expect("Missing type target");
+
                 for (key, _value) in reader.substates_iter::<FieldKey>(node_id, partition_number) {
                     let field_index = match key {
                         SubstateKey::Field(field_index) => field_index,
@@ -295,6 +340,10 @@ impl SystemDatabaseChecker {
                         _ => panic!("Invalid Field key")
                     }
 
+
+                    let field_identifier = BlueprintPayloadIdentifier::Field(field_index);
+                    reader.get_payload_schema(&type_target, &field_identifier).expect("Missing field schema");
+
                     let blueprint_id = reader.get_blueprint_id(node_id, module_id).expect("Invalid module");
                     let bp_def = reader.get_blueprint_definition(&blueprint_id).expect("Missing definition");
                     let _payload_def = bp_def.interface.get_field_payload_def(field_index).expect("Invalid field");
@@ -311,7 +360,7 @@ impl SystemDatabaseChecker {
                         _ => panic!("Invalid TypeInfo key"),
                     };
 
-                    // TODO: Check against schema
+                    let _type_info: TypeInfoSubstate = scrypto_decode(&value).expect("Invalid Type Info");
 
                     substate_count += 1;
                 }
@@ -323,7 +372,7 @@ impl SystemDatabaseChecker {
                         _ => panic!("Invalid Schema key"),
                     };
 
-                    // TODO: Check against schema
+                    let schema: KeyValueEntrySubstate<ScryptoSchema> = scrypto_decode(&value).expect("Invalid Schema");
 
                     substate_count += 1;
                 }

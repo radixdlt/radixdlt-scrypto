@@ -112,18 +112,16 @@ where
         Ok(())
     }
 
-    /// Validate that a blueprint payload matches the blueprint's definition of that payload
-    pub fn validate_blueprint_payload(
+    pub fn get_payload_schema(
         &mut self,
         target: &BlueprintTypeTarget,
-        payload_identifier: BlueprintPayloadIdentifier,
-        payload: &[u8],
-    ) -> Result<(), RuntimeError> {
+        payload_identifier: &BlueprintPayloadIdentifier,
+    ) -> Result<(ScryptoSchema, LocalTypeIndex, bool, bool, SchemaOrigin), RuntimeError> {
         let blueprint_interface =
             self.get_blueprint_default_interface(target.blueprint_info.blueprint_id.clone())?;
 
         let (payload_def, allow_ownership, allow_non_global_ref) = blueprint_interface
-            .get_payload_def(&payload_identifier)
+            .get_payload_def(payload_identifier)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::TypeCheckError(
                     TypeCheckError::BlueprintPayloadDoesNotExist(
@@ -191,6 +189,21 @@ where
                 }
             }
         };
+
+        Ok((schema, index, allow_ownership, allow_non_global_ref, schema_origin))
+    }
+
+    /// Validate that a blueprint payload matches the blueprint's definition of that payload
+    pub fn validate_blueprint_payload(
+        &mut self,
+        target: &BlueprintTypeTarget,
+        payload_identifier: BlueprintPayloadIdentifier,
+        payload: &[u8],
+    ) -> Result<(), RuntimeError> {
+        let (schema, index, allow_ownership, allow_non_global_ref, schema_origin) = self.get_payload_schema(
+            target,
+            &payload_identifier,
+        )?;
 
         self.validate_payload(
             payload,

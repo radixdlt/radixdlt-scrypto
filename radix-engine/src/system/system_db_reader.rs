@@ -1,7 +1,7 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::prelude::{scrypto_decode, scrypto_encode};
+use radix_engine_common::prelude::{Hash, scrypto_decode, scrypto_encode, ScryptoSchema};
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintPartitionType, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PartitionDescription};
+use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintPartitionType, BlueprintPayloadDef, BlueprintPayloadIdentifier, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET, PartitionDescription};
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_store_interface::{
@@ -10,10 +10,13 @@ use radix_engine_store_interface::{
 };
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_engine_store_interface::interface::{ListableSubstateDatabase};
+use sbor::LocalTypeIndex;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::payload_validation::SchemaOrigin;
 use crate::system::system::KeyValueEntrySubstate;
+use crate::system::system_type_checker::{BlueprintTypeTarget, SchemaValidationMeta};
 use crate::track::TrackedNode;
 use crate::types::BlueprintCollectionSchema;
 
@@ -152,6 +155,120 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             )?;
 
         definition.value
+    }
+
+    pub fn get_type_target(&self, node_id: &NodeId, module_id: ObjectModuleId) -> Option<BlueprintTypeTarget> {
+        let type_info = self.fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+            node_id,
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+        )?;
+
+        let object_info = match type_info {
+            TypeInfoSubstate::Object(object_info) => object_info,
+            i @ _ => return None,
+        };
+
+        if let Some(_version) = object_info.module_versions.get(&module_id) {
+            match module_id {
+                ObjectModuleId::Main => {
+                    let target = BlueprintTypeTarget {
+                        blueprint_info: object_info.blueprint_info,
+                        meta: SchemaValidationMeta::ExistingObject { additional_schemas: *node_id }
+                    };
+                    Some(target)
+                }
+                _ => {
+                    let blueprint_id = module_id.static_blueprint().unwrap();
+                    let target = BlueprintTypeTarget {
+                        blueprint_info: BlueprintInfo {
+                            blueprint_id,
+                            outer_obj_info: OuterObjectInfo::None,
+                            features: Default::default(),
+                            generic_substitutions: Default::default(),
+                        },
+                        meta: SchemaValidationMeta::ExistingObject { additional_schemas: *node_id },
+                    };
+                    Some(target)
+                }
+            }
+        } else { None }
+    }
+
+    // TODO: The logic here is currently copied from system_type_checker.rs get_payload_schema().
+    // It would be nice to use the same underlying code but currently too many refactors are required
+    // to make that happen.
+    pub fn get_payload_schema(
+        &self,
+        target: &BlueprintTypeTarget,
+        payload_identifier: &BlueprintPayloadIdentifier,
+    ) -> Option<(ScryptoSchema, LocalTypeIndex, bool, bool, SchemaOrigin)> {
+        let blueprint_interface =
+            self.get_blueprint_definition(&target.blueprint_info.blueprint_id)?.interface;
+
+        let (payload_def, allow_ownership, allow_non_global_ref) = blueprint_interface
+            .get_payload_def(payload_identifier)?;
+
+        // Given the payload definition, retrieve the info to be able to do schema validation on a payload
+        let (schema, index, schema_origin) = match payload_def {
+            BlueprintPayloadDef::Static(type_identifier) => {
+                let schema = self.get_schema(
+                    target
+                        .blueprint_info
+                        .blueprint_id
+                        .package_address
+                        .as_node_id(),
+                    &type_identifier.0,
+                )?;
+                (
+                    schema,
+                    type_identifier.1,
+                    SchemaOrigin::Blueprint(target.blueprint_info.blueprint_id.clone()),
+                )
+            }
+            BlueprintPayloadDef::Generic(instance_index) => {
+                let generic_substitution = target
+                    .blueprint_info
+                    .generic_substitutions
+                    .get(instance_index as usize)?;
+
+                match generic_substitution {
+                    GenericSubstitution::Local(type_id) => {
+                        let schema = match &target.meta {
+                            SchemaValidationMeta::ExistingObject { additional_schemas } => {
+                                self.get_schema(additional_schemas, &type_id.0)?
+                            }
+                            SchemaValidationMeta::NewObject { additional_schemas } => {
+                                additional_schemas
+                                    .get(&type_id.0)?
+                                    .clone()
+                            }
+                            SchemaValidationMeta::Blueprint => {
+                                return None;
+                            }
+                        };
+
+                        (schema, type_id.1, SchemaOrigin::Instance)
+                    }
+                }
+            }
+        };
+
+        Some((schema, index, allow_ownership, allow_non_global_ref, schema_origin))
+    }
+
+    fn get_schema(
+        &self,
+        node_id: &NodeId,
+        schema_hash: &Hash,
+    ) -> Option<ScryptoSchema> {
+        let schema = self.fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+            node_id,
+            SCHEMAS_PARTITION,
+            &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
+        )?;
+
+        Some(schema.value.expect("Schema should exist if substate exists"))
     }
 
     pub fn get_blueprint_payload_def(
