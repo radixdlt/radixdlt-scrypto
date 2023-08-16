@@ -1,18 +1,23 @@
-use radix_engine_common::prelude::{scrypto_decode, ScryptoSchema};
+use crate::errors::RuntimeError;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
+use crate::system::system::KeyValueEntrySubstate;
+use radix_engine_common::prelude::{scrypto_decode, ScryptoCustomExtension, ScryptoSchema};
 use radix_engine_interface::api::{FieldIndex, ObjectModuleId};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintPayloadIdentifier, BlueprintType, KeyOrValue,
+};
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintPayloadIdentifier, BlueprintType, KeyOrValue};
-use radix_engine_store_interface::{
-    interface::SubstateDatabase,
-};
-use radix_engine_store_interface::interface::{DbPartitionKey, ListableSubstateDatabase};
+use radix_engine_store_interface::interface::ListableSubstateDatabase;
+use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::prelude::*;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::KeyValueEntrySubstate;
+use sbor::{validate_payload_against_schema, LocalTypeIndex, LocatedValidationError};
 
-use crate::system::system_db_reader::{ObjectPartitionDescriptor, SystemDatabaseReader, SystemPartitionDescriptor};
-use crate::system::system_type_checker::BlueprintTypeTarget;
+use crate::system::system_db_reader::{
+    ObjectPartitionDescriptor, ResolvedPayloadSchema, SystemDatabaseReader,
+    SystemPartitionDescriptor,
+};
 use crate::types::Condition;
 
 #[derive(Debug)]
@@ -62,7 +67,10 @@ impl SystemDatabaseChecker {
         SystemDatabaseChecker {}
     }
 
-    pub fn check_db<S: SubstateDatabase + ListableSubstateDatabase>(&self, substate_db: &S) -> SystemDatabaseCheckerResults {
+    pub fn check_db<S: SubstateDatabase + ListableSubstateDatabase>(
+        &self,
+        substate_db: &S,
+    ) -> SystemDatabaseCheckerResults {
         let mut global_node_count = 0usize;
         let mut interior_node_count = 0usize;
         let mut package_count = 0usize;
@@ -81,7 +89,7 @@ impl SystemDatabaseChecker {
                     } else {
                         Some(last_info)
                     }
-                },
+                }
                 None => None,
             };
 
@@ -93,12 +101,13 @@ impl SystemDatabaseChecker {
 
                     if node_id.is_global_package() {
                         package_count += 1;
-                        let definition = reader.get_package_definition(PackageAddress::new_or_panic(node_id.0));
+                        let definition =
+                            reader.get_package_definition(PackageAddress::new_or_panic(node_id.0));
                         blueprint_count += definition.len();
                     }
 
                     let new_node_check_state = self.check_node(&reader, &node_id);
-                    if let NodeCheckState::Object { object_info, ..} = &new_node_check_state {
+                    if let NodeCheckState::Object { object_info, .. } = &new_node_check_state {
                         if object_info.global {
                             global_node_count += 1;
                         } else {
@@ -113,12 +122,11 @@ impl SystemDatabaseChecker {
 
                     &mut last_node.as_mut().unwrap().1
                 }
-                Some((_, stored_type_info)) => {
-                    stored_type_info
-                }
+                Some((_, stored_type_info)) => stored_type_info,
             };
 
-            let partition_substate_count = self.check_partition(&reader, node_check_state, &node_id, partition_number);
+            let partition_substate_count =
+                self.check_partition(&reader, node_check_state, &node_id, partition_number);
 
             substate_count += partition_substate_count;
             partition_count += 1;
@@ -140,22 +148,43 @@ impl SystemDatabaseChecker {
         }
     }
 
-    fn check_node<S: SubstateDatabase + ListableSubstateDatabase>(&self, reader: &SystemDatabaseReader<S>, node_id: &NodeId) -> NodeCheckState {
-        let type_info = reader.get_type_info(node_id).expect("All existing nodes must have a type info");
-        let _entity_type = node_id.entity_type().expect("All existing nodes should have a matching entity type");
+    fn check_node<S: SubstateDatabase + ListableSubstateDatabase>(
+        &self,
+        reader: &SystemDatabaseReader<S>,
+        node_id: &NodeId,
+    ) -> NodeCheckState {
+        let type_info = reader
+            .get_type_info(node_id)
+            .expect("All existing nodes must have a type info");
+        let _entity_type = node_id
+            .entity_type()
+            .expect("All existing nodes should have a matching entity type");
         let stored_type_info = match type_info {
             TypeInfoSubstate::Object(object_info) => {
-                let bp_definition = reader.get_blueprint_definition(&object_info.blueprint_info.blueprint_id).expect("Missing blueprint");
+                let bp_definition = reader
+                    .get_blueprint_definition(&object_info.blueprint_info.blueprint_id)
+                    .expect("Missing blueprint");
 
-                let outer_object =
-                match (&object_info.blueprint_info.outer_obj_info, &bp_definition.interface.blueprint_type) {
+                let outer_object = match (
+                    &object_info.blueprint_info.outer_obj_info,
+                    &bp_definition.interface.blueprint_type,
+                ) {
                     (OuterObjectInfo::None, BlueprintType::Outer) => None,
-                    (OuterObjectInfo::Some {
-                        outer_object
-                    }, BlueprintType::Inner { outer_blueprint }) => {
-                        let expected_outer_blueprint = BlueprintId::new(&object_info.blueprint_info.blueprint_id.package_address, outer_blueprint.as_str());
-                        let outer_object_info = reader.get_object_info(*outer_object).expect("Missing outer object");
-                        assert_eq!(outer_object_info.blueprint_info.blueprint_id, expected_outer_blueprint, "Invalid outer object type");
+                    (
+                        OuterObjectInfo::Some { outer_object },
+                        BlueprintType::Inner { outer_blueprint },
+                    ) => {
+                        let expected_outer_blueprint = BlueprintId::new(
+                            &object_info.blueprint_info.blueprint_id.package_address,
+                            outer_blueprint.as_str(),
+                        );
+                        let outer_object_info = reader
+                            .get_object_info(*outer_object)
+                            .expect("Missing outer object");
+                        assert_eq!(
+                            outer_object_info.blueprint_info.blueprint_id, expected_outer_blueprint,
+                            "Invalid outer object type"
+                        );
                         Some(outer_object_info)
                     }
                     _ => {
@@ -178,17 +207,29 @@ impl SystemDatabaseChecker {
                                     match &field_schema.condition {
                                         Condition::Always => {
                                             expected_fields.insert((*module_id, field_index as u8));
-                                        },
+                                        }
                                         Condition::IfFeature(feature) => {
-                                            if object_info.blueprint_info.features.contains(feature.as_str()) {
-                                                expected_fields.insert((*module_id, field_index as u8));
+                                            if object_info
+                                                .blueprint_info
+                                                .features
+                                                .contains(feature.as_str())
+                                            {
+                                                expected_fields
+                                                    .insert((*module_id, field_index as u8));
                                             } else {
                                                 excluded_fields.insert(field_index as u8);
                                             }
                                         }
-                                        Condition::IfOuterFeature(feature)  => {
-                                            if outer_object.as_ref().expect("Invalid condition").blueprint_info.features.contains(feature.as_str()) {
-                                                expected_fields.insert((*module_id, field_index as u8));
+                                        Condition::IfOuterFeature(feature) => {
+                                            if outer_object
+                                                .as_ref()
+                                                .expect("Invalid condition")
+                                                .blueprint_info
+                                                .features
+                                                .contains(feature.as_str())
+                                            {
+                                                expected_fields
+                                                    .insert((*module_id, field_index as u8));
                                             } else {
                                                 excluded_fields.insert(field_index as u8);
                                             }
@@ -199,13 +240,15 @@ impl SystemDatabaseChecker {
                         }
                         _ => {
                             let blueprint_id = module_id.static_blueprint().unwrap();
-                            let module_def = reader.get_blueprint_definition(&blueprint_id).expect("Missing blueprint");
+                            let module_def = reader
+                                .get_blueprint_definition(&blueprint_id)
+                                .expect("Missing blueprint");
                             if let Some((_, fields)) = &module_def.interface.state.fields {
                                 for (field_index, field_schema) in fields.iter().enumerate() {
                                     match &field_schema.condition {
                                         Condition::Always => {
                                             expected_fields.insert((*module_id, field_index as u8));
-                                        },
+                                        }
                                         _ => {
                                             panic!("Modules should not have conditional fields")
                                         }
@@ -223,11 +266,9 @@ impl SystemDatabaseChecker {
                     excluded_fields,
                 }
             }
-            TypeInfoSubstate::KeyValueStore(kv_store_info) => {
-                NodeCheckState::KeyValueStore {
-                    kv_info: kv_store_info,
-                }
-            }
+            TypeInfoSubstate::KeyValueStore(kv_store_info) => NodeCheckState::KeyValueStore {
+                kv_info: kv_store_info,
+            },
             TypeInfoSubstate::GlobalAddressPhantom(..) => {
                 panic!("Global Address Phantom should never be stored");
             }
@@ -239,16 +280,18 @@ impl SystemDatabaseChecker {
         stored_type_info
     }
 
-
     fn check_partition<S: SubstateDatabase + ListableSubstateDatabase>(
         &self,
         reader: &SystemDatabaseReader<S>,
         node_check_state: &mut NodeCheckState,
         node_id: &NodeId,
-        partition_number: PartitionNumber
+        partition_number: PartitionNumber,
     ) -> usize {
         let partition_descriptors = reader.get_partition_descriptors(node_id, &partition_number);
-        assert!(!partition_descriptors.is_empty(), "Partition does not describe anything about object");
+        assert!(
+            !partition_descriptors.is_empty(),
+            "Partition does not describe anything about object"
+        );
 
         let mut substate_count = 0;
 
@@ -265,50 +308,92 @@ impl SystemDatabaseChecker {
                     substate_count += 1;
                 }
             }
-            SystemPartitionDescriptor::Object(module_id, ObjectPartitionDescriptor::IndexCollection(collection_index)) => {
-                let type_target = reader.get_type_target(node_id, module_id).expect("Missing type target");
-                let key_identifier = BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Key);
-                reader.get_payload_schema(&type_target, &key_identifier).expect("Missing key schema");
-                let value_identifier = BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Value);
-                reader.get_payload_schema(&type_target, &value_identifier).expect("Missing value schema");
+            SystemPartitionDescriptor::Object(
+                module_id,
+                ObjectPartitionDescriptor::IndexCollection(collection_index),
+            ) => {
+                let type_target = reader
+                    .get_type_target(node_id, module_id)
+                    .expect("Missing type target");
+                let key_identifier =
+                    BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Key);
+                let key_schema = reader
+                    .get_payload_schema(&type_target, &key_identifier)
+                    .expect("Missing key schema");
+                let value_identifier =
+                    BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Value);
+                reader
+                    .get_payload_schema(&type_target, &value_identifier)
+                    .expect("Missing value schema");
 
                 for (key, value) in reader.substates_iter::<MapKey>(node_id, partition_number) {
-                    let _map_key = match key {
+                    let map_key = match key {
                         SubstateKey::Map(map_key) => map_key,
                         _ => panic!("Invalid map key"),
                     };
+
+                    self.validate_payload(reader, &map_key, &key_schema)
+                        .expect("Invalid Key.");
 
                     // TODO: Check against schema
 
                     substate_count += 1;
                 }
             }
-            SystemPartitionDescriptor::Object(module_id, ObjectPartitionDescriptor::KeyValueCollection(collection_index)) => {
-                let type_target = reader.get_type_target(node_id, module_id).expect("Missing type target");
-                let key_identifier = BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Key);
-                reader.get_payload_schema(&type_target, &key_identifier).expect("Missing key schema");
-                let value_identifier = BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Value);
-                reader.get_payload_schema(&type_target, &value_identifier).expect("Missing value schema");
+            SystemPartitionDescriptor::Object(
+                module_id,
+                ObjectPartitionDescriptor::KeyValueCollection(collection_index),
+            ) => {
+                let type_target = reader
+                    .get_type_target(node_id, module_id)
+                    .expect("Missing type target");
+                let key_identifier =
+                    BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Key);
+                let key_schema = reader
+                    .get_payload_schema(&type_target, &key_identifier)
+                    .expect("Missing key schema");
+                let value_identifier =
+                    BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Value);
+                reader
+                    .get_payload_schema(&type_target, &value_identifier)
+                    .expect("Missing value schema");
 
                 for (key, value) in reader.substates_iter::<MapKey>(node_id, partition_number) {
-                    let _map_key = match key {
+                    let map_key = match key {
                         SubstateKey::Map(map_key) => map_key,
                         _ => panic!("Invalid map key"),
                     };
+
+                    self.validate_payload(reader, &map_key, &key_schema)
+                        .expect("Invalid Key.");
 
                     // TODO: Check against schema
 
                     substate_count += 1;
                 }
             }
-            SystemPartitionDescriptor::Object(module_id, ObjectPartitionDescriptor::SortedIndexCollection(collection_index)) => {
-                let type_target = reader.get_type_target(node_id, module_id).expect("Missing type target");
-                let key_identifier = BlueprintPayloadIdentifier::SortedIndexEntry(collection_index, KeyOrValue::Key);
-                reader.get_payload_schema(&type_target, &key_identifier).expect("Missing key schema");
-                let value_identifier = BlueprintPayloadIdentifier::SortedIndexEntry(collection_index, KeyOrValue::Value);
-                reader.get_payload_schema(&type_target, &value_identifier).expect("Missing value schema");
+            SystemPartitionDescriptor::Object(
+                module_id,
+                ObjectPartitionDescriptor::SortedIndexCollection(collection_index),
+            ) => {
+                let type_target = reader
+                    .get_type_target(node_id, module_id)
+                    .expect("Missing type target");
+                let key_identifier =
+                    BlueprintPayloadIdentifier::SortedIndexEntry(collection_index, KeyOrValue::Key);
+                reader
+                    .get_payload_schema(&type_target, &key_identifier)
+                    .expect("Missing key schema");
+                let value_identifier = BlueprintPayloadIdentifier::SortedIndexEntry(
+                    collection_index,
+                    KeyOrValue::Value,
+                );
+                reader
+                    .get_payload_schema(&type_target, &value_identifier)
+                    .expect("Missing value schema");
 
-                for (key, value) in reader.substates_iter::<SortedU16Key>(node_id, partition_number) {
+                for (key, value) in reader.substates_iter::<SortedU16Key>(node_id, partition_number)
+                {
                     let _sorted_key = match key {
                         SubstateKey::Sorted(sorted_key) => sorted_key,
                         _ => panic!("Invalid sorted key"),
@@ -320,7 +405,9 @@ impl SystemDatabaseChecker {
                 }
             }
             SystemPartitionDescriptor::Object(module_id, ObjectPartitionDescriptor::Field) => {
-                let type_target = reader.get_type_target(node_id, module_id).expect("Missing type target");
+                let type_target = reader
+                    .get_type_target(node_id, module_id)
+                    .expect("Missing type target");
 
                 for (key, _value) in reader.substates_iter::<FieldKey>(node_id, partition_number) {
                     let field_index = match key {
@@ -329,24 +416,36 @@ impl SystemDatabaseChecker {
                     };
                     match &mut *node_check_state {
                         NodeCheckState::Object {
-                            expected_fields, excluded_fields, ..
+                            expected_fields,
+                            excluded_fields,
+                            ..
                         } => {
                             expected_fields.remove(&(module_id, field_index));
 
-                            if module_id.eq(&ObjectModuleId::Main) && excluded_fields.contains(&field_index) {
+                            if module_id.eq(&ObjectModuleId::Main)
+                                && excluded_fields.contains(&field_index)
+                            {
                                 panic!("Contains field which should not exist");
                             }
                         }
-                        _ => panic!("Invalid Field key")
+                        _ => panic!("Invalid Field key"),
                     }
 
-
                     let field_identifier = BlueprintPayloadIdentifier::Field(field_index);
-                    reader.get_payload_schema(&type_target, &field_identifier).expect("Missing field schema");
+                    reader
+                        .get_payload_schema(&type_target, &field_identifier)
+                        .expect("Missing field schema");
 
-                    let blueprint_id = reader.get_blueprint_id(node_id, module_id).expect("Invalid module");
-                    let bp_def = reader.get_blueprint_definition(&blueprint_id).expect("Missing definition");
-                    let _payload_def = bp_def.interface.get_field_payload_def(field_index).expect("Invalid field");
+                    let blueprint_id = reader
+                        .get_blueprint_id(node_id, module_id)
+                        .expect("Invalid module");
+                    let bp_def = reader
+                        .get_blueprint_definition(&blueprint_id)
+                        .expect("Missing definition");
+                    let _payload_def = bp_def
+                        .interface
+                        .get_field_payload_def(field_index)
+                        .expect("Invalid field");
 
                     // TODO: Check against schema
 
@@ -356,11 +455,12 @@ impl SystemDatabaseChecker {
             SystemPartitionDescriptor::TypeInfo => {
                 for (key, value) in reader.substates_iter::<FieldKey>(node_id, partition_number) {
                     match key {
-                        SubstateKey::Field(0u8) => {},
+                        SubstateKey::Field(0u8) => {}
                         _ => panic!("Invalid TypeInfo key"),
                     };
 
-                    let _type_info: TypeInfoSubstate = scrypto_decode(&value).expect("Invalid Type Info");
+                    let _type_info: TypeInfoSubstate =
+                        scrypto_decode(&value).expect("Invalid Type Info");
 
                     substate_count += 1;
                 }
@@ -372,7 +472,8 @@ impl SystemDatabaseChecker {
                         _ => panic!("Invalid Schema key"),
                     };
 
-                    let schema: KeyValueEntrySubstate<ScryptoSchema> = scrypto_decode(&value).expect("Invalid Schema");
+                    let schema: KeyValueEntrySubstate<ScryptoSchema> =
+                        scrypto_decode(&value).expect("Invalid Schema");
 
                     substate_count += 1;
                 }
@@ -380,5 +481,70 @@ impl SystemDatabaseChecker {
         }
 
         substate_count
+    }
+
+    fn validate_payload<'a, S: SubstateDatabase + ListableSubstateDatabase>(
+        &'a self,
+        reader: &SystemDatabaseReader<S>,
+        payload: &[u8],
+        payload_schema: &'a ResolvedPayloadSchema,
+    ) -> Result<(), LocatedValidationError<ScryptoCustomExtension>> {
+        let validation_context: Box<dyn ValidationContext> =
+            Box::new(ValidationPayloadCheckerContext {
+                reader,
+                schema_origin: payload_schema.schema_origin.clone(),
+                allow_ownership: payload_schema.allow_ownership,
+                allow_non_global_ref: payload_schema.allow_non_global_refs,
+            });
+
+        validate_payload_against_schema::<ScryptoCustomExtension, _>(
+            payload,
+            &payload_schema.schema,
+            payload_schema.type_index,
+            &validation_context,
+        )
+    }
+}
+
+struct ValidationPayloadCheckerContext<'a, S: SubstateDatabase> {
+    reader: &'a SystemDatabaseReader<'a, S>,
+    schema_origin: SchemaOrigin,
+    allow_non_global_ref: bool,
+    allow_ownership: bool,
+}
+
+impl<'a, S: SubstateDatabase> ValidationContext for ValidationPayloadCheckerContext<'a, S> {
+    fn get_node_type_info(&self, node_id: &NodeId) -> Result<TypeInfoForValidation, RuntimeError> {
+        let type_info = self
+            .reader
+            .get_type_info(node_id)
+            .expect("Type Info missing");
+        let type_info_for_validation = match type_info {
+            TypeInfoSubstate::Object(object_info) => TypeInfoForValidation::Object {
+                package: object_info.blueprint_info.blueprint_id.package_address,
+                blueprint: object_info.blueprint_info.blueprint_id.blueprint_name,
+            },
+            TypeInfoSubstate::KeyValueStore(..) => TypeInfoForValidation::KeyValueStore,
+            TypeInfoSubstate::GlobalAddressReservation(..) => {
+                TypeInfoForValidation::GlobalAddressReservation
+            }
+            TypeInfoSubstate::GlobalAddressPhantom(..) => {
+                panic!("Found invalid stored address phantom")
+            }
+        };
+
+        Ok(type_info_for_validation)
+    }
+
+    fn schema_origin(&self) -> &SchemaOrigin {
+        &self.schema_origin
+    }
+
+    fn allow_ownership(&self) -> bool {
+        self.allow_ownership
+    }
+
+    fn allow_non_global_ref(&self) -> bool {
+        self.allow_non_global_ref
     }
 }

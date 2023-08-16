@@ -190,7 +190,13 @@ where
             }
         };
 
-        Ok((schema, index, allow_ownership, allow_non_global_ref, schema_origin))
+        Ok((
+            schema,
+            index,
+            allow_ownership,
+            allow_non_global_ref,
+            schema_origin,
+        ))
     }
 
     /// Validate that a blueprint payload matches the blueprint's definition of that payload
@@ -200,10 +206,8 @@ where
         payload_identifier: BlueprintPayloadIdentifier,
         payload: &[u8],
     ) -> Result<(), RuntimeError> {
-        let (schema, index, allow_ownership, allow_non_global_ref, schema_origin) = self.get_payload_schema(
-            target,
-            &payload_identifier,
-        )?;
+        let (schema, index, allow_ownership, allow_non_global_ref, schema_origin) =
+            self.get_payload_schema(target, &payload_identifier)?;
 
         self.validate_payload(
             payload,
