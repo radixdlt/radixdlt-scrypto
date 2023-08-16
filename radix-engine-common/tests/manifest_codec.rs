@@ -22,8 +22,8 @@ fn test_encode_and_decode() {
         e: ManifestProof(5),
         f: ManifestExpression::EntireAuthZone,
         g: ManifestBlobRef([6u8; 32]),
-        h: ManifestDecimal([7u8; 32]),
-        i: ManifestPreciseDecimal([8u8; 64]),
+        h: ManifestDecimal([7u8; DECIMAL_SIZE]),
+        i: ManifestPreciseDecimal([8u8; PRECISE_DECIMAL_SIZE]),
         j: ManifestNonFungibleLocalId::string("abc".to_owned()).unwrap(),
     };
 
@@ -41,11 +41,10 @@ fn test_encode_and_decode() {
             131, 1, // expression
             132, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
             6, 6, 6, 6, 6, // blob
-            133, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, // decimal
+            133, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, // decimal
             134, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-            8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-            8, 8, 8, 8, 8, 8, 8, 8, // precise decimal
+            8, 8, 8, 8, 8, // precise decimal
             135, 0, 3, 97, 98, 99, // non-fungible local id
         ]
     );

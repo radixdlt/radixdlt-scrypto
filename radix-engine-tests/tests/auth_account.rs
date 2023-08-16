@@ -243,7 +243,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
 fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let xrd_auth = rule!(require_amount(Decimal(BnumI256::from(1)), XRD));
+    let xrd_auth = rule!(require_amount(Decimal(BnumI192::from(1)), XRD));
     let account = test_runner.new_account_advanced(OwnerRole::Fixed(xrd_auth));
     let (_, _, other_account) = test_runner.new_allocated_account();
 
@@ -297,7 +297,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
 fn can_update_updatable_owner_role_account() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let xrd_auth = rule!(require_amount(Decimal(BnumI256::from(1)), XRD));
+    let xrd_auth = rule!(require_amount(Decimal(BnumI192::from(1)), XRD));
     let account = test_runner.new_account_advanced(OwnerRole::Updatable(xrd_auth));
 
     // Act
