@@ -24,7 +24,7 @@ use crate::*;
 /// The finite set of values are of the form `m / 10^18`, where `m` is
 /// an integer such that `-2^(192 - 1) <= m < 2^(192 - 1)`.
 ///
-/// Fractional part: 60 bits/18 digits
+/// Fractional part: ~60 bits/18 digits
 /// Integer part   : 132 bits /40 digits
 /// Max            :  3138550867693340381917894711603833208051.177722232017256447
 /// Min            : -3138550867693340381917894711603833208051.177722232017256448
@@ -231,8 +231,8 @@ impl Decimal {
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
 
         if exp < 0 {
-            let dec_256 = BnumI192::try_from(one_256 * one_256 / base_256).expect("Overflow");
-            return Self(dec_256).powi(mul(exp, -1));
+            let dec_192 = BnumI192::try_from(one_256 * one_256 / base_256).expect("Overflow");
+            return Self(dec_192).powi(mul(exp, -1));
         }
         if exp == 0 {
             return Self::ONE;
@@ -241,11 +241,11 @@ impl Decimal {
             return *self;
         }
         if exp % 2 == 0 {
-            let dec_256 = BnumI192::try_from(base_256 * base_256 / one_256).expect("Overflow");
-            Self(dec_256).powi(div(exp, 2))
+            let dec_192 = BnumI192::try_from(base_256 * base_256 / one_256).expect("Overflow");
+            Self(dec_192).powi(div(exp, 2))
         } else {
-            let dec_256 = BnumI192::try_from(base_256 * base_256 / one_256).expect("Overflow");
-            let sub_dec = Self(dec_256);
+            let dec_192 = BnumI192::try_from(base_256 * base_256 / one_256).expect("Overflow");
+            let sub_dec = Self(dec_192);
             *self * sub_dec.powi(div(sub(exp, 1), 2))
         }
     }
@@ -382,8 +382,8 @@ impl Mul<Decimal> for Decimal {
         let a = BnumI256::from(self.0);
         let b = BnumI256::from(other.0);
         let c = a * b / BnumI256::from(Self::ONE.0);
-        let c_256 = BnumI192::try_from(c).expect("Overflow");
-        Decimal(c_256)
+        let c_192 = BnumI192::try_from(c).expect("Overflow");
+        Decimal(c_192)
     }
 }
 
@@ -396,8 +396,8 @@ impl Div<Decimal> for Decimal {
         let a = BnumI256::from(self.0);
         let b = BnumI256::from(other.0);
         let c = a * BnumI256::from(Self::ONE.0) / b;
-        let c_256 = BnumI192::try_from(c).expect("Overflow");
-        Decimal(c_256)
+        let c_192 = BnumI192::try_from(c).expect("Overflow");
+        Decimal(c_192)
     }
 }
 
