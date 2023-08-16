@@ -83,46 +83,53 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
         match device {
             SubstateDevice::Heap => {
-                self.heap.create_node(node_id, node_substates);
+                self.heap
+                    .create_node(node_id, node_substates, &mut |store_access| {
+                        handler.on_store_access(&self.heap, store_access)
+                    })
             }
             SubstateDevice::Store => {
                 self.store
                     .create_node(node_id, node_substates, &mut |store_access| {
                         handler.on_store_access(&self.heap, store_access)
                     })
-                    .map_err(CallbackError::CallbackError)?;
             }
         }
+        .map_err(CallbackError::CallbackError)?;
 
         Ok(())
     }
 
-    pub fn drop_node(
+    pub fn drop_node<E>(
         &mut self,
+        handler: &mut impl SubstateIOHandler<E>,
         device: SubstateDevice,
         node_id: &NodeId,
-    ) -> Result<NodeSubstates, DropNodeError> {
+    ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
         if self.substate_locks.node_is_locked(node_id) {
-            return Err(DropNodeError::SubstateBorrowed(*node_id));
+            return Err(CallbackError::Error(DropNodeError::SubstateBorrowed(
+                *node_id,
+            )));
         }
 
         if self.non_global_node_refs.node_is_referenced(node_id) {
-            return Err(DropNodeError::NodeBorrowed(*node_id));
+            return Err(CallbackError::Error(DropNodeError::NodeBorrowed(*node_id)));
         }
 
-        let node_substates = match device {
-            SubstateDevice::Heap => match self.heap.remove_node(node_id) {
-                Ok(substates) => substates,
-                Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
+        match device {
+            SubstateDevice::Heap => match self.heap.remove_node(node_id, &mut |store_access| {
+                handler.on_store_access(&self.heap, store_access)
+            }) {
+                Ok(substates) => Ok(substates),
+                Err(CallbackError::CallbackError(e)) => Err(CallbackError::CallbackError(e)),
+                Err(CallbackError::Error(HeapRemoveNodeError::NodeNotFound(node_id))) => {
                     panic!("Frame owned node {:?} not found in heap", node_id)
                 }
             },
             SubstateDevice::Store => {
                 panic!("Node drops not supported for store")
             }
-        };
-
-        Ok(node_substates)
+        }
     }
 
     pub fn move_node_from_heap_to_store<E>(
@@ -148,9 +155,14 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 )));
             }
 
-            let node_substates = match self.heap.remove_node(&node_id) {
+            let node_substates = match self.heap.remove_node(&node_id, &mut |store_access| {
+                handler.on_store_access(&self.heap, store_access)
+            }) {
                 Ok(substates) => substates,
-                Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
+                Err(CallbackError::CallbackError(e)) => {
+                    return Err(CallbackError::CallbackError(e));
+                }
+                Err(CallbackError::Error(HeapRemoveNodeError::NodeNotFound(node_id))) => {
                     panic!("Frame owned node {:?} not found in heap", node_id)
                 }
             };
@@ -201,8 +213,15 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         let module = match src_device {
             SubstateDevice::Heap => self
                 .heap
-                .remove_module(src_node_id, src_partition_number)
-                .map_err(|e| CallbackError::Error(MoveModuleError::HeapRemoveModuleErr(e)))?,
+                .remove_module(src_node_id, src_partition_number, &mut |store_access| {
+                    handler.on_store_access(&self.heap, store_access)
+                })
+                .map_err(|e| match e {
+                    CallbackError::Error(e) => {
+                        CallbackError::Error(MoveModuleError::HeapRemoveModuleErr(e))
+                    }
+                    CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
+                })?,
             SubstateDevice::Store => {
                 panic!("Partition moves from store not supported.");
             }
@@ -211,12 +230,15 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         for (substate_key, substate_value) in module {
             match dest_device {
                 SubstateDevice::Heap => {
-                    self.heap.set_substate(
-                        *dest_node_id,
-                        dest_partition_number,
-                        substate_key,
-                        substate_value,
-                    );
+                    self.heap
+                        .set_substate(
+                            *dest_node_id,
+                            dest_partition_number,
+                            substate_key,
+                            substate_value,
+                            &mut |store_access| handler.on_store_access(&self.heap, store_access),
+                        )
+                        .map_err(CallbackError::CallbackError)?;
                 }
                 SubstateDevice::Store => {
                     // Recursively move nodes to store
@@ -411,21 +433,22 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         let substate_key = substate_key.clone();
 
         match lock_data.device {
-            SubstateDevice::Heap => {
-                self.heap
-                    .set_substate(node_id, partition_num, substate_key, substate);
-            }
-            SubstateDevice::Store => self
-                .store
-                .set_substate(
-                    node_id,
-                    partition_num,
-                    substate_key,
-                    substate,
-                    &mut |store_access| on_store_access(&self.heap, store_access),
-                )
-                .map_err(|e| CallbackError::CallbackError(e))?,
+            SubstateDevice::Heap => self.heap.set_substate(
+                node_id,
+                partition_num,
+                substate_key,
+                substate,
+                &mut |store_access| on_store_access(&self.heap, store_access),
+            ),
+            SubstateDevice::Store => self.store.set_substate(
+                node_id,
+                partition_num,
+                substate_key,
+                substate,
+                &mut |store_access| on_store_access(&self.heap, store_access),
+            ),
         }
+        .map_err(|e| CallbackError::CallbackError(e))?;
 
         Ok(())
     }
@@ -468,10 +491,16 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         }
 
         match device {
-            SubstateDevice::Heap => {
-                self.heap
-                    .set_substate(*node_id, partition_num, substate_key, value);
-            }
+            SubstateDevice::Heap => self
+                .heap
+                .set_substate(
+                    *node_id,
+                    partition_num,
+                    substate_key,
+                    value,
+                    on_store_access,
+                )
+                .map_err(CallbackError::CallbackError)?,
             SubstateDevice::Store => self
                 .store
                 .set_substate(
@@ -506,12 +535,16 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         }
 
         let removed = match device {
-            SubstateDevice::Heap => self.heap.remove_substate(node_id, partition_num, key),
-            SubstateDevice::Store => self
-                .store
-                .remove_substate(node_id, partition_num, key, on_store_access)
-                .map_err(CallbackError::CallbackError)?,
-        };
+            SubstateDevice::Heap => {
+                self.heap
+                    .remove_substate(node_id, partition_num, key, on_store_access)
+            }
+            SubstateDevice::Store => {
+                self.store
+                    .remove_substate(node_id, partition_num, key, on_store_access)
+            }
+        }
+        .map_err(CallbackError::CallbackError)?;
 
         Ok(removed)
     }
@@ -557,12 +590,18 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         CallbackError<CallFrameDrainSubstatesError, E>,
     > {
         let substates = match device {
-            SubstateDevice::Heap => self.heap.drain_substates(node_id, partition_num, count),
-            SubstateDevice::Store => self
-                .store
-                .drain_substates::<K, E, F>(node_id, partition_num, count, on_store_access)
-                .map_err(|e| CallbackError::CallbackError(e))?,
-        };
+            SubstateDevice::Heap => {
+                self.heap
+                    .drain_substates(node_id, partition_num, count, on_store_access)
+            }
+            SubstateDevice::Store => self.store.drain_substates::<K, E, F>(
+                node_id,
+                partition_num,
+                count,
+                on_store_access,
+            ),
+        }
+        .map_err(|e| CallbackError::CallbackError(e))?;
 
         // TODO: Should check if any substate is locked
 

@@ -1,6 +1,6 @@
-use crate::blueprints::resource::*;
-use crate::track::interface::NodeSubstates;
+use crate::track::interface::{CallbackError, NodeSubstates};
 use crate::types::*;
+use crate::{blueprints::resource::*, track::interface::StoreAccess};
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
     LockedNonFungibleResource,
@@ -33,18 +33,24 @@ impl Heap {
         self.nodes.contains_key(node_id)
     }
 
-    pub fn remove_module(
+    pub fn remove_module<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
-    ) -> Result<BTreeMap<SubstateKey, IndexedScryptoValue>, HeapRemoveModuleError> {
+        on_store_access: &mut F,
+    ) -> Result<BTreeMap<SubstateKey, IndexedScryptoValue>, CallbackError<HeapRemoveModuleError, E>>
+    {
         if let Some(modules) = self.nodes.get_mut(node_id) {
             let module = modules
                 .remove(&partition_number)
-                .ok_or(HeapRemoveModuleError::ModuleNotFound(partition_number))?;
+                .ok_or(CallbackError::Error(HeapRemoveModuleError::ModuleNotFound(
+                    partition_number,
+                )))?;
             Ok(module)
         } else {
-            Err(HeapRemoveModuleError::NodeNotFound(node_id.clone()))
+            Err(CallbackError::Error(HeapRemoveModuleError::NodeNotFound(
+                node_id.clone(),
+            )))
         }
     }
 
@@ -62,31 +68,35 @@ impl Heap {
     }
 
     /// Inserts or overwrites a substate
-    pub fn set_substate(
+    pub fn set_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-    ) {
+        on_store_access: &mut F,
+    ) -> Result<(), E> {
         self.nodes
             .entry(node_id)
             .or_insert_with(|| NodeSubstates::default())
             .entry(partition_num)
             .or_default()
             .insert(substate_key, substate_value);
+        Ok(())
     }
 
-    pub fn remove_substate(
+    pub fn remove_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Option<IndexedScryptoValue> {
-        self.nodes
+        on_store_access: &mut F,
+    ) -> Result<Option<IndexedScryptoValue>, E> {
+        Ok(self
+            .nodes
             .get_mut(node_id)
             .and_then(|n| n.get_mut(&partition_num))
-            .and_then(|s| s.remove(substate_key))
+            .and_then(|s| s.remove(substate_key)))
     }
 
     /// Scans the keys of a node's partition. On an non-existing node/partition, this
@@ -116,12 +126,13 @@ impl Heap {
 
     /// Drains the substates from a node's partition. On an non-existing node/partition, this
     /// will return an empty vector
-    pub fn drain_substates(
+    pub fn drain_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+        on_store_access: &mut F,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
@@ -140,22 +151,34 @@ impl Heap {
                 items.push((key, value));
             }
 
-            items
+            Ok(items)
         } else {
-            vec![]
+            Ok(vec![])
         }
     }
 
     /// Inserts a new node to heap.
-    pub fn create_node(&mut self, node_id: NodeId, substates: NodeSubstates) {
+    pub fn create_node<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: NodeId,
+        substates: NodeSubstates,
+        on_store_access: &mut F,
+    ) -> Result<(), E> {
         self.nodes.insert(node_id, substates);
+        Ok(())
     }
 
     /// Removes node.
-    pub fn remove_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, HeapRemoveNodeError> {
+    pub fn remove_node<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: &NodeId,
+        on_store_access: &mut F,
+    ) -> Result<NodeSubstates, CallbackError<HeapRemoveNodeError, E>> {
         match self.nodes.remove(node_id) {
             Some(heap_node) => Ok(heap_node),
-            None => Err(HeapRemoveNodeError::NodeNotFound(node_id.clone())),
+            None => Err(CallbackError::Error(HeapRemoveNodeError::NodeNotFound(
+                node_id.clone(),
+            ))),
         }
     }
 }

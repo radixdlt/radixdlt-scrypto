@@ -723,23 +723,26 @@ impl<C, L: Clone> CallFrame<C, L> {
     }
 
     /// Removes node from call frame and owned nodes will be possessed by this call frame.
-    pub fn drop_node<S: SubstateStore>(
+    pub fn drop_node<S: SubstateStore, E>(
         &mut self,
+        handler: &mut impl SubstateIOHandler<E>,
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
-    ) -> Result<NodeSubstates, DropNodeError> {
+    ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
         self.take_node_internal(node_id)
-            .map_err(DropNodeError::TakeNodeError)?;
+            .map_err(|e| CallbackError::Error(DropNodeError::TakeNodeError(e)))?;
 
-        let node_substates = substate_io.drop_node(SubstateDevice::Heap, node_id)?;
+        let node_substates = substate_io.drop_node(handler, SubstateDevice::Heap, node_id)?;
         let mut handler = NullHandler::new();
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
                 let diff = SubstateDiff::from_drop_substate(&substate_value);
                 self.process_substate_diff(substate_io, &mut handler, SubstateDevice::Heap, &diff)
                     .map_err(|e| match e {
-                        CallbackError::Error(e) => DropNodeError::ProcessSubstateError(e),
-                        CallbackError::CallbackError(..) => panic!("Should never get here."),
+                        CallbackError::Error(e) => {
+                            CallbackError::Error(DropNodeError::ProcessSubstateError(e))
+                        }
+                        CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
                     })?;
             }
         }
