@@ -8,10 +8,15 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-fn transaction_limit_exceeded_substate_read_count_should_fail() {
+fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
+    let (code, definition) = Compile::compile("tests/blueprints/transaction_limits");
+    let code_len = code.len();
+    let definition_len = scrypto_encode(&definition).unwrap().len();
+
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
+    let package_address =
+        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
     let component_address = test_runner
         .execute_manifest(
             ManifestBuilder::new()
@@ -33,16 +38,16 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
         .lock_fee_from_faucet()
         .call_method(
             component_address,
-            "read_kv_stores",
-            manifest_args!(200 as u32),
+            "read_non_existent_entries_from_kv_store",
+            manifest_args!(64 * 1024 as u32),
         )
         .build();
 
     let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
-    let fee_config = CostingParameters::default();
+    let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
     let mut execution_config = ExecutionConfig::for_test_transaction();
-    execution_config.max_track_substates_total_bytes = 4 * 1024 * 1024;
+    execution_config.max_track_substates_total_bytes = code_len * 2 + definition_len + 10 * 1024;
     let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,
@@ -54,17 +59,22 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
         matches!(
             e,
             RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-                TransactionLimitsError::TrackSubstateSizeExceeded
+                TransactionLimitsError::TrackSubstateSizeExceeded { .. }
             ))
         )
     });
 }
 
 #[test]
-fn transaction_limit_exceeded_substate_write_count_should_fail() {
+fn test_write_entries_to_kv_store_exceeding_limit() {
+    let (code, definition) = Compile::compile("tests/blueprints/transaction_limits");
+    let code_len = code.len();
+    let definition_len = scrypto_encode(&definition).unwrap().len();
+
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
+    let package_address =
+        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
     let component_address = test_runner
         .execute_manifest(
             ManifestBuilder::new()
@@ -86,16 +96,16 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
         .lock_fee_from_faucet()
         .call_method(
             component_address,
-            "write_kv_stores",
-            manifest_args!(100 as u32),
+            "write_entries_to_kv_store",
+            manifest_args!(64 * 1024 as u32),
         )
         .build();
 
     let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
-    let fee_config = CostingParameters::default();
+    let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
     let mut execution_config = ExecutionConfig::for_test_transaction();
-    execution_config.max_track_substates_total_bytes = 4 * 1024 * 1024;
+    execution_config.max_track_substates_total_bytes = code_len * 2 + definition_len + 10 * 1024;
     let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,
@@ -107,7 +117,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
         matches!(
             e,
             RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-                TransactionLimitsError::TrackSubstateSizeExceeded
+                TransactionLimitsError::TrackSubstateSizeExceeded { .. }
             ))
         )
     });

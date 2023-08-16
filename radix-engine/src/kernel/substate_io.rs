@@ -391,10 +391,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(substate)
     }
 
-    pub fn write_substate<E>(
+    pub fn write_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
+        on_store_access: &mut F,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get_mut(global_lock_handle);
@@ -414,15 +415,16 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 self.heap
                     .set_substate(node_id, partition_num, substate_key, substate);
             }
-            SubstateDevice::Store => {
-                self.store
-                    .set_substate(node_id, partition_num, substate_key, substate, &mut |_| {
-                        Err(())
-                    })
-                    .expect(
-                        "Setting substate on handled substate should not incur a store access.",
-                    );
-            }
+            SubstateDevice::Store => self
+                .store
+                .set_substate(
+                    node_id,
+                    partition_num,
+                    substate_key,
+                    substate,
+                    &mut |store_access| on_store_access(&self.heap, store_access),
+                )
+                .map_err(|e| CallbackError::CallbackError(e))?,
         }
 
         Ok(())

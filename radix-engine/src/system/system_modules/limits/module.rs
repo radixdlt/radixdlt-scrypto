@@ -17,8 +17,8 @@ pub enum TransactionLimitsError {
     MaxSubstateSizeExceeded(usize),
     MaxInvokePayloadSizeExceeded(usize),
     MaxCallDepthLimitReached,
-    TrackSubstateSizeExceeded,
-    HeapSubstateSizeExceeded,
+    TrackSubstateSizeExceeded { actual: usize, max: usize },
+    HeapSubstateSizeExceeded { actual: usize, max: usize },
     LogSizeTooLarge { actual: usize, max: usize },
     EventSizeTooLarge { actual: usize, max: usize },
     PanicMessageSizeTooLarge { actual: usize, max: usize },
@@ -129,7 +129,10 @@ impl LimitsModule {
         if self.heap_substates_total_bytes > self.config.max_heap_substates_total_bytes {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::HeapSubstateSizeExceeded,
+                    TransactionLimitsError::HeapSubstateSizeExceeded {
+                        actual: self.heap_substates_total_bytes,
+                        max: self.config.max_heap_substates_total_bytes,
+                    },
                 ),
             ));
         }
@@ -137,7 +140,10 @@ impl LimitsModule {
         if self.track_substates_total_bytes > self.config.max_track_substates_total_bytes {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::TrackSubstateSizeExceeded,
+                    TransactionLimitsError::TrackSubstateSizeExceeded {
+                        actual: self.track_substates_total_bytes,
+                        max: self.config.max_track_substates_total_bytes,
+                    },
                 ),
             ));
         }
