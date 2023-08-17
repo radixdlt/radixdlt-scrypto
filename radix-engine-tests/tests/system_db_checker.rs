@@ -1,4 +1,4 @@
-use radix_engine::system::bootstrap::{Bootstrapper, GenesisDataChunk, GenesisStakeAllocation};
+use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::system_db_checker::{
     SystemDatabaseCheckError, SystemDatabaseChecker, SystemNodeCheckError,
 };
@@ -10,45 +10,16 @@ use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, PartitionUpdates,
 };
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::CustomGenesis;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
-fn system_database_checker_should_report_missing_owner_error() {
+fn system_database_checker_should_report_missing_owner_error_on_broken_db() {
     // Arrange
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let validator_key = Secp256k1PublicKey([0; 33]);
-    let staker_address = ComponentAddress::virtual_account_from_public_key(
-        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
-    );
-    let genesis_epoch = Epoch::of(1);
-    let stake = GenesisStakeAllocation {
-        account_index: 0,
-        xrd_amount: Decimal::one(),
-    };
-    let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
-        GenesisDataChunk::Stakes {
-            accounts: vec![staker_address],
-            allocations: vec![(validator_key, vec![stake])],
-        },
-    ];
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, true);
-    bootstrapper
-        .bootstrap_with_genesis_data(
-            genesis_data_chunks,
-            genesis_epoch,
-            CustomGenesis::default_consensus_manager_config(),
-            1,
-            Some(0),
-            Decimal::zero(),
-        )
-        .unwrap();
-
-    // Act
+    bootstrapper.bootstrap_test_default().unwrap();
     let remove_owner_update = {
         let mut remove_owner_update = DatabaseUpdates::default();
         let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
@@ -64,6 +35,8 @@ fn system_database_checker_should_report_missing_owner_error() {
         remove_owner_update
     };
     substate_db.commit(&remove_owner_update);
+
+    // Act
     let checker = SystemDatabaseChecker::new();
     let checker_result = checker.check_db(&substate_db);
 

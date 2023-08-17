@@ -38,14 +38,6 @@ pub fn should_be_able_to_withdraw_from_maximum_vault_size_access_controller() {
 
     // Assert
     receipt.expect_commit_success();
-
-    #[cfg(feature = "post_run_db_check")]
-    {
-        let db_info = test_runner
-            .check_db()
-            .expect("Database should be consistent");
-        println!("{:?}", db_info);
-    }
 }
 
 #[test]
