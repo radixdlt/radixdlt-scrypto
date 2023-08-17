@@ -686,7 +686,14 @@ impl<C, L: Clone> CallFrame<C, L> {
             return Err(HeapStickError::NodeNotVisible(node_id));
         }
 
-        substate_io.heap_stick.stick(target);
+        match target {
+            StickTarget::Node(pinned_node) => {
+                substate_io.pinned_nodes.insert(pinned_node);
+            }
+            StickTarget::Substate(node_id, partition_num, substate_key) => {
+                substate_io.heap_stick.stick(node_id, partition_num, substate_key);
+            }
+        }
 
         Ok(())
     }
@@ -701,7 +708,14 @@ impl<C, L: Clone> CallFrame<C, L> {
             return Err(HeapUnstickError::NodeNotVisible(node_id));
         }
 
-        substate_io.heap_stick.unstick(target);
+        match target {
+            StickTarget::Node(pinned_node) => {
+                substate_io.pinned_nodes.remove(pinned_node);
+            }
+            StickTarget::Substate(node_id, partition_num, substate_key) => {
+                substate_io.heap_stick.unstick(*node_id, *partition_num, substate_key.clone());
+            }
+        }
 
         Ok(())
     }
@@ -1535,44 +1549,26 @@ impl<C, L> StoreAccessHandler<C, L, ()> for NullHandler<C, L> {
 /// Structure which keeps track of all sticky nodes/partitions/substates which
 /// are meant to "stick" to the heap.
 pub struct HeapStick {
-    pinned_nodes: BTreeSet<NodeId>,
+    //pinned_nodes: BTreeSet<NodeId>,
     transient_substates: BTreeMap<NodeId, BTreeSet<(PartitionNumber, SubstateKey)>>,
 }
 
 impl HeapStick {
     pub fn new() -> Self {
         Self {
-            pinned_nodes: BTreeSet::new(),
+            //pinned_nodes: BTreeSet::new(),
             transient_substates: BTreeMap::new(),
         }
     }
 
-    fn stick(&mut self, target: StickTarget) {
-        match target {
-            StickTarget::Node(node_id) => {
-                self.pinned_nodes.insert(node_id);
-            }
-            StickTarget::Substate(node_id, partition_num, substate_key) => {
-                self.transient_substates.entry(node_id).or_insert(BTreeSet::new()).insert((partition_num, substate_key));
-            }
-        }
+    fn stick(&mut self, node_id: NodeId, partition_num: PartitionNumber, substate_key: SubstateKey) {
+        self.transient_substates.entry(node_id).or_insert(BTreeSet::new()).insert((partition_num, substate_key));
     }
 
-    fn unstick(&mut self, target: &StickTarget) {
-        match target {
-            StickTarget::Node(node_id) => {
-                self.pinned_nodes.remove(node_id);
-            }
-            StickTarget::Substate(node_id, partition_num, substate_key) => {
-                if let Some(sticky) = self.transient_substates.get_mut(node_id) {
-                    sticky.remove(&(*partition_num, substate_key.clone()));
-                }
-            }
+    fn unstick(&mut self, node_id: NodeId, partition_num: PartitionNumber, substate_key: SubstateKey) {
+        if let Some(sticky) = self.transient_substates.get_mut(&node_id) {
+            sticky.remove(&(partition_num, substate_key));
         }
-    }
-
-    pub fn is_pinned(&self, node_id: &NodeId) -> bool {
-        self.pinned_nodes.contains(node_id)
     }
 
     pub fn get_sticky(&self, node_id: &NodeId) -> Option<&BTreeSet<(PartitionNumber, SubstateKey)>> {
