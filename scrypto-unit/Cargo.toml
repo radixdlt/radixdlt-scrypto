@@ -27,6 +27,7 @@ moka = ["radix-engine/moka", "radix-engine-queries/moka"]
 lru = ["radix-engine/lru", "radix-engine-queries/lru"]
 
 rocksdb = ["radix-engine-stores/rocksdb"]
+post_run_db_check = []
 
 [lib]
 bench = false

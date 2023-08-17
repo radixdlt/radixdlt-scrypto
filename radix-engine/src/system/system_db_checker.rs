@@ -21,13 +21,13 @@ use crate::system::system_db_reader::{
 };
 use crate::types::Condition;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SystemNodeCheckerState {
     node_id: NodeId,
     node_type: SystemNodeType,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum SystemNodeType {
     Object {
         object_info: ObjectInfo,
@@ -76,7 +76,7 @@ pub struct SystemPartitionCheckResults {
     pub substate_count: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum SystemPartitionCheckError {
     NoPartitionDescription,
     MissingKeyValueStoreTarget,
@@ -91,6 +91,7 @@ pub enum SystemPartitionCheckError {
     MissingKeyValueCollectionKeySchema,
     MissingKeyValueCollectionValueSchema,
     InvalidKeyValueCollectionKey,
+    FailedBlueprintSchemaCheck(BlueprintPayloadIdentifier),
     InvalidKeyValueCollectionValue,
     MissingIndexCollectionKeySchema,
     MissingIndexCollectionValueSchema,
@@ -107,7 +108,7 @@ pub enum SystemPartitionCheckError {
     InvalidSchemaValue,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum SystemNodeCheckError {
     NoTypeInfo,
     NoMappedEntityType,
@@ -122,10 +123,16 @@ pub enum SystemNodeCheckError {
     FoundGlobalAddressReservation,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
+pub enum NodeInfo {
+    Object(BlueprintId),
+    KeyValueStore,
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum SystemDatabaseCheckError {
     NodeError(SystemNodeCheckError),
-    PartitionError(SystemPartitionCheckError),
+    PartitionError(NodeInfo, SystemPartitionCheckError),
 }
 
 pub struct SystemDatabaseChecker;
@@ -177,7 +184,15 @@ impl SystemDatabaseChecker {
 
             let partition_results = self
                 .check_partition(&reader, node_checker_state, partition_number)
-                .map_err(SystemDatabaseCheckError::PartitionError)?;
+                .map_err(|e| {
+                    let node_info = match &node_checker_state.node_type {
+                        SystemNodeType::Object { object_info, .. } => {
+                            NodeInfo::Object(object_info.blueprint_info.blueprint_id.clone())
+                        }
+                        SystemNodeType::KeyValueStore {} => NodeInfo::KeyValueStore,
+                    };
+                    SystemDatabaseCheckError::PartitionError(node_info, e)
+                })?;
 
             substate_count += partition_results.substate_count;
             partition_count += 1;
@@ -336,7 +351,7 @@ impl SystemDatabaseChecker {
         };
 
         if node_id.is_global_package() {
-            node_counts.node_count += 1;
+            node_counts.package_count += 1;
             let definition = reader.get_package_definition(PackageAddress::new_or_panic(node_id.0));
             node_counts.blueprint_count += definition.len();
         }
@@ -553,15 +568,16 @@ impl SystemDatabaseChecker {
                         }
 
                         ObjectPartitionDescriptor::KeyValueCollection(collection_index) => {
-                            let key_schema = {
-                                let key_identifier = BlueprintPayloadIdentifier::KeyValueEntry(
-                                    collection_index,
-                                    KeyOrValue::Key,
-                                );
-                                reader
-                                    .get_blueprint_payload_schema(&type_target, &key_identifier)
-                                    .ok_or_else(|| SystemPartitionCheckError::MissingKeyValueCollectionKeySchema)?
-                            };
+                            let key_identifier = BlueprintPayloadIdentifier::KeyValueEntry(
+                                collection_index,
+                                KeyOrValue::Key,
+                            );
+
+                            let key_schema = reader
+                                .get_blueprint_payload_schema(&type_target, &key_identifier)
+                                .ok_or_else(|| {
+                                    SystemPartitionCheckError::MissingKeyValueCollectionKeySchema
+                                })?;
 
                             let value_schema = {
                                 let value_identifier = BlueprintPayloadIdentifier::KeyValueEntry(
@@ -587,7 +603,9 @@ impl SystemDatabaseChecker {
                                     };
                                     self.validate_payload(reader, &map_key, &key_schema)
                                         .map_err(|_| {
-                                            SystemPartitionCheckError::InvalidKeyValueCollectionKey
+                                            SystemPartitionCheckError::FailedBlueprintSchemaCheck(
+                                                key_identifier.clone(),
+                                            )
                                         })?;
                                 }
 
