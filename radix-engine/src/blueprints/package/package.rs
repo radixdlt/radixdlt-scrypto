@@ -746,130 +746,15 @@ fn globalize_package<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>> = BTreeMap::new();
+    let vault = Vault(ResourceManager(XRD).new_empty_vault(api)?);
 
-    let vault = ResourceManager(XRD).new_empty_vault(api)?;
-    let royalty = PackageRoyaltyAccumulatorSubstate {
-        royalty_vault: Vault(vault),
-    };
-
-    {
-        let mut definition_partition = BTreeMap::new();
-        for (blueprint, definition) in package_structure.definitions {
-            let key = BlueprintVersionKey::new_default(blueprint);
-            let entry = KVEntry {
-                value: Some(scrypto_encode(&definition).unwrap()),
-                locked: true,
-            };
-            definition_partition.insert(scrypto_encode(&key).unwrap(), entry);
-        }
-        kv_entries.insert(PACKAGE_BLUEPRINTS_COLLECTION_INDEX, definition_partition);
-    }
-
-    {
-        let mut dependency_partition = BTreeMap::new();
-        for (blueprint, dependencies) in package_structure.dependencies {
-            let key = BlueprintVersionKey::new_default(blueprint);
-            let entry = KVEntry {
-                value: Some(scrypto_encode(&dependencies).unwrap()),
-                locked: true,
-            };
-            dependency_partition.insert(scrypto_encode(&key).unwrap(), entry);
-        }
-        kv_entries.insert(
-            PACKAGE_BLUEPRINT_DEPENDENCIES_COLLECTION_INDEX,
-            dependency_partition,
-        );
-    }
-
-    {
-        let mut package_royalties_partition = BTreeMap::new();
-        for (blueprint, package_royalty) in package_structure.package_royalties {
-            let key = BlueprintVersionKey::new_default(blueprint);
-            let entry = KVEntry {
-                value: Some(scrypto_encode(&package_royalty).unwrap()),
-                locked: true,
-            };
-            package_royalties_partition.insert(scrypto_encode(&key).unwrap(), entry);
-        }
-        kv_entries.insert(
-            PACKAGE_ROYALTY_COLLECTION_INDEX,
-            package_royalties_partition,
-        );
-    }
-
-    {
-        let mut auth_partition = BTreeMap::new();
-        for (blueprint, auth_config) in package_structure.auth_configs {
-            let key = BlueprintVersionKey::new_default(blueprint);
-            let entry = KVEntry {
-                value: Some(scrypto_encode(&auth_config).unwrap()),
-                locked: true,
-            };
-            auth_partition.insert(scrypto_encode(&key).unwrap(), entry);
-        }
-        kv_entries.insert(PACKAGE_AUTH_TEMPLATE_COLLECTION_INDEX, auth_partition);
-    }
-
-    {
-        let mut vm_type_partition = BTreeMap::new();
-        for (hash, code_substate) in package_structure.vm_type {
-            let entry = KVEntry {
-                value: Some(scrypto_encode(&code_substate).unwrap()),
-                locked: true,
-            };
-            vm_type_partition.insert(scrypto_encode(&hash).unwrap(), entry);
-        }
-        kv_entries.insert(PACKAGE_VM_TYPE_COLLECTION_INDEX, vm_type_partition);
-    }
-
-    {
-        let mut original_code_partition = BTreeMap::new();
-        for (hash, code_substate) in package_structure.original_code {
-            let entry = KVEntry {
-                value: Some(scrypto_encode(&code_substate).unwrap()),
-                locked: true,
-            };
-            original_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
-        }
-        kv_entries.insert(
-            PACKAGE_ORIGINAL_CODE_COLLECTION_INDEX,
-            original_code_partition,
-        );
-    }
-
-    {
-        let mut instrumented_code_partition = BTreeMap::new();
-        for (hash, code_substate) in package_structure.instrumented_code {
-            let entry = KVEntry {
-                value: Some(scrypto_encode(&code_substate).unwrap()),
-                locked: true,
-            };
-            instrumented_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
-        }
-        kv_entries.insert(
-            PACKAGE_INSTRUMENTED_CODE_COLLECTION_INDEX,
-            instrumented_code_partition,
-        );
-    }
-
-    {
-        let mut schemas_partition = BTreeMap::new();
-        for (hash, schema) in package_structure.schemas {
-            let entry = KVEntry {
-                value: Some(scrypto_encode(&schema).unwrap()),
-                locked: true,
-            };
-            schemas_partition.insert(scrypto_encode(&hash).unwrap(), entry);
-        }
-        kv_entries.insert(PACKAGE_SCHEMAS_COLLECTION_INDEX, schemas_partition);
-    }
+    let (fields, kv_entries) = PackageNativePackage::init_system_struct(Some(vault), package_structure);
 
     let package_object = api.new_object(
         PACKAGE_BLUEPRINT,
         vec![PACKAGE_ROYALTY_FEATURE],
         GenericArgs::default(),
-        vec![FieldValue::immutable(&royalty)],
+        fields,
         kv_entries,
     )?;
 
@@ -1155,6 +1040,134 @@ impl PackageNativePackage {
                 ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
         }
+    }
+
+    fn init_system_struct(royalty_vault: Option<Vault>, package_structure: PackageStructure) -> (Vec<FieldValue>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>) {
+
+        let field = if let Some(vault) = royalty_vault {
+            let royalty = PackageRoyaltyAccumulatorSubstate {
+                royalty_vault: vault,
+            };
+            FieldValue::immutable(&royalty)
+        } else {
+            FieldValue::new(())
+        };
+
+
+        let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>> = BTreeMap::new();
+        {
+            let mut definition_partition = BTreeMap::new();
+            for (blueprint, definition) in package_structure.definitions {
+                let key = BlueprintVersionKey::new_default(blueprint);
+                let entry = KVEntry {
+                    value: Some(scrypto_encode(&definition).unwrap()),
+                    locked: true,
+                };
+                definition_partition.insert(scrypto_encode(&key).unwrap(), entry);
+            }
+            kv_entries.insert(PACKAGE_BLUEPRINTS_COLLECTION_INDEX, definition_partition);
+        }
+
+        {
+            let mut dependency_partition = BTreeMap::new();
+            for (blueprint, dependencies) in package_structure.dependencies {
+                let key = BlueprintVersionKey::new_default(blueprint);
+                let entry = KVEntry {
+                    value: Some(scrypto_encode(&dependencies).unwrap()),
+                    locked: true,
+                };
+                dependency_partition.insert(scrypto_encode(&key).unwrap(), entry);
+            }
+            kv_entries.insert(
+                PACKAGE_BLUEPRINT_DEPENDENCIES_COLLECTION_INDEX,
+                dependency_partition,
+            );
+        }
+
+        {
+            let mut package_royalties_partition = BTreeMap::new();
+            for (blueprint, package_royalty) in package_structure.package_royalties {
+                let key = BlueprintVersionKey::new_default(blueprint);
+                let entry = KVEntry {
+                    value: Some(scrypto_encode(&package_royalty).unwrap()),
+                    locked: true,
+                };
+                package_royalties_partition.insert(scrypto_encode(&key).unwrap(), entry);
+            }
+            kv_entries.insert(
+                PACKAGE_ROYALTY_COLLECTION_INDEX,
+                package_royalties_partition,
+            );
+        }
+
+        {
+            let mut auth_partition = BTreeMap::new();
+            for (blueprint, auth_config) in package_structure.auth_configs {
+                let key = BlueprintVersionKey::new_default(blueprint);
+                let entry = KVEntry {
+                    value: Some(scrypto_encode(&auth_config).unwrap()),
+                    locked: true,
+                };
+                auth_partition.insert(scrypto_encode(&key).unwrap(), entry);
+            }
+            kv_entries.insert(PACKAGE_AUTH_TEMPLATE_COLLECTION_INDEX, auth_partition);
+        }
+
+        {
+            let mut vm_type_partition = BTreeMap::new();
+            for (hash, code_substate) in package_structure.vm_type {
+                let entry = KVEntry {
+                    value: Some(scrypto_encode(&code_substate).unwrap()),
+                    locked: true,
+                };
+                vm_type_partition.insert(scrypto_encode(&hash).unwrap(), entry);
+            }
+            kv_entries.insert(PACKAGE_VM_TYPE_COLLECTION_INDEX, vm_type_partition);
+        }
+
+        {
+            let mut original_code_partition = BTreeMap::new();
+            for (hash, code_substate) in package_structure.original_code {
+                let entry = KVEntry {
+                    value: Some(scrypto_encode(&code_substate).unwrap()),
+                    locked: true,
+                };
+                original_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
+            }
+            kv_entries.insert(
+                PACKAGE_ORIGINAL_CODE_COLLECTION_INDEX,
+                original_code_partition,
+            );
+        }
+
+        {
+            let mut instrumented_code_partition = BTreeMap::new();
+            for (hash, code_substate) in package_structure.instrumented_code {
+                let entry = KVEntry {
+                    value: Some(scrypto_encode(&code_substate).unwrap()),
+                    locked: true,
+                };
+                instrumented_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
+            }
+            kv_entries.insert(
+                PACKAGE_INSTRUMENTED_CODE_COLLECTION_INDEX,
+                instrumented_code_partition,
+            );
+        }
+
+        {
+            let mut schemas_partition = BTreeMap::new();
+            for (hash, schema) in package_structure.schemas {
+                let entry = KVEntry {
+                    value: Some(scrypto_encode(&schema).unwrap()),
+                    locked: true,
+                };
+                schemas_partition.insert(scrypto_encode(&hash).unwrap(), entry);
+            }
+            kv_entries.insert(PACKAGE_SCHEMAS_COLLECTION_INDEX, schemas_partition);
+        }
+
+        (vec![field], kv_entries)
     }
 
     pub fn validate_and_build_package_structure(
