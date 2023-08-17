@@ -1,4 +1,7 @@
-use crate::track::interface::{NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo};
+use crate::kernel::call_frame::TransientSubstates;
+use crate::track::interface::{
+    CommitableSubstateStore, NodeSubstates, StoreAccess, TrackedSubstateInfo,
+};
 use crate::track::utils::OverlayingResultIterator;
 use crate::types::*;
 use radix_engine_interface::types::*;
@@ -11,7 +14,6 @@ use radix_engine_store_interface::{
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;
-use crate::kernel::call_frame::TransientSubstates;
 
 use super::interface::{StoreCommit, StoreCommitInfo};
 
@@ -332,7 +334,6 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper> {
     /// TODO: if time allows, consider merging into tracked nodes.
     deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 
-
     transient_substates: TransientSubstates,
 
     phantom_data: PhantomData<M>,
@@ -349,7 +350,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             phantom_data: PhantomData::default(),
         }
     }
-
 
     fn get_substate_from_db<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         substate_db: &'s S,
@@ -504,7 +504,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
 
         match entry {
             Entry::Vacant(e) => {
-                if self.transient_substates.substate_is_sticky(node_id, partition_num, &substate_key) {
+                if self
+                    .transient_substates
+                    .is_transient(node_id, partition_num, &substate_key)
+                {
                     on_store_access(StoreAccess::NewEntryInTrack(*node_id))?;
                     let tracked = TrackedSubstate {
                         substate_key,
@@ -546,9 +549,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
     }
 }
 
-impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, S, M> {
-    fn mark_as_transient(&mut self, node_id: NodeId, partition_num: PartitionNumber, substate_key: SubstateKey) {
-        self.transient_substates.mark_as_transient(node_id, partition_num, substate_key);
+impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> CommitableSubstateStore for Track<'s, S, M> {
+    fn mark_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        substate_key: SubstateKey,
+    ) {
+        self.transient_substates
+            .mark_as_transient(node_id, partition_num, substate_key);
     }
 
     fn create_node<E, F: FnMut(StoreAccess) -> Result<(), E>>(
@@ -970,7 +979,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         for (node_id, node) in &self.tracked_nodes {
             for (partition_number, partition) in &node.tracked_partitions {
                 for (sort_key, substate) in &partition.substates {
-                    if self.transient_substates.substate_is_sticky(node_id, *partition_number, &substate.substate_key) {
+                    if self.transient_substates.is_transient(
+                        node_id,
+                        *partition_number,
+                        &substate.substate_key,
+                    ) {
                         continue;
                     }
 

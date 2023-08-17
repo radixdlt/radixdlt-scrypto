@@ -171,7 +171,7 @@ fn validate_package_schema(
                             local_index,
                             &mut (),
                         )
-                            .map_err(|_| PackageError::InvalidTransientField)?;
+                        .map_err(|_| PackageError::InvalidTransientField)?;
                     }
                     TypeRef::Generic(..) => return Err(PackageError::InvalidTransientField),
                 },

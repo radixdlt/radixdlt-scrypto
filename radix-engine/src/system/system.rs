@@ -427,8 +427,7 @@ where
             ),
         )?;
 
-        self.api
-            .kernel_heap_stick(StickTarget::Node(global_address_reservation))?;
+        self.api.kernel_pin_node(global_address_reservation)?;
 
         Ok(GlobalAddressReservation(Own(global_address_reservation)))
     }
@@ -553,7 +552,7 @@ where
         self.api.kernel_create_node(node_id, node_substates)?;
 
         if blueprint_interface.is_transient {
-            self.api.kernel_heap_stick(StickTarget::Node(node_id))?;
+            self.api.kernel_pin_node(node_id)?;
         }
 
         if let Some((partition_offset, fields)) = blueprint_interface.state.fields {
@@ -561,13 +560,15 @@ where
                 if let FieldTransience::TransientStatic(..) = field.transience {
                     let partition_number = match partition_offset {
                         PartitionDescription::Physical(partition_number) => partition_number,
-                        PartitionDescription::Logical(offset) => MAIN_BASE_PARTITION.at_offset(offset).unwrap(),
+                        PartitionDescription::Logical(offset) => {
+                            MAIN_BASE_PARTITION.at_offset(offset).unwrap()
+                        }
                     };
-                    self.api.kernel_heap_stick(StickTarget::Substate(
+                    self.api.kernel_mark_substate_as_transient(
                         node_id,
                         partition_number,
                         SubstateKey::Field(index as u8),
-                    ))?;
+                    )?;
                 }
             }
         }
@@ -811,15 +812,7 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
         field_index: u8,
-    ) -> Result<
-        (
-            NodeId,
-            BlueprintInfo,
-            PartitionNumber,
-            FieldTransience,
-        ),
-        RuntimeError,
-    > {
+    ) -> Result<(NodeId, BlueprintInfo, PartitionNumber, FieldTransience), RuntimeError> {
         let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
 
         let (partition_description, field_schema) =
@@ -1052,8 +1045,6 @@ where
                             }),
                         )));
                     }
-
-                    self.api.kernel_heap_unstick(&StickTarget::Node(node_id))?;
 
                     self.api
                         .kernel_get_system_state()
@@ -2232,11 +2223,11 @@ where
             )?,
             FieldTransience::TransientStatic(default_value) => {
                 let default_value: ScryptoValue = scrypto_decode(&default_value).unwrap();
-                self.api.kernel_heap_stick(StickTarget::Substate(
+                self.api.kernel_mark_substate_as_transient(
                     node_id,
                     partition_num,
                     SubstateKey::Field(field_index),
-                ))?;
+                )?;
                 self.api.kernel_open_substate_with_default(
                     &node_id,
                     partition_num,
@@ -2571,12 +2562,18 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_heap_stick(&mut self, target: StickTarget) -> Result<(), RuntimeError> {
-        self.api.kernel_heap_stick(target)
+    fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+        self.api.kernel_pin_node(node_id)
     }
 
-    fn kernel_heap_unstick(&mut self, target: &StickTarget) -> Result<(), RuntimeError> {
-        self.api.kernel_heap_unstick(target)
+    fn kernel_mark_substate_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        key: SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        self.api
+            .kernel_mark_substate_as_transient(node_id, partition_num, key)
     }
 
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {

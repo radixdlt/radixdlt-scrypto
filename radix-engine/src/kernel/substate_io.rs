@@ -1,14 +1,13 @@
-use std::collections::{BTreeMap, BTreeSet};
 use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
     CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
-    CreateNodeError, DropNodeError, TransientSubstates, MovePartitionError, NonGlobalNodeRefs,
-    OpenSubstateError, PersistNodeError, WriteSubstateError,
+    CreateNodeError, DropNodeError, MovePartitionError, NonGlobalNodeRefs, OpenSubstateError,
+    PersistNodeError, TransientSubstates, WriteSubstateError,
 };
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::{
-    CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo,
+    CallbackError, CommitableSubstateStore, NodeSubstates, StoreAccess, TrackedSubstateInfo,
 };
 use radix_engine_common::prelude::{NodeId, PartitionNumber};
 use radix_engine_common::types::{SortedU16Key, SubstateKey};
@@ -18,6 +17,7 @@ use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Vec;
 use sbor::rust::collections::LinkedList;
+use std::collections::BTreeSet;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SubstateDevice {
@@ -53,7 +53,7 @@ pub enum ProcessSubstateIOWriteError {
     PersistNodeError(PersistNodeError),
 }
 
-pub struct SubstateIO<'g, S: SubstateStore> {
+pub struct SubstateIO<'g, S: CommitableSubstateStore> {
     pub heap: Heap,
     pub store: &'g mut S,
     pub non_global_node_refs: NonGlobalNodeRefs,
@@ -62,7 +62,7 @@ pub struct SubstateIO<'g, S: SubstateStore> {
     pub pinned_nodes: BTreeSet<NodeId>,
 }
 
-impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
+impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
     pub fn new(store: &'g mut S) -> Self {
         Self {
             heap: Heap::new(),
@@ -149,7 +149,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
 
             if self.pinned_nodes.contains(&node_id) {
                 return Err(CallbackError::Error(
-                    PersistNodeError::CannotPersistStickyNode(node_id),
+                    PersistNodeError::CannotPersistPinnedNode(node_id),
                 ));
             }
 
@@ -159,7 +159,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     panic!("Frame owned node {:?} not found in heap", node_id)
                 }
             };
-
 
             for (_partition_num, module_substates) in &node_substates {
                 for (_substate_key, substate_value) in module_substates {
@@ -177,9 +176,14 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 }
             }
 
-            if let Some(transient_substates) = self.heap_transient_substates.transient_substates.remove(&node_id) {
+            if let Some(transient_substates) = self
+                .heap_transient_substates
+                .transient_substates
+                .remove(&node_id)
+            {
                 for (partition_num, substate_key) in transient_substates {
-                    self.store.mark_as_transient(node_id, partition_num, substate_key);
+                    self.store
+                        .mark_as_transient(node_id, partition_num, substate_key);
                 }
             }
 
@@ -215,7 +219,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             SubstateDevice::Heap => self
                 .heap
                 .remove_module(src_node_id, src_partition_number)
-                .map_err(|e| CallbackError::Error(MovePartitionError::HeapRemoveModuleErr(e)))?,
+                .map_err(|e| {
+                    CallbackError::Error(MovePartitionError::HeapRemovePartitionError(e))
+                })?,
             SubstateDevice::Store => {
                 panic!("Partition moves from store not supported.");
             }
@@ -232,7 +238,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     );
                 }
                 SubstateDevice::Store => {
-                    if self.heap_transient_substates.substate_is_sticky(
+                    if self.heap_transient_substates.is_transient(
                         src_node_id,
                         src_partition_number,
                         &substate_key,

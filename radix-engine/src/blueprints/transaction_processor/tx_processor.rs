@@ -1,8 +1,8 @@
 use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::{KernelNodeApi, StickTarget};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -121,7 +121,7 @@ impl TransactionProcessorBlueprint {
                 )
             ),
         )?;
-        api.kernel_heap_stick(StickTarget::Node(worktop_node_id))?;
+        api.kernel_pin_node(worktop_node_id)?;
 
         let worktop = Worktop(Own(worktop_node_id));
         let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)

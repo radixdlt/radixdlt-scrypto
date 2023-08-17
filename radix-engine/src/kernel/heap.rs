@@ -11,7 +11,7 @@ pub struct Heap {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum HeapRemoveModuleError {
+pub enum HeapRemovePartitionError {
     NodeNotFound(NodeId),
     ModuleNotFound(PartitionNumber),
 }
@@ -28,6 +28,10 @@ impl Heap {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
+    }
+
     /// Checks if the given node is in this heap.
     pub fn contains_node(&self, node_id: &NodeId) -> bool {
         self.nodes.contains_key(node_id)
@@ -37,14 +41,14 @@ impl Heap {
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
-    ) -> Result<BTreeMap<SubstateKey, IndexedScryptoValue>, HeapRemoveModuleError> {
+    ) -> Result<BTreeMap<SubstateKey, IndexedScryptoValue>, HeapRemovePartitionError> {
         if let Some(modules) = self.nodes.get_mut(node_id) {
             let module = modules
                 .remove(&partition_number)
-                .ok_or(HeapRemoveModuleError::ModuleNotFound(partition_number))?;
+                .ok_or(HeapRemovePartitionError::ModuleNotFound(partition_number))?;
             Ok(module)
         } else {
-            Err(HeapRemoveModuleError::NodeNotFound(node_id.clone()))
+            Err(HeapRemovePartitionError::NodeNotFound(node_id.clone()))
         }
     }
 
@@ -152,14 +156,9 @@ impl Heap {
     }
 
     /// Removes node.
-    pub fn remove_node(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<NodeSubstates, HeapRemoveNodeError> {
+    pub fn remove_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, HeapRemoveNodeError> {
         match self.nodes.remove(node_id) {
-            Some(node_substates) => {
-                Ok(node_substates)
-            }
+            Some(node_substates) => Ok(node_substates),
             None => Err(HeapRemoveNodeError::NodeNotFound(node_id.clone())),
         }
     }

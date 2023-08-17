@@ -1,6 +1,6 @@
 use crate::blueprints::resource::ComposedProof;
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, StickTarget};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
@@ -106,7 +106,7 @@ impl AuthZoneBlueprint {
                         })),
                     ),
                 )?;
-                api.kernel_heap_stick(StickTarget::Node(node_id))?;
+                api.kernel_pin_node(node_id)?;
             }
             ComposedProof::NonFungible(..) => {
                 api.kernel_create_node(
@@ -130,7 +130,7 @@ impl AuthZoneBlueprint {
                         }
                     }))),
                 )?;
-                api.kernel_heap_stick(StickTarget::Node(node_id))?;
+                api.kernel_pin_node(node_id)?;
             }
         }
 
@@ -180,7 +180,7 @@ impl AuthZoneBlueprint {
                 }))
             ),
         )?;
-        api.kernel_heap_stick(StickTarget::Node(node_id))?;
+        api.kernel_pin_node(node_id)?;
 
         Ok(Proof(Own(node_id)))
     }
@@ -231,7 +231,7 @@ impl AuthZoneBlueprint {
                 }))
             ),
         )?;
-        api.kernel_heap_stick(StickTarget::Node(node_id))?;
+        api.kernel_pin_node(node_id)?;
 
         Ok(Proof(Own(node_id)))
     }

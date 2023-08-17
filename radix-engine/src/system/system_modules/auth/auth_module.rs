@@ -4,9 +4,7 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::ReferenceOrigin;
-use crate::kernel::kernel_api::{
-    KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi, StickTarget,
-};
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::module::KernelModule;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
@@ -321,9 +319,7 @@ impl AuthModule {
                 }))
             ),
         )?;
-        system
-            .api
-            .kernel_heap_stick(StickTarget::Node(self_auth_zone))?;
+        system.api.kernel_pin_node(self_auth_zone)?;
 
         if let Some(parent_lock_handle) = parent_lock_handle {
             system.kernel_close_substate(parent_lock_handle)?;

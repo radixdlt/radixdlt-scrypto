@@ -12,7 +12,7 @@ use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
-use crate::track::interface::SubstateStore;
+use crate::track::interface::CommitableSubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;

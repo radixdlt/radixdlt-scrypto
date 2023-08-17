@@ -11,30 +11,18 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
 
-pub enum StickTarget {
-    Node(NodeId),
-    Substate(NodeId, PartitionNumber, SubstateKey),
-}
-
-impl StickTarget {
-    pub fn node_id(&self) -> &NodeId {
-        match self {
-            StickTarget::Node(node_id)
-            | StickTarget::Substate(node_id, ..) => node_id,
-        }
-    }
-}
-
 /// API for managing nodes
 pub trait KernelNodeApi {
-    /// Sticks a node/partition/substate to the heap.
-    /// If sticky, an error will occur if the target is attempted to be moved.
-    /// If the target's "parent" (e.g. a partition's node) is moved to store, the target
-    /// will remain "stuck" to the heap.
-    fn kernel_heap_stick(&mut self, target: StickTarget) -> Result<(), RuntimeError>;
+    /// Pin a node to it's current device.
+    fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError>;
 
-    /// Unsticks a node/partition/substate to the heap
-    fn kernel_heap_unstick(&mut self, target: &StickTarget) -> Result<(), RuntimeError>;
+    /// Marks a substate as transient, or a substate which was never and will never be persisted
+    fn kernel_mark_substate_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        key: SubstateKey,
+    ) -> Result<(), RuntimeError>;
 
     /// Allocates a new node id useable for create_node
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError>;
