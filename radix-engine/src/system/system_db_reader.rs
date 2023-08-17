@@ -1,9 +1,12 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::prelude::{scrypto_decode, scrypto_encode, Hash, ScryptoSchema};
+use radix_engine_common::prelude::{
+    scrypto_decode, scrypto_encode, Hash, ScryptoEncode, ScryptoSchema,
+};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintPayloadDef, BlueprintPayloadIdentifier, BlueprintVersionKey,
-    KeyOrValue, PartitionDescription, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+    BlueprintDefinition, BlueprintPayloadDef, BlueprintPayloadIdentifier,
+    BlueprintVersionKey, KeyOrValue, PartitionDescription,
+    PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
 };
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
@@ -18,11 +21,14 @@ use sbor::LocalTypeIndex;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::SchemaOrigin;
-use crate::system::system::KeyValueEntrySubstate;
+use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta,
 };
 use crate::track::TrackedNode;
+use crate::transaction::{
+    ObjectInstanceTypeReference, ObjectSubstateTypeReference, PackageTypeReference,
+};
 use crate::types::BlueprintCollectionSchema;
 
 #[derive(Clone, Debug)]
@@ -54,6 +60,23 @@ pub struct ResolvedPayloadSchema {
     pub allow_ownership: bool,
     pub allow_non_global_refs: bool,
     pub schema_origin: SchemaOrigin,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ObjectCollectionKey<'a, K: ScryptoEncode> {
+    KeyValue(u8, &'a K),
+    Index(u8, &'a K),
+    SortedIndex(u8, u16, &'a K),
+}
+
+impl<'a, K: ScryptoEncode> ObjectCollectionKey<'a, K> {
+    fn collection_index(&self) -> u8 {
+        match self {
+            ObjectCollectionKey::KeyValue(index, ..)
+            | ObjectCollectionKey::Index(index, ..)
+            | ObjectCollectionKey::SortedIndex(index, ..) => *index,
+        }
+    }
 }
 
 /// A System Layer (Layer 2) abstraction over an underlying substate database
@@ -111,6 +134,94 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         }
 
         blueprints
+    }
+
+    pub fn read_object_field<V: ScryptoDecode>(
+        &self,
+        node_id: &NodeId,
+        module_id: ObjectModuleId,
+        field_index: u8,
+    ) -> Option<V> {
+        let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
+        let definition = self.get_blueprint_definition(&blueprint_id)?;
+        let partition_description = &definition.interface.state.fields?.0;
+        let partition_number = match partition_description {
+            PartitionDescription::Logical(offset) => {
+                let base_partition = match module_id {
+                    ObjectModuleId::Main => MAIN_BASE_PARTITION,
+                    ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
+                    ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
+                    ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
+                };
+                base_partition.at_offset(*offset).unwrap()
+            }
+            PartitionDescription::Physical(partition_number) => *partition_number,
+        };
+
+        let substate: FieldSubstate<V> = self.substate_db.get_mapped::<SpreadPrefixKeyMapper, _>(
+            node_id,
+            partition_number,
+            &SubstateKey::Field(field_index),
+        )?;
+
+        Some(substate.value.0)
+    }
+
+    pub fn read_object_collection_entry<K: ScryptoEncode, V: ScryptoDecode>(
+        &self,
+        node_id: &NodeId,
+        module_id: ObjectModuleId,
+        collection_key: ObjectCollectionKey<K>,
+    ) -> Option<V> {
+        let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
+        let definition = self.get_blueprint_definition(&blueprint_id)?;
+
+        let (partition_description, ..) = definition
+            .interface
+            .state
+            .collections
+            .get(collection_key.collection_index() as usize)?;
+
+        let partition_number = match partition_description {
+            PartitionDescription::Logical(offset) => {
+                let base_partition = match module_id {
+                    ObjectModuleId::Main => MAIN_BASE_PARTITION,
+                    ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
+                    ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
+                    ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
+                };
+                base_partition.at_offset(*offset).unwrap()
+            }
+            PartitionDescription::Physical(partition_number) => *partition_number,
+        };
+
+        match collection_key {
+            ObjectCollectionKey::KeyValue(_, key) => {
+                let value: KeyValueEntrySubstate<V> =
+                    self.substate_db.get_mapped::<SpreadPrefixKeyMapper, _>(
+                        node_id,
+                        partition_number,
+                        &SubstateKey::Map(scrypto_encode(key).unwrap()),
+                    )?;
+                value.value
+            }
+            ObjectCollectionKey::Index(_, key) => {
+                let value: V = self.substate_db.get_mapped::<SpreadPrefixKeyMapper, _>(
+                    node_id,
+                    partition_number,
+                    &SubstateKey::Map(scrypto_encode(key).unwrap()),
+                )?;
+                Some(value)
+            }
+            ObjectCollectionKey::SortedIndex(_, sort, key) => {
+                let value: V = self.substate_db.get_mapped::<SpreadPrefixKeyMapper, _>(
+                    node_id,
+                    partition_number,
+                    &SubstateKey::Sorted((sort, scrypto_encode(key).unwrap())),
+                )?;
+                Some(value)
+            }
+        }
     }
 
     pub fn get_object_info<A: Into<GlobalAddress>>(&self, address: A) -> Option<ObjectInfo> {
@@ -274,6 +385,56 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         }
     }
 
+    pub fn get_blueprint_payload_schema_pointer(
+        &self,
+        target: &BlueprintTypeTarget,
+        payload_identifier: &BlueprintPayloadIdentifier,
+    ) -> Option<ObjectSubstateTypeReference> {
+        let blueprint_interface = self
+            .get_blueprint_definition(&target.blueprint_info.blueprint_id)?
+            .interface;
+
+        let (payload_def, ..) = blueprint_interface.get_payload_def(payload_identifier)?;
+
+        let obj_type_reference = match payload_def {
+            BlueprintPayloadDef::Static(type_identifier) => {
+                ObjectSubstateTypeReference::Package(PackageTypeReference {
+                    package_address: target.blueprint_info.blueprint_id.package_address,
+                    schema_hash: type_identifier.0,
+                    local_type_index: type_identifier.1,
+                })
+            }
+            BlueprintPayloadDef::Generic(instance_index) => {
+                let generic_substitution = target
+                    .blueprint_info
+                    .generic_substitutions
+                    .get(instance_index as usize)?;
+
+                let entity_address = match target.meta {
+                    SchemaValidationMeta::Blueprint | SchemaValidationMeta::NewObject { .. } => {
+                        return None
+                    }
+                    SchemaValidationMeta::ExistingObject { additional_schemas } => {
+                        additional_schemas
+                    }
+                };
+
+                match generic_substitution {
+                    GenericSubstitution::Local(type_id) => {
+                        ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {
+                            entity_address,
+                            schema_hash: type_id.0,
+                            instance_type_index: instance_index,
+                            local_type_index: type_id.1,
+                        })
+                    }
+                }
+            }
+        };
+
+        Some(obj_type_reference)
+    }
+
     // TODO: The logic here is currently copied from system_type_checker.rs get_payload_schema().
     // It would be nice to use the same underlying code but currently too many refactors are required
     // to make that happen.
@@ -418,32 +579,6 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
 // Reverse Mapping Functionality
 impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
-    pub fn partition_description(
-        &self,
-        partition_num: &PartitionNumber,
-    ) -> SystemPartitionDescription {
-        if partition_num.ge(&MAIN_BASE_PARTITION) {
-            let partition_offset = PartitionOffset(partition_num.0 - MAIN_BASE_PARTITION.0);
-            SystemPartitionDescription::Module(ObjectModuleId::Main, partition_offset)
-        } else if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
-            let partition_offset =
-                PartitionOffset(partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0);
-            SystemPartitionDescription::Module(ObjectModuleId::RoleAssignment, partition_offset)
-        } else if partition_num.ge(&ROYALTY_BASE_PARTITION) {
-            let partition_offset = PartitionOffset(partition_num.0 - ROYALTY_BASE_PARTITION.0);
-            SystemPartitionDescription::Module(ObjectModuleId::Royalty, partition_offset)
-        } else if partition_num.ge(&METADATA_BASE_PARTITION) {
-            let partition_offset = PartitionOffset(partition_num.0 - METADATA_BASE_PARTITION.0);
-            SystemPartitionDescription::Module(ObjectModuleId::Metadata, partition_offset)
-        } else if partition_num.ge(&SCHEMAS_PARTITION) {
-            SystemPartitionDescription::Schema
-        } else if partition_num.eq(&TYPE_INFO_FIELD_PARTITION) {
-            SystemPartitionDescription::TypeInfo
-        } else {
-            panic!("Should not get here")
-        }
-    }
-
     pub fn get_partition_descriptors(
         &self,
         node_id: &NodeId,
