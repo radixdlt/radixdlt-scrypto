@@ -734,7 +734,7 @@ where
 
             // Take fees
             collected_fees.put(locked.take_by_amount(amount).unwrap());
-            required -= amount;
+            required = required.safe_sub(amount).unwrap();
 
             // Refund overpayment
             let mut substate: FieldSubstate<LiquidFungibleResource> = track
@@ -758,13 +758,14 @@ where
                 .unwrap();
 
             // Record final payments
-            *fee_payments.entry(vault_id).or_default() += amount;
+            let entry = fee_payments.entry(vault_id).or_default();
+            *entry = entry.safe_add(amount).unwrap();
         }
         // Free credit is locked first and thus used last
         if free_credit.is_positive() {
             let amount = Decimal::min(free_credit, required);
             collected_fees.put(LiquidFungibleResource::new(amount));
-            required -= amount;
+            required = required.safe_sub(amount).unwrap();
         }
 
         let to_proposer = fee_reserve_finalization.to_proposer_amount();
@@ -782,12 +783,17 @@ where
             "Locked fee does not cover transaction cost: {} required",
             required
         );
-        let remaining_collected_fees = collected_fees.amount() - fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */;
+        let remaining_collected_fees = collected_fees.amount().safe_sub(fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */).unwrap();
+        let to_distribute = to_proposer
+            .safe_add(to_validator_set)
+            .unwrap()
+            .safe_add(to_burn)
+            .unwrap();
         assert!(
-            remaining_collected_fees  == to_proposer + to_validator_set + to_burn,
+            remaining_collected_fees  == to_distribute,
             "Remaining collected fee isn't equal to amount to distribute (proposer/validator set/burn): {} != {}",
             remaining_collected_fees,
-            to_proposer + to_validator_set + to_burn,
+            to_distribute,
         );
 
         if !to_proposer.is_zero() || !to_validator_set.is_zero() {
@@ -815,13 +821,13 @@ where
                 .as_typed()
                 .unwrap();
             if let Some(current_leader) = current_leader {
-                substate
+                let entry = substate
                     .value
                     .0
                     .proposer_rewards
                     .entry(current_leader)
-                    .or_default()
-                    .add_assign(to_proposer);
+                    .or_default();
+                *entry = entry.safe_add(to_proposer).unwrap()
             } else {
                 // If there is no current leader, the rewards go to the pool
             };
@@ -849,7 +855,7 @@ where
                 .unwrap();
             substate.value.0.put(
                 collected_fees
-                    .take_by_amount(to_proposer + to_validator_set)
+                    .take_by_amount(to_proposer.safe_add(to_validator_set).unwrap())
                     .unwrap(),
             );
             track

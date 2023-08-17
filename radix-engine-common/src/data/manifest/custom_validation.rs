@@ -288,10 +288,12 @@ mod tests {
                 value: ManifestCustomValue::Proof(ManifestProof(0)),
             },
             ManifestValue::Custom {
-                value: ManifestCustomValue::Decimal(ManifestDecimal([0; 32])),
+                value: ManifestCustomValue::Decimal(ManifestDecimal([0; DECIMAL_SIZE])),
             },
             ManifestValue::Custom {
-                value: ManifestCustomValue::PreciseDecimal(ManifestPreciseDecimal([0; 64])),
+                value: ManifestCustomValue::PreciseDecimal(ManifestPreciseDecimal(
+                    [0; PRECISE_DECIMAL_SIZE],
+                )),
             },
             ManifestValue::Custom {
                 value: ManifestCustomValue::NonFungibleLocalId(ManifestNonFungibleLocalId::String(

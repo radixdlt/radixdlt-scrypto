@@ -61,7 +61,7 @@ fn test_balance_changes_when_success() {
         result.balance_changes(),
         &indexmap!(
             test_runner.faucet_component().into() => indexmap!(
-                XRD => BalanceChange::Fungible(-(receipt.fee_summary.total_cost()))
+                XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap())
             ),
             account.into() => indexmap!(
                 XRD => BalanceChange::Fungible(dec!("-1"))
@@ -136,7 +136,7 @@ fn test_balance_changes_when_failure() {
         result.balance_changes(),
         &indexmap!(
             test_runner.faucet_component().into() => indexmap!(
-                XRD => BalanceChange::Fungible(-(receipt.fee_summary.total_cost()))
+                XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap() )
             ),
             CONSENSUS_MANAGER.into() => indexmap!(
                 XRD => BalanceChange::Fungible(receipt.fee_summary.expected_reward_if_single_validator())
@@ -173,7 +173,7 @@ fn test_balance_changes_when_recall() {
         result.balance_changes(),
         &indexmap!(
             test_runner.faucet_component().into() => indexmap!(
-                XRD => BalanceChange::Fungible(-(receipt.fee_summary.total_cost()))
+                XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap() )
             ),
             other_account.into() => indexmap!(
                 recallable_token => BalanceChange::Fungible(dec!(1))
@@ -247,7 +247,7 @@ fn test_balance_changes_when_transferring_non_fungibles() {
     assert_eq!(
         faucet_changes,
         &indexmap!(
-            XRD => BalanceChange::Fungible(-total_cost_in_xrd),
+            XRD => BalanceChange::Fungible(total_cost_in_xrd.safe_neg().unwrap()),
         ),
     );
 

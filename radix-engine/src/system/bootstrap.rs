@@ -37,6 +37,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::math::traits::*;
 use radix_engine_interface::{
     burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
@@ -55,8 +56,9 @@ use transaction::validation::ManifestIdAllocator;
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
     pub static ref DEFAULT_VALIDATOR_USD_COST: Decimal = dec!("100");
-    pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal =
-        *DEFAULT_VALIDATOR_USD_COST * Decimal::try_from(USD_PRICE_IN_XRD).unwrap();
+    pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal = DEFAULT_VALIDATOR_USD_COST
+        .safe_mul(Decimal::try_from(USD_PRICE_IN_XRD).unwrap())
+        .unwrap();
 }
 
 //==========================================================================================
