@@ -1,6 +1,5 @@
 use super::*;
-use crate::blueprints::macros::*;
-use crate::types::*;
+use crate::internal_prelude::*;
 
 declare_native_blueprint_state! {
     blueprint_ident: Package,

@@ -1,6 +1,6 @@
-use crate::blueprints::macros::*;
+use super::substates::*;
 use crate::blueprints::util::SecurifiedRoleAssignment;
-use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::metadata::MetadataEntrySubstate;
@@ -33,10 +33,6 @@ use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 use crate::vm::VmPackageValidation;
-
-use super::*;
-
-pub const PACKAGE_ROYALTY_FEATURE: &str = "package_royalty";
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -690,14 +686,11 @@ impl PackageNativePackage {
             PACKAGE_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 is_transient: false,
-                feature_set: btreeset!(
-                    PACKAGE_ROYALTY_FEATURE.to_string(),
-                ),
+                feature_set: PackageFeatureSet::all_features(),
                 dependencies: btreeset!(
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     PACKAGE_OWNER_BADGE.into(),
                 ),
-
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,
@@ -708,7 +701,6 @@ impl PackageNativePackage {
                     },
                     hooks: BlueprintHooksInit::default(),
                 },
-
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AccessRules(
@@ -1119,7 +1111,7 @@ impl PackageRoyaltyNativeBlueprint {
             if !service.is_feature_enabled(
                 receiver,
                 ObjectModuleId::Main,
-                PACKAGE_ROYALTY_FEATURE,
+                PackageFeature::PackageRoyalty.feature_name(),
             )? {
                 return Ok(());
             }
@@ -1181,7 +1173,10 @@ impl PackageRoyaltyNativeBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, PACKAGE_ROYALTY_FEATURE)? {
+        if !api.actor_is_feature_enabled(
+            OBJECT_HANDLE_SELF,
+            PackageFeature::PackageRoyalty.feature_name(),
+        )? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::PackageError(PackageError::RoyaltiesNotEnabled),
             ));
