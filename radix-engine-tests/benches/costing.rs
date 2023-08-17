@@ -2,6 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use paste::paste;
 use radix_engine::{
     system::system_modules::costing::SystemLoanFeeReserve,
+    transaction::CostingParameters,
     types::*,
     utils::ExtractSchemaError,
     vm::{
@@ -15,7 +16,7 @@ use radix_engine_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use sbor::rust::iter;
 use scrypto_unit::TestRunnerBuilder;
 use transaction::{
-    prelude::Secp256k1PrivateKey,
+    prelude::{Secp256k1PrivateKey, TransactionCostingParameters},
     validation::{recover_secp256k1, verify_secp256k1},
 };
 use wabt::wat2wasm;
@@ -80,8 +81,14 @@ fn bench_spin_loop(c: &mut Criterion) {
     let mut wasm_execution_units_consumed = 0;
     c.bench_function("costing::spin_loop", |b| {
         b.iter(|| {
-            let fee_reserve = SystemLoanFeeReserve::default()
-                .with_free_credit(Decimal::try_from(FREE_CREDIT_IN_XRD).unwrap());
+            let fee_reserve = SystemLoanFeeReserve::new(
+                &CostingParameters::default(),
+                &TransactionCostingParameters {
+                    free_credit_in_xrd: Decimal::try_from(FREE_CREDIT_IN_XRD).unwrap(),
+                    tip_percentage: DEFAULT_TIP_PERCENTAGE,
+                },
+                false,
+            );
             wasm_execution_units_consumed = 0;
             let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
                 fee_reserve,

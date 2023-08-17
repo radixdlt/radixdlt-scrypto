@@ -106,10 +106,15 @@ impl ActiveValidatorSet {
 
     /// Note for performance - this is calculated by iterating over the whole validator set.
     pub fn total_active_stake_xrd(&self) -> Decimal {
-        self.validators_by_stake_desc
+        let mut sum = Decimal::ZERO;
+        for v in self
+            .validators_by_stake_desc
             .iter()
             .map(|(_, validator)| validator.stake)
-            .sum()
+        {
+            sum = sum.safe_add(v).unwrap();
+        }
+        sum
     }
 
     pub fn validator_count(&self) -> usize {
@@ -179,7 +184,7 @@ impl ProposalStatistic {
         if total == 0 {
             return Decimal::one();
         }
-        Decimal::from(self.made) / Decimal::from(total)
+        Decimal::from(self.made).safe_div(total).unwrap()
     }
 }
 
@@ -540,8 +545,11 @@ impl ConsensusManagerBlueprint {
                 api.field_read_typed(config_handle)?;
             api.field_close(config_handle)?;
 
-            let validator_creation_xrd_cost =
-                manager_config.config.validator_creation_usd_cost * api.usd_price()?;
+            let validator_creation_xrd_cost = manager_config
+                .config
+                .validator_creation_usd_cost
+                .safe_mul(api.usd_price()?)
+                .unwrap();
             Some(validator_creation_xrd_cost)
         } else {
             None
@@ -750,12 +758,44 @@ impl ConsensusManagerBlueprint {
                 .collect(),
         };
 
+        let mut next_validator_set_total_stake = Decimal::zero();
+        let mut significant_protocol_update_readiness: IndexMap<String, Decimal> = index_map_new();
+        for (validator_address, validator) in
+            next_active_validator_set.validators_by_stake_desc.iter()
+        {
+            next_validator_set_total_stake = next_validator_set_total_stake
+                .safe_add(validator.stake)
+                .unwrap();
+            let rtn = api.call_method(
+                validator_address.as_node_id(),
+                VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT,
+                scrypto_encode(&ValidatorGetProtocolUpdateReadinessInput {}).unwrap(),
+            )?;
+            if let Some(protocol_update_readiness) = scrypto_decode::<Option<String>>(&rtn).unwrap()
+            {
+                let entry = significant_protocol_update_readiness
+                    .entry(protocol_update_readiness)
+                    .or_insert(Decimal::zero());
+                *entry = entry.safe_add(validator.stake).unwrap()
+            }
+        }
+
+        // Only store protocol updates that have been signalled by at
+        // least 10% of the new epoch's validator set total stake.
+        let significant_protocol_update_readiness_stake_threshold = next_validator_set_total_stake
+            .safe_mul(dec!("0.1"))
+            .unwrap();
+        significant_protocol_update_readiness.retain(|_, stake_signalled| {
+            *stake_signalled >= significant_protocol_update_readiness_stake_threshold
+        });
+
         // Emit epoch change event
         Runtime::emit_event(
             api,
             EpochChangeEvent {
                 epoch: next_epoch,
                 validator_set: next_active_validator_set.clone(),
+                significant_protocol_update_readiness,
             },
         )?;
 
@@ -816,10 +856,17 @@ impl ConsensusManagerBlueprint {
             return Ok(());
         }
 
-        let stake_sum_xrd = validator_infos
-            .values()
-            .map(|validator_info| validator_info.stake_xrd)
-            .sum::<Decimal>();
+        let stake_sum_xrd = {
+            let mut sum = Decimal::ZERO;
+
+            for v in validator_infos
+                .values()
+                .map(|validator_info| validator_info.stake_xrd)
+            {
+                sum = sum.safe_add(v).unwrap();
+            }
+            sum
+        };
 
         //======================
         // Distribute emissions
@@ -827,18 +874,33 @@ impl ConsensusManagerBlueprint {
 
         // calculate "how much XRD is emitted by 1 XRD staked", and later apply it evenly among validators
         // (the gains are slightly rounded down, but more fairly distributed - not affected by different rounding errors for different validators)
-        let emission_per_staked_xrd = config.total_emission_xrd_per_epoch / stake_sum_xrd;
-        let effective_total_emission_xrd = validator_infos
-            .values()
-            .map(|validator_info| validator_info.effective_stake_xrd * emission_per_staked_xrd)
-            .sum::<Decimal>();
+        let emission_per_staked_xrd = config
+            .total_emission_xrd_per_epoch
+            .safe_div(stake_sum_xrd)
+            .unwrap();
+        let effective_total_emission_xrd = {
+            let mut sum = Decimal::ZERO;
+
+            for v in validator_infos.values().map(|validator_info| {
+                validator_info
+                    .effective_stake_xrd
+                    .safe_mul(emission_per_staked_xrd)
+                    .unwrap()
+            }) {
+                sum = sum.safe_add(v).unwrap();
+            }
+            sum
+        };
 
         let total_emission_xrd_bucket =
             ResourceManager(XRD).mint_fungible(effective_total_emission_xrd, api)?;
 
         for validator_info in validator_infos.values() {
             let emission_xrd_bucket = total_emission_xrd_bucket.take(
-                validator_info.effective_stake_xrd * emission_per_staked_xrd,
+                validator_info
+                    .effective_stake_xrd
+                    .safe_mul(emission_per_staked_xrd)
+                    .unwrap(),
                 api,
             )?;
             api.call_method(
@@ -858,18 +920,32 @@ impl ConsensusManagerBlueprint {
         //===========================
         // Distribute rewards (fees)
         //===========================
-        let total_individual_amount: Decimal =
-            validator_rewards.proposer_rewards.values().cloned().sum();
-        let reward_per_staked_xrd = (validator_rewards.rewards_vault.amount(api)?
-            - total_individual_amount)
-            / stake_sum_xrd;
+        let total_individual_amount: Decimal = {
+            let mut sum = Decimal::ZERO;
+
+            for v in validator_rewards.proposer_rewards.values() {
+                sum = sum.safe_add(*v).unwrap();
+            }
+            sum
+        };
+
+        let reward_per_staked_xrd = (validator_rewards
+            .rewards_vault
+            .amount(api)?
+            .safe_sub(total_individual_amount)
+            .unwrap())
+        .safe_div(stake_sum_xrd)
+        .unwrap();
         for (index, validator_info) in validator_infos {
             let from_self = validator_rewards
                 .proposer_rewards
                 .remove(&index)
                 .unwrap_or_default();
-            let from_pool = validator_info.effective_stake_xrd * reward_per_staked_xrd;
-            let reward_amount = from_self + from_pool;
+            let from_pool = validator_info
+                .effective_stake_xrd
+                .safe_mul(reward_per_staked_xrd)
+                .unwrap();
+            let reward_amount = from_self.safe_add(from_pool).unwrap();
             if reward_amount.is_zero() {
                 continue;
             }
@@ -909,7 +985,7 @@ impl ValidatorInfo {
                 proposal_statistic.success_ratio(),
                 min_required_reliability,
             );
-            let effective_stake_xrd = stake_xrd * reliability_factor;
+            let effective_stake_xrd = stake_xrd.safe_mul(reliability_factor).unwrap();
             Some(Self {
                 address,
                 stake_xrd,
@@ -925,11 +1001,11 @@ impl ValidatorInfo {
     /// which directly drives the fraction of received emission (e.g. "0.25 of base emission"), by
     /// rescaling it into the allowed reliability range (e.g. "required >0.96 uptime").
     fn to_reliability_factor(reliability: Decimal, min_required_reliability: Decimal) -> Decimal {
-        let reliability_reserve = reliability - min_required_reliability;
+        let reliability_reserve = reliability.safe_sub(min_required_reliability).unwrap();
         if reliability_reserve.is_negative() {
             return Decimal::zero();
         }
-        let max_allowed_unreliability = Decimal::one() - min_required_reliability;
+        let max_allowed_unreliability = Decimal::one().safe_sub(min_required_reliability).unwrap();
         if max_allowed_unreliability.is_zero() {
             // special-casing the dirac delta behavior
             if reliability == Decimal::one() {
@@ -938,6 +1014,8 @@ impl ValidatorInfo {
                 return Decimal::zero();
             }
         }
-        reliability_reserve / max_allowed_unreliability
+        reliability_reserve
+            .safe_div(max_allowed_unreliability)
+            .unwrap()
     }
 }

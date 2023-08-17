@@ -7,12 +7,13 @@ use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system_db_reader::{SystemDatabaseReader, SystemPartitionDescription};
 use crate::track::{ReadOnly, TrackedNode, TrackedSubstateValue};
-use crate::transaction::{SystemPartitionDescription, SystemReader};
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SubstateSystemStructure {
     SystemField(SystemFieldStructure),
+    SystemSchema,
     // KeyValueStore substates
     KeyValueStoreEntry(KeyValueStoreEntryStructure),
     // Object substates
@@ -126,14 +127,14 @@ impl SystemStructure {
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
 pub struct SubstateSchemaMapper<'a, S: SubstateDatabase> {
-    system_reader: SystemReader<'a, S>,
+    system_reader: SystemDatabaseReader<'a, S>,
     tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
 impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
     pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
-            system_reader: SystemReader::new(substate_db, tracked),
+            system_reader: SystemDatabaseReader::new_with_overlay(substate_db, tracked),
             tracked,
         }
     }
@@ -205,8 +206,10 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     field_kind: SystemFieldKind::TypeInfo,
                 })
             }
+            SystemPartitionDescription::Schema => SubstateSystemStructure::SystemSchema,
             SystemPartitionDescription::Module(module_id, partition_offset) => {
-                let (blueprint_id, instance_schema) = if let ObjectModuleId::Main = module_id {
+                let (blueprint_id, generic_substitutions) = if let ObjectModuleId::Main = module_id
+                {
                     let main_type_info =
                         self.system_reader
                             .get_type_info(node_id)
@@ -216,18 +219,26 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     match main_type_info {
                         TypeInfoSubstate::Object(info) => (
                             info.blueprint_info.blueprint_id,
-                            info.blueprint_info.instance_schema,
+                            info.blueprint_info.generic_substitutions,
                         ),
                         TypeInfoSubstate::KeyValueStore(info) => {
+                            let key_type_id =
+                                match info.generic_substitutions.key_generic_substitutions {
+                                    GenericSubstitution::Local(type_id) => type_id,
+                                };
+                            let value_type_id =
+                                match info.generic_substitutions.value_generic_substitutions {
+                                    GenericSubstitution::Local(type_id) => type_id,
+                                };
                             return SubstateSystemStructure::KeyValueStoreEntry(
                                 KeyValueStoreEntryStructure {
                                     key_value_store_address: (*node_id).try_into().unwrap(),
-                                    key_schema_hash: info.schema.key.0,
-                                    key_local_type_index: info.schema.key.1,
-                                    value_schema_hash: info.schema.value.0,
-                                    value_local_type_index: info.schema.value.1,
+                                    key_schema_hash: key_type_id.0,
+                                    key_local_type_index: key_type_id.1,
+                                    value_schema_hash: value_type_id.0,
+                                    value_local_type_index: value_type_id.1,
                                 },
-                            )
+                            );
                         }
                         TypeInfoSubstate::GlobalAddressPhantom(_)
                         | TypeInfoSubstate::GlobalAddressReservation(_) => {
@@ -235,7 +246,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                         }
                     }
                 } else {
-                    (module_id.static_blueprint().unwrap(), None)
+                    (module_id.static_blueprint().unwrap(), vec![])
                 };
 
                 let blueprint_definition = self
@@ -244,8 +255,8 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     .unwrap();
                 let resolver = ObjectSubstateTypeReferenceResolver::new(
                     &node_id,
-                    instance_schema.as_ref(),
                     &blueprint_id,
+                    &generic_substitutions,
                 );
                 self.resolve_object_substate_structure(
                     &resolver,
@@ -264,11 +275,11 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         partition_offset: PartitionOffset,
         key: &SubstateKey,
     ) -> SubstateSystemStructure {
-        if partition_offset.0 >= state_schema.num_partitions {
+        if partition_offset.0 >= state_schema.num_logical_partitions {
             panic!("Partition offset larger than partition count");
         }
 
-        if let Some((offset, fields)) = &state_schema.fields {
+        if let Some((PartitionDescription::Logical(offset), fields)) = &state_schema.fields {
             if offset.eq(&partition_offset) {
                 if let SubstateKey::Field(field_index) = key {
                     let field = fields
@@ -283,33 +294,40 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
             }
         }
 
-        for (offset, collection_schema) in &state_schema.collections {
-            if offset.eq(&partition_offset) {
-                match collection_schema {
-                    BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
-                        return SubstateSystemStructure::ObjectKeyValuePartitionEntry(
-                            KeyValuePartitionEntryStructure {
-                                key_schema: resolver.resolve(kv_schema.key),
-                                value_schema: resolver.resolve(kv_schema.value),
-                            },
-                        )
+        for (partition_description, collection_schema) in &state_schema.collections {
+            match partition_description {
+                PartitionDescription::Logical(offset) => {
+                    if offset.eq(&partition_offset) {
+                        match collection_schema {
+                            BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
+                                return SubstateSystemStructure::ObjectKeyValuePartitionEntry(
+                                    KeyValuePartitionEntryStructure {
+                                        key_schema: resolver.resolve(kv_schema.key),
+                                        value_schema: resolver.resolve(kv_schema.value),
+                                    },
+                                )
+                            }
+                            BlueprintCollectionSchema::Index(kv_schema) => {
+                                return SubstateSystemStructure::ObjectIndexPartitionEntry(
+                                    IndexPartitionEntryStructure {
+                                        key_schema: resolver.resolve(kv_schema.key),
+                                        value_schema: resolver.resolve(kv_schema.value),
+                                    },
+                                )
+                            }
+                            BlueprintCollectionSchema::SortedIndex(kv_schema) => {
+                                return SubstateSystemStructure::ObjectSortedIndexPartitionEntry(
+                                    SortedIndexPartitionEntryStructure {
+                                        key_schema: resolver.resolve(kv_schema.key),
+                                        value_schema: resolver.resolve(kv_schema.value),
+                                    },
+                                )
+                            }
+                        }
                     }
-                    BlueprintCollectionSchema::Index(kv_schema) => {
-                        return SubstateSystemStructure::ObjectIndexPartitionEntry(
-                            IndexPartitionEntryStructure {
-                                key_schema: resolver.resolve(kv_schema.key),
-                                value_schema: resolver.resolve(kv_schema.value),
-                            },
-                        )
-                    }
-                    BlueprintCollectionSchema::SortedIndex(kv_schema) => {
-                        return SubstateSystemStructure::ObjectSortedIndexPartitionEntry(
-                            SortedIndexPartitionEntryStructure {
-                                key_schema: resolver.resolve(kv_schema.key),
-                                value_schema: resolver.resolve(kv_schema.value),
-                            },
-                        )
-                    }
+                }
+                PartitionDescription::Physical(..) => {
+                    // Anything physically mapped should have been resolved earlier in the process
                 }
             }
         }
@@ -320,46 +338,47 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
 
 pub struct ObjectSubstateTypeReferenceResolver<'a> {
     node_id: &'a NodeId,
-    instance_schema: Option<&'a InstanceSchema>,
     blueprint_id: &'a BlueprintId,
+    generic_substitutions: &'a Vec<GenericSubstitution>,
 }
 
 impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
     pub fn new(
         node_id: &'a NodeId,
-        instance_schema: Option<&'a InstanceSchema>,
         blueprint_id: &'a BlueprintId,
+        generic_substitutions: &'a Vec<GenericSubstitution>,
     ) -> Self {
         Self {
             node_id,
-            instance_schema,
             blueprint_id,
+            generic_substitutions,
         }
     }
 
-    pub fn resolve(&self, type_pointer: TypePointer) -> ObjectSubstateTypeReference {
+    pub fn resolve(&self, type_pointer: BlueprintPayloadDef) -> ObjectSubstateTypeReference {
         match type_pointer {
-            TypePointer::Package(type_identifier) => {
+            BlueprintPayloadDef::Static(type_identifier) => {
                 ObjectSubstateTypeReference::Package(PackageTypeReference {
                     package_address: self.blueprint_id.package_address,
                     schema_hash: type_identifier.0,
                     local_type_index: type_identifier.1,
                 })
             }
-            TypePointer::Instance(instance_type_index) => {
-                let instance_schema = self
-                    .instance_schema
-                    .expect("Instance type pointer to no instance schema");
-                let type_identifier = *instance_schema
-                    .instance_type_lookup
+            BlueprintPayloadDef::Generic(instance_type_index) => {
+                let type_substition_ref = *self
+                    .generic_substitutions
                     .get(instance_type_index as usize)
                     .expect("Instance type index not valid");
-                ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {
-                    entity_address: (*self.node_id).try_into().unwrap(),
-                    instance_type_index,
-                    schema_hash: type_identifier.0,
-                    local_type_index: type_identifier.1,
-                })
+                match type_substition_ref {
+                    GenericSubstitution::Local(type_id) => {
+                        ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {
+                            entity_address: (*self.node_id).try_into().unwrap(),
+                            instance_type_index,
+                            schema_hash: type_id.0,
+                            local_type_index: type_id.1,
+                        })
+                    }
+                }
             }
         }
     }
@@ -369,7 +388,7 @@ impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
 pub struct EventSchemaMapper<'a, S: SubstateDatabase> {
-    system_reader: SystemReader<'a, S>,
+    system_reader: SystemDatabaseReader<'a, S>,
     application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
 }
 
@@ -380,7 +399,7 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
         application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
     ) -> Self {
         Self {
-            system_reader: SystemReader::new(substate_db, tracked),
+            system_reader: SystemDatabaseReader::new_with_overlay(substate_db, tracked),
             application_events,
         }
     }
@@ -406,7 +425,17 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
                 }
             };
 
-            let TypePointer::Package(type_identifier) = event_type_identifier.1 else {
+            let blueprint_definition = self
+                .system_reader
+                .get_blueprint_definition(&blueprint_id)
+                .unwrap();
+
+            let type_pointer = blueprint_definition
+                .interface
+                .get_event_payload_def(event_type_identifier.1.as_str())
+                .unwrap();
+
+            let BlueprintPayloadDef::Static(type_identifier) = type_pointer else {
                 panic!("Event identifier type pointer cannot be an instance type pointer");
             };
 

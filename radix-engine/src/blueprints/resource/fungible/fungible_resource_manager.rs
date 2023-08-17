@@ -9,7 +9,7 @@ use num_traits::pow::Pow;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::FungibleResourceManagerField;
@@ -18,7 +18,7 @@ use radix_engine_interface::*;
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
 lazy_static! {
-    static ref MAX_MINT_AMOUNT: Decimal = Decimal(BnumI256::from(2).pow(160)); // 2^160 subunits
+    static ref MAX_MINT_AMOUNT: Decimal = Decimal(I192::from(2).pow(160)); // 2^160 subunits
 }
 
 /// Represents an error when accessing a bucket.
@@ -111,7 +111,7 @@ impl FungibleResourceManagerBlueprint {
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
-            None,
+            GenericArgs::default(),
             vec![FieldValue::immutable(&divisibility), total_supply_field],
             btreemap!(),
         )?;
@@ -169,7 +169,7 @@ impl FungibleResourceManagerBlueprint {
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
-            None,
+            GenericArgs::default(),
             vec![FieldValue::immutable(&divisibility), total_supply_field],
             btreemap!(),
         )?;
@@ -221,7 +221,7 @@ impl FungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply += amount;
+            total_supply = total_supply.safe_add(amount).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
             api.field_close(total_supply_handle)?;
         }
@@ -270,7 +270,7 @@ impl FungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply -= other_bucket.liquid.amount();
+            total_supply = total_supply.safe_sub(other_bucket.liquid.amount()).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
             api.field_close(total_supply_handle)?;
         }

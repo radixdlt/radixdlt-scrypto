@@ -8,8 +8,9 @@ use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
+    execute_preview, execute_transaction, CommitResult, CostingParameters, ExecutionConfig,
     PreviewError, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
@@ -27,8 +28,8 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, PackageDefinition, PackagePublishNativeManifestInput,
-    PackagePublishWasmAdvancedManifestInput, TypePointer, PACKAGE_BLUEPRINT,
+    BlueprintDefinitionInit, BlueprintPayloadDef, PackageDefinition,
+    PackagePublishNativeManifestInput, PackagePublishWasmAdvancedManifestInput, PACKAGE_BLUEPRINT,
     PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
@@ -165,60 +166,42 @@ impl CustomGenesis {
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
-        let genesis_validator: GenesisValidator = validator_public_key.clone().into();
-        let genesis_data_chunks = vec![
-            GenesisDataChunk::Validators(vec![genesis_validator]),
-            GenesisDataChunk::Stakes {
-                accounts: vec![staker_account],
-                allocations: vec![(
-                    validator_public_key,
-                    vec![GenesisStakeAllocation {
-                        account_index: 0,
-                        xrd_amount: stake_xrd_amount,
-                    }],
-                )],
-            },
-        ];
-        CustomGenesis {
-            genesis_data_chunks,
+        Self::validators_and_single_staker(
+            vec![(validator_public_key, stake_xrd_amount)],
+            staker_account,
             genesis_epoch,
             initial_config,
-            initial_time_ms: 0,
-            initial_current_leader: Some(0),
-            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
-        }
+        )
     }
 
-    pub fn two_validators_and_single_staker(
-        validator1_public_key: Secp256k1PublicKey,
-        validator2_public_key: Secp256k1PublicKey,
-        stake_xrd_amount: (Decimal, Decimal),
+    pub fn validators_and_single_staker(
+        validators_and_stakes: Vec<(Secp256k1PublicKey, Decimal)>,
         staker_account: ComponentAddress,
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
-        let genesis_validator1: GenesisValidator = validator1_public_key.clone().into();
-        let genesis_validator2: GenesisValidator = validator2_public_key.clone().into();
+        let genesis_validators: Vec<GenesisValidator> = validators_and_stakes
+            .iter()
+            .map(|(key, _)| key.clone().into())
+            .collect();
+        let stake_allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)> =
+            validators_and_stakes
+                .into_iter()
+                .map(|(key, stake_xrd_amount)| {
+                    (
+                        key,
+                        vec![GenesisStakeAllocation {
+                            account_index: 0,
+                            xrd_amount: stake_xrd_amount,
+                        }],
+                    )
+                })
+                .collect();
         let genesis_data_chunks = vec![
-            GenesisDataChunk::Validators(vec![genesis_validator1, genesis_validator2]),
+            GenesisDataChunk::Validators(genesis_validators),
             GenesisDataChunk::Stakes {
                 accounts: vec![staker_account],
-                allocations: vec![
-                    (
-                        validator1_public_key,
-                        vec![GenesisStakeAllocation {
-                            account_index: 0,
-                            xrd_amount: stake_xrd_amount.0,
-                        }],
-                    ),
-                    (
-                        validator2_public_key,
-                        vec![GenesisStakeAllocation {
-                            account_index: 0,
-                            xrd_amount: stake_xrd_amount.1,
-                        }],
-                    ),
-                ],
+                allocations: stake_allocations,
             },
         ];
         CustomGenesis {
@@ -612,7 +595,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .substate_db()
             .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
                 package_address.as_node_id(),
-                PackagePartition::SchemaKeyValue.as_main_partition(),
+                SCHEMAS_PARTITION,
             ))
         {
             let hash: SchemaHash =
@@ -620,7 +603,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             let value: PackageSchemaEntrySubstate = scrypto_decode(&entry.1).unwrap();
             match value.value {
                 Some(schema) => {
-                    schemas.insert(hash, schema.0.into_latest());
+                    schemas.insert(hash, schema.0);
                 }
                 None => {}
             }
@@ -676,7 +659,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let vaults = self.get_component_vaults(account_address, resource_address);
         let mut sum = Decimal::ZERO;
         for vault in vaults {
-            sum += self.inspect_vault_balance(vault).unwrap();
+            sum = sum
+                .safe_add(self.inspect_vault_balance(vault).unwrap())
+                .unwrap();
         }
         sum
     }
@@ -946,7 +931,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(btreeset!(AuthAddresses::system_role())),
-            FeeReserveConfig::default(),
+            CostingParameters::default(),
             ExecutionConfig::for_system_transaction(),
         );
 
@@ -1054,7 +1039,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .expect("Expected raw transaction to be valid");
         self.execute_transaction(
             validated.get_executable(),
-            FeeReserveConfig::default(),
+            CostingParameters::default(),
             ExecutionConfig::for_notarized_transaction(),
         )
     }
@@ -1067,22 +1052,18 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
-        let nonce = self.next_transaction_nonce();
-        self.execute_transaction(
-            TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(initial_proofs.into_iter().collect()),
-            FeeReserveConfig::default(),
-            ExecutionConfig::for_test_transaction(),
+        self.execute_manifest_with_costing_params(
+            manifest,
+            initial_proofs,
+            CostingParameters::default(),
         )
     }
 
-    pub fn execute_manifest_with_cost_unit_limit<T>(
+    pub fn execute_manifest_with_costing_params<T>(
         &mut self,
         manifest: TransactionManifestV1,
         initial_proofs: T,
-        cost_unit_limit: u32,
+        costing_parameters: CostingParameters,
     ) -> TransactionReceipt
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
@@ -1093,15 +1074,35 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            FeeReserveConfig::default(),
-            ExecutionConfig::for_test_transaction().with_cost_unit_limit(cost_unit_limit),
+            costing_parameters,
+            ExecutionConfig::for_test_transaction(),
+        )
+    }
+
+    pub fn execute_manifest_with_execution_cost_unit_limit<T>(
+        &mut self,
+        manifest: TransactionManifestV1,
+        initial_proofs: T,
+        execution_cost_unit_limit: u32,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            CostingParameters::default().with_execution_cost_unit_limit(execution_cost_unit_limit),
+            ExecutionConfig::for_test_transaction(),
         )
     }
 
     pub fn execute_transaction(
         &mut self,
         executable: Executable,
-        fee_reserve_config: FeeReserveConfig,
+        fee_reserve_config: CostingParameters,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         // Override the kernel trace config
@@ -1119,7 +1120,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             &execution_config,
             &executable,
         );
-        if let TransactionResult::Commit(commit) = &transaction_receipt.transaction_result {
+        if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             self.database.commit(&commit.state_updates.database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates.database_updates);
@@ -1755,7 +1756,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            FeeReserveConfig::default(),
+            CostingParameters::default(),
             ExecutionConfig::for_system_transaction(),
         )
     }
@@ -1785,7 +1786,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            FeeReserveConfig::default(),
+            CostingParameters::default(),
             ExecutionConfig::for_system_transaction(),
         )
     }
@@ -1807,7 +1808,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            FeeReserveConfig::default(),
+            CostingParameters::default(),
             ExecutionConfig::for_system_transaction(),
         )
     }
@@ -1892,14 +1893,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         &self,
         event_type_identifier: &EventTypeIdentifier,
     ) -> (LocalTypeIndex, ScryptoSchema) {
-        let (package_address, schema_pointer) = match event_type_identifier {
-            EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
-                match node_module {
-                    ObjectModuleId::RoleAssignment => {
-                        (ROLE_ASSIGNMENT_MODULE_PACKAGE, schema_pointer.clone())
-                    }
-                    ObjectModuleId::Royalty => (ROYALTY_MODULE_PACKAGE, schema_pointer.clone()),
-                    ObjectModuleId::Metadata => (METADATA_MODULE_PACKAGE, schema_pointer.clone()),
+        let (blueprint_id, name) = match event_type_identifier {
+            EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
+                let blueprint_id = match node_module {
                     ObjectModuleId::Main => {
                         let type_info = self
                             .substate_db()
@@ -1914,37 +1910,46 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                             TypeInfoSubstate::Object(ObjectInfo {
                                 blueprint_info: BlueprintInfo { blueprint_id, .. },
                                 ..
-                            }) => (blueprint_id.package_address, *schema_pointer),
+                            }) => blueprint_id,
                             _ => {
                                 panic!("No event schema.")
                             }
                         }
                     }
-                }
+                    module @ _ => module.static_blueprint().unwrap(),
+                };
+                (blueprint_id, event_name.clone())
             }
-            EventTypeIdentifier(Emitter::Function(blueprint_id), schema_pointer) => {
-                (blueprint_id.package_address, schema_pointer.clone())
+            EventTypeIdentifier(Emitter::Function(blueprint_id), event_name) => {
+                (blueprint_id.clone(), event_name.clone())
             }
         };
 
+        let system_reader = SystemDatabaseReader::new(self.substate_db());
+        let definition = system_reader
+            .get_blueprint_definition(&blueprint_id)
+            .unwrap();
+        let schema_pointer = definition
+            .interface
+            .get_event_payload_def(name.as_str())
+            .unwrap();
+
         match schema_pointer {
-            TypePointer::Package(type_identifier) => {
+            BlueprintPayloadDef::Static(type_identifier) => {
                 let schema = self
                     .substate_db()
-                    .get_mapped::<SpreadPrefixKeyMapper, PackageSchemaEntrySubstate>(
-                        package_address.as_node_id(),
-                        PackagePartition::SchemaKeyValue.as_main_partition(),
+                    .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+                        blueprint_id.package_address.as_node_id(),
+                        SCHEMAS_PARTITION,
                         &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
                     )
                     .unwrap()
                     .value
-                    .unwrap()
-                    .0
-                    .into_latest();
+                    .unwrap();
 
                 (type_identifier.1, schema)
             }
-            TypePointer::Instance(_instance_index) => {
+            BlueprintPayloadDef::Generic(_instance_index) => {
                 todo!()
             }
         }

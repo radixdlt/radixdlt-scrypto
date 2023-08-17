@@ -215,7 +215,7 @@ impl MultiResourcePoolBlueprint {
                 if let Some(value) =
                     resource_bucket_amount_mapping.get_mut(&bucket_resource_address)
                 {
-                    *value += bucket_amount;
+                    *value = value.safe_add(bucket_amount).unwrap();
                     Ok(())
                 } else {
                     Err(MultiResourcePoolError::ResourceDoesNotBelongToPool {
@@ -261,7 +261,7 @@ impl MultiResourcePoolBlueprint {
             let pool_units_to_mint = amounts_of_resources_provided
                 .values()
                 .copied()
-                .reduce(|acc, item| acc * item)
+                .reduce(|acc, item| acc.safe_mul(item).unwrap())
                 .and_then(|value| value.sqrt())
                 .unwrap();
 
@@ -328,7 +328,7 @@ impl MultiResourcePoolBlueprint {
                     vault.amount(api).and_then(|vault_amount| {
                         bucket
                             .amount(api)
-                            .map(|bucket_amount| bucket_amount / vault_amount)
+                            .map(|bucket_amount| bucket_amount.safe_div(vault_amount).unwrap())
                     })
                 })
                 .collect::<Result<Vec<Decimal>, _>>()?
@@ -349,7 +349,7 @@ impl MultiResourcePoolBlueprint {
                     })?;
 
                 let amount_to_contribute = {
-                    let amount_to_contribute = vault.amount(api)? * minimum_ratio;
+                    let amount_to_contribute = vault.amount(api)?.safe_mul(minimum_ratio).unwrap();
                     if divisibility == 18 {
                         amount_to_contribute
                     } else {
@@ -363,7 +363,7 @@ impl MultiResourcePoolBlueprint {
                 change.push(bucket)
             }
 
-            let pool_units_to_mint = pool_unit_total_supply * minimum_ratio;
+            let pool_units_to_mint = pool_unit_total_supply.safe_mul(minimum_ratio).unwrap();
 
             Runtime::emit_event(
                 api,
@@ -609,7 +609,11 @@ impl MultiResourcePoolBlueprint {
                         reserves,
                     },
                 )| {
-                    let amount_owed = (pool_units_to_redeem / pool_units_total_supply) * reserves;
+                    let amount_owed = pool_units_to_redeem
+                        .safe_div(pool_units_total_supply)
+                        .unwrap()
+                        .safe_mul(reserves)
+                        .unwrap();
 
                     let amount_owed = if divisibility == 18 {
                         amount_owed

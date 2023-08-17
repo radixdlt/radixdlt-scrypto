@@ -10,13 +10,13 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
-    PackageDefinition, RoleSpecification, StaticRoles,
+    PackageDefinition, RoleSpecification, StaticRoleDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::hooks::OnDropInput;
 use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema, Generic,
+    BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema, GenericBound,
 };
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit,
@@ -371,7 +371,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
                         roles {
                             MINTER_ROLE => updaters: [MINTER_UPDATER_ROLE];
                             MINTER_UPDATER_ROLE => updaters: [MINTER_UPDATER_ROLE];
@@ -431,7 +431,7 @@ impl ResourceNativePackage {
                         aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
                     ),
                     value: TypeRef::Generic(0u8),
-                    can_own: false,
+                    allow_ownership: false,
                 },
             ));
 
@@ -691,7 +691,7 @@ impl ResourceNativePackage {
                 ),
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
-                    generics: vec![Generic::Any],
+                    generics: vec![GenericBound::Any],
                     schema,
                     state: BlueprintStateSchemaInit {
                         fields,
@@ -705,7 +705,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
                         roles {
                             MINTER_ROLE => updaters: [MINTER_UPDATER_ROLE];
                             MINTER_UPDATER_ROLE => updaters: [MINTER_UPDATER_ROLE];
@@ -928,10 +928,10 @@ impl ResourceNativePackage {
             let event_schema = event_schema! {
                 aggregator,
                 [
-                    LockFeeEvent,
-                    WithdrawResourceEvent,
-                    DepositResourceEvent,
-                    RecallResourceEvent
+                    fungible_vault::LockFeeEvent,
+                    fungible_vault::WithdrawEvent,
+                    fungible_vault::DepositEvent,
+                    fungible_vault::RecallEvent
                 ]
             };
 
@@ -960,7 +960,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
                         roles: RoleSpecification::UseOuter,
                         methods: method_auth_template! {
                             VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
@@ -1003,7 +1003,7 @@ impl ResourceNativePackage {
                     aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
                 ),
                 value: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
-                can_own: false,
+                allow_ownership: false,
             }));
 
             let mut functions = BTreeMap::new();
@@ -1219,10 +1219,9 @@ impl ResourceNativePackage {
             let event_schema = event_schema! {
                 aggregator,
                 [
-                    LockFeeEvent,
-                    WithdrawResourceEvent,
-                    DepositResourceEvent,
-                    RecallResourceEvent
+                    non_fungible_vault::WithdrawEvent,
+                    non_fungible_vault::DepositEvent,
+                    non_fungible_vault::RecallEvent
                 ]
             };
 
@@ -1251,7 +1250,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
                         roles: RoleSpecification::UseOuter,
                         methods: method_auth_template! {
                             VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
@@ -1443,7 +1442,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
                         methods: method_auth_template! {
                             BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
@@ -1657,7 +1656,7 @@ impl ResourceNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
                         methods: method_auth_template! {
                             BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;

@@ -202,12 +202,22 @@ pub trait SubstateStore {
 #[derive(Debug, Clone, Copy)]
 pub enum StoreAccess {
     /// Some substate was read from database.
-    ReadFromDb(usize),
+    ReadFromDb(NodeId, usize),
     /// Non-existent substate was read from database.
-    ReadFromDbNotFound,
+    ReadFromDbNotFound(NodeId),
     /// A new entry has been added to track
     /// System limits how many items that can be tracked.
-    NewEntryInTrack,
+    NewEntryInTrack(NodeId),
+}
+
+impl StoreAccess {
+    pub fn node_id(&self) -> NodeId {
+        match self {
+            StoreAccess::ReadFromDb(node_id, _)
+            | StoreAccess::ReadFromDbNotFound(node_id)
+            | StoreAccess::NewEntryInTrack(node_id) => *node_id,
+        }
+    }
 }
 
 pub type StoreCommitInfo = Vec<StoreCommit>;

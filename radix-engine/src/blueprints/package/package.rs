@@ -24,7 +24,9 @@ use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::system::node_modules::role_assignment::{
+    OwnerRoleSubstate, RoleAssignmentNativePackage,
+};
 use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::*;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
@@ -42,6 +44,7 @@ pub enum PackageError {
 
     InvalidBlueprintSchema(SchemaValidationError),
     TooManySubstateSchemas,
+    SystemInstructionsNotSupported,
 
     FailedToResolveLocalSchema {
         local_type_index: LocalTypeIndex,
@@ -62,6 +65,14 @@ pub enum PackageError {
 
     InvalidAuthSetup,
     DefiningReservedRoleKey(String, RoleKey),
+    ExceededMaxRoles {
+        limit: usize,
+        actual: usize,
+    },
+    ExceededMaxRoleNameLen {
+        limit: usize,
+        actual: usize,
+    },
     MissingRole(RoleKey),
     UnexpectedNumberOfMethodAuth {
         blueprint: String,
@@ -111,8 +122,6 @@ fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
         if bp_init.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
         }
-
-        // FIXME: Also add validation for local_type_index in Instance and KVStore schema type references
 
         for field in &bp_init.state.fields {
             validate_package_schema_type_ref(bp_init, field.field)?;
@@ -314,16 +323,21 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
             &definition_init.auth_config.method_auth,
         ) {
             (_, MethodAuthTemplate::AllowAll) => {}
-            (blueprint_type, MethodAuthTemplate::StaticRoles(StaticRoles { roles, methods })) => {
+            (
+                blueprint_type,
+                MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition { roles, methods }),
+            ) => {
                 let role_specification = match (blueprint_type, roles) {
                     (_, RoleSpecification::Normal(roles)) => roles,
                     (BlueprintType::Inner { outer_blueprint }, RoleSpecification::UseOuter) => {
                         if let Some(blueprint) = definition.blueprints.get(outer_blueprint) {
                             match &blueprint.auth_config.method_auth {
-                                MethodAuthTemplate::StaticRoles(StaticRoles {
-                                    roles: RoleSpecification::Normal(roles),
-                                    ..
-                                }) => roles,
+                                MethodAuthTemplate::StaticRoleDefinition(
+                                    StaticRoleDefinition {
+                                        roles: RoleSpecification::Normal(roles),
+                                        ..
+                                    },
+                                ) => roles,
                                 _ => return Err(PackageError::InvalidAuthSetup),
                             }
                         } else {
@@ -348,8 +362,23 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                 };
 
                 if let RoleSpecification::Normal(roles) = roles {
+                    if roles.len() > MAX_ROLES {
+                        return Err(PackageError::ExceededMaxRoles {
+                            limit: MAX_ROLES,
+                            actual: roles.len(),
+                        });
+                    }
+
                     for (role_key, role_list) in roles {
                         check_list(role_list)?;
+
+                        if role_key.key.len() > MAX_ROLE_NAME_LEN {
+                            return Err(PackageError::ExceededMaxRoleNameLen {
+                                limit: MAX_ROLE_NAME_LEN,
+                                actual: role_key.key.len(),
+                            });
+                        }
+
                         if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
                             return Err(PackageError::DefiningReservedRoleKey(
                                 blueprint.to_string(),
@@ -440,7 +469,9 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
             }
         }
 
-        if let MethodAuthTemplate::StaticRoles(static_roles) = &bp_init.auth_config.method_auth {
+        if let MethodAuthTemplate::StaticRoleDefinition(static_roles) =
+            &bp_init.auth_config.method_auth
+        {
             if let RoleSpecification::Normal(list) = &static_roles.roles {
                 for (role_key, _) in list.iter() {
                     condition(&role_key.key)?;
@@ -510,6 +541,25 @@ pub fn create_bootstrap_package_partitions(
         partitions.insert(METADATA_BASE_PARTITION, metadata_partition);
     }
 
+    {
+        let mut role_assignment_fields_partition = BTreeMap::new();
+
+        let owner_role_substate = FieldSubstate::new_field(OwnerRoleSubstate {
+            owner_role_entry: OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
+        });
+        role_assignment_fields_partition.insert(
+            SubstateKey::Field(0u8),
+            IndexedScryptoValue::from_typed(&owner_role_substate),
+        );
+
+        partitions.insert(
+            ROLE_ASSIGNMENT_BASE_PARTITION
+                .at_offset(ROLE_ASSIGNMENT_FIELDS_PARTITION_OFFSET)
+                .unwrap(),
+            role_assignment_fields_partition,
+        );
+    }
+
     //-------------------
     // SYSTEM PARTITIONS:
     //-------------------
@@ -528,7 +578,7 @@ pub fn create_bootstrap_package_partitions(
                     blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
                     outer_obj_info: OuterObjectInfo::default(),
                     features: own_features.feature_names_string_set(),
-                    instance_schema: None,
+                    generic_substitutions: vec![],
                 },
             })),
         );
@@ -558,7 +608,7 @@ where
         PackageFeatureSet {
             package_royalty: true,
         },
-        None,
+        GenericArgs::default(),
     )?;
 
     let address = api.globalize(
@@ -668,7 +718,7 @@ impl PackageNativePackage {
                             PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                         )
                     ),
-                    method_auth: MethodAuthTemplate::StaticRoles(
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(
                         roles_template! {
                             roles {
                                 SECURIFY_OWNER_ROLE;
@@ -751,6 +801,7 @@ impl PackageNativePackage {
         definition: PackageDefinition,
         vm_type: VmType,
         original_code: Vec<u8>,
+        system_instructions: BTreeMap<String, Vec<SystemInstruction>>,
     ) -> Result<PackageStateInit, RuntimeError> {
         // Validate schema
         validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
@@ -797,7 +848,8 @@ impl PackageNativePackage {
 
         {
             for (blueprint_name, definition_init) in definition.blueprints {
-                let blueprint_version_key = BlueprintVersionKey::new_default(blueprint_name);
+                let blueprint_version_key =
+                    BlueprintVersionKey::new_default(blueprint_name.clone());
 
                 blueprint_version_auth_configs.insert(
                     blueprint_version_key.clone().into_key(),
@@ -838,8 +890,11 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: function_schema_init.receiver,
-                            input: TypePointer::Package(TypeIdentifier(schema_hash, input)),
-                            output: TypePointer::Package(TypeIdentifier(schema_hash, output)),
+                            input: BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, input)),
+                            output: BlueprintPayloadDef::Static(TypeIdentifier(
+                                schema_hash,
+                                output,
+                            )),
                         },
                     );
                     let export = PackageExport {
@@ -853,11 +908,28 @@ impl PackageNativePackage {
                 for (key, type_ref) in definition_init.schema.events.event_schema {
                     let index = match type_ref {
                         TypeRef::Static(index) => {
-                            TypePointer::Package(TypeIdentifier(schema_hash, index))
+                            BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, index))
                         }
-                        TypeRef::Generic(index) => TypePointer::Instance(index),
+                        TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                     };
                     events.insert(key, index);
+                }
+
+                let system_instructions = system_instructions
+                    .get(&blueprint_name)
+                    .cloned()
+                    .unwrap_or_default();
+
+                let mut system_mappings = BTreeMap::new();
+                for system_instruction in system_instructions {
+                    match system_instruction {
+                        SystemInstruction::MapCollectionToPhysicalPartition {
+                            collection_index,
+                            partition_num,
+                        } => {
+                            system_mappings.insert(collection_index as usize, partition_num);
+                        }
+                    }
                 }
 
                 let definition = BlueprintDefinition {
@@ -871,6 +943,7 @@ impl PackageNativePackage {
                         state: IndexedStateSchema::from_schema(
                             schema_hash,
                             definition_init.schema.state,
+                            system_mappings,
                         ),
                     },
                     function_exports,
@@ -940,6 +1013,7 @@ impl PackageNativePackage {
             definition,
             VmType::Native,
             native_package_code_id.to_be_bytes().to_vec(),
+            Default::default(),
         )?;
         let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
@@ -963,8 +1037,12 @@ impl PackageNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         validate_royalties(&definition, api)?;
-        let package_structure =
-            Self::validate_and_build_package_state_init(definition, VmType::ScryptoV1, code)?;
+        let package_structure = Self::validate_and_build_package_state_init(
+            definition,
+            VmType::ScryptoV1,
+            code,
+            Default::default(),
+        )?;
 
         let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: PACKAGE_PACKAGE,
@@ -1004,8 +1082,12 @@ impl PackageNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         validate_royalties(&definition, api)?;
-        let package_structure =
-            Self::validate_and_build_package_state_init(definition, VmType::ScryptoV1, code)?;
+        let package_structure = Self::validate_and_build_package_state_init(
+            definition,
+            VmType::ScryptoV1,
+            code,
+            Default::default(),
+        )?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
         let role_assignment = SecurifiedPackage::create_advanced(owner_role, api)?;
 
@@ -1086,8 +1168,7 @@ impl PackageRoyaltyNativeBlueprint {
             apply_royalty_cost(
                 api,
                 royalty_charge,
-                RoyaltyRecipient::Package(package_address),
-                vault_id.0,
+                RoyaltyRecipient::Package(package_address, vault_id.0),
             )?;
 
             api.kernel_close_substate(handle)?;

@@ -149,7 +149,7 @@ fn arrange_access_controller_big_vault() -> (
                     .build(),
                 vec![],
             );
-            let commit = receipt.expect_commit_ignore_result();
+            let commit = receipt.expect_commit_ignore_outcome();
             if !commit.outcome.is_success() {
                 bucket_size -= 1;
                 break;
@@ -171,7 +171,7 @@ fn arrange_access_controller_big_vault() -> (
                     .build(),
                 vec![],
             );
-            let commit = receipt.expect_commit_ignore_result();
+            let commit = receipt.expect_commit_ignore_outcome();
             if commit.outcome.is_success() {
                 let access_controller =
                     receipt.expect_commit_success().new_component_addresses()[0];

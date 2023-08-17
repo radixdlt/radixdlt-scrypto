@@ -65,7 +65,12 @@ impl FungibleVaultBlueprint {
         // Create node
         let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;
 
-        Runtime::emit_event(api, WithdrawResourceEvent::Amount(taken.amount()))?;
+        Runtime::emit_event(
+            api,
+            events::fungible_vault::WithdrawEvent {
+                amount: taken.amount(),
+            },
+        )?;
 
         Ok(bucket)
     }
@@ -83,7 +88,7 @@ impl FungibleVaultBlueprint {
         // Put
         Self::internal_put(other_bucket.liquid, api)?;
 
-        Runtime::emit_event(api, DepositResourceEvent::Amount(amount))?;
+        Runtime::emit_event(api, events::fungible_vault::DepositEvent { amount })?;
 
         Ok(())
     }
@@ -92,7 +97,9 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let amount = Self::liquid_amount(api)? + Self::locked_amount(api)?;
+        let amount = Self::liquid_amount(api)?
+            .safe_add(Self::locked_amount(api)?)
+            .unwrap();
 
         Ok(amount)
     }
@@ -151,7 +158,7 @@ impl FungibleVaultBlueprint {
         api.field_close(vault_handle)?;
 
         // Emitting an event once the fee has been locked
-        Runtime::emit_event(api, LockFeeEvent { amount })?;
+        Runtime::emit_event(api, events::fungible_vault::LockFeeEvent { amount })?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -173,7 +180,7 @@ impl FungibleVaultBlueprint {
 
         let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;
 
-        Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
+        Runtime::emit_event(api, events::fungible_vault::RecallEvent { amount })?;
 
         Ok(bucket)
     }
@@ -283,7 +290,7 @@ impl FungibleVaultBlueprint {
 
         // Take from liquid if needed
         if amount > max_locked {
-            let delta = amount - max_locked;
+            let delta = amount.safe_sub(max_locked).unwrap();
             Self::internal_take(delta, api)?;
         }
 
@@ -318,7 +325,7 @@ impl FungibleVaultBlueprint {
 
         api.field_write_typed(handle, &locked)?;
 
-        let delta = max_locked - locked.amount();
+        let delta = max_locked.safe_sub(locked.amount()).unwrap();
         Self::internal_put(LiquidFungibleResource::new(delta), api)
     }
 

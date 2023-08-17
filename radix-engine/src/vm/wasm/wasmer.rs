@@ -283,19 +283,37 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn cost_unit_limit(env: &WasmerInstanceEnv) -> Result<u32, RuntimeError> {
+        pub fn execution_cost_unit_limit(env: &WasmerInstanceEnv) -> Result<u32, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             runtime
-                .cost_unit_limit()
+                .execution_cost_unit_limit()
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
-        pub fn cost_unit_price(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn execution_cost_unit_price(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .cost_unit_price()
+                .execution_cost_unit_price()
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn finalization_cost_unit_limit(env: &WasmerInstanceEnv) -> Result<u32, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            runtime
+                .finalization_cost_unit_limit()
+                .map_err(|e| RuntimeError::user(Box::new(e)))
+        }
+
+        pub fn finalization_cost_unit_price(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .finalization_cost_unit_price()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -678,8 +696,10 @@ impl WasmerModule {
                 CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
                 NEW_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_object),
                 ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), allocate_global_address),
-                COST_UNIT_LIMIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), cost_unit_limit),
-                COST_UNIT_PRICE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), cost_unit_price),
+                EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), execution_cost_unit_limit),
+                EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), execution_cost_unit_price),
+                FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), finalization_cost_unit_limit),
+                FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), finalization_cost_unit_price),
                 TIP_PERCENTAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), tip_percentage),
                 FEE_BALANCE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), fee_balance),
                 GLOBALIZE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),

@@ -2,7 +2,10 @@ use radix_engine::types::*;
 
 // Import and re-export these types so they are available easily with a single import
 pub use radix_engine::blueprints::access_controller::*;
-pub use radix_engine::blueprints::account::*;
+pub use radix_engine::blueprints::account::{
+    AccountAuthorizedDepositorEntryContents, AccountBlueprint, AccountError, AccountNativePackage,
+    AccountResourcePreferenceEntryContents, AccountSubstate, AccountVaultEntryContents,
+};
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
 pub use radix_engine::blueprints::pool::multi_resource_pool;
@@ -68,6 +71,7 @@ use transaction::prelude::IntentHash;
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
     TypeInfoModule(TypedTypeInfoModuleSubstateKey),
+    SchemaModule(TypedSchemaSubstateKey),
     RoleAssignmentModule(TypedRoleAssignmentSubstateKey),
     RoyaltyModule(TypedRoyaltyModuleSubstateKey),
     MetadataModule(TypedMetadataModuleSubstateKey),
@@ -94,6 +98,11 @@ impl TypedSubstateKey {
 #[derive(Debug, Clone)]
 pub enum TypedTypeInfoModuleSubstateKey {
     TypeInfoField(TypeInfoField),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedSchemaSubstateKey {
+    SchemaKey(SchemaHash),
 }
 
 #[derive(Debug, Clone)]
@@ -175,6 +184,12 @@ pub fn to_typed_substate_key(
         TYPE_INFO_FIELD_PARTITION => {
             TypedSubstateKey::TypeInfoModule(TypedTypeInfoModuleSubstateKey::TypeInfoField(
                 TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
+            ))
+        }
+        SCHEMAS_PARTITION => {
+            let key = substate_key.for_map().ok_or_else(|| error("Schema key"))?;
+            TypedSubstateKey::SchemaModule(TypedSchemaSubstateKey::SchemaKey(
+                scrypto_decode(key).map_err(|_| error("Schema key"))?,
             ))
         }
         METADATA_BASE_PARTITION => {
@@ -392,6 +407,7 @@ fn to_typed_object_substate_key_internal(
 #[derive(Debug)]
 pub enum TypedSubstateValue {
     TypeInfoModule(TypedTypeInfoModuleSubstateValue),
+    Schema(KeyValueEntrySubstate<ScryptoSchema>),
     RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue),
     RoyaltyModule(TypedRoyaltyModuleSubstateValue),
     MetadataModule(TypedMetadataModuleSubstateValue),
@@ -550,6 +566,7 @@ fn to_typed_substate_value_internal(
                 }
             })
         }
+        TypedSubstateKey::SchemaModule(_) => TypedSubstateValue::Schema(scrypto_decode(data)?),
         TypedSubstateKey::RoleAssignmentModule(role_assignment_key) => match role_assignment_key {
             TypedRoleAssignmentSubstateKey::RoleAssignmentField(role_assignment_field_offset) => {
                 match role_assignment_field_offset {

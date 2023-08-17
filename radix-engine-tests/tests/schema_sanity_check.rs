@@ -7,7 +7,7 @@ use radix_engine::{
 };
 use radix_engine_common::prelude::well_known_scrypto_custom_types::*;
 use radix_engine_interface::schema::TypeRef;
-use radix_engine_queries::typed_substate_layout::TypePointer;
+use radix_engine_queries::typed_substate_layout::BlueprintPayloadDef;
 use sbor::basic_well_known_types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -104,7 +104,7 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             println!("Checking blueprint {:?}", key.blueprint);
             if let Some(fields) = definition.interface.state.fields {
                 for (i, f) in fields.1.iter().enumerate() {
-                    let result = check_type_pointer(&schemas_by_hash, &f.field);
+                    let result = check_payload_def(&schemas_by_hash, &f.field);
                     if result.is_not_safe() {
                         println!("Field {:?} is {:?}", i, result);
                     }
@@ -114,9 +114,9 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             for (partition, collection_schema) in collections {
                 match collection_schema {
                     BlueprintCollectionSchema::KeyValueStore(kv) => {
-                        let result = check_type_pointers(&schemas_by_hash, &[kv.key, kv.value]);
+                        let result = check_payload_defs(&schemas_by_hash, &[kv.key, kv.value]);
                         if result.is_not_safe() {
-                            println!("Partition {:?} is {:?}", partition.0, result);
+                            println!("Partition {:?} is {:?}", partition, result);
                         }
                     }
                     BlueprintCollectionSchema::Index(_) => {
@@ -129,14 +129,14 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             }
             let functions = definition.interface.functions;
             for (name, func) in functions {
-                let result = check_type_pointers(&schemas_by_hash, &[func.input, func.output]);
+                let result = check_payload_defs(&schemas_by_hash, &[func.input, func.output]);
                 if result.is_not_safe() {
                     println!("Function {:?} is {:?}", name, result);
                 }
             }
             let events = definition.interface.events;
             for (name, ty) in events {
-                let result = check_type_pointer(&schemas_by_hash, &ty);
+                let result = check_payload_def(&schemas_by_hash, &ty);
                 if result.is_not_safe() {
                     println!("Event {:?} is {:?}", name, result);
                 }
@@ -145,12 +145,12 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
     }
 }
 
-fn check_type_pointers(
+fn check_payload_defs(
     schemas_by_hash: &IndexMap<SchemaHash, ScryptoSchema>,
-    type_pointers: &[TypePointer],
+    type_pointers: &[BlueprintPayloadDef],
 ) -> CheckResult {
     for ty in type_pointers {
-        let result = check_type_pointer(schemas_by_hash, ty);
+        let result = check_payload_def(schemas_by_hash, ty);
         if result.is_not_safe() {
             return result;
         }
@@ -158,16 +158,16 @@ fn check_type_pointers(
     return CheckResult::Safe;
 }
 
-fn check_type_pointer(
+fn check_payload_def(
     schemas_by_hash: &IndexMap<SchemaHash, ScryptoSchema>,
-    type_pointer: &TypePointer,
+    type_pointer: &BlueprintPayloadDef,
 ) -> CheckResult {
     match type_pointer {
-        TypePointer::Package(type_identifier) => check_type(
+        BlueprintPayloadDef::Static(type_identifier) => check_type(
             schemas_by_hash.get(&type_identifier.0).unwrap(),
             type_identifier.1,
         ),
-        TypePointer::Instance(_) => CheckResult::Safe,
+        BlueprintPayloadDef::Generic(_) => CheckResult::Safe,
     }
 }
 
@@ -398,7 +398,7 @@ pub fn test_fake_bucket() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(e))
+        RuntimeError::SystemError(SystemError::TypeCheckError(e))
             if format!("{:?}", e).contains("Expected = Own<IsBucket>") =>
         {
             true

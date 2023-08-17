@@ -39,16 +39,11 @@ if [[ ${ledger_state} != *"2023-01-27T13:01:00Z"* ]];then
 fi
 
 # Test - show account
-# TODO: renable after showing resource metadata in component dump
-# account_dump=`$resim show $account`
-# if [[ ${account_dump} != *"XRD"* ]];then
-#     echo "XRD not present!"
-#     exit 1
-# fi
-# if [[ ${account_dump} != *"Owner Badge"* ]];then
-#     echo "Owner badge not present!"
-#     exit 1
-# fi
+account_dump=`$resim show $account`
+if [[ ${account_dump} != *"XRD"* ]];then
+    echo "XRD not present!"
+    exit 1
+fi
 
 # Test - create fixed supply badge
 minter_badge=`$resim new-badge-fixed 1 --name 'MinterBadge' | awk '/Resource:/ {print $NF}'`

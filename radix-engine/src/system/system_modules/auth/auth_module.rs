@@ -61,7 +61,7 @@ pub enum AuthorityListAuthorizationResult {
 
 pub enum ResolvedPermission {
     RoleList {
-        role_assignment_of: NodeId,
+        role_assignment_of: GlobalAddress,
         module_id: ObjectModuleId,
         role_list: RoleList,
     },
@@ -314,7 +314,7 @@ impl AuthModule {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                         outer_obj_info: OuterObjectInfo::default(),
                         features: btreeset!(),
-                        instance_schema: None,
+                        generic_substitutions: vec![],
                     }
                 }))
             ),
@@ -431,7 +431,9 @@ impl AuthModule {
         let method_key = MethodKey::new(ident);
 
         if let ObjectModuleId::RoleAssignment = module_id {
-            return RoleAssignmentNativePackage::authorization(receiver, ident, args, api);
+            // Only global objects have role assignment modules
+            let global_address = GlobalAddress::new_or_panic(receiver.0);
+            return RoleAssignmentNativePackage::authorization(&global_address, ident, args, api);
         }
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
@@ -444,7 +446,7 @@ impl AuthModule {
         let receiver_object_info = api.get_object_info(&receiver)?;
 
         let (role_assignment_of, method_permissions) = match auth_template {
-            MethodAuthTemplate::StaticRoles(static_roles) => {
+            MethodAuthTemplate::StaticRoleDefinition(static_roles) => {
                 let role_assignment_of = match static_roles.roles {
                     RoleSpecification::Normal(..) => {
                         // Non-globalized objects do not have access rules module
@@ -452,12 +454,9 @@ impl AuthModule {
                             return Ok(ResolvedPermission::AllowAll);
                         }
 
-                        receiver.clone()
+                        GlobalAddress::new_or_panic(receiver.0)
                     }
-                    RoleSpecification::UseOuter => {
-                        let role_assignment_of = receiver_object_info.get_outer_object();
-                        role_assignment_of.into_node_id()
-                    }
+                    RoleSpecification::UseOuter => receiver_object_info.get_outer_object(),
                 };
 
                 (role_assignment_of, static_roles.methods)

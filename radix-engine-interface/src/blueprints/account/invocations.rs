@@ -10,7 +10,7 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor, ManifestSbor)]
 pub enum ResourcePreference {
     /// The resource is on the allow list.
     Allowed,
@@ -19,7 +19,7 @@ pub enum ResourcePreference {
     Disallowed,
 }
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor, Clone)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, ScryptoSbor, ManifestSbor, Clone, Copy, Hash)]
 pub enum DefaultDepositRule {
     /// Allows the deposit of all resources - the deny list is honored in this state.o
     Accept,

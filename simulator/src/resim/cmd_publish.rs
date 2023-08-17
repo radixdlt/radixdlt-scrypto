@@ -4,8 +4,8 @@ use radix_engine::blueprints::macros::*;
 use radix_engine::track::IntoDatabaseUpdates;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedStateSchema, PackageExport,
-    TypePointer, VmType, *,
+    BlueprintDefinition, BlueprintDependencies, BlueprintPayloadDef, FunctionSchema,
+    IndexedStateSchema, PackageExport, VmType, *,
 };
 use radix_engine_interface::schema::TypeRef;
 use radix_engine_queries::typed_substate_layout::*;
@@ -122,16 +122,16 @@ impl Publish {
                         FunctionSchema {
                             receiver: setup.receiver,
                             input: match setup.input {
-                                TypeRef::Static(type_index) => {
-                                    TypePointer::Package(TypeIdentifier(schema_hash, type_index))
-                                }
-                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                                TypeRef::Static(type_index) => BlueprintPayloadDef::Static(
+                                    TypeIdentifier(schema_hash, type_index),
+                                ),
+                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                             },
                             output: match setup.output {
-                                TypeRef::Static(type_index) => {
-                                    TypePointer::Package(TypeIdentifier(schema_hash, type_index))
-                                }
-                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                                TypeRef::Static(type_index) => BlueprintPayloadDef::Static(
+                                    TypeIdentifier(schema_hash, type_index),
+                                ),
+                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                             },
                         },
                     );
@@ -152,13 +152,19 @@ impl Publish {
                             key,
                             match index {
                                 TypeRef::Static(index) => {
-                                    TypePointer::Package(TypeIdentifier(schema_hash, index))
+                                    BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, index))
                                 }
-                                TypeRef::Generic(index) => TypePointer::Instance(index),
+                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
                             },
                         )
                     })
                     .collect();
+
+                let state = IndexedStateSchema::from_schema(
+                    schema_hash,
+                    blueprint_definition.schema.state,
+                    Default::default(),
+                );
 
                 let def = BlueprintDefinition {
                     interface: BlueprintInterface {
@@ -168,10 +174,7 @@ impl Publish {
                         feature_set: blueprint_definition.feature_set,
                         functions,
                         events,
-                        state: IndexedStateSchema::from_schema(
-                            schema_hash,
-                            blueprint_definition.schema.state,
-                        ),
+                        state,
                     },
                     function_exports,
                     hook_exports: BTreeMap::new(),

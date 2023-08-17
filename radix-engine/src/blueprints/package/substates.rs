@@ -31,7 +31,7 @@ declare_native_blueprint_state! {
             value_type: {
                 kind: StaticSingleVersioned,
             },
-            can_own: false,
+            allow_ownership: false,
         },
         blueprint_version_dependencies: KeyValue {
             entry_ident: BlueprintVersionDependencies,
@@ -42,7 +42,7 @@ declare_native_blueprint_state! {
             value_type: {
                 kind: StaticSingleVersioned,
             },
-            can_own: false,
+            allow_ownership: false,
         },
         schemas: KeyValue {
             entry_ident: Schema,
@@ -51,9 +51,13 @@ declare_native_blueprint_state! {
                 the_type: SchemaHash,
             },
             value_type: {
-                kind: StaticSingleVersioned,
+                kind: Static,
+                the_type: ScryptoSchema,
             },
-            can_own: false,
+            allow_ownership: false,
+            options: {
+                mapped_physical_partition: SCHEMAS_PARTITION,
+            },
         },
         blueprint_version_royalty_configs: KeyValue {
             entry_ident: BlueprintVersionRoyaltyConfig,
@@ -64,7 +68,7 @@ declare_native_blueprint_state! {
             value_type: {
                 kind: StaticSingleVersioned,
             },
-            can_own: false,
+            allow_ownership: false,
         },
         blueprint_version_auth_configs: KeyValue {
             entry_ident: BlueprintVersionAuthConfig,
@@ -75,7 +79,7 @@ declare_native_blueprint_state! {
             value_type: {
                 kind: StaticSingleVersioned,
             },
-            can_own: false,
+            allow_ownership: false,
         },
         code_vm_type: KeyValue {
             entry_ident: CodeVmType,
@@ -86,7 +90,7 @@ declare_native_blueprint_state! {
             value_type: {
                 kind: StaticSingleVersioned,
             },
-            can_own: false,
+            allow_ownership: false,
         },
         code_original_code: KeyValue {
             entry_ident: CodeOriginalCode,
@@ -97,7 +101,7 @@ declare_native_blueprint_state! {
             value_type: {
                 kind: StaticSingleVersioned,
             },
-            can_own: false,
+            allow_ownership: false,
         },
         code_instrumented_code: KeyValue {
             entry_ident: CodeInstrumentedCode,
@@ -108,7 +112,7 @@ declare_native_blueprint_state! {
             value_type: {
                 kind: StaticSingleVersioned,
             },
-            can_own: false,
+            allow_ownership: false,
         },
     }
 }

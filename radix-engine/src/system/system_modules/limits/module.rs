@@ -27,7 +27,7 @@ pub enum TransactionLimitsError {
 
 pub struct TransactionLimitsConfig {
     pub max_number_of_substates_in_track: usize,
-    pub max_number_of_substates_in_heap: usize, // FIXME: enforce this limits in heap!
+    pub max_number_of_substates_in_heap: usize, // TODO: enforce this limits in heap!
     pub max_substate_key_size: usize,
     pub max_substate_size: usize,
     pub max_invoke_payload_size: usize,
@@ -81,8 +81,8 @@ impl LimitsModule {
 
     pub fn process_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError> {
         match store_access {
-            StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
-            StoreAccess::NewEntryInTrack => {
+            StoreAccess::ReadFromDb(..) | StoreAccess::ReadFromDbNotFound(..) => {}
+            StoreAccess::NewEntryInTrack(_) => {
                 self.number_of_substates_in_track += 1;
             }
         }

@@ -8,7 +8,7 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, FieldValue, KVEntry, OBJECT_HANDLE_SELF,
+    ClientApi, CollectionIndex, FieldValue, GenericArgs, KVEntry, OBJECT_HANDLE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -223,9 +223,14 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_field_index,
         };
 
-        let instance_schema = InstanceSchemaInit {
-            schema: non_fungible_schema.schema,
-            instance_type_lookup: vec![non_fungible_schema.non_fungible],
+        let schema_hash = non_fungible_schema.schema.generate_schema_hash();
+
+        let generic_args = GenericArgs {
+            additional_schema: Some(non_fungible_schema.schema),
+            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
+                schema_hash,
+                non_fungible_schema.non_fungible,
+            ))],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
@@ -243,7 +248,7 @@ impl NonFungibleResourceManagerBlueprint {
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
-            Some(instance_schema),
+            generic_args,
             vec![
                 FieldValue::immutable(&id_type),
                 FieldValue::immutable(&mutable_fields),
@@ -327,9 +332,13 @@ impl NonFungibleResourceManagerBlueprint {
             non_fungibles.insert(scrypto_encode(&id).unwrap(), kv_entry);
         }
 
-        let instance_schema = InstanceSchemaInit {
-            schema: non_fungible_schema.schema,
-            instance_type_lookup: vec![non_fungible_schema.non_fungible],
+        let schema_hash = non_fungible_schema.schema.generate_schema_hash();
+        let generic_args = GenericArgs {
+            additional_schema: Some(non_fungible_schema.schema),
+            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
+                schema_hash,
+                non_fungible_schema.non_fungible,
+            ))],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
@@ -347,7 +356,7 @@ impl NonFungibleResourceManagerBlueprint {
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
-            Some(instance_schema),
+            generic_args,
             vec![
                 FieldValue::immutable(&id_type),
                 FieldValue::immutable(&mutable_fields),
@@ -412,9 +421,13 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_field_index,
         };
 
-        let instance_schema = InstanceSchemaInit {
-            schema: non_fungible_schema.schema,
-            instance_type_lookup: vec![non_fungible_schema.non_fungible],
+        let schema_hash = non_fungible_schema.schema.generate_schema_hash();
+        let generic_args = GenericArgs {
+            additional_schema: Some(non_fungible_schema.schema),
+            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
+                schema_hash,
+                non_fungible_schema.non_fungible,
+            ))],
         };
 
         let (mut features, roles) = resource_roles.to_features_and_roles();
@@ -432,7 +445,7 @@ impl NonFungibleResourceManagerBlueprint {
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
-            Some(instance_schema),
+            generic_args,
             vec![
                 FieldValue::immutable(&NonFungibleIdType::RUID),
                 FieldValue::immutable(&mutable_fields),
@@ -491,8 +504,7 @@ impl NonFungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            let amount: Decimal = entries.len().into();
-            total_supply += amount;
+            total_supply = total_supply.safe_add(entries.len()).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
@@ -552,7 +564,7 @@ impl NonFungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply += 1;
+            total_supply = total_supply.safe_add(1).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
@@ -613,8 +625,7 @@ impl NonFungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            let amount: Decimal = entries.len().into();
-            total_supply += amount;
+            total_supply = total_supply.safe_add(entries.len()).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
@@ -817,7 +828,7 @@ impl NonFungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply -= other_bucket.liquid.amount();
+            total_supply = total_supply.safe_sub(other_bucket.liquid.amount()).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 

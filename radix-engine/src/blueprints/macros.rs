@@ -303,9 +303,10 @@ macro_rules! declare_native_blueprint_state {
                     entry_ident: $collection_ident:ident,
                     key_type: $collection_key_type:tt,
                     value_type: $collection_value_type:tt,
-                    can_own: $collection_can_own:expr
-                    // Collection options for (eg) passing in a property name
-                    // of the sorted index parameter for SortedIndex
+                    allow_ownership: $collection_allow_ownership:expr
+                    // Advanced collection options for (eg):
+                    // - Passing in a property name of the sorted index parameter for SortedIndex
+                    // - Specifying a Logical partition mapping
                     $(, options: $collection_options:tt)?
                     $(,)? // Optional trailing comma
                 }
@@ -444,29 +445,56 @@ macro_rules! declare_native_blueprint_state {
                 }
 
                 #[repr(u8)]
-                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
                 pub enum [<$blueprint_ident Partition>] {
                     Field,
                     $([<$collection_ident $collection_type>],)*
                 }
 
                 impl [<$blueprint_ident Partition>] {
-                    pub const fn offset(&self) -> PartitionOffset {
-                        PartitionOffset(*self as u8)
+                    pub const fn description(&self) -> PartitionDescription {
+                        // NOTE: This should really be a fixed mapping - but it's hard to do with declarative macros
+                        // It's a const function, so might hopefully be compiled away
+                        let mut module_partition_offset = 0;
+                        if (*self as u8) == (Self::Field as u8) {
+                            return PartitionDescription::Logical(PartitionOffset(module_partition_offset));
+                        }
+                        $(
+                            generate_next_partition_description!(
+                                let current_partition_description,
+                                module_partition_offset,
+                                $($collection_options)?
+                            );
+
+                            if (*self as u8) == (Self::[<$collection_ident $collection_type>] as u8) {
+                                return current_partition_description;
+                            }
+                        )*
+                        panic!("Partition somehow did not match for calculating its description")
                     }
 
                     pub const fn as_main_partition(&self) -> PartitionNumber {
-                        match MAIN_BASE_PARTITION.at_offset(self.offset()) {
-                            // Work around .unwrap() on Option not being const
-                            Some(x) => x,
-                            None => panic!("Offset larger than allowed value")
+                        match self.description() {
+                            PartitionDescription::Physical(partition_num) => partition_num,
+                            PartitionDescription::Logical(offset) => {
+                                match MAIN_BASE_PARTITION.at_offset(offset) {
+                                    // This map works around unwrap/expect on Option not being const
+                                    Some(x) => x,
+                                    None => panic!("Offset larger than allowed value")
+                                }
+                            }
                         }
                     }
                 }
 
-                impl From<[<$blueprint_ident Partition>]> for PartitionOffset {
-                    fn from(value: [<$blueprint_ident Partition>]) -> Self {
-                        PartitionOffset(value as u8)
+                impl TryFrom<[<$blueprint_ident Partition>]> for PartitionOffset {
+                    type Error = ();
+
+                    fn try_from(value: [<$blueprint_ident Partition>]) -> Result<Self, Self::Error> {
+                        match value.description() {
+                            PartitionDescription::Logical(offset) => Ok(offset),
+                            PartitionDescription::Physical(partition_num) => Err(()),
+                        }
                     }
                 }
 
@@ -474,7 +502,30 @@ macro_rules! declare_native_blueprint_state {
                     type Error = ();
 
                     fn try_from(offset: PartitionOffset) -> Result<Self, Self::Error> {
-                        Self::from_repr(offset.0).ok_or(())
+                        // NOTE: This should really be a fixed mapping - but it's hard to do with declarative macros
+                        // Hopefully this will be compiled away because Partition::description is const
+                        let description = PartitionDescription::Logical(offset);
+                        if description == Self::Field.description() {
+                            return Ok(Self::Field);
+                        }
+                        $(
+                            if description == Self::[<$collection_ident $collection_type>].description() {
+                                return Ok(Self::[<$collection_ident $collection_type>]);
+                            }
+                        )*
+                        Err(())
+                    }
+                }
+
+                #[repr(u8)]
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+                pub enum [<$blueprint_ident Collection>] {
+                    $([<$collection_ident $collection_type>],)*
+                }
+
+                impl [<$blueprint_ident Collection>] {
+                    pub const fn collection_index(&self) -> u8 {
+                        *self as u8
                     }
                 }
 
@@ -603,7 +654,7 @@ macro_rules! declare_native_blueprint_state {
                                 [<$blueprint_ident $collection_ident KeyPayload>],
                                 $collection_value_type,
                                 [<$blueprint_ident $collection_ident EntryPayload>],
-                                $collection_can_own
+                                $collection_allow_ownership
                             ));
                         )*
                         BlueprintStateSchemaInit {
@@ -777,7 +828,7 @@ macro_rules! declare_native_blueprint_state {
                         api: &mut Y,
                         own_features: [<$blueprint_ident FeatureSet>],
                         $(outer_object_features: [<$outer_blueprint_ident FeatureSet>],)?
-                        instance_schema: Option<InstanceSchemaInit>,
+                        generic_args: GenericArgs,
                     ) -> Result<NodeId, RuntimeError> {
                         let (field_values, all_collection_entries) = self.into_system_substates_legacy(
                             [<$blueprint_ident FeatureChecks>]::ForFeatures {
@@ -788,7 +839,7 @@ macro_rules! declare_native_blueprint_state {
                         api.new_object(
                             stringify!($blueprint_ident),
                             own_features.feature_names_str(),
-                            instance_schema,
+                            generic_args,
                             field_values, // TODO: Change to take the IndexMap and get rid of into_system_substates_legacy
                             all_collection_entries, // TODO: Change to take other collections, not just KVEntry
                         )
@@ -941,28 +992,28 @@ mod helper_macros {
     pub(crate) use generate_system_substate_type_alias;
 
     macro_rules! map_collection_schema {
-        (KeyValue, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $can_own:expr$(,)?) => {
+        (KeyValue, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $allow_ownership:expr$(,)?) => {
             BlueprintCollectionSchema::KeyValueStore(BlueprintKeyValueSchema {
                 key: map_type_ref!($aggregator, $key_type, $key_content_alias),
                 value: map_type_ref!($aggregator, $value_type, $value_content_alias),
-                can_own: $can_own,
+                allow_ownership: $allow_ownership,
             })
         };
-        (Index, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $can_own:expr$(,)?) => {
+        (Index, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $allow_ownership:expr$(,)?) => {
             BlueprintCollectionSchema::Index(BlueprintKeyValueSchema {
                 key: map_type_ref!($aggregator, $key_type, $key_content_alias),
                 value: map_type_ref!($aggregator, $value_type, $value_content_alias),
-                can_own: $can_own,
+                allow_ownership: $allow_ownership,
             })
         };
-        (SortedIndex, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $can_own:expr$(,)?) => {
+        (SortedIndex, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $allow_ownership:expr$(,)?) => {
             BlueprintCollectionSchema::SortedIndex(BlueprintKeyValueSchema {
                 key: map_type_ref!($aggregator, $key_type, $key_content_alias),
                 value: map_type_ref!($aggregator, $value_type, $value_content_alias),
-                can_own: $can_own,
+                allow_ownership: $allow_ownership,
             })
         };
-        ($unknown_system_substate_type:ident, $aggregator:ident, $collection_key_type:tt, $collection_value_type:tt, $collection_can_own:expr$(,)?) => {
+        ($unknown_system_substate_type:ident, $aggregator:ident, $collection_key_type:tt, $collection_value_type:tt, $collection_allow_ownership:expr$(,)?) => {
             compile_error!(concat!(
                 "Unrecognized system collection substate type: `",
                 stringify!($unknown_system_substate_type),
@@ -1045,6 +1096,33 @@ mod helper_macros {
 
     #[allow(unused)]
     pub(crate) use map_entry_substate_to_kv_entry;
+
+    macro_rules! generate_next_partition_description {
+        (
+            let $current_partition_description:ident,
+            $module_partition_offset:ident,
+            {
+                mapped_physical_partition: $physical_partition:expr$(,)?
+                // When other options are added, need to explicitly add
+                // an ordering of optional other key / values
+            }
+        ) => {
+            let $current_partition_description =
+                PartitionDescription::Physical($physical_partition);
+        };
+        (
+            let $current_partition_description:ident,
+            $module_partition_offset:ident,
+            $($non_matching_stuff:tt)?
+        ) => {
+            $module_partition_offset += 1;
+            let $current_partition_description =
+                PartitionDescription::Logical(PartitionOffset($module_partition_offset));
+        };
+    }
+
+    #[allow(unused)]
+    pub(crate) use generate_next_partition_description;
 }
 
 #[cfg(test)]
@@ -1090,7 +1168,7 @@ mod tests {
                 value_type: {
                     kind: StaticSingleVersioned,
                 },
-                can_own: true,
+                allow_ownership: true,
             },
             abc: Index {
                 entry_ident: MyCoolIndex,
@@ -1101,7 +1179,7 @@ mod tests {
                 value_type: {
                     kind: StaticSingleVersioned,
                 },
-                can_own: true,
+                allow_ownership: true,
             },
             def: SortedIndex {
                 entry_ident: MyCoolSortedIndex,
@@ -1112,7 +1190,7 @@ mod tests {
                 value_type: {
                     kind: StaticSingleVersioned,
                 },
-                can_own: true,
+                allow_ownership: true,
             },
         }
     }

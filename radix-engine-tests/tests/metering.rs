@@ -1,4 +1,5 @@
-use radix_engine::system::system_modules::costing::FeeSummary;
+use radix_engine::transaction::TransactionFeeDetails;
+use radix_engine::transaction::TransactionFeeSummary;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
@@ -112,26 +113,43 @@ fn execute_with_time_logging(
     (receipt, 0)
 }
 
-pub fn load_cost_breakdown(content: &str) -> BTreeMap<String, u32> {
-    let mut breakdown = BTreeMap::<String, u32>::new();
-    content
-        .split("\n")
-        .filter(|x| x.len() > 0)
-        .skip(6)
-        .for_each(|x| {
-            let mut tokens = x.split(",");
-            let entry = tokens.next().unwrap().trim();
+pub fn load_cost_breakdown(content: &str) -> (BTreeMap<String, u32>, BTreeMap<String, u32>) {
+    let mut execution_breakdown = BTreeMap::<String, u32>::new();
+    let mut finalization_breakdown = BTreeMap::<String, u32>::new();
+    let lines: Vec<String> = content.split("\n").map(String::from).collect();
+    let mut is_execution = true;
+    for i in 8..lines.len() {
+        if lines[i].starts_with("-") {
+            let mut tokens = lines[i].split(",");
+            let entry = tokens.next().unwrap().trim()[2..].to_string();
             let cost = tokens.next().unwrap().trim();
-            breakdown.insert(entry.to_string(), u32::from_str(cost).unwrap());
-        });
-    breakdown
+            if is_execution {
+                &mut execution_breakdown
+            } else {
+                &mut finalization_breakdown
+            }
+            .insert(entry, u32::from_str(cost).unwrap());
+        } else {
+            is_execution = false;
+        }
+    }
+    (execution_breakdown, finalization_breakdown)
 }
 
 #[cfg(feature = "alloc")]
-pub fn write_cost_breakdown(_fee_summary: &FeeSummary, _file: &str) {}
+pub fn write_cost_breakdown(
+    _fee_summary: &TransactionFeeSummary,
+    _fee_details: &TransactionFeeDetails,
+    _file: &str,
+) {
+}
 
 #[cfg(not(feature = "alloc"))]
-pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
+pub fn write_cost_breakdown(
+    fee_summary: &TransactionFeeSummary,
+    fee_details: &TransactionFeeDetails,
+    file: &str,
+) {
     use std::fs::File;
     use std::io::Write;
 
@@ -152,28 +170,15 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ Execution Cost (XRD)",
-            fee_summary.total_execution_cost_xrd.to_string(),
-            decimal_to_float(fee_summary.total_execution_cost_xrd / fee_summary.total_cost() * 100)
-        )
-        .as_str(),
-    );
-    buffer.push_str(
-        format!(
-            "{:<75},{:>15}, {:8.1}%\n",
-            "+ Tipping Cost (XRD)",
-            fee_summary.total_tipping_cost_xrd.to_string(),
-            decimal_to_float(fee_summary.total_tipping_cost_xrd / fee_summary.total_cost() * 100)
-        )
-        .as_str(),
-    );
-    buffer.push_str(
-        format!(
-            "{:<75},{:>15}, {:8.1}%\n",
-            "+ State Expansion Cost (XRD)",
-            fee_summary.total_state_expansion_cost_xrd.to_string(),
+            "- Execution Cost (XRD)",
+            fee_summary.total_execution_cost_in_xrd.to_string(),
             decimal_to_float(
-                fee_summary.total_state_expansion_cost_xrd / fee_summary.total_cost() * 100
+                fee_summary
+                    .total_execution_cost_in_xrd
+                    .safe_div(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
             )
         )
         .as_str(),
@@ -181,29 +186,137 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "+ Royalty Cost (XRD)",
-            fee_summary.total_royalty_cost_xrd.to_string(),
-            decimal_to_float(fee_summary.total_royalty_cost_xrd / fee_summary.total_cost() * 100)
+            "- Finalization Cost (XRD)",
+            fee_summary.total_finalization_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary
+                    .total_finalization_cost_in_xrd
+                    .safe_div(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
+            )
         )
         .as_str(),
     );
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "Total Cost Units Consumed",
-            fee_summary.execution_cost_breakdown.values().sum::<u32>(),
+            "- Tipping Cost (XRD)",
+            fee_summary.total_tipping_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary
+                    .total_tipping_cost_in_xrd
+                    .safe_mul(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
+            )
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<75},{:>15}, {:8.1}%\n",
+            "- State Expansion Cost (XRD)",
+            fee_summary.total_storage_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary
+                    .total_storage_cost_in_xrd
+                    .safe_div(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
+            )
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<75},{:>15}, {:8.1}%\n",
+            "- Tipping Cost (XRD)",
+            fee_summary.total_tipping_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary
+                    .total_tipping_cost_in_xrd
+                    .safe_div(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
+            )
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<75},{:>15}, {:8.1}%\n",
+            "- Royalty Cost (XRD)",
+            fee_summary.total_royalty_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary
+                    .total_royalty_cost_in_xrd
+                    .safe_div(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
+            )
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<75},{:>15}, {:8.1}%\n",
+            "Execution Cost Breakdown",
+            fee_details.execution_cost_breakdown.values().sum::<u32>(),
             100.0
         )
         .as_str(),
     );
-    for (k, v) in &fee_summary.execution_cost_breakdown {
+    for (k, v) in &fee_details.execution_cost_breakdown {
         buffer.push_str(
             format!(
-                "{:<75},{:>15}, {:8.1}%\n",
+                "- {:<73},{:>15}, {:8.1}%\n",
                 k,
                 v,
                 decimal_to_float(
-                    Decimal::from(*v) / Decimal::from(fee_summary.execution_cost_sum) * 100
+                    Decimal::from(*v)
+                        .safe_div(Decimal::from(
+                            fee_summary.total_execution_cost_units_consumed
+                        ))
+                        .unwrap()
+                        .safe_mul(100)
+                        .unwrap()
+                )
+            )
+            .as_str(),
+        );
+    }
+    buffer.push_str(
+        format!(
+            "{:<75},{:>15}, {:8.1}%\n",
+            "Finalization Cost Breakdown",
+            fee_details
+                .finalization_cost_breakdown
+                .values()
+                .sum::<u32>(),
+            100.0
+        )
+        .as_str(),
+    );
+    for (k, v) in &fee_details.finalization_cost_breakdown {
+        buffer.push_str(
+            format!(
+                "- {:<73},{:>15}, {:8.1}%\n",
+                k,
+                v,
+                decimal_to_float(
+                    Decimal::from(*v)
+                        .safe_div(Decimal::from(
+                            fee_summary.total_finalization_cost_units_consumed
+                        ))
+                        .unwrap()
+                        .safe_mul(100)
+                        .unwrap()
                 )
             )
             .as_str(),
@@ -216,17 +329,18 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
 
 pub enum Mode {
     OutputCosting(String),
-    AssertCosting(BTreeMap<String, u32>),
+    AssertCosting((BTreeMap<String, u32>, BTreeMap<String, u32>)),
 }
 
 impl Mode {
-    pub fn run(&self, fee_summary: &FeeSummary) {
+    pub fn run(&self, fee_summary: &TransactionFeeSummary, fee_details: &TransactionFeeDetails) {
         match self {
             Mode::OutputCosting(file) => {
-                write_cost_breakdown(fee_summary, file.as_str());
+                write_cost_breakdown(fee_summary, fee_details, file.as_str());
             }
             Mode::AssertCosting(expected) => {
-                assert_eq!(&fee_summary.execution_cost_breakdown, expected);
+                assert_eq!(&fee_details.execution_cost_breakdown, &expected.0);
+                assert_eq!(&fee_details.finalization_cost_breakdown, &expected.1);
             }
         }
     }
@@ -250,9 +364,9 @@ fn run_basic_transfer(mode: Mode) {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
 
-    mode.run(&commit_result.fee_summary);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_basic_transfer_to_virtual_account(mode: Mode) {
@@ -275,9 +389,9 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
 
-    mode.run(&commit_result.fee_summary);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_radiswap(mode: Mode) {
@@ -373,11 +487,11 @@ fn run_radiswap(mode: Mode) {
     );
     let remaining_btc = test_runner.get_component_balance(account3, btc);
     let eth_received = test_runner.get_component_balance(account3, eth);
-    assert_eq!(remaining_btc, btc_amount - btc_to_swap);
+    assert_eq!(remaining_btc, btc_amount.safe_sub(btc_to_swap).unwrap());
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
 
-    mode.run(&commit_result.fee_summary);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_flash_loan(mode: Mode) {
@@ -423,7 +537,7 @@ fn run_flash_loan(mode: Mode) {
 
     // Take loan
     let loan_amount = Decimal::from(50);
-    let repay_amount = loan_amount * dec!("1.001");
+    let repay_amount = loan_amount.safe_mul(dec!("1.001")).unwrap();
     let old_balance = test_runner.get_component_balance(account3, XRD);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
@@ -443,20 +557,22 @@ fn run_flash_loan(mode: Mode) {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
     let new_balance = test_runner.get_component_balance(account3, XRD);
     assert!(test_runner
         .get_component_balance(account3, promise_token_address)
         .is_zero());
     assert_eq!(
-        old_balance - new_balance,
-        commit_result.fee_summary.total_execution_cost_xrd
-            + commit_result.fee_summary.total_tipping_cost_xrd
-            + commit_result.fee_summary.total_state_expansion_cost_xrd
-            + commit_result.fee_summary.total_royalty_cost_xrd
-            + (repay_amount - loan_amount)
+        old_balance.safe_sub(new_balance).unwrap(),
+        receipt
+            .fee_summary
+            .total_cost()
+            .safe_add(repay_amount)
+            .unwrap()
+            .safe_sub(loan_amount)
+            .unwrap()
     );
-    mode.run(&commit_result.fee_summary);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_publish_large_package(mode: Mode) {
@@ -488,8 +604,8 @@ fn run_publish_large_package(mode: Mode) {
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
     // Assert
-    let commit_result = receipt.expect_commit_success();
-    mode.run(&commit_result.fee_summary);
+    receipt.expect_commit_success();
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_mint_small_size_nfts_from_manifest(mode: Mode) {
@@ -580,7 +696,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
         scrypto_encode(&nft_data).unwrap().len()
     );
     println!("Managed to mint {} NFTs", n);
-    mode.run(&receipt.expect_commit_success().fee_summary);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 #[test]

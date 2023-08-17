@@ -7,14 +7,13 @@ use radix_engine_interface::*;
 use radix_engine_store_interface::{
     db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
 };
-use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::FieldSubstate;
+use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::track::TrackedSubstateValue;
 use crate::track::{TrackedNode, Write};
-use crate::transaction::SystemReader;
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
@@ -22,8 +21,10 @@ pub struct StateUpdateSummary {
     pub new_components: IndexSet<ComponentAddress>,
     pub new_resources: IndexSet<ResourceAddress>,
     pub new_vaults: IndexSet<InternalAddress>,
+    /// TODO: remove
     pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
     /// This field accounts for Direct vault recalls (and the owner is not loaded during the transaction);
+    /// TODO: remove
     pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
 }
 
@@ -102,14 +103,14 @@ impl BalanceChange {
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
 pub struct BalanceAccounter<'a, S: SubstateDatabase> {
-    system_reader: SystemReader<'a, S>,
+    system_reader: SystemDatabaseReader<'a, S>,
     tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
 impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
-            system_reader: SystemReader::new(substate_db, tracked),
+            system_reader: SystemDatabaseReader::new_with_overlay(substate_db, tracked),
             tracked,
         }
     }
@@ -152,7 +153,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                                 .entry(resource_address)
                                 .or_insert(BalanceChange::Fungible(Decimal::ZERO))
                                 .fungible();
-                            existing.add_assign(delta);
+                            *existing = existing.safe_add(delta).unwrap();
                         }
                         BalanceChange::NonFungible { added, removed } => {
                             let existing = direct_vault_updates
@@ -221,7 +222,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                                 .entry(resource_address)
                                 .or_insert(BalanceChange::Fungible(Decimal::ZERO))
                                 .fungible();
-                            existing.add_assign(delta);
+                            *existing = existing.safe_add(delta).unwrap();
                         }
                         BalanceChange::NonFungible { added, removed } => {
                             let existing = balance_changes
@@ -305,7 +306,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 };
                 let new_balance = substate.value.0.amount();
 
-                Some(BalanceChange::Fungible(new_balance - old_balance))
+                Some(BalanceChange::Fungible(new_balance.safe_sub(old_balance).unwrap()))
             } else {
                 None
             }

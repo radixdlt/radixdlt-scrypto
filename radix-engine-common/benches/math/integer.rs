@@ -5,7 +5,7 @@ use criterion::{BenchmarkId, Criterion};
 use ethnum::I256 as EthnumI256;
 use num_bigint::BigInt;
 use num_integer::Roots;
-use rug::{ops::Pow as RugPow, Integer};
+//use rug::{ops::Pow as RugPow, Integer};
 
 use crate::macros::QUICK;
 use crate::{bench_ops, ops_fn, ops_root_fn, process_op};
@@ -106,7 +106,7 @@ bench_ops!(BigInt, "root", u32);
 bench_ops!(BigInt, "pow", u32);
 bench_ops!(BigInt, "to_string");
 bench_ops!(BigInt, "from_string");
-
+/*
 ops_fn!(Integer, pow, u32, "clone");
 ops_root_fn!(Integer, root, "clone");
 bench_ops!(Integer, "add");
@@ -117,7 +117,7 @@ bench_ops!(Integer, "root", u32);
 bench_ops!(Integer, "pow", u32);
 bench_ops!(Integer, "to_string");
 bench_ops!(Integer, "from_string");
-
+*/
 ops_fn!(BnumBint256, pow, u32);
 ops_root_fn!(BnumBint256, nth_root);
 bench_ops!(BnumBint256, "add");

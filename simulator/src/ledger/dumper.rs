@@ -6,8 +6,8 @@ use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_queries::typed_substate_layout::PackageCodeOriginalCodeEntrySubstate;
-use radix_engine_queries::{query::ResourceAccounter, typed_substate_layout::PackagePartition};
+use radix_engine_queries::query::ResourceAccounter;
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -41,7 +41,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     writeln!(
         output,
         "{}: {}",
-        "Package".green().bold(),
+        "Package Address".green().bold(),
         package_address.display(&address_bech32_encoder)
     );
     writeln!(
@@ -50,6 +50,13 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         "Code size".green().bold(),
         substate.value.unwrap().0.into_latest().code.len()
     );
+
+    let metadata = get_entity_metadata(package_address.as_node_id(), substate_db);
+    writeln!(output, "{}: {}", "Metadata".green().bold(), metadata.len());
+    for (last, (key, value)) in metadata.iter().identify_last() {
+        writeln!(output, "{} {}: {:?}", list_item_prefix(last), key, value);
+    }
+
     Ok(())
 }
 
@@ -93,40 +100,71 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     writeln!(
         output,
         "{}: {}",
-        "Component".green().bold(),
+        "Component Address".green().bold(),
         component_address.display(&address_bech32_encoder),
     );
 
     writeln!(
         output,
         "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
-        "Blueprint".green().bold(),
+        "Blueprint ID".green().bold(),
         package_address.display(&address_bech32_encoder),
         blueprint_name
     );
 
-    writeln!(output, "{}", "Fungible Resources".green().bold());
-    for (last, (component_address, amount)) in resources.balances.iter().identify_last() {
+    writeln!(
+        output,
+        "{}: {}",
+        "Owned Fungible Resources".green().bold(),
+        resources.balances.len()
+    );
+    for (last, (resource_address, amount)) in resources.balances.iter().identify_last() {
+        let metadata = get_entity_metadata(resource_address.as_node_id(), substate_db);
+        let symbol = if let Some(MetadataValue::String(symbol)) = metadata.get("symbol") {
+            symbol.as_str()
+        } else {
+            "?"
+        };
         writeln!(
             output,
-            "{} {}: {}",
+            "{} {}: {} {}",
             list_item_prefix(last),
-            component_address.display(&address_bech32_encoder),
-            amount
+            resource_address.display(&address_bech32_encoder),
+            amount,
+            symbol,
         );
     }
 
-    writeln!(output, "{}", "Non-fungibles Resources".green().bold());
-    for (last, (component_address, ids)) in resources.non_fungibles.iter().identify_last() {
+    writeln!(
+        output,
+        "{}: {}",
+        "Owned Non-fungibles Resources".green().bold(),
+        resources.non_fungibles.len()
+    );
+    for (last, (resource_address, ids)) in resources.non_fungibles.iter().identify_last() {
+        let metadata = get_entity_metadata(resource_address.as_node_id(), substate_db);
+        let symbol = if let Some(MetadataValue::String(symbol)) = metadata.get("symbol") {
+            symbol.as_str()
+        } else {
+            "?"
+        };
         writeln!(
             output,
-            "{} {}",
+            "{} {}: {} {}",
             list_item_prefix(last),
-            component_address.display(&address_bech32_encoder)
+            resource_address.display(&address_bech32_encoder),
+            ids.len(),
+            symbol,
         );
         for (last, id) in ids.iter().identify_last() {
             writeln!(output, "   {} {}", list_item_prefix(last), id);
         }
+    }
+
+    let metadata = get_entity_metadata(component_address.as_node_id(), substate_db);
+    writeln!(output, "{}: {}", "Metadata".green().bold(), metadata.len());
+    for (last, (key, value)) in metadata.iter().identify_last() {
+        writeln!(output, "{} {}: {:?}", list_item_prefix(last), key, value);
     }
 
     Ok(())
@@ -138,6 +176,8 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     substate_db: &T,
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
+    let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
+
     let type_info = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
             resource_address.as_node_id(),
@@ -145,6 +185,13 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             &TypeInfoField::TypeInfo.into(),
         )
         .ok_or(EntityDumpError::ResourceManagerNotFound)?;
+
+    writeln!(
+        output,
+        "{}: {}",
+        "Resource Address".green().bold(),
+        resource_address.display(&address_bech32_encoder)
+    );
 
     let info = match type_info {
         TypeInfoSubstate::Object(info)
@@ -244,5 +291,35 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             );
         }
     }
+
+    let metadata = get_entity_metadata(resource_address.as_node_id(), substate_db);
+    writeln!(output, "{}: {}", "Metadata".green().bold(), metadata.len());
+    for (last, (key, value)) in metadata.iter().identify_last() {
+        writeln!(output, "{} {}: {:?}", list_item_prefix(last), key, value);
+    }
+
     Ok(())
+}
+
+fn get_entity_metadata<T: SubstateDatabase>(
+    entity_node_id: &NodeId,
+    substate_db: &T,
+) -> IndexMap<String, MetadataValue> {
+    let mut metadata = indexmap!();
+    for (substate_key, substate_value) in substate_db
+        .list_mapped::<SpreadPrefixKeyMapper, MetadataEntrySubstate, MapKey>(
+            entity_node_id,
+            METADATA_BASE_PARTITION
+                .at_offset(METADATA_KV_STORE_PARTITION_OFFSET)
+                .unwrap(),
+        )
+    {
+        if let SubstateKey::Map(key) = substate_key {
+            if let Some(value) = substate_value.value {
+                let key = scrypto_decode::<String>(&key).unwrap();
+                metadata.insert(key, value);
+            }
+        }
+    }
+    metadata
 }

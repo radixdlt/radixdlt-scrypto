@@ -87,7 +87,7 @@ mod tests {
                     value: ScryptoCustomValue::Decimal(Decimal::ONE),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::Decimal(Decimal::ONE / 100),
+                    value: ScryptoCustomValue::Decimal(Decimal::ONE.safe_div(100).unwrap()),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),

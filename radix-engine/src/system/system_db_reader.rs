@@ -1,5 +1,5 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::prelude::scrypto_encode;
+use radix_engine_common::prelude::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{BlueprintDefinition, BlueprintVersionKey};
 use radix_engine_interface::types::*;
@@ -19,19 +19,31 @@ use crate::track::TrackedNode;
 
 pub enum SystemPartitionDescription {
     TypeInfo,
+    Schema,
     Module(ObjectModuleId, PartitionOffset),
 }
 
-pub struct SystemReader<'a, S: SubstateDatabase> {
+/// A System Layer (Layer 2) abstraction over an underlying substate database
+pub struct SystemDatabaseReader<'a, S: SubstateDatabase> {
     substate_db: &'a S,
-    tracked: &'a IndexMap<NodeId, TrackedNode>,
+    tracked: Option<&'a IndexMap<NodeId, TrackedNode>>,
 }
 
-impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
-    pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
+impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
+    pub fn new_with_overlay(
+        substate_db: &'a S,
+        tracked: &'a IndexMap<NodeId, TrackedNode>,
+    ) -> Self {
         Self {
             substate_db,
-            tracked,
+            tracked: Some(tracked),
+        }
+    }
+
+    pub fn new(substate_db: &'a S) -> Self {
+        Self {
+            substate_db,
+            tracked: None,
         }
     }
 
@@ -52,6 +64,8 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
         } else if partition_num.ge(&METADATA_BASE_PARTITION) {
             let partition_offset = PartitionOffset(partition_num.0 - METADATA_BASE_PARTITION.0);
             SystemPartitionDescription::Module(ObjectModuleId::Metadata, partition_offset)
+        } else if partition_num.ge(&SCHEMAS_PARTITION) {
+            SystemPartitionDescription::Schema
         } else if partition_num.eq(&TYPE_INFO_FIELD_PARTITION) {
             SystemPartitionDescription::TypeInfo
         } else {
@@ -65,6 +79,49 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
         )
+    }
+
+    pub fn get_package_definition(
+        &self,
+        package_address: PackageAddress,
+    ) -> BTreeMap<BlueprintVersionKey, BlueprintDefinition> {
+        let entries = self.substate_db
+            .list_mapped::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate, MapKey>(
+                package_address.as_node_id(),
+                PackagePartition::BlueprintVersionDefinitionKeyValue
+                    .as_main_partition(),
+            );
+
+        let mut blueprints = BTreeMap::new();
+        for (key, blueprint_definition) in entries {
+            let bp_version_key: BlueprintVersionKey = match key {
+                SubstateKey::Map(v) => scrypto_decode(&v).unwrap(),
+                _ => panic!("Unexpected"),
+            };
+
+            blueprints.insert(
+                bp_version_key,
+                blueprint_definition.value.unwrap().0.into_latest(),
+            );
+        }
+
+        blueprints
+    }
+
+    pub fn get_object_info<A: Into<GlobalAddress>>(&self, address: A) -> Option<ObjectInfo> {
+        let type_info = self.fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+            address.into().as_node_id(),
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+        )?;
+
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => Some(object_info),
+            i @ _ => panic!(
+                "Inconsistent Substate Database, found invalid type_info: {:?}",
+                i
+            ),
+        }
     }
 
     pub fn get_blueprint_definition(
@@ -89,10 +146,6 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
         partition_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
-        // FIXME: explore if we can avoid loading from substate database
-        // - Part of the engine still reads/writes substates without touching the TypeInfo;
-        // - Track does not store the initial value of substate.
-
         self.fetch_substate_from_state_updates::<M, D>(node_id, partition_num, key)
             .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, partition_num, key))
     }
@@ -113,15 +166,19 @@ impl<'a, S: SubstateDatabase> SystemReader<'a, S> {
         partition_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
-        self.tracked
-            .get(node_id)
-            .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
-            .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
-            .and_then(|tracked_key| {
-                tracked_key
-                    .substate_value
-                    .get()
-                    .map(|e| e.as_typed().unwrap())
-            })
+        if let Some(tracked) = self.tracked {
+            tracked
+                .get(node_id)
+                .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
+                .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
+                .and_then(|tracked_key| {
+                    tracked_key
+                        .substate_value
+                        .get()
+                        .map(|e| e.as_typed().unwrap())
+                })
+        } else {
+            None
+        }
     }
 }

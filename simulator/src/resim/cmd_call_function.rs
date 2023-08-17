@@ -17,10 +17,10 @@ pub struct CallFunction {
     /// The function name
     pub function_name: String,
 
-    /// The call arguments, such as "5", "hello", "<amount>,<resource_address>" and "<resource_address>:<nf_local_id1>,<nf_local_id2>"
+    /// The call arguments, such as "5", "hello", "<resource_address>:<amount>" and "<resource_address>:<nf_local_id1>,<nf_local_id2>"
     pub arguments: Vec<String>,
 
-    /// The proofs to add to the auth zone, in form of "<amount>,<resource_address>" or "<resource_address>:<nf_local_id1>,<nf_local_id2>"
+    /// The proofs to add to the auth zone, in form of "<resource_address>:<amount>" or "<resource_address>:<nf_local_id1>,<nf_local_id2>"
     #[clap(short, long, multiple = true)]
     pub proofs: Option<Vec<String>>,
 
@@ -111,11 +111,11 @@ impl CallFunction {
             })?;
 
         let (schema, index) = match function_schema.input {
-            TypePointer::Package(TypeIdentifier(hash, index)) => {
-                let schema = export_schema(package_address, hash)?;
+            BlueprintPayloadDef::Static(TypeIdentifier(hash, index)) => {
+                let schema = export_schema(package_address.as_node_id(), hash)?;
                 (schema, index)
             }
-            TypePointer::Instance(_instance_index) => {
+            BlueprintPayloadDef::Generic(_instance_index) => {
                 todo!()
             }
         };

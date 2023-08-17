@@ -3,7 +3,8 @@ use crate::blueprints::account::{AccountNativePackage, AccountOwnerBadgeData};
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::{IdentityNativePackage, IdentityOwnerBadgeData};
 use crate::blueprints::package::{
-    create_bootstrap_package_partitions, PackageNativePackage, PackageOwnerBadgeData,
+    create_bootstrap_package_partitions, PackageCollection, PackageNativePackage,
+    PackageOwnerBadgeData, SystemInstruction,
 };
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceNativePackage;
@@ -18,7 +19,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::SystemUpdates;
 use crate::transaction::{
-    execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, StateUpdateSummary,
+    execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
     TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use crate::types::*;
@@ -36,6 +37,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::math::traits::*;
 use radix_engine_interface::{
     burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
@@ -54,8 +56,9 @@ use transaction::validation::ManifestIdAllocator;
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
     pub static ref DEFAULT_VALIDATOR_USD_COST: Decimal = dec!("100");
-    pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal =
-        *DEFAULT_VALIDATOR_USD_COST * Decimal::try_from(USD_PRICE_IN_XRD).unwrap();
+    pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal = DEFAULT_VALIDATOR_USD_COST
+        .safe_mul(Decimal::try_from(USD_PRICE_IN_XRD).unwrap())
+        .unwrap();
 }
 
 //==========================================================================================
@@ -192,7 +195,7 @@ impl FlashReceipt {
     // This is currently a necessary hack in order to not change GenesisReceipt with
     // the addition of a new system_flash_receipt.
     pub fn merge_genesis_flash_into_transaction_receipt(self, receipt: &mut TransactionReceipt) {
-        match &mut receipt.transaction_result {
+        match &mut receipt.result {
             TransactionResult::Commit(result) => {
                 let mut new_packages = self.state_update_summary.new_packages;
                 new_packages.extend(result.state_update_summary.new_packages.drain(..));
@@ -344,7 +347,7 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            &FeeReserveConfig::default(),
+            &CostingParameters::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
@@ -370,7 +373,7 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            &FeeReserveConfig::default(),
+            &CostingParameters::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
@@ -391,7 +394,7 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            &FeeReserveConfig::default(),
+            &CostingParameters::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
                 .prepare()
@@ -418,6 +421,13 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Package Package".to_owned(), locked;
                 "description" => "A native package that is called to create a new package on the network.".to_owned(), locked;
             },
+            // Maps the application layer schema collection index to the system layer schema partition
+            btreemap! {
+                PACKAGE_BLUEPRINT.to_string() => vec![SystemInstruction::MapCollectionToPhysicalPartition {
+                    collection_index: PackageCollection::SchemaKeyValue.collection_index(),
+                    partition_num: SCHEMAS_PARTITION,
+                }],
+            },
         ),
         (
             TRANSACTION_PROCESSOR_PACKAGE,
@@ -427,6 +437,7 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Transaction Processor Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the processing of manifest instructions and transaction runtime.".to_owned(), locked;
             },
+            btreemap!(),
         ),
         (
             METADATA_MODULE_PACKAGE,
@@ -436,6 +447,7 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Metadata Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the metadata module that is used by resources, components, and packages.".to_owned(), locked;
             },
+            btreemap!(),
         ),
         (
             ROLE_ASSIGNMENT_MODULE_PACKAGE,
@@ -445,6 +457,7 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Access Rules Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the access rules module that is used by resources, components, and packages.".to_owned(), locked;
             },
+            btreemap!(),
         ),
         (
             RESOURCE_PACKAGE,
@@ -454,6 +467,7 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Resource Package".to_owned(), locked;
                 "description" => "A native package that is called to create a new resource manager on the network.".to_owned(), locked;
             },
+            btreemap!(),
         ),
         (
             ROYALTY_MODULE_PACKAGE,
@@ -463,17 +477,20 @@ pub fn create_system_bootstrap_flash(
                 "name" => "Royalty Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the royalty module used by components.".to_owned(), locked;
             },
+            btreemap!(),
         ),
     ];
 
     let mut to_flash = BTreeMap::new();
 
-    for (address, definition, native_code_id, metadata_init) in package_flashes {
+    for (address, definition, native_code_id, metadata_init, system_instructions) in package_flashes
+    {
         let partitions = {
             let package_state_init = PackageNativePackage::validate_and_build_package_state_init(
                 definition,
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
+                system_instructions,
             )
             .expect("Invalid Package Package definition");
 
@@ -1012,8 +1029,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Genesis helper package
     {
-        // FIXME: Add authorization rules around preventing anyone else from
-        // calling genesis helper code
         let genesis_helper_code = include_bytes!("../../../assets/genesis_helper.wasm").to_vec();
         let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.rpd").to_vec();
         let genesis_helper_code_hash = hash(&genesis_helper_code);

@@ -104,10 +104,10 @@ macro_rules! role_entry {
 #[macro_export]
 macro_rules! roles2 {
     ( ) => ({
-        $crate::blueprints::resource::RolesInit::new()
+        $crate::blueprints::resource::RoleAssignmentInit::new()
     });
     ( $($role:expr => $rule:expr $(, $updatable:ident)?;)* ) => ({
-        let mut roles = $crate::blueprints::resource::RolesInit::new();
+        let mut roles = $crate::blueprints::resource::RoleAssignmentInit::new();
         $(
             role_entry!(roles, $role, $rule);
         )*

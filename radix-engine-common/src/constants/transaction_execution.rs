@@ -1,8 +1,11 @@
-/// The system loan amount, used by transaction executor.
-pub const SYSTEM_LOAN_AMOUNT: u32 = 10_000_000;
+/// The execution cost units loaned from system
+pub const EXECUTION_COST_UNIT_LOAN: u32 = 10_000_000;
 
-/// The cost unit limit.
-pub const COST_UNIT_LIMIT: u32 = 100_000_000;
+/// The execution cost unit limit.
+pub const EXECUTION_COST_UNIT_LIMIT: u32 = 100_000_000;
+
+/// The finalization cost unit limit.
+pub const FINALIZATION_COST_UNIT_LIMIT: u32 = 50_000_000;
 
 /// The free credit, for preview only.
 pub const FREE_CREDIT_IN_XRD: &str = "100";
@@ -36,14 +39,14 @@ pub const TIPS_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 0;
 /// The tips to burn
 pub const TIPS_TO_BURN_PERCENTAGE: u8 = 0;
 
-/// The proposer's share of fees (execution and state expansion)
-pub const FEES_PROPOSER_SHARE_PERCENTAGE: u8 = 25;
+/// The proposer's share of network fees (execution, finalization and storage)
+pub const NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE: u8 = 25;
 
-/// The validator set's share of fees  (execution and state expansion)
-pub const FEES_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 25;
+/// The validator set's share of network fees (execution, finalization and storage)
+pub const NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 25;
 
-/// The fees to burn
-pub const FEES_TO_BURN_PERCENTAGE: u8 = 50;
+/// The network fees (execution, finalization and storage) to burn
+pub const NETWORK_FEES_TO_BURN_PERCENTAGE: u8 = 50;
 
 /// The max event size
 pub const MAX_EVENT_SIZE: usize = 64 * 1024;
@@ -72,15 +75,24 @@ pub const MAX_ACCESS_RULE_DEPTH: usize = 8;
 /// The max number of access rule nodes in an access rule
 pub const MAX_ACCESS_RULE_NODES: usize = 64;
 
+/// The max number of roles in a Role Specification
+pub const MAX_ROLES: usize = 50;
+
+/// The max number of roles in a Role Specification
+pub const MAX_ROLE_NAME_LEN: usize = 100;
+
 //==========================
 // TO BE DEFINED
 //==========================
 
-/// The cost unit price, in XRD.
-pub const COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
+/// The price of execution cost unit, in XRD.
+pub const EXECUTION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
+
+/// The price of finalization cost unit, in XRD.
+pub const FINALIZATION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
 
 /// The price for adding a single byte to the substate store, in XRD.
-pub const STATE_EXPANSION_PRICE_IN_XRD: &str = "0.00001";
+pub const STORAGE_PRICE_IN_XRD: &str = "0.00001";
 
 /// The USD price, in XRD
 pub const USD_PRICE_IN_XRD: &str = "10";

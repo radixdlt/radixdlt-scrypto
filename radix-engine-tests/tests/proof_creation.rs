@@ -105,7 +105,7 @@ fn test_create_non_fungible_proof_with_large_amount() {
         .lock_standard_test_fee(account)
         .create_proof_from_auth_zone_of_amount(
             resource_address,
-            dec!("100000000000000000000000000000000000000000000"),
+            dec!("1000000000000000000000000000000000000000"),
             "proof",
         )
         .drop_proof("proof")
@@ -149,10 +149,7 @@ fn compose_proof(amount: Decimal) -> u32 {
             NonFungibleGlobalId::from_public_key(&pk4),
         ],
     );
-    receipt
-        .expect_commit_success()
-        .fee_summary
-        .execution_cost_sum
+    receipt.fee_summary.total_execution_cost_units_consumed
 }
 
 #[test]

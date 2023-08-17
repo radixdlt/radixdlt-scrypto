@@ -4,12 +4,6 @@ pub const MAX_NUMBER_OF_INTENT_SIGNATURES: usize = 16;
 
 pub const MAX_NUMBER_OF_BLOBS: usize = 64;
 
-/// The minimum value of cost unit limit
-pub const MIN_COST_UNIT_LIMIT: u32 = 1_000_000;
-
-/// The maximum value of cost unit limit
-pub const MAX_COST_UNIT_LIMIT: u32 = 100_000_000;
-
 /// The minimum value of tip percentage
 pub const MIN_TIP_PERCENTAGE: u16 = 0;
 

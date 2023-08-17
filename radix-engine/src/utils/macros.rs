@@ -1,6 +1,6 @@
 #[macro_export]
 macro_rules! event_schema {
-    ($aggregator: ident, [$($event_type: ty),*]) => {
+    ($aggregator: ident, [$($event_type: ty),* $(,)?]) => {
         {
             let mut event_schema = sbor::rust::collections::BTreeMap::new();
             $(
@@ -49,7 +49,7 @@ macro_rules! method_auth_template {
 #[macro_export]
 macro_rules! roles_template {
     () => ({
-        radix_engine_interface::blueprints::package::StaticRoles {
+        radix_engine_interface::blueprints::package::StaticRoleDefinition {
             roles: radix_engine_interface::blueprints::package::RoleSpecification::Normal(BTreeMap::new()),
             methods: BTreeMap::new(),
         }
@@ -69,7 +69,7 @@ macro_rules! roles_template {
             crate::add_role!(roles, $role $( => updaters: $updaters)?);
         )*
 
-        radix_engine_interface::blueprints::package::StaticRoles {
+        radix_engine_interface::blueprints::package::StaticRoleDefinition {
             roles: radix_engine_interface::blueprints::package::RoleSpecification::Normal(roles),
             methods,
         }
@@ -81,7 +81,7 @@ macro_rules! roles_template {
             methods.insert($method.into(), $entry.into());
         )*
 
-        radix_engine_interface::blueprints::package::StaticRoles {
+        radix_engine_interface::blueprints::package::StaticRoleDefinition {
             roles: radix_engine_interface::blueprints::package::RoleSpecification::Normal(BTreeMap::new()),
             methods,
         }

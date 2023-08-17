@@ -96,7 +96,7 @@ where
 
     // Assert
     let other_account_balance: Decimal = test_runner.get_component_balance(other_account, XRD);
-    let transfer_amount = other_account_balance - 10000 /* initial balance */;
+    let transfer_amount = other_account_balance.safe_sub(10000).unwrap() /* initial balance */;
 
     assert_eq!(
         receipt
@@ -208,8 +208,6 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     );
 
     // Assert
-    let result = receipt.expect_commit_success();
-
     assert_eq!(
         receipt
             .expect_commit_success()
@@ -219,7 +217,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
             .unwrap()
             .get(&XRD)
             .unwrap(),
-        &BalanceChange::Fungible(-result.fee_summary.total_cost())
+        &BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap())
     );
 }
 

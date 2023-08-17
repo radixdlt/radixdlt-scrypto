@@ -1,12 +1,11 @@
 use radix_engine::errors::{
-    CallFrameError, KernelError, RejectionError, RuntimeError, SystemModuleError,
+    CallFrameError, KernelError, RejectionReason, RuntimeError, SystemModuleError,
 };
 use radix_engine::kernel::call_frame::{CreateFrameError, PassMessageError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
-use std::ops::Sub;
 use transaction::prelude::*;
 
 #[test]
@@ -27,7 +26,7 @@ fn non_existing_vault_should_cause_error() {
 
     // Assert
     receipt.expect_specific_rejection(|e| {
-        e.eq(&RejectionError::ErrorBeforeFeeLoanRepaid(
+        e.eq(&RejectionReason::ErrorBeforeFeeLoanRepaid(
             RuntimeError::KernelError(KernelError::InvalidReference(
                 non_existing_address.as_node_id().clone(),
             )),
@@ -98,7 +97,7 @@ fn can_take_on_recallable_vault() {
         .cloned()
         .unwrap();
     let mut expected_amount: Decimal = 5u32.into();
-    expected_amount = expected_amount.sub(Decimal::one());
+    expected_amount = expected_amount.safe_sub(Decimal::one()).unwrap();
     assert_eq!(expected_amount, original_account_amount);
 
     let other_amount = test_runner

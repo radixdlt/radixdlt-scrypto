@@ -678,34 +678,39 @@ pub fn calculate_resource_changes(
             match vault_op {
                 VaultOp::Create(_) => todo!("Not supported yet!"),
                 VaultOp::Put(resource_address, amount) => {
-                    vault_changes
+                    let entry = &mut vault_changes
                         .entry(instruction_index)
                         .or_default()
                         .entry(node_id)
                         .or_default()
                         .entry(vault_id)
                         .or_insert((resource_address, Decimal::zero()))
-                        .1 += amount;
+                        .1;
+                    *entry = entry.safe_add(amount).unwrap();
                 }
                 VaultOp::Take(resource_address, amount) => {
-                    vault_changes
+                    let entry = &mut vault_changes
                         .entry(instruction_index)
                         .or_default()
                         .entry(node_id)
                         .or_default()
                         .entry(vault_id)
                         .or_insert((resource_address, Decimal::zero()))
-                        .1 -= amount;
+                        .1;
+                    *entry = entry.safe_sub(amount).unwrap();
                 }
                 VaultOp::LockFee(..) => {
-                    vault_changes
+                    let entry = &mut vault_changes
                         .entry(instruction_index)
                         .or_default()
                         .entry(node_id)
                         .or_default()
                         .entry(vault_id)
                         .or_insert((XRD, Decimal::zero()))
-                        .1 -= fee_payments.get(&vault_id).cloned().unwrap_or_default();
+                        .1;
+                    *entry = entry
+                        .safe_sub(fee_payments.get(&vault_id).cloned().unwrap_or_default())
+                        .unwrap();
                 }
             }
         }
@@ -743,9 +748,9 @@ pub fn calculate_fee_locks(vault_ops: &Vec<(TraceActor, NodeId, VaultOp, usize)>
     for (_, _, vault_op, _) in vault_ops {
         if let VaultOp::LockFee(amount, is_contingent) = vault_op {
             if !is_contingent {
-                fee_locks.lock += *amount
+                fee_locks.lock = fee_locks.lock.safe_add(*amount).unwrap()
             } else {
-                fee_locks.contingent_lock += *amount;
+                fee_locks.contingent_lock = fee_locks.contingent_lock.safe_add(*amount).unwrap()
             }
         };
     }

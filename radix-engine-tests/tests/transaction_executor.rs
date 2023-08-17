@@ -1,7 +1,7 @@
-use radix_engine::errors::RejectionError;
+use radix_engine::errors::RejectionReason;
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::execute_and_commit_transaction;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
+use radix_engine::transaction::{CostingParameters, ExecutionConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
@@ -36,7 +36,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     // Act
     let receipt = test_runner.execute_transaction(
         get_validated(&transaction).unwrap().get_executable(),
-        FeeReserveConfig::default(),
+        CostingParameters::default(),
         ExecutionConfig::for_test_transaction(),
     );
 
@@ -44,7 +44,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     let rejection_error = receipt.expect_rejection();
     assert_eq!(
         rejection_error,
-        &RejectionError::TransactionEpochNotYetValid {
+        &RejectionReason::TransactionEpochNotYetValid {
             valid_from: valid_from_epoch,
             current_epoch
         }
@@ -76,7 +76,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Act
     let receipt = test_runner.execute_transaction(
         get_validated(&transaction).unwrap().get_executable(),
-        FeeReserveConfig::default(),
+        CostingParameters::default(),
         ExecutionConfig::for_test_transaction(),
     );
 
@@ -84,7 +84,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     let rejection_error = receipt.expect_rejection();
     assert_eq!(
         rejection_error,
-        &RejectionError::TransactionEpochNoLongerValid {
+        &RejectionReason::TransactionEpochNoLongerValid {
             valid_until: valid_until_epoch,
             current_epoch
         }
@@ -106,7 +106,7 @@ fn test_normal_transaction_flow() {
         .bootstrap_test_default()
         .unwrap();
 
-    let fee_reserve_config = FeeReserveConfig::default();
+    let fee_reserve_config = CostingParameters::default();
     let execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);
     let raw_transaction = create_notarized_transaction(
         TransactionParams {
@@ -130,7 +130,7 @@ fn test_normal_transaction_flow() {
         .validate_from_raw(&raw_transaction)
         .expect("Invalid transaction");
     let executable = validated.get_executable();
-    assert_eq!(executable.payload_size(), 1023 * 1024 + 391);
+    assert_eq!(executable.payload_size(), 1023 * 1024 + 380);
 
     // Act
     let receipt = execute_and_commit_transaction(

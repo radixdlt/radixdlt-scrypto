@@ -1,9 +1,9 @@
 use std::io;
 use std::path::PathBuf;
 
-use radix_engine::errors::{RejectionError, RuntimeError};
+use radix_engine::errors::{RejectionReason, RuntimeError};
 use radix_engine::transaction::AbortReason;
-use radix_engine::types::{ComponentAddress, PackageAddress};
+use radix_engine::types::{ComponentAddress, NodeId, PackageAddress};
 use radix_engine::utils::ExtractSchemaError;
 use radix_engine::vm::wasm::PrepareError;
 use radix_engine_interface::blueprints::resource::ParseNonFungibleGlobalIdError;
@@ -26,7 +26,7 @@ pub enum Error {
     HomeDirUnknown,
 
     PackageNotFound(PackageAddress),
-    SchemaNotFound(PackageAddress, SchemaHash),
+    SchemaNotFound(NodeId, SchemaHash),
     BlueprintNotFound(PackageAddress, String),
     ComponentNotFound(ComponentAddress),
     InstanceSchemaNot(ComponentAddress, u8),
@@ -53,7 +53,7 @@ pub enum Error {
 
     TransactionFailed(RuntimeError),
 
-    TransactionRejected(RejectionError),
+    TransactionRejected(RejectionReason),
 
     TransactionAborted(AbortReason),
 

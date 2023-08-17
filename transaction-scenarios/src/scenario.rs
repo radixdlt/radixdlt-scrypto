@@ -56,8 +56,8 @@ impl NextTransaction {
         };
         let file_name = format!("{:03}--{}", self.stage_counter, self.logical_name);
         dump_manifest_to_file_system(
-            &self.manifest,
             self.naming.clone(),
+            &self.manifest,
             directory_path,
             Some(&file_name),
             &network,
@@ -217,7 +217,7 @@ impl ScenarioCore {
         &self,
         receipt: &'a TransactionReceipt,
     ) -> Result<&'a CommitResult, ScenarioError> {
-        match &receipt.transaction_result {
+        match &receipt.result {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(_) => Ok(c),
                 TransactionOutcome::Failure(err) => Err(ScenarioError::TransactionFailed(
@@ -240,7 +240,7 @@ impl ScenarioCore {
         &self,
         receipt: &'a TransactionReceipt,
     ) -> Result<&'a RuntimeError, ScenarioError> {
-        match &receipt.transaction_result {
+        match &receipt.result {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(_) => Err(ScenarioError::TransactionSucceeded),
                 TransactionOutcome::Failure(err) => Ok(err),

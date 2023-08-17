@@ -217,12 +217,10 @@ impl TxFuzzer {
                 .unwrap();
             let discriminant = InstructionDiscriminants::from_repr(next as usize).unwrap();
 
+            // TODO: add fuzzing support for not covered instructions
             let instruction = match discriminant {
                 // AllocateGlobalAddress
-                InstructionDiscriminants::AllocateGlobalAddress => {
-                    // TODO
-                    None
-                }
+                InstructionDiscriminants::AllocateGlobalAddress => None,
                 // AssertWorktopContains
                 InstructionDiscriminants::AssertWorktopContains => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
@@ -251,7 +249,6 @@ impl TxFuzzer {
                 }
                 // CallRoleAssignmentMethod
                 InstructionDiscriminants::CallRoleAssignmentMethod => {
-                    // TODO - fuzz more methods
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let input = RoleAssignmentCreateInput::arbitrary(&mut unstructured).unwrap();
@@ -266,24 +263,13 @@ impl TxFuzzer {
                     }
                 }
                 // CallFunction
-                InstructionDiscriminants::CallFunction => {
-                    // TODO
-                    None
-                }
+                InstructionDiscriminants::CallFunction => None,
                 // CallMetadataMethod
-                InstructionDiscriminants::CallMetadataMethod => {
-                    // TODO
-                    None
-                }
+                InstructionDiscriminants::CallMetadataMethod => None,
                 // CallMethod
-                InstructionDiscriminants::CallMethod => {
-                    // TODO
-                    None
-                }
+                InstructionDiscriminants::CallMethod => None,
                 // CallRoyaltyMethod
-                InstructionDiscriminants::CallRoyaltyMethod =>
-                // TODO - fuzz more methods
-                {
+                InstructionDiscriminants::CallRoyaltyMethod => {
                     Some(InstructionV1::CallRoyaltyMethod {
                         address: component_address.into(),
                         method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),

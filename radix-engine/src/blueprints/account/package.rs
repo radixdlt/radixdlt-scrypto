@@ -1,9 +1,9 @@
-use super::AccountSubstate;
+use super::*;
 use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::roles_template;
 use crate::types::*;
+use crate::{event_schema, roles_template};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
@@ -12,11 +12,7 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition,
 };
 use radix_engine_interface::hooks::OnVirtualizeInput;
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
-    BlueprintKeyValueSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
-    FunctionSchemaInit, ReceiverInfo, TypeRef,
-};
+use radix_engine_interface::schema::*;
 
 pub const ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
 
@@ -38,7 +34,7 @@ impl AccountNativePackage {
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
                 value: TypeRef::Static(aggregator.add_child_type_and_descendents::<Own>()),
-                can_own: true,
+                allow_ownership: true,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -49,7 +45,7 @@ impl AccountNativePackage {
                 value: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ResourcePreference>(),
                 ),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
@@ -58,7 +54,7 @@ impl AccountNativePackage {
                     aggregator.add_child_type_and_descendents::<ResourceOrNonFungible>(),
                 ),
                 value: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
-                can_own: false,
+                allow_ownership: false,
             },
         ));
 
@@ -416,6 +412,20 @@ impl AccountNativePackage {
             },
         );
 
+        let events = event_schema! {
+            aggregator,
+            [
+                WithdrawEvent,
+                DepositEvent,
+                RejectedDepositEvent,
+                SetResourcePreferenceEvent,
+                RemoveResourcePreferenceEvent,
+                SetDefaultDepositRuleEvent,
+                AddAuthorizedDepositorEvent,
+                RemoveAuthorizedDepositorEvent,
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintDefinitionInit {
@@ -436,7 +446,7 @@ impl AccountNativePackage {
                         fields,
                         collections,
                     },
-                    events: BlueprintEventSchemaInit::default(),
+                    events: events,
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
@@ -446,7 +456,7 @@ impl AccountNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::StaticRoles(roles_template!(
+                    method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template!(
                         roles {
                             SECURIFY_ROLE => updaters: [SELF_ROLE];
                         },
@@ -568,12 +578,11 @@ impl AccountNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = match authorized_depositor_badge {
-                    Some(badge) => {
-                        AccountBlueprint::try_authorized_deposit_or_refund(bucket, badge, api)?
-                    }
-                    None => AccountBlueprint::try_deposit_or_refund(bucket, api)?,
-                };
+                let rtn = AccountBlueprint::try_deposit_or_refund(
+                    bucket,
+                    authorized_depositor_badge,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
@@ -584,12 +593,11 @@ impl AccountNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = match authorized_depositor_badge {
-                    Some(badge) => AccountBlueprint::try_authorized_deposit_batch_or_refund(
-                        buckets, badge, api,
-                    )?,
-                    None => AccountBlueprint::try_deposit_batch_or_refund(buckets, api)?,
-                };
+                let rtn = AccountBlueprint::try_deposit_batch_or_refund(
+                    buckets,
+                    authorized_depositor_badge,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => {
@@ -600,12 +608,11 @@ impl AccountNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = match authorized_depositor_badge {
-                    Some(badge) => {
-                        AccountBlueprint::try_authorized_deposit_or_abort(bucket, badge, api)?
-                    }
-                    None => AccountBlueprint::try_deposit_or_abort(bucket, api)?,
-                };
+                let rtn = AccountBlueprint::try_deposit_or_abort(
+                    bucket,
+                    authorized_depositor_badge,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => {
@@ -616,12 +623,11 @@ impl AccountNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = match authorized_depositor_badge {
-                    Some(badge) => AccountBlueprint::try_authorized_deposit_batch_or_abort(
-                        buckets, badge, api,
-                    )?,
-                    None => AccountBlueprint::try_deposit_batch_or_abort(buckets, api)?,
-                };
+                let rtn = AccountBlueprint::try_deposit_batch_or_abort(
+                    buckets,
+                    authorized_depositor_badge,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {
