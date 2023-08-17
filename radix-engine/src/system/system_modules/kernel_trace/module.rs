@@ -20,8 +20,8 @@ pub struct KernelTraceModule {}
 #[macro_export]
 macro_rules! log {
     ( $api: expr, $msg: expr $( , $arg:expr )* ) => {
-        //#[cfg(not(feature = "alloc"))]
-        //println!("{}[{}] {}", "    ".repeat($api.kernel_get_current_depth()), $api.kernel_get_current_depth(), sbor::rust::format!($msg, $( $arg ),*));
+        #[cfg(not(feature = "alloc"))]
+        println!("{}[{}] {}", "    ".repeat($api.kernel_get_current_depth()), $api.kernel_get_current_depth(), sbor::rust::format!($msg, $( $arg ),*));
     };
 }
 
