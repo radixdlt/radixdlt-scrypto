@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,     0.11878342,    100.0%
-- Execution Cost (XRD)                                                     ,       0.111742,     94.1%
+Total Cost (XRD)                                                           ,     0.11878558,    100.0%
+- Execution Cost (XRD)                                                     ,     0.11174416,     94.1%
 - Finalization Cost (XRD)                                                  ,     0.00695142,      5.9%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - State Expansion Cost (XRD)                                               ,        0.00009,      0.1%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Royalty Cost (XRD)                                                       ,              0,      0.0%
-Execution Cost Breakdown                                                   ,       11174200,    100.0%
+Execution Cost Breakdown                                                   ,       11174416,    100.0%
 - AllocateNodeId                                                           ,           5512,      0.0%
 - BeforeInvoke                                                             ,           9344,      0.1%
 - CloseSubstate                                                            ,          93765,      0.8%
@@ -24,7 +24,7 @@ Execution Cost Breakdown                                                   ,    
 - PrepareWasmCode                                                          ,        1612400,     14.4%
 - QueryActor                                                               ,           9500,      0.1%
 - QueryAuthZone                                                            ,           2000,      0.0%
-- ReadSubstate                                                             ,        1964690,     17.6%
+- ReadSubstate                                                             ,        1964906,     17.6%
 - RunNativeCode::AuthZone_pop                                              ,          37132,      0.3%
 - RunNativeCode::AuthZone_push                                             ,          50694,      0.5%
 - RunNativeCode::Worktop_drain                                             ,          13505,      0.1%

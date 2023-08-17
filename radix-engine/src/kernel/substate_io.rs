@@ -1,8 +1,8 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
     CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
-    CreateNodeError, DropNodeError, HeapStick, MovePartitionError, NonGlobalNodeRefs,
+    CreateNodeError, DropNodeError, TransientSubstates, MovePartitionError, NonGlobalNodeRefs,
     OpenSubstateError, PersistNodeError, WriteSubstateError,
 };
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
@@ -58,7 +58,7 @@ pub struct SubstateIO<'g, S: SubstateStore> {
     pub store: &'g mut S,
     pub non_global_node_refs: NonGlobalNodeRefs,
     pub substate_locks: SubstateLocks<LockData>,
-    pub heap_stick: HeapStick,
+    pub heap_transient_substates: TransientSubstates,
     pub pinned_nodes: BTreeSet<NodeId>,
 }
 
@@ -69,7 +69,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             store,
             non_global_node_refs: NonGlobalNodeRefs::new(),
             substate_locks: SubstateLocks::new(),
-            heap_stick: HeapStick::new(),
+            heap_transient_substates: TransientSubstates::new(),
             pinned_nodes: BTreeSet::new(),
         }
     }
@@ -114,7 +114,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         }
 
         let node_substates = match device {
-            SubstateDevice::Heap => match self.heap.remove_filter(node_id, None) {
+            SubstateDevice::Heap => match self.heap.remove_node(node_id) {
                 Ok(substates) => substates,
                 Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
                     panic!("Frame owned node {:?} not found in heap", node_id)
@@ -153,12 +153,13 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 ));
             }
 
-            let node_substates = match self.heap.remove_filter(&node_id, self.heap_stick.get_sticky(&node_id)) {
+            let node_substates = match self.heap.remove_node(&node_id) {
                 Ok(substates) => substates,
                 Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
                     panic!("Frame owned node {:?} not found in heap", node_id)
                 }
             };
+
 
             for (_partition_num, module_substates) in &node_substates {
                 for (_substate_key, substate_value) in module_substates {
@@ -173,6 +174,12 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     for node_id in substate_value.owned_nodes() {
                         queue.push_back(*node_id);
                     }
+                }
+            }
+
+            if let Some(transient_substates) = self.heap_transient_substates.transient_substates.remove(&node_id) {
+                for (partition_num, substate_key) in transient_substates {
+                    self.store.mark_as_transient(node_id, partition_num, substate_key);
                 }
             }
 
@@ -225,7 +232,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     );
                 }
                 SubstateDevice::Store => {
-                    if self.heap_stick.substate_is_sticky(
+                    if self.heap_transient_substates.substate_is_sticky(
                         src_node_id,
                         src_partition_number,
                         &substate_key,

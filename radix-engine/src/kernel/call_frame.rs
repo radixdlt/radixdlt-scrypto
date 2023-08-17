@@ -681,17 +681,31 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_io: &mut SubstateIO<S>,
         target: StickTarget,
     ) -> Result<(), HeapStickError> {
-        let node_id = *target.node_id();
-        if !self.get_node_visibility(&node_id).is_visible() {
-            return Err(HeapStickError::NodeNotVisible(node_id));
-        }
+        // Get device
+        let (_ref_origin, device) = self.get_node_ref(target.node_id()).ok_or_else(|| {
+            HeapStickError::NodeNotVisible(target.node_id().clone())
+        })?;
 
         match target {
             StickTarget::Node(pinned_node) => {
-                substate_io.pinned_nodes.insert(pinned_node);
+                match device {
+                    SubstateDevice::Heap => {
+                        substate_io.pinned_nodes.insert(pinned_node);
+                    }
+                    SubstateDevice::Store => {
+                        // Nodes in store are always pinned
+                    }
+                }
             }
             StickTarget::Substate(node_id, partition_num, substate_key) => {
-                substate_io.heap_stick.stick(node_id, partition_num, substate_key);
+                match device {
+                    SubstateDevice::Heap => {
+                        substate_io.heap_transient_substates.mark_as_transient(node_id, partition_num, substate_key);
+                    }
+                    SubstateDevice::Store => {
+                        substate_io.store.mark_as_transient(node_id, partition_num, substate_key);
+                    }
+                }
             }
         }
 
@@ -713,7 +727,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 substate_io.pinned_nodes.remove(pinned_node);
             }
             StickTarget::Substate(node_id, partition_num, substate_key) => {
-                substate_io.heap_stick.unstick(*node_id, *partition_num, substate_key.clone());
+                //
             }
         }
 
@@ -905,7 +919,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             .map_err(|e| CallbackError::Error(OpenSubstateError::ProcessSubstateKeyError(e)))?;
 
         if substate_io
-            .heap_stick
+            .heap_transient_substates
             .substate_is_sticky(node_id, partition_num, substate_key)
         {
             device = SubstateDevice::Heap;
@@ -1548,27 +1562,19 @@ impl<C, L> StoreAccessHandler<C, L, ()> for NullHandler<C, L> {
 
 /// Structure which keeps track of all sticky nodes/partitions/substates which
 /// are meant to "stick" to the heap.
-pub struct HeapStick {
-    //pinned_nodes: BTreeSet<NodeId>,
-    transient_substates: BTreeMap<NodeId, BTreeSet<(PartitionNumber, SubstateKey)>>,
+pub struct TransientSubstates {
+    pub transient_substates: BTreeMap<NodeId, BTreeSet<(PartitionNumber, SubstateKey)>>,
 }
 
-impl HeapStick {
+impl TransientSubstates {
     pub fn new() -> Self {
         Self {
-            //pinned_nodes: BTreeSet::new(),
             transient_substates: BTreeMap::new(),
         }
     }
 
-    fn stick(&mut self, node_id: NodeId, partition_num: PartitionNumber, substate_key: SubstateKey) {
+    pub fn mark_as_transient(&mut self, node_id: NodeId, partition_num: PartitionNumber, substate_key: SubstateKey) {
         self.transient_substates.entry(node_id).or_insert(BTreeSet::new()).insert((partition_num, substate_key));
-    }
-
-    fn unstick(&mut self, node_id: NodeId, partition_num: PartitionNumber, substate_key: SubstateKey) {
-        if let Some(sticky) = self.transient_substates.get_mut(&node_id) {
-            sticky.remove(&(partition_num, substate_key));
-        }
     }
 
     pub fn get_sticky(&self, node_id: &NodeId) -> Option<&BTreeSet<(PartitionNumber, SubstateKey)>> {

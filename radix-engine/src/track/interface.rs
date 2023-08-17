@@ -41,6 +41,8 @@ pub enum TrackedSubstateInfo {
 ///
 /// The trait here is for formalizing the interface and intended user flow.
 pub trait SubstateStore {
+    fn mark_as_transient(&mut self, node_id: NodeId, partition_num: PartitionNumber, substate_key: SubstateKey);
+
     /// Inserts a node into the substate store.
     ///
     /// Clients must ensure the `node_id` is new and unique; otherwise, the behavior is undefined.

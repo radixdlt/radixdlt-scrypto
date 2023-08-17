@@ -10,7 +10,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorRunInputEffici
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::{
-    CallFrameMessage, CallFrameSubstateReadHandler, HeapStick, NonGlobalNodeRefs,
+    CallFrameMessage, CallFrameSubstateReadHandler, TransientSubstates, NonGlobalNodeRefs,
     StoreAccessHandler,
 };
 use crate::kernel::kernel_api::{KernelInvocation, StickTarget, SystemState};
@@ -54,7 +54,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 store: self.store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
-                heap_stick: HeapStick::new(),
+                heap_transient_substates: TransientSubstates::new(),
                 pinned_nodes: BTreeSet::new(),
             },
             id_allocator: self.id_allocator,
@@ -83,7 +83,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 store: self.store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
-                heap_stick: HeapStick::new(),
+                heap_transient_substates: TransientSubstates::new(),
                 pinned_nodes: BTreeSet::new(),
             },
             id_allocator: self.id_allocator,
