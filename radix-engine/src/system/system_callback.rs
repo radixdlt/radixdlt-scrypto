@@ -22,10 +22,11 @@ use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
+use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreValidationTarget};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::{ClientBlueprintApi, CollectionIndex};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
@@ -35,7 +36,7 @@ use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::hooks::OnMoveOutput;
 use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
-use radix_engine_interface::schema::{InstanceSchema, RefTypes};
+use radix_engine_interface::schema::RefTypes;
 
 #[derive(Clone)]
 pub enum SystemLockData {
@@ -54,15 +55,11 @@ impl Default for SystemLockData {
 pub enum KeyValueEntryLockData {
     Read,
     Write {
-        schema: ScryptoSchema,
-        index: LocalTypeIndex,
-        can_own: bool,
+        kv_store_validation_target: KVStoreValidationTarget,
     },
     BlueprintWrite {
-        blueprint_id: BlueprintId,
-        instance_schema: Option<InstanceSchema>,
-        type_pointer: TypePointer,
-        can_own: bool,
+        target: BlueprintTypeTarget,
+        collection_index: CollectionIndex,
     },
 }
 
@@ -70,8 +67,8 @@ pub enum KeyValueEntryLockData {
 pub enum FieldLockData {
     Read,
     Write {
-        blueprint_id: BlueprintId,
-        type_pointer: TypePointer,
+        target: BlueprintTypeTarget,
+        field_index: u8,
     },
 }
 
@@ -297,18 +294,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
                 )?;
 
-                let input_type_pointer = definition
-                    .interface
-                    .get_function_input_type_pointer(ident.as_str())
-                    .ok_or_else(|| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(
-                            ident.to_string(),
-                        ))
-                    })?;
-                system.validate_payload_against_blueprint_schema(
-                    &blueprint_id,
-                    &None,
-                    &[(input.as_vec_ref(), input_type_pointer)],
+                let target = system.get_actor_type_target()?;
+
+                // Validate input
+                system.validate_blueprint_payload(
+                    &target,
+                    BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Input),
+                    input.as_vec_ref(),
                 )?;
 
                 // Validate receiver type
@@ -345,15 +337,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
 
                 // Validate output
-                let output_type_pointer = definition
-                    .interface
-                    .get_function_output_type_pointer(ident.as_str())
-                    .expect("Schema verification should enforce that this exists.");
-                system.validate_payload_against_blueprint_schema(
-                    &blueprint_id,
-                    &None,
-                    &[(output.as_vec_ref(), output_type_pointer)],
+                system.validate_blueprint_payload(
+                    &target,
+                    BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Output),
+                    output.as_vec_ref(),
                 )?;
+
                 Ok(output)
             }
             Actor::BlueprintHook(BlueprintHookActor {

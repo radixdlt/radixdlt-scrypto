@@ -8,23 +8,23 @@ use sbor::rust::prelude::*;
 
 pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
 
-pub const METADATA_BASE_PARTITION: PartitionNumber = PartitionNumber(1u8);
+pub const SCHEMAS_PARTITION: PartitionNumber = PartitionNumber(1u8);
+
+pub const METADATA_BASE_PARTITION: PartitionNumber = PartitionNumber(2u8);
 pub const METADATA_KV_STORE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 
-pub const ROYALTY_BASE_PARTITION: PartitionNumber = PartitionNumber(2u8);
+pub const ROYALTY_BASE_PARTITION: PartitionNumber = PartitionNumber(3u8);
+pub const ROYALTY_FIELDS_PARTITION: PartitionNumber = PartitionNumber(3u8);
 pub const ROYALTY_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
+pub const ROYALTY_CONFIG_PARTITION: PartitionNumber = PartitionNumber(4u8);
 pub const ROYALTY_CONFIG_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 
-pub const ROYALTY_FIELDS_PARTITION: PartitionNumber = PartitionNumber(2u8);
-pub const ROYALTY_CONFIG_PARTITION: PartitionNumber = PartitionNumber(3u8);
-
-pub const ROLE_ASSIGNMENT_BASE_PARTITION: PartitionNumber = PartitionNumber(4u8);
+pub const ROLE_ASSIGNMENT_BASE_PARTITION: PartitionNumber = PartitionNumber(5u8);
+pub const ROLE_ASSIGNMENT_FIELDS_PARTITION: PartitionNumber = PartitionNumber(5u8);
 pub const ROLE_ASSIGNMENT_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
+pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION: PartitionNumber = PartitionNumber(6u8);
 pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 pub const ROLE_ASSIGNMENT_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
-
-pub const ROLE_ASSIGNMENT_FIELDS_PARTITION: PartitionNumber = PartitionNumber(4u8);
-pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION: PartitionNumber = PartitionNumber(5u8);
 
 pub const MAIN_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 
@@ -79,7 +79,6 @@ pub enum PackagePartitionOffset {
     Fields,
     Blueprints,
     BlueprintDependencies,
-    Schemas,
     RoyaltyConfig,
     AuthConfig,
     VmType,

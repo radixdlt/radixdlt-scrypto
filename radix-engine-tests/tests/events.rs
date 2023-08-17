@@ -4,18 +4,22 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::{account, resource::*};
-use radix_engine::errors::{
-    ApplicationError, PayloadValidationAgainstSchemaError, RuntimeError, SystemError,
-};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
+use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::blueprints::account::ResourcePreference;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntry};
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::consensus_manager::*;
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
+    CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
+};
+use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
@@ -96,8 +100,11 @@ fn scrypto_cant_emit_unregistered_event() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-            PayloadValidationAgainstSchemaError::EventDoesNotExist(event),
+        RuntimeError::SystemError(SystemError::TypeCheckError(
+            TypeCheckError::BlueprintPayloadDoesNotExist(
+                _,
+                BlueprintPayloadIdentifier::Event(event),
+            ),
         )) if event.eq("UnregisteredEvent") => true,
         _ => false,
     });
@@ -1866,7 +1873,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
     let mut total_burn_amount = Decimal::ZERO;
     for component in test_runner.find_all_components() {
         let balance = test_runner.get_component_balance(component, resource_address);
-        total_supply += balance;
+        total_supply = total_supply.safe_add(balance).unwrap();
         println!("{:?}, {}", component, balance);
     }
     for tx_events in test_runner.collected_events() {
@@ -1880,14 +1887,22 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
             let actual_type_name = test_runner.event_name(&event.0);
             match actual_type_name.as_str() {
                 "MintFungibleResourceEvent" => {
-                    total_mint_amount += scrypto_decode::<MintFungibleResourceEvent>(&event.1)
-                        .unwrap()
-                        .amount;
+                    total_mint_amount = total_mint_amount
+                        .safe_add(
+                            scrypto_decode::<MintFungibleResourceEvent>(&event.1)
+                                .unwrap()
+                                .amount,
+                        )
+                        .unwrap();
                 }
                 "BurnFungibleResourceEvent" => {
-                    total_burn_amount += scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
-                        .unwrap()
-                        .amount;
+                    total_burn_amount = total_burn_amount
+                        .safe_add(
+                            scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
+                                .unwrap()
+                                .amount,
+                        )
+                        .unwrap();
                 }
                 _ => {}
             }
@@ -1896,7 +1911,10 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
     println!("Total supply: {}", total_supply);
     println!("Total mint amount: {}", total_mint_amount);
     println!("Total burn amount: {}", total_burn_amount);
-    assert_eq!(total_supply, total_mint_amount - total_burn_amount);
+    assert_eq!(
+        total_supply,
+        total_mint_amount.safe_sub(total_burn_amount).unwrap()
+    );
 
     // Query total supply from the resource manager
     let receipt = test_runner.execute_manifest(
@@ -1968,7 +1986,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
     let mut total_burn_non_fungibles = BTreeSet::new();
     for component in test_runner.find_all_components() {
         let balance = test_runner.get_component_balance(component, resource_address);
-        total_supply += balance;
+        total_supply = total_supply.safe_add(balance).unwrap();
         println!("{:?}, {}", component, balance);
     }
     for tx_events in test_runner.collected_events() {

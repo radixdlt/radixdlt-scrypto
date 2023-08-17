@@ -259,16 +259,38 @@ fn get_reservation_address(
         .map(|buffer| buffer.0)
 }
 
-fn cost_unit_limit(caller: Caller<'_, HostState>) -> Result<u32, InvokeError<WasmRuntimeError>> {
+fn execution_cost_unit_limit(
+    caller: Caller<'_, HostState>,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.cost_unit_limit()
+    runtime.execution_cost_unit_limit()
 }
 
-fn cost_unit_price(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+fn execution_cost_unit_price(
+    caller: Caller<'_, HostState>,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.cost_unit_price().map(|buffer| buffer.0)
+    runtime.execution_cost_unit_price().map(|buffer| buffer.0)
+}
+
+fn finalization_cost_unit_limit(
+    caller: Caller<'_, HostState>,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.finalization_cost_unit_limit()
+}
+
+fn finalization_cost_unit_price(
+    caller: Caller<'_, HostState>,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime
+        .finalization_cost_unit_price()
+        .map(|buffer| buffer.0)
 }
 
 fn tip_percentage(caller: Caller<'_, HostState>) -> Result<u32, InvokeError<WasmRuntimeError>> {
@@ -717,17 +739,31 @@ impl WasmiModule {
             },
         );
 
-        let host_cost_unit_limit = Func::wrap(
+        let host_execution_cost_unit_limit = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u32, Trap> {
-                cost_unit_limit(caller).map_err(|e| e.into())
+                execution_cost_unit_limit(caller).map_err(|e| e.into())
             },
         );
 
-        let host_cost_unit_price = Func::wrap(
+        let host_execution_cost_unit_price = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                cost_unit_price(caller).map_err(|e| e.into())
+                execution_cost_unit_price(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_finalization_cost_unit_limit = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u32, Trap> {
+                finalization_cost_unit_limit(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_finalization_cost_unit_price = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                finalization_cost_unit_price(caller).map_err(|e| e.into())
             },
         );
 
@@ -991,8 +1027,26 @@ impl WasmiModule {
             GET_RESERVATION_ADDRESS_FUNCTION_NAME,
             host_get_reservation_address
         );
-        linker_define!(linker, COST_UNIT_LIMIT_FUNCTION_NAME, host_cost_unit_limit);
-        linker_define!(linker, COST_UNIT_PRICE_FUNCTION_NAME, host_cost_unit_price);
+        linker_define!(
+            linker,
+            EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME,
+            host_execution_cost_unit_limit
+        );
+        linker_define!(
+            linker,
+            EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME,
+            host_execution_cost_unit_price
+        );
+        linker_define!(
+            linker,
+            FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME,
+            host_finalization_cost_unit_limit
+        );
+        linker_define!(
+            linker,
+            FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME,
+            host_finalization_cost_unit_price
+        );
         linker_define!(linker, TIP_PERCENTAGE_FUNCTION_NAME, host_tip_percentage);
         linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
         linker_define!(linker, GLOBALIZE_FUNCTION_NAME, host_globalize_object);

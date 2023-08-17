@@ -18,9 +18,6 @@ use crate::transaction::*;
 use crate::types::*;
 use radix_engine_common::constants::*;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
@@ -273,11 +270,15 @@ where
 
                 let fee_details = if execution_config.enable_cost_breakdown {
                     let execution_cost_breakdown = costing_module
-                        .costing_traces
+                        .execution_cost_breakdown
                         .into_iter()
                         .map(|(k, v)| (k.to_string(), v))
                         .collect();
-                    let finalization_cost_breakdown = Default::default();
+                    let finalization_cost_breakdown = costing_module
+                        .finalization_cost_breakdown
+                        .into_iter()
+                        .map(|(k, v)| (k.to_string(), v))
+                        .collect();
                     Some(TransactionFeeDetails {
                         execution_cost_breakdown,
                         finalization_cost_breakdown,
@@ -334,32 +335,10 @@ where
                             Otherwise, we won't be able to commit failed transactions.
                             May also cache the information for better performance.
                         */
-                        let substate = track
-                            .read_substate(
-                                RESOURCE_PACKAGE.as_node_id(),
-                                MAIN_BASE_PARTITION
-                                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                                    .unwrap(),
-                                &SubstateKey::Map(
-                                    scrypto_encode(&BlueprintVersionKey::new_default(
-                                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                                    ))
-                                    .unwrap(),
-                                ),
-                            )
-                            .unwrap();
-                        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
-                            substate.as_typed().unwrap();
-                        let type_pointer = substate
-                            .value
-                            .unwrap()
-                            .interface
-                            .get_event_type_pointer("BurnFungibleResourceEvent")
-                            .unwrap();
                         application_events.push((
                             EventTypeIdentifier(
                                 Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
-                                type_pointer,
+                                "BurnFungibleResourceEvent".to_string(),
                             ),
                             scrypto_encode(&BurnFungibleResourceEvent {
                                 amount: fee_destination.to_burn,
@@ -600,14 +579,33 @@ where
                 executable.blobs(),
             )
             .and_then(|x| {
+                // Note that if a transactions fails during this phase, the costing is
+                // done as if it would succeed.
+
+                /* finalization costs */
+                system
+                    .modules
+                    .apply_finalization_cost(FinalizationCostingEntry::BaseCost)?;
                 let info = track.get_commit_info();
-                for commit in &info {
-                    system.modules.apply_execution_cost(CostingEntry::Commit {
-                        store_commit: commit,
-                    })?;
+                for store_commit in &info {
+                    system.modules.apply_finalization_cost(
+                        FinalizationCostingEntry::CommitStateUpdates { store_commit },
+                    )?;
                 }
-                for commit in &info {
-                    system.modules.apply_state_expansion_cost(commit)?;
+                system
+                    .modules
+                    .apply_finalization_cost(FinalizationCostingEntry::CommitEvents {
+                        events: &system.modules.events().clone(),
+                    })?;
+                system
+                    .modules
+                    .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
+                        logs: &system.modules.logs().clone(),
+                    })?;
+
+                /* storage costs */
+                for store_commit in &info {
+                    system.modules.apply_storage_cost(store_commit)?;
                 }
 
                 Ok(x)
@@ -736,7 +734,7 @@ where
 
             // Take fees
             collected_fees.put(locked.take_by_amount(amount).unwrap());
-            required -= amount;
+            required = required.safe_sub(amount).unwrap();
 
             // Refund overpayment
             let mut substate: FieldSubstate<LiquidFungibleResource> = track
@@ -760,13 +758,14 @@ where
                 .unwrap();
 
             // Record final payments
-            *fee_payments.entry(vault_id).or_default() += amount;
+            let entry = fee_payments.entry(vault_id).or_default();
+            *entry = entry.safe_add(amount).unwrap();
         }
         // Free credit is locked first and thus used last
         if free_credit.is_positive() {
             let amount = Decimal::min(free_credit, required);
             collected_fees.put(LiquidFungibleResource::new(amount));
-            required -= amount;
+            required = required.safe_sub(amount).unwrap();
         }
 
         let to_proposer = fee_reserve_finalization.to_proposer_amount();
@@ -784,12 +783,17 @@ where
             "Locked fee does not cover transaction cost: {} required",
             required
         );
-        let remaining_collected_fees = collected_fees.amount() - fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */;
+        let remaining_collected_fees = collected_fees.amount().safe_sub(fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */).unwrap();
+        let to_distribute = to_proposer
+            .safe_add(to_validator_set)
+            .unwrap()
+            .safe_add(to_burn)
+            .unwrap();
         assert!(
-            remaining_collected_fees  == to_proposer + to_validator_set + to_burn,
+            remaining_collected_fees  == to_distribute,
             "Remaining collected fee isn't equal to amount to distribute (proposer/validator set/burn): {} != {}",
             remaining_collected_fees,
-            to_proposer + to_validator_set + to_burn,
+            to_distribute,
         );
 
         if !to_proposer.is_zero() || !to_validator_set.is_zero() {
@@ -817,13 +821,13 @@ where
                 .as_typed()
                 .unwrap();
             if let Some(current_leader) = current_leader {
-                substate
+                let entry = substate
                     .value
                     .0
                     .proposer_rewards
                     .entry(current_leader)
-                    .or_default()
-                    .add_assign(to_proposer);
+                    .or_default();
+                *entry = entry.safe_add(to_proposer).unwrap()
             } else {
                 // If there is no current leader, the rewards go to the pool
             };
@@ -851,7 +855,7 @@ where
                 .unwrap();
             substate.value.0.put(
                 collected_fees
-                    .take_by_amount(to_proposer + to_validator_set)
+                    .take_by_amount(to_proposer.safe_add(to_validator_set).unwrap())
                     .unwrap(),
             );
             track
@@ -981,59 +985,48 @@ where
             }
         }
 
-        println!("{:-^100}", "Cost Totals");
+        println!("{:-^100}", "Fee Summary");
         println!(
-            "{:<30}: {:>15}",
-            "Execution Cost Unit Price",
-            receipt
-                .costing_parameters
-                .execution_cost_unit_price
-                .to_string()
-        );
-        println!(
-            "{:<30}: {:>15}",
-            "Execution Cost Unit Limit", receipt.costing_parameters.execution_cost_unit_limit
-        );
-        println!(
-            "{:<30}: {:>15}",
-            "Execution Cost Unit Consumed",
+            "{:<40}: {:>15}",
+            "Execution Cost Units Consumed",
             receipt
                 .fee_summary
                 .total_execution_cost_units_consumed
                 .to_string()
         );
         println!(
-            "{:<30}: {:>15}",
-            "Finalization Cost Unit Price",
-            receipt
-                .costing_parameters
-                .finalization_cost_unit_price
-                .to_string()
-        );
-        println!(
-            "{:<30}: {:>15}",
-            "Finalization Cost Unit Limit", receipt.costing_parameters.finalization_cost_unit_limit
-        );
-        println!(
-            "{:<30}: {:>15}",
-            "Finalization Cost Unit Consumed",
+            "{:<40}: {:>15}",
+            "Finalization Cost Units Consumed",
             receipt
                 .fee_summary
                 .total_finalization_cost_units_consumed
                 .to_string()
         );
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
+            "Execution Cost in XRD",
+            receipt.fee_summary.total_execution_cost_in_xrd.to_string()
+        );
+        println!(
+            "{:<40}: {:>15}",
+            "Finalization Cost in XRD",
+            receipt
+                .fee_summary
+                .total_finalization_cost_in_xrd
+                .to_string()
+        );
+        println!(
+            "{:<40}: {:>15}",
             "Tipping Cost in XRD",
             receipt.fee_summary.total_tipping_cost_in_xrd.to_string()
         );
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
             "Storage Cost in XRD",
             receipt.fee_summary.total_storage_cost_in_xrd.to_string()
         );
         println!(
-            "{:<30}: {:>15}",
+            "{:<40}: {:>15}",
             "Royalty Costs in XRD",
             receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
         );

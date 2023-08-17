@@ -940,12 +940,12 @@ mod private {
     pub trait CanAddAuth: Sized {
         type OutputBuilder;
 
-        fn add_roles(self, role_init: RolesInit) -> Self::OutputBuilder;
+        fn add_roles(self, role_init: RoleAssignmentInit) -> Self::OutputBuilder;
 
         fn add_action_and_roles(
             self,
             method: ResourceFeature,
-            role_init: RolesInit,
+            role_init: RoleAssignmentInit,
         ) -> Self::OutputBuilder;
     }
 

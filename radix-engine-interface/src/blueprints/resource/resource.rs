@@ -50,7 +50,7 @@ impl LiquidFungibleResource {
 
     pub fn put(&mut self, other: LiquidFungibleResource) {
         // update liquidity
-        self.amount += other.amount();
+        self.amount = self.amount.safe_add(other.amount()).expect("Overflow");
     }
 
     pub fn take_by_amount(
@@ -61,7 +61,7 @@ impl LiquidFungibleResource {
         if self.amount < amount_to_take {
             return Err(ResourceError::InsufficientBalance);
         }
-        self.amount -= amount_to_take;
+        self.amount = self.amount.safe_sub(amount_to_take).expect("Overflow");
         Ok(LiquidFungibleResource::new(amount_to_take))
     }
 

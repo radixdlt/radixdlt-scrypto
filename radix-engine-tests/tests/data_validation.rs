@@ -1,8 +1,10 @@
+use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError, SystemError},
     kernel::call_frame::PassMessageError,
     types::*,
 };
+use radix_engine_interface::blueprints::package::KeyOrValue;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -361,7 +363,9 @@ fn vec_of_u8_underflow_should_not_cause_panic() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::InvalidSubstateWrite(e))
+        RuntimeError::SystemError(SystemError::TypeCheckError(TypeCheckError::KeyValueStorePayloadValidationError(
+                                                                  KeyOrValue::Value, e
+                                                              )))
             if e.eq("[ERROR] byte offset: 7-7, value path: Array, cause: DecodeError(BufferUnderflow { required: 99999993, remaining: 1048569 })") => true,
         _ => false,
     })

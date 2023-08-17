@@ -1,10 +1,10 @@
 use crate::api::ObjectModuleId;
-use crate::blueprints::package::TypePointer;
 use crate::types::BlueprintId;
 use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;
 use radix_engine_common::types::NodeId;
 use sbor::rust::fmt;
+use sbor::rust::string::String;
 use utils::ContextualDisplay;
 
 /// Identifies a specific event schema emitter by some emitter RENode.
@@ -16,7 +16,7 @@ use utils::ContextualDisplay;
 /// It is important to note that application events are always emitted by an RENode, meaning that
 /// there is always an emitter of some [`NodeId`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
-pub struct EventTypeIdentifier(pub Emitter, pub TypePointer);
+pub struct EventTypeIdentifier(pub Emitter, pub String);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum Emitter {
@@ -36,9 +36,8 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
             Self::Function(blueprint_id) => {
                 write!(
                     f,
-                    "Function {{ package: {}, blueprint_name: {} }}",
-                    blueprint_id.package_address.display(*context),
-                    blueprint_id.blueprint_name,
+                    "Function {{ blueprint_id: {} }}",
+                    blueprint_id.display(*context),
                 )
             }
             Self::Method(node_id, module_id) => {

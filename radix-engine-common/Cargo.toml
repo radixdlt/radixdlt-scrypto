@@ -20,15 +20,14 @@ blake2 = { version = "0.10.6", default-features = false }
 lazy_static = "1.4.0"
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 arbitrary = { version = "1.3.0", features = ["derive"], optional = true }
+# This is for math benchmarks for comparison purposes.
+# Fast alternative to bigint but unfortunately not cross-compiled to WASM
+rug = { version = "1.18", optional = true }
+ethnum = {version = "1.3.2", default-features = false, optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
 criterion = { version = "0.3", features = ["html_reports"] }
-# This is for math benchmarks for comparison purposes.
-# Fast alternative to bigint but unfortunately not cross-compiled to WASM
-rug = { version = "1.18" }
-num-integer = { version = "0.1.45", default-features = false }
-ethnum = {version = "1.3.2", default-features = false }
 
 [[bench]]
 name = "math"
@@ -50,6 +49,7 @@ alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", 
 radix_engine_fuzzing = ["arbitrary", "bnum/arbitrary"]
 
 resource_tracker=[]
+full_math_benches = [ "dep:rug", "dep:ethnum"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

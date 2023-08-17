@@ -6,7 +6,7 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "create_proof_of_amount"
-    Address("resource_sim1thmh6935clsc7mq4atkwmnzg8d7seluvdrm4uqpcny9f9xe22r0u67")
+    Address("resource_sim1t5vzgrpgnztd367mvty9fc4xt2ugrsths0g32wvd8xdprqhltd20mn")
     Decimal("1")
 ;
 CALL_METHOD
@@ -23,7 +23,7 @@ CALL_METHOD
     Bucket("bucket")
     Enum<1u8>(
         Enum<1u8>(
-            Address("resource_sim1thmh6935clsc7mq4atkwmnzg8d7seluvdrm4uqpcny9f9xe22r0u67")
+            Address("resource_sim1t5vzgrpgnztd367mvty9fc4xt2ugrsths0g32wvd8xdprqhltd20mn")
         )
     )
 ;

@@ -24,6 +24,7 @@ use crate::system::node_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
 use crate::system::system_modules::limits::TransactionLimitsError;
+use crate::system::system_type_checker::TypeCheckError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
@@ -211,40 +212,31 @@ pub enum SystemError {
     NoPackageAddress,
     InvalidObjectHandle,
     GlobalAddressDoesNotExist,
-    NoParent,
     NotAnAddressReservation,
     NotAnObject,
+    NotAKeyValueStore,
     PersistenceProhibited,
     ModulesDontHaveOuterObjects,
     ActorNodeIdDoesNotExist,
-    ActorModuleIdIdDoesNotExist,
-    ActorObjectInfoDoesNotExist,
     OuterObjectDoesNotExist,
     NotAFieldHandle,
     NotAFieldWriteHandle,
-    InvalidReference,
+    RootHasNoType,
+    TypeCheckError(TypeCheckError),
     FieldDoesNotExist(BlueprintId, u8),
-    KeyValueStoreDoesNotExist(BlueprintId, u8),
-    SortedIndexDoesNotExist(BlueprintId, u8),
-    IndexDoesNotExist(BlueprintId, u8),
+    CollectionIndexDoesNotExist(BlueprintId, u8),
     MutatingImmutableSubstate,
     MutatingImmutableFieldSubstate(ObjectHandle, u8),
-    NotAKeyValueStore,
     ObjectModuleDoesNotExist(ObjectModuleId),
-    CannotStoreOwnedInIterable,
-    InvalidSubstateWrite(String),
-    InvalidKeyValueStoreOwnership,
-    InvalidKeyValueKey(String),
     NotAKeyValueWriteLock,
     InvalidLockFlags,
-    InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize(CannotGlobalizeError),
     MissingModule(ObjectModuleId),
     InvalidGlobalAddressReservation,
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
     CreateObjectError(Box<CreateObjectError>),
-    InvalidInstanceSchema,
+    InvalidGenericArgs,
     InvalidFeature(String),
     AssertAccessRuleFailed,
     BlueprintDoesNotExist(CanonicalBlueprintId),
@@ -255,8 +247,6 @@ pub enum SystemError {
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
-    PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError),
-    EventError(EventError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -312,19 +302,6 @@ pub enum SystemModuleError {
     CostingError(CostingError),
     TransactionLimitsError(TransactionLimitsError),
     EventError(Box<EventError>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum PayloadValidationAgainstSchemaError {
-    BlueprintDoesNotExist(BlueprintId),
-    CollectionDoesNotExist,
-    FieldDoesNotExist(u8),
-    KeyValueStoreKeyDoesNotExist,
-    KeyValueStoreValueDoesNotExist,
-    EventDoesNotExist(String),
-    PayloadValidationError(String),
-    InstanceSchemaDoesNotExist,
-    SchemaNotFound,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
