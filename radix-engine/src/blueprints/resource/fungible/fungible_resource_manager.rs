@@ -18,7 +18,7 @@ use radix_engine_interface::*;
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
 lazy_static! {
-    static ref MAX_MINT_AMOUNT: Decimal = Decimal(BnumI256::from(2).pow(160)); // 2^160 subunits
+    static ref MAX_MINT_AMOUNT: Decimal = Decimal(I192::from(2).pow(160)); // 2^160 subunits
 }
 
 /// Represents an error when accessing a bucket.
@@ -221,7 +221,7 @@ impl FungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply += amount;
+            total_supply = total_supply.safe_add(amount).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
             api.field_close(total_supply_handle)?;
         }
@@ -270,7 +270,7 @@ impl FungibleResourceManagerBlueprint {
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply -= other_bucket.liquid.amount();
+            total_supply = total_supply.safe_sub(other_bucket.liquid.amount()).unwrap();
             api.field_write_typed(total_supply_handle, &total_supply)?;
             api.field_close(total_supply_handle)?;
         }

@@ -38,14 +38,14 @@ use sbor::rust::vec::Vec;
 
 pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
     !amount.is_negative()
-        && amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into())) == BnumI256::from(0)
+        && amount.0 % I192::from(10i128.pow((18 - divisibility).into())) == I192::from(0)
 }
 
 pub fn check_non_fungible_amount(amount: &Decimal) -> Result<u32, ()> {
     // Integers between [0..u32::MAX]
     if amount >= &Decimal::from(u32::MIN)
         && amount <= &Decimal::from(u32::MAX)
-        && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
+        && amount.0 % I192::from(10i128.pow(18)) == I192::from(0)
     {
         Ok(u32::from_str(&amount.to_string()).unwrap())
     } else {

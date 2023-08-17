@@ -130,7 +130,7 @@ fn test_normal_transaction_flow() {
         .validate_from_raw(&raw_transaction)
         .expect("Invalid transaction");
     let executable = validated.get_executable();
-    assert_eq!(executable.payload_size(), 1023 * 1024 + 388);
+    assert_eq!(executable.payload_size(), 1023 * 1024 + 380);
 
     // Act
     let receipt = execute_and_commit_transaction(

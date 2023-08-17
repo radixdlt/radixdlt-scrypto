@@ -106,7 +106,9 @@ impl NonFungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let amount = Self::liquid_amount(api)? + Self::locked_amount(api)?;
+        let amount = Self::liquid_amount(api)?
+            .safe_add(Self::locked_amount(api)?)
+            .unwrap();
 
         Ok(amount)
     }

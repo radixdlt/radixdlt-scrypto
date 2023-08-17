@@ -96,9 +96,8 @@ fn test_trace_resource_transfers() {
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
-        .any(
-            |r| r.node_id == source_component.into() && r.amount == -Decimal::from(transfer_amount)
-        ));
+        .any(|r| r.node_id == source_component.into()
+            && r.amount == Decimal::from(transfer_amount).safe_neg().unwrap()));
 
     // Target vault deposit
     assert!(receipt
@@ -122,7 +121,8 @@ fn test_trace_resource_transfers() {
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
-        .any(|r| r.node_id == account.into() && r.amount == -Decimal::from(total_fee_paid)));
+        .any(|r| r.node_id == account.into()
+            && r.amount == Decimal::from(total_fee_paid).safe_neg().unwrap()));
 }
 
 #[test]
@@ -180,7 +180,8 @@ fn test_trace_fee_payments() {
     assert!(resource_changes
         .into_iter()
         .flat_map(|(_, rc)| rc)
-        .any(|r| r.node_id == funded_component.into() && r.amount == -total_fee_paid));
+        .any(|r| r.node_id == funded_component.into()
+            && r.amount == total_fee_paid.safe_neg().unwrap()));
 }
 
 #[test]
