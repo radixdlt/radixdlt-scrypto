@@ -52,6 +52,7 @@ declare_native_blueprint_state! {
             },
             value_type: {
                 kind: Static,
+                // TODO(David): Change to VersionedSchema in this substate in the SCHEMAS_PARTITION
                 the_type: ScryptoSchema,
             },
             allow_ownership: false,
@@ -126,14 +127,6 @@ pub struct PackageRoyaltyAccumulatorV1 {
     /// The vault for collecting package royalties.
     pub royalty_vault: Vault,
 }
-
-//---------------------------------------
-// Collection models - Schemas
-//---------------------------------------
-
-// TODO(David): Change to VersionedSchema when can define a type as not-implicitly-versioned
-// TODO: Move to Schema partition when we have it
-pub type PackageSchemaV1 = ScryptoSchema;
 
 //---------------------------------------
 // Collection models - By BlueprintVersion
