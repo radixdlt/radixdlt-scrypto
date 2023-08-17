@@ -91,6 +91,7 @@ pub mod prelude {
     pub use crate::enum_variant::FixedEnumVariant as SborFixedEnumVariant;
     pub use crate::path::{SborPath, SborPathBuf};
     pub use crate::representations;
+    pub use crate::schema::prelude::*;
     pub use crate::value::{CustomValue as SborCustomValue, Value as SborValue};
     pub use crate::value_kind::*;
     pub use crate::{

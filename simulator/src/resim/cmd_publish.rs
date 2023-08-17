@@ -1,13 +1,12 @@
 use clap::Parser;
 use colored::*;
-use radix_engine::blueprints::macros::*;
+use radix_engine::blueprints::models::*;
 use radix_engine::track::IntoDatabaseUpdates;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, BlueprintPayloadDef, FunctionSchema,
     IndexedStateSchema, PackageExport, VmType, *,
 };
-use radix_engine_interface::schema::TypeRef;
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::interface::CommittableSubstateDatabase;
 use std::ffi::OsStr;
@@ -121,18 +120,8 @@ impl Publish {
                         function.clone(),
                         FunctionSchema {
                             receiver: setup.receiver,
-                            input: match setup.input {
-                                TypeRef::Static(type_index) => BlueprintPayloadDef::Static(
-                                    TypeIdentifier(schema_hash, type_index),
-                                ),
-                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
-                            },
-                            output: match setup.output {
-                                TypeRef::Static(type_index) => BlueprintPayloadDef::Static(
-                                    TypeIdentifier(schema_hash, type_index),
-                                ),
-                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
-                            },
+                            input: BlueprintPayloadDef::from_type_ref(setup.input, schema_hash),
+                            output: BlueprintPayloadDef::from_type_ref(setup.output, schema_hash),
                         },
                     );
                     let export = PackageExport {
@@ -147,15 +136,10 @@ impl Publish {
                     .events
                     .event_schema
                     .into_iter()
-                    .map(|(key, index)| {
+                    .map(|(key, type_ref)| {
                         (
                             key,
-                            match index {
-                                TypeRef::Static(index) => {
-                                    BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, index))
-                                }
-                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
-                            },
+                            BlueprintPayloadDef::from_type_ref(type_ref, schema_hash),
                         )
                     })
                     .collect();

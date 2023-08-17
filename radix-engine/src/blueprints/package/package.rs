@@ -898,13 +898,10 @@ impl PackageNativePackage {
 
                 let mut events = BTreeMap::new();
                 for (key, type_ref) in definition_init.schema.events.event_schema {
-                    let index = match type_ref {
-                        TypeRef::Static(index) => {
-                            BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, index))
-                        }
-                        TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
-                    };
-                    events.insert(key, index);
+                    events.insert(
+                        key,
+                        BlueprintPayloadDef::from_type_ref(type_ref, schema_hash),
+                    );
                 }
 
                 let system_instructions = system_instructions

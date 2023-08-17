@@ -1,9 +1,5 @@
 use crate::blueprints::package::BlueprintType;
-use crate::prelude::*;
-use crate::schema::*;
-use crate::types::*;
-use crate::*;
-use radix_engine_common::crypto::Hash;
+use crate::internal_prelude::*;
 
 pub const PACKAGE_CODE_ID: u64 = 0u64;
 pub const RESOURCE_CODE_ID: u64 = 1u64;
@@ -34,6 +30,17 @@ pub enum BlueprintPayloadDef {
     Static(TypeIdentifier), // Fully Resolved type is defined in package
     Generic(u8), // Fully Resolved type is mapped directly to a generic defined by instance
                  // TODO: How to represent a structure containing a generic?
+}
+
+impl BlueprintPayloadDef {
+    pub fn from_type_ref(type_ref: TypeRef<LocalTypeIndex>, schema_hash: SchemaHash) -> Self {
+        match type_ref {
+            TypeRef::Static(type_index) => {
+                BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
+            }
+            TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -280,19 +287,9 @@ impl IndexedStateSchema {
             let schema_fields = schema
                 .fields
                 .into_iter()
-                .map(|field_schema| {
-                    let pointer = match field_schema.field {
-                        TypeRef::Static(type_index) => {
-                            BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
-                        }
-                        TypeRef::Generic(instance_index) => {
-                            BlueprintPayloadDef::Generic(instance_index)
-                        }
-                    };
-                    FieldSchema {
-                        field: pointer,
-                        condition: field_schema.condition,
-                    }
+                .map(|field_schema| FieldSchema {
+                    field: BlueprintPayloadDef::from_type_ref(field_schema.field, schema_hash),
+                    condition: field_schema.condition,
                 })
                 .collect();
             fields = Some((
@@ -304,12 +301,8 @@ impl IndexedStateSchema {
 
         let mut collections = Vec::new();
         for (collection_index, collection_schema) in schema.collections.into_iter().enumerate() {
-            let schema = collection_schema.map(|type_ref| match type_ref {
-                TypeRef::Static(type_index) => {
-                    BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
-                }
-                TypeRef::Generic(generic_index) => BlueprintPayloadDef::Generic(generic_index),
-            });
+            let schema = collection_schema
+                .map(|type_ref| BlueprintPayloadDef::from_type_ref(type_ref, schema_hash));
 
             if let Some(partition_num) = system_mappings.get(&collection_index) {
                 collections.push((PartitionDescription::Physical(*partition_num), schema));

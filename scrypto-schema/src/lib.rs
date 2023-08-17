@@ -7,7 +7,6 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 use bitflags::bitflags;
 use radix_engine_common::prelude::*;
-use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreGenericSubstitutions {
