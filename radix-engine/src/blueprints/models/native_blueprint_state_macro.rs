@@ -617,70 +617,6 @@ macro_rules! declare_native_blueprint_state {
                         Ok((field_values_vec, collection_entries))
                     }
 
-                    /// This is used mostly for flashing
-                    pub fn into_kernel_main_partitions(self, feature_checks: [<$blueprint_ident FeatureChecks>]) -> Result<NodeSubstates, RuntimeError> {
-                        // PartitionNumber => SubstateKey => IndexedScryptoValue
-                        let mut partitions: NodeSubstates = BTreeMap::new();
-                        let (mut field_values, mut kv_entries) = self.into_system_substates(feature_checks)?;
-
-                        // Fields
-                        {
-                            let mut field_partition_substates = BTreeMap::new();
-                            for (field_index, field_value) in field_values {
-                                field_partition_substates.insert(
-                                    SubstateKey::Field(field_index),
-                                    IndexedScryptoValue::from_typed(&field_value),
-                                );
-                            }
-                            partitions.insert(
-                                [<$blueprint_ident Partition>]::Field.as_main_partition(),
-                                field_partition_substates,
-                            );
-                        }
-
-                        // Each Collection
-                        let mut collection_index = 0u8;
-                        $({
-                            let collection_kv_entries = kv_entries.remove(&collection_index).unwrap();
-                            let collection_partition = [<$blueprint_ident Partition>]::[<$collection_ident $collection_type>];
-                            let collection_partition_substates = collection_kv_entries
-                                .into_iter()
-                                .filter_map(|(key_bytes, kv_entry)| {
-                                    let substate = match kv_entry {
-                                        KVEntry { value: Some(value_bytes), locked: false } => {
-                                            KeyValueEntrySubstate::entry(
-                                                scrypto_decode::<ScryptoValue>(&value_bytes).unwrap()
-                                            )
-                                        }
-                                        KVEntry { value: Some(value_bytes), locked: true } => {
-                                            KeyValueEntrySubstate::locked_entry(
-                                                scrypto_decode::<ScryptoValue>(&value_bytes).unwrap()
-                                            )
-                                        }
-                                        KVEntry { value: None, locked: true } => {
-                                            KeyValueEntrySubstate::locked_empty_entry()
-                                        }
-                                        KVEntry { value: None, locked: false } => {
-                                            return None;
-                                        }
-                                    };
-
-                                    Some((
-                                        SubstateKey::Map(key_bytes),
-                                        IndexedScryptoValue::from_typed(&substate)
-                                    ))
-                                })
-                                .collect();
-                            partitions.insert(
-                                collection_partition.as_main_partition(),
-                                collection_partition_substates,
-                            );
-                            collection_index += 1;
-                        })*
-
-                        Ok(partitions)
-                    }
-
                     pub fn into_new_object<Y: ClientObjectApi<RuntimeError>>(
                         self,
                         api: &mut Y,
@@ -702,6 +638,85 @@ macro_rules! declare_native_blueprint_state {
                             all_collection_entries, // TODO: Change to take other collections, not just KVEntry
                         )
                     }
+                }
+
+                //-------------
+                // Flashing
+                //-------------
+
+                /// This method converts the state init into the node substates,
+                /// at a kernel / flash level of abstraction.
+                ///
+                /// This can further be mapped to level 0 with a call to:
+                /// `.into_database_updates::<SpreadPrefixKeyMapper>(&node_id)`
+                ///
+                /// We decided to have this as a separate function away from
+                /// the impl of [<$blueprint_ident StateInit>], as it's conceptually
+                /// a helper method at a different abstraction level.
+                pub fn [<map_ $blueprint_property_name _state_into_main_partition_node_substate_flash>](
+                    state_init: [<$blueprint_ident StateInit>],
+                    feature_checks: [<$blueprint_ident FeatureChecks>],
+                ) -> Result<NodeSubstates, RuntimeError> {
+                    // PartitionNumber => SubstateKey => IndexedScryptoValue
+                    let mut partitions: NodeSubstates = BTreeMap::new();
+                    let (mut field_values, mut kv_entries) = state_init.into_system_substates(feature_checks)?;
+
+                    // Fields
+                    {
+                        let mut field_partition_substates = BTreeMap::new();
+                        for (field_index, field_value) in field_values {
+                            field_partition_substates.insert(
+                                SubstateKey::Field(field_index),
+                                IndexedScryptoValue::from_typed(&field_value),
+                            );
+                        }
+                        partitions.insert(
+                            [<$blueprint_ident Partition>]::Field.as_main_partition(),
+                            field_partition_substates,
+                        );
+                    }
+
+                    // Each Collection
+                    let mut collection_index = 0u8;
+                    $({
+                        let collection_kv_entries = kv_entries.remove(&collection_index).unwrap();
+                        let collection_partition = [<$blueprint_ident Partition>]::[<$collection_ident $collection_type>];
+                        let collection_partition_substates = collection_kv_entries
+                            .into_iter()
+                            .filter_map(|(key_bytes, kv_entry)| {
+                                let substate = match kv_entry {
+                                    KVEntry { value: Some(value_bytes), locked: false } => {
+                                        KeyValueEntrySubstate::entry(
+                                            scrypto_decode::<ScryptoValue>(&value_bytes).unwrap()
+                                        )
+                                    }
+                                    KVEntry { value: Some(value_bytes), locked: true } => {
+                                        KeyValueEntrySubstate::locked_entry(
+                                            scrypto_decode::<ScryptoValue>(&value_bytes).unwrap()
+                                        )
+                                    }
+                                    KVEntry { value: None, locked: true } => {
+                                        KeyValueEntrySubstate::locked_empty_entry()
+                                    }
+                                    KVEntry { value: None, locked: false } => {
+                                        return None;
+                                    }
+                                };
+
+                                Some((
+                                    SubstateKey::Map(key_bytes),
+                                    IndexedScryptoValue::from_typed(&substate)
+                                ))
+                            })
+                            .collect();
+                        partitions.insert(
+                            collection_partition.as_main_partition(),
+                            collection_partition_substates,
+                        );
+                        collection_index += 1;
+                    })*
+
+                    Ok(partitions)
                 }
 
                 //-------------

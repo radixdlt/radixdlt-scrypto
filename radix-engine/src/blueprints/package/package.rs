@@ -509,9 +509,11 @@ pub fn create_bootstrap_package_partitions(
     // MAIN PARTITIONS:
     //-----------------
 
-    let mut partitions = package_state_init
-        .into_kernel_main_partitions(own_features.into())
-        .expect("Expected that correct substates are present for given features");
+    let mut partitions = map_package_state_into_main_partition_node_substate_flash(
+        package_state_init,
+        own_features.into(),
+    )
+    .expect("Expected that correct substates are present for given features");
 
     //-------------------
     // MODULE PARTITIONS:

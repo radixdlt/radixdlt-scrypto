@@ -186,10 +186,12 @@ impl Publish {
                     );
             }
 
-            let database_updates = package_state_to_set
-                .into_kernel_main_partitions(FeatureChecks::None)
-                .unwrap()
-                .into_database_updates::<SpreadPrefixKeyMapper>(&node_id);
+            let database_updates = map_package_state_into_main_partition_node_substate_flash(
+                package_state_to_set,
+                FeatureChecks::None,
+            )
+            .unwrap()
+            .into_database_updates::<SpreadPrefixKeyMapper>(&node_id);
             substate_db.commit(&database_updates);
 
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
