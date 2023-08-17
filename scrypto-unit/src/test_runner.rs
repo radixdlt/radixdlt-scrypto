@@ -788,17 +788,16 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     >(
         &self,
         kv_store_id: Own,
-    ) -> std::collections::HashMap<K, V> {
+    ) -> hash_map::ext_HashMap::<K,V> {
         let partition_number = MAIN_BASE_PARTITION;
         let node_id = kv_store_id.as_node_id();
-
-        let map: std::collections::HashMap<K, V> = self
+        let map = self
             .substate_db()
             .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>, MapKey>(
                 node_id,
                 partition_number,
             )
-            .fold(HashMap::new(), |mut all, (k, v)| {
+            .fold(hash_map::ext_HashMap::<K,V>::new(), |mut all, (k, v)| {
                 all.insert(
                     scrypto_decode::<K>(k.for_map().unwrap()).unwrap(),
                     v.value.unwrap(),
