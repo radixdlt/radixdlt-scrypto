@@ -2,7 +2,7 @@ use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
     CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
     CreateNodeError, DropNodeError, HeapStick, MovePartitionError, NonGlobalNodeRefs,
-    OpenSubstateError, PersistNodeError, StickyNode, WriteSubstateError,
+    OpenSubstateError, PersistNodeError, WriteSubstateError,
 };
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
@@ -144,17 +144,13 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 )));
             }
 
-            let retain_partitions = match self.heap_stick.get(&node_id) {
-                Some(StickyNode::StickyNode) => {
-                    return Err(CallbackError::Error(
-                        PersistNodeError::CannotPersistStickyNode(node_id),
-                    ));
-                }
-                Some(StickyNode::StickyPartitions(sticky_partitions)) => Some(sticky_partitions),
-                None => None,
-            };
+            if self.heap_stick.is_pinned(&node_id) {
+                return Err(CallbackError::Error(
+                    PersistNodeError::CannotPersistStickyNode(node_id),
+                ));
+            }
 
-            let node_substates = match self.heap.remove_filter(&node_id, retain_partitions) {
+            let node_substates = match self.heap.remove_filter(&node_id, self.heap_stick.get_sticky(&node_id)) {
                 Ok(substates) => substates,
                 Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
                     panic!("Frame owned node {:?} not found in heap", node_id)
@@ -212,20 +208,6 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 .map_err(|e| CallbackError::Error(MovePartitionError::HeapRemoveModuleErr(e)))?,
             SubstateDevice::Store => {
                 panic!("Partition moves from store not supported.");
-            }
-        };
-
-        if let SubstateDevice::Store = dest_device {
-            if self
-                .heap_stick
-                .partition_is_sticky(src_node_id, src_partition_number)
-            {
-                return Err(CallbackError::Error(
-                    MovePartitionError::CannotMoveStickyPartition(
-                        *src_node_id,
-                        src_partition_number,
-                    ),
-                ));
             }
         };
 

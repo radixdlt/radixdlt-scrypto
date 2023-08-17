@@ -1532,65 +1532,28 @@ impl<C, L> StoreAccessHandler<C, L, ()> for NullHandler<C, L> {
     }
 }
 
-pub enum StickyNode {
-    StickyNode,
-    StickyPartitions(BTreeMap<PartitionNumber, StickyPartition>),
-}
-
-pub enum StickyPartition {
-    StickyPartition,
-    StickySubstates(BTreeSet<SubstateKey>),
-}
-
 /// Structure which keeps track of all sticky nodes/partitions/substates which
 /// are meant to "stick" to the heap.
 pub struct HeapStick {
-    stick_to_heap: BTreeMap<NodeId, StickyNode>,
+    pinned_nodes: BTreeSet<NodeId>,
+    transient_substates: BTreeMap<NodeId, BTreeSet<(PartitionNumber, SubstateKey)>>,
 }
 
 impl HeapStick {
     pub fn new() -> Self {
         Self {
-            stick_to_heap: BTreeMap::new(),
+            pinned_nodes: BTreeSet::new(),
+            transient_substates: BTreeMap::new(),
         }
     }
 
     fn stick(&mut self, target: StickTarget) {
         match target {
             StickTarget::Node(node_id) => {
-                self.stick_to_heap.insert(node_id, StickyNode::StickyNode);
-            }
-            StickTarget::Partition(node_id, partition_num) => {
-                match self
-                    .stick_to_heap
-                    .entry(node_id)
-                    .or_insert(StickyNode::StickyPartitions(Default::default()))
-                {
-                    StickyNode::StickyNode => {}
-                    StickyNode::StickyPartitions(sticky_paritions) => {
-                        sticky_paritions.insert(partition_num, StickyPartition::StickyPartition);
-                    }
-                }
+                self.pinned_nodes.insert(node_id);
             }
             StickTarget::Substate(node_id, partition_num, substate_key) => {
-                match self
-                    .stick_to_heap
-                    .entry(node_id)
-                    .or_insert(StickyNode::StickyPartitions(Default::default()))
-                {
-                    StickyNode::StickyNode => {}
-                    StickyNode::StickyPartitions(sticky_paritions) => {
-                        match sticky_paritions
-                            .entry(partition_num)
-                            .or_insert(StickyPartition::StickySubstates(Default::default()))
-                        {
-                            StickyPartition::StickyPartition => {}
-                            StickyPartition::StickySubstates(sticky_substates) => {
-                                sticky_substates.insert(substate_key);
-                            }
-                        }
-                    }
-                }
+                self.transient_substates.entry(node_id).or_insert(BTreeSet::new()).insert((partition_num, substate_key));
             }
         }
     }
@@ -1598,50 +1561,22 @@ impl HeapStick {
     fn unstick(&mut self, target: &StickTarget) {
         match target {
             StickTarget::Node(node_id) => {
-                self.stick_to_heap.remove(node_id);
-            }
-            StickTarget::Partition(node_id, partition_num) => {
-                match self.stick_to_heap.get_mut(node_id) {
-                    Some(StickyNode::StickyNode) => {}
-                    Some(StickyNode::StickyPartitions(sticky_paritions)) => {
-                        sticky_paritions.remove(partition_num);
-                    }
-                    None => {}
-                }
+                self.pinned_nodes.remove(node_id);
             }
             StickTarget::Substate(node_id, partition_num, substate_key) => {
-                match self.stick_to_heap.get_mut(node_id) {
-                    Some(StickyNode::StickyNode) => {}
-                    Some(StickyNode::StickyPartitions(sticky_paritions)) => {
-                        match sticky_paritions.get_mut(partition_num) {
-                            Some(StickyPartition::StickyPartition) => {}
-                            Some(StickyPartition::StickySubstates(sticky_substates)) => {
-                                sticky_substates.remove(substate_key);
-                            }
-                            None => {}
-                        }
-                    }
-                    None => {}
+                if let Some(sticky) = self.transient_substates.get_mut(node_id) {
+                    sticky.remove(&(*partition_num, substate_key.clone()));
                 }
             }
         }
     }
 
-    pub fn get(&self, node_id: &NodeId) -> Option<&StickyNode> {
-        self.stick_to_heap.get(node_id)
+    pub fn is_pinned(&self, node_id: &NodeId) -> bool {
+        self.pinned_nodes.contains(node_id)
     }
 
-    pub fn partition_is_sticky(&self, node_id: &NodeId, partition_num: PartitionNumber) -> bool {
-        match self.stick_to_heap.get(node_id) {
-            Some(StickyNode::StickyNode) => true,
-            Some(StickyNode::StickyPartitions(sticky_partitions)) => {
-                match sticky_partitions.get(&partition_num) {
-                    Some(StickyPartition::StickyPartition) => true,
-                    _ => false,
-                }
-            }
-            None => false,
-        }
+    pub fn get_sticky(&self, node_id: &NodeId) -> Option<&BTreeSet<(PartitionNumber, SubstateKey)>> {
+        self.transient_substates.get(node_id)
     }
 
     pub fn substate_is_sticky(
@@ -1650,17 +1585,8 @@ impl HeapStick {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> bool {
-        match self.stick_to_heap.get(node_id) {
-            Some(StickyNode::StickyNode) => true,
-            Some(StickyNode::StickyPartitions(sticky_partitions)) => {
-                match sticky_partitions.get(&partition_num) {
-                    Some(StickyPartition::StickyPartition) => true,
-                    Some(StickyPartition::StickySubstates(sticky_substates)) => {
-                        sticky_substates.contains(substate_key)
-                    }
-                    None => false,
-                }
-            }
+        match self.get_sticky(node_id) {
+            Some(sticky) => sticky.contains(&(partition_num, substate_key.clone())),
             None => false,
         }
     }

@@ -13,7 +13,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
 pub enum StickTarget {
     Node(NodeId),
-    Partition(NodeId, PartitionNumber),
     Substate(NodeId, PartitionNumber, SubstateKey),
 }
 
@@ -21,7 +20,6 @@ impl StickTarget {
     pub fn node_id(&self) -> &NodeId {
         match self {
             StickTarget::Node(node_id)
-            | StickTarget::Partition(node_id, ..)
             | StickTarget::Substate(node_id, ..) => node_id,
         }
     }

@@ -1,5 +1,4 @@
 use crate::blueprints::resource::*;
-use crate::kernel::call_frame::StickyPartition;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
@@ -156,36 +155,24 @@ impl Heap {
     pub fn remove_filter(
         &mut self,
         node_id: &NodeId,
-        retain: Option<&BTreeMap<PartitionNumber, StickyPartition>>,
+        retain: Option<&BTreeSet<(PartitionNumber, SubstateKey)>>,
     ) -> Result<NodeSubstates, HeapRemoveNodeError> {
         match self.nodes.remove(node_id) {
             Some(mut node_substates) => {
                 if let Some(stick_partitions) = retain {
                     let mut retained_substates = NodeSubstates::new();
-                    for (partition_num, sticky_partition) in stick_partitions {
-                        match sticky_partition {
-                            StickyPartition::StickyPartition => {
-                                if let Some(partition_substates) =
-                                    node_substates.remove(partition_num)
-                                {
-                                    retained_substates.insert(*partition_num, partition_substates);
-                                }
+                    for (partition_num, key) in stick_partitions {
+
+                        if let Some(partition_substates) =
+                            node_substates.get_mut(partition_num)
+                        {
+                            let mut retain_partition_substates = BTreeMap::new();
+                            if let Some(substate) = partition_substates.remove(key) {
+                                retain_partition_substates
+                                    .insert(key.clone(), substate);
                             }
-                            StickyPartition::StickySubstates(sticky_substates) => {
-                                if let Some(partition_substates) =
-                                    node_substates.get_mut(partition_num)
-                                {
-                                    let mut retain_partition_substates = BTreeMap::new();
-                                    for key in sticky_substates {
-                                        if let Some(substate) = partition_substates.remove(key) {
-                                            retain_partition_substates
-                                                .insert(key.clone(), substate);
-                                        }
-                                    }
-                                    retained_substates
-                                        .insert(*partition_num, retain_partition_substates);
-                                }
-                            }
+                            retained_substates
+                                .insert(*partition_num, retain_partition_substates);
                         }
                     }
 
