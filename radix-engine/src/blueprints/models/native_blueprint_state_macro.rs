@@ -31,8 +31,8 @@ use crate::internal_prelude::*;
 ///         the_type: x,
 ///     },
 ///     {
-///         kind: Instance,
-///         ident: GenericTypeParameterName,
+///         kind: Generic,
+///         ident: BlueprintGenericParameterIdent,
 ///     },
 ///     // In future
 ///     {
@@ -69,20 +69,23 @@ macro_rules! declare_native_blueprint_state {
                 $(,)?
             },
         )?
+        $(
+            generics: {
+                $(
+                    $generic_property_name:ident: {
+                        ident: $generic_ident:ident,
+                        description: $generic_description:expr
+                        $(,)?
+                    }
+                ),*
+                $(,)?
+            },
+        )?
         features: {
             $(
                 $feature_property_name:ident: {
                     ident: $feature_ident:ident,
                     description: $feature_description:expr,
-                }
-            ),*
-            $(,)?
-        },
-        instance_schema_types: {
-            // If no types => instance schema disabled
-            $(
-                $instance_type_property_name:ident: {
-                    ident: $instance_type_ident:ident,
                 }
             ),*
             $(,)?
@@ -152,7 +155,7 @@ macro_rules! declare_native_blueprint_state {
                         Field,
                         type [<$blueprint_ident $field_ident FieldSubstate>] = WRAPPED [<$blueprint_ident $field_ident FieldPayload>]
                     );
-                );*
+                )*
 
                 // Generate models for each collection
                 $(
@@ -344,6 +347,35 @@ macro_rules! declare_native_blueprint_state {
                     }
                 }
 
+                $(
+                    #[repr(u8)]
+                    #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, FromRepr)]
+                    pub enum [<$blueprint_ident Generic>] {
+                        $($generic_ident,)*
+                    }
+
+                    impl [<$blueprint_ident Generic>] {
+                        pub const fn generic_index(&self) -> u8 {
+                            *self as u8
+                        }
+                    }
+                )?
+
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
+                pub enum [<$blueprint_ident Feature>] {
+                    $($feature_ident,)*
+                }
+
+                impl BlueprintFeature for [<$blueprint_ident Feature>] {
+                    fn feature_name(&self) -> &'static str {
+                        match *self {
+                            $(
+                                Self::$feature_ident => stringify!($feature_property_name),
+                            )*
+                        }
+                    }
+                }
+
                 #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
                 pub struct [<$blueprint_ident FeatureSet>] {
                     $(pub [<$feature_property_name>]: bool,)*
@@ -370,21 +402,6 @@ macro_rules! declare_native_blueprint_state {
                             }
                         )*
                         names
-                    }
-                }
-
-                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
-                pub enum [<$blueprint_ident Feature>] {
-                    $($feature_ident,)*
-                }
-
-                impl BlueprintFeature for [<$blueprint_ident Feature>] {
-                    fn feature_name(&self) -> &'static str {
-                        match *self {
-                            $(
-                                Self::$feature_ident => stringify!($feature_property_name),
-                            )*
-                        }
                     }
                 }
 
@@ -477,19 +494,21 @@ macro_rules! declare_native_blueprint_state {
                     ) -> BlueprintStateSchemaInit {
                         let mut fields = vec![];
                         $(
-                            // TODO(David) - Implement instance schema
                             fields.push(FieldSchema {
-                                field: TypeRef::Static(
-                                    type_aggregator.add_child_type_and_descendents::<[<$blueprint_ident $field_ident FieldPayload>]>()
+                                field: map_type_ref!(
+                                    $blueprint_ident,
+                                    type_aggregator,
+                                    $field_type,
+                                    [<$blueprint_ident $field_ident FieldPayload>],
                                 ),
                                 condition: $field_condition,
                             });
                         )*
                         let mut collections = vec![];
                         $(
-                            // TODO(David) - Implement instance schema
                             collections.push(map_collection_schema!(
                                 $collection_type,
+                                $blueprint_ident,
                                 type_aggregator,
                                 $collection_key_type,
                                 [<$blueprint_ident $collection_ident KeyPayload>],
@@ -512,7 +531,6 @@ macro_rules! declare_native_blueprint_state {
                 /// Used for initializing blueprint state.
                 ///
                 /// Note - this doesn't support:
-                /// * Instance schemas / generics (yet)
                 /// * IndexEntries (because the underlying new_object API doesn't support them)
                 ///   > these panic at create time
                 #[derive(Debug, Default)]
@@ -785,14 +803,14 @@ mod helper_macros {
             ident_core: $ident_core:ident,
             $(#[$attributes:meta])*
             struct $content_type_name:ident = {
-                kind: Instance,
-                ident: $instance_ident:ident
+                kind: Generic,
+                ident: $generic_ident:ident
                 $(,)?
             }
         ) => {
             $(#[$attributes])*
-            #[sbor(transparent)]
-            pub struct $content_type_name<$instance_ident = ScryptoValue>(pub $instance_ident);
+            #[sbor(transparent, categorize_types = "")]
+            pub struct $content_type_name<$generic_ident: ScryptoEncode + ScryptoDecode = ScryptoValue>(pub $generic_ident);
         };
         // TODO - Add support for some kind of StaticMultiVersioned type here
     }
@@ -832,28 +850,43 @@ mod helper_macros {
     pub(crate) use generate_system_substate_type_alias;
 
     macro_rules! map_collection_schema {
-        (KeyValue, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $allow_ownership:expr$(,)?) => {
+        (KeyValue, $blueprint_ident:ident, $aggregator:ident, $key_type:tt, $key_payload_alias:ident, $value_type:tt, $value_payload_alias:ident, $allow_ownership:expr$(,)?) => {
             BlueprintCollectionSchema::KeyValueStore(BlueprintKeyValueSchema {
-                key: map_type_ref!($aggregator, $key_type, $key_content_alias),
-                value: map_type_ref!($aggregator, $value_type, $value_content_alias),
+                key: map_type_ref!($blueprint_ident, $aggregator, $key_type, $key_payload_alias),
+                value: map_type_ref!(
+                    $blueprint_ident,
+                    $aggregator,
+                    $value_type,
+                    $value_payload_alias
+                ),
                 allow_ownership: $allow_ownership,
             })
         };
-        (Index, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $allow_ownership:expr$(,)?) => {
+        (Index, $blueprint_ident:ident, $aggregator:ident, $key_type:tt, $key_payload_alias:ident, $value_type:tt, $value_payload_alias:ident, $allow_ownership:expr$(,)?) => {
             BlueprintCollectionSchema::Index(BlueprintKeyValueSchema {
-                key: map_type_ref!($aggregator, $key_type, $key_content_alias),
-                value: map_type_ref!($aggregator, $value_type, $value_content_alias),
+                key: map_type_ref!($blueprint_ident, $aggregator, $key_type, $key_payload_alias),
+                value: map_type_ref!(
+                    $blueprint_ident,
+                    $aggregator,
+                    $value_type,
+                    $value_payload_alias
+                ),
                 allow_ownership: $allow_ownership,
             })
         };
-        (SortedIndex, $aggregator:ident, $key_type:tt, $key_content_alias:ident, $value_type:tt, $value_content_alias:ident, $allow_ownership:expr$(,)?) => {
+        (SortedIndex, $blueprint_ident:ident, $aggregator:ident, $key_type:tt, $key_payload_alias:ident, $value_type:tt, $value_payload_alias:ident, $allow_ownership:expr$(,)?) => {
             BlueprintCollectionSchema::SortedIndex(BlueprintKeyValueSchema {
-                key: map_type_ref!($aggregator, $key_type, $key_content_alias),
-                value: map_type_ref!($aggregator, $value_type, $value_content_alias),
+                key: map_type_ref!($blueprint_ident, $aggregator, $key_type, $key_payload_alias),
+                value: map_type_ref!(
+                    $blueprint_ident,
+                    $aggregator,
+                    $value_type,
+                    $value_payload_alias
+                ),
                 allow_ownership: $allow_ownership,
             })
         };
-        ($unknown_system_substate_type:ident, $aggregator:ident, $collection_key_type:tt, $collection_value_type:tt, $collection_allow_ownership:expr$(,)?) => {
+        ($unknown_system_substate_type:ident, $blueprint_ident:ident, $aggregator:ident, $key_type:tt, $key_payload_alias:ident, $value_type:tt, $value_payload_alias:ident, $allow_ownership:expr$(,)?) => {
             compile_error!(concat!(
                 "Unrecognized system collection substate type: `",
                 stringify!($unknown_system_substate_type),
@@ -867,36 +900,41 @@ mod helper_macros {
 
     macro_rules! map_type_ref {
         (
+            $blueprint_ident:ident,
             $aggregator:ident,
             {
                 kind: StaticSingleVersioned
                 $(,)?
             },
-            $content_alias:ident$(,)?
+            $payload_alias:ident$(,)?
         ) => {
-            TypeRef::Static($aggregator.add_child_type_and_descendents::<$content_alias>())
+            TypeRef::Static($aggregator.add_child_type_and_descendents::<$payload_alias>())
         };
         (
+            $blueprint_ident:ident,
             $aggregator:ident,
             {
                 kind: Static,
                 the_type: $static_type:ty
                 $(,)?
             },
-            $content_alias:ident$(,)?
+            $payload_alias:ident$(,)?
         ) => {
-            TypeRef::Static($aggregator.add_child_type_and_descendents::<$content_alias>())
+            TypeRef::Static($aggregator.add_child_type_and_descendents::<$payload_alias>())
         };
         (
+            $blueprint_ident:ident,
             $aggregator:ident,
             {
-                kind: Instance,
-                ident: $instance_ident:ident
+                kind: Generic,
+                ident: $generic_ident:ident
                 $(,)?
             },
-            $content_alias:ident$(,)?
+            $payload_alias:ident$(,)?
         ) => {
-            compile_error!("Instance schemas not yet supported - close though!")
+            paste::paste! {
+                TypeRef::Generic([<$blueprint_ident Generic>]::$generic_ident.generic_index())
+            }
         }; // TODO - Add support for some kind of StaticMultiVersioned type here
     }
 
@@ -990,13 +1028,26 @@ mod tests {
     declare_native_blueprint_state! {
         blueprint_ident: TestBlueprint,
         blueprint_snake_case: package,
+        generics: {
+            abc: {
+                ident: Abc,
+                description: "Some generic parameter called Abc",
+            }
+        },
         features: {},
-        instance_schema_types: {},
         fields: {
             royalty:  {
                 ident: Royalty,
                 field_type: {
                     kind: StaticSingleVersioned,
+                },
+                condition: Condition::Always,
+            },
+            some_generic_field:  {
+                ident: GenericField,
+                field_type: {
+                    kind: Generic,
+                    ident: Abc,
                 },
                 condition: Condition::Always,
             }

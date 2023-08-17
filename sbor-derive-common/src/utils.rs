@@ -371,13 +371,18 @@ fn get_child_types(attributes: &[Attribute], existing_generics: &Generics) -> Re
     parse_comma_separated_types(&comma_separated_types)
 }
 
-fn get_types_requiring_categorize_bound(
+fn get_types_requiring_categorize_bound_for_encode_and_decode(
     attributes: &[Attribute],
     child_types: &[Type],
 ) -> Result<Vec<Type>> {
     let Some(comma_separated_types) = get_sbor_attribute_string_value(attributes, "categorize_types")? else {
         // A categorize bound is only needed for child types when you have a collection, eg Vec<T>
         // But if no explicit "categorize_types" is set, we assume all are needed.
+        // > Note as of Aug 2023:
+        //   This is perhaps the wrong call.
+        //   In future, I'd suggest:
+        //   - Change this to assume none, and add categorize_child_types_for_encode if needed.
+        //   - Add separate categorize_child_types_for_categorize - and also default to not needed.
         // These can be removed / overriden with the "categorize_types" field
         return Ok(child_types.to_owned());
     };
@@ -572,7 +577,8 @@ pub fn build_decode_generics<'a>(
     let decoder_generic: Path = parse_str(&decoder_label)?;
 
     let child_types = get_child_types(&attributes, &impl_generics)?;
-    let categorize_types = get_types_requiring_categorize_bound(&attributes, &child_types)?;
+    let categorize_types =
+        get_types_requiring_categorize_bound_for_encode_and_decode(&attributes, &child_types)?;
 
     let mut where_clause = where_clause.cloned();
     if child_types.len() > 0 || categorize_types.len() > 0 {
@@ -637,7 +643,8 @@ pub fn build_encode_generics<'a>(
     let encoder_generic: Path = parse_str(&encoder_label)?;
 
     let child_types = get_child_types(&attributes, &impl_generics)?;
-    let categorize_types = get_types_requiring_categorize_bound(&attributes, &child_types)?;
+    let categorize_types =
+        get_types_requiring_categorize_bound_for_encode_and_decode(&attributes, &child_types)?;
 
     let mut where_clause = where_clause.cloned();
     if child_types.len() > 0 || categorize_types.len() > 0 {

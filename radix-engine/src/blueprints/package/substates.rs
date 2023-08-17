@@ -10,7 +10,6 @@ declare_native_blueprint_state! {
             description: "Enables the package royalty substate",
         }
     },
-    instance_schema_types: {},
     fields: {
         royalty:  {
             ident: RoyaltyAccumulator,
