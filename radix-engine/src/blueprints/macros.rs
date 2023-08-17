@@ -444,6 +444,13 @@ macro_rules! declare_native_blueprint_state {
                     }
                 }
 
+                /// A list of all logical (real) and physical (mapped) partitions for the
+                /// $blueprint_ident blueprint.
+                ///
+                /// Note: In future, we could add a separate LogicalPartition enum, to
+                /// not include physical partitions - however it's very hard to do in
+                /// declarative macro land, because enum variants can't be
+                /// macro invocations (to eg filter out the physical partition types)
                 #[repr(u8)]
                 #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
                 pub enum [<$blueprint_ident Partition>] {
@@ -460,12 +467,19 @@ macro_rules! declare_native_blueprint_state {
                             return PartitionDescription::Logical(PartitionOffset(module_partition_offset));
                         }
                         $(
-                            generate_next_partition_description!(
-                                let current_partition_description,
-                                module_partition_offset,
+                            let mapped_physical_partition = extract_collection_option!(
+                                mapped_physical_partition,
                                 $($collection_options)?
                             );
-
+                            let current_partition_description = match mapped_physical_partition {
+                                Some(physical_partition) => {
+                                    PartitionDescription::Physical(physical_partition)
+                                },
+                                None => {
+                                    module_partition_offset += 1;
+                                    PartitionDescription::Logical(PartitionOffset(module_partition_offset))
+                                },
+                            };
                             if (*self as u8) == (Self::[<$collection_ident $collection_type>] as u8) {
                                 return current_partition_description;
                             }
@@ -565,6 +579,13 @@ macro_rules! declare_native_blueprint_state {
                 // Typed Substate - Keys and Values
                 //---------------------------------
                 #[derive(Debug, Clone)]
+                /// All the SubstateKeys for all logical (real) and physical (mapped)
+                /// partitions for the $blueprint_ident blueprint.
+                ///
+                /// Note: In future, we could remove keys for physical partitions from this,
+                /// as they can't be persisted as-is - however it's very hard to do in
+                /// declarative macro land, because enum variants can't be
+                /// macro invocations (to eg filter out the physical partition types)
                 pub enum [<$blueprint_ident TypedSubstateKey>] {
                     Fields([<$blueprint_ident Field>]),
                     $([<$collection_ident $collection_type Entries>]([<$blueprint_ident $collection_ident SubstateKey>]),)*
@@ -596,6 +617,13 @@ macro_rules! declare_native_blueprint_state {
                 }
 
                 #[derive(Debug)]
+                /// All the Substate values for all logical (real) and physical (mapped)
+                /// partitions for the $blueprint_ident blueprint.
+                ///
+                /// Note: In future, we could remove values for physical partitions from this,
+                /// as they can't be persisted as-is - however it's very hard to do in
+                /// declarative macro land, because enum variants can't be
+                /// macro invocations (to eg filter out the physical partition types)
                 pub enum [<$blueprint_ident TypedSubstateValue>] {
                     Field([<$blueprint_ident TypedFieldSubstateValue>]),
                     $([<$collection_ident $collection_type>]([<$blueprint_ident $collection_ident EntrySubstate>]),)*
@@ -671,10 +699,9 @@ macro_rules! declare_native_blueprint_state {
                 /// Used for initializing blueprint state.
                 ///
                 /// Note - this doesn't support:
-                /// * Features
-                /// * Instance schemas
-                /// * Feature-dependent fields
+                /// * Instance schemas / generics (yet)
                 /// * IndexEntries (because the underlying new_object API doesn't support them)
+                ///   > these panic at create time
                 #[derive(Debug, Default)]
                 pub struct [<$blueprint_ident StateInit>] {
                     $(
@@ -1097,32 +1124,35 @@ mod helper_macros {
     #[allow(unused)]
     pub(crate) use map_entry_substate_to_kv_entry;
 
-    macro_rules! generate_next_partition_description {
+    macro_rules! extract_collection_option {
         (
-            let $current_partition_description:ident,
-            $module_partition_offset:ident,
+            mapped_physical_partition, // Name of field
             {
-                mapped_physical_partition: $physical_partition:expr$(,)?
-                // When other options are added, need to explicitly add
-                // an ordering of optional other key / values
-            }
+                mapped_physical_partition: $value:tt$(,)?
+                $(sorted_index_key_property: $ignored:tt$(,)?)?
+            }$(,)?
         ) => {
-            let $current_partition_description =
-                PartitionDescription::Physical($physical_partition);
+            Some($value)
         };
         (
-            let $current_partition_description:ident,
-            $module_partition_offset:ident,
-            $($non_matching_stuff:tt)?
+            sorted_index_key_property, // Name of field
+            {
+                $(mapped_physical_partition: $ignored:tt$(,)?)?
+                sorted_index_key_property: $value:tt$(,)?
+            }$(,)?
         ) => {
-            $module_partition_offset += 1;
-            let $current_partition_description =
-                PartitionDescription::Logical(PartitionOffset($module_partition_offset));
+            Some($value)
+        };
+        (
+            $option_field_name:ident,
+            $($non_matching_stuff:tt)?$(,)?
+        ) => {
+            None
         };
     }
 
     #[allow(unused)]
-    pub(crate) use generate_next_partition_description;
+    pub(crate) use extract_collection_option;
 }
 
 #[cfg(test)]
