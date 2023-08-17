@@ -4,9 +4,8 @@ use radix_engine_common::prelude::{
 };
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintPayloadDef, BlueprintPayloadIdentifier,
-    BlueprintVersionKey, KeyOrValue, PartitionDescription,
-    PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+    BlueprintDefinition, BlueprintPayloadDef, BlueprintPayloadIdentifier, BlueprintVersionKey,
+    KeyOrValue, PartitionDescription, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
 };
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
@@ -502,7 +501,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         })
     }
 
-    fn get_schema(&self, node_id: &NodeId, schema_hash: &Hash) -> Option<ScryptoSchema> {
+    pub fn get_schema(&self, node_id: &NodeId, schema_hash: &Hash) -> Option<ScryptoSchema> {
         let schema = self
             .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
                 node_id,
