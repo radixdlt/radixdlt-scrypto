@@ -347,6 +347,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
         }
     }
 
+    // TODO cleanup interface to avoid redundant information
     fn get_substate_from_db<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         substate_db: &'s S,
         partition_key: &DbPartitionKey,
@@ -365,6 +366,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
         Ok(result)
     }
 
+    // TODO cleanup interface to avoid redundant information
     fn list_entries_from_db<
         'x,
         E: 'x,
