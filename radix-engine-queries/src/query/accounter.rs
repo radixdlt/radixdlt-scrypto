@@ -2,11 +2,10 @@ use super::{StateTreeTraverser, StateTreeVisitor};
 use radix_engine_interface::{
     blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleVault},
     data::scrypto::model::NonFungibleLocalId,
-    math::Decimal,
+    math::{traits::*, Decimal},
     types::{NodeId, ResourceAddress},
 };
 use radix_engine_store_interface::interface::SubstateDatabase;
-use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 pub struct ResourceAccounter<'s, S: SubstateDatabase> {
@@ -51,10 +50,8 @@ impl Accounting {
         address: &ResourceAddress,
         resource: &LiquidFungibleResource,
     ) {
-        self.balances
-            .entry(*address)
-            .or_default()
-            .add_assign(resource.amount())
+        let entry = self.balances.entry(*address).or_default();
+        *entry = entry.safe_add(resource.amount()).unwrap()
     }
 
     pub fn add_non_fungible_vault(
@@ -62,10 +59,8 @@ impl Accounting {
         address: &ResourceAddress,
         resource: &LiquidNonFungibleVault,
     ) {
-        self.balances
-            .entry(*address)
-            .or_default()
-            .add_assign(resource.amount)
+        let entry = self.balances.entry(*address).or_default();
+        *entry = entry.safe_add(resource.amount).unwrap()
     }
 
     pub fn add_non_fungible(&mut self, address: &ResourceAddress, id: &NonFungibleLocalId) {

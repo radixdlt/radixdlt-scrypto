@@ -106,7 +106,9 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let amount = Self::liquid_amount(api)? + Self::locked_amount(api)?;
+        let amount = Self::liquid_amount(api)?
+            .safe_add(Self::locked_amount(api)?)
+            .unwrap();
 
         Ok(amount)
     }
@@ -499,7 +501,7 @@ impl NonFungibleVaultBlueprint {
                 ApplicationError::NonFungibleVaultError(NonFungibleVaultError::NotEnoughAmount),
             ));
         }
-        substate_ref.amount -= Decimal::from(n);
+        substate_ref.amount = substate_ref.amount.safe_sub(n).unwrap();
 
         let taken = {
             let ids: Vec<(NonFungibleLocalId, ())> = api.actor_index_drain_typed(
@@ -532,7 +534,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let mut substate_ref: LiquidNonFungibleVault = api.field_read_typed(handle)?;
 
-        substate_ref.amount -= Decimal::from(ids.len());
+        substate_ref.amount = substate_ref.amount.safe_sub(ids.len()).unwrap();
 
         // TODO: Batch remove
         for id in ids {
@@ -575,7 +577,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let mut vault: LiquidNonFungibleVault = api.field_read_typed(handle)?;
 
-        vault.amount += Decimal::from(resource.ids.len());
+        vault.amount = vault.amount.safe_add(resource.ids.len()).unwrap();
 
         // update liquidity
         // TODO: Batch update

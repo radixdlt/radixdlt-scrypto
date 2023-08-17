@@ -239,11 +239,17 @@ macro_rules! impl_bits {
         )*
     }
 }
-impl_bits! { BnumI256, BInt::<4> }
-impl_bits! { BnumI384, BInt::<6> }
-impl_bits! { BnumI512, BInt::<8> }
-impl_bits! { BnumI768, BInt::<12> }
-impl_bits! { BnumU256, BUint::<4> }
-impl_bits! { BnumU384, BUint::<6> }
-impl_bits! { BnumU512, BUint::<8> }
-impl_bits! { BnumU768, BUint::<12> }
+impl_bits! { I192, BInt::<3> }
+impl_bits! { I256, BInt::<4> }
+impl_bits! { I320, BInt::<5> }
+impl_bits! { I384, BInt::<6> }
+impl_bits! { I448, BInt::<7> }
+impl_bits! { I512, BInt::<8> }
+impl_bits! { I768, BInt::<12> }
+impl_bits! { U192, BUint::<3> }
+impl_bits! { U256, BUint::<4> }
+impl_bits! { U320, BUint::<5> }
+impl_bits! { U384, BUint::<6> }
+impl_bits! { U448, BUint::<7> }
+impl_bits! { U512, BUint::<8> }
+impl_bits! { U768, BUint::<12> }

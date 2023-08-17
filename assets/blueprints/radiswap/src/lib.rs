@@ -62,7 +62,11 @@ mod radiswap {
                 .expect("Resource does not belong to the pool");
             let (output_resource_address, output_reserves) = reserves.into_iter().next().unwrap();
 
-            let output_amount = (input_amount * output_reserves) / (input_reserves + input_amount);
+            let output_amount = input_amount
+                .safe_mul(output_reserves)
+                .unwrap()
+                .safe_div(input_reserves.safe_add(input_amount).unwrap())
+                .unwrap();
 
             // NOTE: It's the responsibility of the user of the pool to do the appropriate rounding
             // before calling the withdraw method.

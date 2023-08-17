@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use radix_engine_common::math::{Decimal, PreciseDecimal};
+use radix_engine_common::math::{traits::*, Decimal, PreciseDecimal};
 use std::process::Command;
 use wasm_benchmarks_lib::*;
 use wasmer::{self, WasmerEnv};
@@ -81,15 +81,15 @@ macro_rules! wasmi_native {
                     "add" => {
                         let b_vec = wasmi_read_memory(caller.as_context(), memory, b_ptr, <$type>::BITS / 8);
                         let b = <$type>::try_from(&b_vec[..]).unwrap();
-                        a + b
+                        a.safe_add(b).unwrap()
                     },
                     "mul" => {
                         let b_vec = wasmi_read_memory(caller.as_context(), memory, b_ptr, <$type>::BITS / 8);
                         let b = <$type>::try_from(&b_vec[..]).unwrap();
-                        a * b
+                        a.safe_mul(b).unwrap()
                     },
                     "pow" => {
-                        a.powi(b_ptr.into())
+                        a.safe_powi(b_ptr.into()).unwrap()
                     },
                     _ => panic!("Unsupported operator!"),
                 };
@@ -209,15 +209,15 @@ macro_rules! wasmer_native {
                     "add" => {
                         let b_vec = wasmer_read_memory(&memory, b_ptr, <$type>::BITS / 8);
                         let b = <$type>::try_from(&b_vec[..]).unwrap();
-                        a + b
+                        a.safe_add(b).unwrap()
                     },
                     "mul" => {
                         let b_vec = wasmer_read_memory(&memory, b_ptr, <$type>::BITS / 8);
                         let b = <$type>::try_from(&b_vec[..]).unwrap();
-                        a * b
+                        a.safe_mul(b).unwrap()
                     },
                     "pow" => {
-                        a.powi(b_ptr.into())
+                        a.safe_powi(b_ptr.into()).unwrap()
                     }
                     _ => panic!("Unsupported operator!"),
                 };

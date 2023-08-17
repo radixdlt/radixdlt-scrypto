@@ -6,7 +6,7 @@ use radix_engine_common::prelude::ManifestBucket;
 use radix_engine_common::time::{Instant, TimeComparisonOperator};
 use radix_engine_common::types::*;
 use radix_engine_interface::crypto::Secp256k1PublicKey;
-use radix_engine_interface::math::Decimal;
+use radix_engine_interface::math::{traits::*, Decimal};
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -162,8 +162,10 @@ impl EpochChangeCondition {
             return false;
         }
         let proportion_difference = (Decimal::from(actual_duration_millis)
-            - Decimal::from(self.target_duration_millis))
-            / Decimal::from(self.target_duration_millis);
+            .safe_sub(self.target_duration_millis)
+            .expect("Overflow"))
+        .safe_div(self.target_duration_millis)
+        .expect("Overflow");
         proportion_difference <= dec!("0.1")
     }
 
