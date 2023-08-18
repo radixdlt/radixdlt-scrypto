@@ -32,6 +32,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
+    receipt1.expect_commit_success();
     println!("\n{:?}", receipt1);
 
     let manifest2 = ManifestBuilder::new().lock_fee(account, dec!(100)).build();
@@ -47,6 +48,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
+    receipt2.expect_commit_success();
     println!("\n{:?}", receipt2);
 
     println!(
@@ -80,6 +82,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
+    receipt1.expect_commit_success();
     println!("\n{:?}", receipt1);
 
     let manifest2 = ManifestBuilder::new()
@@ -102,6 +105,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
+    receipt2.expect_commit_success();
     println!("\n{:?}", receipt2);
 
     println!(
@@ -141,6 +145,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
+    receipt1.expect_commit_success();
     println!("\n{:?}", receipt1);
 
     let manifest2 = ManifestBuilder::new()
@@ -161,6 +166,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
+    receipt2.expect_commit_success();
     println!("\n{:?}", receipt2);
 
     println!(
@@ -204,6 +210,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
+    receipt1.expect_commit_success();
     println!("\n{:?}", receipt1);
 
     let manifest2 = ManifestBuilder::new()
@@ -224,6 +231,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
+    receipt2.expect_commit_success();
     println!("\n{:?}", receipt2);
 
     println!(
@@ -246,7 +254,7 @@ fn estimate_adding_signature() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account1, 20, XRD, 100)
-        .deposit_batch(account2)
+        .try_deposit_batch_or_abort(account2, None)
         .build();
     let tx1 = create_notarized_transaction(
         &mut test_runner,
@@ -260,6 +268,7 @@ fn estimate_adding_signature() {
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
+    receipt1.expect_commit_success();
     println!("\n{:?}", receipt1);
 
     let tx2 = create_notarized_transaction(
@@ -274,6 +283,7 @@ fn estimate_adding_signature() {
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
+    receipt2.expect_commit_success();
     println!("\n{:?}", receipt2);
 
     println!(
