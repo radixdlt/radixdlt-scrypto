@@ -55,6 +55,8 @@ pub enum ExecutionCostingEntry<'a> {
     MoveModule {
         event: &'a MoveModuleEvent<'a>,
     },
+
+    /* Substate */
     OpenSubstate {
         event: &'a OpenSubstateEvent<'a>,
     },
@@ -66,6 +68,11 @@ pub enum ExecutionCostingEntry<'a> {
     },
     CloseSubstate {
         event: &'a CloseSubstateEvent,
+    },
+    MarkSubstateAsTransient {
+        node_id: &'a NodeId,
+        partition_number: &'a PartitionNumber,
+        substate_key: &'a SubstateKey,
     },
 
     /* unstable node apis */
@@ -145,6 +152,7 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::CloseSubstate { event } => ft.close_substate_cost(event),
             ExecutionCostingEntry::SetSubstate { event } => ft.set_substate_cost(event),
             ExecutionCostingEntry::RemoveSubstate { event } => ft.remove_substate_cost(event),
+            ExecutionCostingEntry::MarkSubstateAsTransient { node_id, partition_number, substate_key } => ft.mark_substate_as_transient_cost(node_id, partition_number, substate_key),
             ExecutionCostingEntry::ScanKeys { event } => ft.scan_keys_cost(event),
             ExecutionCostingEntry::DrainSubstates { event } => ft.drain_substates_cost(event),
             ExecutionCostingEntry::ScanSortedSubstates { event } => {

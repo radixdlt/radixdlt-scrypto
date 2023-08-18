@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,     0.06912363,    100.0%
-- Execution Cost (XRD)                                                     ,     0.04263087,     61.7%
+Total Cost (XRD)                                                           ,     0.06912563,    100.0%
+- Execution Cost (XRD)                                                     ,     0.04263287,     61.7%
 - Finalization Cost (XRD)                                                  ,     0.01385276,     20.0%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Storage Cost (XRD)                                                       ,        0.01264,     18.3%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Royalty Cost (XRD)                                                       ,              0,      0.0%
-Execution Cost Breakdown                                                   ,        4263087,    100.0%
+Execution Cost Breakdown                                                   ,        4263287,    100.0%
 - AllocateNodeId                                                           ,           2808,      0.1%
 - BeforeInvoke                                                             ,           3456,      0.1%
 - CloseSubstate                                                            ,          35805,      0.8%
@@ -13,6 +13,7 @@ Execution Cost Breakdown                                                   ,    
 - DropNode                                                                 ,          31141,      0.7%
 - EmitEvent                                                                ,           4052,      0.1%
 - LockFee                                                                  ,            500,      0.0%
+- MarkSubstateAsTransient                                                  ,            200,      0.0%
 - MoveModule                                                               ,            747,      0.0%
 - OpenSubstate::GlobalAccount                                              ,         289242,      6.8%
 - OpenSubstate::GlobalFungibleResourceManager                              ,         176529,      4.1%

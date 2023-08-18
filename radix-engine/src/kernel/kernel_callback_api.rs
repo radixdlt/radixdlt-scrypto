@@ -195,6 +195,8 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
+    fn on_mark_substate_as_transient(&mut self, node_id: &NodeId, partition_number: &PartitionNumber, substate_key: &SubstateKey) -> Result<(), RuntimeError>;
+
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
         partition_num: PartitionNumber,

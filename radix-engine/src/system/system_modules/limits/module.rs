@@ -4,7 +4,7 @@ use crate::kernel::kernel_callback_api::{
     CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent,
     ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
-use crate::system::module::KernelModule;
+use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::StoreAccess;
@@ -99,7 +99,7 @@ impl LimitsModule {
     }
 }
 
-impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for LimitsModule {
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,

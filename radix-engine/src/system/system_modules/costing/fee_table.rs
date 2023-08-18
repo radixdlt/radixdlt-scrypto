@@ -308,6 +308,12 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn mark_substate_as_transient_cost(&self, _node_id: &NodeId, _partition_number: &PartitionNumber, _substate_key: &SubstateKey) -> u32 {
+        // TODO: Add correct costing
+        100u32
+    }
+
+    #[inline]
     pub fn scan_keys_cost(&self, event: &ScanKeysEvent) -> u32 {
         match event {
             ScanKeysEvent::Start => 14285u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,

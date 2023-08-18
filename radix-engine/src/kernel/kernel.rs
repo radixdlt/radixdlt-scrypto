@@ -317,6 +317,8 @@ where
         partition_num: PartitionNumber,
         key: SubstateKey,
     ) -> Result<(), RuntimeError> {
+        self.callback.on_mark_substate_as_transient(&node_id, &partition_num, &key)?;
+
         self.current_frame
             .mark_substate_as_transient(&mut self.substate_io, node_id, partition_num, key)
             .map_err(|e| {

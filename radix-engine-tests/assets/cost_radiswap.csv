@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,     0.07977408,    100.0%
-- Execution Cost (XRD)                                                     ,     0.06757216,     84.7%
+Total Cost (XRD)                                                           ,     0.07977708,    100.0%
+- Execution Cost (XRD)                                                     ,     0.06757516,     84.7%
 - Finalization Cost (XRD)                                                  ,     0.00900192,     11.3%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Storage Cost (XRD)                                                       ,         0.0032,      4.0%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Royalty Cost (XRD)                                                       ,              0,      0.0%
-Execution Cost Breakdown                                                   ,        6757216,    100.0%
+Execution Cost Breakdown                                                   ,        6757516,    100.0%
 - AllocateNodeId                                                           ,           3432,      0.1%
 - BeforeInvoke                                                             ,           4362,      0.1%
 - CloseSubstate                                                            ,          58170,      0.9%
@@ -13,6 +13,7 @@ Execution Cost Breakdown                                                   ,    
 - DropNode                                                                 ,          42240,      0.6%
 - EmitEvent                                                                ,           5828,      0.1%
 - LockFee                                                                  ,            500,      0.0%
+- MarkSubstateAsTransient                                                  ,            300,      0.0%
 - OpenSubstate::GlobalAccount                                              ,         695678,     10.3%
 - OpenSubstate::GlobalFungibleResourceManager                              ,         420505,      6.2%
 - OpenSubstate::GlobalGenericComponent                                     ,          43171,      0.6%
