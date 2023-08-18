@@ -236,6 +236,56 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     );
 }
 
+#[test]
+fn estimate_adding_signature() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let network = NetworkDefinition::simulator();
+    let (_pk1, sk1, account1) = test_runner.new_virtual_account();
+    let (_pk2, sk2, account2) = test_runner.new_virtual_account();
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_and_withdraw(account1, 20, XRD, 100)
+        .deposit_batch(account2)
+        .build();
+    let tx1 = create_notarized_transaction(
+        &mut test_runner,
+        &network,
+        manifest.clone(),
+        vec![&sk1], // no sign
+        &sk1,       // notarize
+    );
+    let receipt1 = test_runner.execute_transaction(
+        validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
+        CostingParameters::default(),
+        ExecutionConfig::for_notarized_transaction(),
+    );
+    println!("\n{:?}", receipt1);
+
+    let tx2 = create_notarized_transaction(
+        &mut test_runner,
+        &network,
+        manifest,
+        vec![&sk1, &sk2], // sign
+        &sk1,             // notarize
+    );
+    let receipt2 = test_runner.execute_transaction(
+        validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
+        CostingParameters::default(),
+        ExecutionConfig::for_notarized_transaction(),
+    );
+    println!("\n{:?}", receipt2);
+
+    println!(
+        "Adding a signature: {} XRD",
+        receipt2
+            .fee_summary
+            .total_cost()
+            .safe_sub(receipt1.fee_summary.total_cost())
+            .unwrap()
+    );
+}
+
 fn create_notarized_transaction(
     test_runner: &mut DefaultTestRunner,
     network: &NetworkDefinition,
