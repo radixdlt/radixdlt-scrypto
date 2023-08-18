@@ -150,8 +150,8 @@ impl SystemModuleMixer {
                 params: auth_zone_params.clone(),
             },
             limits: LimitsModule::new(TransactionLimitsConfig {
-                max_number_of_substates_in_track: execution_config.max_number_of_substates_in_track,
-                max_number_of_substates_in_heap: execution_config.max_number_of_substates_in_heap,
+                max_heap_substate_total_bytes: execution_config.max_heap_substate_total_bytes,
+                max_track_substate_total_bytes: execution_config.max_track_substate_total_bytes,
                 max_substate_key_size: execution_config.max_substate_key_size,
                 max_substate_value_size: execution_config.max_substate_value_size,
                 max_invoke_payload_size: execution_config.max_invoke_input_size,
