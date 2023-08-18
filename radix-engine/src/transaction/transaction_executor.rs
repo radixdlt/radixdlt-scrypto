@@ -40,8 +40,10 @@ pub struct CostingParameters {
 
     /// The price of USD in xrd
     pub usd_price: Decimal,
-    /// The price of storage in xrd
-    pub storage_price: Decimal,
+    /// The price of state storage in xrd
+    pub state_storage_price: Decimal,
+    /// The price of archive storage in xrd
+    pub archive_storage_price: Decimal,
 }
 
 impl Default for CostingParameters {
@@ -53,7 +55,8 @@ impl Default for CostingParameters {
             finalization_cost_unit_price: FINALIZATION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
             finalization_cost_unit_limit: FINALIZATION_COST_UNIT_LIMIT,
             usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
-            storage_price: STORAGE_PRICE_IN_XRD.try_into().unwrap(),
+            state_storage_price: STATE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
+            archive_storage_price: ARCHIVE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
         }
     }
 }
@@ -335,16 +338,18 @@ where
                             Otherwise, we won't be able to commit failed transactions.
                             May also cache the information for better performance.
                         */
-                        application_events.push((
-                            EventTypeIdentifier(
-                                Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
-                                "BurnFungibleResourceEvent".to_string(),
-                            ),
-                            scrypto_encode(&BurnFungibleResourceEvent {
-                                amount: fee_destination.to_burn,
-                            })
-                            .unwrap(),
-                        ));
+                        if fee_destination.to_burn.is_positive() {
+                            application_events.push((
+                                EventTypeIdentifier(
+                                    Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
+                                    "BurnFungibleResourceEvent".to_string(),
+                                ),
+                                scrypto_encode(&BurnFungibleResourceEvent {
+                                    amount: fee_destination.to_burn,
+                                })
+                                .unwrap(),
+                            ));
+                        }
 
                         // Finalize execution trace
                         let execution_trace =
@@ -582,10 +587,7 @@ where
                 // Note that if a transactions fails during this phase, the costing is
                 // done as if it would succeed.
 
-                /* finalization costs */
-                system
-                    .modules
-                    .apply_finalization_cost(FinalizationCostingEntry::BaseCost)?;
+                /* finalization costs: computation on Node side */
                 let info = track.get_commit_info();
                 for store_commit in &info {
                     system.modules.apply_finalization_cost(
@@ -604,8 +606,14 @@ where
                     })?;
 
                 /* storage costs */
+                system
+                    .modules
+                    .apply_storage_cost(StorageType::Archive, executable.payload_size())?;
                 for store_commit in &info {
-                    system.modules.apply_storage_cost(store_commit)?;
+                    system.modules.apply_storage_cost(
+                        StorageType::State,
+                        store_commit.logical_size_increase(),
+                    )?;
                 }
 
                 Ok(x)
@@ -976,18 +984,18 @@ where
         if let Some(fee_details) = &receipt.fee_details {
             println!("{:-^100}", "Execution Cost Breakdown");
             for (k, v) in &fee_details.execution_cost_breakdown {
-                println!("{:<75}: {:>15}", k, v.to_string());
+                println!("{:<75}: {:>25}", k, v.to_string());
             }
 
             println!("{:-^100}", "Finalization Cost Breakdown");
             for (k, v) in &fee_details.finalization_cost_breakdown {
-                println!("{:<75}: {:>15}", k, v.to_string());
+                println!("{:<75}: {:>25}", k, v.to_string());
             }
         }
 
         println!("{:-^100}", "Fee Summary");
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Execution Cost Units Consumed",
             receipt
                 .fee_summary
@@ -995,7 +1003,7 @@ where
                 .to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Finalization Cost Units Consumed",
             receipt
                 .fee_summary
@@ -1003,12 +1011,12 @@ where
                 .to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Execution Cost in XRD",
             receipt.fee_summary.total_execution_cost_in_xrd.to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Finalization Cost in XRD",
             receipt
                 .fee_summary
@@ -1016,17 +1024,17 @@ where
                 .to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Tipping Cost in XRD",
             receipt.fee_summary.total_tipping_cost_in_xrd.to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Storage Cost in XRD",
             receipt.fee_summary.total_storage_cost_in_xrd.to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Royalty Costs in XRD",
             receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
         );
