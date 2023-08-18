@@ -17,7 +17,7 @@ mod ref_check {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(1);
+                .mint_initial_supply(1).into();
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();
             store.insert(0u32, vault);
@@ -43,7 +43,7 @@ mod ref_check {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(1);
+                .mint_initial_supply(1).into();
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();
             store.insert(0u32, vault);
@@ -74,7 +74,7 @@ mod ref_check {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(1);
+                .mint_initial_supply(1).into();
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();
             store.insert(0u32, vault);

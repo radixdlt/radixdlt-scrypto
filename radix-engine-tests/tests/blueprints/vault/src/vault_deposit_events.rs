@@ -10,7 +10,7 @@ mod vault_events {
         pub fn create_vault_with_bucket() {
             Self {
                 vault: Vault::with_bucket(
-                    ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(5),
+                    ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(5).into(),
                 ),
             }
             .instantiate()

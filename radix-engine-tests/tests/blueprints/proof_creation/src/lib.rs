@@ -246,6 +246,7 @@ mod pc {
                     burner_updater => AccessRule::DenyAll;
                 })
                 .mint_initial_supply(100)
+                .into()
         }
 
         pub fn create_non_fungible_bucket() -> Bucket {

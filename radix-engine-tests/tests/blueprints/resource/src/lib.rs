@@ -51,7 +51,7 @@ mod resource_test {
                 burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
-            (badge, resource_manager)
+            (badge.into(), resource_manager)
         }
 
         pub fn create_fungible_and_mint(
@@ -82,7 +82,7 @@ mod resource_test {
             let tokens = badge
                 .as_fungible()
                 .authorize_with_amount(dec!(1), || resource_manager.mint(amount));
-            (badge, tokens, resource_manager)
+            (badge.into(), tokens.into(), resource_manager)
         }
 
         pub fn create_fungible_wrong_resource_flags_should_fail() -> Bucket {
@@ -94,7 +94,7 @@ mod resource_test {
                     }
                 })
                 .mint_initial_supply(1u32);
-            bucket
+            bucket.into()
         }
 
         pub fn create_fungible_wrong_mutable_flags_should_fail() -> Bucket {
@@ -106,7 +106,7 @@ mod resource_test {
                     }
                 })
                 .mint_initial_supply(1u32);
-            bucket
+            bucket.into()
         }
 
         pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceManager)
@@ -132,7 +132,7 @@ mod resource_test {
                 burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
-            (badge, resource_manager)
+            (badge.into(), resource_manager)
         }
 
         pub fn query() -> (Bucket, Decimal, ResourceType) {
@@ -239,7 +239,7 @@ mod rounding {
                 ),
                 dec!("1.52")
             );
-            bucket
+            bucket.into()
         }
 
         pub fn non_fungible_resource_amount_for_withdrawal() -> Bucket {

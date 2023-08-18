@@ -19,7 +19,7 @@ mod vault_lock_unlock_auth {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
 
             Self {
-                vault: Vault::with_bucket(bucket),
+                vault: Vault::with_bucket(bucket.into()),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

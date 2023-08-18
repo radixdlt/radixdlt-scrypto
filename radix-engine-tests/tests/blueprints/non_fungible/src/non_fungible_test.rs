@@ -22,9 +22,9 @@ mod non_fungible_test {
     impl NonFungibleTest {
         pub fn create_non_fungible_mutable() -> (Bucket, ResourceManager, Bucket) {
             // Create a mint badge
-            let mint_badge = ResourceBuilder::new_fungible(OwnerRole::None)
+            let mint_badge: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
-                .mint_initial_supply(1);
+                .mint_initial_supply(1).into();
 
             // Create non-fungible resource with mutable supply
             let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>(

@@ -18,7 +18,7 @@ mod precommitted {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(1);
+                .mint_initial_supply(1).into();
             let vault = Vault::with_bucket(bucket);
             store.insert(0u32, vault);
             {
@@ -64,7 +64,7 @@ mod precommitted {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(1);
+                .mint_initial_supply(1).into();
             let vault = Vault::with_bucket(bucket);
             sub_store.insert(0u32, vault);
             deep_vault.insert(0u32, sub_store);

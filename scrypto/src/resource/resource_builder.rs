@@ -562,7 +562,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
     /// let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
     ///     .mint_initial_supply(5);
     /// ```
-    pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> Bucket {
+    pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> FungibleBucket {
         let metadata = self
             .metadata_config
             .take()
@@ -585,7 +585,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
                 .unwrap(),
             )
             .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+                scrypto_decode::<(ResourceAddress, FungibleBucket)>(&bytes)
                     .unwrap()
                     .1
             })
