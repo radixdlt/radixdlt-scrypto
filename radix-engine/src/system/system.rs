@@ -556,7 +556,7 @@ where
 
         if let Some((partition_offset, fields)) = blueprint_interface.state.fields {
             for (index, field) in fields.iter().enumerate() {
-                if let FieldTransience::TransientStatic(..) = field.transience {
+                if let FieldTransience::TransientStatic {..} = field.transience {
                     let partition_number = match partition_offset {
                         PartitionDescription::Physical(partition_number) => partition_number,
                         PartitionDescription::Logical(offset) => {
@@ -2220,7 +2220,7 @@ where
                 flags,
                 SystemLockData::Field(lock_data),
             )?,
-            FieldTransience::TransientStatic(default_value) => {
+            FieldTransience::TransientStatic { default_value }  => {
                 let default_value: ScryptoValue = scrypto_decode(&default_value).unwrap();
                 self.api.kernel_mark_substate_as_transient(
                     node_id,

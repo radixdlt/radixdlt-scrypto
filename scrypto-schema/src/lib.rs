@@ -155,7 +155,10 @@ pub enum Condition {
 pub enum FieldTransience {
     NotTransient,
     // TODO: Will need to change this Vec<u8> to ScryptoValue to support default values with global references
-    TransientStatic(Vec<u8>),
+    TransientStatic {
+        /// The default value a transient substate will have on first read
+        default_value: Vec<u8>
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -197,7 +200,9 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::Always,
-            transience: FieldTransience::TransientStatic(scrypto_encode(&default_value).unwrap()),
+            transience: FieldTransience::TransientStatic {
+                default_value: scrypto_encode(&default_value).unwrap(),
+            },
         }
     }
 }

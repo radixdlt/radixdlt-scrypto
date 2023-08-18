@@ -163,7 +163,7 @@ fn validate_package_schema(
 
             match &field.transience {
                 FieldTransience::NotTransient => {}
-                FieldTransience::TransientStatic(default_value) => match field.field {
+                FieldTransience::TransientStatic { default_value } => match field.field {
                     TypeRef::Static(local_index) => {
                         validate_payload_against_schema::<ScryptoCustomExtension, ()>(
                             default_value,

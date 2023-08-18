@@ -14,7 +14,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
     CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
-    CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError,
+    CreateFrameError, CreateNodeError, DropNodeError,
     MarkTransientSubstateError, MovePartitionError, OpenSubstateError, PassMessageError,
     PinNodeError, ReadSubstateError, WriteSubstateError,
 };
@@ -188,11 +188,10 @@ pub enum CallFrameError {
 
     CreateNodeError(CreateNodeError),
     DropNodeError(DropNodeError),
-
-    ListNodeModuleError(ListNodeModuleError),
-    MoveModuleError(MovePartitionError),
-
     PinNodeError(PinNodeError),
+
+    MovePartitionError(MovePartitionError),
+
     MarkTransientSubstateError(MarkTransientSubstateError),
     OpenSubstateError(OpenSubstateError),
     CloseSubstateError(CloseSubstateError),
@@ -536,7 +535,7 @@ impl From<PassMessageError> for CallFrameError {
 
 impl From<MovePartitionError> for CallFrameError {
     fn from(value: MovePartitionError) -> Self {
-        Self::MoveModuleError(value)
+        Self::MovePartitionError(value)
     }
 }
 

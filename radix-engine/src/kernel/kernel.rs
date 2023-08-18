@@ -413,7 +413,7 @@ where
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::MoveModuleError(e),
+                    CallFrameError::MovePartitionError(e),
                 )),
                 CallbackError::CallbackError(e) => e,
             })?;

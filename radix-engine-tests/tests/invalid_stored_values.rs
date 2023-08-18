@@ -27,7 +27,7 @@ fn stored_bucket_in_committed_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::MoveModuleError(MovePartitionError::PersistNodeError(
+                CallFrameError::MovePartitionError(MovePartitionError::PersistNodeError(
                     PersistNodeError::CannotPersistPinnedNode(..)
                 ))
             ))
@@ -58,7 +58,7 @@ fn stored_bucket_in_owned_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::MoveModuleError(MovePartitionError::PersistNodeError(
+                CallFrameError::MovePartitionError(MovePartitionError::PersistNodeError(
                     PersistNodeError::CannotPersistPinnedNode(..)
                 ))
             ))

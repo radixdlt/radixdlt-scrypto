@@ -449,13 +449,6 @@ pub enum TakeNodeError {
     OwnLocked(NodeId),
 }
 
-/// Represents an error when listing the node modules of a node.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ListNodeModuleError {
-    NodeNotVisible(NodeId),
-    NodeNotInHeap(NodeId),
-}
-
 /// Represents an error when moving modules from one node to another.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum MovePartitionError {
