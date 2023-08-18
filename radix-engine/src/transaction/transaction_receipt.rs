@@ -641,7 +641,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         )?;
         write!(
             f,
-            "\n├─ {} {} XRD",
+            "\n└─ {} {} XRD",
             "Royalties:".bold().green(),
             self.fee_summary.total_royalty_cost_in_xrd
         )?;
