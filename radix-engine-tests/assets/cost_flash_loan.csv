@@ -1,8 +1,8 @@
-Total Cost (XRD)                                                           ,     0.616059978955077475,    100.0%
-- Execution Cost (XRD)                                                     ,                0.5643818,     91.6%
-- Finalization Cost (XRD)                                                  ,               0.03975725,      6.5%
+Total Cost (XRD)                                                           ,     0.688264467073562985,    100.0%
+- Execution Cost (XRD)                                                     ,                0.5643818,     82.0%
+- Finalization Cost (XRD)                                                  ,               0.03725725,      5.4%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
-- Storage Cost (XRD)                                                       ,     0.011920928955077475,      1.9%
+- Storage Cost (XRD)                                                       ,     0.086625417073562985,     12.6%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
 Execution Cost Breakdown                                                   ,                 11287636,    100.0%
@@ -57,10 +57,9 @@ Execution Cost Breakdown                                                   ,    
 - ValidateTxPayload                                                        ,                    18800,      0.2%
 - VerifyTxSignatures                                                       ,                     7000,      0.1%
 - WriteSubstate                                                            ,                    20438,      0.2%
-Finalization Cost Breakdown                                                ,                   795145,    100.0%
-- BaseCost                                                                 ,                    50000,      6.3%
-- CommitEvents                                                             ,                    45083,      5.7%
+Finalization Cost Breakdown                                                ,                   745145,    100.0%
+- CommitEvents                                                             ,                    45083,      6.1%
 - CommitLogs                                                               ,                        0,      0.0%
-- CommitStateUpdates::GlobalGenericComponent                               ,                   100025,     12.6%
-- CommitStateUpdates::GlobalNonFungibleResourceManager                     ,                   200010,     25.2%
-- CommitStateUpdates::InternalFungibleVault                                ,                   400027,     50.3%
+- CommitStateUpdates::GlobalGenericComponent                               ,                   100025,     13.4%
+- CommitStateUpdates::GlobalNonFungibleResourceManager                     ,                   200010,     26.8%
+- CommitStateUpdates::InternalFungibleVault                                ,                   400027,     53.7%

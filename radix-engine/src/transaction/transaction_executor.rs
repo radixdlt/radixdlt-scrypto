@@ -40,8 +40,10 @@ pub struct CostingParameters {
 
     /// The price of USD in xrd
     pub usd_price: Decimal,
-    /// The price of storage in xrd
+    /// The price of state storage in xrd
     pub state_storage_price: Decimal,
+    /// The price of archive storage in xrd
+    pub archive_storage_price: Decimal,
 }
 
 impl Default for CostingParameters {
@@ -54,6 +56,7 @@ impl Default for CostingParameters {
             finalization_cost_unit_limit: FINALIZATION_COST_UNIT_LIMIT,
             usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
             state_storage_price: STATE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
+            archive_storage_price: ARCHIVE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
         }
     }
 }
@@ -582,10 +585,7 @@ where
                 // Note that if a transactions fails during this phase, the costing is
                 // done as if it would succeed.
 
-                /* finalization costs */
-                system
-                    .modules
-                    .apply_finalization_cost(FinalizationCostingEntry::BaseCost)?;
+                /* finalization costs: computation on node size */
                 let info = track.get_commit_info();
                 for store_commit in &info {
                     system.modules.apply_finalization_cost(
@@ -604,8 +604,14 @@ where
                     })?;
 
                 /* storage costs */
+                system
+                    .modules
+                    .apply_storage_cost(StorageType::Archive, executable.payload_size())?;
                 for store_commit in &info {
-                    system.modules.apply_storage_cost(store_commit)?;
+                    system.modules.apply_storage_cost(
+                        StorageType::State,
+                        store_commit.logical_size_increase(),
+                    )?;
                 }
 
                 Ok(x)

@@ -1,7 +1,6 @@
 use super::FeeReserveFinalizationSummary;
 use crate::{
     errors::CanBeAbortion,
-    track::interface::StoreCommit,
     transaction::{AbortReason, CostingParameters},
     types::*,
 };
@@ -29,6 +28,12 @@ pub enum FeeReserveError {
     Abort(AbortReason),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum StorageType {
+    State,
+    Archive,
+}
+
 impl CanBeAbortion for FeeReserveError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
@@ -49,7 +54,11 @@ pub trait ExecutionFeeReserve {
 
     fn consume_finalization(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
 
-    fn consume_storage(&mut self, store_commit: &StoreCommit) -> Result<(), FeeReserveError>;
+    fn consume_storage(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), FeeReserveError>;
 
     fn consume_royalty(
         &mut self,
@@ -96,6 +105,7 @@ pub struct SystemLoanFeeReserve {
 
     usd_price: u128,
     state_storage_price: u128,
+    archive_storage_price: u128,
 
     tip_percentage: u16,
 
@@ -210,6 +220,10 @@ impl SystemLoanFeeReserve {
             usd_price: transmute_decimal_as_u128(costing_parameters.usd_price).unwrap(),
             state_storage_price: transmute_decimal_as_u128(costing_parameters.state_storage_price)
                 .unwrap(),
+            archive_storage_price: transmute_decimal_as_u128(
+                costing_parameters.archive_storage_price,
+            )
+            .unwrap(),
 
             // Tipping percentage
             tip_percentage: transaction_costing_parameters.tip_percentage,
@@ -471,9 +485,16 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         Ok(())
     }
 
-    fn consume_storage(&mut self, store_commit: &StoreCommit) -> Result<(), FeeReserveError> {
-        let delta = store_commit.logical_size_increase();
-        let amount = self.state_storage_price.saturating_mul(delta as u128);
+    fn consume_storage(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), FeeReserveError> {
+        let amount = match storage_type {
+            StorageType::State => self.state_storage_price,
+            StorageType::Archive => self.archive_storage_price,
+        }
+        .saturating_mul(size_increase as u128);
 
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance {
