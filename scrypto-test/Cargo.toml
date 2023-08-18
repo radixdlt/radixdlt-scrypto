@@ -4,3 +4,10 @@ version = "0.12.0"
 edition = "2021"
 
 [dependencies]
+sbor = { path = "../sbor" }
+transaction = { path = "../transaction" }
+radix-engine = { path = "../radix-engine" }
+radix-engine-stores = { path = "../radix-engine-stores" }
+radix-engine-common = { path = "../radix-engine-common" }
+radix-engine-interface = { path = "../radix-engine-interface" }
+radix-engine-store-interface = { path = "../radix-engine-store-interface" }
