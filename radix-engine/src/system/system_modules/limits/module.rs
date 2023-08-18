@@ -17,7 +17,8 @@ pub enum TransactionLimitsError {
     MaxSubstateSizeExceeded(usize),
     MaxInvokePayloadSizeExceeded(usize),
     MaxCallDepthLimitReached,
-    TooManyEntriesInTrack,
+    TrackSubstateSizeExceeded { actual: usize, max: usize },
+    HeapSubstateSizeExceeded { actual: usize, max: usize },
     LogSizeTooLarge { actual: usize, max: usize },
     EventSizeTooLarge { actual: usize, max: usize },
     PanicMessageSizeTooLarge { actual: usize, max: usize },
@@ -26,8 +27,8 @@ pub enum TransactionLimitsError {
 }
 
 pub struct TransactionLimitsConfig {
-    pub max_number_of_substates_in_track: usize,
-    pub max_number_of_substates_in_heap: usize, // TODO: enforce this limits in heap!
+    pub max_heap_substate_total_bytes: usize,
+    pub max_track_substate_total_bytes: usize,
     pub max_substate_key_size: usize,
     pub max_substate_value_size: usize,
     pub max_invoke_payload_size: usize,
@@ -44,16 +45,16 @@ pub struct TransactionLimitsConfig {
 /// Stores boundary values of the limits and returns them in transaction receipt.
 pub struct LimitsModule {
     config: TransactionLimitsConfig,
-    number_of_substates_in_track: usize,
-    _number_of_substates_in_heap: usize,
+    heap_substate_total_bytes: usize,
+    track_substate_total_bytes: usize,
 }
 
 impl LimitsModule {
     pub fn new(limits_config: TransactionLimitsConfig) -> Self {
         LimitsModule {
             config: limits_config,
-            number_of_substates_in_track: 0,
-            _number_of_substates_in_heap: 0,
+            heap_substate_total_bytes: 0,
+            track_substate_total_bytes: 0,
         }
     }
 
@@ -82,20 +83,72 @@ impl LimitsModule {
     pub fn process_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError> {
         match store_access {
             StoreAccess::ReadFromDb(..) | StoreAccess::ReadFromDbNotFound(..) => {}
-            StoreAccess::NewEntryInTrack(_, _) => {
-                self.number_of_substates_in_track += 1;
+
+            StoreAccess::UpdateSubstateInHeap {
+                canonical_substate_key,
+                old_size,
+                new_size,
+            } => {
+                if old_size.is_none() {
+                    self.heap_substate_total_bytes += canonical_substate_key.logical_size();
+                }
+                if new_size.is_none() {
+                    self.heap_substate_total_bytes -= canonical_substate_key.logical_size();
+                }
+
+                let old_size = old_size.unwrap_or_default();
+                let new_size = new_size.unwrap_or_default();
+                if new_size > old_size {
+                    self.heap_substate_total_bytes += new_size - old_size;
+                } else {
+                    self.heap_substate_total_bytes -= old_size - new_size;
+                }
+            }
+            StoreAccess::UpdateSubstateInTrack {
+                canonical_substate_key,
+                old_size,
+                new_size,
+            } => {
+                if old_size.is_none() {
+                    self.track_substate_total_bytes += canonical_substate_key.logical_size();
+                }
+                if new_size.is_none() {
+                    self.track_substate_total_bytes -= canonical_substate_key.logical_size();
+                }
+
+                let old_size = old_size.unwrap_or_default();
+                let new_size = new_size.unwrap_or_default();
+                if new_size > old_size {
+                    self.track_substate_total_bytes += new_size - old_size;
+                } else {
+                    self.track_substate_total_bytes -= old_size - new_size;
+                }
             }
         }
 
-        if self.number_of_substates_in_track > self.config.max_number_of_substates_in_track {
-            Err(RuntimeError::SystemModuleError(
+        if self.heap_substate_total_bytes > self.config.max_heap_substate_total_bytes {
+            return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::TooManyEntriesInTrack,
+                    TransactionLimitsError::HeapSubstateSizeExceeded {
+                        actual: self.heap_substate_total_bytes,
+                        max: self.config.max_heap_substate_total_bytes,
+                    },
                 ),
-            ))
-        } else {
-            Ok(())
+            ));
         }
+
+        if self.track_substate_total_bytes > self.config.max_track_substate_total_bytes {
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
+                    TransactionLimitsError::TrackSubstateSizeExceeded {
+                        actual: self.track_substate_total_bytes,
+                        max: self.config.max_track_substate_total_bytes,
+                    },
+                ),
+            ));
+        }
+
+        Ok(())
     }
 }
 
