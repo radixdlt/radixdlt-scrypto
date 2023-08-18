@@ -147,7 +147,7 @@ mod non_fungible_test {
                             own: None,
                         },
                     ),
-                ])
+                ]).into()
         }
 
         pub fn verify_does_not_exist(non_fungible_global_id: NonFungibleGlobalId) {

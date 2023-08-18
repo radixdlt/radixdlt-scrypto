@@ -275,6 +275,7 @@ mod pc {
                         },
                     ),
                 ])
+                .into()
         }
 
         pub fn create_fungible_vault() -> Vault {
