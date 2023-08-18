@@ -1,5 +1,5 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
-use radix_engine::system::node_module::metadata::MetadataPanicError;
+use radix_engine::system::node_modules::metadata::MetadataPanicError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use scrypto_unit::*;

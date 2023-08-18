@@ -1,7 +1,7 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_module::role_assignment::OwnerRoleSubstate;
+use crate::system::node_modules::role_assignment::OwnerRoleSubstate;
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,

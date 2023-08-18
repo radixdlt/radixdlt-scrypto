@@ -21,7 +21,7 @@ use crate::kernel::kernel_callback_api::{
 };
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
-use crate::system::node_module::type_info::TypeInfoSubstate;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;

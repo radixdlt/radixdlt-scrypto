@@ -10,9 +10,9 @@ use crate::blueprints::pool::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::*;
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
-use crate::system::node_module::metadata::*;
-use crate::system::node_module::role_assignment::*;
-use crate::system::node_module::royalty::*;
+use crate::system::node_modules::metadata::*;
+use crate::system::node_modules::role_assignment::*;
+use crate::system::node_modules::royalty::*;
 
 lazy_static! {
     pub static ref CONSENSUS_MANAGER_PACKAGE_DEFINITION: PackageDefinition =

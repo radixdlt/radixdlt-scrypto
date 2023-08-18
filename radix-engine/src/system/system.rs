@@ -9,7 +9,7 @@ use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, ReferenceOrigin};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
-use crate::system::node_module::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };

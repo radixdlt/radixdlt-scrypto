@@ -9,7 +9,7 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::module::KernelModule;
-use crate::system::node_module::royalty::ComponentRoyaltyBlueprint;
+use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::StoreCommit;

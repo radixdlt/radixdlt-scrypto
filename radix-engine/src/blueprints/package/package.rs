@@ -2,8 +2,8 @@ use crate::blueprints::util::SecurifiedRoleAssignment;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
-use crate::system::node_module::metadata::MetadataNativePackage;
-use crate::system::node_module::type_info::TypeInfoSubstate;
+use crate::system::node_modules::metadata::MetadataNativePackage;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -29,8 +29,8 @@ use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_module::role_assignment::RoleAssignmentNativePackage;
-use crate::system::node_module::royalty::RoyaltyUtil;
+use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
