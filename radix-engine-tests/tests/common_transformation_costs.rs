@@ -115,22 +115,18 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
 }
 
 #[test]
-fn estimate_asserting_worktop_contains() {
-    const NUM_OF_FUNGIBLES: usize = 200;
+fn estimate_asserting_worktop_contains_fungible_resource() {
+    const AMOUNT: usize = 200;
 
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let network = NetworkDefinition::simulator();
     let (_pk, sk, account) = test_runner.new_virtual_account();
-    let resource_address = test_runner.create_non_fungible_resource_advanced(
-        NonFungibleResourceRoles::default(),
-        account,
-        NUM_OF_FUNGIBLES,
-    );
+    let resource_address = test_runner.create_fungible_resource(AMOUNT.into(), 18, account);
 
     let manifest1 = ManifestBuilder::new()
         .lock_fee(account, 20)
-        .withdraw_from_account(account, resource_address, NUM_OF_FUNGIBLES)
+        .withdraw_from_account(account, resource_address, AMOUNT)
         .deposit_batch(account)
         .build();
     let tx1 = create_notarized_transaction(
@@ -149,8 +145,8 @@ fn estimate_asserting_worktop_contains() {
 
     let manifest2 = ManifestBuilder::new()
         .lock_fee(account, 20)
-        .withdraw_from_account(account, resource_address, NUM_OF_FUNGIBLES)
-        .assert_worktop_contains(resource_address, NUM_OF_FUNGIBLES)
+        .withdraw_from_account(account, resource_address, AMOUNT)
+        .assert_worktop_contains(resource_address, AMOUNT)
         .deposit_batch(account)
         .build();
     let tx2 = create_notarized_transaction(
@@ -168,7 +164,70 @@ fn estimate_asserting_worktop_contains() {
     println!("\n{:?}", receipt2);
 
     println!(
-        "Asserting worktop contains: {} XRD",
+        "Asserting worktop contains (fungible resource; asserting amount only): {} XRD",
+        receipt2
+            .fee_summary
+            .total_cost()
+            .safe_sub(receipt1.fee_summary.total_cost())
+            .unwrap()
+    );
+}
+
+#[test]
+fn estimate_asserting_worktop_contains_non_fungible_resource() {
+    const AMOUNT: usize = 200;
+
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let network = NetworkDefinition::simulator();
+    let (_pk, sk, account) = test_runner.new_virtual_account();
+    let resource_address = test_runner.create_non_fungible_resource_advanced(
+        NonFungibleResourceRoles::default(),
+        account,
+        AMOUNT,
+    );
+
+    let manifest1 = ManifestBuilder::new()
+        .lock_fee(account, 20)
+        .withdraw_from_account(account, resource_address, AMOUNT)
+        .deposit_batch(account)
+        .build();
+    let tx1 = create_notarized_transaction(
+        &mut test_runner,
+        &network,
+        manifest1,
+        vec![&sk], // no sign
+        &sk,       // notarize
+    );
+    let receipt1 = test_runner.execute_transaction(
+        validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
+        CostingParameters::default(),
+        ExecutionConfig::for_notarized_transaction(),
+    );
+    println!("\n{:?}", receipt1);
+
+    let manifest2 = ManifestBuilder::new()
+        .lock_fee(account, 20)
+        .withdraw_from_account(account, resource_address, AMOUNT)
+        .assert_worktop_contains(resource_address, AMOUNT)
+        .deposit_batch(account)
+        .build();
+    let tx2 = create_notarized_transaction(
+        &mut test_runner,
+        &network,
+        manifest2,
+        vec![&sk], // sign
+        &sk,       // notarize
+    );
+    let receipt2 = test_runner.execute_transaction(
+        validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
+        CostingParameters::default(),
+        ExecutionConfig::for_notarized_transaction(),
+    );
+    println!("\n{:?}", receipt2);
+
+    println!(
+        "Asserting worktop contains (non-fungible resource; asserting amount only): {} XRD",
         receipt2
             .fee_summary
             .total_cost()
