@@ -338,16 +338,18 @@ where
                             Otherwise, we won't be able to commit failed transactions.
                             May also cache the information for better performance.
                         */
-                        application_events.push((
-                            EventTypeIdentifier(
-                                Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
-                                "BurnFungibleResourceEvent".to_string(),
-                            ),
-                            scrypto_encode(&BurnFungibleResourceEvent {
-                                amount: fee_destination.to_burn,
-                            })
-                            .unwrap(),
-                        ));
+                        if fee_destination.to_burn.is_positive() {
+                            application_events.push((
+                                EventTypeIdentifier(
+                                    Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
+                                    "BurnFungibleResourceEvent".to_string(),
+                                ),
+                                scrypto_encode(&BurnFungibleResourceEvent {
+                                    amount: fee_destination.to_burn,
+                                })
+                                .unwrap(),
+                            ));
+                        }
 
                         // Finalize execution trace
                         let execution_trace =
