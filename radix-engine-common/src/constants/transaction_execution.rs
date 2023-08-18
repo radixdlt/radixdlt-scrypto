@@ -81,21 +81,17 @@ pub const MAX_ROLES: usize = 50;
 /// The max number of roles in a Role Specification
 pub const MAX_ROLE_NAME_LEN: usize = 100;
 
-//==========================
-// TO BE DEFINED
-//==========================
+/// The price of execution cost unit in XRD.
+pub const EXECUTION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000005";
 
-/// The price of execution cost unit, in XRD.
-pub const EXECUTION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
+/// The price of finalization cost unit in XRD.
+pub const FINALIZATION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000005";
 
-/// The price of finalization cost unit, in XRD.
-pub const FINALIZATION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
+/// The price for adding a single byte to the substate store in XRD: 1 MB = 10 USD
+pub const STORAGE_PRICE_IN_XRD: &str = "0.000158945719401033"; // per byte
 
-/// The price for adding a single byte to the substate store, in XRD.
-pub const STORAGE_PRICE_IN_XRD: &str = "0.00001";
+/// The USD price in XRD: 1 XRD = 0.06 USD
+pub const USD_PRICE_IN_XRD: &str = "16.666666666666666666";
 
-/// The USD price, in XRD
-pub const USD_PRICE_IN_XRD: &str = "10";
-
-/// The maximum that a package or component owner is allowed to set their method royalty to
-pub const MAX_PER_FUNCTION_ROYALTY_IN_XRD: &str = "150.0";
+/// The maximum that a package or component owner is allowed to set their method royalty to: 10 USD
+pub const MAX_PER_FUNCTION_ROYALTY_IN_XRD: &str = "166.666666666666666666";
