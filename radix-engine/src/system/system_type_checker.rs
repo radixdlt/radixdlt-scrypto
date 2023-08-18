@@ -1,16 +1,18 @@
 use super::payload_validation::*;
 use crate::errors::{RuntimeError, SystemError};
 use crate::kernel::kernel_api::KernelApi;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService};
+use crate::system::system::{
+    FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
+};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{CollectionIndex, FieldValue, KVEntry};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::KeyValueStoreGenericSubstitutions;
 use sbor::rust::vec::Vec;
-use crate::track::interface::NodeSubstates;
 
 /// Metadata for schema validation to help with location of certain schemas
 /// since location of schemas are somewhat scattered
@@ -370,7 +372,10 @@ pub struct SystemMapper;
 impl SystemMapper {
     pub fn system_struct_to_node_substates(
         schema: &IndexedStateSchema,
-        system_struct: (Vec<Option<FieldValue>>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>),
+        system_struct: (
+            Vec<Option<FieldValue>>,
+            BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+        ),
         base_partition_num: PartitionNumber,
     ) -> NodeSubstates {
         let mut partitions: NodeSubstates = BTreeMap::new();
@@ -379,7 +384,9 @@ impl SystemMapper {
             let partition_description = schema.fields_partition().unwrap();
             let partition_num = match partition_description {
                 PartitionDescription::Physical(partition_num) => partition_num,
-                PartitionDescription::Logical(offset) => base_partition_num.at_offset(offset).unwrap(),
+                PartitionDescription::Logical(offset) => {
+                    base_partition_num.at_offset(offset).unwrap()
+                }
             };
 
             let mut field_partition = BTreeMap::new();
@@ -406,13 +413,13 @@ impl SystemMapper {
             partitions.insert(partition_num, field_partition);
         }
 
-
-
         for (collection_index, substates) in system_struct.1 {
             let (partition_description, _) = schema.get_partition(collection_index).unwrap();
             let partition_num = match partition_description {
                 PartitionDescription::Physical(partition_num) => partition_num,
-                PartitionDescription::Logical(offset) => base_partition_num.at_offset(offset).unwrap(),
+                PartitionDescription::Logical(offset) => {
+                    base_partition_num.at_offset(offset).unwrap()
+                }
             };
 
             let mut partition = BTreeMap::new();

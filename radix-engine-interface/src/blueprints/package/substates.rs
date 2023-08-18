@@ -500,9 +500,7 @@ impl IndexedStateSchema {
 
     pub fn fields_partition(&self) -> Option<PartitionDescription> {
         match &self.fields {
-            Some((partition, ..)) => {
-                Some(partition.clone())
-            }
+            Some((partition, ..)) => Some(partition.clone()),
             _ => None,
         }
     }

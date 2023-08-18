@@ -2,7 +2,7 @@ use crate::blueprints::util::SecurifiedRoleAssignment;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
-use crate::system::node_module::metadata::{MetadataEntrySubstate, MetadataNativePackage};
+use crate::system::node_module::metadata::MetadataNativePackage;
 use crate::system::node_module::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::track::interface::NodeSubstates;
@@ -29,21 +29,17 @@ use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_module::role_assignment::{
-    OwnerRoleSubstate, RoleAssignmentNativePackage,
-};
+use crate::system::node_module::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_module::royalty::RoyaltyUtil;
-use crate::system::system::{
-    FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
-};
+use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
+use crate::system::system_type_checker::SystemMapper;
 use crate::vm::VmPackageValidation;
 pub use radix_engine_interface::blueprints::package::{
     PackageInstrumentedCodeSubstate, PackageOriginalCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
-use crate::system::system_type_checker::SystemMapper;
 
 pub const PACKAGE_ROYALTY_FEATURE: &str = "package_royalty";
 
@@ -509,8 +505,11 @@ impl SecurifiedRoleAssignment for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
-
-fn blueprint_state_schema(package: PackageDefinition, blueprint_name: &str, system_mappings: BTreeMap<usize, PartitionNumber>) -> IndexedStateSchema {
+fn blueprint_state_schema(
+    package: PackageDefinition,
+    blueprint_name: &str,
+    system_mappings: BTreeMap<usize, PartitionNumber>,
+) -> IndexedStateSchema {
     let package_blueprint = package.blueprints.get(blueprint_name).unwrap();
     IndexedStateSchema::from_schema(
         package_blueprint.schema.schema.generate_schema_hash(),
@@ -532,11 +531,15 @@ pub fn create_bootstrap_package_partitions(
             PACKAGE_BLUEPRINT,
             btreemap!(PACKAGE_SCHEMAS_COLLECTION_INDEX as usize => SCHEMAS_PARTITION),
         );
-        let package_system_struct = PackageNativePackage::init_system_struct(None, package_structure);
-        let package_substates = SystemMapper::system_struct_to_node_substates(&package_schema, package_system_struct, MAIN_BASE_PARTITION);
+        let package_system_struct =
+            PackageNativePackage::init_system_struct(None, package_structure);
+        let package_substates = SystemMapper::system_struct_to_node_substates(
+            &package_schema,
+            package_system_struct,
+            MAIN_BASE_PARTITION,
+        );
         node_substates.extend(package_substates);
     }
-
 
     // Metadata
     {
@@ -546,7 +549,11 @@ pub fn create_bootstrap_package_partitions(
             btreemap!(),
         );
         let metadata_system_struct = MetadataNativePackage::init_system_struct(metadata).unwrap();
-        let metadata_substates = SystemMapper::system_struct_to_node_substates(&metadata_schema, metadata_system_struct, METADATA_BASE_PARTITION);
+        let metadata_substates = SystemMapper::system_struct_to_node_substates(
+            &metadata_schema,
+            metadata_system_struct,
+            METADATA_BASE_PARTITION,
+        );
         node_substates.extend(metadata_substates);
     }
 
@@ -557,8 +564,14 @@ pub fn create_bootstrap_package_partitions(
             ROLE_ASSIGNMENT_BLUEPRINT,
             btreemap!(),
         );
-        let role_assignment_system_struct = RoleAssignmentNativePackage::init_system_struct(OwnerRole::None.into(), btreemap!()).unwrap();
-        let role_assignment_substates = SystemMapper::system_struct_to_node_substates(&role_assignment_schema, role_assignment_system_struct, ROLE_ASSIGNMENT_BASE_PARTITION);
+        let role_assignment_system_struct =
+            RoleAssignmentNativePackage::init_system_struct(OwnerRole::None.into(), btreemap!())
+                .unwrap();
+        let role_assignment_substates = SystemMapper::system_struct_to_node_substates(
+            &role_assignment_schema,
+            role_assignment_system_struct,
+            ROLE_ASSIGNMENT_BASE_PARTITION,
+        );
         node_substates.extend(role_assignment_substates);
     }
 
@@ -586,7 +599,6 @@ pub fn create_bootstrap_package_partitions(
     node_substates
 }
 
-
 fn globalize_package<Y>(
     package_address_reservation: Option<GlobalAddressReservation>,
     package_structure: PackageStructure,
@@ -599,16 +611,20 @@ where
 {
     let vault = Vault(ResourceManager(XRD).new_empty_vault(api)?);
 
-    let (fields, kv_entries) = PackageNativePackage::init_system_struct(Some(vault), package_structure);
+    let (fields, kv_entries) =
+        PackageNativePackage::init_system_struct(Some(vault), package_structure);
 
     let package_object = api.new_object(
         PACKAGE_BLUEPRINT,
         vec![PACKAGE_ROYALTY_FEATURE],
         GenericArgs::default(),
-        fields.into_iter().map(|f| match f {
-            Some(f) => f,
-            None => FieldValue::new(()),
-        }).collect(),
+        fields
+            .into_iter()
+            .map(|f| match f {
+                Some(f) => f,
+                None => FieldValue::new(()),
+            })
+            .collect(),
         kv_entries,
     )?;
 
@@ -896,8 +912,13 @@ impl PackageNativePackage {
         }
     }
 
-    fn init_system_struct(royalty_vault: Option<Vault>, package_structure: PackageStructure) -> (Vec<Option<FieldValue>>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>) {
-
+    fn init_system_struct(
+        royalty_vault: Option<Vault>,
+        package_structure: PackageStructure,
+    ) -> (
+        Vec<Option<FieldValue>>,
+        BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+    ) {
         let field = if let Some(vault) = royalty_vault {
             let royalty = PackageRoyaltyAccumulatorSubstate {
                 royalty_vault: vault,
@@ -906,7 +927,6 @@ impl PackageNativePackage {
         } else {
             None
         };
-
 
         let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>> = BTreeMap::new();
         {

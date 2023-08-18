@@ -4,7 +4,9 @@ use crate::{errors::*, event_schema, roles_template};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, GenericArgs, KVEntry, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{
+    ClientApi, CollectionIndex, FieldValue, GenericArgs, KVEntry, OBJECT_HANDLE_SELF,
+};
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
@@ -260,15 +262,22 @@ impl MetadataNativePackage {
         Ok(Own(node_id))
     }
 
-    pub fn init_system_struct(data: MetadataInit) -> Result<(Vec<Option<FieldValue>>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>), MetadataPanicError> {
+    pub fn init_system_struct(
+        data: MetadataInit,
+    ) -> Result<
+        (
+            Vec<Option<FieldValue>>,
+            BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+        ),
+        MetadataPanicError,
+    > {
         let mut init_kv_entries = BTreeMap::new();
         for (key, entry) in data.data {
             if key.len() > MAX_METADATA_KEY_STRING_LEN {
                 return Err(MetadataPanicError::KeyStringExceedsMaxLength {
-                            max: MAX_METADATA_KEY_STRING_LEN,
-                            actual: key.len(),
-                        },
-                    );
+                    max: MAX_METADATA_KEY_STRING_LEN,
+                    actual: key.len(),
+                });
             }
 
             let key = scrypto_encode(&key).unwrap();
@@ -278,10 +287,9 @@ impl MetadataNativePackage {
                     let value = scrypto_encode(&metadata_value).unwrap();
                     if value.len() > MAX_METADATA_VALUE_SBOR_LEN {
                         return Err(MetadataPanicError::ValueSborExceedsMaxLength {
-                                    max: MAX_METADATA_VALUE_SBOR_LEN,
-                                    actual: value.len(),
-                                },
-                        );
+                            max: MAX_METADATA_VALUE_SBOR_LEN,
+                            actual: value.len(),
+                        });
                     }
                     Some(value)
                 }
@@ -303,15 +311,19 @@ impl MetadataNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (fields, kv_entries) = Self::init_system_struct(data).map_err(|e| RuntimeError::ApplicationError(ApplicationError::MetadataError(e)))?;
+        let (fields, kv_entries) = Self::init_system_struct(data)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::MetadataError(e)))?;
         let node_id = api.new_object(
             METADATA_BLUEPRINT,
             vec![],
             GenericArgs::default(),
-            fields.into_iter().map(|f| match f {
-                Some(f) => f,
-                None => FieldValue::new(()),
-            }).collect(),
+            fields
+                .into_iter()
+                .map(|f| match f {
+                    Some(f) => f,
+                    None => FieldValue::new(()),
+                })
+                .collect(),
             kv_entries,
         )?;
 

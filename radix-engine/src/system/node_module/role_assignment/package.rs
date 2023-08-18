@@ -364,8 +364,16 @@ impl RoleAssignmentNativePackage {
         }
     }
 
-    pub fn init_system_struct(owner_role: OwnerRoleEntry, roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>)
-        -> Result<(Vec<Option<FieldValue>>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>), RoleAssignmentError> {
+    pub fn init_system_struct(
+        owner_role: OwnerRoleEntry,
+        roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>,
+    ) -> Result<
+        (
+            Vec<Option<FieldValue>>,
+            BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+        ),
+        RoleAssignmentError,
+    > {
         if roles.contains_key(&ObjectModuleId::RoleAssignment) {
             return Err(RoleAssignmentError::UsedReservedSpace);
         }
@@ -388,15 +396,16 @@ impl RoleAssignmentNativePackage {
         for (module, roles) in roles {
             for (role_key, role_def) in roles.data {
                 if Self::is_reserved_role_key(&role_key) {
-                    return Err(RoleAssignmentError::UsedReservedRole(role_key.key.to_string()));
+                    return Err(RoleAssignmentError::UsedReservedRole(
+                        role_key.key.to_string(),
+                    ));
                 }
 
                 if role_key.key.len() > MAX_ROLE_NAME_LEN {
                     return Err(RoleAssignmentError::ExceededMaxRoleNameLen {
-                                limit: MAX_ROLE_NAME_LEN,
-                                actual: role_key.key.len(),
-                            }
-                    );
+                        limit: MAX_ROLE_NAME_LEN,
+                        actual: role_key.key.len(),
+                    });
                 }
 
                 let module_role_key = ModuleRoleKey::new(module, role_key);
@@ -427,17 +436,21 @@ impl RoleAssignmentNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (fields, kv_entries) = Self::init_system_struct(owner_role, roles)
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e)))?;
+        let (fields, kv_entries) = Self::init_system_struct(owner_role, roles).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e))
+        })?;
 
         let component_id = api.new_object(
             ROLE_ASSIGNMENT_BLUEPRINT,
             vec![],
             GenericArgs::default(),
-            fields.into_iter().map(|f| match f {
-                Some(f) => f,
-                None => FieldValue::new(()),
-            }).collect(),
+            fields
+                .into_iter()
+                .map(|f| match f {
+                    Some(f) => f,
+                    None => FieldValue::new(()),
+                })
+                .collect(),
             kv_entries,
         )?;
 
