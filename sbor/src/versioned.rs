@@ -35,14 +35,14 @@ macro_rules! define_single_versioned {
     (
         $(#[$attributes:meta])*
         $vis:vis enum $name:ident
-        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
+        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
         =>
         $latest_version_alias:ty = $latest_version_type:ty
     ) => {
         $crate::define_versioned!(
             $(#[$attributes])*
             $vis enum $name
-            $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+            $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?
             {
                 previous_versions: [],
                 latest_version: {
@@ -68,7 +68,7 @@ macro_rules! define_versioned {
         $vis:vis enum $name:ident
         // Now match the optional type parameters
         // See https://stackoverflow.com/questions/41603424/rust-macro-accepting-type-with-generic-parameters
-        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
+        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
         {
             $(
                 previous_versions: [
@@ -108,7 +108,7 @@ macro_rules! define_versioned {
             // We include the repr(u8) so that the SBOR discriminants are assigned
             // to match the version numbers if SBOR is used on the versioned enum
             #[repr(u8)]
-            $vis enum $name $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+            $vis enum $name $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?
             {
                 $($(
                     [<V $version_num>]($version_type) = $version_num,

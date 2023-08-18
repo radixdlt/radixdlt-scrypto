@@ -456,7 +456,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
             ),
         )
         .unwrap();
-    let bp_interface = bp_definition.value.unwrap().0.into_latest().interface;
+    let bp_interface = bp_definition.value.unwrap().into_latest().interface;
 
     let event_def = bp_interface.events.get(event_name)?;
     match event_def {

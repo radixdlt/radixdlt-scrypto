@@ -48,7 +48,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {} bytes",
         "Code size".green().bold(),
-        substate.value.unwrap().0.into_latest().code.len()
+        substate.value.unwrap().into_latest().code.len()
     );
 
     let metadata = get_entity_metadata(package_address.as_node_id(), substate_db);

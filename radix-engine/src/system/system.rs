@@ -83,8 +83,12 @@ impl<V> FieldSubstate<V> {
         }
     }
 
-    pub fn field_content(&self) -> &V {
+    pub fn payload(&self) -> &V {
         &self.value.0
+    }
+
+    pub fn into_payload(self) -> V {
+        self.value.0
     }
 }
 
@@ -391,7 +395,7 @@ where
         self.api.kernel_close_substate(handle)?;
 
         let definition = match substate.value {
-            Some(definition) => definition.0.into_latest(),
+            Some(definition) => definition.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(
                     SystemError::BlueprintDoesNotExist(canonical_bp_id),

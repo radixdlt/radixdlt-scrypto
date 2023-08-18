@@ -1134,7 +1134,7 @@ impl PackageRoyaltyNativeBlueprint {
 
         let royalty_charge = substate
             .value
-            .and_then(|royalty_config| match royalty_config.0.into_latest() {
+            .and_then(|royalty_config| match royalty_config.into_latest() {
                 PackageRoyaltyConfig::Enabled(royalty_amounts) => {
                     royalty_amounts.get(ident).cloned()
                 }
@@ -1154,7 +1154,7 @@ impl PackageRoyaltyNativeBlueprint {
             let substate: PackageRoyaltyAccumulatorFieldSubstate =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            let vault_id = substate.value.0 .0.into_latest().royalty_vault.0;
+            let vault_id = substate.into_payload().into_latest().royalty_vault.0;
             let package_address = PackageAddress::new_or_panic(receiver.0);
             apply_royalty_cost(
                 api,
@@ -1188,7 +1188,7 @@ impl PackageRoyaltyNativeBlueprint {
         )?;
 
         let substate: PackageRoyaltyAccumulatorFieldPayload = api.field_read_typed(handle)?;
-        let bucket = substate.0.into_latest().royalty_vault.take_all(api)?;
+        let bucket = substate.into_latest().royalty_vault.take_all(api)?;
 
         Ok(bucket)
     }
@@ -1277,7 +1277,7 @@ impl PackageAuthNativeBlueprint {
         api.kernel_close_substate(handle)?;
 
         let template = match auth_template.value {
-            Some(template) => template.0.into_latest(),
+            Some(template) => template.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(
                     SystemError::AuthTemplateDoesNotExist(package_bp_version_id),

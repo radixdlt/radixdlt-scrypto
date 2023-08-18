@@ -145,6 +145,7 @@ macro_rules! declare_native_blueprint_state {
                     // > Set up the FieldContent trait for anything which can be resolved into the field payload
                     generate_content_type!(
                         content_trait: FieldContent,
+                        payload_trait: FieldPayload,
                         ident_core: [<$blueprint_ident $field_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
                         struct [<$blueprint_ident $field_ident FieldPayload>] = $field_type
@@ -167,6 +168,7 @@ macro_rules! declare_native_blueprint_state {
                     // > Set up the KeyContent traits for anything which can be resolved into a key
                     generate_content_type!(
                         content_trait: KeyContent,
+                        payload_trait: KeyPayload,
                         ident_core: [<$blueprint_ident $collection_ident KeyInner>],
                         #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
                         #[sbor(transparent_name)]
@@ -190,13 +192,18 @@ macro_rules! declare_native_blueprint_state {
                     }
 
                     // Values
-                    // > Set up Versioned types (if relevant). Assumes __ValueV1 exists and then creates
-                    //   - Versioned__Value
-                    //   - __Value (alias for __ValueV1)
-                    // > Set up the (transparent) _ValueContent new type for the value content
-                    // > Set up the _EntryContent traits
+                    // > If relevant, set up Versioned types, which:
+                    //   - Assumes [BlueprintCollection]V1 exists
+                    //   - Creates Versioned[BlueprintCollection] enum
+                    //   - Creates [BlueprintCollection] as a "latest" type alias for [BlueprintCollection]V1
+                    // > Set up the [BlueprintCollection]EntryPayload transparent new type for the value content
+                    // > Set up the [Collectiontype]EntryContent::<[BlueprintCollection]EntryPayload> trait for:
+                    //   - The [BlueprintCollection] if it exists
+                    //   - The Versioned[BlueprintCollection] if it exists
+                    //   - The static content type, if it exists
                     generate_content_type!(
                         content_trait: [<$collection_type EntryContent>],
+                        payload_trait: [<$collection_type EntryPayload>],
                         ident_core: [<$blueprint_ident $collection_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
                         struct [<$blueprint_ident $collection_ident EntryPayload>] = $collection_value_type
@@ -208,8 +215,49 @@ macro_rules! declare_native_blueprint_state {
                     );
                 )*
 
+                //-------------------------------------
+                // System - Generate schema definitions
+                //-------------------------------------
+                pub struct [<$blueprint_ident StateSchemaInit>];
+
+                impl [<$blueprint_ident StateSchemaInit>] {
+                    pub fn create_schema_init(
+                        type_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>,
+                    ) -> BlueprintStateSchemaInit {
+                        let mut fields = vec![];
+                        $(
+                            fields.push(FieldSchema {
+                                field: map_type_ref!(
+                                    $blueprint_ident,
+                                    type_aggregator,
+                                    $field_type,
+                                    [<$blueprint_ident $field_ident FieldPayload>],
+                                ),
+                                condition: $field_condition,
+                            });
+                        )*
+                        let mut collections = vec![];
+                        $(
+                            collections.push(map_collection_schema!(
+                                $collection_type,
+                                $blueprint_ident,
+                                type_aggregator,
+                                $collection_key_type,
+                                [<$blueprint_ident $collection_ident KeyPayload>],
+                                $collection_value_type,
+                                [<$blueprint_ident $collection_ident EntryPayload>],
+                                $collection_allow_ownership
+                            ));
+                        )*
+                        BlueprintStateSchemaInit {
+                            fields,
+                            collections,
+                        }
+                    }
+                }
+
                 //--------------------------------------------------------
-                // Node Layout (to replace node_layout.rs)
+                // System - Fields, Collections, Features and Generics
                 //--------------------------------------------------------
                 #[repr(u8)]
                 #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -247,6 +295,219 @@ macro_rules! declare_native_blueprint_state {
                         Self::from_repr(offset).ok_or(())
                     }
                 }
+
+                #[repr(u8)]
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+                pub enum [<$blueprint_ident Collection>] {
+                    $([<$collection_ident $collection_type>],)*
+                }
+
+                impl [<$blueprint_ident Collection>] {
+                    pub const fn collection_index(&self) -> u8 {
+                        *self as u8
+                    }
+                }
+
+                $(
+                    #[repr(u8)]
+                    #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, FromRepr)]
+                    pub enum [<$blueprint_ident Generic>] {
+                        $($generic_ident,)*
+                    }
+
+                    impl [<$blueprint_ident Generic>] {
+                        pub const fn generic_index(&self) -> u8 {
+                            *self as u8
+                        }
+                    }
+                )?
+
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
+                pub enum [<$blueprint_ident Feature>] {
+                    $($feature_ident,)*
+                }
+
+                impl BlueprintFeature for [<$blueprint_ident Feature>] {
+                    fn feature_name(&self) -> &'static str {
+                        match *self {
+                            $(
+                                Self::$feature_ident => stringify!($feature_property_name),
+                            )*
+                        }
+                    }
+                }
+
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
+                pub struct [<$blueprint_ident FeatureSet>] {
+                    $(pub [<$feature_property_name>]: bool,)*
+                }
+
+                impl [<$blueprint_ident FeatureSet>] {
+                    pub fn all_features() -> BTreeSet<String> {
+                        let mut features = BTreeSet::new();
+                        $(
+                            features.insert(
+                                [<$blueprint_ident Feature>]::$feature_ident.feature_name().to_string()
+                            );
+                        )*
+                        features
+                    }
+                }
+
+                impl FeatureSetResolver for [<$blueprint_ident FeatureSet>] {
+                    fn feature_names_str(&self) -> Vec<&'static str> {
+                        let mut names = vec![];
+                        $(
+                            if self.[<$feature_property_name>] {
+                                names.push([<$blueprint_ident Feature>]::$feature_ident.feature_name());
+                            }
+                        )*
+                        names
+                    }
+                }
+
+                //--------------------------------------
+                // Application - Typed State API (TODO!)
+                //--------------------------------------
+
+                pub struct [<$blueprint_ident StateApi>]<'a, Y: ClientApi<RuntimeError>> {
+                    api: &'a mut Y,
+                }
+
+                impl<'a, Y: ClientApi<RuntimeError>> [<$blueprint_ident StateApi>]<'a, Y> {
+                    pub fn with(client_api: &'a mut Y) -> Self {
+                        Self {
+                            api: client_api,
+                        }
+                    }
+                }
+
+                impl<'a, Y: ClientApi<$crate::errors::RuntimeError>> From<&'a mut Y> for [<$blueprint_ident StateApi>]<'a, Y> {
+                    fn from(value: &'a mut Y) -> Self {
+                        Self::with(value)
+                    }
+                }
+
+                //--------------------------------
+                // System - Object Initialization
+                //--------------------------------
+
+                /// Used for initializing blueprint state.
+                ///
+                /// Note - this doesn't support:
+                /// * IndexEntries (because the underlying new_object API doesn't support them)
+                ///   > these panic at create time
+                #[derive(Debug, Default)]
+                pub struct [<$blueprint_ident StateInit>] {
+                    $(
+                        pub $field_property_name: Option<[<$blueprint_ident $field_ident FieldSubstate>]>,
+                    )*
+                    $(
+                        pub $collection_property_name: IndexMap<
+                            [<$blueprint_ident $collection_ident SubstateKey>],
+                            [<$blueprint_ident $collection_ident EntrySubstate>]
+                        >,
+                    )*
+                }
+
+                type [<$blueprint_ident FeatureChecks>] = [<$(ignore_arg!($outer_blueprint_ident) InnerObject)? FeatureChecks>]::<
+                    [<$blueprint_ident FeatureSet>],
+                    $([<$outer_blueprint_ident FeatureSet>],)?
+                >;
+
+                impl [<$blueprint_ident StateInit>] {
+                    pub fn into_system_substates(self, feature_checks: [<$blueprint_ident FeatureChecks>]) -> Result<(BTreeMap<u8, FieldValue>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>), RuntimeError> {
+                        let mut field_values = BTreeMap::new();
+                        $(
+                            {
+                                feature_checks.assert_valid(
+                                    stringify!($field_ident),
+                                    &$field_condition,
+                                    self.$field_property_name.is_some(),
+                                )?;
+                                if let Some(field) = self.$field_property_name {
+                                    let payload = scrypto_encode(&field.payload()).unwrap();
+                                    let locked = match &field.mutability {
+                                        SubstateMutability::Mutable => true,
+                                        SubstateMutability::Immutable => false,
+                                    };
+                                    field_values.insert(
+                                        [<$blueprint_ident Field>]::$field_ident.into(),
+                                        FieldValue {
+                                            value: payload,
+                                            locked,
+                                        }
+                                    );
+                                }
+                            }
+                        )*
+                        let mut all_collection_entries = BTreeMap::new();
+                        let mut collection_index: u8 = 0;
+                        $(
+                            {
+                                let this_collection_entries = self.$collection_property_name
+                                    .into_iter()
+                                    .map(|(key, entry_substate)| {
+                                        let key = scrypto_encode(&key).unwrap();
+                                        let value = map_entry_substate_to_kv_entry!($collection_type, entry_substate);
+                                        (key, value)
+                                    })
+                                    .collect();
+                                all_collection_entries.insert(collection_index, this_collection_entries);
+                                collection_index += 1;
+                            }
+                        )*
+                        Ok((field_values, all_collection_entries))
+                    }
+
+                    // TODO: Remove this when the new object api supports non-vec field values
+                    pub fn into_system_substates_legacy(self, feature_checks: [<$blueprint_ident FeatureChecks>]) -> Result<(Vec<FieldValue>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>), RuntimeError> {
+                        let (mut field_values, collection_entries) = self.into_system_substates(feature_checks)?;
+                        let mut field_values_vec = vec![];
+                        let mut field_index = 0;
+                        $(
+                            {
+                                let field_value = field_values.remove(&field_index).expect(
+                                    concat!(
+                                        "The field `",
+                                        stringify!($field_property_name),
+                                        "` was None. Until the system and macro supports feature-based optional fields, all fields need to be present"
+                                    )
+                                );
+                                field_values_vec.push(field_value);
+                                field_index += 1;
+                            }
+                        )*
+                        Ok((field_values_vec, collection_entries))
+                    }
+
+                    pub fn into_new_object<Y: ClientObjectApi<RuntimeError>>(
+                        self,
+                        api: &mut Y,
+                        own_features: [<$blueprint_ident FeatureSet>],
+                        $(outer_object_features: [<$outer_blueprint_ident FeatureSet>],)?
+                        generic_args: GenericArgs,
+                    ) -> Result<NodeId, RuntimeError> {
+                        let (field_values, all_collection_entries) = self.into_system_substates_legacy(
+                            [<$blueprint_ident FeatureChecks>]::ForFeatures {
+                                own_features,
+                                $(ignore_arg!($outer_blueprint_ident) outer_object_features,)?
+                            }
+                        )?;
+                        api.new_object(
+                            stringify!($blueprint_ident),
+                            own_features.feature_names_str(),
+                            generic_args,
+                            field_values, // TODO: Change to take the IndexMap and get rid of into_system_substates_legacy
+                            all_collection_entries, // TODO: Change to take other collections, not just KVEntry
+                        )
+                    }
+                }
+
+
+                //--------------------------------------------------------
+                // System/DB - Node Partitions & Layout
+                //--------------------------------------------------------
 
                 /// A list of all logical (real) and physical (mapped) partitions for the
                 /// $blueprint_ident blueprint.
@@ -335,80 +596,10 @@ macro_rules! declare_native_blueprint_state {
                     }
                 }
 
-                #[repr(u8)]
-                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-                pub enum [<$blueprint_ident Collection>] {
-                    $([<$collection_ident $collection_type>],)*
-                }
-
-                impl [<$blueprint_ident Collection>] {
-                    pub const fn collection_index(&self) -> u8 {
-                        *self as u8
-                    }
-                }
-
-                $(
-                    #[repr(u8)]
-                    #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, FromRepr)]
-                    pub enum [<$blueprint_ident Generic>] {
-                        $($generic_ident,)*
-                    }
-
-                    impl [<$blueprint_ident Generic>] {
-                        pub const fn generic_index(&self) -> u8 {
-                            *self as u8
-                        }
-                    }
-                )?
-
-                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
-                pub enum [<$blueprint_ident Feature>] {
-                    $($feature_ident,)*
-                }
-
-                impl BlueprintFeature for [<$blueprint_ident Feature>] {
-                    fn feature_name(&self) -> &'static str {
-                        match *self {
-                            $(
-                                Self::$feature_ident => stringify!($feature_property_name),
-                            )*
-                        }
-                    }
-                }
-
-                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
-                pub struct [<$blueprint_ident FeatureSet>] {
-                    $(pub [<$feature_property_name>]: bool,)*
-                }
-
-                impl [<$blueprint_ident FeatureSet>] {
-                    pub fn all_features() -> BTreeSet<String> {
-                        let mut features = BTreeSet::new();
-                        $(
-                            features.insert(
-                                [<$blueprint_ident Feature>]::$feature_ident.feature_name().to_string()
-                            );
-                        )*
-                        features
-                    }
-                }
-
-                impl FeatureSetResolver for [<$blueprint_ident FeatureSet>] {
-                    fn feature_names_str(&self) -> Vec<&'static str> {
-                        let mut names = vec![];
-                        $(
-                            if self.[<$feature_property_name>] {
-                                names.push([<$blueprint_ident Feature>]::$feature_ident.feature_name());
-                            }
-                        )*
-                        names
-                    }
-                }
-
                 //---------------------------------
-                // Typed Substate - Keys and Values
+                // Typed - Substate Keys and Values
                 //---------------------------------
-                #[derive(Debug, Clone)]
+
                 /// All the SubstateKeys for all logical (real) and physical (mapped)
                 /// partitions for the $blueprint_ident blueprint.
                 ///
@@ -416,6 +607,7 @@ macro_rules! declare_native_blueprint_state {
                 /// as they can't be persisted as-is - however it's very hard to do in
                 /// declarative macro land, because enum variants can't be
                 /// macro invocations (to eg filter out the physical partition types)
+                #[derive(Debug, Clone)]
                 pub enum [<$blueprint_ident TypedSubstateKey>] {
                     Fields([<$blueprint_ident Field>]),
                     $([<$collection_ident $collection_type Entries>]([<$blueprint_ident $collection_ident SubstateKey>]),)*
@@ -480,163 +672,6 @@ macro_rules! declare_native_blueprint_state {
                             )*
                         };
                         Ok(substate_value)
-                    }
-                }
-
-                //----------------------
-                // Schema
-                //----------------------
-                pub struct [<$blueprint_ident StateSchemaInit>];
-
-                impl [<$blueprint_ident StateSchemaInit>] {
-                    pub fn create_schema_init(
-                        type_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>,
-                    ) -> BlueprintStateSchemaInit {
-                        let mut fields = vec![];
-                        $(
-                            fields.push(FieldSchema {
-                                field: map_type_ref!(
-                                    $blueprint_ident,
-                                    type_aggregator,
-                                    $field_type,
-                                    [<$blueprint_ident $field_ident FieldPayload>],
-                                ),
-                                condition: $field_condition,
-                            });
-                        )*
-                        let mut collections = vec![];
-                        $(
-                            collections.push(map_collection_schema!(
-                                $collection_type,
-                                $blueprint_ident,
-                                type_aggregator,
-                                $collection_key_type,
-                                [<$blueprint_ident $collection_ident KeyPayload>],
-                                $collection_value_type,
-                                [<$blueprint_ident $collection_ident EntryPayload>],
-                                $collection_allow_ownership
-                            ));
-                        )*
-                        BlueprintStateSchemaInit {
-                            fields,
-                            collections,
-                        }
-                    }
-                }
-
-                //----------------------
-                // Object Initialization
-                //----------------------
-
-                /// Used for initializing blueprint state.
-                ///
-                /// Note - this doesn't support:
-                /// * IndexEntries (because the underlying new_object API doesn't support them)
-                ///   > these panic at create time
-                #[derive(Debug, Default)]
-                pub struct [<$blueprint_ident StateInit>] {
-                    $(
-                        pub $field_property_name: Option<[<$blueprint_ident $field_ident FieldSubstate>]>,
-                    )*
-                    $(
-                        pub $collection_property_name: IndexMap<
-                            [<$blueprint_ident $collection_ident SubstateKey>],
-                            [<$blueprint_ident $collection_ident EntrySubstate>]
-                        >,
-                    )*
-                }
-
-                type [<$blueprint_ident FeatureChecks>] = [<$(ignore_arg!($outer_blueprint_ident) InnerObject)? FeatureChecks>]::<
-                    [<$blueprint_ident FeatureSet>],
-                    $([<$outer_blueprint_ident FeatureSet>],)?
-                >;
-
-                impl [<$blueprint_ident StateInit>] {
-                    pub fn into_system_substates(self, feature_checks: [<$blueprint_ident FeatureChecks>]) -> Result<(BTreeMap<u8, FieldValue>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>), RuntimeError> {
-                        let mut field_values = BTreeMap::new();
-                        $(
-                            {
-                                feature_checks.assert_valid(
-                                    stringify!($field_ident),
-                                    &$field_condition,
-                                    self.$field_property_name.is_some(),
-                                )?;
-                                if let Some(field) = self.$field_property_name {
-                                    let field_content = scrypto_encode(&field.field_content()).unwrap();
-                                    let locked = match &field.mutability {
-                                        SubstateMutability::Mutable => true,
-                                        SubstateMutability::Immutable => false,
-                                    };
-                                    field_values.insert(
-                                        [<$blueprint_ident Field>]::$field_ident.into(),
-                                        FieldValue {
-                                            value: field_content,
-                                            locked,
-                                        }
-                                    );
-                                }
-                            }
-                        )*
-                        let mut all_collection_entries = BTreeMap::new();
-                        let mut collection_index: u8 = 0;
-                        $(
-                            {
-                                let this_collection_entries = self.$collection_property_name
-                                    .into_iter()
-                                    .map(|(key, entry_substate)| {
-                                        let key = scrypto_encode(&key).unwrap();
-                                        let value = map_entry_substate_to_kv_entry!($collection_type, entry_substate);
-                                        (key, value)
-                                    })
-                                    .collect();
-                                all_collection_entries.insert(collection_index, this_collection_entries);
-                                collection_index += 1;
-                            }
-                        )*
-                        Ok((field_values, all_collection_entries))
-                    }
-
-                    // TODO: Remove this when the new object api supports non-vec field values
-                    pub fn into_system_substates_legacy(self, feature_checks: [<$blueprint_ident FeatureChecks>]) -> Result<(Vec<FieldValue>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>), RuntimeError> {
-                        let (mut field_values, collection_entries) = self.into_system_substates(feature_checks)?;
-                        let mut field_values_vec = vec![];
-                        let mut field_index = 0;
-                        $(
-                            {
-                                let field_value = field_values.remove(&field_index).expect(
-                                    concat!(
-                                        "The field `",
-                                        stringify!($field_property_name),
-                                        "` was None. Until the system and macro supports feature-based optional fields, all fields need to be present"
-                                    )
-                                );
-                                field_values_vec.push(field_value);
-                                field_index += 1;
-                            }
-                        )*
-                        Ok((field_values_vec, collection_entries))
-                    }
-
-                    pub fn into_new_object<Y: ClientObjectApi<RuntimeError>>(
-                        self,
-                        api: &mut Y,
-                        own_features: [<$blueprint_ident FeatureSet>],
-                        $(outer_object_features: [<$outer_blueprint_ident FeatureSet>],)?
-                        generic_args: GenericArgs,
-                    ) -> Result<NodeId, RuntimeError> {
-                        let (field_values, all_collection_entries) = self.into_system_substates_legacy(
-                            [<$blueprint_ident FeatureChecks>]::ForFeatures {
-                                own_features,
-                                $(ignore_arg!($outer_blueprint_ident) outer_object_features,)?
-                            }
-                        )?;
-                        api.new_object(
-                            stringify!($blueprint_ident),
-                            own_features.feature_names_str(),
-                            generic_args,
-                            field_values, // TODO: Change to take the IndexMap and get rid of into_system_substates_legacy
-                            all_collection_entries, // TODO: Change to take other collections, not just KVEntry
-                        )
                     }
                 }
 
@@ -718,28 +753,6 @@ macro_rules! declare_native_blueprint_state {
 
                     Ok(partitions)
                 }
-
-                //-------------
-                // State API (TODO!)
-                //-------------
-
-                pub struct [<$blueprint_ident StateApi>]<'a, Y: ClientApi<RuntimeError>> {
-                    api: &'a mut Y,
-                }
-
-                impl<'a, Y: ClientApi<RuntimeError>> [<$blueprint_ident StateApi>]<'a, Y> {
-                    pub fn with(client_api: &'a mut Y) -> Self {
-                        Self {
-                            api: client_api,
-                        }
-                    }
-                }
-
-                impl<'a, Y: ClientApi<$crate::errors::RuntimeError>> From<&'a mut Y> for [<$blueprint_ident StateApi>]<'a, Y> {
-                    fn from(value: &'a mut Y) -> Self {
-                        Self::with(value)
-                    }
-                }
             }
         }
     }
@@ -761,9 +774,10 @@ mod helper_macros {
     macro_rules! generate_content_type {
         (
             content_trait: $content_trait:ident,
+            payload_trait: $payload_trait:ident,
             ident_core: $ident_core:ident,
             $(#[$attributes:meta])*
-            struct $content_type_name:ident = {
+            struct $payload_type_name:ident = {
                 kind: StaticSingleVersioned
                 $(,)?
             }$(,)?
@@ -773,59 +787,81 @@ mod helper_macros {
                     $(#[$attributes])*
                     pub enum [<Versioned $ident_core>] => $ident_core = [<$ident_core V1>]
                 );
-                $(#[$attributes])*
-                #[sbor(transparent)]
-                pub struct $content_type_name(pub [<Versioned $ident_core>]);
-                impl From<[<Versioned $ident_core>]> for $content_type_name {
-                    fn from(value: [<Versioned $ident_core>]) -> Self {
-                        Self(value)
+                declare_payload_new_type!(
+                    content_trait: $content_trait,
+                    payload_trait: $payload_trait,
+                    $(#[$attributes])*
+                    pub struct $payload_type_name([<Versioned $ident_core>]);
+                );
+
+                impl HasLatestVersion for $payload_type_name
+                {
+                    type Latest = <[<Versioned $ident_core>] as HasLatestVersion>::Latest;
+                    fn into_latest(self) -> Self::Latest {
+                        self.into_content().into_latest()
+                    }
+
+                    fn as_latest_ref(&self) -> Option<&Self::Latest> {
+                        self.as_ref().as_latest_ref()
                     }
                 }
-                impl $content_trait<$content_type_name> for [<Versioned $ident_core>] {}
-                // Also add impls from the "latest" type
-                impl From<$ident_core> for $content_type_name {
-                    fn from(value: $ident_core) -> Self {
-                        Self(value.into())
+
+                // Now implement other relevant content traits, for:
+                // > The "latest" type: $ident_core
+                impl $content_trait<$payload_type_name> for $ident_core {
+                    fn into_payload(self) -> $payload_type_name {
+                        $payload_type_name(self.into())
                     }
                 }
-                impl $content_trait<$content_type_name> for $ident_core {}
             }
         };
         (
             content_trait: $content_trait:ident,
+            payload_trait: $payload_trait:ident,
             ident_core: $ident_core:ident,
             $(#[$attributes:meta])*
-            struct $content_type_name:ident = {
+            struct $payload_type_name:ident = {
                 kind: Static,
                 the_type: $static_type:ty
                 $(,)?
             }$(,)?
         ) => {
             paste::paste! {
-                $(#[$attributes])*
-                #[sbor(transparent)]
-                pub struct $content_type_name(pub $static_type);
-                impl From<$static_type> for $content_type_name {
-                    fn from(value: $static_type) -> Self {
-                        Self(value)
-                    }
-                }
-                impl $content_trait<$content_type_name> for $static_type {}
+                declare_payload_new_type!(
+                    content_trait: $content_trait,
+                    payload_trait: $payload_trait,
+                    $(#[$attributes])*
+                    pub struct $payload_type_name($static_type);
+                );
             }
         };
         (
             content_trait: $content_trait:ident,
+            payload_trait: $payload_trait:ident,
             ident_core: $ident_core:ident,
             $(#[$attributes:meta])*
-            struct $content_type_name:ident = {
+            struct $payload_type_name:ident = {
                 kind: Generic,
                 ident: $generic_ident:ident
                 $(,)?
             }
         ) => {
-            $(#[$attributes])*
-            #[sbor(transparent, categorize_types = "")]
-            pub struct $content_type_name<$generic_ident: ScryptoEncode + ScryptoDecode = ScryptoValue>(pub $generic_ident);
+            paste::paste! {
+                declare_payload_new_type!(
+                    content_trait: $content_trait,
+                    payload_trait: $payload_trait,
+                    $(#[$attributes])*
+                    pub struct $payload_type_name<$generic_ident: [<$ident_core ContentMarker>] = ScryptoValue>($generic_ident);
+                );
+                // We choose to create an explicit marker trait, as an alternative to a blanket impl
+                // over ScryptoEncode + ScryptoDecode. Any explicit types can implement this trait.
+                // This avoids every type getting implementations for every such generic type,
+                // which would require disambiguation everywhere `to_substate()` is used.
+                // Anyone needing a type implementing content can use the payload type itself
+                pub trait [<$ident_core ContentMarker>]: ScryptoEncode + ScryptoDecode {}
+                impl [<$ident_core ContentMarker>] for ScryptoValue {}
+                impl [<$ident_core ContentMarker>] for RawScryptoValue<'_> {}
+            }
         };
         // TODO - Add support for some kind of StaticMultiVersioned type here
     }

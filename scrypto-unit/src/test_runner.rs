@@ -540,7 +540,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         self.database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
-                output.0.into_latest().royalty_vault.0.as_node_id(),
+                output.into_latest().royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &FungibleVaultField::LiquidFungible.into(),
             )
@@ -630,7 +630,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 scrypto_decode(&entry.1).unwrap();
             match value.value {
                 Some(definition) => {
-                    definitions.insert(key, definition.0.into_latest());
+                    definitions.insert(key, definition.into_latest());
                 }
                 None => {}
             }

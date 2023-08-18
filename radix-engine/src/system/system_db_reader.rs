@@ -101,7 +101,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
             blueprints.insert(
                 bp_version_key,
-                blueprint_definition.value.unwrap().0.into_latest(),
+                blueprint_definition.value.unwrap().into_latest(),
             );
         }
 
@@ -137,7 +137,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             )?;
 
-        definition.value.map(|v| v.0.into_latest())
+        definition.value.map(|v| v.into_latest())
     }
 
     pub fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(

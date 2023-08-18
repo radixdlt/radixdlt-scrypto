@@ -71,7 +71,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 .expect(&format!("Vm type not found: {:?}", export))
         };
 
-        let output = match vm_type.0.into_latest().vm_type {
+        let output = match vm_type.into_latest().vm_type {
             VmType::Native => {
                 let original_code = {
                     let handle = api.kernel_open_substate_with_default(
@@ -98,7 +98,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     .kernel_get_system()
                     .callback_obj
                     .native_vm
-                    .create_instance(address, &original_code.0.into_latest().code)?;
+                    .create_instance(address, &original_code.into_latest().code)?;
                 let output = { vm_instance.invoke(export.export_name.as_str(), input, api)? };
 
                 output
@@ -123,7 +123,6 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     instrumented_code
                         .value
                         .expect(&format!("Instrumented code not found: {:?}", export))
-                        .0
                         .into_latest()
                 };
 
