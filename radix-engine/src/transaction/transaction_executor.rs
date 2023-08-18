@@ -587,7 +587,7 @@ where
                 // Note that if a transactions fails during this phase, the costing is
                 // done as if it would succeed.
 
-                /* finalization costs: computation on node size */
+                /* finalization costs: computation on Node side */
                 let info = track.get_commit_info();
                 for store_commit in &info {
                     system.modules.apply_finalization_cost(
