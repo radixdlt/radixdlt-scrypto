@@ -557,6 +557,7 @@ mod non_fungible_test {
                         },
                     ),
                 ])
+                .into()
         }
 
         pub fn create_ruid_non_fungible() -> Bucket {

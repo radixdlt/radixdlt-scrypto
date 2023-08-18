@@ -735,7 +735,7 @@ impl<D: NonFungibleData>
     ///         (vec![2u8].try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
     where
         T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
     {
@@ -765,7 +765,7 @@ impl<D: NonFungibleData>
                 .unwrap(),
             )
             .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+                scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
                     .unwrap()
                     .1
             })
