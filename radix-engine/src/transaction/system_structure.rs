@@ -407,7 +407,7 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
     pub fn run(&self) -> IndexMap<EventTypeIdentifier, EventSystemStructure> {
         let mut event_system_structures = index_map_new();
         for (event_type_identifier, _) in self.application_events {
-            if !event_system_structures.contains_key(event_type_identifier) {
+            if event_system_structures.contains_key(event_type_identifier) {
                 continue;
             }
             let blueprint_id = match &event_type_identifier.0 {
