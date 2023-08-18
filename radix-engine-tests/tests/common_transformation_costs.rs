@@ -15,7 +15,7 @@ use transaction::validation::{TransactionValidator, ValidationConfig};
 #[test]
 fn estimate_locking_fee_from_an_account_protected_by_signature() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let (_pk, sk, account) = test_runner.new_virtual_account();
 
@@ -30,7 +30,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(100)),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
     println!("\n{:?}", receipt1);
 
@@ -45,7 +45,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
     println!("\n{:?}", receipt2);
 
@@ -62,7 +62,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
 #[test]
 fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let (_pk1, sk1, _pk2, _sk2, _pk3, _sk3, _pk4, _sk4, account, access_controller) =
         test_runner.new_virtual_account_with_access_controller();
@@ -78,7 +78,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(100)),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
     println!("\n{:?}", receipt1);
 
@@ -100,7 +100,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
     println!("\n{:?}", receipt2);
 
@@ -119,7 +119,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
     const AMOUNT: usize = 200;
 
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let (_pk, sk, account) = test_runner.new_virtual_account();
     let resource_address = test_runner.create_fungible_resource(AMOUNT.into(), 18, account);
@@ -139,7 +139,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
     println!("\n{:?}", receipt1);
 
@@ -159,7 +159,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
     println!("\n{:?}", receipt2);
 
@@ -178,7 +178,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     const AMOUNT: usize = 200;
 
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let (_pk, sk, account) = test_runner.new_virtual_account();
     let resource_address = test_runner.create_non_fungible_resource_advanced(
@@ -202,7 +202,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
     println!("\n{:?}", receipt1);
 
@@ -222,7 +222,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
     println!("\n{:?}", receipt2);
 
@@ -239,7 +239,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
 #[test]
 fn estimate_adding_signature() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let (_pk1, sk1, account1) = test_runner.new_virtual_account();
     let (_pk2, sk2, account2) = test_runner.new_virtual_account();
@@ -258,7 +258,7 @@ fn estimate_adding_signature() {
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
     println!("\n{:?}", receipt1);
 
@@ -272,7 +272,7 @@ fn estimate_adding_signature() {
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
     );
     println!("\n{:?}", receipt2);
 
