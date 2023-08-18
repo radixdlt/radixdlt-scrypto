@@ -12,7 +12,6 @@ use crate::system::module::KernelModule;
 use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::StoreCommit;
 use crate::types::*;
 use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
@@ -128,9 +127,13 @@ impl CostingModule {
         Ok(())
     }
 
-    pub fn apply_storage_cost(&mut self, store_commit: &StoreCommit) -> Result<(), RuntimeError> {
+    pub fn apply_storage_cost(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), RuntimeError> {
         self.fee_reserve
-            .consume_storage(store_commit)
+            .consume_storage(storage_type, size_increase)
             .map_err(|e| {
                 RuntimeError::SystemModuleError(SystemModuleError::CostingError(
                     CostingError::FeeReserveError(e),

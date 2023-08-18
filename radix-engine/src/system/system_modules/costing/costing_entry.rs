@@ -105,7 +105,6 @@ pub enum ExecutionCostingEntry<'a> {
 
 #[derive(Debug, IntoStaticStr)]
 pub enum FinalizationCostingEntry<'a> {
-    BaseCost,
     CommitStateUpdates { store_commit: &'a StoreCommit },
     CommitEvents { events: &'a Vec<Event> },
     CommitLogs { logs: &'a Vec<(Level, String)> },
@@ -166,7 +165,6 @@ impl<'a> ExecutionCostingEntry<'a> {
 impl<'a> FinalizationCostingEntry<'a> {
     pub fn to_finalization_cost_units(&self, ft: &FeeTable) -> u32 {
         match self {
-            FinalizationCostingEntry::BaseCost => ft.base_cost(),
             FinalizationCostingEntry::CommitStateUpdates { store_commit } => {
                 ft.commit_state_updates_cost(store_commit)
             }

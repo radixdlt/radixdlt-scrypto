@@ -447,13 +447,39 @@ impl TransactionReceipt {
     }
 
     pub fn effective_execution_cost_unit_price(&self) -> Decimal {
-        self.costing_parameters.execution_cost_unit_price
-            * (1 + Decimal::from(self.transaction_costing_parameters.tip_percentage) / 100)
+        let dec_100 = dec!(100);
+
+        self.costing_parameters
+            .execution_cost_unit_price
+            .safe_mul(
+                Decimal::ONE
+                    .safe_add(
+                        self.transaction_costing_parameters
+                            .tip_percentage
+                            .safe_div(dec_100)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
+            .unwrap()
     }
 
     pub fn effective_finalization_cost_unit_price(&self) -> Decimal {
-        self.costing_parameters.finalization_cost_unit_price
-            * (1 + Decimal::from(self.transaction_costing_parameters.tip_percentage) / 100)
+        let dec_100 = dec!(100);
+
+        self.costing_parameters
+            .finalization_cost_unit_price
+            .safe_mul(
+                Decimal::ONE
+                    .safe_add(
+                        self.transaction_costing_parameters
+                            .tip_percentage
+                            .safe_div(dec_100)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
+            .unwrap()
     }
 }
 
@@ -582,32 +608,42 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         )?;
 
         write!(
-                f,
-                "\n{} Network Execution: {} XRD, Network Finalization: {} XRD, Tip: {} XRD, Network Storage: {} XRD, Royalties: {} XRD",
-                "Transaction Cost:".bold().green(),
-                self.fee_summary.total_execution_cost_in_xrd,
-                self.fee_summary.total_finalization_cost_in_xrd,
-                self.fee_summary.total_tipping_cost_in_xrd,
-                self.fee_summary.total_storage_cost_in_xrd,
-                self.fee_summary.total_royalty_cost_in_xrd,
-            )?;
-
-        write!(
             f,
-            "\n{} {} limit, {} consumed, {} XRD per unit",
-            "Execution Cost Units:".bold().green(),
-            self.costing_parameters.execution_cost_unit_limit,
-            self.fee_summary.total_execution_cost_units_consumed,
-            self.costing_parameters.execution_cost_unit_price,
+            "\n{} {} XRD",
+            "Transaction Cost:".bold().green(),
+            self.fee_summary.total_cost(),
         )?;
-
         write!(
             f,
-            "\n{} {} limit, {} consumed, {} XRD per unit",
-            "Finalization Cost Units:".bold().green(),
-            self.costing_parameters.finalization_cost_unit_limit,
+            "\n├─ {} {} XRD, {} execution cost units",
+            "Network execution:".bold().green(),
+            self.fee_summary.total_execution_cost_in_xrd,
+            self.fee_summary.total_execution_cost_units_consumed,
+        )?;
+        write!(
+            f,
+            "\n├─ {} {} XRD, {} finalization cost units",
+            "Network finalization:".bold().green(),
+            self.fee_summary.total_finalization_cost_in_xrd,
             self.fee_summary.total_finalization_cost_units_consumed,
-            self.costing_parameters.finalization_cost_unit_price,
+        )?;
+        write!(
+            f,
+            "\n├─ {} {} XRD",
+            "Tip:".bold().green(),
+            self.fee_summary.total_tipping_cost_in_xrd
+        )?;
+        write!(
+            f,
+            "\n├─ {} {} XRD",
+            "Network Storage:".bold().green(),
+            self.fee_summary.total_storage_cost_in_xrd
+        )?;
+        write!(
+            f,
+            "\n└─ {} {} XRD",
+            "Royalties:".bold().green(),
+            self.fee_summary.total_royalty_cost_in_xrd
         )?;
 
         if let TransactionResult::Commit(c) = &result {
@@ -789,7 +825,7 @@ fn display_event_with_network_context<'a, F: fmt::Write>(
         IndexedScryptoValue::from_slice(&event_data).expect("Event must be decodable!");
     write!(
         f,
-        "\n{} Emitter: {}\n   Local Type Index: {:?}\n   Data: {}",
+        "\n{} Emitter: {}\n   Name: {:?}\n   Data: {}",
         prefix,
         event_type_identifier
             .0
@@ -865,16 +901,22 @@ impl From<FeeReserveFinalizationSummary> for TransactionFeeSummary {
 impl TransactionFeeSummary {
     pub fn total_cost(&self) -> Decimal {
         self.total_execution_cost_in_xrd
-            + self.total_finalization_cost_in_xrd
-            + self.total_tipping_cost_in_xrd
-            + self.total_storage_cost_in_xrd
-            + self.total_royalty_cost_in_xrd
+            .safe_add(self.total_finalization_cost_in_xrd)
+            .unwrap()
+            .safe_add(self.total_tipping_cost_in_xrd)
+            .unwrap()
+            .safe_add(self.total_storage_cost_in_xrd)
+            .unwrap()
+            .safe_add(self.total_royalty_cost_in_xrd)
+            .unwrap()
     }
 
     pub fn network_fees(&self) -> Decimal {
         self.total_execution_cost_in_xrd
-            + self.total_finalization_cost_in_xrd
-            + self.total_storage_cost_in_xrd
+            .safe_add(self.total_finalization_cost_in_xrd)
+            .unwrap()
+            .safe_add(self.total_storage_cost_in_xrd)
+            .unwrap()
     }
 
     //===================
@@ -883,24 +925,54 @@ impl TransactionFeeSummary {
 
     pub fn expected_reward_if_single_validator(&self) -> Decimal {
         self.expected_reward_as_proposer_if_single_validator()
-            + self.expected_reward_as_active_validator_if_single_validator()
+            .safe_add(self.expected_reward_as_active_validator_if_single_validator())
+            .unwrap()
     }
 
     pub fn expected_reward_as_proposer_if_single_validator(&self) -> Decimal {
-        self.total_tipping_cost_in_xrd * (TIPS_PROPOSER_SHARE_PERCENTAGE) / dec!(100)
-            + (self.total_execution_cost_in_xrd
-                + self.total_finalization_cost_in_xrd
-                + self.total_storage_cost_in_xrd)
-                * (NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE)
-                / dec!(100)
+        let dec_100 = dec!(100);
+        TIPS_PROPOSER_SHARE_PERCENTAGE
+            .safe_div(dec_100)
+            .unwrap()
+            .safe_mul(self.total_tipping_cost_in_xrd)
+            .unwrap()
+            .safe_add(
+                NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE
+                    .safe_div(dec_100)
+                    .unwrap()
+                    .safe_mul(
+                        self.total_execution_cost_in_xrd
+                            .safe_add(self.total_finalization_cost_in_xrd)
+                            .unwrap()
+                            .safe_add(self.total_storage_cost_in_xrd)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
+            .unwrap()
     }
 
     pub fn expected_reward_as_active_validator_if_single_validator(&self) -> Decimal {
-        self.total_tipping_cost_in_xrd * (TIPS_VALIDATOR_SET_SHARE_PERCENTAGE) / dec!(100)
-            + (self.total_execution_cost_in_xrd
-                + self.total_finalization_cost_in_xrd
-                + self.total_storage_cost_in_xrd)
-                * (NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE)
-                / dec!(100)
+        let dec_100 = dec!(100);
+
+        TIPS_VALIDATOR_SET_SHARE_PERCENTAGE
+            .safe_div(dec_100)
+            .unwrap()
+            .safe_mul(self.total_tipping_cost_in_xrd)
+            .unwrap()
+            .safe_add(
+                NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE
+                    .safe_div(dec_100)
+                    .unwrap()
+                    .safe_mul(
+                        self.total_execution_cost_in_xrd
+                            .safe_add(self.total_finalization_cost_in_xrd)
+                            .unwrap()
+                            .safe_add(self.total_storage_cost_in_xrd)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
+            .unwrap()
     }
 }

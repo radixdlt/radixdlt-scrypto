@@ -960,7 +960,11 @@ impl<C, L: Clone> CallFrame<C, L> {
             &diff,
         );
 
-        substate_io.write_substate(opened_substate.global_substate_handle, substate)?;
+        substate_io.write_substate(
+            opened_substate.global_substate_handle,
+            substate,
+            &mut |heap, store_access| handler.on_store_access(self, heap, store_access),
+        )?;
 
         self.open_substates.insert(lock_handle, opened_substate);
 
@@ -1064,7 +1068,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     pub fn scan_keys<
         'f,
-        K: SubstateKeyContent,
+        K: SubstateKeyContent + 'static,
         S: SubstateStore,
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,
@@ -1100,7 +1104,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     pub fn drain_substates<
         'f,
-        K: SubstateKeyContent,
+        K: SubstateKeyContent + 'static,
         S: SubstateStore,
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,
@@ -1160,7 +1164,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         count: u32,
         on_store_access: &mut F,
     ) -> Result<
-        Vec<(SortedU16Key, IndexedScryptoValue)>,
+        Vec<(SortedKey, IndexedScryptoValue)>,
         CallbackError<CallFrameScanSortedSubstatesError, E>,
     > {
         // Check node visibility

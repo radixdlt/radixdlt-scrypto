@@ -167,12 +167,15 @@ mod genesis_helper {
             accounts: Vec<ComponentAddress>,
             allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
         ) {
-            let xrd_needed: Decimal = allocations
-                .iter()
-                .flat_map(|(_, allocations)| {
+            let xrd_needed: Decimal = {
+                let mut sum = Decimal::ZERO;
+                for v in allocations.iter().flat_map(|(_, allocations)| {
                     allocations.iter().map(|alloc| alloc.xrd_amount.clone())
-                })
-                .sum();
+                }) {
+                    sum = sum.safe_add(v).unwrap();
+                }
+                sum
+            };
             let mut xrd_bucket = ResourceManager(XRD)
                 .mint_fungible(xrd_needed, &mut ScryptoEnv)
                 .expect("XRD mint for genesis stake allocation failed");
@@ -281,7 +284,13 @@ mod genesis_helper {
             allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
         ) {
             for (resource_address, allocations) in allocations.into_iter() {
-                let amount_needed = allocations.iter().map(|alloc| alloc.amount.clone()).sum();
+                let amount_needed = {
+                    let mut sum = Decimal::ZERO;
+                    for v in allocations.iter().map(|alloc| alloc.amount.clone()) {
+                        sum = sum.safe_add(v).unwrap();
+                    }
+                    sum
+                };
                 let mut resource_bucket = ResourceManager(resource_address)
                     .mint_fungible(amount_needed, &mut ScryptoEnv)
                     .expect("Resource mint for genesis allocation failed");
@@ -302,7 +311,13 @@ mod genesis_helper {
         }
 
         fn allocate_xrd(&mut self, allocations: Vec<(ComponentAddress, Decimal)>) {
-            let xrd_needed = allocations.iter().map(|(_, amount)| amount.clone()).sum();
+            let xrd_needed = {
+                let mut sum = Decimal::ZERO;
+                for v in allocations.iter().map(|(_, amount)| amount.clone()) {
+                    sum = sum.safe_add(v).unwrap();
+                }
+                sum
+            };
             let mut xrd_bucket = ResourceManager(XRD)
                 .mint_fungible(xrd_needed, &mut ScryptoEnv)
                 .expect("XRD mint for genesis allocation failed");

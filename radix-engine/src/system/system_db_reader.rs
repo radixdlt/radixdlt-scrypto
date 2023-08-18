@@ -53,8 +53,6 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         if partition_num.ge(&MAIN_BASE_PARTITION) {
             let partition_offset = PartitionOffset(partition_num.0 - MAIN_BASE_PARTITION.0);
             SystemPartitionDescription::Module(ObjectModuleId::Main, partition_offset)
-        } else if partition_num.ge(&SCHEMAS_PARTITION) {
-            SystemPartitionDescription::Schema
         } else if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
             let partition_offset =
                 PartitionOffset(partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0);
@@ -65,6 +63,8 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         } else if partition_num.ge(&METADATA_BASE_PARTITION) {
             let partition_offset = PartitionOffset(partition_num.0 - METADATA_BASE_PARTITION.0);
             SystemPartitionDescription::Module(ObjectModuleId::Metadata, partition_offset)
+        } else if partition_num.ge(&SCHEMAS_PARTITION) {
+            SystemPartitionDescription::Schema
         } else if partition_num.eq(&TYPE_INFO_FIELD_PARTITION) {
             SystemPartitionDescription::TypeInfo
         } else {
@@ -162,13 +162,17 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         &self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        key: &SubstateKey,
+        substate_key: &SubstateKey,
     ) -> Option<D> {
         if let Some(tracked) = self.tracked {
             tracked
                 .get(node_id)
                 .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
-                .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
+                .and_then(|tracked_module| {
+                    tracked_module
+                        .substates
+                        .get(&M::to_db_sort_key(&substate_key))
+                })
                 .and_then(|tracked_key| {
                     tracked_key
                         .substate_value

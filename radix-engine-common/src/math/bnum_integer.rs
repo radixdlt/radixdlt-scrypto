@@ -1,5 +1,6 @@
 //! Definitions of safe integers and uints.
 
+use crate::math::traits::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use bnum::{BInt, BUint};
@@ -120,14 +121,20 @@ macro_rules! types {
     };
 }
 types! {
-    BnumI256, BInt::<4>,
-    BnumI384, BInt::<6>,
-    BnumI512, BInt::<8>,
-    BnumI768, BInt::<12>,
-    BnumU256, BUint::<4>,
-    BnumU384, BUint::<6>,
-    BnumU512, BUint::<8>,
-    BnumU768, BUint::<12>
+    I192, BInt::<3>,
+    I256, BInt::<4>,
+    I320, BInt::<5>,
+    I384, BInt::<6>,
+    I448, BInt::<7>,
+    I512, BInt::<8>,
+    I768, BInt::<12>,
+    U192, BUint::<3>,
+    U256, BUint::<4>,
+    U320, BUint::<5>,
+    U384, BUint::<6>,
+    U448, BUint::<7>,
+    U512, BUint::<8>,
+    U768, BUint::<12>
 }
 
 pub trait Sqrt {
@@ -140,18 +147,6 @@ pub trait Cbrt {
 
 pub trait NthRoot {
     fn nth_root(self, n: u32) -> Self;
-}
-
-pub trait CheckedSub {
-    fn checked_sub(self, other: Self) -> Option<Self>
-    where
-        Self: Sized;
-}
-
-pub trait CheckedMul {
-    fn checked_mul(self, other: Self) -> Option<Self>
-    where
-        Self: Sized;
 }
 
 macro_rules! forward_ref_unop {
@@ -348,18 +343,42 @@ macro_rules! op_impl {
                     }
                 }
 
-                impl CheckedSub for $t
+                impl SafeAdd for $t
                 {
-                    fn checked_sub(self, other: Self) -> Option<Self> {
+                    type Output = $t;
+
+                    fn safe_add(self, other: Self) -> Option<Self::Output> {
+                        let opt = self.0.checked_add(other.0);
+                        opt.map(|v| Self(v))
+                    }
+                }
+
+                impl SafeSub for $t
+                {
+                    type Output = $t;
+
+                    fn safe_sub(self, other: Self) -> Option<Self::Output> {
                         let opt = self.0.checked_sub(other.0);
                         opt.map(|v| Self(v))
                     }
                 }
 
-                impl CheckedMul for $t
+                impl SafeMul for $t
                 {
-                    fn checked_mul(self, other: Self) -> Option<Self> {
+                    type Output = $t;
+
+                    fn safe_mul(self, other: Self) -> Option<Self::Output> {
                         let opt = self.0.checked_mul(other.0);
+                        opt.map(|v| Self(v))
+                    }
+                }
+
+                impl SafeDiv for $t
+                {
+                    type Output = $t;
+
+                    fn safe_div(self, other: Self) -> Option<Self::Output> {
+                        let opt = self.0.checked_div(other.0);
                         opt.map(|v| Self(v))
                     }
                 }
@@ -367,14 +386,20 @@ macro_rules! op_impl {
         }
     };
 }
-op_impl! { BnumI256 }
-op_impl! { BnumI384 }
-op_impl! { BnumI512 }
-op_impl! { BnumI768 }
-op_impl! { BnumU256 }
-op_impl! { BnumU384 }
-op_impl! { BnumU512 }
-op_impl! { BnumU768 }
+op_impl! { I192 }
+op_impl! { I256 }
+op_impl! { I320 }
+op_impl! { I384 }
+op_impl! { I448 }
+op_impl! { I512 }
+op_impl! { I768 }
+op_impl! { U192 }
+op_impl! { U256 }
+op_impl! { U320 }
+op_impl! { U384 }
+op_impl! { U448 }
+op_impl! { U512 }
+op_impl! { U768 }
 
 macro_rules! op_impl_unsigned {
     ($($t:ty),*) => {
@@ -393,10 +418,13 @@ macro_rules! op_impl_unsigned {
         }
     };
 }
-op_impl_unsigned! { BnumU256 }
-op_impl_unsigned! { BnumU384 }
-op_impl_unsigned! { BnumU512 }
-op_impl_unsigned! { BnumU768 }
+op_impl_unsigned! { U192 }
+op_impl_unsigned! { U256 }
+op_impl_unsigned! { U320 }
+op_impl_unsigned! { U384 }
+op_impl_unsigned! { U448 }
+op_impl_unsigned! { U512 }
+op_impl_unsigned! { U768 }
 
 macro_rules! op_impl_signed {
     ($($t:ty),*) => {
@@ -409,7 +437,16 @@ macro_rules! op_impl_signed {
                         Self(self.0.neg())
                     }
                 }
-                forward_ref_unop! { impl Neg, neg for $t }
+
+                impl SafeNeg for $t {
+                    type Output = Self;
+
+                    #[inline]
+                    fn safe_neg(self) -> Option<Self::Output> {
+                        let c = self.0.checked_neg();
+                        c.map(Self)
+                    }
+                }
 
 
                 impl $t {
@@ -463,10 +500,13 @@ macro_rules! op_impl_signed {
     }
 }
 
-op_impl_signed! { BnumI256 }
-op_impl_signed! { BnumI384 }
-op_impl_signed! { BnumI512 }
-op_impl_signed! { BnumI768 }
+op_impl_signed! { I192 }
+op_impl_signed! { I256 }
+op_impl_signed! { I320 }
+op_impl_signed! { I384 }
+op_impl_signed! { I448 }
+op_impl_signed! { I512 }
+op_impl_signed! { I768 }
 
 macro_rules! error {
     ($($t:ident),*) => {
@@ -494,12 +534,18 @@ macro_rules! error {
     };
 }
 error! {
-    BnumI256,
-    BnumI384,
-    BnumI512,
-    BnumI768,
-    BnumU256,
-    BnumU384,
-    BnumU512,
-    BnumU768
+    I192,
+    I256,
+    I320,
+    I384,
+    I448,
+    I512,
+    I768,
+    U192,
+    U256,
+    U320,
+    U384,
+    U448,
+    U512,
+    U768
 }

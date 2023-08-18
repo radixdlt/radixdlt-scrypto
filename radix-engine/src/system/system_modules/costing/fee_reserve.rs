@@ -1,7 +1,6 @@
 use super::FeeReserveFinalizationSummary;
 use crate::{
     errors::CanBeAbortion,
-    track::interface::StoreCommit,
     transaction::{AbortReason, CostingParameters},
     types::*,
 };
@@ -29,6 +28,12 @@ pub enum FeeReserveError {
     Abort(AbortReason),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum StorageType {
+    State,
+    Archive,
+}
+
 impl CanBeAbortion for FeeReserveError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
@@ -49,7 +54,11 @@ pub trait ExecutionFeeReserve {
 
     fn consume_finalization(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
 
-    fn consume_storage(&mut self, store_commit: &StoreCommit) -> Result<(), FeeReserveError>;
+    fn consume_storage(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), FeeReserveError>;
 
     fn consume_royalty(
         &mut self,
@@ -95,7 +104,8 @@ pub struct SystemLoanFeeReserve {
     finalization_cost_unit_limit: u32,
 
     usd_price: u128,
-    storage_price: u128,
+    state_storage_price: u128,
+    archive_storage_price: u128,
 
     tip_percentage: u16,
 
@@ -124,7 +134,7 @@ pub struct SystemLoanFeeReserve {
     royalty_cost: u128,
     royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, u128>,
 
-    /// State expansion costs
+    /// Storage Costs
     storage_cost: u128,
 
     /// Payments made during the execution of a transaction.
@@ -157,8 +167,8 @@ fn transmute_u128_as_decimal(a: u128) -> Decimal {
 }
 
 fn transmute_decimal_as_u128(a: Decimal) -> Result<u128, FeeReserveError> {
-    let i256 = a.0;
-    i256.try_into().map_err(|_| FeeReserveError::Overflow)
+    let i192 = a.0;
+    i192.try_into().map_err(|_| FeeReserveError::Overflow)
 }
 
 impl SystemLoanFeeReserve {
@@ -167,13 +177,28 @@ impl SystemLoanFeeReserve {
         transaction_costing_parameters: &TransactionCostingParameters,
         abort_when_loan_repaid: bool,
     ) -> Self {
-        let effective_execution_cost_unit_price = costing_parameters.execution_cost_unit_price
-            * (dec!(1) + transaction_costing_parameters.tip_percentage / dec!(100));
+        let tip_percentage = Decimal::ONE
+            .safe_add(
+                transaction_costing_parameters
+                    .tip_percentage
+                    .safe_div(dec!(100))
+                    .unwrap(),
+            )
+            .unwrap();
+
+        let effective_execution_cost_unit_price = costing_parameters
+            .execution_cost_unit_price
+            .safe_mul(tip_percentage)
+            .unwrap();
+
         let effective_finalization_cost_unit_price = costing_parameters
             .finalization_cost_unit_price
-            * (dec!(1) + transaction_costing_parameters.tip_percentage / dec!(100));
-        let system_loan_in_xrd =
-            effective_execution_cost_unit_price * costing_parameters.execution_cost_unit_loan;
+            .safe_mul(tip_percentage)
+            .unwrap();
+
+        let system_loan_in_xrd = effective_execution_cost_unit_price
+            .safe_mul(costing_parameters.execution_cost_unit_loan)
+            .unwrap();
 
         Self {
             // Execution costing parameters
@@ -193,7 +218,12 @@ impl SystemLoanFeeReserve {
 
             // USD and storage price
             usd_price: transmute_decimal_as_u128(costing_parameters.usd_price).unwrap(),
-            storage_price: transmute_decimal_as_u128(costing_parameters.storage_price).unwrap(),
+            state_storage_price: transmute_decimal_as_u128(costing_parameters.state_storage_price)
+                .unwrap(),
+            archive_storage_price: transmute_decimal_as_u128(
+                costing_parameters.archive_storage_price,
+            )
+            .unwrap(),
 
             // Tipping percentage
             tip_percentage: transaction_costing_parameters.tip_percentage,
@@ -213,7 +243,9 @@ impl SystemLoanFeeReserve {
 
             // Running balance
             xrd_balance: transmute_decimal_as_u128(
-                system_loan_in_xrd + transaction_costing_parameters.free_credit_in_xrd,
+                system_loan_in_xrd
+                    .safe_add(transaction_costing_parameters.free_credit_in_xrd)
+                    .unwrap(),
             )
             .unwrap(),
             xrd_owed: transmute_decimal_as_u128(system_loan_in_xrd).unwrap(),
@@ -253,8 +285,8 @@ impl SystemLoanFeeReserve {
         transmute_u128_as_decimal(self.usd_price)
     }
 
-    pub fn storage_price(&self) -> Decimal {
-        transmute_u128_as_decimal(self.storage_price)
+    pub fn state_storage_price(&self) -> Decimal {
+        transmute_u128_as_decimal(self.state_storage_price)
     }
 
     pub fn tip_percentage(&self) -> u32 {
@@ -453,19 +485,16 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         Ok(())
     }
 
-    fn consume_storage(&mut self, store_commit: &StoreCommit) -> Result<(), FeeReserveError> {
-        let delta = match store_commit {
-            StoreCommit::Insert { size, .. } => *size,
-            StoreCommit::Update { size, old_size, .. } => {
-                if *size > *old_size {
-                    *size - *old_size
-                } else {
-                    0
-                }
-            }
-            StoreCommit::Delete { .. } => 0, // TODO: refund?
-        };
-        let amount = self.storage_price.saturating_mul(delta as u128);
+    fn consume_storage(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), FeeReserveError> {
+        let amount = match storage_type {
+            StorageType::State => self.state_storage_price,
+            StorageType::Archive => self.archive_storage_price,
+        }
+        .saturating_mul(size_increase as u128);
 
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance {
@@ -501,14 +530,28 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
     fn finalize(self) -> FeeReserveFinalizationSummary {
-        let total_execution_cost_in_xrd = transmute_u128_as_decimal(self.execution_cost_unit_price)
-            * self.execution_cost_units_committed;
+        let total_execution_cost_in_xrd: Decimal =
+            transmute_u128_as_decimal(self.execution_cost_unit_price)
+                .safe_mul(self.execution_cost_units_committed)
+                .unwrap();
+
         let total_finalization_cost_in_xrd =
             transmute_u128_as_decimal(self.finalization_cost_unit_price)
-                * self.finalization_cost_units_committed;
-        let total_tipping_cost_in_xrd = total_execution_cost_in_xrd * self.tip_percentage
-            / dec!(100)
-            + total_finalization_cost_in_xrd * self.tip_percentage / dec!(100);
+                .safe_mul(self.finalization_cost_units_committed)
+                .unwrap();
+
+        let tip_percentage = Decimal::from(self.tip_percentage).safe_div(100).unwrap();
+
+        let mut total_tipping_cost_in_xrd: Decimal = total_execution_cost_in_xrd
+            .safe_mul(tip_percentage)
+            .unwrap();
+        total_tipping_cost_in_xrd = total_tipping_cost_in_xrd
+            .safe_add(
+                total_finalization_cost_in_xrd
+                    .safe_mul(tip_percentage)
+                    .unwrap(),
+            )
+            .unwrap();
         let royalty_cost_breakdown = self.royalty_cost_breakdown();
 
         FeeReserveFinalizationSummary {
@@ -545,7 +588,7 @@ mod tests {
     fn create_test_fee_reserve(
         execution_cost_unit_price: Decimal,
         usd_price: Decimal,
-        storage_price: Decimal,
+        state_storage_price: Decimal,
         tip_percentage: u16,
         execution_cost_unit_limit: u32,
         execution_cost_unit_loan: u32,
@@ -556,7 +599,7 @@ mod tests {
         costing_parameters.execution_cost_unit_limit = execution_cost_unit_limit;
         costing_parameters.execution_cost_unit_loan = execution_cost_unit_loan;
         costing_parameters.usd_price = usd_price;
-        costing_parameters.storage_price = storage_price;
+        costing_parameters.state_storage_price = state_storage_price;
         let mut transaction_costing_parameters = TransactionCostingParameters::default();
         transaction_costing_parameters.tip_percentage = tip_percentage;
 

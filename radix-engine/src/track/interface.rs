@@ -127,7 +127,7 @@ pub trait SubstateStore {
     /// Otherwise, behavior is undefined.
     ///
     /// Returns list of substate keys and database access info
-    fn scan_keys<K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn scan_keys<K: SubstateKeyContent + 'static, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -143,7 +143,7 @@ pub trait SubstateStore {
     /// Otherwise, behavior is undefined.
     ///
     /// Returns list of removed substates with their associated keys and values, as well as database access info
-    fn drain_substates<K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn drain_substates<K: SubstateKeyContent + 'static, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -158,7 +158,7 @@ pub trait SubstateStore {
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: &mut F,
-    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, E>;
+    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, E>;
 
     /// Note: unstable interface, for intent transaction tracker only
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);
@@ -168,22 +168,83 @@ pub trait SubstateStore {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub struct CanonicalPartition {
+    pub node_id: NodeId,
+    pub partition_number: PartitionNumber,
+}
+
+#[derive(Debug, Clone)]
+pub struct CanonicalSubstateKey {
+    pub node_id: NodeId,
+    pub partition_number: PartitionNumber,
+    pub substate_key: SubstateKey, // TODO: use reference if this turns out to be costly
+}
+
+impl CanonicalSubstateKey {
+    pub fn of(partition: CanonicalPartition, substate_key: SubstateKey) -> Self {
+        Self {
+            node_id: partition.node_id,
+            partition_number: partition.partition_number,
+            substate_key,
+        }
+    }
+}
+
+impl CanonicalSubstateKey {
+    pub fn logical_size(&self) -> usize {
+        self.node_id.as_bytes().len()
+            + 1
+            + match &self.substate_key {
+                SubstateKey::Field(_) => 1,
+                SubstateKey::Map(k) => k.len(),
+                SubstateKey::Sorted(k) => 2 + k.1.len(),
+            }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum StoreAccess {
     /// Some substate was read from database.
-    ReadFromDb(NodeId, usize),
+    ReadFromDb(CanonicalSubstateKey, usize),
     /// Non-existent substate was read from database.
-    ReadFromDbNotFound(NodeId),
-    /// A new entry has been added to track
-    /// System limits how many items that can be tracked.
-    NewEntryInTrack(NodeId),
+    ReadFromDbNotFound(CanonicalSubstateKey),
+
+    /// A substate in track has been updated
+    UpdateSubstateInTrack {
+        /// The canonical substate key
+        canonical_substate_key: CanonicalSubstateKey,
+        /// Previous size of the substate, or `None` if it's a new entry.
+        /// The current size before the update rather than the size in the underlying store.
+        old_size: Option<usize>,
+        /// The new substate size, or `None` if it's removed
+        new_size: Option<usize>,
+    },
+
+    /// A substate in track has been updated
+    UpdateSubstateInHeap {
+        /// The canonical substate key
+        canonical_substate_key: CanonicalSubstateKey,
+        /// Previous size of the substate, or `None` if it's a new entry.
+        /// The current size before the update rather than the size in the underlying store.
+        old_size: Option<usize>,
+        /// The new substate size, or `None` if it's removed
+        new_size: Option<usize>,
+    },
 }
 
 impl StoreAccess {
     pub fn node_id(&self) -> NodeId {
         match self {
-            StoreAccess::ReadFromDb(node_id, _)
-            | StoreAccess::ReadFromDbNotFound(node_id)
-            | StoreAccess::NewEntryInTrack(node_id) => *node_id,
+            StoreAccess::ReadFromDb(key, _)
+            | StoreAccess::ReadFromDbNotFound(key)
+            | StoreAccess::UpdateSubstateInTrack {
+                canonical_substate_key: key,
+                ..
+            }
+            | StoreAccess::UpdateSubstateInHeap {
+                canonical_substate_key: key,
+                ..
+            } => key.node_id,
         }
     }
 }
@@ -193,26 +254,53 @@ pub type StoreCommitInfo = Vec<StoreCommit>;
 #[derive(Debug, Clone)]
 pub enum StoreCommit {
     Insert {
-        node_id: NodeId,
+        canonical_substate_key: CanonicalSubstateKey,
         size: usize,
     },
     Update {
-        node_id: NodeId,
+        canonical_substate_key: CanonicalSubstateKey,
         size: usize,
         old_size: usize,
     },
     Delete {
-        node_id: NodeId,
+        canonical_substate_key: CanonicalSubstateKey,
         old_size: usize,
     },
 }
 
 impl StoreCommit {
-    pub fn node_id(&self) -> &NodeId {
+    pub fn node_id(&self) -> NodeId {
         match self {
-            StoreCommit::Insert { node_id, .. }
-            | StoreCommit::Update { node_id, .. }
-            | StoreCommit::Delete { node_id, .. } => node_id,
+            StoreCommit::Insert {
+                canonical_substate_key,
+                ..
+            }
+            | StoreCommit::Update {
+                canonical_substate_key,
+                ..
+            }
+            | StoreCommit::Delete {
+                canonical_substate_key,
+                ..
+            } => canonical_substate_key.node_id,
+        }
+    }
+
+    pub fn logical_size_increase(&self) -> usize {
+        match self {
+            StoreCommit::Insert {
+                canonical_substate_key,
+                size,
+                ..
+            } => canonical_substate_key.logical_size() + *size,
+            StoreCommit::Update { size, old_size, .. } => {
+                if *size > *old_size {
+                    *size - *old_size
+                } else {
+                    0
+                }
+            }
+            StoreCommit::Delete { .. } => 0, // TODO: refund?
         }
     }
 }

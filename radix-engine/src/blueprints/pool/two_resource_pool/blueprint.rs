@@ -231,12 +231,20 @@ impl TwoResourcePoolBlueprint {
                 reserves2 > Decimal::ZERO,
             ) {
                 (false, false, false) => Ok((
-                    (contribution1 * contribution2).sqrt().unwrap(),
+                    contribution1
+                        .safe_mul(contribution2)
+                        .unwrap()
+                        .sqrt()
+                        .unwrap(),
                     contribution1,
                     contribution2,
                 )),
                 (false, _, _) => Ok((
-                    ((contribution1 + reserves1) * (contribution2 + reserves2))
+                    contribution1
+                        .safe_add(reserves1)
+                        .unwrap()
+                        .safe_mul(contribution2.safe_add(reserves2).unwrap())
+                        .unwrap()
                         .sqrt()
                         .unwrap(),
                     contribution1,
@@ -255,12 +263,15 @@ impl TwoResourcePoolBlueprint {
                     let dm = contribution1;
                     let dn = contribution2;
 
-                    let (mut amount1, mut amount2) = if (m / n) == (dm / dn) {
+                    let m_div_n = m.safe_div(n).unwrap();
+                    let dm_div_dn = dm.safe_div(dn).unwrap();
+
+                    let (mut amount1, mut amount2) = if m_div_n == dm_div_dn {
                         (dm, dn)
-                    } else if (m / n) < (dm / dn) {
-                        (dn * m / n, dn)
+                    } else if m_div_n < dm_div_dn {
+                        (dn.safe_mul(m_div_n).unwrap(), dn)
                     } else {
-                        (dm, dm * n / m)
+                        (dm, dm.safe_mul(n.safe_div(m).unwrap()).unwrap())
                     };
 
                     if divisibility1 != 18 {
@@ -270,7 +281,11 @@ impl TwoResourcePoolBlueprint {
                         amount2 = amount2.round(divisibility2, RoundingMode::ToNegativeInfinity)
                     }
 
-                    let pool_units_to_mint = amount1 / reserves1 * pool_unit_total_supply;
+                    let pool_units_to_mint = amount1
+                        .safe_div(reserves1)
+                        .unwrap()
+                        .safe_mul(pool_unit_total_supply)
+                        .unwrap();
 
                     Ok((pool_units_to_mint, amount1, amount2))
                 }
@@ -544,7 +559,11 @@ impl TwoResourcePoolBlueprint {
                         reserves,
                     },
                 )| {
-                    let amount_owed = (pool_units_to_redeem / pool_units_total_supply) * reserves;
+                    let amount_owed = pool_units_to_redeem
+                        .safe_div(pool_units_total_supply)
+                        .unwrap()
+                        .safe_mul(reserves)
+                        .unwrap();
 
                     let amount_owed = if divisibility == 18 {
                         amount_owed

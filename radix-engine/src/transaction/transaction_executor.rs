@@ -40,8 +40,10 @@ pub struct CostingParameters {
 
     /// The price of USD in xrd
     pub usd_price: Decimal,
-    /// The price of storage in xrd
-    pub storage_price: Decimal,
+    /// The price of state storage in xrd
+    pub state_storage_price: Decimal,
+    /// The price of archive storage in xrd
+    pub archive_storage_price: Decimal,
 }
 
 impl Default for CostingParameters {
@@ -53,7 +55,8 @@ impl Default for CostingParameters {
             finalization_cost_unit_price: FINALIZATION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
             finalization_cost_unit_limit: FINALIZATION_COST_UNIT_LIMIT,
             usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
-            storage_price: STORAGE_PRICE_IN_XRD.try_into().unwrap(),
+            state_storage_price: STATE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
+            archive_storage_price: ARCHIVE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
         }
     }
 }
@@ -72,10 +75,10 @@ pub struct ExecutionConfig {
     pub enable_cost_breakdown: bool,
     pub max_execution_trace_depth: usize,
     pub max_call_depth: usize,
-    pub max_number_of_substates_in_track: usize,
-    pub max_number_of_substates_in_heap: usize,
+    pub max_heap_substate_total_bytes: usize,
+    pub max_track_substate_total_bytes: usize,
     pub max_substate_key_size: usize,
-    pub max_substate_size: usize,
+    pub max_substate_value_size: usize,
     pub max_invoke_input_size: usize,
     pub max_event_size: usize,
     pub max_log_size: usize,
@@ -95,10 +98,10 @@ impl ExecutionConfig {
             enable_cost_breakdown: false,
             max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
             max_call_depth: MAX_CALL_DEPTH,
-            max_number_of_substates_in_track: MAX_NUMBER_OF_SUBSTATES_IN_TRACK,
-            max_number_of_substates_in_heap: MAX_NUMBER_OF_SUBSTATES_IN_HEAP,
+            max_heap_substate_total_bytes: MAX_HEAP_SUBSTATE_TOTAL_BYTES,
+            max_track_substate_total_bytes: MAX_TRACK_SUBSTATE_TOTAL_BYTES,
             max_substate_key_size: MAX_SUBSTATE_KEY_SIZE,
-            max_substate_size: MAX_SUBSTATE_SIZE,
+            max_substate_value_size: MAX_SUBSTATE_VALUE_SIZE,
             max_invoke_input_size: MAX_INVOKE_PAYLOAD_SIZE,
             max_event_size: MAX_EVENT_SIZE,
             max_log_size: MAX_LOG_SIZE,
@@ -113,9 +116,9 @@ impl ExecutionConfig {
     pub fn for_genesis_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_genesis_transaction(),
-            max_number_of_substates_in_track: 50_000,
-            max_number_of_substates_in_heap: 50_000,
-            max_number_of_events: 1_000_000,
+            max_heap_substate_total_bytes: 512 * 1024 * 1024,
+            max_track_substate_total_bytes: 512 * 1024 * 1024,
+            max_number_of_events: 1024 * 1024,
             ..Self::default()
         }
     }
@@ -264,7 +267,7 @@ where
                     .enabled_modules
                     .contains(EnabledModules::KERNEL_TRACE)
                 {
-                    println!("{:-^100}", "Interpretation Results");
+                    println!("{:-^120}", "Interpretation Results");
                     println!("{:?}", interpretation_result);
                 }
 
@@ -335,16 +338,18 @@ where
                             Otherwise, we won't be able to commit failed transactions.
                             May also cache the information for better performance.
                         */
-                        application_events.push((
-                            EventTypeIdentifier(
-                                Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
-                                "BurnFungibleResourceEvent".to_string(),
-                            ),
-                            scrypto_encode(&BurnFungibleResourceEvent {
-                                amount: fee_destination.to_burn,
-                            })
-                            .unwrap(),
-                        ));
+                        if fee_destination.to_burn.is_positive() {
+                            application_events.push((
+                                EventTypeIdentifier(
+                                    Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
+                                    "BurnFungibleResourceEvent".to_string(),
+                                ),
+                                scrypto_encode(&BurnFungibleResourceEvent {
+                                    amount: fee_destination.to_burn,
+                                })
+                                .unwrap(),
+                            ));
+                        }
 
                         // Finalize execution trace
                         let execution_trace =
@@ -582,10 +587,7 @@ where
                 // Note that if a transactions fails during this phase, the costing is
                 // done as if it would succeed.
 
-                /* finalization costs */
-                system
-                    .modules
-                    .apply_finalization_cost(FinalizationCostingEntry::BaseCost)?;
+                /* finalization costs: computation on Node side */
                 let info = track.get_commit_info();
                 for store_commit in &info {
                     system.modules.apply_finalization_cost(
@@ -604,8 +606,14 @@ where
                     })?;
 
                 /* storage costs */
+                system
+                    .modules
+                    .apply_storage_cost(StorageType::Archive, executable.payload_size())?;
                 for store_commit in &info {
-                    system.modules.apply_storage_cost(store_commit)?;
+                    system.modules.apply_storage_cost(
+                        StorageType::State,
+                        store_commit.logical_size_increase(),
+                    )?;
                 }
 
                 Ok(x)
@@ -734,7 +742,7 @@ where
 
             // Take fees
             collected_fees.put(locked.take_by_amount(amount).unwrap());
-            required -= amount;
+            required = required.safe_sub(amount).unwrap();
 
             // Refund overpayment
             let mut substate: FieldSubstate<LiquidFungibleResource> = track
@@ -758,13 +766,14 @@ where
                 .unwrap();
 
             // Record final payments
-            *fee_payments.entry(vault_id).or_default() += amount;
+            let entry = fee_payments.entry(vault_id).or_default();
+            *entry = entry.safe_add(amount).unwrap();
         }
         // Free credit is locked first and thus used last
         if free_credit.is_positive() {
             let amount = Decimal::min(free_credit, required);
             collected_fees.put(LiquidFungibleResource::new(amount));
-            required -= amount;
+            required = required.safe_sub(amount).unwrap();
         }
 
         let to_proposer = fee_reserve_finalization.to_proposer_amount();
@@ -782,12 +791,17 @@ where
             "Locked fee does not cover transaction cost: {} required",
             required
         );
-        let remaining_collected_fees = collected_fees.amount() - fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */;
+        let remaining_collected_fees = collected_fees.amount().safe_sub(fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */).unwrap();
+        let to_distribute = to_proposer
+            .safe_add(to_validator_set)
+            .unwrap()
+            .safe_add(to_burn)
+            .unwrap();
         assert!(
-            remaining_collected_fees  == to_proposer + to_validator_set + to_burn,
+            remaining_collected_fees  == to_distribute,
             "Remaining collected fee isn't equal to amount to distribute (proposer/validator set/burn): {} != {}",
             remaining_collected_fees,
-            to_proposer + to_validator_set + to_burn,
+            to_distribute,
         );
 
         if !to_proposer.is_zero() || !to_validator_set.is_zero() {
@@ -815,13 +829,13 @@ where
                 .as_typed()
                 .unwrap();
             if let Some(current_leader) = current_leader {
-                substate
+                let entry = substate
                     .value
                     .0
                     .proposer_rewards
                     .entry(current_leader)
-                    .or_default()
-                    .add_assign(to_proposer);
+                    .or_default();
+                *entry = entry.safe_add(to_proposer).unwrap()
             } else {
                 // If there is no current leader, the rewards go to the pool
             };
@@ -849,7 +863,7 @@ where
                 .unwrap();
             substate.value.0.put(
                 collected_fees
-                    .take_by_amount(to_proposer + to_validator_set)
+                    .take_by_amount(to_proposer.safe_add(to_validator_set).unwrap())
                     .unwrap(),
             );
             track
@@ -948,7 +962,7 @@ where
 
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &Executable) {
-        println!("{:-^100}", "Executable");
+        println!("{:-^120}", "Executable");
         println!("Intent hash: {}", executable.intent_hash().as_hash());
         println!("Payload size: {}", executable.payload_size());
         println!(
@@ -968,20 +982,20 @@ where
         // NB - we use "to_string" to ensure they align correctly
 
         if let Some(fee_details) = &receipt.fee_details {
-            println!("{:-^100}", "Execution Cost Breakdown");
+            println!("{:-^120}", "Execution Cost Breakdown");
             for (k, v) in &fee_details.execution_cost_breakdown {
-                println!("{:<75}: {:>15}", k, v.to_string());
+                println!("{:<75}: {:>25}", k, v.to_string());
             }
 
-            println!("{:-^100}", "Finalization Cost Breakdown");
+            println!("{:-^120}", "Finalization Cost Breakdown");
             for (k, v) in &fee_details.finalization_cost_breakdown {
-                println!("{:<75}: {:>15}", k, v.to_string());
+                println!("{:<75}: {:>25}", k, v.to_string());
             }
         }
 
-        println!("{:-^100}", "Fee Summary");
+        println!("{:-^120}", "Fee Summary");
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Execution Cost Units Consumed",
             receipt
                 .fee_summary
@@ -989,7 +1003,7 @@ where
                 .to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Finalization Cost Units Consumed",
             receipt
                 .fee_summary
@@ -997,12 +1011,12 @@ where
                 .to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Execution Cost in XRD",
             receipt.fee_summary.total_execution_cost_in_xrd.to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Finalization Cost in XRD",
             receipt
                 .fee_summary
@@ -1010,29 +1024,29 @@ where
                 .to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Tipping Cost in XRD",
             receipt.fee_summary.total_tipping_cost_in_xrd.to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Storage Cost in XRD",
             receipt.fee_summary.total_storage_cost_in_xrd.to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Royalty Costs in XRD",
             receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
         );
 
         match &receipt.result {
             TransactionResult::Commit(commit) => {
-                println!("{:-^100}", "Application Logs");
+                println!("{:-^120}", "Application Logs");
                 for (level, message) in &commit.application_logs {
                     println!("[{}] {}", level, message);
                 }
 
-                println!("{:-^100}", "Outcome");
+                println!("{:-^120}", "Outcome");
                 println!(
                     "{}",
                     match &commit.outcome {
@@ -1042,15 +1056,15 @@ where
                 );
             }
             TransactionResult::Reject(e) => {
-                println!("{:-^100}", "Transaction Rejected");
+                println!("{:-^120}", "Transaction Rejected");
                 println!("{:?}", e.reason);
             }
             TransactionResult::Abort(e) => {
-                println!("{:-^100}", "Transaction Aborted");
+                println!("{:-^120}", "Transaction Aborted");
                 println!("{:?}", e);
             }
         }
-        println!("{:-^100}", "Finish");
+        println!("{:-^120}", "Finish");
     }
 }
 

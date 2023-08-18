@@ -10,7 +10,7 @@ use crate::track::interface::{
     CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo,
 };
 use radix_engine_common::prelude::{NodeId, PartitionNumber};
-use radix_engine_common::types::{SortedU16Key, SubstateKey};
+use radix_engine_common::types::{SortedKey, SubstateKey};
 use radix_engine_common::ScryptoSbor;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::IndexedScryptoValue;
@@ -391,10 +391,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(substate)
     }
 
-    pub fn write_substate<E>(
+    pub fn write_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
+        on_store_access: &mut F,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get_mut(global_lock_handle);
@@ -414,15 +415,16 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 self.heap
                     .set_substate(node_id, partition_num, substate_key, substate);
             }
-            SubstateDevice::Store => {
-                self.store
-                    .set_substate(node_id, partition_num, substate_key, substate, &mut |_| {
-                        Err(())
-                    })
-                    .expect(
-                        "Setting substate on handled substate should not incur a store access.",
-                    );
-            }
+            SubstateDevice::Store => self
+                .store
+                .set_substate(
+                    node_id,
+                    partition_num,
+                    substate_key,
+                    substate,
+                    &mut |store_access| on_store_access(&self.heap, store_access),
+                )
+                .map_err(|e| CallbackError::CallbackError(e))?,
         }
 
         Ok(())
@@ -514,7 +516,12 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(removed)
     }
 
-    pub fn scan_keys<'f, K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn scan_keys<
+        'f,
+        K: SubstateKeyContent + 'static,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
@@ -533,7 +540,12 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(keys)
     }
 
-    pub fn drain_substates<'f, K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn drain_substates<
+        'f,
+        K: SubstateKeyContent + 'static,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
@@ -567,7 +579,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         count: u32,
         on_store_access: &mut F,
     ) -> Result<
-        Vec<(SortedU16Key, IndexedScryptoValue)>,
+        Vec<(SortedKey, IndexedScryptoValue)>,
         CallbackError<CallFrameScanSortedSubstatesError, E>,
     > {
         let substates = match device {

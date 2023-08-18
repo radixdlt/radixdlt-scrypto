@@ -37,23 +37,23 @@ macro_rules! ops_fn {
     ($t:ty, $pow_fn:ident, $exp_t:ty, "clone") => {
         paste::item! {
             fn [< $t:lower _add >](a: &$t, b: &$t) -> $t {
-                a.clone() + b.clone()
+                a.clone().safe_add(b.clone()).unwrap()
             }
 
             fn [< $t:lower _sub >](a: &$t, b: &$t) -> $t {
-                a.clone() - b.clone()
+                a.clone().safe_sub(b.clone()).unwrap()
             }
 
             fn [< $t:lower _mul >](a: &$t, b: &$t) -> $t {
-                a.clone() * b.clone()
+                a.clone().safe_mul(b.clone()).unwrap()
             }
 
             fn [< $t:lower _div >](a: &$t, b: &$t) -> $t {
-                a.clone() / b.clone()
+                a.clone().safe_div(b.clone()).unwrap()
             }
 
             fn [< $t:lower _pow >](a: &$t, exp: &$exp_t) -> $t {
-                a.clone().$pow_fn(*exp)
+                a.clone().$pow_fn(*exp).unwrap()
             }
 
             fn [< $t:lower _to_string >](a: &$t, _: &str) -> String {

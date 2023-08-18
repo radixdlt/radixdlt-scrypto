@@ -6,7 +6,6 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
-use std::ops::Sub;
 use transaction::prelude::*;
 
 #[test]
@@ -98,7 +97,7 @@ fn can_take_on_recallable_vault() {
         .cloned()
         .unwrap();
     let mut expected_amount: Decimal = 5u32.into();
-    expected_amount = expected_amount.sub(Decimal::one());
+    expected_amount = expected_amount.safe_sub(Decimal::one()).unwrap();
     assert_eq!(expected_amount, original_account_amount);
 
     let other_amount = test_runner

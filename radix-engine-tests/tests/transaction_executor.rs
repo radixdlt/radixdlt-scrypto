@@ -106,7 +106,7 @@ fn test_normal_transaction_flow() {
         .bootstrap_test_default()
         .unwrap();
 
-    let fee_reserve_config = CostingParameters::default();
+    let costing_parameters = CostingParameters::default();
     let execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);
     let raw_transaction = create_notarized_transaction(
         TransactionParams {
@@ -130,13 +130,13 @@ fn test_normal_transaction_flow() {
         .validate_from_raw(&raw_transaction)
         .expect("Invalid transaction");
     let executable = validated.get_executable();
-    assert_eq!(executable.payload_size(), 1023 * 1024 + 388);
+    assert_eq!(executable.payload_size(), 1023 * 1024 + 380);
 
     // Act
     let receipt = execute_and_commit_transaction(
         &mut substate_db,
         vm,
-        &fee_reserve_config,
+        &costing_parameters,
         &execution_config,
         &executable,
     );
