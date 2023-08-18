@@ -185,6 +185,7 @@ impl SystemLoanFeeReserve {
             .finalization_cost_unit_price
             .safe_mul(tip_percentage)
             .unwrap();
+
         let system_loan_in_xrd = effective_execution_cost_unit_price
             .safe_mul(costing_parameters.execution_cost_unit_loan)
             .unwrap();

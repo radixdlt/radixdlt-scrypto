@@ -36,17 +36,11 @@ pub const TIPS_PROPOSER_SHARE_PERCENTAGE: u8 = 100;
 /// The validator set's share of tips
 pub const TIPS_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 0;
 
-/// The tips to burn
-pub const TIPS_TO_BURN_PERCENTAGE: u8 = 0;
-
 /// The proposer's share of network fees (execution, finalization and storage)
 pub const NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE: u8 = 25;
 
 /// The validator set's share of network fees (execution, finalization and storage)
 pub const NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 25;
-
-/// The network fees (execution, finalization and storage) to burn
-pub const NETWORK_FEES_TO_BURN_PERCENTAGE: u8 = 50;
 
 /// The max event size
 pub const MAX_EVENT_SIZE: usize = 64 * 1024;
