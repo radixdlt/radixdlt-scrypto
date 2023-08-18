@@ -97,7 +97,9 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let amount = Self::liquid_amount(api)? + Self::locked_amount(api)?;
+        let amount = Self::liquid_amount(api)?
+            .safe_add(Self::locked_amount(api)?)
+            .unwrap();
 
         Ok(amount)
     }
@@ -288,7 +290,7 @@ impl FungibleVaultBlueprint {
 
         // Take from liquid if needed
         if amount > max_locked {
-            let delta = amount - max_locked;
+            let delta = amount.safe_sub(max_locked).unwrap();
             Self::internal_take(delta, api)?;
         }
 
@@ -323,7 +325,7 @@ impl FungibleVaultBlueprint {
 
         api.field_write_typed(handle, &locked)?;
 
-        let delta = max_locked - locked.amount();
+        let delta = max_locked.safe_sub(locked.amount()).unwrap();
         Self::internal_put(LiquidFungibleResource::new(delta), api)
     }
 

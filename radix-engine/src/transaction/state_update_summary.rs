@@ -7,7 +7,6 @@ use radix_engine_interface::*;
 use radix_engine_store_interface::{
     db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
 };
-use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -154,7 +153,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                                 .entry(resource_address)
                                 .or_insert(BalanceChange::Fungible(Decimal::ZERO))
                                 .fungible();
-                            existing.add_assign(delta);
+                            *existing = existing.safe_add(delta).unwrap();
                         }
                         BalanceChange::NonFungible { added, removed } => {
                             let existing = direct_vault_updates
@@ -223,7 +222,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                                 .entry(resource_address)
                                 .or_insert(BalanceChange::Fungible(Decimal::ZERO))
                                 .fungible();
-                            existing.add_assign(delta);
+                            *existing = existing.safe_add(delta).unwrap();
                         }
                         BalanceChange::NonFungible { added, removed } => {
                             let existing = balance_changes
@@ -307,7 +306,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 };
                 let new_balance = substate.value.0.amount();
 
-                Some(BalanceChange::Fungible(new_balance - old_balance))
+                Some(BalanceChange::Fungible(new_balance.safe_sub(old_balance).unwrap()))
             } else {
                 None
             }

@@ -45,9 +45,16 @@ fn test_transaction_preview_cost_estimate() {
     actual_receipt.expect_commit(true);
     assert_eq!(
         // TODO: better preview payload size estimate?
-        preview_receipt.fee_summary.total_cost()
-            + Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD).unwrap()
-                * FeeTable::new().validate_tx_payload_cost(size_diff),
+        preview_receipt
+            .fee_summary
+            .total_cost()
+            .safe_add(
+                Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD)
+                    .unwrap()
+                    .safe_mul(FeeTable::new().validate_tx_payload_cost(size_diff))
+                    .unwrap()
+            )
+            .unwrap(),
         actual_receipt.fee_summary.total_cost(),
     );
 }
