@@ -127,7 +127,7 @@ fn test_default_substate_size_limit() {
             package_address,
             "TransactionLimitSubstateTest",
             "write_large_value",
-            manifest_args!(MAX_SUBSTATE_SIZE - 14),
+            manifest_args!(MAX_SUBSTATE_VALUE_SIZE - 14),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -142,7 +142,7 @@ fn test_default_substate_size_limit() {
             package_address,
             "TransactionLimitSubstateTest",
             "write_large_value",
-            manifest_args!(MAX_SUBSTATE_SIZE - 13),
+            manifest_args!(MAX_SUBSTATE_VALUE_SIZE - 13),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

@@ -218,7 +218,7 @@ pub fn write_cost_breakdown(
     buffer.push_str(
         format!(
             "{:<75},{:>15}, {:8.1}%\n",
-            "- State Expansion Cost (XRD)",
+            "- Storage Cost (XRD)",
             fee_summary.total_storage_cost_in_xrd.to_string(),
             decimal_to_float(
                 fee_summary

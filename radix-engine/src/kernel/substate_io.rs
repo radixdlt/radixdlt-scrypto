@@ -10,7 +10,7 @@ use crate::track::interface::{
     CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo,
 };
 use radix_engine_common::prelude::{NodeId, PartitionNumber};
-use radix_engine_common::types::{SortedU16Key, SubstateKey};
+use radix_engine_common::types::{SortedKey, SubstateKey};
 use radix_engine_common::ScryptoSbor;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::IndexedScryptoValue;
@@ -514,7 +514,12 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(removed)
     }
 
-    pub fn scan_keys<'f, K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn scan_keys<
+        'f,
+        K: SubstateKeyContent + 'static,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
@@ -533,7 +538,12 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(keys)
     }
 
-    pub fn drain_substates<'f, K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn drain_substates<
+        'f,
+        K: SubstateKeyContent + 'static,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
@@ -567,7 +577,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         count: u32,
         on_store_access: &mut F,
     ) -> Result<
-        Vec<(SortedU16Key, IndexedScryptoValue)>,
+        Vec<(SortedKey, IndexedScryptoValue)>,
         CallbackError<CallFrameScanSortedSubstatesError, E>,
     > {
         let substates = match device {
