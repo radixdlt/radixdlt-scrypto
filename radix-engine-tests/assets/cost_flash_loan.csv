@@ -1,8 +1,8 @@
-Total Cost (XRD)                                                           ,     0.11878558,    100.0%
-- Execution Cost (XRD)                                                     ,     0.11174416,     94.1%
-- Finalization Cost (XRD)                                                  ,     0.00695142,      5.9%
+Total Cost (XRD)                                                           ,     0.11944558,    100.0%
+- Execution Cost (XRD)                                                     ,     0.11174416,     93.6%
+- Finalization Cost (XRD)                                                  ,     0.00695142,      5.8%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
-- State Expansion Cost (XRD)                                               ,        0.00009,      0.1%
+- Storage Cost (XRD)                                                       ,        0.00075,      0.6%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Royalty Cost (XRD)                                                       ,              0,      0.0%
 Execution Cost Breakdown                                                   ,       11174416,    100.0%

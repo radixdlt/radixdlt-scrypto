@@ -124,7 +124,7 @@ pub struct SystemLoanFeeReserve {
     royalty_cost: u128,
     royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, u128>,
 
-    /// State expansion costs
+    /// Storage Costs
     storage_cost: u128,
 
     /// Payments made during the execution of a transaction.
@@ -470,17 +470,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
     }
 
     fn consume_storage(&mut self, store_commit: &StoreCommit) -> Result<(), FeeReserveError> {
-        let delta = match store_commit {
-            StoreCommit::Insert { size, .. } => *size,
-            StoreCommit::Update { size, old_size, .. } => {
-                if *size > *old_size {
-                    *size - *old_size
-                } else {
-                    0
-                }
-            }
-            StoreCommit::Delete { .. } => 0, // TODO: refund?
-        };
+        let delta = store_commit.logical_size_increase();
         let amount = self.storage_price.saturating_mul(delta as u128);
 
         if self.xrd_balance < amount {

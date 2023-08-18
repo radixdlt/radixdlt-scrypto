@@ -25,7 +25,7 @@ pub const MAX_NUMBER_OF_SUBSTATES_IN_HEAP: usize = 512;
 pub const MAX_SUBSTATE_KEY_SIZE: usize = 1024;
 
 /// The maximum substate read and write size.
-pub const MAX_SUBSTATE_SIZE: usize = 2 * 1024 * 1024;
+pub const MAX_SUBSTATE_VALUE_SIZE: usize = 2 * 1024 * 1024;
 
 /// The maximum invoke payload size.
 pub const MAX_INVOKE_PAYLOAD_SIZE: usize = 1 * 1024 * 1024;

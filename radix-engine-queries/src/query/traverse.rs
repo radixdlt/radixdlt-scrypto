@@ -277,7 +277,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
         }
     }
 
-    fn traverse_substates<K: SubstateKeyContent>(
+    fn traverse_substates<K: SubstateKeyContent + 'static>(
         &mut self,
         node_id: NodeId,
         partition_num: PartitionNumber,
