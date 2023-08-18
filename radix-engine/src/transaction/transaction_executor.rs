@@ -267,7 +267,7 @@ where
                     .enabled_modules
                     .contains(EnabledModules::KERNEL_TRACE)
                 {
-                    println!("{:-^100}", "Interpretation Results");
+                    println!("{:-^120}", "Interpretation Results");
                     println!("{:?}", interpretation_result);
                 }
 
@@ -962,7 +962,7 @@ where
 
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &Executable) {
-        println!("{:-^100}", "Executable");
+        println!("{:-^120}", "Executable");
         println!("Intent hash: {}", executable.intent_hash().as_hash());
         println!("Payload size: {}", executable.payload_size());
         println!(
@@ -982,18 +982,18 @@ where
         // NB - we use "to_string" to ensure they align correctly
 
         if let Some(fee_details) = &receipt.fee_details {
-            println!("{:-^100}", "Execution Cost Breakdown");
+            println!("{:-^120}", "Execution Cost Breakdown");
             for (k, v) in &fee_details.execution_cost_breakdown {
                 println!("{:<75}: {:>25}", k, v.to_string());
             }
 
-            println!("{:-^100}", "Finalization Cost Breakdown");
+            println!("{:-^120}", "Finalization Cost Breakdown");
             for (k, v) in &fee_details.finalization_cost_breakdown {
                 println!("{:<75}: {:>25}", k, v.to_string());
             }
         }
 
-        println!("{:-^100}", "Fee Summary");
+        println!("{:-^120}", "Fee Summary");
         println!(
             "{:<40}: {:>25}",
             "Execution Cost Units Consumed",
@@ -1041,12 +1041,12 @@ where
 
         match &receipt.result {
             TransactionResult::Commit(commit) => {
-                println!("{:-^100}", "Application Logs");
+                println!("{:-^120}", "Application Logs");
                 for (level, message) in &commit.application_logs {
                     println!("[{}] {}", level, message);
                 }
 
-                println!("{:-^100}", "Outcome");
+                println!("{:-^120}", "Outcome");
                 println!(
                     "{}",
                     match &commit.outcome {
@@ -1056,15 +1056,15 @@ where
                 );
             }
             TransactionResult::Reject(e) => {
-                println!("{:-^100}", "Transaction Rejected");
+                println!("{:-^120}", "Transaction Rejected");
                 println!("{:?}", e.reason);
             }
             TransactionResult::Abort(e) => {
-                println!("{:-^100}", "Transaction Aborted");
+                println!("{:-^120}", "Transaction Aborted");
                 println!("{:?}", e);
             }
         }
-        println!("{:-^100}", "Finish");
+        println!("{:-^120}", "Finish");
     }
 }
 
