@@ -2,8 +2,8 @@ use crate::blueprints::util::SecurifiedRoleAssignment;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
-use crate::system::node_modules::metadata::MetadataEntrySubstate;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_module::metadata::{MetadataEntrySubstate, MetadataNativePackage};
+use crate::system::node_module::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -12,7 +12,7 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::{AuthAddresses, ROLE_ASSIGNMENT_BLUEPRINT};
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{
     ClientApi, FieldValue, GenericArgs, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
@@ -29,10 +29,10 @@ use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_modules::role_assignment::{
+use crate::system::node_module::role_assignment::{
     OwnerRoleSubstate, RoleAssignmentNativePackage,
 };
-use crate::system::node_modules::royalty::RoyaltyUtil;
+use crate::system::node_module::royalty::RoyaltyUtil;
 use crate::system::system::{
     FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
 };
@@ -508,212 +508,145 @@ impl SecurifiedRoleAssignment for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
+pub fn system_struct_to_node_substates(
+    schema: &IndexedStateSchema,
+    system_struct: (Vec<Option<FieldValue>>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>),
+    base_partition_num: PartitionNumber,
+) -> NodeSubstates {
+    let mut partitions: NodeSubstates = BTreeMap::new();
+
+    if !system_struct.0.is_empty() {
+        let partition_description = schema.fields_partition().unwrap();
+        let partition_num = match partition_description {
+            PartitionDescription::Physical(partition_num) => partition_num,
+            PartitionDescription::Logical(offset) => base_partition_num.at_offset(offset).unwrap(),
+        };
+
+        let mut field_partition = BTreeMap::new();
+
+        for (index, field) in system_struct.0.into_iter().enumerate() {
+            if let Some(field) = field {
+                let value: ScryptoValue =
+                    scrypto_decode(&field.value).expect("Checked by payload-schema validation");
+
+                let substate = FieldSubstate {
+                    value: (value,),
+                    mutability: if field.locked {
+                        SubstateMutability::Immutable
+                    } else {
+                        SubstateMutability::Mutable
+                    },
+                };
+
+                let value = IndexedScryptoValue::from_typed(&substate);
+                field_partition.insert(SubstateKey::Field(index as u8), value);
+            }
+        }
+
+        partitions.insert(partition_num, field_partition);
+    }
+
+
+
+    for (collection_index, substates) in system_struct.1 {
+        let (partition_description, _) = schema.get_partition(collection_index).unwrap();
+        let partition_num = match partition_description {
+            PartitionDescription::Physical(partition_num) => partition_num,
+            PartitionDescription::Logical(offset) => base_partition_num.at_offset(offset).unwrap(),
+        };
+
+        let mut partition = BTreeMap::new();
+
+        for (key, kv_entry) in substates {
+            let kv_entry = if let Some(value) = kv_entry.value {
+                let value: ScryptoValue = scrypto_decode(&value).unwrap();
+                let kv_entry = if kv_entry.locked {
+                    KeyValueEntrySubstate::locked_entry(value)
+                } else {
+                    KeyValueEntrySubstate::entry(value)
+                };
+                kv_entry
+            } else {
+                if kv_entry.locked {
+                    KeyValueEntrySubstate::locked_empty_entry()
+                } else {
+                    continue;
+                }
+            };
+
+            let value = IndexedScryptoValue::from_typed(&kv_entry);
+            partition.insert(SubstateKey::Map(key), value);
+        }
+
+        partitions.insert(partition_num, partition);
+    }
+
+    partitions
+}
+
 pub fn create_bootstrap_package_partitions(
     package_structure: PackageStructure,
     metadata: MetadataInit,
 ) -> NodeSubstates {
-    let mut partitions: NodeSubstates = BTreeMap::new();
+    let mut node_substates = NodeSubstates::new();
 
     {
-        let blueprints_partition = package_structure
-            .definitions
-            .into_iter()
-            .map(|(blueprint, definition)| {
-                let key = BlueprintVersionKey {
-                    blueprint,
-                    version: BlueprintVersion::default(),
-                };
-                let value = KeyValueEntrySubstate::locked_entry(definition);
-                (
-                    SubstateKey::Map(scrypto_encode(&key).unwrap()),
-                    IndexedScryptoValue::from_typed(&value),
-                )
-            })
-            .collect();
+        /*
+        IndexedStateSchema::from_schema(
+            PackageNativePackage::definition().blueprints.get(PACKAGE_BLUEPRINT).unwrap().schema.schema.generate_schema_hash(),
+            PackageNativePackage::definition().blueprints.get(PACKAGE_BLUEPRINT).unwrap().schema.state.clone(),
+            btreemap!(),
+        )
+         */
 
-        partitions.insert(
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                .unwrap(),
-            blueprints_partition,
-        );
-    };
-
-    {
-        let minor_version_configs = package_structure
-            .dependencies
-            .into_iter()
-            .map(|(blueprint, minor_version_config)| {
-                let key = BlueprintVersionKey {
-                    blueprint,
-                    version: BlueprintVersion::default(),
-                };
-
-                let value = KeyValueEntrySubstate::locked_entry(minor_version_config);
-                (
-                    SubstateKey::Map(scrypto_encode(&key).unwrap()),
-                    IndexedScryptoValue::from_typed(&value),
-                )
-            })
-            .collect();
-
-        partitions.insert(
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
-                .unwrap(),
-            minor_version_configs,
-        );
-    };
-
-    {
-        let schemas_partition = package_structure
-            .schemas
-            .into_iter()
-            .map(|(hash, schema)| {
-                let value = KeyValueEntrySubstate::locked_entry(schema);
-
-                (
-                    SubstateKey::Map(scrypto_encode(&hash).unwrap()),
-                    IndexedScryptoValue::from_typed(&value),
-                )
-            })
-            .collect();
-
-        partitions.insert(SCHEMAS_PARTITION, schemas_partition);
+        let package_package_structure = PackageNativePackage::validate_and_build_package_structure(
+            PackageNativePackage::definition(),
+            VmType::Native,
+            PACKAGE_CODE_ID.to_be_bytes().to_vec(),
+            btreemap! {
+                PACKAGE_BLUEPRINT.to_string() => vec![SystemInstruction::MapCollectionToPhysicalPartition {
+                    collection_index: PACKAGE_SCHEMAS_COLLECTION_INDEX,
+                    partition_num: SCHEMAS_PARTITION,
+                }],
+            },
+        ).expect("Invalid Package Package definition");
+        let package_state_schema = &package_package_structure.definitions.get(PACKAGE_BLUEPRINT).unwrap().interface.state;
+        let package_system_struct = PackageNativePackage::init_system_struct(None, package_structure);
+        let package_substates = system_struct_to_node_substates(package_state_schema, package_system_struct, MAIN_BASE_PARTITION);
+        node_substates.extend(package_substates);
     }
 
-    {
-        let vm_type_partition = package_structure
-            .vm_type
-            .into_iter()
-            .map(|(hash, code_substate)| {
-                let value = KeyValueEntrySubstate::locked_entry(code_substate);
-                (
-                    SubstateKey::Map(scrypto_encode(&hash).unwrap()),
-                    IndexedScryptoValue::from_typed(&value),
-                )
-            })
-            .collect();
-
-        partitions.insert(
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_VM_TYPE_PARTITION_OFFSET)
-                .unwrap(),
-            vm_type_partition,
-        );
-    }
-
-    {
-        let original_code_partition = package_structure
-            .original_code
-            .into_iter()
-            .map(|(hash, code_substate)| {
-                let value = KeyValueEntrySubstate::locked_entry(code_substate);
-                (
-                    SubstateKey::Map(scrypto_encode(&hash).unwrap()),
-                    IndexedScryptoValue::from_typed(&value),
-                )
-            })
-            .collect();
-
-        partitions.insert(
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET)
-                .unwrap(),
-            original_code_partition,
-        );
-    }
-
-    {
-        let instrumented_code_partition = package_structure
-            .instrumented_code
-            .into_iter()
-            .map(|(hash, code_substate)| {
-                let value = KeyValueEntrySubstate::locked_entry(code_substate);
-                (
-                    SubstateKey::Map(scrypto_encode(&hash).unwrap()),
-                    IndexedScryptoValue::from_typed(&value),
-                )
-            })
-            .collect();
-
-        partitions.insert(
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET)
-                .unwrap(),
-            instrumented_code_partition,
-        );
-    }
-
-    {
-        let auth_partition = package_structure
-            .auth_configs
-            .into_iter()
-            .map(|(blueprint, auth_template)| {
-                let key = BlueprintVersionKey {
-                    blueprint,
-                    version: BlueprintVersion::default(),
-                };
-                let value = KeyValueEntrySubstate::locked_entry(auth_template);
-                (
-                    SubstateKey::Map(scrypto_encode(&key).unwrap()),
-                    IndexedScryptoValue::from_typed(&value),
-                )
-            })
-            .collect();
-
-        partitions.insert(
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET)
-                .unwrap(),
-            auth_partition,
-        );
-    }
 
     // Metadata
     {
-        let mut metadata_partition = BTreeMap::new();
-        for (key, value) in metadata.data {
-            let mutability = if value.lock {
-                SubstateMutability::Immutable
-            } else {
-                SubstateMutability::Mutable
-            };
-            let value = MetadataEntrySubstate {
-                value: value.value,
-                mutability,
-            };
-
-            metadata_partition.insert(
-                SubstateKey::Map(scrypto_encode(&key).unwrap()),
-                IndexedScryptoValue::from_typed(&value),
-            );
-        }
-        partitions.insert(METADATA_BASE_PARTITION, metadata_partition);
+        let metadata_package_structure = PackageNativePackage::validate_and_build_package_structure(
+            MetadataNativePackage::definition(),
+            VmType::Native,
+            METADATA_CODE_ID.to_be_bytes().to_vec(),
+            btreemap!(),
+        ).expect("Invalid Package Package definition");
+        let metadata_schema = &metadata_package_structure.definitions.get(METADATA_BLUEPRINT).unwrap().interface.state;
+        let metadata_system_struct = MetadataNativePackage::init_system_struct(metadata).unwrap();
+        let metadata_substates = system_struct_to_node_substates(metadata_schema, metadata_system_struct, METADATA_BASE_PARTITION);
+        node_substates.extend(metadata_substates);
     }
 
     // Role Assignment
     {
-        let mut role_assignment_fields_partition = BTreeMap::new();
-
-        let owner_role_substate = FieldSubstate::new_field(OwnerRoleSubstate {
-            owner_role_entry: OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
-        });
-        role_assignment_fields_partition.insert(
-            SubstateKey::Field(0u8),
-            IndexedScryptoValue::from_typed(&owner_role_substate),
-        );
-
-        partitions.insert(
-            ROLE_ASSIGNMENT_BASE_PARTITION
-                .at_offset(ROLE_ASSIGNMENT_FIELDS_PARTITION_OFFSET)
-                .unwrap(),
-            role_assignment_fields_partition,
-        );
+        let role_assignment_package_structure = PackageNativePackage::validate_and_build_package_structure(
+            RoleAssignmentNativePackage::definition(),
+            VmType::Native,
+            ROLE_ASSIGNMENT_CODE_ID.to_be_bytes().to_vec(),
+            btreemap!(),
+        ).expect("Invalid Package Package definition");
+        let role_assignment_schema = &role_assignment_package_structure.definitions.get(ROLE_ASSIGNMENT_BLUEPRINT).unwrap().interface.state;
+        let role_assignment_system_struct = RoleAssignmentNativePackage::init_system_struct(OwnerRole::None.into(), btreemap!()).unwrap();
+        let role_assignment_substates = system_struct_to_node_substates(role_assignment_schema, role_assignment_system_struct, ROLE_ASSIGNMENT_BASE_PARTITION);
+        node_substates.extend(role_assignment_substates);
     }
 
     {
-        partitions.insert(
+        node_substates.insert(
             TYPE_INFO_FIELD_PARTITION,
             type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                 global: true,
@@ -733,8 +666,9 @@ pub fn create_bootstrap_package_partitions(
         );
     }
 
-    partitions
+    node_substates
 }
+
 
 fn globalize_package<Y>(
     package_address_reservation: Option<GlobalAddressReservation>,
@@ -754,7 +688,10 @@ where
         PACKAGE_BLUEPRINT,
         vec![PACKAGE_ROYALTY_FEATURE],
         GenericArgs::default(),
-        fields,
+        fields.into_iter().map(|f| match f {
+            Some(f) => f,
+            None => FieldValue::new(()),
+        }).collect(),
         kv_entries,
     )?;
 
@@ -1042,15 +979,15 @@ impl PackageNativePackage {
         }
     }
 
-    fn init_system_struct(royalty_vault: Option<Vault>, package_structure: PackageStructure) -> (Vec<FieldValue>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>) {
+    fn init_system_struct(royalty_vault: Option<Vault>, package_structure: PackageStructure) -> (Vec<Option<FieldValue>>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>) {
 
         let field = if let Some(vault) = royalty_vault {
             let royalty = PackageRoyaltyAccumulatorSubstate {
                 royalty_vault: vault,
             };
-            FieldValue::immutable(&royalty)
+            Some(FieldValue::immutable(&royalty))
         } else {
-            FieldValue::new(())
+            None
         };
 
 

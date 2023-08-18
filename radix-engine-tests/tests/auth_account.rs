@@ -1,5 +1,5 @@
 use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::system::node_modules::royalty::ComponentRoyaltyError;
+use radix_engine::system::node_module::royalty::ComponentRoyaltyError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::rule;

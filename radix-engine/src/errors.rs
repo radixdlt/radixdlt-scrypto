@@ -17,9 +17,9 @@ use crate::kernel::call_frame::{
     CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError,
     OpenSubstateError, PassMessageError, ReadSubstateError, WriteSubstateError,
 };
-use crate::system::node_modules::metadata::MetadataPanicError;
-use crate::system::node_modules::role_assignment::RoleAssignmentError;
-use crate::system::node_modules::royalty::ComponentRoyaltyError;
+use crate::system::node_module::metadata::MetadataPanicError;
+use crate::system::node_module::role_assignment::RoleAssignmentError;
+use crate::system::node_module::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
 use crate::system::system_modules::limits::TransactionLimitsError;

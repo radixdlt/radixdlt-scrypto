@@ -6,7 +6,7 @@ use radix_engine_interface::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::prelude::*;
 
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_module::type_info::TypeInfoSubstate;
 use crate::system::system_db_reader::{SystemDatabaseReader, SystemPartitionDescription};
 use crate::track::{ReadOnly, TrackedNode, TrackedSubstateValue};
 

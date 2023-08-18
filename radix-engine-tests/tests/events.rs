@@ -5,7 +5,7 @@ use radix_engine::blueprints::consensus_manager::{
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::{account, resource::*};
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
-use radix_engine::system::node_modules::metadata::SetMetadataEvent;
+use radix_engine::system::node_module::metadata::SetMetadataEvent;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::blueprints::account::ResourcePreference;
 use radix_engine::types::*;

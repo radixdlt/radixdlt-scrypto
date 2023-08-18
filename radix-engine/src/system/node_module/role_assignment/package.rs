@@ -1,6 +1,6 @@
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
-use crate::system::node_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
+use crate::system::node_module::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -364,53 +364,45 @@ impl RoleAssignmentNativePackage {
         }
     }
 
-    pub(crate) fn create<Y>(
-        owner_role: OwnerRoleEntry,
-        roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>,
-        api: &mut Y,
-    ) -> Result<Own, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
+    pub fn init_system_struct(owner_role: OwnerRoleEntry, roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>)
+        -> Result<(Vec<Option<FieldValue>>, BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>), RoleAssignmentError> {
         if roles.contains_key(&ObjectModuleId::RoleAssignment) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::RoleAssignmentError(RoleAssignmentError::UsedReservedSpace),
-            ));
+            return Err(RoleAssignmentError::UsedReservedSpace);
         }
 
-        Self::verify_access_rule(&owner_role.rule).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e))
-        })?;
+        Self::verify_access_rule(&owner_role.rule)?;
+
+        let owner_role_substate = OwnerRoleSubstate {
+            owner_role_entry: owner_role.clone(),
+        };
+
+        let owner_role_field = match owner_role.updater {
+            OwnerRoleUpdater::None => FieldValue::immutable(&owner_role_substate),
+            OwnerRoleUpdater::Owner | OwnerRoleUpdater::Object => {
+                FieldValue::new(&owner_role_substate)
+            }
+        };
 
         let mut role_entries = BTreeMap::new();
 
         for (module, roles) in roles {
             for (role_key, role_def) in roles.data {
                 if Self::is_reserved_role_key(&role_key) {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::RoleAssignmentError(
-                            RoleAssignmentError::UsedReservedRole(role_key.key.to_string()),
-                        ),
-                    ));
+                    return Err(RoleAssignmentError::UsedReservedRole(role_key.key.to_string()));
                 }
 
                 if role_key.key.len() > MAX_ROLE_NAME_LEN {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::RoleAssignmentError(
-                            RoleAssignmentError::ExceededMaxRoleNameLen {
+                    return Err(RoleAssignmentError::ExceededMaxRoleNameLen {
                                 limit: MAX_ROLE_NAME_LEN,
                                 actual: role_key.key.len(),
-                            },
-                        ),
-                    ));
+                            }
+                    );
                 }
 
                 let module_role_key = ModuleRoleKey::new(module, role_key);
 
                 if let Some(access_rule) = &role_def {
-                    Self::verify_access_rule(access_rule).map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e))
-                    })?;
+                    Self::verify_access_rule(access_rule)?;
                 }
 
                 let value = role_def.map(|rule| scrypto_encode(&rule).unwrap());
@@ -424,25 +416,29 @@ impl RoleAssignmentNativePackage {
             }
         }
 
-        let owner_role_substate = OwnerRoleSubstate {
-            owner_role_entry: owner_role.clone(),
-        };
+        Ok((vec![Some(owner_role_field)], btreemap!(0 => role_entries)))
+    }
 
-        let owner_role_field = match owner_role.updater {
-            OwnerRoleUpdater::None => FieldValue::immutable(&owner_role_substate),
-            OwnerRoleUpdater::Owner | OwnerRoleUpdater::Object => {
-                FieldValue::new(&owner_role_substate)
-            }
-        };
+    pub(crate) fn create<Y>(
+        owner_role: OwnerRoleEntry,
+        roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>,
+        api: &mut Y,
+    ) -> Result<Own, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let (fields, kv_entries) = Self::init_system_struct(owner_role, roles)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e)))?;
 
         let component_id = api.new_object(
             ROLE_ASSIGNMENT_BLUEPRINT,
             vec![],
             GenericArgs::default(),
-            vec![owner_role_field],
-            btreemap!(
-                0u8 => role_entries,
-            ),
+            fields.into_iter().map(|f| match f {
+                Some(f) => f,
+                None => FieldValue::new(()),
+            }).collect(),
+            kv_entries,
         )?;
 
         Ok(Own(component_id))

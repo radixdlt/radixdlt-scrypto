@@ -1,4 +1,4 @@
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::node_module::type_info::TypeInfoSubstate;
 use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::{FieldKey, MapKey, ScryptoValue, SubstateKey};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;

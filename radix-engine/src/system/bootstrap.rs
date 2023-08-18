@@ -12,10 +12,10 @@ use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
 };
-use crate::system::node_modules::metadata::MetadataNativePackage;
-use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::node_modules::royalty::RoyaltyNativePackage;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_module::metadata::MetadataNativePackage;
+use crate::system::node_module::role_assignment::RoleAssignmentNativePackage;
+use crate::system::node_module::royalty::RoyaltyNativePackage;
+use crate::system::node_module::type_info::TypeInfoSubstate;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::SystemUpdates;
 use crate::transaction::{
