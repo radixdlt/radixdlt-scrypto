@@ -1580,18 +1580,29 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        self.create_non_fungible_resource_with_roles(NonFungibleResourceRoles::default(), account)
+        self.create_non_fungible_resource_advanced(NonFungibleResourceRoles::default(), account, 3)
     }
-
     pub fn create_non_fungible_resource_with_roles(
         &mut self,
         resource_roles: NonFungibleResourceRoles,
         account: ComponentAddress,
     ) -> ResourceAddress {
+        self.create_non_fungible_resource_advanced(resource_roles, account, 3)
+    }
+
+    pub fn create_non_fungible_resource_advanced(
+        &mut self,
+        resource_roles: NonFungibleResourceRoles,
+        account: ComponentAddress,
+        n: usize,
+    ) -> ResourceAddress {
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleLocalId::integer(1), EmptyNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(2), EmptyNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
+        for i in 1..n + 1 {
+            entries.insert(
+                NonFungibleLocalId::integer(i as u64),
+                EmptyNonFungibleData {},
+            );
+        }
 
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()

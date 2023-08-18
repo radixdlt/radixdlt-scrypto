@@ -114,6 +114,69 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
     );
 }
 
+#[test]
+fn estimate_asserting_worktop_contains() {
+    const NUM_OF_FUNGIBLES: usize = 200;
+
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let network = NetworkDefinition::simulator();
+    let (_pk, sk, account) = test_runner.new_virtual_account();
+    let resource_address = test_runner.create_non_fungible_resource_advanced(
+        NonFungibleResourceRoles::default(),
+        account,
+        NUM_OF_FUNGIBLES,
+    );
+
+    let manifest1 = ManifestBuilder::new()
+        .lock_fee(account, 20)
+        .withdraw_from_account(account, resource_address, NUM_OF_FUNGIBLES)
+        .deposit_batch(account)
+        .build();
+    let tx1 = create_notarized_transaction(
+        &mut test_runner,
+        &network,
+        manifest1,
+        vec![&sk], // no sign
+        &sk,       // notarize
+    );
+    let receipt1 = test_runner.execute_transaction(
+        validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
+        CostingParameters::default(),
+        ExecutionConfig::for_notarized_transaction(),
+    );
+    println!("\n{:?}", receipt1);
+
+    let manifest2 = ManifestBuilder::new()
+        .lock_fee(account, 20)
+        .withdraw_from_account(account, resource_address, NUM_OF_FUNGIBLES)
+        .assert_worktop_contains(resource_address, NUM_OF_FUNGIBLES)
+        .deposit_batch(account)
+        .build();
+    let tx2 = create_notarized_transaction(
+        &mut test_runner,
+        &network,
+        manifest2,
+        vec![&sk], // sign
+        &sk,       // notarize
+    );
+    let receipt2 = test_runner.execute_transaction(
+        validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
+        CostingParameters::default(),
+        ExecutionConfig::for_notarized_transaction(),
+    );
+    println!("\n{:?}", receipt2);
+
+    println!(
+        "Asserting worktop contains: {} XRD",
+        receipt2
+            .fee_summary
+            .total_cost()
+            .safe_sub(receipt1.fee_summary.total_cost())
+            .unwrap()
+    );
+}
+
 fn create_notarized_transaction(
     test_runner: &mut DefaultTestRunner,
     network: &NetworkDefinition,
