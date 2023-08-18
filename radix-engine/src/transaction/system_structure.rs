@@ -25,7 +25,7 @@ pub enum SubstateSystemStructure {
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct SystemFieldStructure {
-    field_kind: SystemFieldKind,
+    pub field_kind: SystemFieldKind,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -35,34 +35,34 @@ pub enum SystemFieldKind {
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct KeyValueStoreEntryStructure {
-    key_value_store_address: InternalAddress,
-    key_schema_hash: Hash,
-    key_local_type_index: LocalTypeIndex,
-    value_schema_hash: Hash,
-    value_local_type_index: LocalTypeIndex,
+    pub key_value_store_address: InternalAddress,
+    pub key_schema_hash: Hash,
+    pub key_local_type_index: LocalTypeIndex,
+    pub value_schema_hash: Hash,
+    pub value_local_type_index: LocalTypeIndex,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct FieldStructure {
-    value_schema: ObjectSubstateTypeReference,
+    pub value_schema: ObjectSubstateTypeReference,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct KeyValuePartitionEntryStructure {
-    key_schema: ObjectSubstateTypeReference,
-    value_schema: ObjectSubstateTypeReference,
+    pub key_schema: ObjectSubstateTypeReference,
+    pub value_schema: ObjectSubstateTypeReference,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct IndexPartitionEntryStructure {
-    key_schema: ObjectSubstateTypeReference,
-    value_schema: ObjectSubstateTypeReference,
+    pub key_schema: ObjectSubstateTypeReference,
+    pub value_schema: ObjectSubstateTypeReference,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct SortedIndexPartitionEntryStructure {
-    key_schema: ObjectSubstateTypeReference,
-    value_schema: ObjectSubstateTypeReference,
+    pub key_schema: ObjectSubstateTypeReference,
+    pub value_schema: ObjectSubstateTypeReference,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -73,30 +73,30 @@ pub enum ObjectSubstateTypeReference {
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct PackageTypeReference {
-    package_address: PackageAddress,
-    schema_hash: Hash,
-    local_type_index: LocalTypeIndex,
+    pub package_address: PackageAddress,
+    pub schema_hash: Hash,
+    pub local_type_index: LocalTypeIndex,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct ObjectInstanceTypeReference {
-    entity_address: NodeId,
-    schema_hash: Hash,
-    instance_type_index: u8,
-    local_type_index: LocalTypeIndex,
+    pub entity_address: NodeId,
+    pub schema_hash: Hash,
+    pub instance_type_index: u8,
+    pub local_type_index: LocalTypeIndex,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct KeyValueTypeReference {
-    key_value_store_address: InternalAddress,
-    schema_hash: Hash,
-    key_local_type_index: LocalTypeIndex,
-    value_local_type_index: LocalTypeIndex,
+    pub key_value_store_address: InternalAddress,
+    pub schema_hash: Hash,
+    pub key_local_type_index: LocalTypeIndex,
+    pub value_local_type_index: LocalTypeIndex,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct EventSystemStructure {
-    package_type_reference: PackageTypeReference,
+    pub package_type_reference: PackageTypeReference,
 }
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
