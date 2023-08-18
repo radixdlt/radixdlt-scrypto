@@ -530,7 +530,7 @@ mod non_fungible_test {
                             own: None,
                         },
                     ),
-                ])
+                ]).into()
         }
 
         pub fn create_bytes_non_fungible() -> Bucket {
