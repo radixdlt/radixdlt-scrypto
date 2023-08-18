@@ -857,7 +857,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
         let tracked_partition = self.get_tracked_partition(node_id, partition_number);
         tracked_partition.range_read = u32::max(tracked_partition.range_read, num_iterations);
 
-        drop(tracked_iter);
         Ok(items)
     }
 
@@ -921,47 +920,52 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> SubstateStore for 
 
         // Read from database
         let db_partition_key = M::to_db_partition_key(node_id, partition_number);
-        let mut tracked_iter = IterationCountedIter::new(Self::list_entries_from_db::<E, F, K>(
-            self.substate_db,
-            &db_partition_key,
-            on_store_access,
-            CanonicalPartition {
-                node_id: *node_id,
-                partition_number,
-            },
-        ));
-        let new_updates = {
-            let mut new_updates = Vec::new();
-            for result in &mut tracked_iter {
-                let (db_sort_key, (substate_key, substate_value)) = result?;
 
-                if items.len() == limit {
-                    break;
+        let (new_updates, num_iterations) = {
+            let mut tracked_iter =
+                IterationCountedIter::new(Self::list_entries_from_db::<E, F, K>(
+                    self.substate_db,
+                    &db_partition_key,
+                    on_store_access,
+                    CanonicalPartition {
+                        node_id: *node_id,
+                        partition_number,
+                    },
+                ));
+            let new_updates = {
+                let mut new_updates = Vec::new();
+                for result in &mut tracked_iter {
+                    let (db_sort_key, (substate_key, substate_value)) = result?;
+
+                    if items.len() == limit {
+                        break;
+                    }
+
+                    if tracked_partition
+                        .as_ref()
+                        .map(|tracked_partition| {
+                            tracked_partition.substates.contains_key(&db_sort_key)
+                        })
+                        .unwrap_or(false)
+                    {
+                        continue;
+                    }
+
+                    let tracked = TrackedSubstate {
+                        substate_key: substate_key.clone(),
+                        substate_value: TrackedSubstateValue::ReadExistAndWrite(
+                            substate_value.clone(),
+                            Write::Delete,
+                        ),
+                    };
+                    new_updates.push((db_sort_key, tracked));
+                    items.push((substate_key, substate_value));
                 }
+                new_updates
+            };
 
-                if tracked_partition
-                    .as_ref()
-                    .map(|tracked_partition| tracked_partition.substates.contains_key(&db_sort_key))
-                    .unwrap_or(false)
-                {
-                    continue;
-                }
-
-                let tracked = TrackedSubstate {
-                    substate_key: substate_key.clone(),
-                    substate_value: TrackedSubstateValue::ReadExistAndWrite(
-                        substate_value.clone(),
-                        Write::Delete,
-                    ),
-                };
-                new_updates.push((db_sort_key, tracked));
-                items.push((substate_key, substate_value));
-            }
-            new_updates
+            (new_updates, tracked_iter.num_iterations)
         };
-
-        let num_iterations = tracked_iter.num_iterations;
-        drop(tracked_iter);
 
         // Update track
         {
