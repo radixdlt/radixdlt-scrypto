@@ -584,64 +584,55 @@ pub fn system_struct_to_node_substates(
     partitions
 }
 
+fn blueprint_state_schema(package: PackageDefinition, blueprint_name: &str, system_mappings: BTreeMap<usize, PartitionNumber>) -> IndexedStateSchema {
+    let package_blueprint = package.blueprints.get(blueprint_name).unwrap();
+    IndexedStateSchema::from_schema(
+        package_blueprint.schema.schema.generate_schema_hash(),
+        package_blueprint.schema.state.clone(),
+        system_mappings,
+    )
+}
+
 pub fn create_bootstrap_package_partitions(
     package_structure: PackageStructure,
     metadata: MetadataInit,
 ) -> NodeSubstates {
     let mut node_substates = NodeSubstates::new();
 
+    // Main Package
     {
-        /*
-        IndexedStateSchema::from_schema(
-            PackageNativePackage::definition().blueprints.get(PACKAGE_BLUEPRINT).unwrap().schema.schema.generate_schema_hash(),
-            PackageNativePackage::definition().blueprints.get(PACKAGE_BLUEPRINT).unwrap().schema.state.clone(),
-            btreemap!(),
-        )
-         */
-
-        let package_package_structure = PackageNativePackage::validate_and_build_package_structure(
+        let package_schema = blueprint_state_schema(
             PackageNativePackage::definition(),
-            VmType::Native,
-            PACKAGE_CODE_ID.to_be_bytes().to_vec(),
-            btreemap! {
-                PACKAGE_BLUEPRINT.to_string() => vec![SystemInstruction::MapCollectionToPhysicalPartition {
-                    collection_index: PACKAGE_SCHEMAS_COLLECTION_INDEX,
-                    partition_num: SCHEMAS_PARTITION,
-                }],
-            },
-        ).expect("Invalid Package Package definition");
-        let package_state_schema = &package_package_structure.definitions.get(PACKAGE_BLUEPRINT).unwrap().interface.state;
+            PACKAGE_BLUEPRINT,
+            btreemap!(PACKAGE_SCHEMAS_COLLECTION_INDEX as usize => SCHEMAS_PARTITION),
+        );
         let package_system_struct = PackageNativePackage::init_system_struct(None, package_structure);
-        let package_substates = system_struct_to_node_substates(package_state_schema, package_system_struct, MAIN_BASE_PARTITION);
+        let package_substates = system_struct_to_node_substates(&package_schema, package_system_struct, MAIN_BASE_PARTITION);
         node_substates.extend(package_substates);
     }
 
 
     // Metadata
     {
-        let metadata_package_structure = PackageNativePackage::validate_and_build_package_structure(
+        let metadata_schema = blueprint_state_schema(
             MetadataNativePackage::definition(),
-            VmType::Native,
-            METADATA_CODE_ID.to_be_bytes().to_vec(),
+            METADATA_BLUEPRINT,
             btreemap!(),
-        ).expect("Invalid Package Package definition");
-        let metadata_schema = &metadata_package_structure.definitions.get(METADATA_BLUEPRINT).unwrap().interface.state;
+        );
         let metadata_system_struct = MetadataNativePackage::init_system_struct(metadata).unwrap();
-        let metadata_substates = system_struct_to_node_substates(metadata_schema, metadata_system_struct, METADATA_BASE_PARTITION);
+        let metadata_substates = system_struct_to_node_substates(&metadata_schema, metadata_system_struct, METADATA_BASE_PARTITION);
         node_substates.extend(metadata_substates);
     }
 
     // Role Assignment
     {
-        let role_assignment_package_structure = PackageNativePackage::validate_and_build_package_structure(
+        let role_assignment_schema = blueprint_state_schema(
             RoleAssignmentNativePackage::definition(),
-            VmType::Native,
-            ROLE_ASSIGNMENT_CODE_ID.to_be_bytes().to_vec(),
+            ROLE_ASSIGNMENT_BLUEPRINT,
             btreemap!(),
-        ).expect("Invalid Package Package definition");
-        let role_assignment_schema = &role_assignment_package_structure.definitions.get(ROLE_ASSIGNMENT_BLUEPRINT).unwrap().interface.state;
+        );
         let role_assignment_system_struct = RoleAssignmentNativePackage::init_system_struct(OwnerRole::None.into(), btreemap!()).unwrap();
-        let role_assignment_substates = system_struct_to_node_substates(role_assignment_schema, role_assignment_system_struct, ROLE_ASSIGNMENT_BASE_PARTITION);
+        let role_assignment_substates = system_struct_to_node_substates(&role_assignment_schema, role_assignment_system_struct, ROLE_ASSIGNMENT_BASE_PARTITION);
         node_substates.extend(role_assignment_substates);
     }
 
