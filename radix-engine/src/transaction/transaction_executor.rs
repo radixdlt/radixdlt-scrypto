@@ -976,18 +976,18 @@ where
         if let Some(fee_details) = &receipt.fee_details {
             println!("{:-^100}", "Execution Cost Breakdown");
             for (k, v) in &fee_details.execution_cost_breakdown {
-                println!("{:<75}: {:>15}", k, v.to_string());
+                println!("{:<75}: {:>25}", k, v.to_string());
             }
 
             println!("{:-^100}", "Finalization Cost Breakdown");
             for (k, v) in &fee_details.finalization_cost_breakdown {
-                println!("{:<75}: {:>15}", k, v.to_string());
+                println!("{:<75}: {:>25}", k, v.to_string());
             }
         }
 
         println!("{:-^100}", "Fee Summary");
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Execution Cost Units Consumed",
             receipt
                 .fee_summary
@@ -995,7 +995,7 @@ where
                 .to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Finalization Cost Units Consumed",
             receipt
                 .fee_summary
@@ -1003,12 +1003,12 @@ where
                 .to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Execution Cost in XRD",
             receipt.fee_summary.total_execution_cost_in_xrd.to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Finalization Cost in XRD",
             receipt
                 .fee_summary
@@ -1016,17 +1016,17 @@ where
                 .to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Tipping Cost in XRD",
             receipt.fee_summary.total_tipping_cost_in_xrd.to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Storage Cost in XRD",
             receipt.fee_summary.total_storage_cost_in_xrd.to_string()
         );
         println!(
-            "{:<40}: {:>15}",
+            "{:<40}: {:>25}",
             "Royalty Costs in XRD",
             receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
         );
