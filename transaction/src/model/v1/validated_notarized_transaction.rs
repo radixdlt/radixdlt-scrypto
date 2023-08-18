@@ -27,7 +27,10 @@ impl HasNotarizedTransactionHash for ValidatedNotarizedTransactionV1 {
 }
 
 impl ValidatedNotarizedTransactionV1 {
-    pub fn get_executable<'a>(&'a self) -> Executable<'a> {
+    pub fn get_executable_with_free_credit<'a>(
+        &'a self,
+        free_credit_in_xrd: Decimal,
+    ) -> Executable<'a> {
         let intent = &self.prepared.signed_intent.intent;
         let header = &intent.header.inner;
         let intent_hash = intent.intent_hash();
@@ -53,10 +56,14 @@ impl ValidatedNotarizedTransactionV1 {
                 },
                 costing_parameters: TransactionCostingParameters {
                     tip_percentage: intent.header.inner.tip_percentage,
-                    free_credit_in_xrd: Decimal::ZERO,
+                    free_credit_in_xrd,
                 },
                 pre_allocated_addresses: vec![],
             },
         )
+    }
+
+    pub fn get_executable<'a>(&'a self) -> Executable<'a> {
+        self.get_executable_with_free_credit(Decimal::ZERO)
     }
 }

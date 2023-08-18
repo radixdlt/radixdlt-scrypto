@@ -57,14 +57,14 @@ impl TransactionFuzzer {
             .expect("transaction to be validatable");
 
         let execution_config = ExecutionConfig::for_test_transaction();
-        let fee_reserve_config = CostingParameters::default();
+        let costing_parameters = CostingParameters::default();
 
         let vm = Vm::new(&self.scrypto_vm, self.native_vm.clone());
 
         execute_and_commit_transaction(
             &mut self.substate_db,
             vm,
-            &fee_reserve_config,
+            &costing_parameters,
             &execution_config,
             &validated.get_executable(),
         );
