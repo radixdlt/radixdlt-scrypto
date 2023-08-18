@@ -41,7 +41,7 @@ pub struct CostingParameters {
     /// The price of USD in xrd
     pub usd_price: Decimal,
     /// The price of storage in xrd
-    pub storage_price: Decimal,
+    pub state_storage_price: Decimal,
 }
 
 impl Default for CostingParameters {
@@ -53,7 +53,7 @@ impl Default for CostingParameters {
             finalization_cost_unit_price: FINALIZATION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
             finalization_cost_unit_limit: FINALIZATION_COST_UNIT_LIMIT,
             usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
-            storage_price: STORAGE_PRICE_IN_XRD.try_into().unwrap(),
+            state_storage_price: STATE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
         }
     }
 }

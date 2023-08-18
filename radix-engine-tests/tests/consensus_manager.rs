@@ -3066,7 +3066,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
     let mut costing_params = CostingParameters::default();
     costing_params.execution_cost_unit_price = Decimal::zero();
     costing_params.finalization_cost_unit_price = Decimal::zero();
-    costing_params.storage_price = Decimal::zero();
+    costing_params.state_storage_price = Decimal::zero();
 
     let receipt = test_runner.execute_manifest_with_costing_params(
         manifest,

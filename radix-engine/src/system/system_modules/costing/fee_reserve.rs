@@ -95,7 +95,7 @@ pub struct SystemLoanFeeReserve {
     finalization_cost_unit_limit: u32,
 
     usd_price: u128,
-    storage_price: u128,
+    state_storage_price: u128,
 
     tip_percentage: u16,
 
@@ -208,7 +208,8 @@ impl SystemLoanFeeReserve {
 
             // USD and storage price
             usd_price: transmute_decimal_as_u128(costing_parameters.usd_price).unwrap(),
-            storage_price: transmute_decimal_as_u128(costing_parameters.storage_price).unwrap(),
+            state_storage_price: transmute_decimal_as_u128(costing_parameters.state_storage_price)
+                .unwrap(),
 
             // Tipping percentage
             tip_percentage: transaction_costing_parameters.tip_percentage,
@@ -270,8 +271,8 @@ impl SystemLoanFeeReserve {
         transmute_u128_as_decimal(self.usd_price)
     }
 
-    pub fn storage_price(&self) -> Decimal {
-        transmute_u128_as_decimal(self.storage_price)
+    pub fn state_storage_price(&self) -> Decimal {
+        transmute_u128_as_decimal(self.state_storage_price)
     }
 
     pub fn tip_percentage(&self) -> u32 {
@@ -472,7 +473,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
     fn consume_storage(&mut self, store_commit: &StoreCommit) -> Result<(), FeeReserveError> {
         let delta = store_commit.logical_size_increase();
-        let amount = self.storage_price.saturating_mul(delta as u128);
+        let amount = self.state_storage_price.saturating_mul(delta as u128);
 
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance {
@@ -566,7 +567,7 @@ mod tests {
     fn create_test_fee_reserve(
         execution_cost_unit_price: Decimal,
         usd_price: Decimal,
-        storage_price: Decimal,
+        state_storage_price: Decimal,
         tip_percentage: u16,
         execution_cost_unit_limit: u32,
         execution_cost_unit_loan: u32,
@@ -577,7 +578,7 @@ mod tests {
         costing_parameters.execution_cost_unit_limit = execution_cost_unit_limit;
         costing_parameters.execution_cost_unit_loan = execution_cost_unit_loan;
         costing_parameters.usd_price = usd_price;
-        costing_parameters.storage_price = storage_price;
+        costing_parameters.state_storage_price = state_storage_price;
         let mut transaction_costing_parameters = TransactionCostingParameters::default();
         transaction_costing_parameters.tip_percentage = tip_percentage;
 

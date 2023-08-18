@@ -24,7 +24,7 @@ fn test_kv_store_with_many_large_keys() {
         receipt
             .fee_summary
             .total_storage_cost_in_xrd
-            .safe_div(receipt.costing_parameters.storage_price)
+            .safe_div(receipt.costing_parameters.state_storage_price)
             .unwrap(),
         dec!("419292")
     );
