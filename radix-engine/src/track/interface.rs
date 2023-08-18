@@ -213,7 +213,8 @@ pub enum StoreAccess {
     UpdateSubstateInTrack {
         /// The canonical substate key
         canonical_substate_key: CanonicalSubstateKey,
-        /// Previous size of the substate, or `None` if it's a new entry
+        /// Previous size of the substate, or `None` if it's a new entry.
+        /// The current size before the update rather than the size in the underlying store.
         old_size: Option<usize>,
         /// The new substate size, or `None` if it's removed
         new_size: Option<usize>,
@@ -223,7 +224,8 @@ pub enum StoreAccess {
     UpdateSubstateInHeap {
         /// The canonical substate key
         canonical_substate_key: CanonicalSubstateKey,
-        /// Previous size of the substate, or `None` if it's a new entry
+        /// Previous size of the substate, or `None` if it's a new entry.
+        /// The current size before the update rather than the size in the underlying store.
         old_size: Option<usize>,
         /// The new substate size, or `None` if it's removed
         new_size: Option<usize>,
