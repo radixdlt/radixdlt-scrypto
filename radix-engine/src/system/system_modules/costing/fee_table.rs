@@ -99,8 +99,9 @@ impl FeeTable {
                 // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
                 160_000
             }
-            StoreAccess::NewEntryInTrack(_, _) => {
-                // The max number of entries is limited by limits module.
+            StoreAccess::UpdateSubstateInHeap { .. }
+            | StoreAccess::UpdateSubstateInTrack { .. } => {
+                // Heap/track substate total size is limited by limits module.
                 0
             }
         }

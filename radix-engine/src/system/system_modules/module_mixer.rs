@@ -1,4 +1,4 @@
-use super::costing::{ExecutionCostingEntry, FinalizationCostingEntry};
+use super::costing::{ExecutionCostingEntry, FinalizationCostingEntry, StorageType};
 use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
@@ -24,7 +24,6 @@ use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::transaction_runtime::{Event, TransactionRuntimeModule};
-use crate::track::interface::StoreCommit;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
@@ -151,8 +150,8 @@ impl SystemModuleMixer {
                 params: auth_zone_params.clone(),
             },
             limits: LimitsModule::new(TransactionLimitsConfig {
-                max_number_of_substates_in_track: execution_config.max_number_of_substates_in_track,
-                max_number_of_substates_in_heap: execution_config.max_number_of_substates_in_heap,
+                max_heap_substate_total_bytes: execution_config.max_heap_substate_total_bytes,
+                max_track_substate_total_bytes: execution_config.max_track_substate_total_bytes,
                 max_substate_key_size: execution_config.max_substate_key_size,
                 max_substate_value_size: execution_config.max_substate_value_size,
                 max_invoke_payload_size: execution_config.max_invoke_input_size,
@@ -634,9 +633,13 @@ impl SystemModuleMixer {
         }
     }
 
-    pub fn apply_storage_cost(&mut self, store_commit: &StoreCommit) -> Result<(), RuntimeError> {
+    pub fn apply_storage_cost(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
-            self.costing.apply_storage_cost(store_commit)
+            self.costing.apply_storage_cost(storage_type, size_increase)
         } else {
             Ok(())
         }

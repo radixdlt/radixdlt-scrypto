@@ -160,7 +160,7 @@ pub fn write_cost_breakdown(
     let mut buffer = String::new();
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
+            "{:<75},{:>25}, {:8.1}%\n",
             "Total Cost (XRD)",
             fee_summary.total_cost().to_string(),
             100.0
@@ -169,7 +169,7 @@ pub fn write_cost_breakdown(
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
+            "{:<75},{:>25}, {:8.1}%\n",
             "- Execution Cost (XRD)",
             fee_summary.total_execution_cost_in_xrd.to_string(),
             decimal_to_float(
@@ -185,7 +185,7 @@ pub fn write_cost_breakdown(
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
+            "{:<75},{:>25}, {:8.1}%\n",
             "- Finalization Cost (XRD)",
             fee_summary.total_finalization_cost_in_xrd.to_string(),
             decimal_to_float(
@@ -201,7 +201,7 @@ pub fn write_cost_breakdown(
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
+            "{:<75},{:>25}, {:8.1}%\n",
             "- Tipping Cost (XRD)",
             fee_summary.total_tipping_cost_in_xrd.to_string(),
             decimal_to_float(
@@ -217,7 +217,7 @@ pub fn write_cost_breakdown(
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
+            "{:<75},{:>25}, {:8.1}%\n",
             "- Storage Cost (XRD)",
             fee_summary.total_storage_cost_in_xrd.to_string(),
             decimal_to_float(
@@ -233,7 +233,7 @@ pub fn write_cost_breakdown(
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
+            "{:<75},{:>25}, {:8.1}%\n",
             "- Tipping Cost (XRD)",
             fee_summary.total_tipping_cost_in_xrd.to_string(),
             decimal_to_float(
@@ -249,7 +249,7 @@ pub fn write_cost_breakdown(
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
+            "{:<75},{:>25}, {:8.1}%\n",
             "- Royalty Cost (XRD)",
             fee_summary.total_royalty_cost_in_xrd.to_string(),
             decimal_to_float(
@@ -265,7 +265,7 @@ pub fn write_cost_breakdown(
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
+            "{:<75},{:>25}, {:8.1}%\n",
             "Execution Cost Breakdown",
             fee_details.execution_cost_breakdown.values().sum::<u32>(),
             100.0
@@ -275,7 +275,7 @@ pub fn write_cost_breakdown(
     for (k, v) in &fee_details.execution_cost_breakdown {
         buffer.push_str(
             format!(
-                "- {:<73},{:>15}, {:8.1}%\n",
+                "- {:<73},{:>25}, {:8.1}%\n",
                 k,
                 v,
                 decimal_to_float(
@@ -293,7 +293,7 @@ pub fn write_cost_breakdown(
     }
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
+            "{:<75},{:>25}, {:8.1}%\n",
             "Finalization Cost Breakdown",
             fee_details
                 .finalization_cost_breakdown
@@ -306,7 +306,7 @@ pub fn write_cost_breakdown(
     for (k, v) in &fee_details.finalization_cost_breakdown {
         buffer.push_str(
             format!(
-                "- {:<73},{:>15}, {:8.1}%\n",
+                "- {:<73},{:>25}, {:8.1}%\n",
                 k,
                 v,
                 decimal_to_float(
