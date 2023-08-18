@@ -5,7 +5,7 @@ use transaction::prelude::*;
 #[test]
 fn test_kv_store_with_many_large_keys() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/storage");
 
     // Act
@@ -21,11 +21,7 @@ fn test_kv_store_with_many_large_keys() {
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     assert_eq!(
-        receipt
-            .fee_summary
-            .total_storage_cost_in_xrd
-            .safe_div(receipt.costing_parameters.state_storage_price)
-            .unwrap(),
-        dec!("419292")
+        receipt.fee_summary.total_storage_cost_in_xrd,
+        dec!("66.670735677079698048")
     );
 }

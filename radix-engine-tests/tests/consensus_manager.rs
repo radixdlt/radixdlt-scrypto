@@ -478,7 +478,7 @@ fn create_validator_with_wrong_resource_should_fail() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(*DEFAULT_VALIDATOR_XRD_COST, 0u8, account);
+        test_runner.create_fungible_resource(*DEFAULT_VALIDATOR_XRD_COST, 18u8, account);
 
     // Act
     let receipt = test_runner.execute_manifest(
@@ -3067,6 +3067,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
     costing_params.execution_cost_unit_price = Decimal::zero();
     costing_params.finalization_cost_unit_price = Decimal::zero();
     costing_params.state_storage_price = Decimal::zero();
+    costing_params.archive_storage_price = Decimal::zero();
 
     let receipt = test_runner.execute_manifest_with_costing_params(
         manifest,
