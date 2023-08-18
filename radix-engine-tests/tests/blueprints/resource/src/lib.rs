@@ -154,14 +154,16 @@ mod resource_test {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge: Bucket = ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
-                .mint_initial_supply(vec![(
-                    0u64.into(),
-                    TestNFData {
-                        name: "name".to_string(),
-                        available: false,
-                    },
-                )]).into();
+            let badge: Bucket =
+                ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                    .mint_initial_supply(vec![(
+                        0u64.into(),
+                        TestNFData {
+                            name: "name".to_string(),
+                            available: false,
+                        },
+                    )])
+                    .into();
             let manager_badge =
                 NonFungibleGlobalId::new(badge.resource_address(), NonFungibleLocalId::integer(0));
 
@@ -243,14 +245,16 @@ mod rounding {
         }
 
         pub fn non_fungible_resource_amount_for_withdrawal() -> Bucket {
-            let bucket: Bucket = ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
-                .mint_initial_supply(vec![(
-                    0u64.into(),
-                    TestNFData {
-                        name: "name".to_string(),
-                        available: false,
-                    },
-                )]).into();
+            let bucket: Bucket =
+                ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                    .mint_initial_supply(vec![(
+                        0u64.into(),
+                        TestNFData {
+                            name: "name".to_string(),
+                            available: false,
+                        },
+                    )])
+                    .into();
             let manager = bucket.resource_manager();
             assert_eq!(
                 manager.amount_for_withdrawal(dec!("1.515"), WithdrawStrategy::Exact),

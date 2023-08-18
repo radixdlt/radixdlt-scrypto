@@ -28,7 +28,8 @@ mod leaks {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(1).into();
+                .mint_initial_supply(1)
+                .into();
             let _vault = Vault::with_bucket(bucket);
         }
 
@@ -40,7 +41,8 @@ mod leaks {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(1).into();
+                .mint_initial_supply(1)
+                .into();
             bucket
         }
 
@@ -58,7 +60,8 @@ mod leaks {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(1).into();
+                .mint_initial_supply(1)
+                .into();
 
             bucket.create_proof_of_all()
         }

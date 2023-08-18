@@ -24,7 +24,8 @@ mod non_fungible_test {
             // Create a mint badge
             let mint_badge: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
-                .mint_initial_supply(1).into();
+                .mint_initial_supply(1)
+                .into();
 
             // Create non-fungible resource with mutable supply
             let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>(
@@ -107,6 +108,7 @@ mod non_fungible_test {
                         own: None,
                     },
                 ])
+                .into()
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {
@@ -147,7 +149,8 @@ mod non_fungible_test {
                             own: None,
                         },
                     ),
-                ]).into()
+                ])
+                .into()
         }
 
         pub fn verify_does_not_exist(non_fungible_global_id: NonFungibleGlobalId) {
@@ -530,7 +533,8 @@ mod non_fungible_test {
                             own: None,
                         },
                     ),
-                ]).into()
+                ])
+                .into()
         }
 
         pub fn create_bytes_non_fungible() -> Bucket {
@@ -561,15 +565,15 @@ mod non_fungible_test {
         }
 
         pub fn create_ruid_non_fungible() -> Bucket {
-            ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None).mint_initial_supply(
-                [Sandwich {
+            ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
+                .mint_initial_supply([Sandwich {
                     name: "Zero".to_owned(),
                     available: true,
                     tastes_great: true,
                     reference: None,
                     own: None,
-                }],
-            )
+                }])
+                .into()
         }
 
         pub fn create_mintable_ruid_non_fungible() -> ResourceManager {

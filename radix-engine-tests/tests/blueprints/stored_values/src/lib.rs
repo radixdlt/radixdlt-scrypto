@@ -14,7 +14,8 @@ mod invalid_init_stored_bucket {
                     withdrawer => rule!(allow_all);
                     withdrawer_updater => rule!(deny_all);
                 })
-                .mint_initial_supply(Decimal::from(5)).into();
+                .mint_initial_supply(Decimal::from(5))
+                .into();
 
             let component = InvalidInitStoredBucket { bucket }.instantiate();
             component.prepare_to_globalize(OwnerRole::None).globalize()

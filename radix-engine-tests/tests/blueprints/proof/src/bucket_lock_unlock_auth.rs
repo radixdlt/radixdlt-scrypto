@@ -16,7 +16,9 @@ mod bucket_lock_unlock_auth {
 
     impl BucketLockUnlockAuth {
         pub fn call_lock_fungible_amount_directly() {
-            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100).into();
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .mint_initial_supply(100)
+                .into();
 
             ScryptoEnv
                 .call_method(
@@ -28,7 +30,9 @@ mod bucket_lock_unlock_auth {
         }
 
         pub fn call_unlock_fungible_amount_directly() {
-            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100).into();
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .mint_initial_supply(100)
+                .into();
 
             let _proof = bucket.create_proof_of_all();
 
@@ -49,7 +53,8 @@ mod bucket_lock_unlock_auth {
                         name: "One".to_owned(),
                         available: true,
                     },
-                )]).into();
+                )])
+                .into();
 
             ScryptoEnv
                 .call_method(
@@ -68,7 +73,8 @@ mod bucket_lock_unlock_auth {
                         name: "One".to_owned(),
                         available: true,
                     },
-                )]).into();
+                )])
+                .into();
 
             let _proof = bucket.create_proof_of_all();
 

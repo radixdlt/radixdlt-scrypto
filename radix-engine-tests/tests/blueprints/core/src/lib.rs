@@ -37,18 +37,24 @@ mod globalize_test {
         }
 
         pub fn globalize_bucket() {
-            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100).into();
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .mint_initial_supply(100)
+                .into();
             Self::globalize(bucket.0);
         }
 
         pub fn globalize_proof() {
-            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100).into();
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .mint_initial_supply(100)
+                .into();
             let proof = bucket.create_proof_of_all();
             Self::globalize(proof.0);
         }
 
         pub fn globalize_vault() {
-            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100).into();
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .mint_initial_supply(100)
+                .into();
             let vault = Vault::with_bucket(bucket);
             Self::globalize(vault.0);
         }
@@ -82,12 +88,16 @@ mod globalize_test {
         }
 
         pub fn store_bucket() {
-            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100).into();
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .mint_initial_supply(100)
+                .into();
             Self::store(bucket.0);
         }
 
         pub fn store_proof() {
-            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100).into();
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .mint_initial_supply(100)
+                .into();
             let proof = bucket.create_proof_of_all();
             Self::store(proof.0);
         }
