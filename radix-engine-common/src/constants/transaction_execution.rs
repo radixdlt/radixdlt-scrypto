@@ -72,8 +72,17 @@ pub const MAX_ACCESS_RULE_NODES: usize = 64;
 /// The max number of roles in a Role Specification
 pub const MAX_ROLES: usize = 50;
 
-/// The max number of roles in a Role Specification
+/// The max length of a role name
 pub const MAX_ROLE_NAME_LEN: usize = 100;
+
+/// The max length of a feature name
+pub const MAX_FEATURE_NAME_LEN: usize = 100;
+
+/// The max length of an event name
+pub const MAX_EVENT_NAME_LEN: usize = 100;
+
+/// The max length of a function name
+pub const MAX_FUNCTION_NAME_LEN: usize = 256;
 
 /// The price of execution cost unit, in XRD.
 pub const EXECUTION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000005";
