@@ -2,13 +2,13 @@ use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
     ProcessSubstateIOWriteError, SubstateDevice, SubstateIO, SubstateIOHandler, SubstateReadHandler,
 };
-use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore};
+use crate::track::interface::{CallbackError, CommitableSubstateStore, NodeSubstates, StoreAccess};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
-use super::heap::{Heap, HeapRemoveModuleError};
+use super::heap::{Heap, HeapRemovePartitionError};
 
 /// A message used for communication between call frames.
 ///
@@ -324,10 +324,6 @@ pub trait StoreAccessHandler<C, L, E> {
     ) -> Result<(), E>;
 }
 
-pub trait PersistNodeHandler<E> {
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
-}
-
 pub trait CallFrameSubstateReadHandler<C, L> {
     type Error;
 
@@ -341,19 +337,15 @@ pub trait CallFrameSubstateReadHandler<C, L> {
     ) -> Result<(), Self::Error>;
 }
 
-struct WrapperHandler<'g, C, L, E, H: StoreAccessHandler<C, L, E> + PersistNodeHandler<E>> {
+struct WrapperHandler<'g, C, L, E, H: StoreAccessHandler<C, L, E>> {
     handler: &'g mut H,
     call_frame: &'g CallFrame<C, L>,
     phantom: PhantomData<E>,
 }
 
-impl<'g, C, L, E, H: StoreAccessHandler<C, L, E> + PersistNodeHandler<E>> SubstateIOHandler<E>
+impl<'g, C, L, E, H: StoreAccessHandler<C, L, E>> SubstateIOHandler<E>
     for WrapperHandler<'g, C, L, E, H>
 {
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E> {
-        self.handler.on_persist_node(heap, node_id)
-    }
-
     fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E> {
         self.handler
             .on_store_access(self.call_frame, heap, store_access)
@@ -447,6 +439,7 @@ pub enum DropNodeError {
 pub enum PersistNodeError {
     ContainsNonGlobalRef(NodeId),
     NodeBorrowed(NodeId),
+    CannotPersistPinnedNode(NodeId),
 }
 
 /// Represents an error when taking a node from current frame.
@@ -456,21 +449,24 @@ pub enum TakeNodeError {
     OwnLocked(NodeId),
 }
 
-/// Represents an error when listing the node modules of a node.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ListNodeModuleError {
-    NodeNotVisible(NodeId),
-    NodeNotInHeap(NodeId),
-}
-
 /// Represents an error when moving modules from one node to another.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum MoveModuleError {
+pub enum MovePartitionError {
     NodeNotAvailable(NodeId),
-    HeapRemoveModuleErr(HeapRemoveModuleError),
+    HeapRemovePartitionError(HeapRemovePartitionError),
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
     SubstateBorrowed(NodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum PinNodeError {
+    NodeNotVisible(NodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum MarkTransientSubstateError {
+    NodeNotVisible(NodeId),
 }
 
 /// Represents an error when attempting to lock a substate.
@@ -671,10 +667,62 @@ impl<C, L: Clone> CallFrame<C, L> {
         &self.call_frame_data
     }
 
-    pub fn create_node<'f, S: SubstateStore, E>(
+    pub fn pin_node<'f, S: CommitableSubstateStore>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
+        node_id: NodeId,
+    ) -> Result<(), PinNodeError> {
+        // Get device
+        let (_ref_origin, device) = self
+            .get_node_ref(&node_id)
+            .ok_or_else(|| PinNodeError::NodeNotVisible(node_id))?;
+
+        match device {
+            SubstateDevice::Heap => {
+                substate_io.pinned_nodes.insert(node_id);
+            }
+            SubstateDevice::Store => {
+                // Nodes in store are always pinned
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn mark_substate_as_transient<'f, S: CommitableSubstateStore>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        substate_key: SubstateKey,
+    ) -> Result<(), MarkTransientSubstateError> {
+        // Get device
+        let (_ref_origin, device) = self
+            .get_node_ref(&node_id)
+            .ok_or_else(|| MarkTransientSubstateError::NodeNotVisible(node_id))?;
+
+        match device {
+            SubstateDevice::Heap => {
+                substate_io.heap_transient_substates.mark_as_transient(
+                    node_id,
+                    partition_num,
+                    substate_key,
+                );
+            }
+            SubstateDevice::Store => {
+                substate_io
+                    .store
+                    .mark_as_transient(node_id, partition_num, substate_key);
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn create_node<'f, S: CommitableSubstateStore, E>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+        handler: &mut impl StoreAccessHandler<C, L, E>,
         node_id: NodeId,
         node_substates: NodeSubstates,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
@@ -723,7 +771,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     }
 
     /// Removes node from call frame and owned nodes will be possessed by this call frame.
-    pub fn drop_node<S: SubstateStore>(
+    pub fn drop_node<S: CommitableSubstateStore>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
@@ -747,23 +795,23 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(node_substates)
     }
 
-    pub fn move_partition<'f, S: SubstateStore, E>(
+    pub fn move_partition<'f, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
+        handler: &mut impl StoreAccessHandler<C, L, E>,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
-    ) -> Result<(), CallbackError<MoveModuleError, E>> {
+    ) -> Result<(), CallbackError<MovePartitionError, E>> {
         // Check src visibility
         let (_ref_origin, src_device) = self.get_node_ref(src_node_id).ok_or_else(|| {
-            CallbackError::Error(MoveModuleError::NodeNotAvailable(src_node_id.clone()))
+            CallbackError::Error(MovePartitionError::NodeNotAvailable(src_node_id.clone()))
         })?;
 
         // Check dest visibility
         let (_ref_origin, dest_device) = self.get_node_ref(dest_node_id).ok_or_else(|| {
-            CallbackError::Error(MoveModuleError::NodeNotAvailable(dest_node_id.clone()))
+            CallbackError::Error(MovePartitionError::NodeNotAvailable(dest_node_id.clone()))
         })?;
 
         let mut handler = WrapperHandler {
@@ -832,7 +880,12 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
-    pub fn open_substate<S: SubstateStore, E, H: StoreAccessHandler<C, L, E>>(
+    pub fn open_substate<
+        S: CommitableSubstateStore,
+        E,
+        H: StoreAccessHandler<C, L, E>,
+        F: FnOnce() -> IndexedScryptoValue,
+    >(
         &mut self,
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
@@ -840,7 +893,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_key: &SubstateKey,
         flags: LockFlags,
         handler: &mut H,
-        default: Option<fn() -> IndexedScryptoValue>,
+        default: Option<F>,
         data: L,
     ) -> Result<(SubstateHandle, usize), CallbackError<OpenSubstateError, E>> {
         let (ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
@@ -896,7 +949,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok((substate_handle, value_len))
     }
 
-    pub fn read_substate<'f, S: SubstateStore, H: CallFrameSubstateReadHandler<C, L>>(
+    pub fn read_substate<'f, S: CommitableSubstateStore, H: CallFrameSubstateReadHandler<C, L>>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         lock_handle: SubstateHandle,
@@ -925,10 +978,10 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(substate)
     }
 
-    pub fn write_substate<'f, S: SubstateStore, E>(
+    pub fn write_substate<'f, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
+        handler: &mut impl StoreAccessHandler<C, L, E>,
         lock_handle: SubstateHandle,
         substate: IndexedScryptoValue,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
@@ -971,7 +1024,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
-    pub fn close_substate<S: SubstateStore>(
+    pub fn close_substate<S: CommitableSubstateStore>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
         lock_handle: SubstateHandle,
@@ -1017,7 +1070,12 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
-    pub fn set_substate<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn set_substate<
+        'f,
+        S: CommitableSubstateStore,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
@@ -1042,7 +1100,12 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
-    pub fn remove_substate<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn remove_substate<
+        'f,
+        S: CommitableSubstateStore,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
@@ -1069,7 +1132,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn scan_keys<
         'f,
         K: SubstateKeyContent + 'static,
-        S: SubstateStore,
+        S: CommitableSubstateStore,
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,
     >(
@@ -1105,7 +1168,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn drain_substates<
         'f,
         K: SubstateKeyContent + 'static,
-        S: SubstateStore,
+        S: CommitableSubstateStore,
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,
     >(
@@ -1156,7 +1219,12 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
-    pub fn scan_sorted<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn scan_sorted<
+        'f,
+        S: CommitableSubstateStore,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
@@ -1200,7 +1268,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(substates)
     }
 
-    pub fn close_all_substates<S: SubstateStore>(
+    pub fn close_all_substates<S: CommitableSubstateStore>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
     ) -> Result<(), CloseSubstateError> {
@@ -1255,10 +1323,10 @@ impl<C, L: Clone> CallFrame<C, L> {
         NodeVisibility(visibilities)
     }
 
-    fn process_substate_diff<S: SubstateStore, E>(
+    fn process_substate_diff<S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
-        handler: &mut (impl StoreAccessHandler<C, L, E> + PersistNodeHandler<E>),
+        handler: &mut impl StoreAccessHandler<C, L, E>,
         device: SubstateDevice,
         diff: &SubstateDiff,
     ) -> Result<(), CallbackError<ProcessSubstateError, E>> {
@@ -1353,7 +1421,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
-    fn apply_diff_to_open_substate<S: SubstateStore>(
+    fn apply_diff_to_open_substate<S: CommitableSubstateStore>(
         transient_references: &mut NonIterMap<NodeId, TransientReference>,
         substate_io: &SubstateIO<S>,
         open_substate: &mut OpenedSubstate<L>,
@@ -1489,8 +1557,40 @@ impl<C, L> StoreAccessHandler<C, L, ()> for NullHandler<C, L> {
     }
 }
 
-impl<C, L> PersistNodeHandler<()> for NullHandler<C, L> {
-    fn on_persist_node(&mut self, _heap: &Heap, _node_id: &NodeId) -> Result<(), ()> {
-        Ok(())
+/// Structure which keeps track of all transient substates or substates
+/// which are never committed though can have transaction runtime state
+pub struct TransientSubstates {
+    pub transient_substates: BTreeMap<NodeId, BTreeSet<(PartitionNumber, SubstateKey)>>,
+}
+
+impl TransientSubstates {
+    pub fn new() -> Self {
+        Self {
+            transient_substates: BTreeMap::new(),
+        }
+    }
+
+    pub fn mark_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        substate_key: SubstateKey,
+    ) {
+        self.transient_substates
+            .entry(node_id)
+            .or_insert(BTreeSet::new())
+            .insert((partition_num, substate_key));
+    }
+
+    pub fn is_transient(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> bool {
+        match self.transient_substates.get(node_id) {
+            Some(transient) => transient.contains(&(partition_num, substate_key.clone())),
+            None => false,
+        }
     }
 }

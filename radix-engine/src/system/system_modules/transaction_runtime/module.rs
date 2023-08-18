@@ -1,5 +1,5 @@
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
-use crate::system::module::KernelModule;
+use crate::system::module::SystemModule;
 use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
@@ -94,7 +94,7 @@ impl TransactionRuntimeModule {
     }
 }
 
-impl<K: KernelCallbackObject> KernelModule<K> for TransactionRuntimeModule {}
+impl<K: KernelCallbackObject> SystemModule<K> for TransactionRuntimeModule {}
 
 #[cfg(test)]
 mod tests {

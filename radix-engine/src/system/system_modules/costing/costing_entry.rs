@@ -52,9 +52,14 @@ pub enum ExecutionCostingEntry<'a> {
     DropNode {
         event: &'a DropNodeEvent<'a>,
     },
+    PinNode {
+        node_id: &'a NodeId,
+    },
     MoveModule {
         event: &'a MoveModuleEvent<'a>,
     },
+
+    /* Substate */
     OpenSubstate {
         event: &'a OpenSubstateEvent<'a>,
     },
@@ -66,6 +71,11 @@ pub enum ExecutionCostingEntry<'a> {
     },
     CloseSubstate {
         event: &'a CloseSubstateEvent,
+    },
+    MarkSubstateAsTransient {
+        node_id: &'a NodeId,
+        partition_number: &'a PartitionNumber,
+        substate_key: &'a SubstateKey,
     },
 
     /* unstable node apis */
@@ -137,6 +147,7 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::AllocateNodeId => ft.allocate_node_id_cost(),
             ExecutionCostingEntry::CreateNode { event } => ft.create_node_cost(event),
             ExecutionCostingEntry::DropNode { event } => ft.drop_node_cost(event),
+            ExecutionCostingEntry::PinNode { node_id } => ft.pin_node_cost(node_id),
             ExecutionCostingEntry::MoveModule { event } => ft.move_module_cost(event),
             ExecutionCostingEntry::OpenSubstate { event } => ft.open_substate_cost(event),
             ExecutionCostingEntry::ReadSubstate { event } => ft.read_substate_cost(event),
@@ -144,6 +155,11 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::CloseSubstate { event } => ft.close_substate_cost(event),
             ExecutionCostingEntry::SetSubstate { event } => ft.set_substate_cost(event),
             ExecutionCostingEntry::RemoveSubstate { event } => ft.remove_substate_cost(event),
+            ExecutionCostingEntry::MarkSubstateAsTransient {
+                node_id,
+                partition_number,
+                substate_key,
+            } => ft.mark_substate_as_transient_cost(node_id, partition_number, substate_key),
             ExecutionCostingEntry::ScanKeys { event } => ft.scan_keys_cost(event),
             ExecutionCostingEntry::DrainSubstates { event } => ft.drain_substates_cost(event),
             ExecutionCostingEntry::ScanSortedSubstates { event } => {

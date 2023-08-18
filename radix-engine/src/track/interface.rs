@@ -40,7 +40,15 @@ pub enum TrackedSubstateInfo {
 /// In practice, we will likely end up with only one implementation.
 ///
 /// The trait here is for formalizing the interface and intended user flow.
-pub trait SubstateStore {
+pub trait CommitableSubstateStore {
+    /// Marks a substate as transient, or a substate which was never and will never be persisted
+    fn mark_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        substate_key: SubstateKey,
+    );
+
     /// Inserts a node into the substate store.
     ///
     /// Clients must ensure the `node_id` is new and unique; otherwise, the behavior is undefined.
@@ -181,6 +189,18 @@ pub struct CanonicalSubstateKey {
 }
 
 impl CanonicalSubstateKey {
+    pub fn new(
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Self {
+        Self {
+            node_id: *node_id,
+            partition_number: *partition_number,
+            substate_key: substate_key.clone(),
+        }
+    }
+
     pub fn of(partition: CanonicalPartition, substate_key: SubstateKey) -> Self {
         Self {
             node_id: partition.node_id,

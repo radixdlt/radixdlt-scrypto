@@ -10,8 +10,8 @@ use crate::blueprints::transaction_processor::TransactionProcessorRunInputEffici
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::{
-    CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs, PersistNodeHandler,
-    StoreAccessHandler,
+    CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs, StoreAccessHandler,
+    TransientSubstates,
 };
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::{
@@ -26,7 +26,7 @@ use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore};
+use crate::track::interface::{CallbackError, CommitableSubstateStore, NodeSubstates, StoreAccess};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -40,13 +40,13 @@ use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
+pub struct KernelBoot<'g, V: SystemCallbackObject, S: CommitableSubstateStore> {
     pub id_allocator: &'g mut IdAllocator,
     pub callback: &'g mut SystemConfig<V>,
     pub store: &'g mut S,
 }
 
-impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
+impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, V, S> {
     pub fn create_kernel_for_test_only(&mut self) -> Kernel<SystemConfig<V>, S> {
         Kernel {
             substate_io: SubstateIO {
@@ -54,6 +54,8 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 store: self.store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
+                heap_transient_substates: TransientSubstates::new(),
+                pinned_nodes: BTreeSet::new(),
             },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
@@ -81,6 +83,8 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 store: self.store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
+                heap_transient_substates: TransientSubstates::new(),
+                pinned_nodes: BTreeSet::new(),
             },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
@@ -182,6 +186,9 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 
+        // Sanity check heap
+        assert!(kernel.substate_io.heap.is_empty());
+
         SystemConfig::on_teardown(&mut kernel)?;
 
         Ok(rtn)
@@ -194,7 +201,7 @@ pub struct Kernel<
     S,  // Substate store
 > where
     M: KernelCallbackObject,
-    S: SubstateStore,
+    S: CommitableSubstateStore,
 {
     /// Stack
     current_frame: CallFrame<M::CallFrameData, M::LockData>,
@@ -220,16 +227,6 @@ struct KernelHandler<
     callback: &'a mut M,
     prev_frame: Option<&'a CallFrame<M::CallFrameData, M::LockData>>,
     on_store_access: F,
-}
-
-impl<
-        M: KernelCallbackObject,
-        F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
-    > PersistNodeHandler<RuntimeError> for KernelHandler<'_, M, F>
-{
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError> {
-        self.callback.on_persist_node(heap, node_id)
-    }
 }
 
 impl<
@@ -300,8 +297,40 @@ macro_rules! as_read_only {
 impl<'g, M, S> KernelNodeApi for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
-    S: SubstateStore,
+    S: CommitableSubstateStore,
 {
+    #[trace_resources]
+    fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+        self.callback.on_pin_node(&node_id)?;
+
+        self.current_frame
+            .pin_node(&mut self.substate_io, node_id)
+            .map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::PinNodeError(e),
+                ))
+            })
+    }
+
+    #[trace_resources]
+    fn kernel_mark_substate_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        key: SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        self.callback
+            .on_mark_substate_as_transient(&node_id, &partition_num, &key)?;
+
+        self.current_frame
+            .mark_substate_as_transient(&mut self.substate_io, node_id, partition_num, key)
+            .map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::MarkTransientSubstateError(e),
+                ))
+            })
+    }
+
     #[trace_resources(log=entity_type)]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
         M::on_allocate_node_id(entity_type, self)?;
@@ -389,7 +418,7 @@ where
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::MoveModuleError(e),
+                    CallFrameError::MovePartitionError(e),
                 )),
                 CallbackError::CallbackError(e) => e,
             })?;
@@ -402,7 +431,7 @@ where
 impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
-    S: SubstateStore,
+    S: CommitableSubstateStore,
 {
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.current_frame.get_node_visibility(node_id)
@@ -627,16 +656,16 @@ where
 impl<'g, M, S> KernelSubstateApi<M::LockData> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
-    S: SubstateStore,
+    S: CommitableSubstateStore,
 {
     #[trace_resources(log=node_id.entity_type())]
-    fn kernel_open_substate_with_default(
+    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        default: Option<fn() -> IndexedScryptoValue>,
+        default: Option<F>,
         data: M::LockData,
     ) -> Result<SubstateHandle, RuntimeError> {
         let mut read_only = as_read_only!(self);
@@ -693,7 +722,7 @@ where
                             &substate_key,
                             flags,
                             &mut handler,
-                            None,
+                            None::<fn() -> IndexedScryptoValue>,
                             M::LockData::default(),
                         )
                         .map_err(|e| match e {
@@ -1000,7 +1029,7 @@ where
 impl<'g, M, S> KernelInvokeApi<M::CallFrameData> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
-    S: SubstateStore,
+    S: CommitableSubstateStore,
 {
     #[trace_resources]
     fn kernel_invoke(
@@ -1093,6 +1122,6 @@ where
 impl<'g, M, S> KernelApi<M> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
-    S: SubstateStore,
+    S: CommitableSubstateStore,
 {
 }

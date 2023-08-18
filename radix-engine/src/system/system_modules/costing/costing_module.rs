@@ -8,7 +8,7 @@ use crate::kernel::kernel_callback_api::{
     OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
-use crate::system::module::KernelModule;
+use crate::system::module::SystemModule;
 use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -176,7 +176,7 @@ pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject
         })
 }
 
-impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let costing = &mut api.kernel_get_system().modules.costing;
 
@@ -280,6 +280,15 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
+    fn on_pin_node(system: &mut SystemConfig<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
+        system
+            .modules
+            .costing
+            .apply_execution_cost(ExecutionCostingEntry::PinNode { node_id })?;
+
+        Ok(())
+    }
+
     fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         event: &DropNodeEvent,
@@ -312,6 +321,23 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
             .modules
             .costing
             .apply_execution_cost(ExecutionCostingEntry::OpenSubstate { event })?;
+
+        Ok(())
+    }
+
+    fn on_mark_substate_as_transient(
+        system: &mut SystemConfig<V>,
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        system.modules.costing.apply_execution_cost(
+            ExecutionCostingEntry::MarkSubstateAsTransient {
+                node_id,
+                partition_number,
+                substate_key,
+            },
+        )?;
 
         Ok(())
     }
