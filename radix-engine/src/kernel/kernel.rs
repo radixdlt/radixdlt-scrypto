@@ -301,6 +301,8 @@ where
 {
     #[trace_resources]
     fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+        self.callback.on_pin_node(&node_id)?;
+
         self.current_frame
             .pin_node(&mut self.substate_io, node_id)
             .map_err(|e| {
@@ -317,7 +319,8 @@ where
         partition_num: PartitionNumber,
         key: SubstateKey,
     ) -> Result<(), RuntimeError> {
-        self.callback.on_mark_substate_as_transient(&node_id, &partition_num, &key)?;
+        self.callback
+            .on_mark_substate_as_transient(&node_id, &partition_num, &key)?;
 
         self.current_frame
             .mark_substate_as_transient(&mut self.substate_io, node_id, partition_num, key)

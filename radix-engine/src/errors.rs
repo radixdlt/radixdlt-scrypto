@@ -14,9 +14,9 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
     CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
-    CreateFrameError, CreateNodeError, DropNodeError,
-    MarkTransientSubstateError, MovePartitionError, OpenSubstateError, PassMessageError,
-    PinNodeError, ReadSubstateError, WriteSubstateError,
+    CreateFrameError, CreateNodeError, DropNodeError, MarkTransientSubstateError,
+    MovePartitionError, OpenSubstateError, PassMessageError, PinNodeError, ReadSubstateError,
+    WriteSubstateError,
 };
 use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::node_modules::role_assignment::RoleAssignmentError;

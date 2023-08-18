@@ -277,6 +277,15 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
+    fn on_pin_node(system: &mut SystemConfig<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
+        system
+            .modules
+            .costing
+            .apply_execution_cost(ExecutionCostingEntry::PinNode { node_id })?;
+
+        Ok(())
+    }
+
     fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         event: &DropNodeEvent,
@@ -313,11 +322,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_mark_substate_as_transient(system: &mut SystemConfig<V>, node_id: &NodeId, partition_number: &PartitionNumber, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
-        system
-            .modules
-            .costing
-            .apply_execution_cost(ExecutionCostingEntry::MarkSubstateAsTransient { node_id, partition_number, substate_key })?;
+    fn on_mark_substate_as_transient(
+        system: &mut SystemConfig<V>,
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        system.modules.costing.apply_execution_cost(
+            ExecutionCostingEntry::MarkSubstateAsTransient {
+                node_id,
+                partition_number,
+                substate_key,
+            },
+        )?;
 
         Ok(())
     }

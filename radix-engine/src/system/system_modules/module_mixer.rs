@@ -281,6 +281,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
+    fn on_pin_node(system: &mut SystemConfig<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(system, on_pin_node(system, node_id))
+    }
+
+    #[trace_resources]
     fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         event: &DropNodeEvent,
@@ -305,8 +310,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_mark_substate_as_transient(system: &mut SystemConfig<V>, node_id: &NodeId, partition_number: &PartitionNumber, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_mark_substate_as_transient(system, node_id, partition_number, substate_key))
+    fn on_mark_substate_as_transient(
+        system: &mut SystemConfig<V>,
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            system,
+            on_mark_substate_as_transient(system, node_id, partition_number, substate_key)
+        )
     }
 
     #[trace_resources(log={

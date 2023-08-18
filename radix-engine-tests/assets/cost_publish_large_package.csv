@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,    21.84439148,    100.0%
-- Execution Cost (XRD)                                                     ,     0.86887207,      4.0%
+Total Cost (XRD)                                                           ,    21.84440348,    100.0%
+- Execution Cost (XRD)                                                     ,     0.86888407,      4.0%
 - Finalization Cost (XRD)                                                  ,     0.01583941,      0.1%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Storage Cost (XRD)                                                       ,       20.95968,     95.9%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Royalty Cost (XRD)                                                       ,              0,      0.0%
-Execution Cost Breakdown                                                   ,       86887207,    100.0%
+Execution Cost Breakdown                                                   ,       86888407,    100.0%
 - AllocateNodeId                                                           ,           1560,      0.0%
 - BeforeInvoke                                                             ,        2096350,      2.4%
 - CloseSubstate                                                            ,          13230,      0.0%
@@ -21,6 +21,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::InternalFungibleVault                                      ,          86966,      0.1%
 - OpenSubstate::InternalGenericComponent                                   ,          14239,      0.0%
 - OpenSubstate::InternalKeyValueStore                                      ,          40474,      0.0%
+- PinNode                                                                  ,           1200,      0.0%
 - PrepareWasmCode                                                          ,         651168,      0.7%
 - QueryActor                                                               ,           1500,      0.0%
 - ReadSubstate                                                             ,         765280,      0.9%

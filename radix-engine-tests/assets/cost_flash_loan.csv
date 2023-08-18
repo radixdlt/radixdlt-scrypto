@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,     0.11945058,    100.0%
-- Execution Cost (XRD)                                                     ,     0.11174916,     93.6%
+Total Cost (XRD)                                                           ,     0.11950358,    100.0%
+- Execution Cost (XRD)                                                     ,     0.11180216,     93.6%
 - Finalization Cost (XRD)                                                  ,     0.00695142,      5.8%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Storage Cost (XRD)                                                       ,        0.00075,      0.6%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Royalty Cost (XRD)                                                       ,              0,      0.0%
-Execution Cost Breakdown                                                   ,       11174916,    100.0%
+Execution Cost Breakdown                                                   ,       11180216,    100.0%
 - AllocateNodeId                                                           ,           5512,      0.0%
 - BeforeInvoke                                                             ,           9344,      0.1%
 - CloseSubstate                                                            ,          93765,      0.8%
@@ -22,6 +22,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalPackage                                              ,        4044492,     36.2%
 - OpenSubstate::InternalFungibleVault                                      ,         284873,      2.5%
 - OpenSubstate::InternalGenericComponent                                   ,         185848,      1.7%
+- PinNode                                                                  ,           5300,      0.0%
 - PrepareWasmCode                                                          ,        1612400,     14.4%
 - QueryActor                                                               ,           9500,      0.1%
 - QueryAuthZone                                                            ,           2000,      0.0%

@@ -104,6 +104,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_teardown(api)
     }
 
+    fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_pin_node(self, node_id)
+    }
+
     fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>,
@@ -446,8 +450,18 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(())
     }
 
-    fn on_mark_substate_as_transient(&mut self, node_id: &NodeId, partition_number: &PartitionNumber, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_mark_substate_as_transient(self, node_id, partition_number, substate_key)
+    fn on_mark_substate_as_transient(
+        &mut self,
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_mark_substate_as_transient(
+            self,
+            node_id,
+            partition_number,
+            substate_key,
+        )
     }
 
     fn on_substate_lock_fault<Y>(

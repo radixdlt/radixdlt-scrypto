@@ -157,7 +157,7 @@ pub enum FieldTransience {
     // TODO: Will need to change this Vec<u8> to ScryptoValue to support default values with global references
     TransientStatic {
         /// The default value a transient substate will have on first read
-        default_value: Vec<u8>
+        default_value: Vec<u8>,
     },
 }
 

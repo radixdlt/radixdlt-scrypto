@@ -67,6 +67,11 @@ pub trait SystemModule<M: KernelCallbackObject> {
     //======================
 
     #[inline(always)]
+    fn on_pin_node(_system: &mut M, _node_id: &NodeId) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
     fn on_allocate_node_id<Y: KernelApi<M>>(
         _api: &mut Y,
         _entity_type: EntityType,
@@ -102,7 +107,12 @@ pub trait SystemModule<M: KernelCallbackObject> {
     // Substate events
     //======================
     #[inline(always)]
-    fn on_mark_substate_as_transient(_system: &mut M, _node_id: &NodeId, _partition_number: &PartitionNumber, _substate_key: &SubstateKey) -> Result<(), RuntimeError> {
+    fn on_mark_substate_as_transient(
+        _system: &mut M,
+        _node_id: &NodeId,
+        _partition_number: &PartitionNumber,
+        _substate_key: &SubstateKey,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
