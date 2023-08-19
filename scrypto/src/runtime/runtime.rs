@@ -29,12 +29,11 @@ pub struct Runtime {}
 impl Runtime {
     /// Returns the current epoch
     pub fn current_epoch() -> Epoch {
-        let rtn = ScryptoVmV1Api
-            .call_method(
-                CONSENSUS_MANAGER.as_node_id(),
-                CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
-                scrypto_encode(&ConsensusManagerGetCurrentEpochInput).unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_method(
+            CONSENSUS_MANAGER.as_node_id(),
+            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+            scrypto_encode(&ConsensusManagerGetCurrentEpochInput).unwrap(),
+        );
 
         scrypto_decode(&rtn).unwrap()
     }
@@ -67,8 +66,7 @@ impl Runtime {
 
     /// Get the global address an address reservation is associated with
     pub fn get_reservation_address(reservation: &GlobalAddressReservation) -> GlobalAddress {
-        ScryptoVmV1Api
-            .get_reservation_address(reservation.0.as_node_id())
+        ScryptoVmV1Api.get_reservation_address(reservation.0.as_node_id())
     }
 
     /// Returns the transaction hash.
@@ -90,12 +88,11 @@ impl Runtime {
 
     pub fn assert_access_rule(rule: AccessRule) {
         let node_id = ScryptoVmV1Api.get_auth_zone().unwrap();
-        let _ = ScryptoVmV1Api
-            .call_method(
-                &node_id,
-                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
-                scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
-            );
+        let _ = ScryptoVmV1Api.call_method(
+            &node_id,
+            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+            scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
+        );
     }
 
     pub fn allocate_component_address(

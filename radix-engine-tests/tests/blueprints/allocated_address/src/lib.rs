@@ -37,8 +37,7 @@ mod apa {
         pub fn create_and_call() {
             let (_own, address) =
                 Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
-            ScryptoVmV1Api
-                .call_method(address.as_node_id(), "hi", scrypto_args!());
+            ScryptoVmV1Api.call_method(address.as_node_id(), "hi", scrypto_args!());
         }
 
         pub fn create_and_consume_within_frame() {

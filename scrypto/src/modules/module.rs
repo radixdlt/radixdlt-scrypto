@@ -68,19 +68,17 @@ pub trait Attachable: Sized {
     fn call_raw(&self, method: &str, args: Vec<u8>) -> Vec<u8> {
         match self.handle() {
             ModuleHandle::Own(own) => {
-                let output = ScryptoVmV1Api
-                    .call_method(own.as_node_id(), method, args);
+                let output = ScryptoVmV1Api.call_method(own.as_node_id(), method, args);
                 output
             }
             ModuleHandle::Attached(address, module_id) => {
-                let output = ScryptoVmV1Api
-                    .call_method_advanced(
-                        address.as_node_id(),
-                        module_id.clone(),
-                        false,
-                        method,
-                        args,
-                    );
+                let output = ScryptoVmV1Api.call_method_advanced(
+                    address.as_node_id(),
+                    module_id.clone(),
+                    false,
+                    method,
+                    args,
+                );
                 output
             }
             ModuleHandle::SELF(module_id) => {
@@ -96,18 +94,16 @@ pub trait Attachable: Sized {
         let args = scrypto_encode(args).unwrap();
         match self.handle() {
             ModuleHandle::Own(own) => {
-                ScryptoVmV1Api
-                    .call_method(own.as_node_id(), method, args);
+                ScryptoVmV1Api.call_method(own.as_node_id(), method, args);
             }
             ModuleHandle::Attached(address, module_id) => {
-                ScryptoVmV1Api
-                    .call_method_advanced(
-                        address.as_node_id(),
-                        module_id.clone(),
-                        false,
-                        method,
-                        args,
-                    );
+                ScryptoVmV1Api.call_method_advanced(
+                    address.as_node_id(),
+                    module_id.clone(),
+                    false,
+                    method,
+                    args,
+                );
             }
             ModuleHandle::SELF(module_id) => {
                 ScryptoVmV1Api

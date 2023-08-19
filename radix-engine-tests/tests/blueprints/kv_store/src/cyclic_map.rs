@@ -1,6 +1,4 @@
 use scrypto::api::field_api::LockFlags;
-use scrypto::api::key_value_entry_api::ClientKeyValueEntryApi;
-use scrypto::api::key_value_store_api::ClientKeyValueStoreApi;
 use scrypto::prelude::*;
 
 #[blueprint]
@@ -30,12 +28,9 @@ mod cyclic_map {
                 value: PhantomData,
             };
 
-            let handle = ScryptoVmV1Api
-                .key_value_store_open_entry(node_id, &key, LockFlags::MUTABLE)
-                .unwrap();
-            ScryptoVmV1Api
-                .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())
-                .unwrap();
+            let handle =
+                ScryptoVmV1Api.key_value_store_open_entry(node_id, &key, LockFlags::MUTABLE);
+            ScryptoVmV1Api.key_value_entry_set(handle, scrypto_encode(&substate).unwrap());
 
             CyclicMap { store: kv_store0 }
                 .instantiate()
@@ -55,12 +50,9 @@ mod cyclic_map {
                 value: PhantomData,
             };
 
-            let handle = ScryptoVmV1Api
-                .key_value_store_open_entry(node_id, &key, LockFlags::MUTABLE)
-                .unwrap();
-            ScryptoVmV1Api
-                .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())
-                .unwrap();
+            let handle =
+                ScryptoVmV1Api.key_value_store_open_entry(node_id, &key, LockFlags::MUTABLE);
+            ScryptoVmV1Api.key_value_entry_set(handle, scrypto_encode(&substate).unwrap());
 
             CyclicMap { store: kv_store }
                 .instantiate()

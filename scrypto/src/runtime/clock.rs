@@ -21,12 +21,11 @@ impl Clock {
     /// Returns the current timestamp (in seconds), rounded down to the specified precision
     pub fn current_time(precision: TimePrecision) -> Instant {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                CONSENSUS_MANAGER.as_node_id(),
-                CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
-                scrypto_encode(&ConsensusManagerGetCurrentTimeInput { precision }).unwrap(),
-            );
+        let rtn = env.call_method(
+            CONSENSUS_MANAGER.as_node_id(),
+            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
+            scrypto_encode(&ConsensusManagerGetCurrentTimeInput { precision }).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -63,17 +62,16 @@ impl Clock {
         operator: TimeComparisonOperator,
     ) -> bool {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                CONSENSUS_MANAGER.as_node_id(),
-                CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
-                scrypto_encode(&ConsensusManagerCompareCurrentTimeInput {
-                    instant,
-                    precision,
-                    operator,
-                })
-                .unwrap(),
-            );
+        let rtn = env.call_method(
+            CONSENSUS_MANAGER.as_node_id(),
+            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
+            scrypto_encode(&ConsensusManagerCompareCurrentTimeInput {
+                instant,
+                precision,
+                operator,
+            })
+            .unwrap(),
+        );
 
         scrypto_decode(&rtn).unwrap()
     }

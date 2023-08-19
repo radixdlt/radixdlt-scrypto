@@ -135,7 +135,10 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn key_value_entry_remove(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn key_value_entry_remove(
+        &mut self,
+        handle: u32,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

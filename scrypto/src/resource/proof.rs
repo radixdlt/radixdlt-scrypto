@@ -167,12 +167,11 @@ impl ScryptoUncheckedProof for Proof {
 
     fn resource_address(&self) -> ResourceAddress {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                PROOF_GET_RESOURCE_ADDRESS_IDENT,
-                scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0.as_node_id(),
+            PROOF_GET_RESOURCE_ADDRESS_IDENT,
+            scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -197,12 +196,11 @@ impl ScryptoUncheckedProof for Proof {
 
     fn clone(&self) -> Self {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                PROOF_CLONE_IDENT,
-                scrypto_encode(&ProofCloneInput {}).unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0.as_node_id(),
+            PROOF_CLONE_IDENT,
+            scrypto_encode(&ProofCloneInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -305,12 +303,11 @@ impl ScryptoProof for CheckedProof {
 
     fn amount(&self) -> Decimal {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                PROOF_GET_AMOUNT_IDENT,
-                scrypto_encode(&ProofGetAmountInput {}).unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0 .0.as_node_id(),
+            PROOF_GET_AMOUNT_IDENT,
+            scrypto_encode(&ProofGetAmountInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -488,12 +485,11 @@ impl ScryptoNonFungibleProof for CheckedNonFungibleProof {
 
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0 .0 .0.as_node_id(),
-                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
-                scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0 .0 .0.as_node_id(),
+            NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
+            scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 }

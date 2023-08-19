@@ -114,34 +114,31 @@ impl ScryptoVault for Vault {
 
     fn new(resource_address: ResourceAddress) -> Self {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                resource_address.as_node_id(),
-                RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
-                scrypto_encode(&ResourceManagerCreateEmptyVaultInput {}).unwrap(),
-            );
+        let rtn = env.call_method(
+            resource_address.as_node_id(),
+            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
+            scrypto_encode(&ResourceManagerCreateEmptyVaultInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
     fn put(&mut self, bucket: Bucket) -> () {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                VAULT_PUT_IDENT,
-                scrypto_encode(&VaultPutInput { bucket }).unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0.as_node_id(),
+            VAULT_PUT_IDENT,
+            scrypto_encode(&VaultPutInput { bucket }).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
     fn amount(&self) -> Decimal {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                VAULT_GET_AMOUNT_IDENT,
-                scrypto_encode(&VaultGetAmountInput {}).unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0.as_node_id(),
+            VAULT_GET_AMOUNT_IDENT,
+            scrypto_encode(&VaultGetAmountInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -154,15 +151,14 @@ impl ScryptoVault for Vault {
     /// Takes some amount of resource from this vault into a bucket.
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                VAULT_TAKE_IDENT,
-                scrypto_encode(&VaultTakeInput {
-                    amount: amount.into(),
-                })
-                .unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0.as_node_id(),
+            VAULT_TAKE_IDENT,
+            scrypto_encode(&VaultTakeInput {
+                amount: amount.into(),
+            })
+            .unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -177,16 +173,15 @@ impl ScryptoVault for Vault {
         withdraw_strategy: WithdrawStrategy,
     ) -> Bucket {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                VAULT_TAKE_ADVANCED_IDENT,
-                scrypto_encode(&VaultTakeAdvancedInput {
-                    amount: amount.into(),
-                    withdraw_strategy,
-                })
-                .unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0.as_node_id(),
+            VAULT_TAKE_ADVANCED_IDENT,
+            scrypto_encode(&VaultTakeAdvancedInput {
+                amount: amount.into(),
+                withdraw_strategy,
+            })
+            .unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -213,15 +208,14 @@ impl ScryptoVault for Vault {
 
     fn burn<A: Into<Decimal>>(&mut self, amount: A) {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                VAULT_BURN_IDENT,
-                scrypto_encode(&VaultBurnInput {
-                    amount: amount.into(),
-                })
-                .unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0.as_node_id(),
+            VAULT_BURN_IDENT,
+            scrypto_encode(&VaultBurnInput {
+                amount: amount.into(),
+            })
+            .unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 }
@@ -297,16 +291,15 @@ impl ScryptoFungibleVault for FungibleVault {
     /// Unused fee will be refunded to the vaults from the most recently locked to the least.
     fn lock_fee<A: Into<Decimal>>(&mut self, amount: A) {
         let mut env = ScryptoVmV1Api;
-        let _rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                FUNGIBLE_VAULT_LOCK_FEE_IDENT,
-                scrypto_encode(&FungibleVaultLockFeeInput {
-                    amount: amount.into(),
-                    contingent: false,
-                })
-                .unwrap(),
-            );
+        let _rtn = env.call_method(
+            self.0 .0.as_node_id(),
+            FUNGIBLE_VAULT_LOCK_FEE_IDENT,
+            scrypto_encode(&FungibleVaultLockFeeInput {
+                amount: amount.into(),
+                contingent: false,
+            })
+            .unwrap(),
+        );
     }
 
     /// Locks the given amount of resource as contingent fee.
@@ -315,29 +308,27 @@ impl ScryptoFungibleVault for FungibleVault {
     /// Unused amount will be refunded the original vault.
     fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A) {
         let mut env = ScryptoVmV1Api;
-        let _rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                FUNGIBLE_VAULT_LOCK_FEE_IDENT,
-                scrypto_encode(&FungibleVaultLockFeeInput {
-                    amount: amount.into(),
-                    contingent: true,
-                })
-                .unwrap(),
-            );
+        let _rtn = env.call_method(
+            self.0 .0.as_node_id(),
+            FUNGIBLE_VAULT_LOCK_FEE_IDENT,
+            scrypto_encode(&FungibleVaultLockFeeInput {
+                amount: amount.into(),
+                contingent: true,
+            })
+            .unwrap(),
+        );
     }
 
     fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> FungibleProof {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
-                scrypto_encode(&FungibleVaultCreateProofOfAmountInput {
-                    amount: amount.into(),
-                })
-                .unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0 .0.as_node_id(),
+            FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
+            scrypto_encode(&FungibleVaultCreateProofOfAmountInput {
+                amount: amount.into(),
+            })
+            .unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -417,25 +408,21 @@ impl ScryptoVault for NonFungibleVault {
 impl ScryptoNonFungibleVault for NonFungibleVault {
     fn non_fungible_local_ids(&self, limit: u32) -> BTreeSet<NonFungibleLocalId> {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-                scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit: limit })
-                    .unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0 .0.as_node_id(),
+            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit: limit }).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
     fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT,
-                scrypto_encode(&NonFungibleVaultContainsNonFungibleInput { id: id.clone() })
-                    .unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0 .0.as_node_id(),
+            NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT,
+            scrypto_encode(&NonFungibleVaultContainsNonFungibleInput { id: id.clone() }).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -492,15 +479,14 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
         non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
     ) -> NonFungibleBucket {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
-                scrypto_encode(&NonFungibleVaultTakeNonFungiblesInput {
-                    non_fungible_local_ids: non_fungible_local_ids.clone(),
-                })
-                .unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0 .0.as_node_id(),
+            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&NonFungibleVaultTakeNonFungiblesInput {
+                non_fungible_local_ids: non_fungible_local_ids.clone(),
+            })
+            .unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -509,29 +495,25 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> NonFungibleProof {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
-                scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput {
-                    ids: ids.clone(),
-                })
+        let rtn = env.call_method(
+            self.0 .0.as_node_id(),
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput { ids: ids.clone() })
                 .unwrap(),
-            );
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
     fn burn_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>) {
         let mut env = ScryptoVmV1Api;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT,
-                scrypto_encode(&NonFungibleVaultBurnNonFungiblesInput {
-                    non_fungible_local_ids: non_fungible_local_ids.clone(),
-                })
-                .unwrap(),
-            );
+        let rtn = env.call_method(
+            self.0 .0.as_node_id(),
+            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&NonFungibleVaultBurnNonFungiblesInput {
+                non_fungible_local_ids: non_fungible_local_ids.clone(),
+            })
+            .unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 

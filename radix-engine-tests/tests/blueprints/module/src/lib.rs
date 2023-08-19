@@ -50,16 +50,15 @@ mod component_module {
                 .unwrap();
             let role_assignment: Own = scrypto_decode(&rtn).unwrap();
 
-            let address = ScryptoVmV1Api
-                .globalize(
-                    btreemap!(
-                        ObjectModuleId::Main => *component.0.handle().as_node_id(),
-                        ObjectModuleId::RoleAssignment => metadata.0,
-                        ObjectModuleId::Metadata => royalty.0,
-                        ObjectModuleId::Royalty => role_assignment.0,
-                    ),
-                    None,
-                );
+            let address = ScryptoVmV1Api.globalize(
+                btreemap!(
+                    ObjectModuleId::Main => *component.0.handle().as_node_id(),
+                    ObjectModuleId::RoleAssignment => metadata.0,
+                    ObjectModuleId::Metadata => royalty.0,
+                    ObjectModuleId::Royalty => role_assignment.0,
+                ),
+                None,
+            );
 
             ComponentAddress::new_or_panic(address.into())
         }

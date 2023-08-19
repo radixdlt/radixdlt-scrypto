@@ -1,6 +1,4 @@
 use sbor::*;
-use scrypto::api::key_value_entry_api::ClientKeyValueEntryApi;
-use scrypto::api::key_value_store_api::ClientKeyValueStoreApi;
 use scrypto::api::*;
 use scrypto::prelude::wasm_api::kv_entry_set;
 use scrypto::prelude::*;
@@ -94,15 +92,13 @@ mod transaction_limits_substate {
 
             // Insert into store
             let key_payload = scrypto_encode(&1u32).unwrap();
-            let handle = ScryptoVmV1Api
-                .key_value_store_open_entry(
-                    kv_store.id.as_node_id(),
-                    &key_payload,
-                    LockFlags::MUTABLE,
-                )
-                .unwrap();
+            let handle = ScryptoVmV1Api.key_value_store_open_entry(
+                kv_store.id.as_node_id(),
+                &key_payload,
+                LockFlags::MUTABLE,
+            );
             unsafe { kv_entry_set(handle, buf.as_ptr(), buf.len()) };
-            ScryptoVmV1Api.key_value_entry_close(handle).unwrap();
+            ScryptoVmV1Api.key_value_entry_close(handle);
 
             // Put the kv store into a component
             TransactionLimitSubstateTest { kv_store }
@@ -134,14 +130,12 @@ mod invoke_limits {
             let new_len = buf.len() + raw_array_size;
             unsafe { buf.set_len(new_len) };
 
-            ScryptoVmV1Api
-                .call_function(
-                    Runtime::package_address(),
-                    "InvokeLimitsTest",
-                    "callee",
-                    buf,
-                )
-                .unwrap();
+            ScryptoVmV1Api.call_function(
+                Runtime::package_address(),
+                "InvokeLimitsTest",
+                "callee",
+                buf,
+            );
         }
 
         pub fn callee(_: Vec<u8>) {}

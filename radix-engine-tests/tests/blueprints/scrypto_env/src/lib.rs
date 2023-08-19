@@ -7,11 +7,10 @@ mod scrypto_env_test {
 
     impl ScryptoEnvTest {
         pub fn create_node_with_invalid_blueprint() {
-            ScryptoVmV1Api
-                .new_simple_object(
-                    "invalid_blueprint",
-                    vec![FieldValue::new(&ScryptoEnvTest {})],
-                );
+            ScryptoVmV1Api.new_simple_object(
+                "invalid_blueprint",
+                vec![FieldValue::new(&ScryptoEnvTest {})],
+            );
         }
 
         pub fn create_and_open_mut_substate_twice(heap: bool) {

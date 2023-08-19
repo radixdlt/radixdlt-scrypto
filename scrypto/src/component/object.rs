@@ -29,32 +29,28 @@ pub trait ObjectStub: Copy {
     fn handle(&self) -> &ObjectStubHandle;
 
     fn call<A: ScryptoEncode, T: ScryptoDecode>(&self, method: &str, args: &A) -> T {
-        let output = ScryptoVmV1Api
-            .call_method(
-                self.handle().as_node_id(),
-                method,
-                scrypto_encode(args).unwrap(),
-            );
+        let output = ScryptoVmV1Api.call_method(
+            self.handle().as_node_id(),
+            method,
+            scrypto_encode(args).unwrap(),
+        );
         scrypto_decode(&output).unwrap()
     }
 
     fn call_ignore_rtn<A: ScryptoEncode>(&self, method: &str, args: &A) {
-        ScryptoVmV1Api
-            .call_method(
-                self.handle().as_node_id(),
-                method,
-                scrypto_encode(args).unwrap(),
-            );
+        ScryptoVmV1Api.call_method(
+            self.handle().as_node_id(),
+            method,
+            scrypto_encode(args).unwrap(),
+        );
     }
 
     fn call_raw<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoVmV1Api
-            .call_method(self.handle().as_node_id(), method, args);
+        let output = ScryptoVmV1Api.call_method(self.handle().as_node_id(), method, args);
         scrypto_decode(&output).unwrap()
     }
 
     fn blueprint(&self) -> BlueprintId {
-        ScryptoVmV1Api
-            .get_blueprint_id(self.handle().as_node_id())
+        ScryptoVmV1Api.get_blueprint_id(self.handle().as_node_id())
     }
 }

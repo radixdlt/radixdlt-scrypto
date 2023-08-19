@@ -2,19 +2,13 @@ use crate::engine::wasm_api::*;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::field_api::FieldHandle;
-use radix_engine_interface::api::key_value_entry_api::{
-    KeyValueEntryHandle,
-};
-use radix_engine_interface::api::key_value_store_api::{
-    ClientKeyValueStoreApi, KeyValueStoreGenericArgs,
-};
+use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
+use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::{
-    ClientActorApi, ClientFieldApi, FieldValue, ObjectHandle,
-};
+use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::api::{ClientActorApi, ClientFieldApi, FieldValue, ObjectHandle};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
-use radix_engine_interface::api::{LockFlags};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::PackageAddress;
@@ -112,12 +106,7 @@ impl ScryptoVmV1Api {
         scrypto_decode(&bytes).unwrap()
     }
 
-    pub fn call_method(
-        &mut self,
-        receiver: &NodeId,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Vec<u8> {
+    pub fn call_method(&mut self, receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
         self.call_method_advanced(receiver, ObjectModuleId::Main, false, method_name, args)
     }
 
@@ -161,10 +150,7 @@ impl ScryptoVmV1Api {
         scrypto_decode(&bytes).unwrap()
     }
 
-    pub fn get_reservation_address(
-        &mut self,
-        node_id: &NodeId,
-    ) -> GlobalAddress {
+    pub fn get_reservation_address(&mut self, node_id: &NodeId) -> GlobalAddress {
         let bytes = copy_buffer(unsafe {
             get_reservation_address(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });
@@ -179,26 +165,16 @@ impl ScryptoVmV1Api {
         Vec::new()
     }
 
-    pub fn key_value_entry_get(
-        &mut self,
-        handle: KeyValueEntryHandle,
-    ) -> Vec<u8> {
+    pub fn key_value_entry_get(&mut self, handle: KeyValueEntryHandle) -> Vec<u8> {
         let entry = copy_buffer(unsafe { kv_entry_get(handle) });
         entry
     }
 
-    pub fn key_value_entry_set(
-        &mut self,
-        handle: KeyValueEntryHandle,
-        buffer: Vec<u8>,
-    ) {
+    pub fn key_value_entry_set(&mut self, handle: KeyValueEntryHandle, buffer: Vec<u8>) {
         unsafe { kv_entry_set(handle, buffer.as_ptr(), buffer.len()) };
     }
 
-    pub fn key_value_entry_remove(
-        &mut self,
-        handle: KeyValueEntryHandle,
-    ) -> Vec<u8> {
+    pub fn key_value_entry_remove(&mut self, handle: KeyValueEntryHandle) -> Vec<u8> {
         let removed = copy_buffer(unsafe { kv_entry_remove(handle) });
         removed
     }
@@ -207,24 +183,18 @@ impl ScryptoVmV1Api {
         unsafe { kv_entry_release(handle) };
     }
 
-}
-
-impl ClientKeyValueStoreApi<ClientApiError> for ScryptoVmV1Api {
-    fn key_value_store_new(
-        &mut self,
-        schema: KeyValueStoreGenericArgs,
-    ) -> Result<NodeId, ClientApiError> {
+    pub fn key_value_store_new(&mut self, schema: KeyValueStoreGenericArgs) -> NodeId {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { kv_store_new(schema.as_ptr(), schema.len()) });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&bytes).unwrap()
     }
 
-    fn key_value_store_open_entry(
+    pub fn key_value_store_open_entry(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,
         flags: LockFlags,
-    ) -> Result<KeyValueEntryHandle, ClientApiError> {
+    ) -> KeyValueEntryHandle {
         let handle = unsafe {
             kv_store_open_entry(
                 node_id.as_ref().as_ptr(),
@@ -235,14 +205,10 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoVmV1Api {
             )
         };
 
-        Ok(handle)
+        handle
     }
 
-    fn key_value_store_remove_entry(
-        &mut self,
-        node_id: &NodeId,
-        key: &Vec<u8>,
-    ) -> Result<Vec<u8>, ClientApiError> {
+    pub fn key_value_store_remove_entry(&mut self, node_id: &NodeId, key: &Vec<u8>) -> Vec<u8> {
         let removed = copy_buffer(unsafe {
             kv_store_remove_entry(
                 node_id.as_ref().as_ptr(),
@@ -251,7 +217,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoVmV1Api {
                 key.len(),
             )
         });
-        Ok(removed)
+        removed
     }
 }
 

@@ -85,8 +85,8 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
 
     fn instantiate(self) -> Owned<Self> {
-        let node_id = ScryptoVmV1Api
-            .new_simple_object(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)]);
+        let node_id =
+            ScryptoVmV1Api.new_simple_object(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)]);
 
         let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
         Owned(stub)
@@ -337,8 +337,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             );
         }
 
-        let address = ScryptoVmV1Api
-            .globalize(modules, self.address_reservation);
+        let address = ScryptoVmV1Api.globalize(modules, self.address_reservation);
 
         Global(C::Stub::new(ObjectStubHandle::Global(address)))
     }

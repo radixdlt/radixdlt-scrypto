@@ -44,12 +44,11 @@ impl ScryptoAuthZone for AuthZoneRef {
     }
 
     fn pop(&self) -> Proof {
-        let rtn = ScryptoVmV1Api
-            .call_method(
-                &self.0,
-                AUTH_ZONE_POP_IDENT,
-                scrypto_encode(&AuthZonePopInput {}).unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_method(
+            &self.0,
+            AUTH_ZONE_POP_IDENT,
+            scrypto_encode(&AuthZonePopInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -58,16 +57,15 @@ impl ScryptoAuthZone for AuthZoneRef {
         amount: A,
         resource_address: ResourceAddress,
     ) -> Proof {
-        let rtn = ScryptoVmV1Api
-            .call_method(
-                &self.0,
-                AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
-                scrypto_encode(&AuthZoneCreateProofOfAmountInput {
-                    resource_address,
-                    amount: amount.into(),
-                })
-                .unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_method(
+            &self.0,
+            AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
+            scrypto_encode(&AuthZoneCreateProofOfAmountInput {
+                resource_address,
+                amount: amount.into(),
+            })
+            .unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -76,55 +74,51 @@ impl ScryptoAuthZone for AuthZoneRef {
         ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> Proof {
-        let rtn = ScryptoVmV1Api
-            .call_method(
-                &self.0,
-                AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
-                scrypto_encode(&AuthZoneCreateProofOfNonFungiblesInput {
-                    resource_address,
-                    ids,
-                }).unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_method(
+            &self.0,
+            AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&AuthZoneCreateProofOfNonFungiblesInput {
+                resource_address,
+                ids,
+            })
+            .unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
     fn create_proof_of_all(&self, resource_address: ResourceAddress) -> Proof {
-        let rtn = ScryptoVmV1Api
-            .call_method(
-                &self.0,
-                AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT,
-                scrypto_encode(&AuthZoneCreateProofOfAllInput { resource_address }).unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_method(
+            &self.0,
+            AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT,
+            scrypto_encode(&AuthZoneCreateProofOfAllInput { resource_address }).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
     fn drop_proofs(&self) {
-        let rtn = ScryptoVmV1Api
-            .call_method(
-                &self.0,
-                AUTH_ZONE_DROP_PROOFS_IDENT,
-                scrypto_encode(&AuthZoneDropProofsInput {}).unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_method(
+            &self.0,
+            AUTH_ZONE_DROP_PROOFS_IDENT,
+            scrypto_encode(&AuthZoneDropProofsInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
     fn drop_signature_proofs(&self) {
-        let rtn = ScryptoVmV1Api
-            .call_method(
-                &self.0,
-                AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT,
-                scrypto_encode(&AuthZoneDropSignatureProofsInput {}).unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_method(
+            &self.0,
+            AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT,
+            scrypto_encode(&AuthZoneDropSignatureProofsInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
     fn drop_regular_proofs(&self) {
-        let rtn = ScryptoVmV1Api
-            .call_method(
-                &self.0,
-                AUTH_ZONE_DROP_REGULAR_PROOFS_IDENT,
-                scrypto_encode(&AuthZoneDropRegularProofsInput {}).unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_method(
+            &self.0,
+            AUTH_ZONE_DROP_REGULAR_PROOFS_IDENT,
+            scrypto_encode(&AuthZoneDropRegularProofsInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 }
