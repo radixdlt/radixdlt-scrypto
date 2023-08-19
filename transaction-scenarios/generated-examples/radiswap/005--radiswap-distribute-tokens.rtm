@@ -40,13 +40,37 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t4k4wdzh2xlzs90ftu057yj8z2rwp944ek64m06pdfw3475k589qdf")
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    Address("resource_sim1t4k4wdzh2xlzs90ftu057yj8z2rwp944ek64m06pdfw3475k589qdf")
+=======
+    Address("resource_sim1tk3dlzqewq42r7y70686ge6zn978yjc2ntutyztcwflf3l7ew8mdan")
+>>>>>>> develop
+=======
+    Address("resource_sim1tkldnepuf587egk7jjnt2nndzp38re3y5e8t3usxyq7kgr9qaqvw97")
+>>>>>>> c9a7b62... Use Global<ConsensusManager> in genesis_helper
+>>>>>>> fix-stubs
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1thp6e2zlyvcxkmzshz4x0sn46xkxvl5hh2va0nyn8yyukm5s35tz77")
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    Address("resource_sim1thp6e2zlyvcxkmzshz4x0sn46xkxvl5hh2va0nyn8yyukm5s35tz77")
+=======
+    Address("resource_sim1tkdl32tulvug287y29ws2jytmtgd63ej3s3m6hsydm3uu3v50r3k38")
+>>>>>>> develop
+=======
+    Address("resource_sim1t4junzrepcpvfjq7mqzf3w9ay5ahxd8env2f933yavmtqv7cm2epag")
+>>>>>>> c9a7b62... Use Global<ConsensusManager> in genesis_helper
+>>>>>>> fix-stubs
     Decimal("333")
 ;
 CALL_METHOD
@@ -82,13 +106,37 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t4k4wdzh2xlzs90ftu057yj8z2rwp944ek64m06pdfw3475k589qdf")
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    Address("resource_sim1t4k4wdzh2xlzs90ftu057yj8z2rwp944ek64m06pdfw3475k589qdf")
+=======
+    Address("resource_sim1tk3dlzqewq42r7y70686ge6zn978yjc2ntutyztcwflf3l7ew8mdan")
+>>>>>>> develop
+=======
+    Address("resource_sim1tkldnepuf587egk7jjnt2nndzp38re3y5e8t3usxyq7kgr9qaqvw97")
+>>>>>>> c9a7b62... Use Global<ConsensusManager> in genesis_helper
+>>>>>>> fix-stubs
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1thp6e2zlyvcxkmzshz4x0sn46xkxvl5hh2va0nyn8yyukm5s35tz77")
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    Address("resource_sim1thp6e2zlyvcxkmzshz4x0sn46xkxvl5hh2va0nyn8yyukm5s35tz77")
+=======
+    Address("resource_sim1tkdl32tulvug287y29ws2jytmtgd63ej3s3m6hsydm3uu3v50r3k38")
+>>>>>>> develop
+=======
+    Address("resource_sim1t4junzrepcpvfjq7mqzf3w9ay5ahxd8env2f933yavmtqv7cm2epag")
+>>>>>>> c9a7b62... Use Global<ConsensusManager> in genesis_helper
+>>>>>>> fix-stubs
     Decimal("333")
 ;
 CALL_METHOD
@@ -124,13 +172,37 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t4k4wdzh2xlzs90ftu057yj8z2rwp944ek64m06pdfw3475k589qdf")
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    Address("resource_sim1t4k4wdzh2xlzs90ftu057yj8z2rwp944ek64m06pdfw3475k589qdf")
+=======
+    Address("resource_sim1tk3dlzqewq42r7y70686ge6zn978yjc2ntutyztcwflf3l7ew8mdan")
+>>>>>>> develop
+=======
+    Address("resource_sim1tkldnepuf587egk7jjnt2nndzp38re3y5e8t3usxyq7kgr9qaqvw97")
+>>>>>>> c9a7b62... Use Global<ConsensusManager> in genesis_helper
+>>>>>>> fix-stubs
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1thp6e2zlyvcxkmzshz4x0sn46xkxvl5hh2va0nyn8yyukm5s35tz77")
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    Address("resource_sim1thp6e2zlyvcxkmzshz4x0sn46xkxvl5hh2va0nyn8yyukm5s35tz77")
+=======
+    Address("resource_sim1tkdl32tulvug287y29ws2jytmtgd63ej3s3m6hsydm3uu3v50r3k38")
+>>>>>>> develop
+=======
+    Address("resource_sim1t4junzrepcpvfjq7mqzf3w9ay5ahxd8env2f933yavmtqv7cm2epag")
+>>>>>>> c9a7b62... Use Global<ConsensusManager> in genesis_helper
+>>>>>>> fix-stubs
     Decimal("333")
 ;
 CALL_METHOD

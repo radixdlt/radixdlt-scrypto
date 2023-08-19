@@ -20,7 +20,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::component::HasStub;
 
-#[derive(Debug, Clone, Copy, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
 pub struct ResourceManager(Global<ResourceManagerStub>);
 
@@ -133,7 +133,7 @@ impl HasStub for ResourceManagerStub {
     type Stub = Self;
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct ResourceManagerStub(pub ObjectStubHandle);
 
 impl ObjectStub for ResourceManagerStub {
