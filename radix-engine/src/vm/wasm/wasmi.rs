@@ -148,6 +148,27 @@ fn call_method(
         .map(|buffer| buffer.0)
 }
 
+fn call_module_method(
+    mut caller: Caller<'_, HostState>,
+    receiver_ptr: u32,
+    receiver_len: u32,
+    direct_access: u32,
+    ident_ptr: u32,
+    ident_len: u32,
+    args_ptr: u32,
+    args_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let receiver = read_memory(caller.as_context_mut(), memory, receiver_ptr, receiver_len)?;
+    let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
+    let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
+
+    runtime
+        .call_module_method(receiver, direct_access, ident, args)
+        .map(|buffer| buffer.0)
+}
+
 fn call_function(
     mut caller: Caller<'_, HostState>,
     package_address_ptr: u32,
@@ -678,6 +699,31 @@ impl WasmiModule {
             },
         );
 
+        let host_call_module_method = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             receiver_ptr: u32,
+             receiver_len: u32,
+             direct_access: u32,
+             ident_ptr: u32,
+             ident_len: u32,
+             args_ptr: u32,
+             args_len: u32|
+             -> Result<u64, Trap> {
+                call_module_method(
+                    caller,
+                    receiver_ptr,
+                    receiver_len,
+                    direct_access,
+                    ident_ptr,
+                    ident_len,
+                    args_ptr,
+                    args_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
         let host_call_function = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -1044,6 +1090,11 @@ impl WasmiModule {
 
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
+        linker_define!(
+            linker,
+            CALL_MODULE_METHOD_FUNCTION_NAME,
+            host_call_module_method
+        );
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
         linker_define!(linker, NEW_OBJECT_FUNCTION_NAME, host_new_component);
 

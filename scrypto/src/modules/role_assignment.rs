@@ -36,17 +36,16 @@ impl RoleAssignment {
         owner_role: R,
         roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>,
     ) -> Self {
-        let rtn = ScryptoVmV1Api
-            .call_function(
-                ROLE_ASSIGNMENT_MODULE_PACKAGE,
-                ROLE_ASSIGNMENT_BLUEPRINT,
-                ROLE_ASSIGNMENT_CREATE_IDENT,
-                scrypto_encode(&RoleAssignmentCreateInput {
-                    owner_role: owner_role.into(),
-                    roles,
-                })
-                .unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_function(
+            ROLE_ASSIGNMENT_MODULE_PACKAGE,
+            ROLE_ASSIGNMENT_BLUEPRINT,
+            ROLE_ASSIGNMENT_CREATE_IDENT,
+            scrypto_encode(&RoleAssignmentCreateInput {
+                owner_role: owner_role.into(),
+                roles,
+            })
+            .unwrap(),
+        );
         let role_assignment: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(role_assignment))
     }

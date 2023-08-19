@@ -120,6 +120,16 @@ extern "C" {
         args_len: usize,
     ) -> Buffer;
 
+    pub fn call_module_method(
+        _receiver_ptr: *const u8,
+        _receive_len: usize,
+        _module_id: u32,
+        _ident_ptr: *const u8,
+        _ident_len: usize,
+        _args_ptr: *const u8,
+        _args_len: usize,
+    ) -> Buffer;
+
     /// Invokes a function on a blueprint.
     pub fn call_function(
         package_address_ptr: *const u8,
@@ -334,6 +344,19 @@ pub unsafe fn call_method(
     _receiver_ptr: *const u8,
     _receive_len: usize,
     _direct_access: u32,
+    _module_id: u32,
+    _ident_ptr: *const u8,
+    _ident_len: usize,
+    _args_ptr: *const u8,
+    _args_len: usize,
+) -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn call_module_method(
+    _receiver_ptr: *const u8,
+    _receive_len: usize,
     _module_id: u32,
     _ident_ptr: *const u8,
     _ident_len: usize,

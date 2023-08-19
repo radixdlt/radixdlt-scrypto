@@ -23,6 +23,7 @@ pub const GET_RESERVATION_ADDRESS_FUNCTION_NAME: &str = "get_reservation_address
 pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
 pub const GLOBALIZE_FUNCTION_NAME: &str = "globalize";
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
+pub const CALL_MODULE_METHOD_FUNCTION_NAME: &str = "call_module_method";
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
 pub const GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "get_blueprint_id";
 pub const GET_OUTER_OBJECT_FUNCTION_NAME: &str = "get_outer_object";

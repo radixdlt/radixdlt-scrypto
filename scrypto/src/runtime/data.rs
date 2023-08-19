@@ -114,24 +114,22 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
     }
 
     pub fn get(&self) -> DataRef<V> {
-        let lock_handle = ScryptoVmV1Api
-            .actor_open_field(
-                OBJECT_HANDLE_SELF,
-                ComponentField::State0 as u8,
-                LockFlags::read_only(),
-            );
+        let lock_handle = ScryptoVmV1Api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            ComponentField::State0 as u8,
+            LockFlags::read_only(),
+        );
         let raw_substate = ScryptoVmV1Api.field_read(lock_handle);
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRef { lock_handle, value }
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
-        let lock_handle = ScryptoVmV1Api
-            .actor_open_field(
-                OBJECT_HANDLE_SELF,
-                ComponentField::State0 as u8,
-                LockFlags::MUTABLE,
-            );
+        let lock_handle = ScryptoVmV1Api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            ComponentField::State0 as u8,
+            LockFlags::MUTABLE,
+        );
         let raw_substate = ScryptoVmV1Api.field_read(lock_handle);
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRefMut {

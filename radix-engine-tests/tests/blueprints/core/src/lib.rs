@@ -24,13 +24,12 @@ mod globalize_test {
         pub fn globalize_in_package(package_address: PackageAddress) {
             let x = GlobalizeTest { own: None }.instantiate();
 
-            ScryptoVmV1Api
-                .call_function(
-                    package_address,
-                    "GlobalizeTest",
-                    "globalize",
-                    scrypto_args!(x),
-                );
+            ScryptoVmV1Api.call_function(
+                package_address,
+                "GlobalizeTest",
+                "globalize",
+                scrypto_args!(x),
+            );
         }
 
         pub fn globalize_bucket() {
@@ -120,8 +119,7 @@ mod drop_test {
         pub fn drop_in_package(package_address: PackageAddress) {
             let x = DropTest {}.instantiate();
 
-            ScryptoVmV1Api
-                .call_function(package_address, "DropTest", "drop", scrypto_args!(x));
+            ScryptoVmV1Api.call_function(package_address, "DropTest", "drop", scrypto_args!(x));
         }
 
         pub fn drop(x: Own) {

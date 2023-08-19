@@ -42,25 +42,23 @@ impl Default for Metadata {
 
 impl Metadata {
     pub fn new() -> Self {
-        let rtn = ScryptoVmV1Api
-            .call_function(
-                METADATA_MODULE_PACKAGE,
-                METADATA_BLUEPRINT,
-                METADATA_CREATE_IDENT,
-                scrypto_encode(&MetadataCreateInput {}).unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_function(
+            METADATA_MODULE_PACKAGE,
+            METADATA_BLUEPRINT,
+            METADATA_CREATE_IDENT,
+            scrypto_encode(&MetadataCreateInput {}).unwrap(),
+        );
         let metadata: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(metadata))
     }
 
     pub fn new_with_data(data: MetadataInit) -> Self {
-        let rtn = ScryptoVmV1Api
-            .call_function(
-                METADATA_MODULE_PACKAGE,
-                METADATA_BLUEPRINT,
-                METADATA_CREATE_WITH_DATA_IDENT,
-                scrypto_encode(&MetadataCreateWithDataInput { data }).unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_function(
+            METADATA_MODULE_PACKAGE,
+            METADATA_BLUEPRINT,
+            METADATA_CREATE_WITH_DATA_IDENT,
+            scrypto_encode(&MetadataCreateWithDataInput { data }).unwrap(),
+        );
         let metadata: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(metadata))
     }

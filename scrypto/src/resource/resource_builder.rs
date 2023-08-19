@@ -473,21 +473,20 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
-                let bytes = ScryptoVmV1Api
-                    .call_function(
-                        RESOURCE_PACKAGE,
-                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                        FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                        scrypto_encode(&FungibleResourceManagerCreateInput {
-                            owner_role,
-                            divisibility,
-                            track_total_supply: true,
-                            metadata,
-                            resource_roles,
-                            address_reservation,
-                        })
-                        .unwrap(),
-                    );
+                let bytes = ScryptoVmV1Api.call_function(
+                    RESOURCE_PACKAGE,
+                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+                    scrypto_encode(&FungibleResourceManagerCreateInput {
+                        owner_role,
+                        divisibility,
+                        track_total_supply: true,
+                        metadata,
+                        resource_roles,
+                        address_reservation,
+                    })
+                    .unwrap(),
+                );
                 scrypto_decode(&bytes).unwrap()
             }
             private::CreateWithNoSupply::NonFungible {
@@ -500,22 +499,21 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
-                let bytes = ScryptoVmV1Api
-                    .call_function(
-                        RESOURCE_PACKAGE,
-                        NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                        scrypto_encode(&NonFungibleResourceManagerCreateInput {
-                            owner_role,
-                            id_type,
-                            track_total_supply: true,
-                            non_fungible_schema,
-                            resource_roles,
-                            metadata,
-                            address_reservation,
-                        })
-                        .unwrap(),
-                    );
+                let bytes = ScryptoVmV1Api.call_function(
+                    RESOURCE_PACKAGE,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+                    scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                        owner_role,
+                        id_type,
+                        track_total_supply: true,
+                        non_fungible_schema,
+                        resource_roles,
+                        metadata,
+                        address_reservation,
+                    })
+                    .unwrap(),
+                );
                 scrypto_decode(&bytes).unwrap()
             }
         }
@@ -565,22 +563,21 @@ impl InProgressResourceBuilder<FungibleResourceType> {
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let bytes = ScryptoVmV1Api
-            .call_function(
-                RESOURCE_PACKAGE,
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                    owner_role: self.owner_role,
-                    track_total_supply: true,
-                    divisibility: self.resource_type.divisibility,
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    initial_supply: amount.into(),
-                    address_reservation: self.address_reservation,
-                })
-                .unwrap(),
-            );
+        let bytes = ScryptoVmV1Api.call_function(
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                owner_role: self.owner_role,
+                track_total_supply: true,
+                divisibility: self.resource_type.divisibility,
+                resource_roles: self.resource_roles,
+                metadata,
+                initial_supply: amount.into(),
+                address_reservation: self.address_reservation,
+            })
+            .unwrap(),
+        );
 
         scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
             .unwrap()
@@ -622,22 +619,22 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let bytes = ScryptoVmV1Api
-            .call_function(
-                RESOURCE_PACKAGE,
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    owner_role: self.owner_role,
-                    track_total_supply: true,
-                    id_type: StringNonFungibleLocalId::id_type(),
-                    non_fungible_schema,
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    entries: map_entries(entries),
-                    address_reservation: self.address_reservation,
-                }).unwrap()
-            );
+        let bytes = ScryptoVmV1Api.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                owner_role: self.owner_role,
+                track_total_supply: true,
+                id_type: StringNonFungibleLocalId::id_type(),
+                non_fungible_schema,
+                resource_roles: self.resource_roles,
+                metadata,
+                entries: map_entries(entries),
+                address_reservation: self.address_reservation,
+            })
+            .unwrap(),
+        );
         scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
             .unwrap()
             .1
@@ -678,22 +675,22 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let bytes = ScryptoVmV1Api
-            .call_function(
-                RESOURCE_PACKAGE,
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    owner_role: self.owner_role,
-                    track_total_supply: true,
-                    id_type: IntegerNonFungibleLocalId::id_type(),
-                    non_fungible_schema,
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    entries: map_entries(entries),
-                    address_reservation: self.address_reservation,
-                }).unwrap()
-            );
+        let bytes = ScryptoVmV1Api.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                owner_role: self.owner_role,
+                track_total_supply: true,
+                id_type: IntegerNonFungibleLocalId::id_type(),
+                non_fungible_schema,
+                resource_roles: self.resource_roles,
+                metadata,
+                entries: map_entries(entries),
+                address_reservation: self.address_reservation,
+            })
+            .unwrap(),
+        );
         scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
             .unwrap()
             .1
@@ -734,23 +731,22 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let bytes = ScryptoVmV1Api
-            .call_function(
-                RESOURCE_PACKAGE,
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    owner_role: self.owner_role,
-                    id_type: BytesNonFungibleLocalId::id_type(),
-                    track_total_supply: true,
-                    non_fungible_schema,
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    entries: map_entries(entries),
-                    address_reservation: self.address_reservation,
-                })
-                .unwrap(),
-            );
+        let bytes = ScryptoVmV1Api.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                owner_role: self.owner_role,
+                id_type: BytesNonFungibleLocalId::id_type(),
+                track_total_supply: true,
+                non_fungible_schema,
+                resource_roles: self.resource_roles,
+                metadata,
+                entries: map_entries(entries),
+                address_reservation: self.address_reservation,
+            })
+            .unwrap(),
+        );
         scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
             .unwrap()
             .1
@@ -794,31 +790,30 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let bytes = ScryptoVmV1Api
-            .call_function(
-                RESOURCE_PACKAGE,
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(
-                    &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
-                        owner_role: self.owner_role,
-                        non_fungible_schema,
-                        track_total_supply: true,
-                        resource_roles: self.resource_roles,
-                        metadata,
-                        entries: entries
-                            .into_iter()
-                            .map(|data| {
-                                let value: ScryptoValue =
-                                    scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
-                                (value,)
-                            })
-                            .collect(),
-                        address_reservation: self.address_reservation,
-                    },
-                )
-                .unwrap(),
-            );
+        let bytes = ScryptoVmV1Api.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(
+                &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
+                    owner_role: self.owner_role,
+                    non_fungible_schema,
+                    track_total_supply: true,
+                    resource_roles: self.resource_roles,
+                    metadata,
+                    entries: entries
+                        .into_iter()
+                        .map(|data| {
+                            let value: ScryptoValue =
+                                scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
+                            (value,)
+                        })
+                        .collect(),
+                    address_reservation: self.address_reservation,
+                },
+            )
+            .unwrap(),
+        );
         scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
             .unwrap()
             .1

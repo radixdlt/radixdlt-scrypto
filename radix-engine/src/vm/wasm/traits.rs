@@ -21,6 +21,14 @@ pub trait WasmRuntime {
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
+    fn call_module_method(
+        &mut self,
+        receiver: Vec<u8>,
+        module_id: u32,
+        ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn call_method(
         &mut self,
         receiver: Vec<u8>,

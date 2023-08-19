@@ -1,4 +1,4 @@
-use radix_engine_interface::{types::Level};
+use radix_engine_interface::types::Level;
 use sbor::rust::string::String;
 
 use crate::engine::scrypto_env::ScryptoVmV1Api;

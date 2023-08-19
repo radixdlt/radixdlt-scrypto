@@ -4,8 +4,8 @@ use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::FieldValue;
 use radix_engine_interface::api::LockFlags;
-use radix_engine_interface::api::{FieldValue};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::PackageAddress;
@@ -17,6 +17,7 @@ use sbor::rust::prelude::*;
 pub struct ScryptoVmV1Api;
 
 impl ScryptoVmV1Api {
+    // Costing
     pub fn execution_cost_unit_limit(&mut self) -> u32 {
         unsafe { execution_cost_unit_limit() }
     }
@@ -97,33 +98,6 @@ impl ScryptoVmV1Api {
         scrypto_decode(&bytes).unwrap()
     }
 
-    pub fn call_method(&mut self, receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
-        self.call_method_advanced(receiver, ObjectModuleId::Main, false, method_name, args)
-    }
-
-    pub fn call_method_advanced(
-        &mut self,
-        receiver: &NodeId,
-        module_id: ObjectModuleId,
-        direct_access: bool,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Vec<u8> {
-        let return_data = copy_buffer(unsafe {
-            call_method(
-                receiver.as_ref().as_ptr(),
-                receiver.as_ref().len(),
-                if direct_access { 1 } else { 0 },
-                module_id as u8 as u32,
-                method_name.as_ptr(),
-                method_name.len(),
-                args.as_ptr(),
-                args.len(),
-            )
-        });
-
-        return_data
-    }
 
     pub fn get_blueprint_id(&mut self, node_id: &NodeId) -> BlueprintId {
         let bytes = copy_buffer(unsafe {
@@ -211,6 +185,56 @@ impl ScryptoVmV1Api {
         removed
     }
 
+    pub fn call_method(&mut self, receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
+        self.call_method_advanced(receiver, ObjectModuleId::Main, false, method_name, args)
+    }
+
+    pub fn call_module_method(
+        &mut self,
+        receiver: &NodeId,
+        module_id: ObjectModuleId,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Vec<u8> {
+        let return_data = copy_buffer(unsafe {
+            call_module_method(
+                receiver.as_ref().as_ptr(),
+                receiver.as_ref().len(),
+                module_id as u8 as u32,
+                method_name.as_ptr(),
+                method_name.len(),
+                args.as_ptr(),
+                args.len(),
+            )
+        });
+
+        return_data
+    }
+
+    pub fn call_method_advanced(
+        &mut self,
+        receiver: &NodeId,
+        module_id: ObjectModuleId,
+        direct_access: bool,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Vec<u8> {
+        let return_data = copy_buffer(unsafe {
+            call_method(
+                receiver.as_ref().as_ptr(),
+                receiver.as_ref().len(),
+                if direct_access { 1 } else { 0 },
+                module_id as u8 as u32,
+                method_name.as_ptr(),
+                method_name.len(),
+                args.as_ptr(),
+                args.len(),
+            )
+        });
+
+        return_data
+    }
+
     pub fn call_function(
         &mut self,
         package_address: PackageAddress,
@@ -241,11 +265,7 @@ impl ScryptoVmV1Api {
         substate
     }
 
-    pub fn field_write(
-        &mut self,
-        lock_handle: SubstateHandle,
-        buffer: Vec<u8>,
-    ) {
+    pub fn field_write(&mut self, lock_handle: SubstateHandle, buffer: Vec<u8>) {
         unsafe { field_lock_write(lock_handle, buffer.as_ptr(), buffer.len()) };
     }
 
@@ -306,11 +326,7 @@ impl ScryptoVmV1Api {
         scrypto_decode(&auth_zone).unwrap()
     }
 
-    pub fn emit_event(
-        &mut self,
-        event_name: String,
-        event_data: Vec<u8>,
-    ) {
+    pub fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) {
         unsafe {
             emit_event(
                 event_name.as_ptr(),

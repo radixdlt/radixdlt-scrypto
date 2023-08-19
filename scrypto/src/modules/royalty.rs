@@ -51,13 +51,12 @@ impl Default for Royalty {
 
 impl Royalty {
     pub fn new(royalty_config: ComponentRoyaltyConfig) -> Self {
-        let rtn = ScryptoVmV1Api
-            .call_function(
-                ROYALTY_MODULE_PACKAGE,
-                COMPONENT_ROYALTY_BLUEPRINT,
-                COMPONENT_ROYALTY_CREATE_IDENT,
-                scrypto_encode(&ComponentRoyaltyCreateInput { royalty_config }).unwrap(),
-            );
+        let rtn = ScryptoVmV1Api.call_function(
+            ROYALTY_MODULE_PACKAGE,
+            COMPONENT_ROYALTY_BLUEPRINT,
+            COMPONENT_ROYALTY_CREATE_IDENT,
+            scrypto_encode(&ComponentRoyaltyCreateInput { royalty_config }).unwrap(),
+        );
 
         let royalty: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(royalty))

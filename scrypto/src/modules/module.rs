@@ -71,18 +71,16 @@ pub trait Attachable: Sized {
                 output
             }
             ModuleHandle::Attached(address, module_id) => {
-                let output = ScryptoVmV1Api.call_method_advanced(
+                let output = ScryptoVmV1Api.call_module_method(
                     address.as_node_id(),
                     module_id.clone(),
-                    false,
                     method,
                     args,
                 );
                 output
             }
             ModuleHandle::SELF(module_id) => {
-                let output = ScryptoVmV1Api
-                    .actor_call_module(*module_id, method, args);
+                let output = ScryptoVmV1Api.actor_call_module(*module_id, method, args);
                 output
             }
         }
@@ -95,17 +93,15 @@ pub trait Attachable: Sized {
                 ScryptoVmV1Api.call_method(own.as_node_id(), method, args);
             }
             ModuleHandle::Attached(address, module_id) => {
-                ScryptoVmV1Api.call_method_advanced(
+                ScryptoVmV1Api.call_module_method(
                     address.as_node_id(),
                     module_id.clone(),
-                    false,
                     method,
                     args,
                 );
             }
             ModuleHandle::SELF(module_id) => {
-                ScryptoVmV1Api
-                    .actor_call_module(*module_id, method, args);
+                ScryptoVmV1Api.actor_call_module(*module_id, method, args);
             }
         }
     }
