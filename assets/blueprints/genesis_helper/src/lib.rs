@@ -1,6 +1,5 @@
 use native_sdk::account::*;
 use native_sdk::consensus_manager::*;
-use native_sdk::resource::ResourceManager;
 use scrypto::api::node_modules::metadata::*;
 use scrypto::api::object_api::ObjectModuleId;
 use scrypto::api::ClientObjectApi;
@@ -67,6 +66,8 @@ mod genesis_helper {
         }
     }
 
+    const XRD_MGR: ResourceManager = resource_manager!(XRD);
+
     struct GenesisHelper {
         consensus_manager: ComponentAddress,
         validators: KeyValueStore<Secp256k1PublicKey, ComponentAddress>,
@@ -117,9 +118,7 @@ mod genesis_helper {
         }
 
         fn create_validator(&mut self, validator: GenesisValidator) {
-            let xrd_payment = ResourceManager(XRD)
-                .new_empty_bucket(&mut ScryptoEnv)
-                .unwrap();
+            let xrd_payment = XRD_MGR.create_empty_bucket();
             let (validator_address, owner_token_bucket, change) =
                 ConsensusManager(self.consensus_manager)
                     .create_validator(
@@ -176,9 +175,7 @@ mod genesis_helper {
                 }
                 sum
             };
-            let mut xrd_bucket = ResourceManager(XRD)
-                .mint_fungible(xrd_needed, &mut ScryptoEnv)
-                .expect("XRD mint for genesis stake allocation failed");
+            let mut xrd_bucket = XRD_MGR.mint(xrd_needed);
 
             for (validator_key, stake_allocations) in allocations.into_iter() {
                 let validator_address = self.validators.get(&validator_key).unwrap();
@@ -291,9 +288,8 @@ mod genesis_helper {
                     }
                     sum
                 };
-                let mut resource_bucket = ResourceManager(resource_address)
-                    .mint_fungible(amount_needed, &mut ScryptoEnv)
-                    .expect("Resource mint for genesis allocation failed");
+                let resource_manager: ResourceManager = resource_address.into();
+                let mut resource_bucket = resource_manager.mint(amount_needed);
 
                 for GenesisResourceAllocation {
                     account_index,
@@ -318,9 +314,7 @@ mod genesis_helper {
                 }
                 sum
             };
-            let mut xrd_bucket = ResourceManager(XRD)
-                .mint_fungible(xrd_needed, &mut ScryptoEnv)
-                .expect("XRD mint for genesis allocation failed");
+            let mut xrd_bucket = XRD_MGR.mint(xrd_needed);
 
             for (account_address, amount) in allocations.into_iter() {
                 let bucket = xrd_bucket.take(amount);

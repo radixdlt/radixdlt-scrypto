@@ -135,18 +135,29 @@ pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Resu
                 };
             } else if macro_ident.eq(&Ident::new("resource_manager", Span::call_site())) {
                 let address: Expr = m.mac.clone().parse_body()?;
-                let lit_str: LitStr = parse_quote!( #address );
+                match address {
+                    Expr::Lit(..) => {
+                        let lit_str: LitStr = parse_quote!( #address );
+                        let (_hrp, _entity_type, address) =
+                            AddressBech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
+                                .unwrap();
+                        dependency_exprs.push(parse_quote! {
+                            GlobalAddress :: new_or_panic([ #(#address),* ])
+                        });
 
-                let (_hrp, _entity_type, address) =
-                    AddressBech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                        .unwrap();
+                        *expr = parse_quote! {
+                            ResourceManager::from_address(ResourceAddress :: new_or_panic([ #(#address),* ]))
+                        };
+                    }
+                    _ => {
+                        dependency_exprs.push(parse_quote! {
+                            #address
+                        });
 
-                dependency_exprs.push(parse_quote! {
-                    GlobalAddress :: new_or_panic([ #(#address),* ])
-                });
-
-                *expr = parse_quote! {
-                    ResourceManager::from_address(ResourceAddress :: new_or_panic([ #(#address),* ]))
+                        *expr = parse_quote! {
+                            ResourceManager::from_address(#address)
+                        };
+                    }
                 };
             } else if macro_ident.eq(&Ident::new("package", Span::call_site())) {
                 let address: Expr = m.mac.clone().parse_body()?;
