@@ -1,5 +1,5 @@
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientActorApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::OBJECT_HANDLE_SELF;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };
@@ -114,29 +114,25 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
     }
 
     pub fn get(&self) -> DataRef<V> {
-        let mut env = ScryptoVmV1Api;
-        let lock_handle = env
+        let lock_handle = ScryptoVmV1Api
             .actor_open_field(
                 OBJECT_HANDLE_SELF,
                 ComponentField::State0 as u8,
                 LockFlags::read_only(),
-            )
-            .unwrap();
-        let raw_substate = env.field_read(lock_handle);
+            );
+        let raw_substate = ScryptoVmV1Api.field_read(lock_handle);
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRef { lock_handle, value }
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
-        let mut env = ScryptoVmV1Api;
-        let lock_handle = env
+        let lock_handle = ScryptoVmV1Api
             .actor_open_field(
                 OBJECT_HANDLE_SELF,
                 ComponentField::State0 as u8,
                 LockFlags::MUTABLE,
-            )
-            .unwrap();
-        let raw_substate = env.field_read(lock_handle);
+            );
+        let raw_substate = ScryptoVmV1Api.field_read(lock_handle);
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRefMut {
             lock_handle,

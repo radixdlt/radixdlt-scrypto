@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 ALLOCATE_GLOBAL_ADDRESS
-    Address("package_sim1p4ul467xcs490gnv7z3tp6lxuc724s947wdh8jya6x3237zlvdmc07")
+    Address("package_sim1p5t0r63qgfk5xy7ndcun9wu6w8vcyz8khn9d0g787rmw0zghmx7m4k")
     "MetadataTest"
     AddressReservation("metadata_component_address_reservation")
     NamedAddress("metadata_component_address")
@@ -14,7 +14,7 @@ CALL_METHOD
     "free"
 ;
 CALL_FUNCTION
-    Address("package_sim1p4ul467xcs490gnv7z3tp6lxuc724s947wdh8jya6x3237zlvdmc07")
+    Address("package_sim1p5t0r63qgfk5xy7ndcun9wu6w8vcyz8khn9d0g787rmw0zghmx7m4k")
     "MetadataTest"
     "new_with_address"
     AddressReservation("metadata_component_address_reservation")

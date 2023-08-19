@@ -39,24 +39,23 @@ impl Runtime {
     }
 
     pub fn global_component() -> Global<AnyComponent> {
-        let address: GlobalAddress = ScryptoVmV1Api.actor_get_global_address().unwrap();
+        let address: GlobalAddress = ScryptoVmV1Api.actor_get_global_address();
         Global(AnyComponent(ObjectStubHandle::Global(address)))
     }
 
     pub fn global_address() -> ComponentAddress {
-        let address: GlobalAddress = ScryptoVmV1Api.actor_get_global_address().unwrap();
+        let address: GlobalAddress = ScryptoVmV1Api.actor_get_global_address();
         ComponentAddress::new_or_panic(address.into())
     }
 
     pub fn node_id() -> NodeId {
-        ScryptoVmV1Api.actor_get_node_id().unwrap()
+        ScryptoVmV1Api.actor_get_node_id()
     }
 
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
         ScryptoVmV1Api
             .actor_get_blueprint_id()
-            .unwrap()
             .package_address
     }
 

@@ -26,12 +26,10 @@ mod scrypto_env_test {
 
         pub fn open_mut_substate_twice(&mut self) {
             ScryptoVmV1Api
-                .actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::MUTABLE)
-                .unwrap();
+                .actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::MUTABLE);
 
             ScryptoVmV1Api
-                .actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::MUTABLE)
-                .unwrap();
+                .actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::MUTABLE);
         }
     }
 }
