@@ -41,11 +41,9 @@ pub mod blueprint {
 
     extern "C" {
         /// Invokes a blueprint function
-        pub fn blueprint_call_function(
-            package_address_ptr: *const u8,
-            package_address_len: usize,
-            blueprint_ident_ptr: *const u8,
-            blueprint_ident_len: usize,
+        pub fn blueprint_call(
+            blueprint_id_ptr: *const u8,
+            blueprint_id_len: usize,
             function_ident_ptr: *const u8,
             function_ident_len: usize,
             args_ptr: *const u8,
@@ -131,6 +129,7 @@ pub mod object {
     }
 }
 
+/// API to manipulate or get information about the current actor
 pub mod actor {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
@@ -194,6 +193,7 @@ pub mod kv_store {
     }
 }
 
+/// API to manipulate or get information about an open Key Value Entry
 pub mod kv_entry {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
@@ -217,6 +217,7 @@ pub mod kv_entry {
 }
 
 
+/// API to manipulate or get information about an open Field Entry
 pub mod field_entry {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
@@ -252,10 +253,12 @@ pub mod costing {
     }
 }
 
+/// Various environment-based API calls
 pub mod system {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
+        /// Logs a string message
         pub fn sys_log(
             level_ptr: *const u8,
             level_len: usize,
@@ -263,10 +266,13 @@ pub mod system {
             message_len: usize,
         );
 
+        /// Panics and halts transaction execution
         pub fn panic(message_ptr: *const u8, message_len: usize);
 
+        /// Retrieves the current transaction hash
         pub fn get_transaction_hash() -> Buffer;
 
+        /// Generates a unique id
         pub fn generate_ruid() -> Buffer;
     }
 }

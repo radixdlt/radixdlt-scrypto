@@ -189,10 +189,8 @@ fn call_module_method(
 
 fn call_function(
     mut caller: Caller<'_, HostState>,
-    package_address_ptr: u32,
-    package_address_len: u32,
-    blueprint_ident_ptr: u32,
-    blueprint_ident_len: u32,
+    blueprint_id_ptr: u32,
+    blueprint_id_len: u32,
     ident_ptr: u32,
     ident_len: u32,
     args_ptr: u32,
@@ -200,23 +198,17 @@ fn call_function(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let package_address = read_memory(
+    let blueprint_id = read_memory(
         caller.as_context_mut(),
         memory,
-        package_address_ptr,
-        package_address_len,
-    )?;
-    let blueprint_ident = read_memory(
-        caller.as_context_mut(),
-        memory,
-        blueprint_ident_ptr,
-        blueprint_ident_len,
+        blueprint_id_ptr,
+        blueprint_id_len,
     )?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .call_function(package_address, blueprint_ident, ident, args)
+        .call_function(blueprint_id, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -749,13 +741,11 @@ impl WasmiModule {
             },
         );
 
-        let host_call_function = Func::wrap(
+        let host_blueprint_call = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             package_address_ptr: u32,
-             package_address_len: u32,
-             blueprint_ident_ptr: u32,
-             blueprint_ident_len: u32,
+             blueprint_id_ptr: u32,
+             blueprint_id_len: u32,
              ident_ptr: u32,
              ident_len: u32,
              args_ptr: u32,
@@ -763,10 +753,8 @@ impl WasmiModule {
              -> Result<u64, Trap> {
                 call_function(
                     caller,
-                    package_address_ptr,
-                    package_address_len,
-                    blueprint_ident_ptr,
-                    blueprint_ident_len,
+                    blueprint_id_ptr,
+                    blueprint_id_len,
                     ident_ptr,
                     ident_len,
                     args_ptr,
@@ -1115,7 +1103,7 @@ impl WasmiModule {
             OBJECT_CALL_DIRECT_METHOD_FUNCTION_NAME,
             host_call_direct_method
         );
-        linker_define!(linker, BLUEPRINT_CALL_FUNCTION_FUNCTION_NAME, host_call_function);
+        linker_define!(linker, BLUEPRINT_CALL_FUNCTION_NAME, host_blueprint_call);
         linker_define!(linker, OBJECT_NEW_FUNCTION_NAME, host_new_component);
 
         linker_define!(

@@ -79,8 +79,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
 
     fn call_function(
         &mut self,
-        package_address: Vec<u8>,
-        blueprint_ident: Vec<u8>,
+        blueprint_id: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {

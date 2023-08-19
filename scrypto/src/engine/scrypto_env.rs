@@ -234,14 +234,13 @@ impl ScryptoVmV1Api {
         function_name: &str,
         args: Vec<u8>,
     ) -> Vec<u8> {
-        let package_address = scrypto_encode(&package_address).unwrap();
+        let blueprint_id = BlueprintId::new(&package_address, blueprint_name);
+        let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
 
         copy_buffer(unsafe {
-            blueprint::blueprint_call_function(
-                package_address.as_ptr(),
-                package_address.len(),
-                blueprint_name.as_ptr(),
-                blueprint_name.len(),
+            blueprint::blueprint_call(
+                blueprint_id.as_ptr(),
+                blueprint_id.len(),
                 function_name.as_ptr(),
                 function_name.len(),
                 args.as_ptr(),

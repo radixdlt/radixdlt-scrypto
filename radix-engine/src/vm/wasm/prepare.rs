@@ -162,14 +162,12 @@ impl WasmModule {
                             ));
                         }
                     }
-                    BLUEPRINT_CALL_FUNCTION_FUNCTION_NAME => {
+                    BLUEPRINT_CALL_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
                                 type_index,
                                 vec![
-                                    ValType::I32,
-                                    ValType::I32,
                                     ValType::I32,
                                     ValType::I32,
                                     ValType::I32,

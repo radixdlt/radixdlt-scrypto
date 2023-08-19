@@ -1,38 +1,24 @@
 //=================
-// WASM Shim
-//=================
-pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
-
-//=================
-// Costing
-//=================
-pub const CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME: &str = "gas";
-pub const EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME: &str = "execution_cost_unit_limit";
-pub const EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME: &str = "execution_cost_unit_price";
-pub const FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME: &str = "finalization_cost_unit_limit";
-pub const FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME: &str = "finalization_cost_unit_price";
-pub const USD_PRICE_FUNCTION_NAME: &str = "usd_price";
-pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
-pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
-
-//=================
 // Blueprint
 //=================
-pub const BLUEPRINT_CALL_FUNCTION_FUNCTION_NAME: &str = "blueprint_call_function";
+pub const BLUEPRINT_CALL_FUNCTION_NAME: &str = "blueprint_call";
+
+//=================
+// Address
+//=================
+pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "allocate_global_address";
+pub const GET_RESERVATION_ADDRESS_FUNCTION_NAME: &str = "get_reservation_address";
 
 //=================
 // Object
 //=================
 pub const OBJECT_NEW_FUNCTION_NAME: &str = "object_new";
-pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "allocate_global_address";
-pub const GET_RESERVATION_ADDRESS_FUNCTION_NAME: &str = "get_reservation_address";
 pub const GLOBALIZE_FUNCTION_NAME: &str = "globalize";
 pub const GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "get_blueprint_id";
 pub const GET_OUTER_OBJECT_FUNCTION_NAME: &str = "get_outer_object";
 pub const OBJECT_CALL_METHOD_FUNCTION_NAME: &str = "object_call_method";
 pub const OBJECT_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "object_call_module_method";
 pub const OBJECT_CALL_DIRECT_METHOD_FUNCTION_NAME: &str = "object_call_direct_method";
-
 
 //=================
 // Actor
@@ -68,12 +54,29 @@ pub const FIELD_ENTRY_WRITE_FUNCTION_NAME: &str = "field_entry_write";
 pub const FIELD_ENTRY_CLOSE_FUNCTION_NAME: &str = "field_entry_close";
 
 //=================
+// Costing
+//=================
+pub const CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME: &str = "gas";
+pub const EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME: &str = "execution_cost_unit_limit";
+pub const EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME: &str = "execution_cost_unit_price";
+pub const FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME: &str = "finalization_cost_unit_limit";
+pub const FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME: &str = "finalization_cost_unit_price";
+pub const USD_PRICE_FUNCTION_NAME: &str = "usd_price";
+pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
+pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
+
+//=================
 // System
 //=================
 pub const SYS_LOG_FUNCTION_NAME: &str = "sys_log";
 pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
 pub const GENERATE_RUID_FUNCTION_NAME: &str = "generate_ruid";
 pub const PANIC_FUNCTION_NAME: &str = "panic";
+
+//=================
+// WASM Shim
+//=================
+pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";

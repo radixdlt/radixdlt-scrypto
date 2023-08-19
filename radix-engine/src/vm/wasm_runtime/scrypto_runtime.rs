@@ -153,21 +153,18 @@ where
 
     fn call_function(
         &mut self,
-        package_address: Vec<u8>,
-        blueprint_ident: Vec<u8>,
+        blueprint_id: Vec<u8>,
         function_ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let package_address = scrypto_decode::<PackageAddress>(&package_address)
-            .map_err(WasmRuntimeError::InvalidPackageAddress)?;
-        let blueprint_ident =
-            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
+        let blueprint_id = scrypto_decode::<BlueprintId>(&blueprint_id)
+            .map_err(WasmRuntimeError::InvalidBlueprintId)?;
         let function_ident =
             String::from_utf8(function_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
         let return_data =
             self.api
-                .call_function(package_address, &blueprint_ident, &function_ident, args)?;
+                .call_function(blueprint_id.package_address, blueprint_id.blueprint_name.as_str(), &function_ident, args)?;
 
         self.allocate_buffer(return_data)
     }

@@ -45,7 +45,6 @@ pub trait WasmRuntime {
 
     fn call_function(
         &mut self,
-        package_address: Vec<u8>,
         blueprint_ident: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,

@@ -108,9 +108,6 @@ pub enum WasmRuntimeError {
     /// Buffer not found
     BufferNotFound(BufferId),
 
-    /// Invalid package address
-    InvalidPackageAddress(DecodeError),
-
     InvalidBlueprintId(DecodeError),
 
     /// Invalid method ident
