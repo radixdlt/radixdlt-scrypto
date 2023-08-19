@@ -13,7 +13,7 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use runtime::LocalAuthZone;
 use sbor::rust::prelude::*;
-use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 // Different from the native SDK, in Scrypto we use `CheckedProof`, `CheckedFungibleProof`
 // and `CheckedNonFungibleProof` (instead of `Proof`/`FungibleProof`/`NonFungibleProof`)
@@ -167,7 +167,7 @@ impl ScryptoUncheckedProof for Proof {
     }
 
     fn resource_address(&self) -> ResourceAddress {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
@@ -183,7 +183,7 @@ impl ScryptoUncheckedProof for Proof {
     }
 
     fn drop(self) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let blueprint_id = env.get_blueprint_id(self.0.as_node_id()).unwrap();
         env.call_function(
             RESOURCE_PACKAGE,
@@ -198,7 +198,7 @@ impl ScryptoUncheckedProof for Proof {
     }
 
     fn clone(&self) -> Self {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
@@ -307,7 +307,7 @@ impl ScryptoProof for CheckedProof {
     }
 
     fn amount(&self) -> Decimal {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
@@ -491,7 +491,7 @@ impl ScryptoNonFungibleProof for CheckedNonFungibleProof {
     }
 
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0 .0 .0.as_node_id(),

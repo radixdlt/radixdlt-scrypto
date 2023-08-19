@@ -124,17 +124,17 @@ mod vec_of_u8_underflow {
             // Insert into store
             let key_payload = scrypto_encode(&1u32).unwrap();
             let value_payload = vec;
-            let handle = ScryptoEnv
+            let handle = ScryptoVmV1Api
                 .key_value_store_open_entry(
                     kv_store.id.as_node_id(),
                     &key_payload,
                     LockFlags::MUTABLE,
                 )
                 .unwrap();
-            ScryptoEnv
+            ScryptoVmV1Api
                 .key_value_entry_set(handle, value_payload)
                 .unwrap();
-            ScryptoEnv.key_value_entry_close(handle).unwrap();
+            ScryptoVmV1Api.key_value_entry_close(handle).unwrap();
 
             // Put the kv store into a component
             VecOfU8Underflow { kv_store }

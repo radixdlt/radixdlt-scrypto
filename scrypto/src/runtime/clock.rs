@@ -7,7 +7,7 @@ use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::time::*;
 use sbor::rust::fmt::Debug;
-use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 /// The system clock
 #[derive(Debug)]
@@ -21,7 +21,7 @@ impl Clock {
 
     /// Returns the current timestamp (in seconds), rounded down to the specified precision
     pub fn current_time(precision: TimePrecision) -> Instant {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 CONSENSUS_MANAGER.as_node_id(),
@@ -64,7 +64,7 @@ impl Clock {
         precision: TimePrecision,
         operator: TimeComparisonOperator,
     ) -> bool {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 CONSENSUS_MANAGER.as_node_id(),

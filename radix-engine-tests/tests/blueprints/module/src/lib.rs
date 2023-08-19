@@ -13,7 +13,7 @@ mod component_module {
         pub fn globalize_with_mixed_up_modules() -> ComponentAddress {
             let component = ComponentModule {}.instantiate();
 
-            let rtn = ScryptoEnv
+            let rtn = ScryptoVmV1Api
                 .call_function(
                     METADATA_MODULE_PACKAGE,
                     METADATA_BLUEPRINT,
@@ -23,7 +23,7 @@ mod component_module {
                 .unwrap();
             let metadata: Own = scrypto_decode(&rtn).unwrap();
 
-            let rtn = ScryptoEnv
+            let rtn = ScryptoVmV1Api
                 .call_function(
                     ROYALTY_MODULE_PACKAGE,
                     COMPONENT_ROYALTY_BLUEPRINT,
@@ -36,7 +36,7 @@ mod component_module {
                 .unwrap();
             let royalty: Own = scrypto_decode(&rtn).unwrap();
 
-            let rtn = ScryptoEnv
+            let rtn = ScryptoVmV1Api
                 .call_function(
                     ROLE_ASSIGNMENT_MODULE_PACKAGE,
                     ROLE_ASSIGNMENT_BLUEPRINT,
@@ -50,7 +50,7 @@ mod component_module {
                 .unwrap();
             let role_assignment: Own = scrypto_decode(&rtn).unwrap();
 
-            let address = ScryptoEnv
+            let address = ScryptoVmV1Api
                 .globalize(
                     btreemap!(
                         ObjectModuleId::Main => *component.0.handle().as_node_id(),

@@ -9,6 +9,7 @@ members = [
     "cast",
     "component",
     "core",
+    "costing",
     "clock",
     "data_validation",
     "deep_sbor",

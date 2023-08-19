@@ -94,7 +94,7 @@ mod transaction_limits_substate {
 
             // Insert into store
             let key_payload = scrypto_encode(&1u32).unwrap();
-            let handle = ScryptoEnv
+            let handle = ScryptoVmV1Api
                 .key_value_store_open_entry(
                     kv_store.id.as_node_id(),
                     &key_payload,
@@ -102,7 +102,7 @@ mod transaction_limits_substate {
                 )
                 .unwrap();
             unsafe { kv_entry_set(handle, buf.as_ptr(), buf.len()) };
-            ScryptoEnv.key_value_entry_close(handle).unwrap();
+            ScryptoVmV1Api.key_value_entry_close(handle).unwrap();
 
             // Put the kv store into a component
             TransactionLimitSubstateTest { kv_store }
@@ -134,7 +134,7 @@ mod invoke_limits {
             let new_len = buf.len() + raw_array_size;
             unsafe { buf.set_len(new_len) };
 
-            ScryptoEnv
+            ScryptoVmV1Api
                 .call_function(
                     Runtime::package_address(),
                     "InvokeLimitsTest",

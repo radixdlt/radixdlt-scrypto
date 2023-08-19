@@ -6,7 +6,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
-use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 pub trait ScryptoAuthZone {
     fn push<P: Into<Proof>>(&self, proof: P);
@@ -37,7 +37,7 @@ pub trait ScryptoAuthZone {
 impl ScryptoAuthZone for AuthZoneRef {
     fn push<P: Into<Proof>>(&self, proof: P) {
         let proof: Proof = proof.into();
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         env.call_method(
             &self.0,
             AUTH_ZONE_PUSH_IDENT,
@@ -47,7 +47,7 @@ impl ScryptoAuthZone for AuthZoneRef {
     }
 
     fn pop(&self) -> Proof {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 &self.0,
@@ -63,7 +63,7 @@ impl ScryptoAuthZone for AuthZoneRef {
         amount: A,
         resource_address: ResourceAddress,
     ) -> Proof {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 &self.0,
@@ -83,7 +83,7 @@ impl ScryptoAuthZone for AuthZoneRef {
         ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> Proof {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 &self.0,
@@ -99,7 +99,7 @@ impl ScryptoAuthZone for AuthZoneRef {
     }
 
     fn create_proof_of_all(&self, resource_address: ResourceAddress) -> Proof {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 &self.0,
@@ -111,7 +111,7 @@ impl ScryptoAuthZone for AuthZoneRef {
     }
 
     fn drop_proofs(&self) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 &self.0,
@@ -123,7 +123,7 @@ impl ScryptoAuthZone for AuthZoneRef {
     }
 
     fn drop_signature_proofs(&self) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 &self.0,
@@ -135,7 +135,7 @@ impl ScryptoAuthZone for AuthZoneRef {
     }
 
     fn drop_regular_proofs(&self) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 &self.0,

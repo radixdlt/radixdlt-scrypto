@@ -10,7 +10,7 @@ mod mini_proof {
     impl MiniProof {
         pub fn amount(&self) -> u32 {
             scrypto_decode(
-                &ScryptoEnv
+                &ScryptoVmV1Api
                     .call_method(self.bucket.as_node_id(), "amount", scrypto_args!())
                     .unwrap(),
             )
@@ -18,7 +18,7 @@ mod mini_proof {
         }
 
         pub fn drop(proof: Owned<MiniProof>) {
-            ScryptoEnv
+            ScryptoVmV1Api
                 .drop_object(proof.0.handle().as_node_id())
                 .unwrap();
         }
@@ -51,7 +51,7 @@ mod mini_bucket {
         }
 
         pub fn drop(bucket: Owned<MiniBucket>) {
-            ScryptoEnv
+            ScryptoVmV1Api
                 .drop_object(bucket.0.handle().as_node_id())
                 .unwrap();
         }

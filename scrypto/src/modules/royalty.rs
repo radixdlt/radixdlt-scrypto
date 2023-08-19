@@ -1,4 +1,4 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
@@ -52,7 +52,7 @@ impl Default for Royalty {
 
 impl Royalty {
     pub fn new(royalty_config: ComponentRoyaltyConfig) -> Self {
-        let rtn = ScryptoEnv
+        let rtn = ScryptoVmV1Api
             .call_function(
                 ROYALTY_MODULE_PACKAGE,
                 COMPONENT_ROYALTY_BLUEPRINT,

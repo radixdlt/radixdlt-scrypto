@@ -482,7 +482,7 @@ mod non_fungible_test {
             );
 
             // creating non-fungible id with id type set to default (RUID)
-            let rtn = ScryptoEnv
+            let rtn = ScryptoVmV1Api
                 .call_function(
                     RESOURCE_PACKAGE,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

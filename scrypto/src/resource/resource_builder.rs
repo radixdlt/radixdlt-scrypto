@@ -1,4 +1,4 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::radix_engine_interface::api::ClientBlueprintApi;
 use crate::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
@@ -474,7 +474,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
-                ScryptoEnv
+                ScryptoVmV1Api
                     .call_function(
                         RESOURCE_PACKAGE,
                         FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -502,7 +502,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
-                ScryptoEnv
+                ScryptoVmV1Api
                     .call_function(
                         RESOURCE_PACKAGE,
                         NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -568,7 +568,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoEnv
+        ScryptoVmV1Api
             .call_function(
                 RESOURCE_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -627,7 +627,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoEnv
+        ScryptoVmV1Api
             .call_function(
                 RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -687,7 +687,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoEnv
+        ScryptoVmV1Api
             .call_function(
                 RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -747,7 +747,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoEnv
+        ScryptoVmV1Api
             .call_function(
                 RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -810,7 +810,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoEnv
+        ScryptoVmV1Api
             .call_function(
                 RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

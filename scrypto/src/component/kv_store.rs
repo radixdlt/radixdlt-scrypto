@@ -16,7 +16,7 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::*;
 
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::runtime::Runtime;
 
 // TODO: optimize `rust_value -> bytes -> scrypto_value` conversion.
@@ -38,7 +38,7 @@ impl<
 {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
 
         let store_schema = KeyValueStoreGenericArgs::new_with_self_package::<K, V>(
             true,
@@ -54,7 +54,7 @@ impl<
 
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<KeyValueEntryRef<'_, V>> {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
             .key_value_store_open_entry(self.id.as_node_id(), &key_payload, LockFlags::read_only())
@@ -76,7 +76,7 @@ impl<
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<KeyValueEntryRefMut<'_, V>> {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
             .key_value_store_open_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
@@ -99,7 +99,7 @@ impl<
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let key_payload = scrypto_encode(&key).unwrap();
         let handle = env
             .key_value_store_open_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
@@ -115,7 +115,7 @@ impl<
 
     /// Remove an entry from the map and return the original value if it exists
     pub fn remove(&self, key: &K) -> Option<V> {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let key_payload = scrypto_encode(&key).unwrap();
         let rtn = env
             .key_value_store_remove_entry(self.id.as_node_id(), &key_payload)
@@ -219,7 +219,7 @@ impl<'a, V: ScryptoEncode> Deref for KeyValueEntryRef<'a, V> {
 
 impl<'a, V: ScryptoEncode> Drop for KeyValueEntryRef<'a, V> {
     fn drop(&mut self) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         env.key_value_entry_close(self.lock_handle).unwrap();
     }
 }
@@ -248,7 +248,7 @@ impl<'a, V: ScryptoEncode> KeyValueEntryRefMut<'a, V> {
 
 impl<'a, V: ScryptoEncode> Drop for KeyValueEntryRefMut<'a, V> {
     fn drop(&mut self) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let value = scrypto_encode(&self.value).unwrap();
         env.key_value_entry_set(self.handle, value).unwrap();
         env.key_value_entry_close(self.handle).unwrap();

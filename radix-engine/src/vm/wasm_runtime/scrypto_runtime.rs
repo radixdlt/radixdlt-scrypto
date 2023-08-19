@@ -486,6 +486,13 @@ where
         )
     }
 
+    fn usd_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let usd_price = self.api.usd_price()?;
+        self.allocate_buffer(
+            scrypto_encode(&usd_price).expect("Failed to encode finalization_cost_unit_price"),
+        )
+    }
+
     fn tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
         let tip_percentage = self.api.tip_percentage()?;
 

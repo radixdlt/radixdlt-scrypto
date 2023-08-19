@@ -9,7 +9,7 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use runtime::LocalAuthZone;
 use sbor::rust::prelude::*;
-use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 //========
 // Traits
@@ -114,7 +114,7 @@ impl ScryptoVault for Vault {
     }
 
     fn new(resource_address: ResourceAddress) -> Self {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 resource_address.as_node_id(),
@@ -126,7 +126,7 @@ impl ScryptoVault for Vault {
     }
 
     fn put(&mut self, bucket: Bucket) -> () {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
@@ -138,7 +138,7 @@ impl ScryptoVault for Vault {
     }
 
     fn amount(&self) -> Decimal {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
@@ -150,14 +150,14 @@ impl ScryptoVault for Vault {
     }
 
     fn resource_address(&self) -> ResourceAddress {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let address = env.get_outer_object(self.0.as_node_id()).unwrap();
         ResourceAddress::try_from(address).unwrap()
     }
 
     /// Takes some amount of resource from this vault into a bucket.
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
@@ -181,7 +181,7 @@ impl ScryptoVault for Vault {
         amount: A,
         withdraw_strategy: WithdrawStrategy,
     ) -> Bucket {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
@@ -218,7 +218,7 @@ impl ScryptoVault for Vault {
     }
 
     fn burn<A: Into<Decimal>>(&mut self, amount: A) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
@@ -303,7 +303,7 @@ impl ScryptoFungibleVault for FungibleVault {
     ///
     /// Unused fee will be refunded to the vaults from the most recently locked to the least.
     fn lock_fee<A: Into<Decimal>>(&mut self, amount: A) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let _rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
@@ -322,7 +322,7 @@ impl ScryptoFungibleVault for FungibleVault {
     /// The locked amount will be used as transaction only if the transaction succeeds;
     /// Unused amount will be refunded the original vault.
     fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let _rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
@@ -337,7 +337,7 @@ impl ScryptoFungibleVault for FungibleVault {
     }
 
     fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> FungibleProof {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
@@ -426,7 +426,7 @@ impl ScryptoVault for NonFungibleVault {
 
 impl ScryptoNonFungibleVault for NonFungibleVault {
     fn non_fungible_local_ids(&self, limit: u32) -> BTreeSet<NonFungibleLocalId> {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
@@ -439,7 +439,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
     }
 
     fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
@@ -503,7 +503,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
         &mut self,
         non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
     ) -> NonFungibleBucket {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
@@ -521,7 +521,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
         &self,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> NonFungibleProof {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
@@ -536,7 +536,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
     }
 
     fn burn_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),

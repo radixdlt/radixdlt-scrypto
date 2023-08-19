@@ -11,8 +11,7 @@ use radix_engine_interface::api::key_value_store_api::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldValue, GenericArgs,
-    ObjectHandle,
+    ClientActorApi, ClientFieldApi, ClientObjectApi, FieldValue, GenericArgs, ObjectHandle,
 };
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{KVEntry, LockFlags};
@@ -30,62 +29,43 @@ pub enum ClientApiError {
     DecodeError(DecodeError),
 }
 
-pub struct ScryptoEnv;
+pub struct ScryptoVmV1Api;
 
-impl ClientCostingApi<ClientApiError> for ScryptoEnv {
-    fn consume_cost_units(
-        &mut self,
-        _costing_entry: types::ClientCostingEntry,
-    ) -> Result<(), ClientApiError> {
-        unimplemented!("Not exposed to scrypto")
-    }
-
-    fn credit_cost_units(
-        &mut self,
-        _vault_id: NodeId,
-        _locked_fee: blueprints::resource::LiquidFungibleResource,
-        _contingent: bool,
-    ) -> Result<blueprints::resource::LiquidFungibleResource, ClientApiError> {
-        unimplemented!("Not exposed to scrypto")
-    }
-
-    fn execution_cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
+impl ScryptoVmV1Api {
+    pub fn execution_cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
         Ok(unsafe { execution_cost_unit_limit() })
     }
 
-    fn execution_cost_unit_price(&mut self) -> Result<math::Decimal, ClientApiError> {
+    pub fn execution_cost_unit_price(&mut self) -> Result<Decimal, ClientApiError> {
         let bytes = copy_buffer(unsafe { execution_cost_unit_price() });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn finalization_cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
+    pub fn finalization_cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
         Ok(unsafe { finalization_cost_unit_limit() })
     }
 
-    fn finalization_cost_unit_price(&mut self) -> Result<math::Decimal, ClientApiError> {
+    pub fn finalization_cost_unit_price(&mut self) -> Result<Decimal, ClientApiError> {
         let bytes = copy_buffer(unsafe { finalization_cost_unit_price() });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn usd_price(&mut self) -> Result<Decimal, ClientApiError> {
-        unimplemented!("Not exposed to scrypto")
+    pub fn usd_price(&mut self) -> Result<Decimal, ClientApiError> {
+        let bytes = copy_buffer(unsafe { usd_price() });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, ClientApiError> {
-        unimplemented!("Not exposed to scrypto")
-    }
-
-    fn tip_percentage(&mut self) -> Result<u32, ClientApiError> {
+    pub fn tip_percentage(&mut self) -> Result<u32, ClientApiError> {
         Ok(unsafe { tip_percentage() })
     }
 
-    fn fee_balance(&mut self) -> Result<math::Decimal, ClientApiError> {
+    pub fn fee_balance(&mut self) -> Result<math::Decimal, ClientApiError> {
         let bytes = copy_buffer(unsafe { fee_balance() });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 }
 
-impl ClientObjectApi<ClientApiError> for ScryptoEnv {
+impl ClientObjectApi<ClientApiError> for ScryptoVmV1Api {
     fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
@@ -224,7 +204,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
+impl ClientKeyValueEntryApi<ClientApiError> for ScryptoVmV1Api {
     fn key_value_entry_get(
         &mut self,
         handle: KeyValueEntryHandle,
@@ -262,7 +242,7 @@ impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
+impl ClientKeyValueStoreApi<ClientApiError> for ScryptoVmV1Api {
     fn key_value_store_new(
         &mut self,
         schema: KeyValueStoreGenericArgs,
@@ -308,7 +288,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
+impl ClientBlueprintApi<ClientApiError> for ScryptoVmV1Api {
     fn call_function(
         &mut self,
         package_address: PackageAddress,
@@ -335,7 +315,7 @@ impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientFieldApi<ClientApiError> for ScryptoEnv {
+impl ClientFieldApi<ClientApiError> for ScryptoVmV1Api {
     fn field_read(&mut self, lock_handle: SubstateHandle) -> Result<Vec<u8>, ClientApiError> {
         let substate = copy_buffer(unsafe { field_lock_read(lock_handle) });
 
@@ -363,7 +343,7 @@ impl ClientFieldApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientActorApi<ClientApiError> for ScryptoEnv {
+impl ClientActorApi<ClientApiError> for ScryptoVmV1Api {
     fn actor_open_field(
         &mut self,
         object_handle: u32,
@@ -425,7 +405,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientAuthApi<ClientApiError> for ScryptoEnv {
+impl ClientAuthApi<ClientApiError> for ScryptoVmV1Api {
     fn get_auth_zone(&mut self) -> Result<NodeId, ClientApiError> {
         let auth_zone = copy_buffer(unsafe { get_auth_zone() });
 
@@ -433,7 +413,7 @@ impl ClientAuthApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
+impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoVmV1Api {
     fn emit_event(
         &mut self,
         event_name: String,
@@ -474,16 +454,4 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         };
         Ok(())
     }
-}
-
-#[macro_export]
-macro_rules! scrypto_env_native_fn {
-    ($($vis:vis $fn:ident $fn_name:ident ($($args:tt)*) -> $rtn:ty { $arg:expr })*) => {
-        $(
-            $vis $fn $fn_name ($($args)*) -> $rtn {
-                let mut env = crate::engine::scrypto_env::ScryptoEnv;
-                env.call_native($arg).unwrap()
-            }
-        )+
-    };
 }

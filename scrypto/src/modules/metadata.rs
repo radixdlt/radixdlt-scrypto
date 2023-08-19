@@ -1,4 +1,4 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
@@ -43,7 +43,7 @@ impl Default for Metadata {
 
 impl Metadata {
     pub fn new() -> Self {
-        let rtn = ScryptoEnv
+        let rtn = ScryptoVmV1Api
             .call_function(
                 METADATA_MODULE_PACKAGE,
                 METADATA_BLUEPRINT,
@@ -56,7 +56,7 @@ impl Metadata {
     }
 
     pub fn new_with_data(data: MetadataInit) -> Self {
-        let rtn = ScryptoEnv
+        let rtn = ScryptoVmV1Api
             .call_function(
                 METADATA_MODULE_PACKAGE,
                 METADATA_BLUEPRINT,

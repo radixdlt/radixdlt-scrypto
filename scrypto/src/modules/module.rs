@@ -1,4 +1,4 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::prelude::ScryptoEncode;
 use crate::runtime::*;
 use crate::*;
@@ -69,13 +69,13 @@ pub trait Attachable: Sized {
     fn call_raw(&self, method: &str, args: Vec<u8>) -> Vec<u8> {
         match self.handle() {
             ModuleHandle::Own(own) => {
-                let output = ScryptoEnv
+                let output = ScryptoVmV1Api
                     .call_method(own.as_node_id(), method, args)
                     .unwrap();
                 output
             }
             ModuleHandle::Attached(address, module_id) => {
-                let output = ScryptoEnv
+                let output = ScryptoVmV1Api
                     .call_method_advanced(
                         address.as_node_id(),
                         module_id.clone(),
@@ -87,7 +87,7 @@ pub trait Attachable: Sized {
                 output
             }
             ModuleHandle::SELF(module_id) => {
-                let output = ScryptoEnv
+                let output = ScryptoVmV1Api
                     .actor_call_module(*module_id, method, args)
                     .unwrap();
                 output
@@ -99,12 +99,12 @@ pub trait Attachable: Sized {
         let args = scrypto_encode(args).unwrap();
         match self.handle() {
             ModuleHandle::Own(own) => {
-                ScryptoEnv
+                ScryptoVmV1Api
                     .call_method(own.as_node_id(), method, args)
                     .unwrap();
             }
             ModuleHandle::Attached(address, module_id) => {
-                ScryptoEnv
+                ScryptoVmV1Api
                     .call_method_advanced(
                         address.as_node_id(),
                         module_id.clone(),
@@ -115,7 +115,7 @@ pub trait Attachable: Sized {
                     .unwrap();
             }
             ModuleHandle::SELF(module_id) => {
-                ScryptoEnv
+                ScryptoVmV1Api
                     .actor_call_module(*module_id, method, args)
                     .unwrap();
             }

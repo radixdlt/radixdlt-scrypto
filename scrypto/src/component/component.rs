@@ -1,4 +1,4 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::modules::{Attachable, HasMetadata, RoleAssignment, Royalty};
 use crate::prelude::{scrypto_encode, HasRoleAssignment, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
@@ -52,7 +52,7 @@ impl<C: HasTypeInfo> Blueprint<C> {
     pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: A) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
 
-        let output = ScryptoEnv
+        let output = ScryptoVmV1Api
             .call_function(
                 package_address,
                 C::BLUEPRINT_NAME,
@@ -65,7 +65,7 @@ impl<C: HasTypeInfo> Blueprint<C> {
 
     pub fn call_function_raw<T: ScryptoDecode>(function_name: &str, args: Vec<u8>) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
-        let output = ScryptoEnv
+        let output = ScryptoVmV1Api
             .call_function(package_address, C::BLUEPRINT_NAME, function_name, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
@@ -85,7 +85,7 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
 
     fn instantiate(self) -> Owned<Self> {
-        let node_id = ScryptoEnv
+        let node_id = ScryptoVmV1Api
             .new_simple_object(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)])
             .unwrap();
 
@@ -338,7 +338,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             );
         }
 
-        let address = ScryptoEnv
+        let address = ScryptoVmV1Api
             .globalize(modules, self.address_reservation)
             .unwrap();
 
@@ -472,7 +472,7 @@ trait TypeCheckable {
 
 impl<O: HasTypeInfo> TypeCheckable for O {
     fn check(node_id: &NodeId) -> Result<(), ComponentCastError> {
-        let blueprint_id = ScryptoEnv.get_blueprint_id(node_id).unwrap();
+        let blueprint_id = ScryptoVmV1Api.get_blueprint_id(node_id).unwrap();
         let to = O::blueprint_id();
         if !blueprint_id.eq(&to) {
             return Err(ComponentCastError::CannotCast {

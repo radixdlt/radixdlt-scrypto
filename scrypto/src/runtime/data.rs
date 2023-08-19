@@ -9,7 +9,7 @@ use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::rust::prelude::*;
-use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 pub struct DataRef<V: ScryptoEncode> {
     lock_handle: SubstateHandle,
@@ -41,7 +41,7 @@ impl<V: ScryptoEncode> Deref for DataRef<V> {
 
 impl<V: ScryptoEncode> Drop for DataRef<V> {
     fn drop(&mut self) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         env.field_close(self.lock_handle).unwrap();
     }
 }
@@ -79,7 +79,7 @@ impl<V: ScryptoEncode> DataRefMut<V> {
 
 impl<V: ScryptoEncode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let substate = match &self.original_data {
             OriginalData::KeyValueStoreEntry(_) => scrypto_encode(&Some(&self.value)).unwrap(),
             OriginalData::ComponentAppState(_) => scrypto_encode(&self.value).unwrap(),
@@ -115,7 +115,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
     }
 
     pub fn get(&self) -> DataRef<V> {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let lock_handle = env
             .actor_open_field(
                 OBJECT_HANDLE_SELF,
@@ -129,7 +129,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let lock_handle = env
             .actor_open_field(
                 OBJECT_HANDLE_SELF,

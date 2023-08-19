@@ -12,7 +12,7 @@ mod consensus_manager_test {
         }
 
         pub fn next_round(consensus_manager: ComponentAddress, round: Round) {
-            ScryptoEnv
+            ScryptoVmV1Api
                 .call_method(
                     &consensus_manager.into(),
                     CONSENSUS_MANAGER_NEXT_ROUND_IDENT,

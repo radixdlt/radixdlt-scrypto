@@ -5,7 +5,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
-use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 use crate::resource::ScryptoAuthZone;
 
@@ -19,12 +19,12 @@ pub struct LocalAuthZone {}
 impl LocalAuthZone {
     pub fn push<P: Into<Proof>>(proof: P) {
         let proof: Proof = proof.into();
-        let node_id = ScryptoEnv.get_auth_zone().unwrap();
+        let node_id = ScryptoVmV1Api.get_auth_zone().unwrap();
         AuthZoneRef(node_id).push(proof)
     }
 
     pub fn pop() -> Proof {
-        let node_id = ScryptoEnv.get_auth_zone().unwrap();
+        let node_id = ScryptoVmV1Api.get_auth_zone().unwrap();
         AuthZoneRef(node_id).pop()
     }
 
@@ -32,7 +32,7 @@ impl LocalAuthZone {
         amount: A,
         resource_address: ResourceAddress,
     ) -> Proof {
-        let node_id = ScryptoEnv.get_auth_zone().unwrap();
+        let node_id = ScryptoVmV1Api.get_auth_zone().unwrap();
         AuthZoneRef(node_id).create_proof_of_amount(amount, resource_address)
     }
 
@@ -40,27 +40,27 @@ impl LocalAuthZone {
         ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> Proof {
-        let node_id = ScryptoEnv.get_auth_zone().unwrap();
+        let node_id = ScryptoVmV1Api.get_auth_zone().unwrap();
         AuthZoneRef(node_id).create_proof_of_non_fungibles(ids, resource_address)
     }
 
     pub fn create_proof_of_all(resource_address: ResourceAddress) -> Proof {
-        let node_id = ScryptoEnv.get_auth_zone().unwrap();
+        let node_id = ScryptoVmV1Api.get_auth_zone().unwrap();
         AuthZoneRef(node_id).create_proof_of_all(resource_address)
     }
 
     pub fn drop_proofs() {
-        let node_id = ScryptoEnv.get_auth_zone().unwrap();
+        let node_id = ScryptoVmV1Api.get_auth_zone().unwrap();
         AuthZoneRef(node_id).drop_proofs()
     }
 
     pub fn drop_signature_proofs() {
-        let node_id = ScryptoEnv.get_auth_zone().unwrap();
+        let node_id = ScryptoVmV1Api.get_auth_zone().unwrap();
         AuthZoneRef(node_id).drop_signature_proofs()
     }
 
     pub fn drop_regular_proofs() {
-        let node_id = ScryptoEnv.get_auth_zone().unwrap();
+        let node_id = ScryptoVmV1Api.get_auth_zone().unwrap();
         AuthZoneRef(node_id).drop_regular_proofs()
     }
 }

@@ -11,6 +11,7 @@ pub const EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME: &str = "execution_cost_unit_l
 pub const EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME: &str = "execution_cost_unit_price";
 pub const FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME: &str = "finalization_cost_unit_limit";
 pub const FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME: &str = "finalization_cost_unit_price";
+pub const USD_PRICE_FUNCTION_NAME: &str = "usd_price";
 pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
 pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
 

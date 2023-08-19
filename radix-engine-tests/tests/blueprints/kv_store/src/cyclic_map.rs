@@ -30,10 +30,10 @@ mod cyclic_map {
                 value: PhantomData,
             };
 
-            let handle = ScryptoEnv
+            let handle = ScryptoVmV1Api
                 .key_value_store_open_entry(node_id, &key, LockFlags::MUTABLE)
                 .unwrap();
-            ScryptoEnv
+            ScryptoVmV1Api
                 .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 
@@ -55,10 +55,10 @@ mod cyclic_map {
                 value: PhantomData,
             };
 
-            let handle = ScryptoEnv
+            let handle = ScryptoVmV1Api
                 .key_value_store_open_entry(node_id, &key, LockFlags::MUTABLE)
                 .unwrap();
-            ScryptoEnv
+            ScryptoVmV1Api
                 .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 

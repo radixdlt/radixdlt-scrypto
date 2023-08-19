@@ -20,7 +20,7 @@ use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
-use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -29,7 +29,7 @@ pub struct Runtime {}
 impl Runtime {
     /// Returns the current epoch
     pub fn current_epoch() -> Epoch {
-        let rtn = ScryptoEnv
+        let rtn = ScryptoVmV1Api
             .call_method(
                 CONSENSUS_MANAGER.as_node_id(),
                 CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
@@ -41,22 +41,25 @@ impl Runtime {
     }
 
     pub fn global_component() -> Global<AnyComponent> {
-        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
+        let address: GlobalAddress = ScryptoVmV1Api.actor_get_global_address().unwrap();
         Global(AnyComponent(ObjectStubHandle::Global(address)))
     }
 
     pub fn global_address() -> ComponentAddress {
-        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
+        let address: GlobalAddress = ScryptoVmV1Api.actor_get_global_address().unwrap();
         ComponentAddress::new_or_panic(address.into())
     }
 
     pub fn node_id() -> NodeId {
-        ScryptoEnv.actor_get_node_id().unwrap()
+        ScryptoVmV1Api.actor_get_node_id().unwrap()
     }
 
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
-        ScryptoEnv.actor_get_blueprint_id().unwrap().package_address
+        ScryptoVmV1Api
+            .actor_get_blueprint_id()
+            .unwrap()
+            .package_address
     }
 
     pub fn package_token() -> NonFungibleGlobalId {
@@ -65,30 +68,30 @@ impl Runtime {
 
     /// Get the global address an address reservation is associated with
     pub fn get_reservation_address(reservation: &GlobalAddressReservation) -> GlobalAddress {
-        ScryptoEnv
+        ScryptoVmV1Api
             .get_reservation_address(reservation.0.as_node_id())
             .unwrap()
     }
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        ScryptoEnv.get_transaction_hash().unwrap()
+        ScryptoVmV1Api.get_transaction_hash().unwrap()
     }
 
     /// Returns the transaction hash.
     pub fn generate_ruid() -> [u8; 32] {
-        ScryptoEnv.generate_ruid().unwrap()
+        ScryptoVmV1Api.generate_ruid().unwrap()
     }
 
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
-        ScryptoEnv
+        ScryptoVmV1Api
             .emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap())
             .unwrap();
     }
 
     pub fn assert_access_rule(rule: AccessRule) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
 
         let node_id = env.get_auth_zone().unwrap();
         let _ = env
@@ -103,7 +106,7 @@ impl Runtime {
     pub fn allocate_component_address(
         blueprint_id: BlueprintId,
     ) -> (GlobalAddressReservation, ComponentAddress) {
-        let mut env = ScryptoEnv;
+        let mut env = ScryptoVmV1Api;
         let (ownership, global_address) = env.allocate_global_address(blueprint_id).unwrap();
         (ownership, unsafe {
             ComponentAddress::new_unchecked(global_address.as_node_id().0)
@@ -111,31 +114,35 @@ impl Runtime {
     }
 
     pub fn execution_cost_unit_limit() -> u32 {
-        ScryptoEnv.execution_cost_unit_limit().unwrap()
+        ScryptoVmV1Api.execution_cost_unit_limit().unwrap()
     }
 
     pub fn execution_cost_unit_price() -> Decimal {
-        ScryptoEnv.execution_cost_unit_price().unwrap()
+        ScryptoVmV1Api.execution_cost_unit_price().unwrap()
     }
 
     pub fn finalization_cost_unit_limit() -> u32 {
-        ScryptoEnv.finalization_cost_unit_limit().unwrap()
+        ScryptoVmV1Api.finalization_cost_unit_limit().unwrap()
     }
 
     pub fn finalization_cost_unit_price() -> Decimal {
-        ScryptoEnv.finalization_cost_unit_price().unwrap()
+        ScryptoVmV1Api.finalization_cost_unit_price().unwrap()
+    }
+
+    pub fn usd_price() -> Decimal {
+        ScryptoVmV1Api.usd_price().unwrap()
     }
 
     pub fn tip_percentage() -> u32 {
-        ScryptoEnv.tip_percentage().unwrap()
+        ScryptoVmV1Api.tip_percentage().unwrap()
     }
 
     pub fn fee_balance() -> Decimal {
-        ScryptoEnv.fee_balance().unwrap()
+        ScryptoVmV1Api.fee_balance().unwrap()
     }
 
     pub fn panic(message: String) -> ! {
-        ScryptoEnv.panic(message).unwrap();
+        ScryptoVmV1Api.panic(message).unwrap();
         loop {}
     }
 }

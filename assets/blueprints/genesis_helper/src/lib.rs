@@ -118,7 +118,7 @@ mod genesis_helper {
 
         fn create_validator(&mut self, validator: GenesisValidator) {
             let xrd_payment = ResourceManager(XRD)
-                .new_empty_bucket(&mut ScryptoEnv)
+                .new_empty_bucket(&mut ScryptoVmV1Api)
                 .unwrap();
             let (validator_address, owner_token_bucket, change) =
                 ConsensusManager(self.consensus_manager)
@@ -126,7 +126,7 @@ mod genesis_helper {
                         validator.key,
                         validator.fee_factor,
                         xrd_payment,
-                        &mut ScryptoEnv,
+                        &mut ScryptoVmV1Api,
                     )
                     .unwrap();
 
@@ -134,21 +134,24 @@ mod genesis_helper {
 
             // Deposit the badge to the owner account
             Account(validator.owner)
-                .deposit(owner_token_bucket, &mut ScryptoEnv)
+                .deposit(owner_token_bucket, &mut ScryptoVmV1Api)
                 .unwrap();
 
             if validator.is_registered {
                 Validator(validator_address)
-                    .register(&mut ScryptoEnv)
+                    .register(&mut ScryptoVmV1Api)
                     .unwrap();
             }
 
             Validator(validator_address)
-                .update_accept_delegated_stake(validator.accept_delegated_stake, &mut ScryptoEnv)
+                .update_accept_delegated_stake(
+                    validator.accept_delegated_stake,
+                    &mut ScryptoVmV1Api,
+                )
                 .unwrap();
 
             for (key, value) in validator.metadata {
-                ScryptoEnv
+                ScryptoVmV1Api
                     .call_method_advanced(
                         &validator_address.into_node_id(),
                         ObjectModuleId::Metadata,
@@ -177,7 +180,7 @@ mod genesis_helper {
                 sum
             };
             let mut xrd_bucket = ResourceManager(XRD)
-                .mint_fungible(xrd_needed, &mut ScryptoEnv)
+                .mint_fungible(xrd_needed, &mut ScryptoVmV1Api)
                 .expect("XRD mint for genesis stake allocation failed");
 
             for (validator_key, stake_allocations) in allocations.into_iter() {
@@ -185,11 +188,12 @@ mod genesis_helper {
                 let validator = Validator(validator_address.clone());
 
                 // Enable staking temporarily for genesis delegators
-                let accepts_delegated_stake =
-                    validator.accepts_delegated_stake(&mut ScryptoEnv).unwrap();
+                let accepts_delegated_stake = validator
+                    .accepts_delegated_stake(&mut ScryptoVmV1Api)
+                    .unwrap();
                 if !accepts_delegated_stake {
                     validator
-                        .update_accept_delegated_stake(true, &mut ScryptoEnv)
+                        .update_accept_delegated_stake(true, &mut ScryptoVmV1Api)
                         .unwrap();
                 }
 
@@ -200,17 +204,18 @@ mod genesis_helper {
                 {
                     let staker_account_address = accounts[account_index as usize].clone();
                     let stake_xrd_bucket = xrd_bucket.take(xrd_amount);
-                    let stake_unit_bucket =
-                        validator.stake(stake_xrd_bucket, &mut ScryptoEnv).unwrap();
+                    let stake_unit_bucket = validator
+                        .stake(stake_xrd_bucket, &mut ScryptoVmV1Api)
+                        .unwrap();
                     let _: () = Account(staker_account_address)
-                        .deposit(stake_unit_bucket, &mut ScryptoEnv)
+                        .deposit(stake_unit_bucket, &mut ScryptoVmV1Api)
                         .unwrap();
                 }
 
                 // Restore original delegated stake flag
                 if !accepts_delegated_stake {
                     validator
-                        .update_accept_delegated_stake(accepts_delegated_stake, &mut ScryptoEnv)
+                        .update_accept_delegated_stake(accepts_delegated_stake, &mut ScryptoVmV1Api)
                         .unwrap();
                 }
             }
@@ -248,7 +253,7 @@ mod genesis_helper {
                 resource_mgr.set_metadata("tags", vec!["badge".to_string()]);
 
                 let _: () = Account(owner)
-                    .deposit(owner_badge, &mut ScryptoEnv)
+                    .deposit(owner_badge, &mut ScryptoVmV1Api)
                     .unwrap();
 
                 Some(owner_badge_address)
@@ -292,7 +297,7 @@ mod genesis_helper {
                     sum
                 };
                 let mut resource_bucket = ResourceManager(resource_address)
-                    .mint_fungible(amount_needed, &mut ScryptoEnv)
+                    .mint_fungible(amount_needed, &mut ScryptoVmV1Api)
                     .expect("Resource mint for genesis allocation failed");
 
                 for GenesisResourceAllocation {
@@ -303,7 +308,7 @@ mod genesis_helper {
                     let account_address = accounts[account_index as usize].clone();
                     let allocation_bucket = resource_bucket.take(amount);
                     let _: () = Account(account_address)
-                        .deposit(allocation_bucket, &mut ScryptoEnv)
+                        .deposit(allocation_bucket, &mut ScryptoVmV1Api)
                         .unwrap();
                 }
                 resource_bucket.drop_empty();
@@ -319,13 +324,13 @@ mod genesis_helper {
                 sum
             };
             let mut xrd_bucket = ResourceManager(XRD)
-                .mint_fungible(xrd_needed, &mut ScryptoEnv)
+                .mint_fungible(xrd_needed, &mut ScryptoVmV1Api)
                 .expect("XRD mint for genesis allocation failed");
 
             for (account_address, amount) in allocations.into_iter() {
                 let bucket = xrd_bucket.take(amount);
                 let _: () = Account(account_address)
-                    .deposit(bucket, &mut ScryptoEnv)
+                    .deposit(bucket, &mut ScryptoVmV1Api)
                     .unwrap();
             }
 
@@ -334,7 +339,7 @@ mod genesis_helper {
 
         pub fn wrap_up(&mut self) -> () {
             ConsensusManager(self.consensus_manager)
-                .start(&mut ScryptoEnv)
+                .start(&mut ScryptoVmV1Api)
                 .unwrap();
         }
     }

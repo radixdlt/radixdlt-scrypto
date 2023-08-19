@@ -19,7 +19,7 @@ mod large_key {
             for i in 0..n {
                 let n = key_payload.len();
                 key_payload[n - 4..n].copy_from_slice(&i.to_le_bytes());
-                let handle = ScryptoEnv
+                let handle = ScryptoVmV1Api
                     .key_value_store_open_entry(
                         kv_store.id.as_node_id(),
                         &key_payload,
@@ -27,7 +27,7 @@ mod large_key {
                     )
                     .unwrap();
                 unsafe { kv_entry_set(handle, value_payload.as_ptr(), value_payload.len()) };
-                ScryptoEnv.key_value_entry_close(handle).unwrap();
+                ScryptoVmV1Api.key_value_entry_close(handle).unwrap();
             }
 
             LargeKey { kv_store }

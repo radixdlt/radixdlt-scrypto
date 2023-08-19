@@ -1,4 +1,4 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::prelude::{scrypto_encode, ScryptoEncode, ScryptoSbor};
 use crate::runtime::*;
 use crate::*;
@@ -30,7 +30,7 @@ pub trait ObjectStub: Copy {
     fn handle(&self) -> &ObjectStubHandle;
 
     fn call<A: ScryptoEncode, T: ScryptoDecode>(&self, method: &str, args: &A) -> T {
-        let output = ScryptoEnv
+        let output = ScryptoVmV1Api
             .call_method(
                 self.handle().as_node_id(),
                 method,
@@ -41,7 +41,7 @@ pub trait ObjectStub: Copy {
     }
 
     fn call_ignore_rtn<A: ScryptoEncode>(&self, method: &str, args: &A) {
-        ScryptoEnv
+        ScryptoVmV1Api
             .call_method(
                 self.handle().as_node_id(),
                 method,
@@ -51,14 +51,14 @@ pub trait ObjectStub: Copy {
     }
 
     fn call_raw<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv
+        let output = ScryptoVmV1Api
             .call_method(self.handle().as_node_id(), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
 
     fn blueprint(&self) -> BlueprintId {
-        ScryptoEnv
+        ScryptoVmV1Api
             .get_blueprint_id(self.handle().as_node_id())
             .unwrap()
     }

@@ -43,7 +43,7 @@ mod recall {
 
         pub fn recall_on_internal_vault(&self) -> Bucket {
             scrypto_decode(
-                &ScryptoEnv
+                &ScryptoVmV1Api
                     .call_method_advanced(
                         self.vault.0.as_node_id(),
                         ObjectModuleId::Main,
@@ -58,7 +58,7 @@ mod recall {
 
         pub fn recall_on_direct_access_ref(reference: InternalAddress) -> Bucket {
             scrypto_decode(
-                &ScryptoEnv
+                &ScryptoVmV1Api
                     .call_method_advanced(
                         reference.as_node_id(),
                         ObjectModuleId::Main,
@@ -73,7 +73,7 @@ mod recall {
 
         pub fn recall_on_direct_access_ref_method(&self, reference: InternalAddress) -> Bucket {
             scrypto_decode(
-                &ScryptoEnv
+                &ScryptoVmV1Api
                     .call_method_advanced(
                         reference.as_node_id(),
                         ObjectModuleId::Main,

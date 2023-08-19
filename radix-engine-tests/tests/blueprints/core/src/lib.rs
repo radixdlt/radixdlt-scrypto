@@ -20,13 +20,13 @@ mod globalize_test {
                 ObjectModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
             );
 
-            let _ = ScryptoEnv.globalize(modules, None).unwrap();
+            let _ = ScryptoVmV1Api.globalize(modules, None).unwrap();
         }
 
         pub fn globalize_in_package(package_address: PackageAddress) {
             let x = GlobalizeTest { own: None }.instantiate();
 
-            ScryptoEnv
+            ScryptoVmV1Api
                 .call_function(
                     package_address,
                     "GlobalizeTest",
@@ -123,13 +123,13 @@ mod drop_test {
         pub fn drop_in_package(package_address: PackageAddress) {
             let x = DropTest {}.instantiate();
 
-            ScryptoEnv
+            ScryptoVmV1Api
                 .call_function(package_address, "DropTest", "drop", scrypto_args!(x))
                 .unwrap();
         }
 
         pub fn drop(x: Own) {
-            let _ = ScryptoEnv.drop_object(&x.0);
+            let _ = ScryptoVmV1Api.drop_object(&x.0);
         }
     }
 }
