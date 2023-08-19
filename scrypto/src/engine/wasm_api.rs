@@ -68,8 +68,6 @@ pub mod object {
             obj_fields_len: usize,
         ) -> Buffer;
 
-        pub fn drop_object(obj_id_ptr: *const u8, obj_id_len: usize);
-
         /// Reserves a global address for the given blueprint
         pub fn allocate_global_address(
             blueprint_id_ptr: *const u8,

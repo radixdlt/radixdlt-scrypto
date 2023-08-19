@@ -189,24 +189,6 @@ impl WasmModule {
                             ));
                         }
                     }
-                    DROP_OBJECT_FUNCTION_NAME => {
-                        if let TypeRef::Func(type_index) = entry.ty {
-                            if Self::function_type_matches(
-                                &self.module,
-                                type_index,
-                                vec![ValType::I32, ValType::I32],
-                                vec![],
-                            ) {
-                                continue;
-                            }
-
-                            return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    DROP_OBJECT_FUNCTION_NAME.to_string(),
-                                ),
-                            ));
-                        }
-                    }
                     KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(

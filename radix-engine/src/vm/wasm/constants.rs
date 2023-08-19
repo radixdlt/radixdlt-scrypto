@@ -24,7 +24,6 @@ pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
 pub const GLOBALIZE_FUNCTION_NAME: &str = "globalize";
 pub const GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "get_blueprint_id";
 pub const GET_OUTER_OBJECT_FUNCTION_NAME: &str = "get_outer_object";
-pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 
 //=================
 // Invocation

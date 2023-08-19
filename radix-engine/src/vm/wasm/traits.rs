@@ -118,8 +118,6 @@ pub trait WasmRuntime {
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
-
     fn actor_open_field(
         &mut self,
         object_handle: u32,

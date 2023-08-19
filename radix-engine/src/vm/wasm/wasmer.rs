@@ -494,22 +494,6 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn drop_object(
-            env: &WasmerInstanceEnv,
-            node_id_ptr: u32,
-            node_id_len: u32,
-        ) -> Result<(), RuntimeError> {
-            let (instance, runtime) = grab_runtime!(env);
-
-            let node_id = read_memory(&instance, node_id_ptr, node_id_len)?;
-
-            runtime
-                .drop_object(node_id)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(())
-        }
-
         pub fn actor_open_field(
             env: &WasmerInstanceEnv,
             object_handle: u32,
@@ -705,7 +689,6 @@ impl WasmerModule {
                 GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint_id),
                 GET_OUTER_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_outer_object),
                 GET_RESERVATION_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_reservation_address),
-                DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
                 ACTOR_OPEN_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_open_field),
                 ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_call_module_method),
                 KEY_VALUE_STORE_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_new),

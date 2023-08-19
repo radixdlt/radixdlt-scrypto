@@ -122,13 +122,6 @@ impl ScryptoVmV1Api {
         scrypto_decode(&bytes).unwrap()
     }
 
-    pub fn drop_object(&mut self, node_id: &NodeId) -> Vec<Vec<u8>> {
-        unsafe { object::drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
-
-        // TODO: remove return
-        Vec::new()
-    }
-
     pub fn key_value_entry_get(&mut self, handle: KeyValueEntryHandle) -> Vec<u8> {
         copy_buffer(unsafe { kv_entry::kv_entry_get(handle) })
     }
