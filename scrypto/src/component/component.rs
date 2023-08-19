@@ -16,7 +16,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi, FieldValue};
+use radix_engine_interface::api::{ClientBlueprintApi, FieldValue};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit,
 };
@@ -86,8 +86,7 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
 
     fn instantiate(self) -> Owned<Self> {
         let node_id = ScryptoVmV1Api
-            .new_simple_object(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)])
-            .unwrap();
+            .new_simple_object(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)]);
 
         let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
         Owned(stub)
@@ -339,8 +338,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         }
 
         let address = ScryptoVmV1Api
-            .globalize(modules, self.address_reservation)
-            .unwrap();
+            .globalize(modules, self.address_reservation);
 
         Global(C::Stub::new(ObjectStubHandle::Global(address)))
     }
@@ -472,7 +470,7 @@ trait TypeCheckable {
 
 impl<O: HasTypeInfo> TypeCheckable for O {
     fn check(node_id: &NodeId) -> Result<(), ComponentCastError> {
-        let blueprint_id = ScryptoVmV1Api.get_blueprint_id(node_id).unwrap();
+        let blueprint_id = ScryptoVmV1Api.get_blueprint_id(node_id);
         let to = O::blueprint_id();
         if !blueprint_id.eq(&to) {
             return Err(ComponentCastError::CannotCast {

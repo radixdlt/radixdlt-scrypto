@@ -34,8 +34,7 @@ impl Runtime {
                 CONSENSUS_MANAGER.as_node_id(),
                 CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
                 scrypto_encode(&ConsensusManagerGetCurrentEpochInput).unwrap(),
-            )
-            .unwrap();
+            );
 
         scrypto_decode(&rtn).unwrap()
     }
@@ -70,7 +69,6 @@ impl Runtime {
     pub fn get_reservation_address(reservation: &GlobalAddressReservation) -> GlobalAddress {
         ScryptoVmV1Api
             .get_reservation_address(reservation.0.as_node_id())
-            .unwrap()
     }
 
     /// Returns the transaction hash.
@@ -91,23 +89,19 @@ impl Runtime {
     }
 
     pub fn assert_access_rule(rule: AccessRule) {
-        let mut env = ScryptoVmV1Api;
-
-        let node_id = env.get_auth_zone().unwrap();
-        let _ = env
+        let node_id = ScryptoVmV1Api.get_auth_zone().unwrap();
+        let _ = ScryptoVmV1Api
             .call_method(
                 &node_id,
                 AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
                 scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
-            )
-            .unwrap();
+            );
     }
 
     pub fn allocate_component_address(
         blueprint_id: BlueprintId,
     ) -> (GlobalAddressReservation, ComponentAddress) {
-        let mut env = ScryptoVmV1Api;
-        let (ownership, global_address) = env.allocate_global_address(blueprint_id).unwrap();
+        let (ownership, global_address) = ScryptoVmV1Api.allocate_global_address(blueprint_id);
         (ownership, unsafe {
             ComponentAddress::new_unchecked(global_address.as_node_id().0)
         })

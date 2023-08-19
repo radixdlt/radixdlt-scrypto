@@ -20,8 +20,7 @@ mod consensus_manager_test {
                         round, 0, 240000i64,
                     ))
                     .unwrap(),
-                )
-                .unwrap();
+                );
         }
     }
 }

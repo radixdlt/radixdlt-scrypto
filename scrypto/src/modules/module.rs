@@ -5,7 +5,6 @@ use crate::*;
 use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientActorApi;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
@@ -70,8 +69,7 @@ pub trait Attachable: Sized {
         match self.handle() {
             ModuleHandle::Own(own) => {
                 let output = ScryptoVmV1Api
-                    .call_method(own.as_node_id(), method, args)
-                    .unwrap();
+                    .call_method(own.as_node_id(), method, args);
                 output
             }
             ModuleHandle::Attached(address, module_id) => {
@@ -82,8 +80,7 @@ pub trait Attachable: Sized {
                         false,
                         method,
                         args,
-                    )
-                    .unwrap();
+                    );
                 output
             }
             ModuleHandle::SELF(module_id) => {
@@ -100,8 +97,7 @@ pub trait Attachable: Sized {
         match self.handle() {
             ModuleHandle::Own(own) => {
                 ScryptoVmV1Api
-                    .call_method(own.as_node_id(), method, args)
-                    .unwrap();
+                    .call_method(own.as_node_id(), method, args);
             }
             ModuleHandle::Attached(address, module_id) => {
                 ScryptoVmV1Api
@@ -111,8 +107,7 @@ pub trait Attachable: Sized {
                         false,
                         method,
                         args,
-                    )
-                    .unwrap();
+                    );
             }
             ModuleHandle::SELF(module_id) => {
                 ScryptoVmV1Api

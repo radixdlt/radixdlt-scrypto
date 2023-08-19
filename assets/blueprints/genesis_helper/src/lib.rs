@@ -1,6 +1,5 @@
 use scrypto::api::node_modules::metadata::*;
 use scrypto::api::object_api::ObjectModuleId;
-use scrypto::api::ClientObjectApi;
 use scrypto::prelude::*;
 
 // Important: the types defined here must match those in bootstrap.rs
@@ -140,8 +139,7 @@ mod genesis_helper {
                         false,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
-                    )
-                    .expect("Failed to set validator metadata");
+                    );
             }
 
             self.validators.insert(validator.key, validator_component);

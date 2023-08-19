@@ -50,8 +50,7 @@ mod recall {
                         true,
                         VAULT_RECALL_IDENT,
                         scrypto_args!(Decimal::ONE),
-                    )
-                    .unwrap(),
+                    ),
             )
             .unwrap()
         }
@@ -65,8 +64,7 @@ mod recall {
                         true,
                         VAULT_RECALL_IDENT,
                         scrypto_args!(Decimal::ONE),
-                    )
-                    .unwrap(),
+                    ),
             )
             .unwrap()
         }
@@ -80,8 +78,7 @@ mod recall {
                         true,
                         VAULT_RECALL_IDENT,
                         scrypto_args!(Decimal::ONE),
-                    )
-                    .unwrap(),
+                    ),
             )
             .unwrap()
         }

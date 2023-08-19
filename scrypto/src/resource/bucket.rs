@@ -2,7 +2,6 @@ use super::ScryptoUncheckedProof;
 use crate::prelude::ResourceManager;
 use crate::resource::NonFungible;
 use crate::runtime::LocalAuthZone;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -103,8 +102,7 @@ impl ScryptoBucket for Bucket {
                 resource_address.as_node_id(),
                 RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
                 scrypto_encode(&ResourceManagerCreateEmptyBucketInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -118,8 +116,7 @@ impl ScryptoBucket for Bucket {
                     bucket: Bucket(self.0),
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
     }
 
     fn burn(self) {
@@ -134,8 +131,7 @@ impl ScryptoBucket for Bucket {
                 self.0.as_node_id(),
                 BUCKET_CREATE_PROOF_OF_ALL_IDENT,
                 scrypto_encode(&BucketCreateProofOfAllInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -150,8 +146,7 @@ impl ScryptoBucket for Bucket {
                 self.0.as_node_id(),
                 BUCKET_GET_RESOURCE_ADDRESS_IDENT,
                 scrypto_encode(&BucketGetResourceAddressInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -162,8 +157,7 @@ impl ScryptoBucket for Bucket {
                 self.0.as_node_id(),
                 BUCKET_PUT_IDENT,
                 scrypto_encode(&BucketPutInput { bucket: other }).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -174,8 +168,7 @@ impl ScryptoBucket for Bucket {
                 self.0.as_node_id(),
                 BUCKET_GET_AMOUNT_IDENT,
                 scrypto_encode(&BucketGetAmountInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -190,8 +183,7 @@ impl ScryptoBucket for Bucket {
                     amount: amount.into(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -210,8 +202,7 @@ impl ScryptoBucket for Bucket {
                     withdraw_strategy,
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -326,8 +317,7 @@ impl ScryptoFungibleBucket for FungibleBucket {
                     amount: amount.into(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -414,8 +404,7 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
                 self.0 .0.as_node_id(),
                 NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&BucketGetNonFungibleLocalIdsInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -427,8 +416,7 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
                 NON_FUNGIBLE_BUCKET_CONTAINS_NON_FUNGIBLE_IDENT,
                 scrypto_encode(&NonFungibleBucketContainsNonFungibleInput { id: id.clone() })
                     .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -489,8 +477,7 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
                     ids: non_fungible_local_ids.clone(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -507,8 +494,7 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
                     ids: ids.clone(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 

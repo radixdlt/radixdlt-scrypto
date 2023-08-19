@@ -59,8 +59,7 @@ mod component_module {
                         ObjectModuleId::Royalty => role_assignment.0,
                     ),
                     None,
-                )
-                .unwrap();
+                );
 
             ComponentAddress::new_or_panic(address.into())
         }

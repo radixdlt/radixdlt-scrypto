@@ -23,8 +23,7 @@ mod bucket_lock_unlock_auth {
                     bucket.0.as_node_id(),
                     FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT,
                     scrypto_args!(Decimal::from(1)),
-                )
-                .unwrap();
+                );
         }
 
         pub fn call_unlock_fungible_amount_directly() {
@@ -37,8 +36,7 @@ mod bucket_lock_unlock_auth {
                     bucket.0.as_node_id(),
                     FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT,
                     scrypto_args!(Decimal::from(1)),
-                )
-                .unwrap();
+                );
         }
 
         pub fn call_lock_non_fungibles_directly() {
@@ -56,8 +54,7 @@ mod bucket_lock_unlock_auth {
                     bucket.0.as_node_id(),
                     NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                     scrypto_args!([NonFungibleLocalId::integer(1)]),
-                )
-                .unwrap();
+                );
         }
 
         pub fn call_unlock_non_fungibles_directly() {
@@ -77,8 +74,7 @@ mod bucket_lock_unlock_auth {
                     bucket.0.as_node_id(),
                     NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
                     scrypto_args!([NonFungibleLocalId::integer(1)]),
-                )
-                .unwrap();
+                );
         }
     }
 }

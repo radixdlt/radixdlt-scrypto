@@ -20,7 +20,7 @@ mod globalize_test {
                 ObjectModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
             );
 
-            let _ = ScryptoVmV1Api.globalize(modules, None).unwrap();
+            ScryptoVmV1Api.globalize(modules, None);
         }
 
         pub fn globalize_in_package(package_address: PackageAddress) {

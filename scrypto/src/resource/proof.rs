@@ -2,7 +2,6 @@ use crate::resource::*;
 use crate::runtime::Runtime;
 use crate::*;
 use radix_engine_interface::api::ClientBlueprintApi;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -173,8 +172,7 @@ impl ScryptoUncheckedProof for Proof {
                 self.0.as_node_id(),
                 PROOF_GET_RESOURCE_ADDRESS_IDENT,
                 scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -184,7 +182,7 @@ impl ScryptoUncheckedProof for Proof {
 
     fn drop(self) {
         let mut env = ScryptoVmV1Api;
-        let blueprint_id = env.get_blueprint_id(self.0.as_node_id()).unwrap();
+        let blueprint_id = env.get_blueprint_id(self.0.as_node_id());
         env.call_function(
             RESOURCE_PACKAGE,
             blueprint_id.blueprint_name.as_str(),
@@ -204,8 +202,7 @@ impl ScryptoUncheckedProof for Proof {
                 self.0.as_node_id(),
                 PROOF_CLONE_IDENT,
                 scrypto_encode(&ProofCloneInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -313,8 +310,7 @@ impl ScryptoProof for CheckedProof {
                 self.0 .0.as_node_id(),
                 PROOF_GET_AMOUNT_IDENT,
                 scrypto_encode(&ProofGetAmountInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -497,8 +493,7 @@ impl ScryptoNonFungibleProof for CheckedNonFungibleProof {
                 self.0 .0 .0.as_node_id(),
                 NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
                 scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 }

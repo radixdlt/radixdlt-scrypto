@@ -1,4 +1,3 @@
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerCompareCurrentTimeInput, ConsensusManagerGetCurrentTimeInput, TimePrecision,
     CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
@@ -27,8 +26,7 @@ impl Clock {
                 CONSENSUS_MANAGER.as_node_id(),
                 CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
                 scrypto_encode(&ConsensusManagerGetCurrentTimeInput { precision }).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -75,8 +73,7 @@ impl Clock {
                     operator,
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
 
         scrypto_decode(&rtn).unwrap()
     }

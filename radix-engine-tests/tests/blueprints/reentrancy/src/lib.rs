@@ -19,20 +19,17 @@ mod reentrant_component {
 
         pub fn call_mut_self(&mut self, address: ComponentAddress) {
             ScryptoVmV1Api
-                .call_method(&address.into(), "mut_func", scrypto_args!())
-                .unwrap();
+                .call_method(&address.into(), "mut_func", scrypto_args!());
         }
 
         pub fn call_self(&self, address: ComponentAddress) {
             ScryptoVmV1Api
-                .call_method(&address.into(), "func", scrypto_args!())
-                .unwrap();
+                .call_method(&address.into(), "func", scrypto_args!());
         }
 
         pub fn call_mut_self_2(&self, address: ComponentAddress) {
             ScryptoVmV1Api
-                .call_method(&address.into(), "mut_func", scrypto_args!())
-                .unwrap();
+                .call_method(&address.into(), "mut_func", scrypto_args!());
         }
     }
 }

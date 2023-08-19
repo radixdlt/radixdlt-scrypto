@@ -11,8 +11,7 @@ mod scrypto_env_test {
                 .new_simple_object(
                     "invalid_blueprint",
                     vec![FieldValue::new(&ScryptoEnvTest {})],
-                )
-                .unwrap();
+                );
         }
 
         pub fn create_and_open_mut_substate_twice(heap: bool) {

@@ -32,8 +32,7 @@ mod vault_lock_unlock_auth {
                     self.vault.0.as_node_id(),
                     FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
                     scrypto_args!(Decimal::from(1)),
-                )
-                .unwrap();
+                );
         }
 
         pub fn call_unlock_fungible_amount_directly(&self) {
@@ -44,8 +43,7 @@ mod vault_lock_unlock_auth {
                     self.vault.0.as_node_id(),
                     FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
                     scrypto_args!(Decimal::from(1)),
-                )
-                .unwrap();
+                );
         }
 
         pub fn new_non_fungible() -> Global<VaultLockUnlockAuth> {
@@ -72,8 +70,7 @@ mod vault_lock_unlock_auth {
                     self.vault.0.as_node_id(),
                     NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
                     scrypto_args!([NonFungibleLocalId::integer(1)]),
-                )
-                .unwrap();
+                );
         }
 
         pub fn call_unlock_non_fungibles_directly(&self) {
@@ -84,8 +81,7 @@ mod vault_lock_unlock_auth {
                     self.vault.0.as_node_id(),
                     NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
                     scrypto_args!([NonFungibleLocalId::integer(1)]),
-                )
-                .unwrap();
+                );
         }
     }
 }

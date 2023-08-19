@@ -13,15 +13,13 @@ mod fake_bucket {
             let substates: Vec<FieldValue> = vec![FieldValue::new(&first_substate)];
 
             let custom_node = ScryptoVmV1Api
-                .new_simple_object("FakeBucket", substates)
-                .unwrap();
+                .new_simple_object("FakeBucket", substates);
             let fake_bucket = scrypto_encode(&BucketPutInput {
                 bucket: Bucket(Own(custom_node)),
             })
             .unwrap();
             ScryptoVmV1Api
-                .call_method(bucket.0.as_node_id(), BUCKET_PUT_IDENT, fake_bucket)
-                .unwrap();
+                .call_method(bucket.0.as_node_id(), BUCKET_PUT_IDENT, fake_bucket);
             bucket
         }
     }

@@ -1,6 +1,5 @@
 use crate::resource::*;
 use crate::*;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -120,8 +119,7 @@ impl ScryptoVault for Vault {
                 resource_address.as_node_id(),
                 RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
                 scrypto_encode(&ResourceManagerCreateEmptyVaultInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -132,8 +130,7 @@ impl ScryptoVault for Vault {
                 self.0.as_node_id(),
                 VAULT_PUT_IDENT,
                 scrypto_encode(&VaultPutInput { bucket }).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -144,14 +141,13 @@ impl ScryptoVault for Vault {
                 self.0.as_node_id(),
                 VAULT_GET_AMOUNT_IDENT,
                 scrypto_encode(&VaultGetAmountInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
     fn resource_address(&self) -> ResourceAddress {
         let mut env = ScryptoVmV1Api;
-        let address = env.get_outer_object(self.0.as_node_id()).unwrap();
+        let address = env.get_outer_object(self.0.as_node_id());
         ResourceAddress::try_from(address).unwrap()
     }
 
@@ -166,8 +162,7 @@ impl ScryptoVault for Vault {
                     amount: amount.into(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -191,8 +186,7 @@ impl ScryptoVault for Vault {
                     withdraw_strategy,
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -227,8 +221,7 @@ impl ScryptoVault for Vault {
                     amount: amount.into(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 }
@@ -313,8 +306,7 @@ impl ScryptoFungibleVault for FungibleVault {
                     contingent: false,
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
     }
 
     /// Locks the given amount of resource as contingent fee.
@@ -332,8 +324,7 @@ impl ScryptoFungibleVault for FungibleVault {
                     contingent: true,
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
     }
 
     fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> FungibleProof {
@@ -346,8 +337,7 @@ impl ScryptoFungibleVault for FungibleVault {
                     amount: amount.into(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -433,8 +423,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
                 NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit: limit })
                     .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -446,8 +435,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
                 NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT,
                 scrypto_encode(&NonFungibleVaultContainsNonFungibleInput { id: id.clone() })
                     .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -512,8 +500,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
                     non_fungible_local_ids: non_fungible_local_ids.clone(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -530,8 +517,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
                     ids: ids.clone(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -545,8 +531,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
                     non_fungible_local_ids: non_fungible_local_ids.clone(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&rtn).unwrap()
     }
 
