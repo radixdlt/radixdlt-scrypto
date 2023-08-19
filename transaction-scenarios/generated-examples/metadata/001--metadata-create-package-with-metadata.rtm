@@ -473,10 +473,14 @@ PUBLISH_PACKAGE_ADVANCED
         )
     )
 <<<<<<< HEAD
+<<<<<<< HEAD
     Blob("8e0171048047a47b4a13596434f309a52bbac134f2b24f51b227b5371b4efe4c")
 =======
     Blob("37ec0b71971f6e6ce9e1adb28d67214be5b4a5515344b7ced08ac4e359741ab4")
 >>>>>>> develop
+=======
+    Blob("4584d8fa0f453f9d569e12f3989b4adfb89750a24383a873aa1d6b0f3d2a4f3b")
+>>>>>>> c9a7b62... Use Global<ConsensusManager> in genesis_helper
     Map<String, Tuple>(
         "" => Tuple(
             Enum<1u8>(

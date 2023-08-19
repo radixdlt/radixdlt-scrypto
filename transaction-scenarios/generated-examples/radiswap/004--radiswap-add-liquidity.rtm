@@ -35,10 +35,14 @@ TAKE_ALL_FROM_WORKTOP
 ;
 CALL_METHOD
 <<<<<<< HEAD
+<<<<<<< HEAD
     Address("component_sim1czcyvwqvvd2pstkuncs57rtltaa7c2u5kevkfqkfqy5jnp6wwkdf6x")
 =======
     Address("component_sim1cq49w9xq09scf526j6efeq4cgqw6pnnc3pexu4kwvfgckpj7hcrpv4")
 >>>>>>> develop
+=======
+    Address("component_sim1cpfdmx8jrq8k5anwzue2xrlyp95xzumvmzpv9cvp6dvuqq38mp3z33")
+>>>>>>> c9a7b62... Use Global<ConsensusManager> in genesis_helper
     "add_liquidity"
     Bucket("pool_1_resource_1")
     Bucket("pool_1_resource_2")
@@ -53,10 +57,14 @@ TAKE_ALL_FROM_WORKTOP
 ;
 CALL_METHOD
 <<<<<<< HEAD
+<<<<<<< HEAD
     Address("component_sim1cqn96eu5e4dvh3m5txdrpn4h0ay5e9a9kz520mdj3atkylqqnxtlpa")
 =======
     Address("component_sim1cru86rxhyf48fmxrjrk3k4sl2tupwg5679eypaw4l2meqxwrqqaa4f")
 >>>>>>> develop
+=======
+    Address("component_sim1czuh8arthjt82huwfza200vmk7sfuznn4l2wdmrgyfn4d6zwg9f37t")
+>>>>>>> c9a7b62... Use Global<ConsensusManager> in genesis_helper
     "add_liquidity"
     Bucket("pool_2_resource_1")
     Bucket("pool_2_resource_2")

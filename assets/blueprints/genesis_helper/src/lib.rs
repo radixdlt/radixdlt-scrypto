@@ -1,5 +1,4 @@
 use native_sdk::account::*;
-use native_sdk::consensus_manager::*;
 use scrypto::api::node_modules::metadata::*;
 use scrypto::api::object_api::ObjectModuleId;
 use scrypto::api::ClientObjectApi;
@@ -69,14 +68,14 @@ mod genesis_helper {
     const XRD_MGR: ResourceManager = resource_manager!(XRD);
 
     struct GenesisHelper {
-        consensus_manager: ComponentAddress,
-        validators: KeyValueStore<Secp256k1PublicKey, ComponentAddress>,
+        consensus_manager: Global<ConsensusManager>,
+        validators: KeyValueStore<Secp256k1PublicKey, Global<Validator>>,
     }
 
     impl GenesisHelper {
         pub fn new(
             address_reservation: GlobalAddressReservation,
-            consensus_manager: ComponentAddress,
+            consensus_manager: Global<ConsensusManager>,
             system_role: NonFungibleGlobalId,
         ) -> Global<GenesisHelper> {
             Self {
@@ -119,15 +118,13 @@ mod genesis_helper {
 
         fn create_validator(&mut self, validator: GenesisValidator) {
             let xrd_payment = XRD_MGR.create_empty_bucket();
-            let (validator_address, owner_token_bucket, change) =
-                ConsensusManager(self.consensus_manager)
+            let (mut validator_component, owner_token_bucket, change) =
+                self.consensus_manager
                     .create_validator(
                         validator.key,
                         validator.fee_factor,
                         xrd_payment,
-                        &mut ScryptoEnv,
-                    )
-                    .unwrap();
+                    );
 
             change.drop_empty();
 
@@ -137,19 +134,15 @@ mod genesis_helper {
                 .unwrap();
 
             if validator.is_registered {
-                Validator(validator_address)
-                    .register(&mut ScryptoEnv)
-                    .unwrap();
+                validator_component.register();
             }
 
-            Validator(validator_address)
-                .update_accept_delegated_stake(validator.accept_delegated_stake, &mut ScryptoEnv)
-                .unwrap();
+            validator_component.update_accept_delegated_stake(validator.accept_delegated_stake);
 
             for (key, value) in validator.metadata {
                 ScryptoEnv
                     .call_method_advanced(
-                        &validator_address.into_node_id(),
+                        &validator_component.address().into_node_id(),
                         ObjectModuleId::Metadata,
                         false,
                         METADATA_SET_IDENT,
@@ -158,7 +151,7 @@ mod genesis_helper {
                     .expect("Failed to set validator metadata");
             }
 
-            self.validators.insert(validator.key, validator_address);
+            self.validators.insert(validator.key, validator_component);
         }
 
         fn allocate_stakes(
@@ -178,16 +171,12 @@ mod genesis_helper {
             let mut xrd_bucket = XRD_MGR.mint(xrd_needed);
 
             for (validator_key, stake_allocations) in allocations.into_iter() {
-                let validator_address = self.validators.get(&validator_key).unwrap();
-                let validator = Validator(validator_address.clone());
+                let mut validator = self.validators.get_mut(&validator_key).unwrap();
 
                 // Enable staking temporarily for genesis delegators
-                let accepts_delegated_stake =
-                    validator.accepts_delegated_stake(&mut ScryptoEnv).unwrap();
+                let accepts_delegated_stake = validator.accepts_delegated_stake();
                 if !accepts_delegated_stake {
-                    validator
-                        .update_accept_delegated_stake(true, &mut ScryptoEnv)
-                        .unwrap();
+                    validator.update_accept_delegated_stake(true);
                 }
 
                 for GenesisStakeAllocation {
@@ -197,8 +186,7 @@ mod genesis_helper {
                 {
                     let staker_account_address = accounts[account_index as usize].clone();
                     let stake_xrd_bucket = xrd_bucket.take(xrd_amount);
-                    let stake_unit_bucket =
-                        validator.stake(stake_xrd_bucket, &mut ScryptoEnv).unwrap();
+                    let stake_unit_bucket = validator.stake(stake_xrd_bucket);
                     let _: () = Account(staker_account_address)
                         .deposit(stake_unit_bucket, &mut ScryptoEnv)
                         .unwrap();
@@ -206,9 +194,7 @@ mod genesis_helper {
 
                 // Restore original delegated stake flag
                 if !accepts_delegated_stake {
-                    validator
-                        .update_accept_delegated_stake(accepts_delegated_stake, &mut ScryptoEnv)
-                        .unwrap();
+                    validator.update_accept_delegated_stake(accepts_delegated_stake);
                 }
             }
 
@@ -327,9 +313,7 @@ mod genesis_helper {
         }
 
         pub fn wrap_up(&mut self) -> () {
-            ConsensusManager(self.consensus_manager)
-                .start(&mut ScryptoEnv)
-                .unwrap();
+            self.consensus_manager.start();
         }
     }
 }
