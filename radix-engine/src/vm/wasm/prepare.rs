@@ -98,8 +98,6 @@ impl WasmModule {
                                     ValType::I32,
                                     ValType::I32,
                                     ValType::I32,
-                                    ValType::I32,
-                                    ValType::I32,
                                 ],
                                 vec![ValType::I64],
                             ) {
@@ -135,6 +133,31 @@ impl WasmModule {
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
                                     CALL_MODULE_METHOD_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
+                    CALL_DIRECT_METHOD_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                ],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    CALL_DIRECT_METHOD_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }

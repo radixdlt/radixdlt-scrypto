@@ -98,7 +98,6 @@ impl ScryptoVmV1Api {
         scrypto_decode(&bytes).unwrap()
     }
 
-
     pub fn get_blueprint_id(&mut self, node_id: &NodeId) -> BlueprintId {
         let bytes = copy_buffer(unsafe {
             get_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
@@ -186,7 +185,18 @@ impl ScryptoVmV1Api {
     }
 
     pub fn call_method(&mut self, receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
-        self.call_method_advanced(receiver, ObjectModuleId::Main, false, method_name, args)
+        let return_data = copy_buffer(unsafe {
+            call_method(
+                receiver.as_ref().as_ptr(),
+                receiver.as_ref().len(),
+                method_name.as_ptr(),
+                method_name.len(),
+                args.as_ptr(),
+                args.len(),
+            )
+        });
+
+        return_data
     }
 
     pub fn call_module_method(
@@ -211,20 +221,16 @@ impl ScryptoVmV1Api {
         return_data
     }
 
-    pub fn call_method_advanced(
+    pub fn call_direct_method(
         &mut self,
         receiver: &NodeId,
-        module_id: ObjectModuleId,
-        direct_access: bool,
         method_name: &str,
         args: Vec<u8>,
     ) -> Vec<u8> {
         let return_data = copy_buffer(unsafe {
-            call_method(
+            call_direct_method(
                 receiver.as_ref().as_ptr(),
                 receiver.as_ref().len(),
-                if direct_access { 1 } else { 0 },
-                module_id as u8 as u32,
                 method_name.as_ptr(),
                 method_name.len(),
                 args.as_ptr(),

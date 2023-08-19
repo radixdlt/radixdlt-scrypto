@@ -79,6 +79,13 @@ extern "C" {
 
     pub fn get_reservation_address(node_id_ptr: *const u8, node_id_len: usize) -> Buffer;
 
+    /// Destroys a node.
+    pub fn drop_object(node_id_ptr: *const u8, node_id_len: usize);
+
+    //===============
+    // KeyValueStore API
+    //===============
+
     pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
     pub fn kv_store_open_entry(
@@ -96,6 +103,10 @@ extern "C" {
         _key_len: usize,
     ) -> Buffer;
 
+    //===============
+    // KeyValueEntry API
+    //===============
+
     pub fn kv_entry_get(_key_value_entry_lock_handle: u32) -> Buffer;
 
     pub fn kv_entry_set(
@@ -108,12 +119,14 @@ extern "C" {
 
     pub fn kv_entry_release(_key_value_entry_lock_handle: u32);
 
+    //===============
+    // Invocation API
+    //===============
+
     /// Invokes a method on a component.
     pub fn call_method(
         receiver_ptr: *const u8,
         receive_len: usize,
-        direct_access: u32,
-        module_id: u32,
         ident_ptr: *const u8,
         ident_len: usize,
         args_ptr: *const u8,
@@ -130,6 +143,15 @@ extern "C" {
         _args_len: usize,
     ) -> Buffer;
 
+    pub fn call_direct_method(
+        receiver_ptr: *const u8,
+        receive_len: usize,
+        ident_ptr: *const u8,
+        ident_len: usize,
+        args_ptr: *const u8,
+        args_len: usize,
+    ) -> Buffer;
+
     /// Invokes a function on a blueprint.
     pub fn call_function(
         package_address_ptr: *const u8,
@@ -142,8 +164,6 @@ extern "C" {
         args_len: usize,
     ) -> Buffer;
 
-    /// Destroys a node.
-    pub fn drop_object(node_id_ptr: *const u8, node_id_len: usize);
 
     //===============
     // Actor API
@@ -343,8 +363,6 @@ pub unsafe fn kv_store_remove_entry(
 pub unsafe fn call_method(
     _receiver_ptr: *const u8,
     _receive_len: usize,
-    _direct_access: u32,
-    _module_id: u32,
     _ident_ptr: *const u8,
     _ident_len: usize,
     _args_ptr: *const u8,
@@ -358,6 +376,18 @@ pub unsafe fn call_module_method(
     _receiver_ptr: *const u8,
     _receive_len: usize,
     _module_id: u32,
+    _ident_ptr: *const u8,
+    _ident_len: usize,
+    _args_ptr: *const u8,
+    _args_len: usize,
+) -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn call_direct_method(
+    _receiver_ptr: *const u8,
+    _receive_len: usize,
     _ident_ptr: *const u8,
     _ident_len: usize,
     _args_ptr: *const u8,

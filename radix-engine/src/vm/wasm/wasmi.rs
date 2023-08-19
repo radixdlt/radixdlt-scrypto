@@ -108,6 +108,26 @@ fn consume_buffer(
     }
 }
 
+fn call_method(
+    mut caller: Caller<'_, HostState>,
+    receiver_ptr: u32,
+    receiver_len: u32,
+    ident_ptr: u32,
+    ident_len: u32,
+    args_ptr: u32,
+    args_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let receiver = read_memory(caller.as_context_mut(), memory, receiver_ptr, receiver_len)?;
+    let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
+    let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
+
+    runtime
+        .call_method(receiver, ident, args)
+        .map(|buffer| buffer.0)
+}
+
 fn actor_call_module_method(
     mut caller: Caller<'_, HostState>,
     module_id: u32,
@@ -126,12 +146,10 @@ fn actor_call_module_method(
         .map(|buffer| buffer.0)
 }
 
-fn call_method(
+fn call_direct_method(
     mut caller: Caller<'_, HostState>,
     receiver_ptr: u32,
     receiver_len: u32,
-    direct_access: u32,
-    module_id: u32,
     ident_ptr: u32,
     ident_len: u32,
     args_ptr: u32,
@@ -144,7 +162,7 @@ fn call_method(
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .call_method(receiver, direct_access, module_id, ident, args)
+        .call_direct_method(receiver, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -677,8 +695,6 @@ impl WasmiModule {
             |caller: Caller<'_, HostState>,
              receiver_ptr: u32,
              receiver_len: u32,
-             direct_access: u32,
-             module_id: u32,
              ident_ptr: u32,
              ident_len: u32,
              args_ptr: u32,
@@ -688,8 +704,6 @@ impl WasmiModule {
                     caller,
                     receiver_ptr,
                     receiver_len,
-                    direct_access,
-                    module_id,
                     ident_ptr,
                     ident_len,
                     args_ptr,
@@ -715,6 +729,29 @@ impl WasmiModule {
                     receiver_ptr,
                     receiver_len,
                     direct_access,
+                    ident_ptr,
+                    ident_len,
+                    args_ptr,
+                    args_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
+        let host_call_direct_method = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             receiver_ptr: u32,
+             receiver_len: u32,
+             ident_ptr: u32,
+             ident_len: u32,
+             args_ptr: u32,
+             args_len: u32|
+             -> Result<u64, Trap> {
+                call_direct_method(
+                    caller,
+                    receiver_ptr,
+                    receiver_len,
                     ident_ptr,
                     ident_len,
                     args_ptr,
@@ -1094,6 +1131,11 @@ impl WasmiModule {
             linker,
             CALL_MODULE_METHOD_FUNCTION_NAME,
             host_call_module_method
+        );
+        linker_define!(
+            linker,
+            CALL_DIRECT_METHOD_FUNCTION_NAME,
+            host_call_direct_method
         );
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
         linker_define!(linker, NEW_OBJECT_FUNCTION_NAME, host_new_component);

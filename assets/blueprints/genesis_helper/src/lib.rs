@@ -132,10 +132,9 @@ mod genesis_helper {
             validator_component.update_accept_delegated_stake(validator.accept_delegated_stake);
 
             for (key, value) in validator.metadata {
-                ScryptoVmV1Api.call_method_advanced(
+                ScryptoVmV1Api.call_module_method(
                     &validator_component.address().into_node_id(),
                     ObjectModuleId::Metadata,
-                    false,
                     METADATA_SET_IDENT,
                     scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
                 );

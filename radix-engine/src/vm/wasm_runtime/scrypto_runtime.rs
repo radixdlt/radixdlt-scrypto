@@ -92,8 +92,6 @@ where
     fn call_method(
         &mut self,
         receiver: Vec<u8>,
-        direct_access: u32,
-        module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -102,27 +100,7 @@ where
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
-        let is_direct_access = match direct_access {
-            0 => false,
-            1 => true,
-            _ => {
-                return Err(InvokeError::SelfError(
-                    WasmRuntimeError::InvalidReferenceType(direct_access),
-                ))
-            }
-        };
-        let module_id = u8::try_from(module_id)
-            .ok()
-            .and_then(|x| ObjectModuleId::from_repr(x))
-            .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
-
-        let return_data = self.api.call_method_advanced(
-            &receiver,
-            module_id,
-            is_direct_access,
-            ident.as_str(),
-            args,
-        )?;
+        let return_data = self.api.call_method(&receiver, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }
@@ -147,6 +125,28 @@ where
         let return_data =
             self.api
                 .call_method_advanced(&receiver, module_id, false, ident.as_str(), args)?;
+
+        self.allocate_buffer(return_data)
+    }
+
+    fn call_direct_method(
+        &mut self,
+        receiver: Vec<u8>,
+        ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let receiver = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(receiver.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+        let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
+        let return_data = self.api.call_method_advanced(
+            &receiver,
+            ObjectModuleId::Main,
+            true,
+            ident.as_str(),
+            args,
+        )?;
 
         self.allocate_buffer(return_data)
     }
