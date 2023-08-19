@@ -4,7 +4,6 @@ use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::api::{FieldValue};
 use radix_engine_interface::api::{ClientTransactionRuntimeApi};
@@ -307,13 +306,11 @@ impl ScryptoVmV1Api {
 
         return_data
     }
-}
 
-impl ClientAuthApi<ClientApiError> for ScryptoVmV1Api {
-    fn get_auth_zone(&mut self) -> Result<NodeId, ClientApiError> {
+    pub fn get_auth_zone(&mut self) -> NodeId {
         let auth_zone = copy_buffer(unsafe { get_auth_zone() });
 
-        scrypto_decode(&auth_zone).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&auth_zone).unwrap()
     }
 }
 

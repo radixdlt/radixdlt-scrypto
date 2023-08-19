@@ -2,7 +2,6 @@ use crate::component::ObjectStubHandle;
 use crate::prelude::{AnyComponent, Global};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
-use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
@@ -86,8 +85,8 @@ impl Runtime {
     }
 
     pub fn assert_access_rule(rule: AccessRule) {
-        let node_id = ScryptoVmV1Api.get_auth_zone().unwrap();
-        let _ = ScryptoVmV1Api.call_method(
+        let node_id = ScryptoVmV1Api.get_auth_zone();
+        ScryptoVmV1Api.call_method(
             &node_id,
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
             scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
