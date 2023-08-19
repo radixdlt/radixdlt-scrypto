@@ -26,6 +26,56 @@ pub fn forget_vec(vec: Vec<u8>) -> Slice {
     Slice::new(ptr as u32, len as u32)
 }
 
+pub mod costing {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        pub fn execution_cost_unit_limit() -> u32;
+
+        pub fn execution_cost_unit_price() -> Buffer;
+
+        pub fn finalization_cost_unit_limit() -> u32;
+
+        pub fn finalization_cost_unit_price() -> Buffer;
+
+        pub fn usd_price() -> Buffer;
+
+        pub fn tip_percentage() -> u32;
+
+        pub fn fee_balance() -> Buffer;
+    }
+}
+
+pub mod object {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        pub fn new_object(
+            blueprint_ident_ptr: *const u8,
+            blueprint_ident: usize,
+            object_states_ptr: *const u8,
+            object_states_len: usize,
+        ) -> Buffer;
+
+        pub fn drop_object(node_id_ptr: *const u8, node_id_len: usize);
+
+        pub fn allocate_global_address(blueprint_id_ptr: *const u8, blueprint_id_len: usize) -> Buffer;
+
+        pub fn globalize(
+            _modules_ptr: *const u8,
+            _modules_len: usize,
+            _address_ptr: *const u8,
+            _address_len: usize,
+        ) -> Buffer;
+
+        pub fn get_blueprint_id(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+
+        pub fn get_outer_object(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+
+        pub fn get_reservation_address(node_id_ptr: *const u8, node_id_len: usize) -> Buffer;
+    }
+}
+
 #[cfg(target_arch = "wasm32")]
 extern "C" {
     //===============
@@ -34,53 +84,6 @@ extern "C" {
 
     /// Consumes a buffer by copying the contents into the specified destination.
     pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
-
-    //===============
-    // Costing API
-    //===============
-
-    pub fn execution_cost_unit_limit() -> u32;
-
-    pub fn execution_cost_unit_price() -> Buffer;
-
-    pub fn finalization_cost_unit_limit() -> u32;
-
-    pub fn finalization_cost_unit_price() -> Buffer;
-
-    pub fn usd_price() -> Buffer;
-
-    pub fn tip_percentage() -> u32;
-
-    pub fn fee_balance() -> Buffer;
-
-    //===============
-    // Object API
-    //===============
-
-    pub fn new_object(
-        blueprint_ident_ptr: *const u8,
-        blueprint_ident: usize,
-        object_states_ptr: *const u8,
-        object_states_len: usize,
-    ) -> Buffer;
-
-    pub fn allocate_global_address(blueprint_id_ptr: *const u8, blueprint_id_len: usize) -> Buffer;
-
-    pub fn globalize(
-        _modules_ptr: *const u8,
-        _modules_len: usize,
-        _address_ptr: *const u8,
-        _address_len: usize,
-    ) -> Buffer;
-
-    pub fn get_blueprint_id(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
-
-    pub fn get_outer_object(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
-
-    pub fn get_reservation_address(node_id_ptr: *const u8, node_id_len: usize) -> Buffer;
-
-    /// Destroys a node.
-    pub fn drop_object(node_id_ptr: *const u8, node_id_len: usize);
 
     //===============
     // KeyValueStore API
@@ -228,84 +231,6 @@ extern "C" {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn execution_cost_unit_limit() -> u32 {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn execution_cost_unit_price() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn finalization_cost_unit_limit() -> u32 {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn finalization_cost_unit_price() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn usd_price() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn tip_percentage() -> u32 {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn fee_balance() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn new_object(
-    _blueprint_ident_ptr: *const u8,
-    _blueprint_ident: usize,
-    _object_states_ptr: *const u8,
-    _object_states: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn allocate_global_address(
-    _blueprint_id_ptr: *const u8,
-    _blueprint_id_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn globalize(
-    _modules_ptr: *const u8,
-    _modules_len: usize,
-    _address_ptr: *const u8,
-    _address_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_blueprint_id(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_outer_object(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_reservation_address(_node_id_ptr: *const u8, _node_id_len: usize) -> Buffer {
     unreachable!()
 }
 

@@ -19,34 +19,34 @@ pub struct ScryptoVmV1Api;
 impl ScryptoVmV1Api {
     // Costing
     pub fn execution_cost_unit_limit(&mut self) -> u32 {
-        unsafe { execution_cost_unit_limit() }
+        unsafe { costing::execution_cost_unit_limit() }
     }
 
     pub fn execution_cost_unit_price(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { execution_cost_unit_price() });
+        let bytes = copy_buffer(unsafe { costing::execution_cost_unit_price() });
         scrypto_decode(&bytes).unwrap()
     }
 
     pub fn finalization_cost_unit_limit(&mut self) -> u32 {
-        unsafe { finalization_cost_unit_limit() }
+        unsafe { costing::finalization_cost_unit_limit() }
     }
 
     pub fn finalization_cost_unit_price(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { finalization_cost_unit_price() });
+        let bytes = copy_buffer(unsafe { costing::finalization_cost_unit_price() });
         scrypto_decode(&bytes).unwrap()
     }
 
     pub fn usd_price(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { usd_price() });
+        let bytes = copy_buffer(unsafe { costing::usd_price() });
         scrypto_decode(&bytes).unwrap()
     }
 
     pub fn tip_percentage(&mut self) -> u32 {
-        unsafe { tip_percentage() }
+        unsafe { costing::tip_percentage() }
     }
 
     pub fn fee_balance(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { fee_balance() });
+        let bytes = copy_buffer(unsafe { costing::fee_balance() });
         scrypto_decode(&bytes).unwrap()
     }
 
@@ -56,7 +56,7 @@ impl ScryptoVmV1Api {
     ) -> (GlobalAddressReservation, GlobalAddress) {
         let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
         let bytes = copy_buffer(unsafe {
-            allocate_global_address(blueprint_id.as_ptr(), blueprint_id.len())
+            object::allocate_global_address(blueprint_id.as_ptr(), blueprint_id.len())
         });
         scrypto_decode(&bytes).unwrap()
     }
@@ -69,7 +69,7 @@ impl ScryptoVmV1Api {
         let object_states = scrypto_encode(&object_states).unwrap();
 
         let bytes = copy_buffer(unsafe {
-            new_object(
+            object::new_object(
                 blueprint_ident.as_ptr(),
                 blueprint_ident.len(),
                 object_states.as_ptr(),
@@ -88,7 +88,7 @@ impl ScryptoVmV1Api {
         let address_reservation = scrypto_encode(&address_reservation).unwrap();
 
         let bytes = copy_buffer(unsafe {
-            globalize(
+            object::globalize(
                 modules.as_ptr(),
                 modules.len(),
                 address_reservation.as_ptr(),
@@ -100,7 +100,7 @@ impl ScryptoVmV1Api {
 
     pub fn get_blueprint_id(&mut self, node_id: &NodeId) -> BlueprintId {
         let bytes = copy_buffer(unsafe {
-            get_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+            object::get_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });
 
         scrypto_decode(&bytes).unwrap()
@@ -108,7 +108,7 @@ impl ScryptoVmV1Api {
 
     pub fn get_outer_object(&mut self, node_id: &NodeId) -> GlobalAddress {
         let bytes = copy_buffer(unsafe {
-            get_outer_object(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+            object::get_outer_object(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });
 
         scrypto_decode(&bytes).unwrap()
@@ -116,14 +116,14 @@ impl ScryptoVmV1Api {
 
     pub fn get_reservation_address(&mut self, node_id: &NodeId) -> GlobalAddress {
         let bytes = copy_buffer(unsafe {
-            get_reservation_address(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+            object::get_reservation_address(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });
 
         scrypto_decode(&bytes).unwrap()
     }
 
     pub fn drop_object(&mut self, node_id: &NodeId) -> Vec<Vec<u8>> {
-        unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
+        unsafe { object::drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
 
         // TODO: remove return
         Vec::new()
