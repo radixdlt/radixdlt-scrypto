@@ -59,13 +59,16 @@ pub mod object {
 
         pub fn drop_object(node_id_ptr: *const u8, node_id_len: usize);
 
-        pub fn allocate_global_address(blueprint_id_ptr: *const u8, blueprint_id_len: usize) -> Buffer;
+        pub fn allocate_global_address(
+            blueprint_id_ptr: *const u8,
+            blueprint_id_len: usize,
+        ) -> Buffer;
 
         pub fn globalize(
-            _modules_ptr: *const u8,
-            _modules_len: usize,
-            _address_ptr: *const u8,
-            _address_len: usize,
+            modules_ptr: *const u8,
+            modules_len: usize,
+            address_ptr: *const u8,
+            address_len: usize,
         ) -> Buffer;
 
         pub fn get_blueprint_id(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
@@ -73,6 +76,125 @@ pub mod object {
         pub fn get_outer_object(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
         pub fn get_reservation_address(node_id_ptr: *const u8, node_id_len: usize) -> Buffer;
+    }
+}
+
+pub mod kv_store {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
+
+        pub fn kv_store_open_entry(
+            key_value_store_id_ptr: *const u8,
+            key_value_store_id_len: usize,
+            offset: *const u8,
+            offset_len: usize,
+            flags: u32,
+        ) -> u32;
+
+        pub fn kv_store_remove_entry(
+            key_value_store_id_ptr: *const u8,
+            key_value_store_id_len: usize,
+            key: *const u8,
+            key_len: usize,
+        ) -> Buffer;
+    }
+}
+
+
+pub mod kv_entry {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        pub fn kv_entry_get(key_value_entry_lock_handle: u32) -> Buffer;
+
+        pub fn kv_entry_set(
+            key_value_entry_lock_handle: u32,
+            buffer_ptr: *const u8,
+            buffer_len: usize,
+        );
+
+        pub fn kv_entry_remove(key_value_entry_lock_handle: u32) -> Buffer;
+
+        pub fn kv_entry_release(key_value_entry_lock_handle: u32);
+    }
+}
+
+pub mod invocation {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        pub fn call_method(
+            receiver_ptr: *const u8,
+            receive_len: usize,
+            ident_ptr: *const u8,
+            ident_len: usize,
+            args_ptr: *const u8,
+            args_len: usize,
+        ) -> Buffer;
+
+        pub fn call_module_method(
+            _receiver_ptr: *const u8,
+            _receive_len: usize,
+            _module_id: u32,
+            _ident_ptr: *const u8,
+            _ident_len: usize,
+            _args_ptr: *const u8,
+            _args_len: usize,
+        ) -> Buffer;
+
+        pub fn call_direct_method(
+            receiver_ptr: *const u8,
+            receive_len: usize,
+            ident_ptr: *const u8,
+            ident_len: usize,
+            args_ptr: *const u8,
+            args_len: usize,
+        ) -> Buffer;
+
+        /// Invokes a function on a blueprint.
+        pub fn call_function(
+            package_address_ptr: *const u8,
+            package_address_len: usize,
+            blueprint_ident_ptr: *const u8,
+            blueprint_ident_len: usize,
+            function_ident_ptr: *const u8,
+            function_ident_len: usize,
+            args_ptr: *const u8,
+            args_len: usize,
+        ) -> Buffer;
+    }
+}
+
+pub mod actor {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
+
+        pub fn actor_call_module_method(
+            module_id: u32,
+            ident_ptr: *const u8,
+            ident_len: usize,
+            args_ptr: *const u8,
+            args_len: usize,
+        ) -> Buffer;
+
+        pub fn get_node_id() -> Buffer;
+
+        pub fn get_global_address() -> Buffer;
+
+        pub fn get_blueprint() -> Buffer;
+
+        pub fn get_auth_zone() -> Buffer;
+
+        pub fn emit_event(
+            event_name_ptr: *const u8,
+            event_name_len: usize,
+            event_data_ptr: *const u8,
+            event_data_len: usize,
+        );
     }
 }
 
@@ -84,104 +206,6 @@ extern "C" {
 
     /// Consumes a buffer by copying the contents into the specified destination.
     pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
-
-    //===============
-    // KeyValueStore API
-    //===============
-
-    pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
-
-    pub fn kv_store_open_entry(
-        key_value_store_id_ptr: *const u8,
-        key_value_store_id_len: usize,
-        offset: *const u8,
-        offset_len: usize,
-        flags: u32,
-    ) -> u32;
-
-    pub fn kv_store_remove_entry(
-        _key_value_store_id_ptr: *const u8,
-        _key_value_store_id_len: usize,
-        _key: *const u8,
-        _key_len: usize,
-    ) -> Buffer;
-
-    //===============
-    // KeyValueEntry API
-    //===============
-
-    pub fn kv_entry_get(_key_value_entry_lock_handle: u32) -> Buffer;
-
-    pub fn kv_entry_set(
-        _key_value_entry_lock_handle: u32,
-        _buffer_ptr: *const u8,
-        _buffer_len: usize,
-    );
-
-    pub fn kv_entry_remove(_key_value_entry_lock_handle: u32) -> Buffer;
-
-    pub fn kv_entry_release(_key_value_entry_lock_handle: u32);
-
-    //===============
-    // Invocation API
-    //===============
-
-    /// Invokes a method on a component.
-    pub fn call_method(
-        receiver_ptr: *const u8,
-        receive_len: usize,
-        ident_ptr: *const u8,
-        ident_len: usize,
-        args_ptr: *const u8,
-        args_len: usize,
-    ) -> Buffer;
-
-    pub fn call_module_method(
-        _receiver_ptr: *const u8,
-        _receive_len: usize,
-        _module_id: u32,
-        _ident_ptr: *const u8,
-        _ident_len: usize,
-        _args_ptr: *const u8,
-        _args_len: usize,
-    ) -> Buffer;
-
-    pub fn call_direct_method(
-        receiver_ptr: *const u8,
-        receive_len: usize,
-        ident_ptr: *const u8,
-        ident_len: usize,
-        args_ptr: *const u8,
-        args_len: usize,
-    ) -> Buffer;
-
-    /// Invokes a function on a blueprint.
-    pub fn call_function(
-        package_address_ptr: *const u8,
-        package_address_len: usize,
-        blueprint_ident_ptr: *const u8,
-        blueprint_ident_len: usize,
-        function_ident_ptr: *const u8,
-        function_ident_len: usize,
-        args_ptr: *const u8,
-        args_len: usize,
-    ) -> Buffer;
-
-
-    //===============
-    // Actor API
-    //===============
-
-    // Locks a field
-    pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
-
-    pub fn actor_call_module_method(
-        _module_id: u32,
-        _ident_ptr: *const u8,
-        _ident_len: usize,
-        _args_ptr: *const u8,
-        _args_len: usize,
-    ) -> Buffer;
 
     //===============
     // Field Lock API
@@ -199,22 +223,6 @@ extern "C" {
     //===============
     // System API
     //===============
-
-    pub fn get_node_id() -> Buffer;
-
-    pub fn get_global_address() -> Buffer;
-
-    pub fn get_blueprint() -> Buffer;
-
-    pub fn get_auth_zone() -> Buffer;
-
-    pub fn emit_event(
-        event_name_ptr: *const u8,
-        event_name_len: usize,
-        event_data_ptr: *const u8,
-        event_data_len: usize,
-    );
-
     pub fn emit_log(
         level_ptr: *const u8,
         level_len: usize,
@@ -235,117 +243,6 @@ pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_store_new(_schema_ptr: *const u8, _schema_len: usize) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_store_open_entry(
-    _key_value_store_id_ptr: *const u8,
-    _key_value_store_id_len: usize,
-    _offset: *const u8,
-    _offset_len: usize,
-    _flags: u32,
-) -> u32 {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_entry_get(_key_value_entry_lock_handle: u32) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_entry_set(
-    _key_value_entry_lock_handle: u32,
-    _buffer_ptr: *const u8,
-    _buffer_len: usize,
-) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_entry_remove(_key_value_entry_lock_handle: u32) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_entry_release(_key_value_entry_lock_handle: u32) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_store_remove_entry(
-    _key_value_store_id_ptr: *const u8,
-    _key_value_store_id_len: usize,
-    _key: *const u8,
-    _key_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn call_method(
-    _receiver_ptr: *const u8,
-    _receive_len: usize,
-    _ident_ptr: *const u8,
-    _ident_len: usize,
-    _args_ptr: *const u8,
-    _args_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn call_module_method(
-    _receiver_ptr: *const u8,
-    _receive_len: usize,
-    _module_id: u32,
-    _ident_ptr: *const u8,
-    _ident_len: usize,
-    _args_ptr: *const u8,
-    _args_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn call_direct_method(
-    _receiver_ptr: *const u8,
-    _receive_len: usize,
-    _ident_ptr: *const u8,
-    _ident_len: usize,
-    _args_ptr: *const u8,
-    _args_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn call_function(
-    _package_address_ptr: *const u8,
-    _package_address_len: usize,
-    _blueprint_ident_ptr: *const u8,
-    _blueprint_ident_len: usize,
-    _function_ident_ptr: *const u8,
-    _function_ident_len: usize,
-    _args_ptr: *const u8,
-    _args_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn drop_object(_node_id_ptr: *const u8, _node_id_len: usize) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn actor_open_field(_object_handle: u32, _field: u32, _flags: u32) -> u32 {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn field_lock_read(_handle: u32) -> Buffer {
     unreachable!()
 }
@@ -355,47 +252,6 @@ pub unsafe fn field_lock_write(_handle: u32, _data_ptr: *const u8, _data_len: us
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn field_lock_release(_handle: u32) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_global_address() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_node_id() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_blueprint() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn actor_call_module_method(
-    _module_id: u32,
-    _ident_ptr: *const u8,
-    _ident_len: usize,
-    _args_ptr: *const u8,
-    _args_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_auth_zone() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn emit_event(
-    _event_name_ptr: *const u8,
-    _event_name_len: usize,
-    _event_data_ptr: *const u8,
-    _event_data_len: usize,
-) {
     unreachable!()
 }
 

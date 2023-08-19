@@ -76,11 +76,11 @@ impl Runtime {
 
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
-        ScryptoVmV1Api.emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap());
+        ScryptoVmV1Api.actor_emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap());
     }
 
     pub fn assert_access_rule(rule: AccessRule) {
-        let node_id = ScryptoVmV1Api.get_auth_zone();
+        let node_id = ScryptoVmV1Api.actor_get_auth_zone();
         ScryptoVmV1Api.call_method(
             &node_id,
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,

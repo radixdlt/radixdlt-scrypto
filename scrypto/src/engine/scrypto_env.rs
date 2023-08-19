@@ -130,26 +130,24 @@ impl ScryptoVmV1Api {
     }
 
     pub fn key_value_entry_get(&mut self, handle: KeyValueEntryHandle) -> Vec<u8> {
-        let entry = copy_buffer(unsafe { kv_entry_get(handle) });
-        entry
+        copy_buffer(unsafe { kv_entry::kv_entry_get(handle) })
     }
 
     pub fn key_value_entry_set(&mut self, handle: KeyValueEntryHandle, buffer: Vec<u8>) {
-        unsafe { kv_entry_set(handle, buffer.as_ptr(), buffer.len()) };
+        unsafe { kv_entry::kv_entry_set(handle, buffer.as_ptr(), buffer.len()) };
     }
 
     pub fn key_value_entry_remove(&mut self, handle: KeyValueEntryHandle) -> Vec<u8> {
-        let removed = copy_buffer(unsafe { kv_entry_remove(handle) });
-        removed
+        copy_buffer(unsafe { kv_entry::kv_entry_remove(handle) })
     }
 
     pub fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) {
-        unsafe { kv_entry_release(handle) };
+        unsafe { kv_entry::kv_entry_release(handle) };
     }
 
     pub fn key_value_store_new(&mut self, schema: KeyValueStoreGenericArgs) -> NodeId {
         let schema = scrypto_encode(&schema).unwrap();
-        let bytes = copy_buffer(unsafe { kv_store_new(schema.as_ptr(), schema.len()) });
+        let bytes = copy_buffer(unsafe { kv_store::kv_store_new(schema.as_ptr(), schema.len()) });
         scrypto_decode(&bytes).unwrap()
     }
 
@@ -160,7 +158,7 @@ impl ScryptoVmV1Api {
         flags: LockFlags,
     ) -> KeyValueEntryHandle {
         let handle = unsafe {
-            kv_store_open_entry(
+            kv_store::kv_store_open_entry(
                 node_id.as_ref().as_ptr(),
                 node_id.as_ref().len(),
                 key.as_ptr(),
@@ -174,7 +172,7 @@ impl ScryptoVmV1Api {
 
     pub fn key_value_store_remove_entry(&mut self, node_id: &NodeId, key: &Vec<u8>) -> Vec<u8> {
         let removed = copy_buffer(unsafe {
-            kv_store_remove_entry(
+            kv_store::kv_store_remove_entry(
                 node_id.as_ref().as_ptr(),
                 node_id.as_ref().len(),
                 key.as_ptr(),
@@ -185,8 +183,8 @@ impl ScryptoVmV1Api {
     }
 
     pub fn call_method(&mut self, receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
-        let return_data = copy_buffer(unsafe {
-            call_method(
+        copy_buffer(unsafe {
+            invocation::call_method(
                 receiver.as_ref().as_ptr(),
                 receiver.as_ref().len(),
                 method_name.as_ptr(),
@@ -194,9 +192,7 @@ impl ScryptoVmV1Api {
                 args.as_ptr(),
                 args.len(),
             )
-        });
-
-        return_data
+        })
     }
 
     pub fn call_module_method(
@@ -206,8 +202,8 @@ impl ScryptoVmV1Api {
         method_name: &str,
         args: Vec<u8>,
     ) -> Vec<u8> {
-        let return_data = copy_buffer(unsafe {
-            call_module_method(
+        copy_buffer(unsafe {
+            invocation::call_module_method(
                 receiver.as_ref().as_ptr(),
                 receiver.as_ref().len(),
                 module_id as u8 as u32,
@@ -216,9 +212,7 @@ impl ScryptoVmV1Api {
                 args.as_ptr(),
                 args.len(),
             )
-        });
-
-        return_data
+        })
     }
 
     pub fn call_direct_method(
@@ -227,8 +221,8 @@ impl ScryptoVmV1Api {
         method_name: &str,
         args: Vec<u8>,
     ) -> Vec<u8> {
-        let return_data = copy_buffer(unsafe {
-            call_direct_method(
+        copy_buffer(unsafe {
+            invocation::call_direct_method(
                 receiver.as_ref().as_ptr(),
                 receiver.as_ref().len(),
                 method_name.as_ptr(),
@@ -236,9 +230,7 @@ impl ScryptoVmV1Api {
                 args.as_ptr(),
                 args.len(),
             )
-        });
-
-        return_data
+        })
     }
 
     pub fn call_function(
@@ -250,8 +242,8 @@ impl ScryptoVmV1Api {
     ) -> Vec<u8> {
         let package_address = scrypto_encode(&package_address).unwrap();
 
-        let return_data = copy_buffer(unsafe {
-            call_function(
+        copy_buffer(unsafe {
+            invocation::call_function(
                 package_address.as_ptr(),
                 package_address.len(),
                 blueprint_name.as_ptr(),
@@ -261,9 +253,7 @@ impl ScryptoVmV1Api {
                 args.as_ptr(),
                 args.len(),
             )
-        });
-
-        return_data
+        })
     }
 
     pub fn field_read(&mut self, lock_handle: SubstateHandle) -> Vec<u8> {
@@ -285,24 +275,24 @@ impl ScryptoVmV1Api {
         field: u8,
         flags: LockFlags,
     ) -> SubstateHandle {
-        let handle = unsafe { actor_open_field(object_handle, u32::from(field), flags.bits()) };
+        let handle = unsafe { actor::actor_open_field(object_handle, u32::from(field), flags.bits()) };
         handle
     }
 
     pub fn actor_get_node_id(&mut self) -> NodeId {
-        let node_id = copy_buffer(unsafe { get_node_id() });
+        let node_id = copy_buffer(unsafe { actor::get_node_id() });
 
         scrypto_decode(&node_id).unwrap()
     }
 
     pub fn actor_get_global_address(&mut self) -> GlobalAddress {
-        let global_address = copy_buffer(unsafe { get_global_address() });
+        let global_address = copy_buffer(unsafe { actor::get_global_address() });
 
         scrypto_decode(&global_address).unwrap()
     }
 
     pub fn actor_get_blueprint_id(&mut self) -> BlueprintId {
-        let blueprint_id = copy_buffer(unsafe { get_blueprint() });
+        let blueprint_id = copy_buffer(unsafe { actor::get_blueprint() });
 
         scrypto_decode(&blueprint_id).unwrap()
     }
@@ -314,7 +304,7 @@ impl ScryptoVmV1Api {
         args: Vec<u8>,
     ) -> Vec<u8> {
         let return_data = copy_buffer(unsafe {
-            actor_call_module_method(
+            actor::actor_call_module_method(
                 module_id as u8 as u32,
                 method_name.as_ptr(),
                 method_name.len(),
@@ -326,15 +316,15 @@ impl ScryptoVmV1Api {
         return_data
     }
 
-    pub fn get_auth_zone(&mut self) -> NodeId {
-        let auth_zone = copy_buffer(unsafe { get_auth_zone() });
+    pub fn actor_get_auth_zone(&mut self) -> NodeId {
+        let auth_zone = copy_buffer(unsafe { actor::get_auth_zone() });
 
         scrypto_decode(&auth_zone).unwrap()
     }
 
-    pub fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) {
+    pub fn actor_emit_event(&mut self, event_name: String, event_data: Vec<u8>) {
         unsafe {
-            emit_event(
+            actor::emit_event(
                 event_name.as_ptr(),
                 event_name.len(),
                 event_data.as_ptr(),

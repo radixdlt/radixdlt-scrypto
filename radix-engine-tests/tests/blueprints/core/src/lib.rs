@@ -190,7 +190,8 @@ mod recursive_test {
             let mut value_payload = scrypto_encode(&Own(NodeId([0u8; NodeId::LENGTH]))).unwrap();
 
             fn create_kv_store(schema: &[u8]) -> NodeId {
-                let bytes = copy_buffer(unsafe { kv_store_new(schema.as_ptr(), schema.len()) });
+                let bytes =
+                    copy_buffer(unsafe { kv_store::kv_store_new(schema.as_ptr(), schema.len()) });
                 NodeId(bytes[bytes.len() - NodeId::LENGTH..].try_into().unwrap())
             }
 
@@ -201,7 +202,7 @@ mod recursive_test {
                 value_payload: &mut [u8],
             ) {
                 unsafe {
-                    let handle = kv_store_open_entry(
+                    let handle = kv_store::kv_store_open_entry(
                         to.as_ref().as_ptr(),
                         to.as_ref().len(),
                         key_payload.as_ptr(),
