@@ -56,8 +56,16 @@ impl ScryptoVmV1Api {
     ) -> (GlobalAddressReservation, GlobalAddress) {
         let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
         let bytes = copy_buffer(unsafe {
-            object::allocate_global_address(blueprint_id.as_ptr(), blueprint_id.len())
+            addr::allocate_global_address(blueprint_id.as_ptr(), blueprint_id.len())
         });
+        scrypto_decode(&bytes).unwrap()
+    }
+
+    pub fn get_reservation_address(&mut self, node_id: &NodeId) -> GlobalAddress {
+        let bytes = copy_buffer(unsafe {
+            addr::get_reservation_address(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
+
         scrypto_decode(&bytes).unwrap()
     }
 
@@ -69,7 +77,7 @@ impl ScryptoVmV1Api {
         let object_states = scrypto_encode(&object_states).unwrap();
 
         let bytes = copy_buffer(unsafe {
-            object::new_object(
+            object::object_new(
                 blueprint_ident.as_ptr(),
                 blueprint_ident.len(),
                 object_states.as_ptr(),
@@ -114,13 +122,6 @@ impl ScryptoVmV1Api {
         scrypto_decode(&bytes).unwrap()
     }
 
-    pub fn get_reservation_address(&mut self, node_id: &NodeId) -> GlobalAddress {
-        let bytes = copy_buffer(unsafe {
-            object::get_reservation_address(node_id.as_ref().as_ptr(), node_id.as_ref().len())
-        });
-
-        scrypto_decode(&bytes).unwrap()
-    }
 
     pub fn key_value_entry_get(&mut self, handle: KeyValueEntryHandle) -> Vec<u8> {
         copy_buffer(unsafe { kv_entry::kv_entry_get(handle) })
@@ -177,7 +178,7 @@ impl ScryptoVmV1Api {
 
     pub fn call_method(&mut self, receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
         copy_buffer(unsafe {
-            invocation::call_method(
+            object::object_call_method(
                 receiver.as_ref().as_ptr(),
                 receiver.as_ref().len(),
                 method_name.as_ptr(),
@@ -196,7 +197,7 @@ impl ScryptoVmV1Api {
         args: Vec<u8>,
     ) -> Vec<u8> {
         copy_buffer(unsafe {
-            invocation::call_module_method(
+            object::object_call_module_method(
                 receiver.as_ref().as_ptr(),
                 receiver.as_ref().len(),
                 module_id as u8 as u32,
@@ -215,7 +216,7 @@ impl ScryptoVmV1Api {
         args: Vec<u8>,
     ) -> Vec<u8> {
         copy_buffer(unsafe {
-            invocation::call_direct_method(
+            object::object_call_direct_method(
                 receiver.as_ref().as_ptr(),
                 receiver.as_ref().len(),
                 method_name.as_ptr(),
@@ -236,7 +237,7 @@ impl ScryptoVmV1Api {
         let package_address = scrypto_encode(&package_address).unwrap();
 
         copy_buffer(unsafe {
-            invocation::call_function(
+            blueprint::blueprint_call_function(
                 package_address.as_ptr(),
                 package_address.len(),
                 blueprint_name.as_ptr(),

@@ -35,80 +35,13 @@ pub mod buffer {
     }
 }
 
-
-/// API to manipulate or get information about visible objects
-pub mod object {
+/// Api make blueprint function calls
+pub mod blueprint {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
-        /// Creates a new object of a given blueprint defined in the same
-        /// package as the current actor
-        pub fn new_object(
-            blueprint_ident_ptr: *const u8,
-            blueprint_ident: usize,
-            obj_fields_ptr: *const u8,
-            obj_fields_len: usize,
-        ) -> Buffer;
-
-        /// Reserves a global address for the given blueprint
-        pub fn allocate_global_address(
-            blueprint_id_ptr: *const u8,
-            blueprint_id_len: usize,
-        ) -> Buffer;
-
-        /// Get the address associated with an address reservation
-        pub fn get_reservation_address(reservation_id_ptr: *const u8, reservation_id_len: usize) -> Buffer;
-
-        /// Globalizes an object with given modules
-        pub fn globalize(
-            modules_ptr: *const u8,
-            modules_len: usize,
-            address_ptr: *const u8,
-            address_len: usize,
-        ) -> Buffer;
-
-        /// Get the Blueprint Identifier of a given object
-        pub fn get_blueprint_id(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
-
-        /// Get the address of the outer object of a given object
-        pub fn get_outer_object(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
-    }
-}
-
-pub mod invocation {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
-
-    extern "C" {
-        pub fn call_method(
-            receiver_ptr: *const u8,
-            receive_len: usize,
-            ident_ptr: *const u8,
-            ident_len: usize,
-            args_ptr: *const u8,
-            args_len: usize,
-        ) -> Buffer;
-
-        pub fn call_module_method(
-            _receiver_ptr: *const u8,
-            _receive_len: usize,
-            _module_id: u32,
-            _ident_ptr: *const u8,
-            _ident_len: usize,
-            _args_ptr: *const u8,
-            _args_len: usize,
-        ) -> Buffer;
-
-        pub fn call_direct_method(
-            receiver_ptr: *const u8,
-            receive_len: usize,
-            ident_ptr: *const u8,
-            ident_len: usize,
-            args_ptr: *const u8,
-            args_len: usize,
-        ) -> Buffer;
-
         /// Invokes a blueprint function
-        pub fn call_function(
+        pub fn blueprint_call_function(
             package_address_ptr: *const u8,
             package_address_len: usize,
             blueprint_ident_ptr: *const u8,
@@ -121,12 +54,90 @@ pub mod invocation {
     }
 }
 
+/// API to allocate/reserve global address
+pub mod addr {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        /// Reserves a global address for a given blueprint
+        pub fn allocate_global_address(
+            blueprint_id_ptr: *const u8,
+            blueprint_id_len: usize,
+        ) -> Buffer;
+
+        /// Get the address associated with an address reservation
+        pub fn get_reservation_address(address_id_ptr: *const u8, address_id_len: usize) -> Buffer;
+    }
+}
+
+/// API to manipulate or get information about visible objects
+pub mod object {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        /// Creates a new object of a given blueprint defined in the same
+        /// package as the current actor
+        pub fn object_new(
+            blueprint_id_ptr: *const u8,
+            blueprint_id: usize,
+            obj_fields_ptr: *const u8,
+            obj_fields_len: usize,
+        ) -> Buffer;
+
+        /// Globalizes an object with given modules
+        pub fn globalize(
+            modules_ptr: *const u8,
+            modules_len: usize,
+            address_id_ptr: *const u8,
+            address_id_len: usize,
+        ) -> Buffer;
+
+        /// Get the Blueprint Identifier of a given object
+        pub fn get_blueprint_id(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
+
+        /// Get the address of the outer object of a given object
+        pub fn get_outer_object(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
+
+        /// Invokes a method on a visible object
+        pub fn object_call_method(
+            obj_id_ptr: *const u8,
+            obj_id_len: usize,
+            ident_ptr: *const u8,
+            ident_len: usize,
+            args_ptr: *const u8,
+            args_len: usize,
+        ) -> Buffer;
+
+        /// Invokes a direct method on a visible object
+        pub fn object_call_direct_method(
+            obj_id_ptr: *const u8,
+            obj_id_len: usize,
+            ident_ptr: *const u8,
+            ident_len: usize,
+            args_ptr: *const u8,
+            args_len: usize,
+        ) -> Buffer;
+
+        /// Invokes a module method on a visible object
+        pub fn object_call_module_method(
+            obj_id_ptr: *const u8,
+            obj_id_len: usize,
+            module_id: u32,
+            ident_ptr: *const u8,
+            ident_len: usize,
+            args_ptr: *const u8,
+            args_len: usize,
+        ) -> Buffer;
+    }
+}
+
 pub mod actor {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
         pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
 
+        /// Call a module method of the current actor
         pub fn actor_call_module_method(
             module_id: u32,
             ident_ptr: *const u8,
@@ -135,6 +146,7 @@ pub mod actor {
             args_len: usize,
         ) -> Buffer;
 
+        /// Emit an event
         pub fn actor_emit_event(
             event_name_ptr: *const u8,
             event_name_len: usize,
@@ -144,8 +156,11 @@ pub mod actor {
 
         pub fn actor_get_node_id() -> Buffer;
 
+        /// Get the global address of the current actor
+        /// If an owned object, this will refer to the global containing object's address
         pub fn actor_get_global_address() -> Buffer;
 
+        /// Get the blueprint id of the current actor
         pub fn actor_get_blueprint_id() -> Buffer;
 
         pub fn actor_get_auth_zone() -> Buffer;

@@ -16,22 +16,23 @@ pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
 pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
 
 //=================
-// Blueprint/Object
+// Blueprint
 //=================
+pub const BLUEPRINT_CALL_FUNCTION_FUNCTION_NAME: &str = "blueprint_call_function";
+
+//=================
+// Object
+//=================
+pub const OBJECT_NEW_FUNCTION_NAME: &str = "object_new";
 pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "allocate_global_address";
 pub const GET_RESERVATION_ADDRESS_FUNCTION_NAME: &str = "get_reservation_address";
-pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
 pub const GLOBALIZE_FUNCTION_NAME: &str = "globalize";
 pub const GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "get_blueprint_id";
 pub const GET_OUTER_OBJECT_FUNCTION_NAME: &str = "get_outer_object";
+pub const OBJECT_CALL_METHOD_FUNCTION_NAME: &str = "object_call_method";
+pub const OBJECT_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "object_call_module_method";
+pub const OBJECT_CALL_DIRECT_METHOD_FUNCTION_NAME: &str = "object_call_direct_method";
 
-//=================
-// Invocation
-//=================
-pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
-pub const CALL_MODULE_METHOD_FUNCTION_NAME: &str = "call_module_method";
-pub const CALL_DIRECT_METHOD_FUNCTION_NAME: &str = "call_direct_method";
-pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
 
 //=================
 // Actor

@@ -675,9 +675,9 @@ impl WasmerModule {
         let import_object = imports! {
             MODULE_ENV_NAME => {
                 CONSUME_BUFFER_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_buffer),
-                CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
-                CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
-                NEW_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_object),
+                OBJECT_CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
+                BLUEPRINT_CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
+                OBJECT_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_object),
                 ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), allocate_global_address),
                 EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), execution_cost_unit_limit),
                 EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), execution_cost_unit_price),

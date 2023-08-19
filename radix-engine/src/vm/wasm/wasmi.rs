@@ -1104,19 +1104,19 @@ impl WasmiModule {
         let mut linker = <Linker<HostState>>::new();
 
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
-        linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
+        linker_define!(linker, OBJECT_CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(
             linker,
-            CALL_MODULE_METHOD_FUNCTION_NAME,
+            OBJECT_CALL_MODULE_METHOD_FUNCTION_NAME,
             host_call_module_method
         );
         linker_define!(
             linker,
-            CALL_DIRECT_METHOD_FUNCTION_NAME,
+            OBJECT_CALL_DIRECT_METHOD_FUNCTION_NAME,
             host_call_direct_method
         );
-        linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
-        linker_define!(linker, NEW_OBJECT_FUNCTION_NAME, host_new_component);
+        linker_define!(linker, BLUEPRINT_CALL_FUNCTION_FUNCTION_NAME, host_call_function);
+        linker_define!(linker, OBJECT_NEW_FUNCTION_NAME, host_new_component);
 
         linker_define!(
             linker,
