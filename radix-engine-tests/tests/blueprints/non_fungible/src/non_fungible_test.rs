@@ -498,8 +498,7 @@ mod non_fungible_test {
                         address_reservation: None,
                     })
                     .unwrap(),
-                )
-                .unwrap();
+                );
             let (_resource_address, bucket): (ResourceAddress, Bucket) =
                 scrypto_decode(&rtn).unwrap();
 

@@ -1,7 +1,6 @@
 use crate::resource::*;
 use crate::runtime::Runtime;
 use crate::*;
-use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -190,8 +189,7 @@ impl ScryptoUncheckedProof for Proof {
                 proof: Proof(self.0),
             })
             .unwrap(),
-        )
-        .unwrap();
+        );
     }
 
     fn clone(&self) -> Self {

@@ -8,7 +8,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::api::{ClientActorApi, ClientFieldApi, FieldValue, ObjectHandle};
-use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
+use radix_engine_interface::api::{ClientTransactionRuntimeApi};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::PackageAddress;
@@ -219,16 +219,14 @@ impl ScryptoVmV1Api {
         });
         removed
     }
-}
 
-impl ClientBlueprintApi<ClientApiError> for ScryptoVmV1Api {
-    fn call_function(
+    pub fn call_function(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
         function_name: &str,
         args: Vec<u8>,
-    ) -> Result<Vec<u8>, ClientApiError> {
+    ) -> Vec<u8> {
         let package_address = scrypto_encode(&package_address).unwrap();
 
         let return_data = copy_buffer(unsafe {
@@ -244,7 +242,7 @@ impl ClientBlueprintApi<ClientApiError> for ScryptoVmV1Api {
             )
         });
 
-        Ok(return_data)
+        return_data
     }
 }
 

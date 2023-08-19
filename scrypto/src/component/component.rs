@@ -16,7 +16,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientBlueprintApi, FieldValue};
+use radix_engine_interface::api::{FieldValue};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit,
 };
@@ -58,16 +58,14 @@ impl<C: HasTypeInfo> Blueprint<C> {
                 C::BLUEPRINT_NAME,
                 function_name,
                 scrypto_encode(&args).unwrap(),
-            )
-            .unwrap();
+            );
         scrypto_decode(&output).unwrap()
     }
 
     pub fn call_function_raw<T: ScryptoDecode>(function_name: &str, args: Vec<u8>) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
         let output = ScryptoVmV1Api
-            .call_function(package_address, C::BLUEPRINT_NAME, function_name, args)
-            .unwrap();
+            .call_function(package_address, C::BLUEPRINT_NAME, function_name, args);
         scrypto_decode(&output).unwrap()
     }
 }

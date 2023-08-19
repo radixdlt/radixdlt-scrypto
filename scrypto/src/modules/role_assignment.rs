@@ -46,8 +46,7 @@ impl RoleAssignment {
                     roles,
                 })
                 .unwrap(),
-            )
-            .unwrap();
+            );
         let role_assignment: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(role_assignment))
     }

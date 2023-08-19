@@ -13,7 +13,6 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -58,8 +57,7 @@ impl Royalty {
                 COMPONENT_ROYALTY_BLUEPRINT,
                 COMPONENT_ROYALTY_CREATE_IDENT,
                 scrypto_encode(&ComponentRoyaltyCreateInput { royalty_config }).unwrap(),
-            )
-            .unwrap();
+            );
 
         let royalty: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(royalty))

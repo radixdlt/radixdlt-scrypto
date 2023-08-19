@@ -19,8 +19,7 @@ mod component_module {
                     METADATA_BLUEPRINT,
                     METADATA_CREATE_IDENT,
                     scrypto_encode(&MetadataCreateInput {}).unwrap(),
-                )
-                .unwrap();
+                );
             let metadata: Own = scrypto_decode(&rtn).unwrap();
 
             let rtn = ScryptoVmV1Api
@@ -32,8 +31,7 @@ mod component_module {
                         royalty_config: ComponentRoyaltyConfig::default(),
                     })
                     .unwrap(),
-                )
-                .unwrap();
+                );
             let royalty: Own = scrypto_decode(&rtn).unwrap();
 
             let rtn = ScryptoVmV1Api
@@ -46,8 +44,7 @@ mod component_module {
                         roles: BTreeMap::new(),
                     })
                     .unwrap(),
-                )
-                .unwrap();
+                );
             let role_assignment: Own = scrypto_decode(&rtn).unwrap();
 
             let address = ScryptoVmV1Api.globalize(

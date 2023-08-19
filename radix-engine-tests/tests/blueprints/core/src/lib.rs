@@ -1,7 +1,5 @@
 use scrypto::api::key_value_store_api::KeyValueStoreGenericArgs;
 use scrypto::api::object_api::ObjectModuleId;
-use scrypto::api::ClientBlueprintApi;
-use scrypto::api::ClientObjectApi;
 use scrypto::api::LockFlags;
 use scrypto::prelude::wasm_api::*;
 use scrypto::prelude::*;
@@ -32,8 +30,7 @@ mod globalize_test {
                     "GlobalizeTest",
                     "globalize",
                     scrypto_args!(x),
-                )
-                .unwrap();
+                );
         }
 
         pub fn globalize_bucket() {
@@ -124,8 +121,7 @@ mod drop_test {
             let x = DropTest {}.instantiate();
 
             ScryptoVmV1Api
-                .call_function(package_address, "DropTest", "drop", scrypto_args!(x))
-                .unwrap();
+                .call_function(package_address, "DropTest", "drop", scrypto_args!(x));
         }
 
         pub fn drop(x: Own) {

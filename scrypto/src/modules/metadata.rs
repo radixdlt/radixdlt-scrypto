@@ -5,7 +5,6 @@ use crate::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::rust::prelude::*;
@@ -49,8 +48,7 @@ impl Metadata {
                 METADATA_BLUEPRINT,
                 METADATA_CREATE_IDENT,
                 scrypto_encode(&MetadataCreateInput {}).unwrap(),
-            )
-            .unwrap();
+            );
         let metadata: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(metadata))
     }
@@ -62,8 +60,7 @@ impl Metadata {
                 METADATA_BLUEPRINT,
                 METADATA_CREATE_WITH_DATA_IDENT,
                 scrypto_encode(&MetadataCreateWithDataInput { data }).unwrap(),
-            )
-            .unwrap();
+            );
         let metadata: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(metadata))
     }

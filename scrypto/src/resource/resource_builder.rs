@@ -1,5 +1,4 @@
 use crate::engine::scrypto_env::ScryptoVmV1Api;
-use crate::radix_engine_interface::api::ClientBlueprintApi;
 use crate::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
@@ -474,7 +473,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
-                ScryptoVmV1Api
+                let bytes = ScryptoVmV1Api
                     .call_function(
                         RESOURCE_PACKAGE,
                         FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -488,9 +487,8 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             address_reservation,
                         })
                         .unwrap(),
-                    )
-                    .map(|bytes| scrypto_decode(&bytes).unwrap())
-                    .unwrap()
+                    );
+                scrypto_decode(&bytes).unwrap()
             }
             private::CreateWithNoSupply::NonFungible {
                 owner_role,
@@ -502,7 +500,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
-                ScryptoVmV1Api
+                let bytes = ScryptoVmV1Api
                     .call_function(
                         RESOURCE_PACKAGE,
                         NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -517,9 +515,8 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             address_reservation,
                         })
                         .unwrap(),
-                    )
-                    .map(|bytes| scrypto_decode(&bytes).unwrap())
-                    .unwrap()
+                    );
+                scrypto_decode(&bytes).unwrap()
             }
         }
     }
@@ -568,7 +565,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoVmV1Api
+        let bytes = ScryptoVmV1Api
             .call_function(
                 RESOURCE_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -583,13 +580,11 @@ impl InProgressResourceBuilder<FungibleResourceType> {
                     address_reservation: self.address_reservation,
                 })
                 .unwrap(),
-            )
-            .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-                    .unwrap()
-                    .1
-            })
+            );
+
+        scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
             .unwrap()
+            .1
     }
 }
 
@@ -627,7 +622,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoVmV1Api
+        let bytes = ScryptoVmV1Api
             .call_function(
                 RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -641,15 +636,11 @@ impl<D: NonFungibleData>
                     metadata,
                     entries: map_entries(entries),
                     address_reservation: self.address_reservation,
-                })
-                .unwrap(),
-            )
-            .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-                    .unwrap()
-                    .1
-            })
+                }).unwrap()
+            );
+        scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
             .unwrap()
+            .1
     }
 }
 
@@ -687,7 +678,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoVmV1Api
+        let bytes = ScryptoVmV1Api
             .call_function(
                 RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -701,15 +692,11 @@ impl<D: NonFungibleData>
                     metadata,
                     entries: map_entries(entries),
                     address_reservation: self.address_reservation,
-                })
-                .unwrap(),
-            )
-            .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-                    .unwrap()
-                    .1
-            })
+                }).unwrap()
+            );
+        scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
             .unwrap()
+            .1
     }
 }
 
@@ -747,7 +734,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoVmV1Api
+        let bytes = ScryptoVmV1Api
             .call_function(
                 RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -763,13 +750,10 @@ impl<D: NonFungibleData>
                     address_reservation: self.address_reservation,
                 })
                 .unwrap(),
-            )
-            .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-                    .unwrap()
-                    .1
-            })
+            );
+        scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
             .unwrap()
+            .1
     }
 }
 
@@ -810,7 +794,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoVmV1Api
+        let bytes = ScryptoVmV1Api
             .call_function(
                 RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -834,13 +818,10 @@ impl<D: NonFungibleData>
                     },
                 )
                 .unwrap(),
-            )
-            .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-                    .unwrap()
-                    .1
-            })
+            );
+        scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
             .unwrap()
+            .1
     }
 }
 
