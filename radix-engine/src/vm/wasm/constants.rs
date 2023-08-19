@@ -35,6 +35,17 @@ pub const CALL_DIRECT_METHOD_FUNCTION_NAME: &str = "call_direct_method";
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
 
 //=================
+// Actor
+//=================
+pub const ACTOR_OPEN_FIELD_FUNCTION_NAME: &str = "actor_open_field";
+pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "actor_call_module_method";
+pub const ACTOR_GET_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "actor_get_global_address";
+pub const ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "actor_get_blueprint_id";
+pub const ACTOR_GET_AUTH_ZONE_FUNCTION_NAME: &str = "actor_get_auth_zone";
+pub const ACTOR_GET_NODE_ID_FUNCTION_NAME: &str = "actor_get_node_id";
+pub const ACTOR_EMIT_EVENT_FUNCTION_NAME: &str = "actor_emit_event";
+
+//=================
 // Key Value Store
 //=================
 pub const KEY_VALUE_STORE_NEW_FUNCTION_NAME: &str = "kv_store_new";
@@ -57,20 +68,9 @@ pub const FIELD_ENTRY_WRITE_FUNCTION_NAME: &str = "field_entry_write";
 pub const FIELD_ENTRY_CLOSE_FUNCTION_NAME: &str = "field_entry_close";
 
 //=================
-// Actor
-//=================
-pub const ACTOR_OPEN_FIELD_FUNCTION_NAME: &str = "actor_open_field";
-pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "actor_call_module_method";
-pub const GET_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "get_global_address";
-pub const GET_BLUEPRINT_FUNCTION_NAME: &str = "get_blueprint";
-pub const GET_AUTH_ZONE_FUNCTION_NAME: &str = "get_auth_zone";
-pub const GET_NODE_ID_FUNCTION_NAME: &str = "get_node_id";
-pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
-
-//=================
 // System
 //=================
-pub const EMIT_LOG_FUNCTION_NAME: &str = "emit_log";
+pub const SYS_LOG_FUNCTION_NAME: &str = "sys_log";
 pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
 pub const GENERATE_RUID_FUNCTION_NAME: &str = "generate_ruid";
 pub const PANIC_FUNCTION_NAME: &str = "panic";

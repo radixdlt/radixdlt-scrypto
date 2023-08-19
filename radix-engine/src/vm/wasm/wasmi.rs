@@ -1235,21 +1235,21 @@ impl WasmiModule {
             FIELD_ENTRY_CLOSE_FUNCTION_NAME,
             host_field_lock_release
         );
-        linker_define!(linker, GET_NODE_ID_FUNCTION_NAME, host_get_node_id);
+        linker_define!(linker, ACTOR_GET_NODE_ID_FUNCTION_NAME, host_get_node_id);
         linker_define!(
             linker,
-            GET_GLOBAL_ADDRESS_FUNCTION_NAME,
+            ACTOR_GET_GLOBAL_ADDRESS_FUNCTION_NAME,
             host_get_global_address
         );
-        linker_define!(linker, GET_BLUEPRINT_FUNCTION_NAME, host_get_blueprint);
-        linker_define!(linker, GET_AUTH_ZONE_FUNCTION_NAME, host_get_auth_zone);
+        linker_define!(linker, ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME, host_get_blueprint);
+        linker_define!(linker, ACTOR_GET_AUTH_ZONE_FUNCTION_NAME, host_get_auth_zone);
         linker_define!(
             linker,
             CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
             host_consume_wasm_execution_units
         );
-        linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
-        linker_define!(linker, EMIT_LOG_FUNCTION_NAME, host_emit_log);
+        linker_define!(linker, ACTOR_EMIT_EVENT_FUNCTION_NAME, host_emit_event);
+        linker_define!(linker, SYS_LOG_FUNCTION_NAME, host_emit_log);
         linker_define!(linker, PANIC_FUNCTION_NAME, host_panic);
         linker_define!(
             linker,

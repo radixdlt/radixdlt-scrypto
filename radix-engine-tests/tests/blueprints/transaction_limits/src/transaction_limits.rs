@@ -50,7 +50,7 @@ mod transaction_limits {
             })
             .unwrap();
             unsafe {
-                wasm_api::actor::emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len())
+                wasm_api::actor::actor_emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len())
             }
         }
 
@@ -58,7 +58,7 @@ mod transaction_limits {
             let level = scrypto_encode(&Level::Debug).unwrap();
             let buf = "a".repeat(n);
             unsafe {
-                wasm_api::system::emit_log(level.as_ptr(), level.len(), buf.as_ptr(), buf.len())
+                wasm_api::system::sys_log(level.as_ptr(), level.len(), buf.as_ptr(), buf.len())
             }
         }
 

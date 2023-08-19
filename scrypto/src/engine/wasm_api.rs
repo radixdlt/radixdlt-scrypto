@@ -59,15 +59,18 @@ pub mod object {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
+        /// Creates a new object of a given blueprint defined in the same
+        /// package as the current actor
         pub fn new_object(
             blueprint_ident_ptr: *const u8,
             blueprint_ident: usize,
-            object_states_ptr: *const u8,
-            object_states_len: usize,
+            obj_fields_ptr: *const u8,
+            obj_fields_len: usize,
         ) -> Buffer;
 
-        pub fn drop_object(node_id_ptr: *const u8, node_id_len: usize);
+        pub fn drop_object(obj_id_ptr: *const u8, obj_id_len: usize);
 
+        /// Reserves a global address for the given blueprint
         pub fn allocate_global_address(
             blueprint_id_ptr: *const u8,
             blueprint_id_len: usize,
@@ -80,52 +83,11 @@ pub mod object {
             address_len: usize,
         ) -> Buffer;
 
-        pub fn get_blueprint_id(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+        pub fn get_blueprint_id(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
 
-        pub fn get_outer_object(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+        pub fn get_outer_object(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
 
-        pub fn get_reservation_address(node_id_ptr: *const u8, node_id_len: usize) -> Buffer;
-    }
-}
-
-pub mod kv_store {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
-
-    extern "C" {
-        pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
-
-        pub fn kv_store_open_entry(
-            key_value_store_id_ptr: *const u8,
-            key_value_store_id_len: usize,
-            offset: *const u8,
-            offset_len: usize,
-            flags: u32,
-        ) -> u32;
-
-        pub fn kv_store_remove_entry(
-            key_value_store_id_ptr: *const u8,
-            key_value_store_id_len: usize,
-            key: *const u8,
-            key_len: usize,
-        ) -> Buffer;
-    }
-}
-
-pub mod kv_entry {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
-
-    extern "C" {
-        pub fn kv_entry_get(key_value_entry_lock_handle: u32) -> Buffer;
-
-        pub fn kv_entry_set(
-            key_value_entry_lock_handle: u32,
-            buffer_ptr: *const u8,
-            buffer_len: usize,
-        );
-
-        pub fn kv_entry_remove(key_value_entry_lock_handle: u32) -> Buffer;
-
-        pub fn kv_entry_close(key_value_entry_lock_handle: u32);
+        pub fn get_reservation_address(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
     }
 }
 
@@ -189,15 +151,15 @@ pub mod actor {
             args_len: usize,
         ) -> Buffer;
 
-        pub fn get_node_id() -> Buffer;
+        pub fn actor_get_node_id() -> Buffer;
 
-        pub fn get_global_address() -> Buffer;
+        pub fn actor_get_global_address() -> Buffer;
 
-        pub fn get_blueprint() -> Buffer;
+        pub fn actor_get_blueprint_id() -> Buffer;
 
-        pub fn get_auth_zone() -> Buffer;
+        pub fn actor_get_auth_zone() -> Buffer;
 
-        pub fn emit_event(
+        pub fn actor_emit_event(
             event_name_ptr: *const u8,
             event_name_len: usize,
             event_data_ptr: *const u8,
@@ -205,6 +167,49 @@ pub mod actor {
         );
     }
 }
+
+
+pub mod kv_store {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
+
+        pub fn kv_store_open_entry(
+            key_value_store_id_ptr: *const u8,
+            key_value_store_id_len: usize,
+            offset: *const u8,
+            offset_len: usize,
+            flags: u32,
+        ) -> u32;
+
+        pub fn kv_store_remove_entry(
+            key_value_store_id_ptr: *const u8,
+            key_value_store_id_len: usize,
+            key: *const u8,
+            key_len: usize,
+        ) -> Buffer;
+    }
+}
+
+pub mod kv_entry {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        pub fn kv_entry_get(key_value_entry_lock_handle: u32) -> Buffer;
+
+        pub fn kv_entry_set(
+            key_value_entry_lock_handle: u32,
+            buffer_ptr: *const u8,
+            buffer_len: usize,
+        );
+
+        pub fn kv_entry_remove(key_value_entry_lock_handle: u32) -> Buffer;
+
+        pub fn kv_entry_close(key_value_entry_lock_handle: u32);
+    }
+}
+
 
 pub mod field_entry {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
@@ -225,7 +230,7 @@ pub mod system {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
-        pub fn emit_log(
+        pub fn sys_log(
             level_ptr: *const u8,
             level_len: usize,
             message_ptr: *const u8,

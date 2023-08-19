@@ -280,19 +280,19 @@ impl ScryptoVmV1Api {
     }
 
     pub fn actor_get_node_id(&mut self) -> NodeId {
-        let node_id = copy_buffer(unsafe { actor::get_node_id() });
+        let node_id = copy_buffer(unsafe { actor::actor_get_node_id() });
 
         scrypto_decode(&node_id).unwrap()
     }
 
     pub fn actor_get_global_address(&mut self) -> GlobalAddress {
-        let global_address = copy_buffer(unsafe { actor::get_global_address() });
+        let global_address = copy_buffer(unsafe { actor::actor_get_global_address() });
 
         scrypto_decode(&global_address).unwrap()
     }
 
     pub fn actor_get_blueprint_id(&mut self) -> BlueprintId {
-        let blueprint_id = copy_buffer(unsafe { actor::get_blueprint() });
+        let blueprint_id = copy_buffer(unsafe { actor::actor_get_blueprint_id() });
 
         scrypto_decode(&blueprint_id).unwrap()
     }
@@ -317,14 +317,14 @@ impl ScryptoVmV1Api {
     }
 
     pub fn actor_get_auth_zone(&mut self) -> NodeId {
-        let auth_zone = copy_buffer(unsafe { actor::get_auth_zone() });
+        let auth_zone = copy_buffer(unsafe { actor::actor_get_auth_zone() });
 
         scrypto_decode(&auth_zone).unwrap()
     }
 
     pub fn actor_emit_event(&mut self, event_name: String, event_data: Vec<u8>) {
         unsafe {
-            actor::emit_event(
+            actor::actor_emit_event(
                 event_name.as_ptr(),
                 event_name.len(),
                 event_data.as_ptr(),
@@ -333,9 +333,9 @@ impl ScryptoVmV1Api {
         };
     }
 
-    pub fn emit_log(&mut self, level: Level, message: String) {
+    pub fn sys_log(&mut self, level: Level, message: String) {
         let level = scrypto_encode(&level).unwrap();
-        unsafe { system::emit_log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
+        unsafe { system::sys_log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
     }
 
     pub fn get_transaction_hash(&mut self) -> Hash {

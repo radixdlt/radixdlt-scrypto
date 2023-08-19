@@ -10,7 +10,7 @@ pub struct Logger {}
 impl Logger {
     /// Emits a log to console.
     pub fn emit_log(level: Level, message: String) {
-        ScryptoVmV1Api.emit_log(level, message);
+        ScryptoVmV1Api.sys_log(level, message);
     }
 
     /// Emits a trace message.
