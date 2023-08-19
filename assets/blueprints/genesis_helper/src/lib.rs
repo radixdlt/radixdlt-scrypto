@@ -1,4 +1,6 @@
 use scrypto::api::node_modules::metadata::*;
+use scrypto::api::object_api::ObjectModuleId;
+use scrypto::api::ClientObjectApi;
 use scrypto::prelude::*;
 
 // Important: the types defined here must match those in bootstrap.rs
@@ -41,7 +43,7 @@ pub enum GenesisDataChunk {
     Resources(Vec<GenesisResource>),
     ResourceBalances {
         accounts: Vec<Global<Account>>,
-        allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
+        allocations: Vec<(ResourceManager, Vec<GenesisResourceAllocation>)>,
     },
     XrdBalances(Vec<(Global<Account>, Decimal)>),
 }
@@ -251,9 +253,9 @@ mod genesis_helper {
         fn allocate_resources(
             &mut self,
             accounts: Vec<Global<Account>>,
-            allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
+            allocations: Vec<(ResourceManager, Vec<GenesisResourceAllocation>)>,
         ) {
-            for (resource_address, allocations) in allocations.into_iter() {
+            for (resource_manager, allocations) in allocations.into_iter() {
                 let amount_needed = {
                     let mut sum = Decimal::ZERO;
                     for v in allocations.iter().map(|alloc| alloc.amount.clone()) {
@@ -261,7 +263,6 @@ mod genesis_helper {
                     }
                     sum
                 };
-                let resource_manager: ResourceManager = resource_address.into();
                 let mut resource_bucket = resource_manager.mint(amount_needed);
 
                 for GenesisResourceAllocation {
