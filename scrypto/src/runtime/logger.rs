@@ -1,4 +1,4 @@
-use radix_engine_interface::{api::ClientTransactionRuntimeApi, types::Level};
+use radix_engine_interface::{types::Level};
 use sbor::rust::string::String;
 
 use crate::engine::scrypto_env::ScryptoVmV1Api;
@@ -10,7 +10,7 @@ pub struct Logger {}
 impl Logger {
     /// Emits a log to console.
     pub fn emit_log(level: Level, message: String) {
-        ScryptoVmV1Api.emit_log(level, message).unwrap();
+        ScryptoVmV1Api.emit_log(level, message);
     }
 
     /// Emits a trace message.

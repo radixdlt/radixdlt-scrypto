@@ -2,7 +2,6 @@ use crate::component::ObjectStubHandle;
 use crate::prelude::{AnyComponent, Global};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
-use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
@@ -69,19 +68,18 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        ScryptoVmV1Api.get_transaction_hash().unwrap()
+        ScryptoVmV1Api.get_transaction_hash()
     }
 
     /// Returns the transaction hash.
     pub fn generate_ruid() -> [u8; 32] {
-        ScryptoVmV1Api.generate_ruid().unwrap()
+        ScryptoVmV1Api.generate_ruid()
     }
 
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
         ScryptoVmV1Api
-            .emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap())
-            .unwrap();
+            .emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap());
     }
 
     pub fn assert_access_rule(rule: AccessRule) {
@@ -131,7 +129,7 @@ impl Runtime {
     }
 
     pub fn panic(message: String) -> ! {
-        ScryptoVmV1Api.panic(message).unwrap();
+        ScryptoVmV1Api.panic(message);
         loop {}
     }
 }

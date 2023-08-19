@@ -6,7 +6,6 @@ use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::api::{FieldValue};
-use radix_engine_interface::api::{ClientTransactionRuntimeApi};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::PackageAddress;
@@ -14,12 +13,6 @@ use radix_engine_interface::types::{BlueprintId, GlobalAddress};
 use radix_engine_interface::types::{Level, NodeId, SubstateHandle};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
-use sbor::*;
-
-#[derive(Debug, Sbor)]
-pub enum ClientApiError {
-    DecodeError(DecodeError),
-}
 
 pub struct ScryptoVmV1Api;
 
@@ -312,14 +305,12 @@ impl ScryptoVmV1Api {
 
         scrypto_decode(&auth_zone).unwrap()
     }
-}
 
-impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoVmV1Api {
-    fn emit_event(
+    pub fn emit_event(
         &mut self,
         event_name: String,
         event_data: Vec<u8>,
-    ) -> Result<(), ClientApiError> {
+    ) {
         unsafe {
             emit_event(
                 event_name.as_ptr(),
@@ -328,31 +319,28 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoVmV1Api {
                 event_data.len(),
             )
         };
-        Ok(())
     }
 
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
+    pub fn emit_log(&mut self, level: Level, message: String) {
         let level = scrypto_encode(&level).unwrap();
         unsafe { emit_log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
-        Ok(())
     }
 
-    fn get_transaction_hash(&mut self) -> Result<Hash, ClientApiError> {
+    pub fn get_transaction_hash(&mut self) -> Hash {
         let actor = copy_buffer(unsafe { get_transaction_hash() });
 
-        scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&actor).unwrap()
     }
 
-    fn generate_ruid(&mut self) -> Result<[u8; 32], ClientApiError> {
+    pub fn generate_ruid(&mut self) -> [u8; 32] {
         let actor = copy_buffer(unsafe { generate_ruid() });
 
-        scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&actor).unwrap()
     }
 
-    fn panic(&mut self, message: String) -> Result<(), ClientApiError> {
+    pub fn panic(&mut self, message: String) {
         unsafe {
             panic(message.as_ptr(), message.len());
         };
-        Ok(())
     }
 }
