@@ -114,31 +114,31 @@ impl Runtime {
     }
 
     pub fn execution_cost_unit_limit() -> u32 {
-        ScryptoVmV1Api.execution_cost_unit_limit().unwrap()
+        ScryptoVmV1Api.execution_cost_unit_limit()
     }
 
     pub fn execution_cost_unit_price() -> Decimal {
-        ScryptoVmV1Api.execution_cost_unit_price().unwrap()
+        ScryptoVmV1Api.execution_cost_unit_price()
     }
 
     pub fn finalization_cost_unit_limit() -> u32 {
-        ScryptoVmV1Api.finalization_cost_unit_limit().unwrap()
+        ScryptoVmV1Api.finalization_cost_unit_limit()
     }
 
     pub fn finalization_cost_unit_price() -> Decimal {
-        ScryptoVmV1Api.finalization_cost_unit_price().unwrap()
+        ScryptoVmV1Api.finalization_cost_unit_price()
     }
 
     pub fn usd_price() -> Decimal {
-        ScryptoVmV1Api.usd_price().unwrap()
+        ScryptoVmV1Api.usd_price()
     }
 
     pub fn tip_percentage() -> u32 {
-        ScryptoVmV1Api.tip_percentage().unwrap()
+        ScryptoVmV1Api.tip_percentage()
     }
 
     pub fn fee_balance() -> Decimal {
-        ScryptoVmV1Api.fee_balance().unwrap()
+        ScryptoVmV1Api.fee_balance()
     }
 
     pub fn panic(message: String) -> ! {

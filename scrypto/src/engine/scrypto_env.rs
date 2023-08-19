@@ -32,36 +32,36 @@ pub enum ClientApiError {
 pub struct ScryptoVmV1Api;
 
 impl ScryptoVmV1Api {
-    pub fn execution_cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
-        Ok(unsafe { execution_cost_unit_limit() })
+    pub fn execution_cost_unit_limit(&mut self) -> u32 {
+        unsafe { execution_cost_unit_limit() }
     }
 
-    pub fn execution_cost_unit_price(&mut self) -> Result<Decimal, ClientApiError> {
+    pub fn execution_cost_unit_price(&mut self) -> Decimal {
         let bytes = copy_buffer(unsafe { execution_cost_unit_price() });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&bytes).unwrap()
     }
 
-    pub fn finalization_cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
-        Ok(unsafe { finalization_cost_unit_limit() })
+    pub fn finalization_cost_unit_limit(&mut self) -> u32 {
+        unsafe { finalization_cost_unit_limit() }
     }
 
-    pub fn finalization_cost_unit_price(&mut self) -> Result<Decimal, ClientApiError> {
+    pub fn finalization_cost_unit_price(&mut self) -> Decimal {
         let bytes = copy_buffer(unsafe { finalization_cost_unit_price() });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&bytes).unwrap()
     }
 
-    pub fn usd_price(&mut self) -> Result<Decimal, ClientApiError> {
+    pub fn usd_price(&mut self) -> Decimal {
         let bytes = copy_buffer(unsafe { usd_price() });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&bytes).unwrap()
     }
 
-    pub fn tip_percentage(&mut self) -> Result<u32, ClientApiError> {
-        Ok(unsafe { tip_percentage() })
+    pub fn tip_percentage(&mut self) -> u32 {
+        unsafe { tip_percentage() }
     }
 
-    pub fn fee_balance(&mut self) -> Result<math::Decimal, ClientApiError> {
+    pub fn fee_balance(&mut self) -> Decimal {
         let bytes = copy_buffer(unsafe { fee_balance() });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&bytes).unwrap()
     }
 }
 
