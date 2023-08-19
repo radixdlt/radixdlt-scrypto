@@ -1,6 +1,5 @@
 use sbor::*;
 use scrypto::api::*;
-use scrypto::prelude::wasm_api::kv_entry_set;
 use scrypto::prelude::*;
 
 #[derive(Sbor, ScryptoEvent)]
@@ -50,18 +49,22 @@ mod transaction_limits {
                 message: "a".repeat(n),
             })
             .unwrap();
-            unsafe { wasm_api::emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len()) }
+            unsafe {
+                wasm_api::actor::emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len())
+            }
         }
 
         pub fn emit_log_of_size(n: usize) {
             let level = scrypto_encode(&Level::Debug).unwrap();
             let buf = "a".repeat(n);
-            unsafe { wasm_api::emit_log(level.as_ptr(), level.len(), buf.as_ptr(), buf.len()) }
+            unsafe {
+                wasm_api::system::emit_log(level.as_ptr(), level.len(), buf.as_ptr(), buf.len())
+            }
         }
 
         pub fn panic_of_size(n: usize) {
             let buf = "a".repeat(n);
-            unsafe { wasm_api::panic(buf.as_ptr(), buf.len()) }
+            unsafe { wasm_api::system::panic(buf.as_ptr(), buf.len()) }
         }
     }
 }
@@ -97,7 +100,7 @@ mod transaction_limits_substate {
                 &key_payload,
                 LockFlags::MUTABLE,
             );
-            unsafe { kv_entry_set(handle, buf.as_ptr(), buf.len()) };
+            unsafe { wasm_api::kv_entry::kv_entry_set(handle, buf.as_ptr(), buf.len()) };
             ScryptoVmV1Api.key_value_entry_close(handle);
 
             // Put the kv store into a component

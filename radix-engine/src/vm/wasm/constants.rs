@@ -22,13 +22,17 @@ pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "allocate_global_address
 pub const GET_RESERVATION_ADDRESS_FUNCTION_NAME: &str = "get_reservation_address";
 pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
 pub const GLOBALIZE_FUNCTION_NAME: &str = "globalize";
+pub const GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "get_blueprint_id";
+pub const GET_OUTER_OBJECT_FUNCTION_NAME: &str = "get_outer_object";
+pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
+
+//=================
+// Invocation
+//=================
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
 pub const CALL_MODULE_METHOD_FUNCTION_NAME: &str = "call_module_method";
 pub const CALL_DIRECT_METHOD_FUNCTION_NAME: &str = "call_direct_method";
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
-pub const GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "get_blueprint_id";
-pub const GET_OUTER_OBJECT_FUNCTION_NAME: &str = "get_outer_object";
-pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 
 //=================
 // Key Value Store
@@ -38,19 +42,19 @@ pub const KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME: &str = "kv_store_open_entry"
 pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME: &str = "kv_store_remove_entry";
 
 //=================
-// KV Entry Handle
+// KV Entry
 //=================
 pub const KEY_VALUE_ENTRY_GET_FUNCTION_NAME: &str = "kv_entry_get";
 pub const KEY_VALUE_ENTRY_SET_FUNCTION_NAME: &str = "kv_entry_set";
 pub const KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME: &str = "kv_entry_remove";
-pub const KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME: &str = "kv_entry_release";
+pub const KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME: &str = "kv_entry_close";
 
 //=================
-// Field Handle
+// Field Entry
 //=================
-pub const FIELD_LOCK_READ_FUNCTION_NAME: &str = "field_lock_read";
-pub const FIELD_LOCK_WRITE_FUNCTION_NAME: &str = "field_lock_write";
-pub const FIELD_LOCK_RELEASE_FUNCTION_NAME: &str = "field_lock_release";
+pub const FIELD_ENTRY_READ_FUNCTION_NAME: &str = "field_entry_read";
+pub const FIELD_ENTRY_WRITE_FUNCTION_NAME: &str = "field_entry_write";
+pub const FIELD_ENTRY_CLOSE_FUNCTION_NAME: &str = "field_entry_close";
 
 //=================
 // Actor
@@ -61,11 +65,11 @@ pub const GET_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "get_global_address";
 pub const GET_BLUEPRINT_FUNCTION_NAME: &str = "get_blueprint";
 pub const GET_AUTH_ZONE_FUNCTION_NAME: &str = "get_auth_zone";
 pub const GET_NODE_ID_FUNCTION_NAME: &str = "get_node_id";
+pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
 
 //=================
-// Environment
+// System
 //=================
-pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
 pub const EMIT_LOG_FUNCTION_NAME: &str = "emit_log";
 pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
 pub const GENERATE_RUID_FUNCTION_NAME: &str = "generate_ruid";

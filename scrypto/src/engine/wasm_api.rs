@@ -7,7 +7,7 @@ pub fn copy_buffer(buffer: Buffer) -> Vec<u8> {
     let len = buffer.len() as usize;
     let mut vec = Vec::<u8>::with_capacity(len);
     unsafe {
-        consume_buffer(buffer.id(), vec.as_mut_ptr());
+        buffer::consume_buffer(buffer.id(), vec.as_mut_ptr());
         vec.set_len(len);
     };
     vec
@@ -24,6 +24,15 @@ pub fn forget_vec(vec: Vec<u8>) -> Slice {
     sbor::rust::mem::forget(vec);
 
     Slice::new(ptr as u32, len as u32)
+}
+
+pub mod buffer {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        /// Consumes a buffer by copying the contents into the specified destination.
+        pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
+    }
 }
 
 pub mod costing {
@@ -102,7 +111,6 @@ pub mod kv_store {
     }
 }
 
-
 pub mod kv_entry {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
@@ -117,7 +125,7 @@ pub mod kv_entry {
 
         pub fn kv_entry_remove(key_value_entry_lock_handle: u32) -> Buffer;
 
-        pub fn kv_entry_release(key_value_entry_lock_handle: u32);
+        pub fn kv_entry_close(key_value_entry_lock_handle: u32);
     }
 }
 
@@ -198,84 +206,36 @@ pub mod actor {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
-extern "C" {
-    //===============
-    // Buffer API
-    //===============
+pub mod field_entry {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    /// Consumes a buffer by copying the contents into the specified destination.
-    pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
+    extern "C" {
+        // Reads a substate
+        pub fn field_entry_read(handle: u32) -> Buffer;
 
-    //===============
-    // Field Lock API
-    //===============
+        // Writes into a substate
+        pub fn field_entry_write(handle: u32, data_ptr: *const u8, data_len: usize);
 
-    // Reads a substate
-    pub fn field_lock_read(handle: u32) -> Buffer;
-
-    // Writes into a substate
-    pub fn field_lock_write(handle: u32, data_ptr: *const u8, data_len: usize);
-
-    // Releases a lock
-    pub fn field_lock_release(handle: u32);
-
-    //===============
-    // System API
-    //===============
-    pub fn emit_log(
-        level_ptr: *const u8,
-        level_len: usize,
-        message_ptr: *const u8,
-        message_len: usize,
-    );
-
-    pub fn panic(message_ptr: *const u8, message_len: usize);
-
-    pub fn get_transaction_hash() -> Buffer;
-
-    pub fn generate_ruid() -> Buffer;
+        // Releases a lock
+        pub fn field_entry_close(handle: u32);
+    }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
-    unreachable!()
-}
+pub mod system {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn field_lock_read(_handle: u32) -> Buffer {
-    unreachable!()
-}
+    extern "C" {
+        pub fn emit_log(
+            level_ptr: *const u8,
+            level_len: usize,
+            message_ptr: *const u8,
+            message_len: usize,
+        );
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn field_lock_write(_handle: u32, _data_ptr: *const u8, _data_len: usize) {}
+        pub fn panic(message_ptr: *const u8, message_len: usize);
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn field_lock_release(_handle: u32) {
-    unreachable!()
-}
+        pub fn get_transaction_hash() -> Buffer;
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn emit_log(
-    _level_ptr: *const u8,
-    _level_len: usize,
-    _message_ptr: *const u8,
-    _message_len: usize,
-) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn panic(_message_ptr: *const u8, _message_len: usize) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_transaction_hash() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn generate_ruid() -> Buffer {
-    unreachable!()
+        pub fn generate_ruid() -> Buffer;
+    }
 }

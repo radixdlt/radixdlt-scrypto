@@ -142,7 +142,7 @@ impl ScryptoVmV1Api {
     }
 
     pub fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) {
-        unsafe { kv_entry::kv_entry_release(handle) };
+        unsafe { kv_entry::kv_entry_close(handle) };
     }
 
     pub fn key_value_store_new(&mut self, schema: KeyValueStoreGenericArgs) -> NodeId {
@@ -257,16 +257,15 @@ impl ScryptoVmV1Api {
     }
 
     pub fn field_read(&mut self, lock_handle: SubstateHandle) -> Vec<u8> {
-        let substate = copy_buffer(unsafe { field_lock_read(lock_handle) });
-        substate
+        copy_buffer(unsafe { field_entry::field_entry_read(lock_handle) })
     }
 
     pub fn field_write(&mut self, lock_handle: SubstateHandle, buffer: Vec<u8>) {
-        unsafe { field_lock_write(lock_handle, buffer.as_ptr(), buffer.len()) };
+        unsafe { field_entry::field_entry_write(lock_handle, buffer.as_ptr(), buffer.len()) };
     }
 
     pub fn field_close(&mut self, lock_handle: SubstateHandle) {
-        unsafe { field_lock_release(lock_handle) };
+        unsafe { field_entry::field_entry_close(lock_handle) };
     }
 
     pub fn actor_open_field(
@@ -275,7 +274,8 @@ impl ScryptoVmV1Api {
         field: u8,
         flags: LockFlags,
     ) -> SubstateHandle {
-        let handle = unsafe { actor::actor_open_field(object_handle, u32::from(field), flags.bits()) };
+        let handle =
+            unsafe { actor::actor_open_field(object_handle, u32::from(field), flags.bits()) };
         handle
     }
 
@@ -335,24 +335,24 @@ impl ScryptoVmV1Api {
 
     pub fn emit_log(&mut self, level: Level, message: String) {
         let level = scrypto_encode(&level).unwrap();
-        unsafe { emit_log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
+        unsafe { system::emit_log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
     }
 
     pub fn get_transaction_hash(&mut self) -> Hash {
-        let actor = copy_buffer(unsafe { get_transaction_hash() });
+        let actor = copy_buffer(unsafe { system::get_transaction_hash() });
 
         scrypto_decode(&actor).unwrap()
     }
 
     pub fn generate_ruid(&mut self) -> [u8; 32] {
-        let actor = copy_buffer(unsafe { generate_ruid() });
+        let actor = copy_buffer(unsafe { system::generate_ruid() });
 
         scrypto_decode(&actor).unwrap()
     }
 
     pub fn panic(&mut self, message: String) {
         unsafe {
-            panic(message.as_ptr(), message.len());
+            system::panic(message.as_ptr(), message.len());
         };
     }
 }

@@ -285,7 +285,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME => {
+                    KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -298,7 +298,7 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME.to_string(),
+                                    KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -362,7 +362,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    FIELD_LOCK_READ_FUNCTION_NAME => {
+                    FIELD_ENTRY_READ_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -375,12 +375,12 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    FIELD_LOCK_READ_FUNCTION_NAME.to_string(),
+                                    FIELD_ENTRY_READ_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    FIELD_LOCK_WRITE_FUNCTION_NAME => {
+                    FIELD_ENTRY_WRITE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -393,12 +393,12 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    FIELD_LOCK_WRITE_FUNCTION_NAME.to_string(),
+                                    FIELD_ENTRY_WRITE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    FIELD_LOCK_RELEASE_FUNCTION_NAME => {
+                    FIELD_ENTRY_CLOSE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -411,7 +411,7 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    FIELD_LOCK_RELEASE_FUNCTION_NAME.to_string(),
+                                    FIELD_ENTRY_CLOSE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }

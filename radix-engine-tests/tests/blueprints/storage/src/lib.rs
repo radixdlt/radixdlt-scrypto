@@ -1,5 +1,4 @@
 use scrypto::api::*;
-use scrypto::prelude::wasm_api::kv_entry_set;
 use scrypto::prelude::*;
 
 #[blueprint]
@@ -22,7 +21,13 @@ mod large_key {
                     &key_payload,
                     LockFlags::MUTABLE,
                 );
-                unsafe { kv_entry_set(handle, value_payload.as_ptr(), value_payload.len()) };
+                unsafe {
+                    wasm_api::kv_entry::kv_entry_set(
+                        handle,
+                        value_payload.as_ptr(),
+                        value_payload.len(),
+                    )
+                };
                 ScryptoVmV1Api.key_value_entry_close(handle);
             }
 

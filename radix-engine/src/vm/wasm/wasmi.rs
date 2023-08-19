@@ -1215,7 +1215,7 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME,
+            KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME,
             host_unlock_key_value_entry
         );
         linker_define!(
@@ -1224,15 +1224,15 @@ impl WasmiModule {
             host_key_value_store_remove
         );
 
-        linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_field_lock_read);
+        linker_define!(linker, FIELD_ENTRY_READ_FUNCTION_NAME, host_field_lock_read);
         linker_define!(
             linker,
-            FIELD_LOCK_WRITE_FUNCTION_NAME,
+            FIELD_ENTRY_WRITE_FUNCTION_NAME,
             host_field_lock_write
         );
         linker_define!(
             linker,
-            FIELD_LOCK_RELEASE_FUNCTION_NAME,
+            FIELD_ENTRY_CLOSE_FUNCTION_NAME,
             host_field_lock_release
         );
         linker_define!(linker, GET_NODE_ID_FUNCTION_NAME, host_get_node_id);
