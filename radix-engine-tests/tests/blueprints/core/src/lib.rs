@@ -121,10 +121,6 @@ mod drop_test {
 
             ScryptoVmV1Api.call_function(package_address, "DropTest", "drop", scrypto_args!(x));
         }
-
-        pub fn drop(x: Own) {
-            let _ = ScryptoVmV1Api.drop_object(&x.0);
-        }
     }
 }
 

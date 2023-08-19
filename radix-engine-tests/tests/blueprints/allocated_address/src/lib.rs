@@ -21,12 +21,6 @@ mod apa {
             (own, address)
         }
 
-        pub fn create_and_drop() {
-            let (own, _address) =
-                Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
-            ScryptoVmV1Api.drop_object(own.0.as_node_id());
-        }
-
         pub fn create_and_pass_address() {
             let (own, address) =
                 Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());

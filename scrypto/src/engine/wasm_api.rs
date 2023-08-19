@@ -35,26 +35,8 @@ pub mod buffer {
     }
 }
 
-pub mod costing {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    extern "C" {
-        pub fn execution_cost_unit_limit() -> u32;
-
-        pub fn execution_cost_unit_price() -> Buffer;
-
-        pub fn finalization_cost_unit_limit() -> u32;
-
-        pub fn finalization_cost_unit_price() -> Buffer;
-
-        pub fn usd_price() -> Buffer;
-
-        pub fn tip_percentage() -> u32;
-
-        pub fn fee_balance() -> Buffer;
-    }
-}
-
+/// API to manipulate or get information about visible objects
 pub mod object {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
@@ -74,6 +56,10 @@ pub mod object {
             blueprint_id_len: usize,
         ) -> Buffer;
 
+        /// Get the address associated with an address reservation
+        pub fn get_reservation_address(reservation_id_ptr: *const u8, reservation_id_len: usize) -> Buffer;
+
+        /// Globalizes an object with given modules
         pub fn globalize(
             modules_ptr: *const u8,
             modules_len: usize,
@@ -81,11 +67,11 @@ pub mod object {
             address_len: usize,
         ) -> Buffer;
 
+        /// Get the Blueprint Identifier of a given object
         pub fn get_blueprint_id(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
 
+        /// Get the address of the outer object of a given object
         pub fn get_outer_object(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
-
-        pub fn get_reservation_address(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
     }
 }
 
@@ -121,7 +107,7 @@ pub mod invocation {
             args_len: usize,
         ) -> Buffer;
 
-        /// Invokes a function on a blueprint.
+        /// Invokes a blueprint function
         pub fn call_function(
             package_address_ptr: *const u8,
             package_address_len: usize,
@@ -149,6 +135,13 @@ pub mod actor {
             args_len: usize,
         ) -> Buffer;
 
+        pub fn actor_emit_event(
+            event_name_ptr: *const u8,
+            event_name_len: usize,
+            event_data_ptr: *const u8,
+            event_data_len: usize,
+        );
+
         pub fn actor_get_node_id() -> Buffer;
 
         pub fn actor_get_global_address() -> Buffer;
@@ -156,13 +149,6 @@ pub mod actor {
         pub fn actor_get_blueprint_id() -> Buffer;
 
         pub fn actor_get_auth_zone() -> Buffer;
-
-        pub fn actor_emit_event(
-            event_name_ptr: *const u8,
-            event_name_len: usize,
-            event_data_ptr: *const u8,
-            event_data_len: usize,
-        );
     }
 }
 
@@ -171,16 +157,19 @@ pub mod kv_store {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
+        /// Creates a new key value store
         pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
+        /// Opens an entry for a given key in a key value store
         pub fn kv_store_open_entry(
             key_value_store_id_ptr: *const u8,
             key_value_store_id_len: usize,
-            offset: *const u8,
-            offset_len: usize,
+            key_ptr: *const u8,
+            key_len: usize,
             flags: u32,
         ) -> u32;
 
+        /// Removes a value from a key value store
         pub fn kv_store_remove_entry(
             key_value_store_id_ptr: *const u8,
             key_value_store_id_len: usize,
@@ -194,17 +183,21 @@ pub mod kv_entry {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
-        pub fn kv_entry_get(key_value_entry_lock_handle: u32) -> Buffer;
+        /// Reads the value in a Key Value entry
+        pub fn kv_entry_get(kv_entry_handle: u32) -> Buffer;
 
+        /// Writes a value to Key Value entry
         pub fn kv_entry_set(
-            key_value_entry_lock_handle: u32,
+            kv_entry_handle: u32,
             buffer_ptr: *const u8,
             buffer_len: usize,
         );
 
-        pub fn kv_entry_remove(key_value_entry_lock_handle: u32) -> Buffer;
+        /// Removes the value in an underlying Key Value entry
+        pub fn kv_entry_remove(kv_entry_handle: u32) -> Buffer;
 
-        pub fn kv_entry_close(key_value_entry_lock_handle: u32);
+        /// Close a Key Value entry
+        pub fn kv_entry_close(kv_entry_handle: u32);
     }
 }
 
@@ -213,14 +206,34 @@ pub mod field_entry {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
-        // Reads a substate
+        /// Reads the value in a field
         pub fn field_entry_read(handle: u32) -> Buffer;
 
-        // Writes into a substate
+        /// Writes a value to a field
         pub fn field_entry_write(handle: u32, data_ptr: *const u8, data_len: usize);
 
-        // Releases a lock
+        /// Close a field entry
         pub fn field_entry_close(handle: u32);
+    }
+}
+
+pub mod costing {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        pub fn execution_cost_unit_limit() -> u32;
+
+        pub fn execution_cost_unit_price() -> Buffer;
+
+        pub fn finalization_cost_unit_limit() -> u32;
+
+        pub fn finalization_cost_unit_price() -> Buffer;
+
+        pub fn usd_price() -> Buffer;
+
+        pub fn tip_percentage() -> u32;
+
+        pub fn fee_balance() -> Buffer;
     }
 }
 

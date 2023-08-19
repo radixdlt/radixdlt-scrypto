@@ -238,17 +238,6 @@ where
         self.allocate_buffer(address_encoded)
     }
 
-    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
-        let node_id = NodeId(
-            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
-                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
-        );
-
-        self.api.drop_object(&node_id)?;
-
-        Ok(())
-    }
-
     fn key_value_store_new(
         &mut self,
         schema: Vec<u8>,

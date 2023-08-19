@@ -49,30 +49,6 @@ fn cant_globalize_in_another_package() {
     });
 }
 
-#[test]
-fn cant_drop_in_another_package() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address1 = test_runner.compile_and_publish("./tests/blueprints/core");
-    let package_address2 = test_runner.compile_and_publish("./tests/blueprints/core");
-
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_function(
-            package_address1,
-            "DropTest",
-            "drop_in_package",
-            manifest_args![package_address2],
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemError(SystemError::InvalidDropAccess(..))
-        )
-    });
-}
-
 fn call_function_and_assert_error(blueprint: &str, function: &str, expected_error: &str) {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/core");

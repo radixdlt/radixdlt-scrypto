@@ -117,10 +117,6 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
     fn key_value_store_new(
         &mut self,
         schema: Vec<u8>,
