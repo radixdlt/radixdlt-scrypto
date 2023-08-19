@@ -409,6 +409,14 @@ fn key_value_entry_set(
     runtime.key_value_entry_set(handle, data)
 }
 
+fn key_value_entry_remove(
+    caller: Caller<'_, HostState>,
+    handle: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+    runtime.key_value_entry_remove(handle).map(|buffer| buffer.0)
+}
+
 fn unlock_key_value_entry(
     caller: Caller<'_, HostState>,
     handle: u32,
@@ -417,7 +425,7 @@ fn unlock_key_value_entry(
     runtime.key_value_entry_release(handle)
 }
 
-fn key_value_entry_remove(
+fn key_value_store_remove(
     mut caller: Caller<'_, HostState>,
     node_id_ptr: u32,
     node_id_len: u32,
@@ -876,6 +884,13 @@ impl WasmiModule {
             },
         );
 
+        let host_key_value_entry_remove = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Trap> {
+                key_value_entry_remove(caller, handle).map_err(|e| e.into())
+            },
+        );
+
         let host_unlock_key_value_entry = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Trap> {
@@ -883,7 +898,7 @@ impl WasmiModule {
             },
         );
 
-        let host_key_value_entry_remove = Func::wrap(
+        let host_key_value_store_remove = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              node_id_ptr: u32,
@@ -891,7 +906,7 @@ impl WasmiModule {
              key_ptr: u32,
              key_len: u32|
              -> Result<u64, Trap> {
-                key_value_entry_remove(caller, node_id_ptr, node_id_len, key_ptr, key_len)
+                key_value_store_remove(caller, node_id_ptr, node_id_len, key_ptr, key_len)
                     .map_err(|e| e.into())
             },
         );
@@ -1100,13 +1115,18 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
+            KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME,
+            host_key_value_entry_remove
+        );
+        linker_define!(
+            linker,
             KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME,
             host_unlock_key_value_entry
         );
         linker_define!(
             linker,
             KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME,
-            host_key_value_entry_remove
+            host_key_value_store_remove
         );
 
         linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_field_lock_read);

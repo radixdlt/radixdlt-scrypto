@@ -81,6 +81,9 @@ pub trait WasmRuntime {
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
+    fn key_value_entry_remove(&mut self, handle: u32)
+                           -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn key_value_entry_release(&mut self, handle: u32)
         -> Result<(), InvokeError<WasmRuntimeError>>;
 

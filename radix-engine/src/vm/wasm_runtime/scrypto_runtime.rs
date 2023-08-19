@@ -273,6 +273,11 @@ where
         Ok(())
     }
 
+    fn key_value_entry_remove(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let value = self.api.key_value_entry_remove(handle)?;
+        self.allocate_buffer(value)
+    }
+
     fn key_value_entry_release(
         &mut self,
         handle: u32,

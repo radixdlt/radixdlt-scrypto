@@ -104,6 +104,8 @@ extern "C" {
         _buffer_len: usize,
     );
 
+    pub fn kv_entry_remove(_key_value_entry_lock_handle: u32) -> Buffer;
+
     pub fn kv_entry_release(_key_value_entry_lock_handle: u32);
 
     /// Invokes a method on a component.
@@ -304,6 +306,11 @@ pub unsafe fn kv_entry_set(
     _buffer_ptr: *const u8,
     _buffer_len: usize,
 ) {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn kv_entry_remove(_key_value_entry_lock_handle: u32) -> Buffer {
     unreachable!()
 }
 

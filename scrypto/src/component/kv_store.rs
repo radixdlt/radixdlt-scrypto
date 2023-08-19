@@ -1,6 +1,6 @@
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_entry_api::{
-    ClientKeyValueEntryApi, KeyValueEntryHandle,
+    KeyValueEntryHandle,
 };
 use radix_engine_interface::api::key_value_store_api::{
     ClientKeyValueStoreApi, KeyValueStoreGenericArgs,
@@ -59,7 +59,7 @@ impl<
         let handle = env
             .key_value_store_open_entry(self.id.as_node_id(), &key_payload, LockFlags::read_only())
             .unwrap();
-        let raw_bytes = env.key_value_entry_get(handle).unwrap();
+        let raw_bytes = env.key_value_entry_get(handle);
 
         // Decode and create Ref
         let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
@@ -69,7 +69,7 @@ impl<
                 scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
             )),
             Option::None => {
-                env.key_value_entry_close(handle).unwrap();
+                env.key_value_entry_close(handle);
                 None
             }
         }
@@ -81,7 +81,7 @@ impl<
         let handle = env
             .key_value_store_open_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
-        let raw_bytes = env.key_value_entry_get(handle).unwrap();
+        let raw_bytes = env.key_value_entry_get(handle);
 
         // Decode and create RefMut
         let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
@@ -91,7 +91,7 @@ impl<
                 Some(KeyValueEntryRefMut::new(handle, rust_value))
             }
             Option::None => {
-                env.key_value_entry_close(handle).unwrap();
+                env.key_value_entry_close(handle);
                 None
             }
         }
@@ -109,8 +109,8 @@ impl<
         let value: ScryptoValue = scrypto_decode(&value_payload).unwrap();
         let buffer = scrypto_encode(&value).unwrap();
 
-        env.key_value_entry_set(handle, buffer).unwrap();
-        env.key_value_entry_close(handle).unwrap();
+        env.key_value_entry_set(handle, buffer);
+        env.key_value_entry_close(handle);
     }
 
     /// Remove an entry from the map and return the original value if it exists
@@ -220,7 +220,7 @@ impl<'a, V: ScryptoEncode> Deref for KeyValueEntryRef<'a, V> {
 impl<'a, V: ScryptoEncode> Drop for KeyValueEntryRef<'a, V> {
     fn drop(&mut self) {
         let mut env = ScryptoVmV1Api;
-        env.key_value_entry_close(self.lock_handle).unwrap();
+        env.key_value_entry_close(self.lock_handle);
     }
 }
 
@@ -250,8 +250,8 @@ impl<'a, V: ScryptoEncode> Drop for KeyValueEntryRefMut<'a, V> {
     fn drop(&mut self) {
         let mut env = ScryptoVmV1Api;
         let value = scrypto_encode(&self.value).unwrap();
-        env.key_value_entry_set(self.handle, value).unwrap();
-        env.key_value_entry_close(self.handle).unwrap();
+        env.key_value_entry_set(self.handle, value);
+        env.key_value_entry_close(self.handle);
     }
 }
 

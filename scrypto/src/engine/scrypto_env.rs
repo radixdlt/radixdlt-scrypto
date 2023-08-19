@@ -3,7 +3,7 @@ use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::field_api::FieldHandle;
 use radix_engine_interface::api::key_value_entry_api::{
-    ClientKeyValueEntryApi, KeyValueEntryHandle,
+    KeyValueEntryHandle,
 };
 use radix_engine_interface::api::key_value_store_api::{
     ClientKeyValueStoreApi, KeyValueStoreGenericArgs,
@@ -179,44 +179,34 @@ impl ScryptoVmV1Api {
         Vec::new()
     }
 
-}
-
-impl ClientKeyValueEntryApi<ClientApiError> for ScryptoVmV1Api {
-    fn key_value_entry_get(
+    pub fn key_value_entry_get(
         &mut self,
         handle: KeyValueEntryHandle,
-    ) -> Result<Vec<u8>, ClientApiError> {
+    ) -> Vec<u8> {
         let entry = copy_buffer(unsafe { kv_entry_get(handle) });
-
-        Ok(entry)
+        entry
     }
 
-    fn key_value_entry_set(
+    pub fn key_value_entry_set(
         &mut self,
         handle: KeyValueEntryHandle,
         buffer: Vec<u8>,
-    ) -> Result<(), ClientApiError> {
+    ) {
         unsafe { kv_entry_set(handle, buffer.as_ptr(), buffer.len()) };
-
-        Ok(())
     }
 
-    fn key_value_entry_remove(
+    pub fn key_value_entry_remove(
         &mut self,
-        _handle: KeyValueEntryHandle,
-    ) -> Result<Vec<u8>, ClientApiError> {
-        unimplemented!("Not available for Scrypto")
+        handle: KeyValueEntryHandle,
+    ) -> Vec<u8> {
+        let removed = copy_buffer(unsafe { kv_entry_remove(handle) });
+        removed
     }
 
-    fn key_value_entry_lock(&mut self, _handle: KeyValueEntryHandle) -> Result<(), ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
-
-    fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) -> Result<(), ClientApiError> {
+    pub fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) {
         unsafe { kv_entry_release(handle) };
-
-        Ok(())
     }
+
 }
 
 impl ClientKeyValueStoreApi<ClientApiError> for ScryptoVmV1Api {
