@@ -14,15 +14,7 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("input")
 ;
 CALL_METHOD
-<<<<<<< HEAD
-<<<<<<< HEAD
     Address("component_sim1czcyvwqvvd2pstkuncs57rtltaa7c2u5kevkfqkfqy5jnp6wwkdf6x")
-=======
-    Address("component_sim1cq49w9xq09scf526j6efeq4cgqw6pnnc3pexu4kwvfgckpj7hcrpv4")
->>>>>>> develop
-=======
-    Address("component_sim1cpfdmx8jrq8k5anwzue2xrlyp95xzumvmzpv9cvp6dvuqq38mp3z33")
->>>>>>> c9a7b62... Use Global<ConsensusManager> in genesis_helper
     "swap"
     Bucket("input")
 ;
