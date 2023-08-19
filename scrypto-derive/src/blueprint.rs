@@ -139,8 +139,10 @@ pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Resu
                     Expr::Lit(..) => {
                         let lit_str: LitStr = parse_quote!( #address );
                         let (_hrp, _entity_type, address) =
-                            AddressBech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                                .unwrap();
+                            AddressBech32Decoder::validate_and_decode_ignore_hrp(
+                                lit_str.value().as_str(),
+                            )
+                            .unwrap();
                         dependency_exprs.push(parse_quote! {
                             GlobalAddress :: new_or_panic([ #(#address),* ])
                         });
