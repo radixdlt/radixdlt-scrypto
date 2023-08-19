@@ -1,13 +1,12 @@
 use crate::engine::wasm_api::*;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
-use radix_engine_interface::api::field_api::FieldHandle;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::LockFlags;
-use radix_engine_interface::api::{ClientActorApi, ClientFieldApi, FieldValue, ObjectHandle};
+use radix_engine_interface::api::{ClientActorApi, FieldValue, ObjectHandle};
 use radix_engine_interface::api::{ClientTransactionRuntimeApi};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
@@ -244,33 +243,22 @@ impl ScryptoVmV1Api {
 
         return_data
     }
-}
 
-impl ClientFieldApi<ClientApiError> for ScryptoVmV1Api {
-    fn field_read(&mut self, lock_handle: SubstateHandle) -> Result<Vec<u8>, ClientApiError> {
+    pub fn field_read(&mut self, lock_handle: SubstateHandle) -> Vec<u8> {
         let substate = copy_buffer(unsafe { field_lock_read(lock_handle) });
-
-        Ok(substate)
+        substate
     }
 
-    fn field_write(
+    pub fn field_write(
         &mut self,
         lock_handle: SubstateHandle,
         buffer: Vec<u8>,
-    ) -> Result<(), ClientApiError> {
+    ) {
         unsafe { field_lock_write(lock_handle, buffer.as_ptr(), buffer.len()) };
-
-        Ok(())
     }
 
-    fn field_lock(&mut self, _handle: FieldHandle) -> Result<(), ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
-
-    fn field_close(&mut self, lock_handle: SubstateHandle) -> Result<(), ClientApiError> {
+    pub fn field_close(&mut self, lock_handle: SubstateHandle) {
         unsafe { field_lock_release(lock_handle) };
-
-        Ok(())
     }
 }
 
