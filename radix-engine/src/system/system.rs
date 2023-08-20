@@ -128,14 +128,17 @@ impl TryFrom<ActorStateHandle> for ActorStateRef {
         match value {
             ACTOR_STATE_SELF => Ok(ActorStateRef::SELF),
             ACTOR_STATE_OUTER_OBJECT => Ok(ActorStateRef::OuterObject),
-            _ => Err(RuntimeError::SystemError(SystemError::InvalidActorStateHandle)),
+            _ => Err(RuntimeError::SystemError(
+                SystemError::InvalidActorStateHandle,
+            )),
         }
     }
 }
 
 enum ActorObjectRef {
     SELF,
-    OuterObject,
+    Outer,
+    Global,
     AuthZone,
 }
 
@@ -144,14 +147,15 @@ impl TryFrom<ActorRefHandle> for ActorObjectRef {
     fn try_from(value: ActorStateHandle) -> Result<Self, Self::Error> {
         match value {
             ACTOR_REF_SELF => Ok(ActorObjectRef::SELF),
-            ACTOR_REF_OUTER_OBJECT => Ok(ActorObjectRef::OuterObject),
+            ACTOR_REF_OUTER => Ok(ActorObjectRef::Outer),
+            ACTOR_REF_GLOBAL => Ok(ActorObjectRef::Global),
             ACTOR_REF_AUTH_ZONE => Ok(ActorObjectRef::AuthZone),
-            _ => Err(RuntimeError::SystemError(SystemError::InvalidActorRefHandle)),
+            _ => Err(RuntimeError::SystemError(
+                SystemError::InvalidActorRefHandle,
+            )),
         }
     }
 }
-
-
 
 enum EmitterActor {
     CurrentActor,
@@ -2277,10 +2281,7 @@ where
     }
 
     #[trace_resources]
-    fn actor_get_node_id(
-        &mut self,
-        ref_handle: ActorRefHandle,
-    ) -> Result<NodeId, RuntimeError> {
+    fn actor_get_node_id(&mut self, ref_handle: ActorRefHandle) -> Result<NodeId, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
@@ -2290,20 +2291,21 @@ where
 
         let node_id = match actor_ref {
             ActorObjectRef::SELF => {
-                self
-                    .current_actor()
+                self.current_actor()
                     .node_id()
                     .ok_or(RuntimeError::SystemError(
                         SystemError::ActorNodeIdDoesNotExist,
                     ))?
             }
-            ActorObjectRef::OuterObject => {
+            ActorObjectRef::Outer => {
                 let (node_id, module_id) = self.get_actor_object_id(ActorStateRef::SELF)?;
                 match module_id {
                     ObjectModuleId::Main => {
                         let info = self.get_object_info(&node_id)?;
                         match info.blueprint_info.outer_obj_info {
-                            OuterObjectInfo::Some { outer_object } => Ok(outer_object.into_node_id()),
+                            OuterObjectInfo::Some { outer_object } => {
+                                Ok(outer_object.into_node_id())
+                            }
                             OuterObjectInfo::None => Err(RuntimeError::SystemError(
                                 SystemError::OuterObjectDoesNotExist,
                             )),
@@ -2314,38 +2316,38 @@ where
                     )),
                 }?
             }
-            ActorObjectRef::AuthZone => {
-                self.current_actor().self_auth_zone().ok_or_else(|| {
-                    RuntimeError::SystemError(SystemError::AuthModuleNotEnabled)
-                })?
+            ActorObjectRef::Global => {
+                let actor = self.current_actor();
+                if actor.is_direct_access() {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::GlobalAddressDoesNotExist,
+                    ));
+                }
+
+                if let Some(node_id) = actor.node_id() {
+                    let visibility = self.kernel_get_node_visibility(&node_id);
+                    if let ReferenceOrigin::Global(address) =
+                        visibility.reference_origin(node_id).unwrap()
+                    {
+                        address.into_node_id()
+                    } else {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::GlobalAddressDoesNotExist,
+                        ));
+                    }
+                } else {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::GlobalAddressDoesNotExist,
+                    ));
+                }
             }
+            ActorObjectRef::AuthZone => self
+                .current_actor()
+                .self_auth_zone()
+                .ok_or_else(|| RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))?,
         };
 
         Ok(node_id)
-    }
-
-    #[trace_resources]
-    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
-
-        let actor = self.current_actor();
-        if !actor.is_direct_access() {
-            if let Some(node_id) = actor.node_id() {
-                let visibility = self.kernel_get_node_visibility(&node_id);
-                if let ReferenceOrigin::Global(address) =
-                    visibility.reference_origin(node_id).unwrap()
-                {
-                    return Ok(address);
-                }
-            }
-        }
-
-        Err(RuntimeError::SystemError(
-            SystemError::GlobalAddressDoesNotExist,
-        ))
     }
 
     #[trace_resources]

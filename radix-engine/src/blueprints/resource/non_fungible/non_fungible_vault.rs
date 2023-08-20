@@ -6,8 +6,7 @@ use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, FieldValue, LockFlags, ACTOR_STATE_OUTER_OBJECT,
-    ACTOR_STATE_SELF,
+    ClientApi, CollectionIndex, FieldValue, LockFlags, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;

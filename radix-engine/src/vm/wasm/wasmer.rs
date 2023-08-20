@@ -539,16 +539,6 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn get_global_address(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
-            let (_instance, runtime) = grab_runtime!(env);
-
-            let buffer = runtime
-                .get_global_address()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
-        }
-
         pub fn get_blueprint(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
@@ -670,7 +660,6 @@ impl WasmerModule {
                 FIELD_ENTRY_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_write),
                 FIELD_ENTRY_CLOSE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_release),
                 ACTOR_GET_OBJECT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_node_id),
-                ACTOR_GET_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_global_address),
                 ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint),
                 COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_wasm_execution_units),
                 ACTOR_EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),

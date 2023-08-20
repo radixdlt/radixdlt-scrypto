@@ -33,7 +33,8 @@ pub const ACTOR_STATE_OUTER_OBJECT: ActorStateHandle = 1u32;
 pub type ActorRefHandle = u32;
 
 pub const ACTOR_REF_SELF: ActorRefHandle = 0u32;
-pub const ACTOR_REF_OUTER_OBJECT: ActorRefHandle = 1u32;
+pub const ACTOR_REF_OUTER: ActorRefHandle = 1u32;
+pub const ACTOR_REF_GLOBAL: ActorRefHandle = 2u32;
 pub const ACTOR_REF_AUTH_ZONE: ActorRefHandle = 8u32;
 
 pub type FieldIndex = u8;

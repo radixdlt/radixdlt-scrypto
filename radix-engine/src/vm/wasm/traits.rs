@@ -1,7 +1,7 @@
-use radix_engine_interface::api::ActorRefHandle;
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::errors::*;
+use radix_engine_interface::api::ActorRefHandle;
 use sbor::rust::boxed::Box;
 use sbor::rust::vec::Vec;
 
@@ -134,9 +134,10 @@ pub trait WasmRuntime {
         handle: SubstateHandle,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn actor_get_node_id(&mut self, actor_ref_handle: ActorRefHandle) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
-
-    fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn actor_get_node_id(
+        &mut self,
+        actor_ref_handle: ActorRefHandle,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 

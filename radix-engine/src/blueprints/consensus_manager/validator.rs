@@ -15,7 +15,7 @@ use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
+    ClientApi, FieldValue, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -435,7 +435,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let validator_address: ComponentAddress =
-            ComponentAddress::new_or_panic(api.actor_get_global_address()?.into());
+            ComponentAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
         let new_sorted_key =
             Self::to_sorted_key(new_registered, new_stake_amount, validator_address);
 

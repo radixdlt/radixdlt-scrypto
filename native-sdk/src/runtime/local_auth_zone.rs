@@ -1,5 +1,5 @@
 use crate::resource::NativeAuthZone;
-use radix_engine_interface::api::{ACTOR_REF_AUTH_ZONE, ClientApi};
+use radix_engine_interface::api::{ClientApi, ACTOR_REF_AUTH_ZONE};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{ScryptoCategorize, ScryptoDecode};

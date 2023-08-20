@@ -8,7 +8,8 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, FieldValue, GenericArgs, KVEntry, ACTOR_STATE_SELF,
+    ClientApi, CollectionIndex, FieldValue, GenericArgs, KVEntry, ACTOR_REF_GLOBAL,
+    ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -476,7 +477,7 @@ impl NonFungibleResourceManagerBlueprint {
         Self::assert_mintable(api)?;
 
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
+            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
         let id_type = {
             let handle = api.actor_open_field(
                 ACTOR_STATE_SELF,
@@ -532,7 +533,7 @@ impl NonFungibleResourceManagerBlueprint {
         Self::assert_mintable(api)?;
 
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
+            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
 
         // Check id_type
         let id_type = {
@@ -594,7 +595,7 @@ impl NonFungibleResourceManagerBlueprint {
         Self::assert_mintable(api)?;
 
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
+            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
 
         // Check type
         let id_type = {
@@ -659,7 +660,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
+            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
         let data_schema_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             NonFungibleResourceManagerField::MutableFields.into(),
@@ -739,7 +740,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
+            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
 
         let non_fungible_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,

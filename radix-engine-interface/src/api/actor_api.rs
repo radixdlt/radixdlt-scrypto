@@ -1,15 +1,13 @@
 use crate::api::field_api::FieldHandle;
 use crate::api::{ActorRefHandle, FieldIndex};
 use crate::types::*;
-use radix_engine_interface::api::{LockFlags, ActorStateHandle};
+use radix_engine_interface::api::{ActorStateHandle, LockFlags};
 use sbor::rust::fmt::Debug;
 
 /// Api which exposes methods in the context of the actor
 pub trait ClientActorApi<E: Debug> {
     /// Retrieve the current blueprint id
-    fn actor_get_blueprint_id(
-        &mut self,
-    ) -> Result<BlueprintId, E>;
+    fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, E>;
 
     /// Open a field in a given object for reading/writing
     fn actor_open_field(
@@ -31,7 +29,4 @@ pub trait ClientActorApi<E: Debug> {
 
     /// Retrieve the current method actor's outer object
     fn actor_get_outer_object(&mut self) -> Result<GlobalAddress, E>;
-
-    /// Retrieve the current method actor's global address
-    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
 }

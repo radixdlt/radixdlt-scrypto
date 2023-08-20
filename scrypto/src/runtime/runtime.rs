@@ -2,6 +2,7 @@ use crate::component::ObjectStubHandle;
 use crate::prelude::{AnyComponent, Global};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
+use radix_engine_interface::api::{ACTOR_REF_AUTH_ZONE, ACTOR_REF_GLOBAL};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
@@ -17,7 +18,6 @@ use radix_engine_interface::data::scrypto::{
 use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::ACTOR_REF_AUTH_ZONE;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
@@ -38,12 +38,14 @@ impl Runtime {
     }
 
     pub fn global_component() -> Global<AnyComponent> {
-        let address: GlobalAddress = ScryptoVmV1Api.actor_get_global_address();
-        Global(AnyComponent(ObjectStubHandle::Global(address)))
+        let id = ScryptoVmV1Api.actor_get_object_id(ACTOR_REF_GLOBAL);
+        Global(AnyComponent(ObjectStubHandle::Global(
+            GlobalAddress::new_or_panic(id.0),
+        )))
     }
 
     pub fn global_address() -> ComponentAddress {
-        let address: GlobalAddress = ScryptoVmV1Api.actor_get_global_address();
+        let address = ScryptoVmV1Api.actor_get_object_id(ACTOR_REF_GLOBAL);
         ComponentAddress::new_or_panic(address.into())
     }
 

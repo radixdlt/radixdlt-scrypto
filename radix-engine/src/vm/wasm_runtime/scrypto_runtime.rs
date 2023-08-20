@@ -335,17 +335,13 @@ where
         Ok(())
     }
 
-    fn actor_get_node_id(&mut self, actor_ref_handle: ActorRefHandle) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn actor_get_node_id(
+        &mut self,
+        actor_ref_handle: ActorRefHandle,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_id = self.api.actor_get_node_id(actor_ref_handle)?;
 
         let buffer = scrypto_encode(&node_id).expect("Failed to encode node id");
-        self.allocate_buffer(buffer)
-    }
-
-    fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let address = self.api.actor_get_global_address()?;
-
-        let buffer = scrypto_encode(&address).expect("Failed to encode address");
         self.allocate_buffer(buffer)
     }
 
