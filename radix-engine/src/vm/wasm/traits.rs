@@ -10,19 +10,19 @@ pub trait WasmRuntime {
     fn allocate_buffer(&mut self, buffer: Vec<u8>)
         -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn consume_buffer(
+    fn buffer_consume(
         &mut self,
         buffer_id: BufferId,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
 
-    fn call_method(
+    fn object_call(
         &mut self,
         receiver: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn call_module_method(
+    fn object_call_module(
         &mut self,
         receiver: Vec<u8>,
         module_id: u32,
@@ -30,32 +30,32 @@ pub trait WasmRuntime {
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn call_direct_method(
+    fn object_call_direct(
         &mut self,
         receiver: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn call_function(
+    fn blueprint_call(
         &mut self,
         blueprint_ident: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn new_object(
+    fn object_new(
         &mut self,
         blueprint_ident: Vec<u8>,
         object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn allocate_global_address(
+    fn address_allocate(
         &mut self,
         blueprint_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_reservation_address(
+    fn address_get_reservation_address(
         &mut self,
         node_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
@@ -119,18 +119,18 @@ pub trait WasmRuntime {
         flags: u32,
     ) -> Result<SubstateHandle, InvokeError<WasmRuntimeError>>;
 
-    fn field_lock_read(
+    fn field_entry_read(
         &mut self,
         handle: SubstateHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn field_lock_write(
+    fn field_entry_write(
         &mut self,
         handle: SubstateHandle,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn field_lock_release(
+    fn field_entry_close(
         &mut self,
         handle: SubstateHandle,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
@@ -140,42 +140,50 @@ pub trait WasmRuntime {
         actor_ref_handle: ActorRefHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn actor_get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn consume_wasm_execution_units(&mut self, n: u32)
         -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn execution_cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>>;
+    fn costing_get_execution_cost_unit_limit(
+        &mut self,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>>;
 
-    fn execution_cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn costing_get_execution_cost_unit_price(
+        &mut self,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn finalization_cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>>;
+    fn costing_get_finalization_cost_unit_limit(
+        &mut self,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>>;
 
-    fn finalization_cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn costing_get_finalization_cost_unit_price(
+        &mut self,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn usd_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn costing_get_usd_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>>;
+    fn costing_get_tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>>;
 
-    fn fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn costing_get_fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn emit_event(
+    fn actor_emit_event(
         &mut self,
         event_name: Vec<u8>,
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn emit_log(
+    fn sys_log(
         &mut self,
         level: Vec<u8>,
         message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn sys_panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn sys_get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn sys_generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.
