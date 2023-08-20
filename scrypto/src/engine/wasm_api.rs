@@ -7,7 +7,7 @@ pub fn copy_buffer(buffer: Buffer) -> Vec<u8> {
     let len = buffer.len() as usize;
     let mut vec = Vec::<u8>::with_capacity(len);
     unsafe {
-        buffer::consume_buffer(buffer.id(), vec.as_mut_ptr());
+        buffer::buffer_consume(buffer.id(), vec.as_mut_ptr());
         vec.set_len(len);
     };
     vec
@@ -25,7 +25,6 @@ pub fn forget_vec(vec: Vec<u8>) -> Slice {
 
     Slice::new(ptr as u32, len as u32)
 }
-
 
 /// Api make blueprint function calls
 pub mod blueprint {
@@ -50,10 +49,7 @@ pub mod addr {
 
     extern "C" {
         /// Reserves a global address for a given blueprint
-        pub fn address_allocate(
-            blueprint_id_ptr: *const u8,
-            blueprint_id_len: usize,
-        ) -> Buffer;
+        pub fn address_allocate(blueprint_id_ptr: *const u8, blueprint_id_len: usize) -> Buffer;
 
         /// Get the address associated with an address reservation
         pub fn address_get_reservation_address(
@@ -131,6 +127,8 @@ pub mod actor {
     extern "C" {
         pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
 
+        pub fn actor_get_auth_zone() -> Buffer;
+
         /// Call a module method of the current actor
         pub fn actor_call_module(
             module_id: u32,
@@ -140,15 +138,8 @@ pub mod actor {
             args_len: usize,
         ) -> Buffer;
 
-        /// Emit an event
-        pub fn actor_emit_event(
-            event_name_ptr: *const u8,
-            event_name_len: usize,
-            event_data_ptr: *const u8,
-            event_data_len: usize,
-        );
-
-        pub fn actor_get_node_id() -> Buffer;
+        /// Get the object id of the current actor
+        pub fn actor_get_object_id() -> Buffer;
 
         /// Get the global address of the current actor
         /// If an owned object, this will refer to the global containing object's address
@@ -157,10 +148,15 @@ pub mod actor {
         /// Get the blueprint id of the current actor
         pub fn actor_get_blueprint_id() -> Buffer;
 
-        pub fn actor_get_auth_zone() -> Buffer;
+        /// Emit an event
+        pub fn actor_emit_event(
+            event_name_ptr: *const u8,
+            event_name_len: usize,
+            event_data_ptr: *const u8,
+            event_data_len: usize,
+        );
     }
 }
-
 
 pub mod kv_store {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
@@ -194,14 +190,10 @@ pub mod kv_entry {
 
     extern "C" {
         /// Reads the value in a Key Value entry
-        pub fn kv_entry_get(kv_entry_handle: u32) -> Buffer;
+        pub fn kv_entry_read(kv_entry_handle: u32) -> Buffer;
 
         /// Writes a value to Key Value entry
-        pub fn kv_entry_set(
-            kv_entry_handle: u32,
-            buffer_ptr: *const u8,
-            buffer_len: usize,
-        );
+        pub fn kv_entry_write(kv_entry_handle: u32, buffer_ptr: *const u8, buffer_len: usize);
 
         /// Removes the value in an underlying Key Value entry
         pub fn kv_entry_remove(kv_entry_handle: u32) -> Buffer;
@@ -210,7 +202,6 @@ pub mod kv_entry {
         pub fn kv_entry_close(kv_entry_handle: u32);
     }
 }
-
 
 /// API to manipulate or get information about an open Field Entry
 pub mod field_entry {
@@ -232,19 +223,19 @@ pub mod costing {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
-        pub fn execution_cost_unit_limit() -> u32;
+        pub fn costing_execution_cost_unit_limit() -> u32;
 
-        pub fn execution_cost_unit_price() -> Buffer;
+        pub fn costing_execution_cost_unit_price() -> Buffer;
 
-        pub fn finalization_cost_unit_limit() -> u32;
+        pub fn costing_finalization_cost_unit_limit() -> u32;
 
-        pub fn finalization_cost_unit_price() -> Buffer;
+        pub fn costing_finalization_cost_unit_price() -> Buffer;
 
-        pub fn usd_price() -> Buffer;
+        pub fn costing_usd_price() -> Buffer;
 
-        pub fn tip_percentage() -> u32;
+        pub fn costing_tip_percentage() -> u32;
 
-        pub fn fee_balance() -> Buffer;
+        pub fn costing_fee_balance() -> Buffer;
     }
 }
 
@@ -262,13 +253,13 @@ pub mod system {
         );
 
         /// Retrieves the current transaction hash
-        pub fn get_transaction_hash() -> Buffer;
+        pub fn sys_get_transaction_hash() -> Buffer;
 
         /// Generates a unique id
-        pub fn generate_ruid() -> Buffer;
+        pub fn sys_generate_ruid() -> Buffer;
 
         /// Panics and halts transaction execution
-        pub fn panic(message_ptr: *const u8, message_len: usize);
+        pub fn sys_panic(message_ptr: *const u8, message_len: usize);
     }
 }
 
@@ -277,6 +268,6 @@ pub mod buffer {
 
     extern "C" {
         /// Consumes a buffer by copying the contents into the specified destination.
-        pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
+        pub fn buffer_consume(buffer_id: BufferId, destination_ptr: *mut u8);
     }
 }

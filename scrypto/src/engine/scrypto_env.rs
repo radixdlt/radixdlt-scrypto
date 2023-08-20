@@ -19,34 +19,34 @@ pub struct ScryptoVmV1Api;
 impl ScryptoVmV1Api {
     // Costing
     pub fn execution_cost_unit_limit(&mut self) -> u32 {
-        unsafe { costing::execution_cost_unit_limit() }
+        unsafe { costing::costing_execution_cost_unit_limit() }
     }
 
     pub fn execution_cost_unit_price(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { costing::execution_cost_unit_price() });
+        let bytes = copy_buffer(unsafe { costing::costing_execution_cost_unit_price() });
         scrypto_decode(&bytes).unwrap()
     }
 
     pub fn finalization_cost_unit_limit(&mut self) -> u32 {
-        unsafe { costing::finalization_cost_unit_limit() }
+        unsafe { costing::costing_finalization_cost_unit_limit() }
     }
 
     pub fn finalization_cost_unit_price(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { costing::finalization_cost_unit_price() });
+        let bytes = copy_buffer(unsafe { costing::costing_finalization_cost_unit_price() });
         scrypto_decode(&bytes).unwrap()
     }
 
     pub fn usd_price(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { costing::usd_price() });
+        let bytes = copy_buffer(unsafe { costing::costing_usd_price() });
         scrypto_decode(&bytes).unwrap()
     }
 
     pub fn tip_percentage(&mut self) -> u32 {
-        unsafe { costing::tip_percentage() }
+        unsafe { costing::costing_tip_percentage() }
     }
 
     pub fn fee_balance(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { costing::fee_balance() });
+        let bytes = copy_buffer(unsafe { costing::costing_fee_balance() });
         scrypto_decode(&bytes).unwrap()
     }
 
@@ -122,13 +122,12 @@ impl ScryptoVmV1Api {
         scrypto_decode(&bytes).unwrap()
     }
 
-
     pub fn key_value_entry_get(&mut self, handle: KeyValueEntryHandle) -> Vec<u8> {
-        copy_buffer(unsafe { kv_entry::kv_entry_get(handle) })
+        copy_buffer(unsafe { kv_entry::kv_entry_read(handle) })
     }
 
     pub fn key_value_entry_set(&mut self, handle: KeyValueEntryHandle, buffer: Vec<u8>) {
-        unsafe { kv_entry::kv_entry_set(handle, buffer.as_ptr(), buffer.len()) };
+        unsafe { kv_entry::kv_entry_write(handle, buffer.as_ptr(), buffer.len()) };
     }
 
     pub fn key_value_entry_remove(&mut self, handle: KeyValueEntryHandle) -> Vec<u8> {
@@ -273,7 +272,7 @@ impl ScryptoVmV1Api {
     }
 
     pub fn actor_get_node_id(&mut self) -> NodeId {
-        let node_id = copy_buffer(unsafe { actor::actor_get_node_id() });
+        let node_id = copy_buffer(unsafe { actor::actor_get_object_id() });
 
         scrypto_decode(&node_id).unwrap()
     }
@@ -332,20 +331,20 @@ impl ScryptoVmV1Api {
     }
 
     pub fn get_transaction_hash(&mut self) -> Hash {
-        let actor = copy_buffer(unsafe { system::get_transaction_hash() });
+        let actor = copy_buffer(unsafe { system::sys_get_transaction_hash() });
 
         scrypto_decode(&actor).unwrap()
     }
 
     pub fn generate_ruid(&mut self) -> [u8; 32] {
-        let actor = copy_buffer(unsafe { system::generate_ruid() });
+        let actor = copy_buffer(unsafe { system::sys_generate_ruid() });
 
         scrypto_decode(&actor).unwrap()
     }
 
     pub fn panic(&mut self, message: String) {
         unsafe {
-            system::panic(message.as_ptr(), message.len());
+            system::sys_panic(message.as_ptr(), message.len());
         };
     }
 }

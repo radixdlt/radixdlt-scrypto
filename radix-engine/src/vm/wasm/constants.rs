@@ -28,7 +28,7 @@ pub const ACTOR_CALL_MODULE_FUNCTION_NAME: &str = "actor_call_module";
 pub const ACTOR_GET_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "actor_get_global_address";
 pub const ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "actor_get_blueprint_id";
 pub const ACTOR_GET_AUTH_ZONE_FUNCTION_NAME: &str = "actor_get_auth_zone";
-pub const ACTOR_GET_NODE_ID_FUNCTION_NAME: &str = "actor_get_node_id";
+pub const ACTOR_GET_OBJECT_ID_FUNCTION_NAME: &str = "actor_get_object_id";
 pub const ACTOR_EMIT_EVENT_FUNCTION_NAME: &str = "actor_emit_event";
 
 //=================
@@ -41,8 +41,8 @@ pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME: &str = "kv_store_remove_en
 //=================
 // KV Entry
 //=================
-pub const KEY_VALUE_ENTRY_GET_FUNCTION_NAME: &str = "kv_entry_get";
-pub const KEY_VALUE_ENTRY_SET_FUNCTION_NAME: &str = "kv_entry_set";
+pub const KEY_VALUE_ENTRY_READ_FUNCTION_NAME: &str = "kv_entry_read";
+pub const KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME: &str = "kv_entry_write";
 pub const KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME: &str = "kv_entry_remove";
 pub const KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME: &str = "kv_entry_close";
 
@@ -56,27 +56,31 @@ pub const FIELD_ENTRY_CLOSE_FUNCTION_NAME: &str = "field_entry_close";
 //=================
 // Costing
 //=================
-pub const CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME: &str = "gas";
-pub const EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME: &str = "execution_cost_unit_limit";
-pub const EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME: &str = "execution_cost_unit_price";
-pub const FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME: &str = "finalization_cost_unit_limit";
-pub const FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME: &str = "finalization_cost_unit_price";
-pub const USD_PRICE_FUNCTION_NAME: &str = "usd_price";
-pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
-pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
+pub const COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME: &str = "gas";
+pub const COSTING_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME: &str =
+    "costing_execution_cost_unit_limit";
+pub const COSTING_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME: &str =
+    "costing_execution_cost_unit_price";
+pub const COSTING_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME: &str =
+    "costing_finalization_cost_unit_limit";
+pub const COSTING_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME: &str =
+    "costing_finalization_cost_unit_price";
+pub const COSTING_USD_PRICE_FUNCTION_NAME: &str = "costing_usd_price";
+pub const COSTING_TIP_PERCENTAGE_FUNCTION_NAME: &str = "costing_tip_percentage";
+pub const COSTING_FEE_BALANCE_FUNCTION_NAME: &str = "costing_fee_balance";
 
 //=================
 // System
 //=================
 pub const SYS_LOG_FUNCTION_NAME: &str = "sys_log";
-pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
-pub const GENERATE_RUID_FUNCTION_NAME: &str = "generate_ruid";
-pub const PANIC_FUNCTION_NAME: &str = "panic";
+pub const SYS_GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "sys_get_transaction_hash";
+pub const SYS_GENERATE_RUID_FUNCTION_NAME: &str = "sys_generate_ruid";
+pub const SYS_PANIC_FUNCTION_NAME: &str = "sys_panic";
 
 //=================
 // WASM Shim
 //=================
-pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
+pub const BUFFER_CONSUME_FUNCTION_NAME: &str = "buffer_consume";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";

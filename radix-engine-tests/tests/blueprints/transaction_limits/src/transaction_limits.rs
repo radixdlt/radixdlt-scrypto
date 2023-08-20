@@ -50,7 +50,12 @@ mod transaction_limits {
             })
             .unwrap();
             unsafe {
-                wasm_api::actor::actor_emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len())
+                wasm_api::actor::actor_emit_event(
+                    name.as_ptr(),
+                    name.len(),
+                    buf.as_ptr(),
+                    buf.len(),
+                )
             }
         }
 

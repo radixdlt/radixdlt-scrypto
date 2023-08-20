@@ -162,9 +162,12 @@ where
         let function_ident =
             String::from_utf8(function_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
-        let return_data =
-            self.api
-                .call_function(blueprint_id.package_address, blueprint_id.blueprint_name.as_str(), &function_ident, args)?;
+        let return_data = self.api.call_function(
+            blueprint_id.package_address,
+            blueprint_id.blueprint_name.as_str(),
+            &function_ident,
+            args,
+        )?;
 
         self.allocate_buffer(return_data)
     }

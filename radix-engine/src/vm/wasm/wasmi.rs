@@ -1091,7 +1091,7 @@ impl WasmiModule {
 
         let mut linker = <Linker<HostState>>::new();
 
-        linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
+        linker_define!(linker, BUFFER_CONSUME_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, OBJECT_CALL_FUNCTION_NAME, host_call_method);
         linker_define!(
             linker,
@@ -1118,29 +1118,41 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME,
+            COSTING_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME,
             host_execution_cost_unit_limit
         );
         linker_define!(
             linker,
-            EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME,
+            COSTING_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME,
             host_execution_cost_unit_price
         );
         linker_define!(
             linker,
-            FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME,
+            COSTING_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME,
             host_finalization_cost_unit_limit
         );
         linker_define!(
             linker,
-            FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME,
+            COSTING_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME,
             host_finalization_cost_unit_price
         );
-        linker_define!(linker, USD_PRICE_FUNCTION_NAME, host_usd_price);
-        linker_define!(linker, TIP_PERCENTAGE_FUNCTION_NAME, host_tip_percentage);
-        linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
-        linker_define!(linker, OBJECT_GLOBALIZE_FUNCTION_NAME, host_globalize_object);
-        linker_define!(linker, OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME, host_get_object_info);
+        linker_define!(linker, COSTING_USD_PRICE_FUNCTION_NAME, host_usd_price);
+        linker_define!(
+            linker,
+            COSTING_TIP_PERCENTAGE_FUNCTION_NAME,
+            host_tip_percentage
+        );
+        linker_define!(linker, COSTING_FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
+        linker_define!(
+            linker,
+            OBJECT_GLOBALIZE_FUNCTION_NAME,
+            host_globalize_object
+        );
+        linker_define!(
+            linker,
+            OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME,
+            host_get_object_info
+        );
         linker_define!(
             linker,
             OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME,
@@ -1165,12 +1177,12 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            KEY_VALUE_ENTRY_GET_FUNCTION_NAME,
+            KEY_VALUE_ENTRY_READ_FUNCTION_NAME,
             host_key_value_entry_get
         );
         linker_define!(
             linker,
-            KEY_VALUE_ENTRY_SET_FUNCTION_NAME,
+            KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME,
             host_key_value_entry_set
         );
         linker_define!(
@@ -1200,28 +1212,36 @@ impl WasmiModule {
             FIELD_ENTRY_CLOSE_FUNCTION_NAME,
             host_field_lock_release
         );
-        linker_define!(linker, ACTOR_GET_NODE_ID_FUNCTION_NAME, host_get_node_id);
+        linker_define!(linker, ACTOR_GET_OBJECT_ID_FUNCTION_NAME, host_get_node_id);
         linker_define!(
             linker,
             ACTOR_GET_GLOBAL_ADDRESS_FUNCTION_NAME,
             host_get_global_address
         );
-        linker_define!(linker, ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME, host_get_blueprint);
-        linker_define!(linker, ACTOR_GET_AUTH_ZONE_FUNCTION_NAME, host_get_auth_zone);
         linker_define!(
             linker,
-            CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
+            ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME,
+            host_get_blueprint
+        );
+        linker_define!(
+            linker,
+            ACTOR_GET_AUTH_ZONE_FUNCTION_NAME,
+            host_get_auth_zone
+        );
+        linker_define!(
+            linker,
+            COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
             host_consume_wasm_execution_units
         );
         linker_define!(linker, ACTOR_EMIT_EVENT_FUNCTION_NAME, host_emit_event);
         linker_define!(linker, SYS_LOG_FUNCTION_NAME, host_emit_log);
-        linker_define!(linker, PANIC_FUNCTION_NAME, host_panic);
+        linker_define!(linker, SYS_PANIC_FUNCTION_NAME, host_panic);
         linker_define!(
             linker,
-            GET_TRANSACTION_HASH_FUNCTION_NAME,
+            SYS_GET_TRANSACTION_HASH_FUNCTION_NAME,
             host_get_transaction_hash
         );
-        linker_define!(linker, GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
+        linker_define!(linker, SYS_GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
 
         let global_value = Global::new(store.as_context_mut(), Value::I32(-1), Mutability::Var);
         linker_define!(linker, "test_global_mutable_value", global_value);
