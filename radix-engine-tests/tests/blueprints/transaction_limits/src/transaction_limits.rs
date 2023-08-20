@@ -69,7 +69,7 @@ mod transaction_limits {
 
         pub fn panic_of_size(n: usize) {
             let buf = "a".repeat(n);
-            unsafe { wasm_api::system::panic(buf.as_ptr(), buf.len()) }
+            unsafe { wasm_api::system::sys_panic(buf.as_ptr(), buf.len()) }
         }
     }
 }
@@ -105,7 +105,7 @@ mod transaction_limits_substate {
                 &key_payload,
                 LockFlags::MUTABLE,
             );
-            unsafe { wasm_api::kv_entry::kv_entry_set(handle, buf.as_ptr(), buf.len()) };
+            unsafe { wasm_api::kv_entry::kv_entry_write(handle, buf.as_ptr(), buf.len()) };
             ScryptoVmV1Api.key_value_entry_close(handle);
 
             // Put the kv store into a component

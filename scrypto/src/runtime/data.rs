@@ -1,5 +1,5 @@
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::OBJECT_HANDLE_SELF;
+use radix_engine_interface::api::ACTOR_STATE_SELF;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };
@@ -115,7 +115,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
 
     pub fn get(&self) -> DataRef<V> {
         let lock_handle = ScryptoVmV1Api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ComponentField::State0 as u8,
             LockFlags::read_only(),
         );
@@ -126,7 +126,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
         let lock_handle = ScryptoVmV1Api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ComponentField::State0 as u8,
             LockFlags::MUTABLE,
         );

@@ -2,7 +2,7 @@ use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -75,7 +75,7 @@ impl FungibleProofBlueprint {
     {
         let moveable = {
             let handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 FungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
@@ -86,7 +86,7 @@ impl FungibleProofBlueprint {
         };
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -110,7 +110,7 @@ impl FungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -142,7 +142,7 @@ impl FungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleProofField::ProofRefs.into(),
             LockFlags::MUTABLE,
         )?;
@@ -173,7 +173,7 @@ impl FungibleProofBlueprint {
             )));
             if !is_to_self && (is_to_barrier || is_to_auth_zone) {
                 let handle = api.actor_open_field(
-                    OBJECT_HANDLE_SELF,
+                    ACTOR_STATE_SELF,
                     FungibleProofField::Moveable.into(),
                     LockFlags::MUTABLE,
                 )?;

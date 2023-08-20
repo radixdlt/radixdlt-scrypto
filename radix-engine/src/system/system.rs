@@ -117,21 +117,41 @@ pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObj
     pub phantom: PhantomData<V>,
 }
 
-enum ActorObjectType {
+enum ActorStateRef {
     SELF,
     OuterObject,
 }
 
-impl TryFrom<ObjectHandle> for ActorObjectType {
+impl TryFrom<ActorStateHandle> for ActorStateRef {
     type Error = RuntimeError;
-    fn try_from(value: ObjectHandle) -> Result<Self, Self::Error> {
+    fn try_from(value: ActorStateHandle) -> Result<Self, Self::Error> {
         match value {
-            OBJECT_HANDLE_SELF => Ok(ActorObjectType::SELF),
-            OBJECT_HANDLE_OUTER_OBJECT => Ok(ActorObjectType::OuterObject),
-            _ => Err(RuntimeError::SystemError(SystemError::InvalidObjectHandle)),
+            ACTOR_STATE_SELF => Ok(ActorStateRef::SELF),
+            ACTOR_STATE_OUTER_OBJECT => Ok(ActorStateRef::OuterObject),
+            _ => Err(RuntimeError::SystemError(SystemError::InvalidActorStateHandle)),
         }
     }
 }
+
+enum ActorObjectRef {
+    SELF,
+    OuterObject,
+    AuthZone,
+}
+
+impl TryFrom<ActorRefHandle> for ActorObjectRef {
+    type Error = RuntimeError;
+    fn try_from(value: ActorStateHandle) -> Result<Self, Self::Error> {
+        match value {
+            ACTOR_REF_SELF => Ok(ActorObjectRef::SELF),
+            ACTOR_REF_OUTER_OBJECT => Ok(ActorObjectRef::OuterObject),
+            ACTOR_REF_AUTH_ZONE => Ok(ActorObjectRef::AuthZone),
+            _ => Err(RuntimeError::SystemError(SystemError::InvalidActorRefHandle)),
+        }
+    }
+}
+
+
 
 enum EmitterActor {
     CurrentActor,
@@ -720,7 +740,7 @@ where
 
     fn get_actor_object_id(
         &mut self,
-        actor_object_type: ActorObjectType,
+        actor_object_type: ActorStateRef,
     ) -> Result<(NodeId, ObjectModuleId), RuntimeError> {
         let actor = self.current_actor();
         let object_id = actor
@@ -728,7 +748,7 @@ where
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAnObject))?;
 
         let object_id = match actor_object_type {
-            ActorObjectType::OuterObject => {
+            ActorStateRef::OuterObject => {
                 let module_id = object_id.1;
 
                 match module_id {
@@ -745,7 +765,7 @@ where
                     }
                 }
             }
-            ActorObjectType::SELF => object_id,
+            ActorStateRef::SELF => object_id,
         };
 
         Ok(object_id)
@@ -753,7 +773,7 @@ where
 
     fn get_actor_collection_partition_info(
         &mut self,
-        actor_object_type: ActorObjectType,
+        actor_object_type: ActorStateRef,
         collection_index: u8,
         expected_type: &BlueprintPartitionType,
     ) -> Result<(NodeId, BlueprintInfo, PartitionNumber), RuntimeError> {
@@ -797,7 +817,7 @@ where
 
     fn get_actor_info(
         &mut self,
-        actor_object_type: ActorObjectType,
+        actor_object_type: ActorStateRef,
     ) -> Result<(NodeId, ObjectModuleId, BlueprintInterface, BlueprintInfo), RuntimeError> {
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
         let blueprint_info = self.get_blueprint_info(&node_id, module_id)?;
@@ -809,7 +829,7 @@ where
 
     fn get_actor_field_info(
         &mut self,
-        actor_object_type: ActorObjectType,
+        actor_object_type: ActorStateRef,
         field_index: u8,
     ) -> Result<(NodeId, BlueprintInfo, PartitionNumber, FieldTransience), RuntimeError> {
         let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
@@ -1727,12 +1747,12 @@ where
     // Costing through kernel
     fn actor_index_insert(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1769,11 +1789,11 @@ where
     // Costing through kernel
     fn actor_index_remove(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1792,11 +1812,11 @@ where
     // Costing through kernel
     fn actor_index_scan_keys(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1817,11 +1837,11 @@ where
     // Costing through kernel
     fn actor_index_drain(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1849,12 +1869,12 @@ where
     #[trace_resources]
     fn actor_sorted_index_insert(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1896,11 +1916,11 @@ where
     #[trace_resources]
     fn actor_sorted_index_remove(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1924,11 +1944,11 @@ where
     #[trace_resources]
     fn actor_sorted_index_scan(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<(SortedKey, Vec<u8>)>, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -2177,11 +2197,11 @@ where
     #[trace_resources]
     fn actor_open_field(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         field_index: u8,
         flags: LockFlags,
     ) -> Result<SubstateHandle, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, blueprint_info, partition_num, transient) =
             self.get_actor_field_info(actor_object_type, field_index)?;
@@ -2257,18 +2277,49 @@ where
     }
 
     #[trace_resources]
-    fn actor_get_node_id(&mut self) -> Result<NodeId, RuntimeError> {
+    fn actor_get_node_id(
+        &mut self,
+        ref_handle: ActorRefHandle,
+    ) -> Result<NodeId, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
             .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
 
-        let node_id = self
-            .current_actor()
-            .node_id()
-            .ok_or(RuntimeError::SystemError(
-                SystemError::ActorNodeIdDoesNotExist,
-            ))?;
+        let actor_ref: ActorObjectRef = ref_handle.try_into()?;
+
+        let node_id = match actor_ref {
+            ActorObjectRef::SELF => {
+                self
+                    .current_actor()
+                    .node_id()
+                    .ok_or(RuntimeError::SystemError(
+                        SystemError::ActorNodeIdDoesNotExist,
+                    ))?
+            }
+            ActorObjectRef::OuterObject => {
+                let (node_id, module_id) = self.get_actor_object_id(ActorStateRef::SELF)?;
+                match module_id {
+                    ObjectModuleId::Main => {
+                        let info = self.get_object_info(&node_id)?;
+                        match info.blueprint_info.outer_obj_info {
+                            OuterObjectInfo::Some { outer_object } => Ok(outer_object.into_node_id()),
+                            OuterObjectInfo::None => Err(RuntimeError::SystemError(
+                                SystemError::OuterObjectDoesNotExist,
+                            )),
+                        }
+                    }
+                    _ => Err(RuntimeError::SystemError(
+                        SystemError::ModulesDontHaveOuterObjects,
+                    )),
+                }?
+            }
+            ActorObjectRef::AuthZone => {
+                self.current_actor().self_auth_zone().ok_or_else(|| {
+                    RuntimeError::SystemError(SystemError::AuthModuleNotEnabled)
+                })?
+            }
+        };
 
         Ok(node_id)
     }
@@ -2304,7 +2355,7 @@ where
             .modules
             .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
 
-        let (node_id, module_id) = self.get_actor_object_id(ActorObjectType::SELF)?;
+        let (node_id, module_id) = self.get_actor_object_id(ActorStateRef::SELF)?;
         match module_id {
             ObjectModuleId::Main => {
                 let info = self.get_object_info(&node_id)?;
@@ -2329,14 +2380,14 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let node_id = self.actor_get_node_id()?;
+        let node_id = self.actor_get_node_id(ACTOR_REF_SELF)?;
         self.call_method_advanced(&node_id, module_id, false, method_name, args)
     }
 
     #[trace_resources]
     fn actor_is_feature_enabled(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         feature: &str,
     ) -> Result<bool, RuntimeError> {
         self.api
@@ -2344,7 +2395,7 @@ where
             .modules
             .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
 
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
         self.is_feature_enabled(&node_id, module_id, feature)
     }
@@ -2359,12 +2410,12 @@ where
     #[trace_resources]
     fn actor_open_key_value_entry(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -2423,7 +2474,7 @@ where
     // Costing through kernel
     fn actor_remove_key_value_entry(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {

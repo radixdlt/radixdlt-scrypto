@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+    ClientApi, FieldValue, LockFlags, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 
@@ -18,7 +18,7 @@ impl FungibleBucketBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let divisibility_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
@@ -55,7 +55,7 @@ impl FungibleBucketBlueprint {
 
         // Take
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
@@ -84,7 +84,7 @@ impl FungibleBucketBlueprint {
 
         // Put
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
@@ -170,7 +170,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
@@ -197,7 +197,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
@@ -227,7 +227,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::read_only(),
         )?;
@@ -242,7 +242,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::read_only(),
         )?;
@@ -260,7 +260,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
@@ -284,7 +284,7 @@ impl FungibleBucketBlueprint {
         }
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;

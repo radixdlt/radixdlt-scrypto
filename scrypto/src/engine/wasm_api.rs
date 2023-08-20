@@ -125,9 +125,10 @@ pub mod actor {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
-        pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
+        /// Get the blueprint id of the current actor
+        pub fn actor_get_blueprint_id() -> Buffer;
 
-        pub fn actor_get_auth_zone() -> Buffer;
+        pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
 
         /// Call a module method of the current actor
         pub fn actor_call_module(
@@ -145,8 +146,7 @@ pub mod actor {
         /// If an owned object, this will refer to the global containing object's address
         pub fn actor_get_global_address() -> Buffer;
 
-        /// Get the blueprint id of the current actor
-        pub fn actor_get_blueprint_id() -> Buffer;
+        pub fn actor_get_auth_zone() -> Buffer;
 
         /// Emit an event
         pub fn actor_emit_event(

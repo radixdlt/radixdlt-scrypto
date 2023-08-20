@@ -26,10 +26,16 @@ pub use system_modules::costing_api::ClientCostingApi;
 pub use system_modules::execution_trace_api::ClientExecutionTraceApi;
 pub use system_modules::transaction_runtime_api::ClientTransactionRuntimeApi;
 
-pub type ObjectHandle = u32;
+pub type ActorStateHandle = u32;
 
-pub const OBJECT_HANDLE_SELF: ObjectHandle = 0u32;
-pub const OBJECT_HANDLE_OUTER_OBJECT: ObjectHandle = 1u32;
+pub const ACTOR_STATE_SELF: ActorStateHandle = 0u32;
+pub const ACTOR_STATE_OUTER_OBJECT: ActorStateHandle = 1u32;
+
+pub type ActorRefHandle = u32;
+
+pub const ACTOR_REF_SELF: ActorRefHandle = 0u32;
+pub const ACTOR_REF_OUTER_OBJECT: ActorRefHandle = 1u32;
+pub const ACTOR_REF_AUTH_ZONE: ActorRefHandle = 8u32;
 
 pub type FieldIndex = u8;
 pub type CollectionIndex = u8;

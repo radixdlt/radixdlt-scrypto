@@ -209,7 +209,7 @@ mod recursive_test {
                     let len = value_payload.len();
                     value_payload[len - NodeId::LENGTH..].copy_from_slice(store.as_bytes());
 
-                    kv_entry::kv_entry_set(handle, value_payload.as_ptr(), value_payload.len());
+                    kv_entry::kv_entry_write(handle, value_payload.as_ptr(), value_payload.len());
                     kv_entry::kv_entry_close(handle);
                 }
             }

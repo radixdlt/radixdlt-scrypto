@@ -5,7 +5,7 @@ use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
-use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::{KeyOrValue, PackageDefinition};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -97,7 +97,7 @@ fn cannot_write_reference_in_non_transient_blueprint() {
                 }
                 "test" => {
                     let handle =
-                        api.actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::MUTABLE)?;
+                        api.actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE)?;
                     let auth_zone = api.get_auth_zone()?;
                     api.field_write_typed(handle, Reference(auth_zone))?;
                 }

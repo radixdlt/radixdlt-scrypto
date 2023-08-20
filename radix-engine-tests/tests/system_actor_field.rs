@@ -6,7 +6,7 @@ use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::{
-    ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_OUTER_OBJECT,
+    ClientApi, LockFlags, ObjectModuleId, ACTOR_STATE_OUTER_OBJECT,
 };
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
@@ -31,7 +31,7 @@ fn opening_non_existent_outer_object_fields_should_not_panic() {
         {
             match export_name {
                 "test" => {
-                    api.actor_open_field(OBJECT_HANDLE_OUTER_OBJECT, 0u8, LockFlags::read_only())?;
+                    api.actor_open_field(ACTOR_STATE_OUTER_OBJECT, 0u8, LockFlags::read_only())?;
                 }
                 "new" => {
                     let metadata = Metadata::create(api)?;

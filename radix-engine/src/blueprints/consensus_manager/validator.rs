@@ -15,7 +15,7 @@ use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+    ClientApi, FieldValue, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -188,7 +188,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::read_only(),
         )?;
@@ -213,7 +213,7 @@ impl ValidatorBlueprint {
         let xrd_bucket_amount = xrd_bucket.amount(api)?;
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
@@ -260,7 +260,7 @@ impl ValidatorBlueprint {
         let stake_unit_bucket_amount = stake_unit_bucket.amount(api)?;
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
@@ -282,7 +282,7 @@ impl ValidatorBlueprint {
             stake_unit_resman.burn(stake_unit_bucket, api)?;
 
             let manager_handle = api.actor_open_field(
-                OBJECT_HANDLE_OUTER_OBJECT,
+                ACTOR_STATE_OUTER_OBJECT,
                 ConsensusManagerField::ConsensusManager.into(),
                 LockFlags::read_only(),
             )?;
@@ -292,7 +292,7 @@ impl ValidatorBlueprint {
             api.field_close(manager_handle)?;
 
             let config_handle = api.actor_open_field(
-                OBJECT_HANDLE_OUTER_OBJECT,
+                ACTOR_STATE_OUTER_OBJECT,
                 ConsensusManagerField::Config.into(),
                 LockFlags::read_only(),
             )?;
@@ -356,7 +356,7 @@ impl ValidatorBlueprint {
         }
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::ProtocolUpdateReadinessSignal.into(),
             LockFlags::MUTABLE,
         )?;
@@ -381,7 +381,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::ProtocolUpdateReadinessSignal.into(),
             LockFlags::read_only(),
         )?;
@@ -397,7 +397,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = ValidatorField::Validator.into();
-        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
+        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::MUTABLE)?;
 
         let mut validator: ValidatorSubstate = api.field_read_typed(handle)?;
         // No update
@@ -475,7 +475,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::read_only(),
         )?;
@@ -492,7 +492,7 @@ impl ValidatorBlueprint {
 
         let current_epoch = {
             let mgr_handle = api.actor_open_field(
-                OBJECT_HANDLE_OUTER_OBJECT,
+                ACTOR_STATE_OUTER_OBJECT,
                 ConsensusManagerField::ConsensusManager.into(),
                 LockFlags::read_only(),
             )?;
@@ -533,7 +533,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
@@ -566,7 +566,7 @@ impl ValidatorBlueprint {
 
         // read the current epoch
         let consensus_manager_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
         )?;
@@ -577,7 +577,7 @@ impl ValidatorBlueprint {
 
         // read the configured fee increase epochs delay
         let config_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             ConsensusManagerField::Config.into(),
             LockFlags::read_only(),
         )?;
@@ -587,7 +587,7 @@ impl ValidatorBlueprint {
 
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
@@ -623,7 +623,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::read_only(),
         )?;
@@ -639,7 +639,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::read_only(),
         )?;
@@ -657,7 +657,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::read_only(),
         )?;
@@ -678,7 +678,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::read_only(),
         )?;
@@ -699,7 +699,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
@@ -729,7 +729,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::read_only(),
         )?;
@@ -754,7 +754,7 @@ impl ValidatorBlueprint {
     {
         // read the current epoch (needed for a drive-by "finish unlocking" of available withdrawals)
         let consensus_manager_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
         )?;
@@ -765,7 +765,7 @@ impl ValidatorBlueprint {
 
         // read the configured unlock epochs delay
         let config_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             ConsensusManagerField::Config.into(),
             LockFlags::read_only(),
         )?;
@@ -775,7 +775,7 @@ impl ValidatorBlueprint {
 
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
@@ -819,7 +819,7 @@ impl ValidatorBlueprint {
     {
         // read the current epoch
         let consensus_manager_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
         )?;
@@ -830,7 +830,7 @@ impl ValidatorBlueprint {
 
         // drain the already-available withdrawals
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
@@ -896,7 +896,7 @@ impl ValidatorBlueprint {
     {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
@@ -976,7 +976,7 @@ impl ValidatorBlueprint {
     {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
@@ -1051,7 +1051,7 @@ impl ValidatorBlueprint {
                 stake,
             } => {
                 api.actor_sorted_index_insert_typed(
-                    OBJECT_HANDLE_OUTER_OBJECT,
+                    ACTOR_STATE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
                     Validator { key, stake },
@@ -1060,14 +1060,14 @@ impl ValidatorBlueprint {
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
                 let mut validator = api
                     .actor_sorted_index_remove_typed::<Validator>(
-                        OBJECT_HANDLE_OUTER_OBJECT,
+                        ACTOR_STATE_OUTER_OBJECT,
                         CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
                 validator.key = key;
                 api.actor_sorted_index_insert_typed(
-                    OBJECT_HANDLE_OUTER_OBJECT,
+                    ACTOR_STATE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
                     validator,
@@ -1080,14 +1080,14 @@ impl ValidatorBlueprint {
             } => {
                 let mut validator = api
                     .actor_sorted_index_remove_typed::<Validator>(
-                        OBJECT_HANDLE_OUTER_OBJECT,
+                        ACTOR_STATE_OUTER_OBJECT,
                         CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
                 validator.stake = new_stake_amount;
                 api.actor_sorted_index_insert_typed(
-                    OBJECT_HANDLE_OUTER_OBJECT,
+                    ACTOR_STATE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     new_index_key,
                     validator,
@@ -1095,7 +1095,7 @@ impl ValidatorBlueprint {
             }
             UpdateSecondaryIndex::Remove { index_key } => {
                 api.actor_sorted_index_remove(
-                    OBJECT_HANDLE_OUTER_OBJECT,
+                    ACTOR_STATE_OUTER_OBJECT,
                     CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     &index_key,
                 )?;

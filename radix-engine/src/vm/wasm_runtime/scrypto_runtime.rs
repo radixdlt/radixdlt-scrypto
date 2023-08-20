@@ -5,7 +5,7 @@ use crate::vm::wasm::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, FieldValue};
+use radix_engine_interface::api::{ACTOR_REF_SELF, ClientApi, FieldValue};
 use radix_engine_interface::types::ClientCostingEntry;
 use radix_engine_interface::types::Level;
 use sbor::rust::vec::Vec;
@@ -356,7 +356,7 @@ where
     }
 
     fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node_id = self.api.actor_get_node_id()?;
+        let node_id = self.api.actor_get_node_id(ACTOR_REF_SELF)?;
 
         let buffer = scrypto_encode(&node_id).expect("Failed to encode node id");
         self.allocate_buffer(buffer)

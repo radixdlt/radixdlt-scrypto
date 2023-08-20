@@ -22,7 +22,7 @@ mod large_key {
                     LockFlags::MUTABLE,
                 );
                 unsafe {
-                    wasm_api::kv_entry::kv_entry_set(
+                    wasm_api::kv_entry::kv_entry_write(
                         handle,
                         value_payload.as_ptr(),
                         value_payload.len(),
