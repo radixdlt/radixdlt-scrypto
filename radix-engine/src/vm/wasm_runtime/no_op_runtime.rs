@@ -190,11 +190,11 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn field_lock_release(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn field_lock_release(&mut self, _handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn actor_get_node_id(&mut self, _handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

@@ -4,7 +4,7 @@ use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::FieldValue;
+use radix_engine_interface::api::{ActorRefHandle, FieldValue};
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
@@ -271,8 +271,8 @@ impl ScryptoVmV1Api {
         handle
     }
 
-    pub fn actor_get_node_id(&mut self) -> NodeId {
-        let node_id = copy_buffer(unsafe { actor::actor_get_object_id() });
+    pub fn actor_get_node_id(&mut self, actor_ref_handle: ActorRefHandle) -> NodeId {
+        let node_id = copy_buffer(unsafe { actor::actor_get_object_id(actor_ref_handle) });
 
         scrypto_decode(&node_id).unwrap()
     }

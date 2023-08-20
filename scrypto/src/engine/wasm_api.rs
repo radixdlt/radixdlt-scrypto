@@ -122,6 +122,7 @@ pub mod object {
 
 /// API to manipulate or get information about the current actor
 pub mod actor {
+    use radix_engine_interface::api::ActorRefHandle;
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
@@ -140,7 +141,7 @@ pub mod actor {
         ) -> Buffer;
 
         /// Get the object id of the current actor
-        pub fn actor_get_object_id() -> Buffer;
+        pub fn actor_get_object_id(actor_ref_handle: ActorRefHandle) -> Buffer;
 
         /// Get the global address of the current actor
         /// If an owned object, this will refer to the global containing object's address

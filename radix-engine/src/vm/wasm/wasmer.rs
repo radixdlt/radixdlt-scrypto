@@ -553,7 +553,7 @@ impl WasmerModule {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .get_node_id()
+                .actor_get_node_id()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)

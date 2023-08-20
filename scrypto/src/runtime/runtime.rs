@@ -17,6 +17,7 @@ use radix_engine_interface::data::scrypto::{
 use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::ACTOR_REF_SELF;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
@@ -47,7 +48,7 @@ impl Runtime {
     }
 
     pub fn node_id() -> NodeId {
-        ScryptoVmV1Api.actor_get_node_id()
+        ScryptoVmV1Api.actor_get_node_id(ACTOR_REF_SELF)
     }
 
     /// Returns the current package address.

@@ -23,10 +23,10 @@ pub const OBJECT_CALL_MODULE_FUNCTION_NAME: &str = "object_call_module";
 //=================
 // Actor
 //=================
+pub const ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "actor_get_blueprint_id";
 pub const ACTOR_OPEN_FIELD_FUNCTION_NAME: &str = "actor_open_field";
 pub const ACTOR_CALL_MODULE_FUNCTION_NAME: &str = "actor_call_module";
 pub const ACTOR_GET_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "actor_get_global_address";
-pub const ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "actor_get_blueprint_id";
 pub const ACTOR_GET_AUTH_ZONE_FUNCTION_NAME: &str = "actor_get_auth_zone";
 pub const ACTOR_GET_OBJECT_ID_FUNCTION_NAME: &str = "actor_get_object_id";
 pub const ACTOR_EMIT_EVENT_FUNCTION_NAME: &str = "actor_emit_event";

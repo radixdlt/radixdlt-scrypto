@@ -503,10 +503,13 @@ fn field_lock_release(
     runtime.field_lock_release(handle)
 }
 
-fn get_node_id(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+fn actor_get_node_id(
+    caller: Caller<'_, HostState>,
+    handle: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.get_node_id().map(|buffer| buffer.0)
+    runtime.actor_get_node_id(handle).map(|buffer| buffer.0)
 }
 
 fn get_global_address(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -998,10 +1001,10 @@ impl WasmiModule {
             },
         );
 
-        let host_get_node_id = Func::wrap(
+        let host_actor_get_node_id = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                get_node_id(caller).map_err(|e| e.into())
+            |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Trap> {
+                actor_get_node_id(caller, handle).map_err(|e| e.into())
             },
         );
 
@@ -1212,7 +1215,7 @@ impl WasmiModule {
             FIELD_ENTRY_CLOSE_FUNCTION_NAME,
             host_field_lock_release
         );
-        linker_define!(linker, ACTOR_GET_OBJECT_ID_FUNCTION_NAME, host_get_node_id);
+        linker_define!(linker, ACTOR_GET_OBJECT_ID_FUNCTION_NAME, host_actor_get_node_id);
         linker_define!(
             linker,
             ACTOR_GET_GLOBAL_ADDRESS_FUNCTION_NAME,
