@@ -215,19 +215,19 @@ pub mod costing {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
-        pub fn costing_execution_cost_unit_limit() -> u32;
+        pub fn costing_get_execution_cost_unit_limit() -> u32;
 
-        pub fn costing_execution_cost_unit_price() -> Buffer;
+        pub fn costing_get_execution_cost_unit_price() -> Buffer;
 
-        pub fn costing_finalization_cost_unit_limit() -> u32;
+        pub fn costing_get_finalization_cost_unit_limit() -> u32;
 
-        pub fn costing_finalization_cost_unit_price() -> Buffer;
+        pub fn costing_get_finalization_cost_unit_price() -> Buffer;
 
-        pub fn costing_usd_price() -> Buffer;
+        pub fn costing_get_usd_price() -> Buffer;
 
-        pub fn costing_tip_percentage() -> u32;
+        pub fn costing_get_tip_percentage() -> u32;
 
-        pub fn costing_fee_balance() -> Buffer;
+        pub fn costing_get_fee_balance() -> Buffer;
     }
 }
 

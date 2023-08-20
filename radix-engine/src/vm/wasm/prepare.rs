@@ -429,7 +429,7 @@ impl WasmModule {
                         }
                     }
 
-                    COSTING_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME => {
+                    COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -441,12 +441,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    COSTING_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    COSTING_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME => {
+                    COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -458,12 +458,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    COSTING_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    COSTING_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME => {
+                    COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -475,12 +475,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    COSTING_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    COSTING_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME => {
+                    COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -492,12 +492,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    COSTING_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    COSTING_USD_PRICE_FUNCTION_NAME => {
+                    COSTING_GET_USD_PRICE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -509,12 +509,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    COSTING_USD_PRICE_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_USD_PRICE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    COSTING_TIP_PERCENTAGE_FUNCTION_NAME => {
+                    COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -526,12 +526,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    COSTING_TIP_PERCENTAGE_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    COSTING_FEE_BALANCE_FUNCTION_NAME => {
+                    COSTING_GET_FEE_BALANCE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -543,7 +543,7 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    COSTING_FEE_BALANCE_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_FEE_BALANCE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }

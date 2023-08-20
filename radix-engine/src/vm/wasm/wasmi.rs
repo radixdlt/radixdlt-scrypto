@@ -1061,31 +1061,31 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            COSTING_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME,
+            COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME,
             host_execution_cost_unit_limit
         );
         linker_define!(
             linker,
-            COSTING_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME,
+            COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME,
             host_execution_cost_unit_price
         );
         linker_define!(
             linker,
-            COSTING_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME,
+            COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME,
             host_finalization_cost_unit_limit
         );
         linker_define!(
             linker,
-            COSTING_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME,
+            COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME,
             host_finalization_cost_unit_price
         );
-        linker_define!(linker, COSTING_USD_PRICE_FUNCTION_NAME, host_usd_price);
+        linker_define!(linker, COSTING_GET_USD_PRICE_FUNCTION_NAME, host_usd_price);
         linker_define!(
             linker,
-            COSTING_TIP_PERCENTAGE_FUNCTION_NAME,
+            COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME,
             host_tip_percentage
         );
-        linker_define!(linker, COSTING_FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
+        linker_define!(linker, COSTING_GET_FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
         linker_define!(
             linker,
             OBJECT_GLOBALIZE_FUNCTION_NAME,

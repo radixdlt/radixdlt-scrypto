@@ -54,17 +54,17 @@ pub const FIELD_ENTRY_CLOSE_FUNCTION_NAME: &str = "field_entry_close";
 // Costing
 //=================
 pub const COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME: &str = "gas";
-pub const COSTING_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME: &str =
-    "costing_execution_cost_unit_limit";
-pub const COSTING_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME: &str =
-    "costing_execution_cost_unit_price";
-pub const COSTING_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME: &str =
-    "costing_finalization_cost_unit_limit";
-pub const COSTING_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME: &str =
-    "costing_finalization_cost_unit_price";
-pub const COSTING_USD_PRICE_FUNCTION_NAME: &str = "costing_usd_price";
-pub const COSTING_TIP_PERCENTAGE_FUNCTION_NAME: &str = "costing_tip_percentage";
-pub const COSTING_FEE_BALANCE_FUNCTION_NAME: &str = "costing_fee_balance";
+pub const COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME: &str =
+    "costing_get_execution_cost_unit_limit";
+pub const COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME: &str =
+    "costing_get_execution_cost_unit_price";
+pub const COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME: &str =
+    "costing_get_finalization_cost_unit_limit";
+pub const COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME: &str =
+    "costing_get_finalization_cost_unit_price";
+pub const COSTING_GET_USD_PRICE_FUNCTION_NAME: &str = "costing_get_usd_price";
+pub const COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME: &str = "costing_get_tip_percentage";
+pub const COSTING_GET_FEE_BALANCE_FUNCTION_NAME: &str = "costing_get_fee_balance";
 
 //=================
 // System
