@@ -26,14 +26,6 @@ pub fn forget_vec(vec: Vec<u8>) -> Slice {
     Slice::new(ptr as u32, len as u32)
 }
 
-pub mod buffer {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
-
-    extern "C" {
-        /// Consumes a buffer by copying the contents into the specified destination.
-        pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
-    }
-}
 
 /// Api make blueprint function calls
 pub mod blueprint {
@@ -58,13 +50,16 @@ pub mod addr {
 
     extern "C" {
         /// Reserves a global address for a given blueprint
-        pub fn allocate_global_address(
+        pub fn address_allocate(
             blueprint_id_ptr: *const u8,
             blueprint_id_len: usize,
         ) -> Buffer;
 
         /// Get the address associated with an address reservation
-        pub fn get_reservation_address(address_id_ptr: *const u8, address_id_len: usize) -> Buffer;
+        pub fn address_get_reservation_address(
+            address_id_ptr: *const u8,
+            address_id_len: usize,
+        ) -> Buffer;
     }
 }
 
@@ -83,7 +78,7 @@ pub mod object {
         ) -> Buffer;
 
         /// Globalizes an object with given modules
-        pub fn globalize(
+        pub fn object_globalize(
             modules_ptr: *const u8,
             modules_len: usize,
             address_id_ptr: *const u8,
@@ -91,13 +86,13 @@ pub mod object {
         ) -> Buffer;
 
         /// Get the Blueprint Identifier of a given object
-        pub fn get_blueprint_id(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
+        pub fn object_get_blueprint_id(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
 
         /// Get the address of the outer object of a given object
-        pub fn get_outer_object(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
+        pub fn object_get_outer_object(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
 
         /// Invokes a method on a visible object
-        pub fn object_call_method(
+        pub fn object_call(
             obj_id_ptr: *const u8,
             obj_id_len: usize,
             ident_ptr: *const u8,
@@ -107,7 +102,7 @@ pub mod object {
         ) -> Buffer;
 
         /// Invokes a direct method on a visible object
-        pub fn object_call_direct_method(
+        pub fn object_call_direct(
             obj_id_ptr: *const u8,
             obj_id_len: usize,
             ident_ptr: *const u8,
@@ -117,7 +112,7 @@ pub mod object {
         ) -> Buffer;
 
         /// Invokes a module method on a visible object
-        pub fn object_call_module_method(
+        pub fn object_call_module(
             obj_id_ptr: *const u8,
             obj_id_len: usize,
             module_id: u32,
@@ -137,7 +132,7 @@ pub mod actor {
         pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
 
         /// Call a module method of the current actor
-        pub fn actor_call_module_method(
+        pub fn actor_call_module(
             module_id: u32,
             ident_ptr: *const u8,
             ident_len: usize,
@@ -266,13 +261,22 @@ pub mod system {
             message_len: usize,
         );
 
-        /// Panics and halts transaction execution
-        pub fn panic(message_ptr: *const u8, message_len: usize);
-
         /// Retrieves the current transaction hash
         pub fn get_transaction_hash() -> Buffer;
 
         /// Generates a unique id
         pub fn generate_ruid() -> Buffer;
+
+        /// Panics and halts transaction execution
+        pub fn panic(message_ptr: *const u8, message_len: usize);
+    }
+}
+
+pub mod buffer {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        /// Consumes a buffer by copying the contents into the specified destination.
+        pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
     }
 }

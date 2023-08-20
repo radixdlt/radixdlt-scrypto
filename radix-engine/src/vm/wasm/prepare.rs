@@ -86,7 +86,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    OBJECT_CALL_METHOD_FUNCTION_NAME => {
+                    OBJECT_CALL_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -106,12 +106,12 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    OBJECT_CALL_METHOD_FUNCTION_NAME.to_string(),
+                                    OBJECT_CALL_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    OBJECT_CALL_MODULE_METHOD_FUNCTION_NAME => {
+                    OBJECT_CALL_MODULE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -132,12 +132,12 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    OBJECT_CALL_MODULE_METHOD_FUNCTION_NAME.to_string(),
+                                    OBJECT_CALL_MODULE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    OBJECT_CALL_DIRECT_METHOD_FUNCTION_NAME => {
+                    OBJECT_CALL_DIRECT_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -157,7 +157,7 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    OBJECT_CALL_DIRECT_METHOD_FUNCTION_NAME.to_string(),
+                                    OBJECT_CALL_DIRECT_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -182,7 +182,7 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    OBJECT_CALL_METHOD_FUNCTION_NAME.to_string(),
+                                    OBJECT_CALL_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -319,7 +319,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME => {
+                    ACTOR_CALL_MODULE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -337,7 +337,7 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME.to_string(),
+                                    ACTOR_CALL_MODULE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -608,7 +608,7 @@ impl WasmModule {
                         }
                     }
 
-                    ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => {
+                    ADDRESS_ALLOCATE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -620,12 +620,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
+                                    ADDRESS_ALLOCATE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    GET_RESERVATION_ADDRESS_FUNCTION_NAME => {
+                    ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -637,12 +637,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    GET_RESERVATION_ADDRESS_FUNCTION_NAME.to_string(),
+                                    ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    GLOBALIZE_FUNCTION_NAME => {
+                    OBJECT_GLOBALIZE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -654,7 +654,7 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    GLOBALIZE_FUNCTION_NAME.to_string(),
+                                    OBJECT_GLOBALIZE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -676,7 +676,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    GET_BLUEPRINT_ID_FUNCTION_NAME => {
+                    OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -688,12 +688,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    GET_BLUEPRINT_ID_FUNCTION_NAME.to_string(),
+                                    OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    GET_OUTER_OBJECT_FUNCTION_NAME => {
+                    OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -705,7 +705,7 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    GET_OUTER_OBJECT_FUNCTION_NAME.to_string(),
+                                    OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -797,7 +797,7 @@ impl WasmModule {
                 };
             }
 
-            return Err(PrepareError::InvalidImport(InvalidImport::ImportNotAllowed));
+            return Err(PrepareError::InvalidImport(InvalidImport::ImportNotAllowed(entry.name.to_string())));
         }
 
         Ok(self)

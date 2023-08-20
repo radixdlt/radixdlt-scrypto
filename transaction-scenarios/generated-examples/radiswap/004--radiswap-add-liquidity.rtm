@@ -34,7 +34,7 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("pool_1_resource_2")
 ;
 CALL_METHOD
-    Address("component_sim1cp6jm4p7lfq6k0hdy660qqa5mxvym3q2sacr8a6e0epezsztj0d62l")
+    Address("component_sim1cq75q6c9xj2897e5j4canrj3q92c64hsuxp6qnqvm0m5t9rq87xtnv")
     "add_liquidity"
     Bucket("pool_1_resource_1")
     Bucket("pool_1_resource_2")
@@ -48,7 +48,7 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("pool_2_resource_2")
 ;
 CALL_METHOD
-    Address("component_sim1crul6a9pru5h2zfe03xcnxfw44kxcg245jg28zqky5penthm90udye")
+    Address("component_sim1cpj66g2grff39kgkgnjxkzcqqzlqvlqn6sct476cj4yu736zxa2unq")
     "add_liquidity"
     Bucket("pool_2_resource_1")
     Bucket("pool_2_resource_2")

@@ -6,25 +6,25 @@ pub const BLUEPRINT_CALL_FUNCTION_NAME: &str = "blueprint_call";
 //=================
 // Address
 //=================
-pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "allocate_global_address";
-pub const GET_RESERVATION_ADDRESS_FUNCTION_NAME: &str = "get_reservation_address";
+pub const ADDRESS_ALLOCATE_FUNCTION_NAME: &str = "address_allocate";
+pub const ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME: &str = "address_get_reservation_address";
 
 //=================
 // Object
 //=================
 pub const OBJECT_NEW_FUNCTION_NAME: &str = "object_new";
-pub const GLOBALIZE_FUNCTION_NAME: &str = "globalize";
-pub const GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "get_blueprint_id";
-pub const GET_OUTER_OBJECT_FUNCTION_NAME: &str = "get_outer_object";
-pub const OBJECT_CALL_METHOD_FUNCTION_NAME: &str = "object_call_method";
-pub const OBJECT_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "object_call_module_method";
-pub const OBJECT_CALL_DIRECT_METHOD_FUNCTION_NAME: &str = "object_call_direct_method";
+pub const OBJECT_GLOBALIZE_FUNCTION_NAME: &str = "object_globalize";
+pub const OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "object_get_blueprint_id";
+pub const OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME: &str = "object_get_outer_object";
+pub const OBJECT_CALL_FUNCTION_NAME: &str = "object_call";
+pub const OBJECT_CALL_DIRECT_FUNCTION_NAME: &str = "object_call_direct";
+pub const OBJECT_CALL_MODULE_FUNCTION_NAME: &str = "object_call_module";
 
 //=================
 // Actor
 //=================
 pub const ACTOR_OPEN_FIELD_FUNCTION_NAME: &str = "actor_open_field";
-pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "actor_call_module_method";
+pub const ACTOR_CALL_MODULE_FUNCTION_NAME: &str = "actor_call_module";
 pub const ACTOR_GET_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "actor_get_global_address";
 pub const ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "actor_get_blueprint_id";
 pub const ACTOR_GET_AUTH_ZONE_FUNCTION_NAME: &str = "actor_get_auth_zone";

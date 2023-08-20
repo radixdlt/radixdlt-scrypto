@@ -61,7 +61,7 @@ pub enum PrepareError {
 #[derive(Debug, PartialEq, Eq, Clone, Sbor)]
 pub enum InvalidImport {
     /// The import is not allowed
-    ImportNotAllowed,
+    ImportNotAllowed(String),
     InvalidFunctionType(String),
 }
 

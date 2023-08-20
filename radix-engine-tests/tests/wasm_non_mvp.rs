@@ -83,7 +83,7 @@ fn test_wasm_non_mvp_mutable_globals_import() {
         .outcome
         .expect_failure()
         .to_string();
-    assert!(error_message.contains("InvalidImport(ImportNotAllowed)"));
+    assert!(error_message.contains("InvalidImport"));
 }
 
 #[test]

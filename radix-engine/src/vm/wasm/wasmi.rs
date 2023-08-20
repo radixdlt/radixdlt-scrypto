@@ -1092,15 +1092,15 @@ impl WasmiModule {
         let mut linker = <Linker<HostState>>::new();
 
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
-        linker_define!(linker, OBJECT_CALL_METHOD_FUNCTION_NAME, host_call_method);
+        linker_define!(linker, OBJECT_CALL_FUNCTION_NAME, host_call_method);
         linker_define!(
             linker,
-            OBJECT_CALL_MODULE_METHOD_FUNCTION_NAME,
+            OBJECT_CALL_MODULE_FUNCTION_NAME,
             host_call_module_method
         );
         linker_define!(
             linker,
-            OBJECT_CALL_DIRECT_METHOD_FUNCTION_NAME,
+            OBJECT_CALL_DIRECT_FUNCTION_NAME,
             host_call_direct_method
         );
         linker_define!(linker, BLUEPRINT_CALL_FUNCTION_NAME, host_blueprint_call);
@@ -1108,12 +1108,12 @@ impl WasmiModule {
 
         linker_define!(
             linker,
-            ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME,
+            ADDRESS_ALLOCATE_FUNCTION_NAME,
             host_allocate_global_address
         );
         linker_define!(
             linker,
-            GET_RESERVATION_ADDRESS_FUNCTION_NAME,
+            ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME,
             host_get_reservation_address
         );
         linker_define!(
@@ -1139,17 +1139,17 @@ impl WasmiModule {
         linker_define!(linker, USD_PRICE_FUNCTION_NAME, host_usd_price);
         linker_define!(linker, TIP_PERCENTAGE_FUNCTION_NAME, host_tip_percentage);
         linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
-        linker_define!(linker, GLOBALIZE_FUNCTION_NAME, host_globalize_object);
-        linker_define!(linker, GET_BLUEPRINT_ID_FUNCTION_NAME, host_get_object_info);
+        linker_define!(linker, OBJECT_GLOBALIZE_FUNCTION_NAME, host_globalize_object);
+        linker_define!(linker, OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME, host_get_object_info);
         linker_define!(
             linker,
-            GET_OUTER_OBJECT_FUNCTION_NAME,
+            OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME,
             host_get_outer_object
         );
         linker_define!(linker, ACTOR_OPEN_FIELD_FUNCTION_NAME, host_lock_field);
         linker_define!(
             linker,
-            ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME,
+            ACTOR_CALL_MODULE_FUNCTION_NAME,
             host_actor_call_module_method
         );
 
