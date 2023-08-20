@@ -21,10 +21,10 @@ impl Runtime {
         event: T,
     ) -> Result<(), E>
     where
-        Y: ClientTransactionRuntimeApi<E>,
+        Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
+        api.actor_emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
     }
 
     pub fn current_epoch<Y, E>(api: &mut Y) -> Result<Epoch, E>

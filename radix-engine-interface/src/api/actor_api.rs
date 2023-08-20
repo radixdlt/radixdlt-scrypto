@@ -9,13 +9,8 @@ pub trait ClientActorApi<E: Debug> {
     /// Retrieve the current blueprint id
     fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, E>;
 
-    /// Open a field in a given object for reading/writing
-    fn actor_open_field(
-        &mut self,
-        state_handle: ActorStateHandle,
-        field: FieldIndex,
-        flags: LockFlags,
-    ) -> Result<FieldHandle, E>;
+    /// Retrieve the current method actor's node id
+    fn actor_get_node_id(&mut self, ref_handle: ActorRefHandle) -> Result<NodeId, E>;
 
     /// Check if a feature is enabled for a given object
     fn actor_is_feature_enabled(
@@ -24,9 +19,14 @@ pub trait ClientActorApi<E: Debug> {
         feature: &str,
     ) -> Result<bool, E>;
 
-    /// Retrieve the current method actor's node id
-    fn actor_get_node_id(&mut self, ref_handle: ActorRefHandle) -> Result<NodeId, E>;
+    /// Open a field in a given object for reading/writing
+    fn actor_open_field(
+        &mut self,
+        state_handle: ActorStateHandle,
+        field: FieldIndex,
+        flags: LockFlags,
+    ) -> Result<FieldHandle, E>;
 
-    /// Retrieve the current method actor's outer object
-    fn actor_get_outer_object(&mut self) -> Result<GlobalAddress, E>;
+    /// Emits an event of the current actor
+    fn actor_emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), E>;
 }

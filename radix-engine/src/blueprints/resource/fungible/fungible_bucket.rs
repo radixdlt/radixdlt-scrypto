@@ -3,9 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use radix_engine_interface::api::{
-    ClientApi, FieldValue, LockFlags, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
-};
+use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF, ACTOR_REF_OUTER};
 use radix_engine_interface::blueprints::resource::*;
 
 pub struct FungibleBucket;
@@ -109,7 +107,7 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.actor_get_outer_object()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());
 
         Ok(resource_address)
     }

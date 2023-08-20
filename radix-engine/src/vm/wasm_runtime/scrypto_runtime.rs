@@ -409,7 +409,7 @@ where
         event_name: Vec<u8>,
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.emit_event(
+        self.api.actor_emit_event(
             String::from_utf8(event_name).map_err(|_| WasmRuntimeError::InvalidString)?,
             event,
         )?;

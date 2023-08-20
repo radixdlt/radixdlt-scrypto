@@ -2,7 +2,7 @@ use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_STATE_SELF, ACTOR_REF_OUTER};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -145,7 +145,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address = ResourceAddress::new_or_panic(api.actor_get_outer_object().unwrap().into());
+        let address = ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER).unwrap().into());
         Ok(address)
     }
 

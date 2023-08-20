@@ -2197,6 +2197,93 @@ where
             .ok_or(RuntimeError::SystemError(SystemError::NoBlueprintId))
     }
 
+
+    #[trace_resources]
+    fn actor_get_node_id(&mut self, ref_handle: ActorRefHandle) -> Result<NodeId, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
+
+        let actor_ref: ActorObjectRef = ref_handle.try_into()?;
+
+        let node_id = match actor_ref {
+            ActorObjectRef::SELF => {
+                self.current_actor()
+                    .node_id()
+                    .ok_or(RuntimeError::SystemError(
+                        SystemError::ActorNodeIdDoesNotExist,
+                    ))?
+            }
+            ActorObjectRef::Outer => {
+                let (node_id, module_id) = self.get_actor_object_id(ActorStateRef::SELF)?;
+                match module_id {
+                    ObjectModuleId::Main => {
+                        let info = self.get_object_info(&node_id)?;
+                        match info.blueprint_info.outer_obj_info {
+                            OuterObjectInfo::Some { outer_object } => {
+                                Ok(outer_object.into_node_id())
+                            }
+                            OuterObjectInfo::None => Err(RuntimeError::SystemError(
+                                SystemError::OuterObjectDoesNotExist,
+                            )),
+                        }
+                    }
+                    _ => Err(RuntimeError::SystemError(
+                        SystemError::ModulesDontHaveOuterObjects,
+                    )),
+                }?
+            }
+            ActorObjectRef::Global => {
+                let actor = self.current_actor();
+                if actor.is_direct_access() {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::GlobalAddressDoesNotExist,
+                    ));
+                }
+
+                if let Some(node_id) = actor.node_id() {
+                    let visibility = self.kernel_get_node_visibility(&node_id);
+                    if let ReferenceOrigin::Global(address) =
+                        visibility.reference_origin(node_id).unwrap()
+                    {
+                        address.into_node_id()
+                    } else {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::GlobalAddressDoesNotExist,
+                        ));
+                    }
+                } else {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::GlobalAddressDoesNotExist,
+                    ));
+                }
+            }
+            ActorObjectRef::AuthZone => self
+                .current_actor()
+                .self_auth_zone()
+                .ok_or_else(|| RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))?,
+        };
+
+        Ok(node_id)
+    }
+
+    #[trace_resources]
+    fn actor_is_feature_enabled(
+        &mut self,
+        object_handle: ActorStateHandle,
+        feature: &str,
+    ) -> Result<bool, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
+
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
+        let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
+        self.is_feature_enabled(&node_id, module_id, feature)
+    }
+
     // Costing through kernel
     #[trace_resources]
     fn actor_open_field(
@@ -2280,114 +2367,10 @@ where
         Ok(handle)
     }
 
-    #[trace_resources]
-    fn actor_get_node_id(&mut self, ref_handle: ActorRefHandle) -> Result<NodeId, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
-
-        let actor_ref: ActorObjectRef = ref_handle.try_into()?;
-
-        let node_id = match actor_ref {
-            ActorObjectRef::SELF => {
-                self.current_actor()
-                    .node_id()
-                    .ok_or(RuntimeError::SystemError(
-                        SystemError::ActorNodeIdDoesNotExist,
-                    ))?
-            }
-            ActorObjectRef::Outer => {
-                let (node_id, module_id) = self.get_actor_object_id(ActorStateRef::SELF)?;
-                match module_id {
-                    ObjectModuleId::Main => {
-                        let info = self.get_object_info(&node_id)?;
-                        match info.blueprint_info.outer_obj_info {
-                            OuterObjectInfo::Some { outer_object } => {
-                                Ok(outer_object.into_node_id())
-                            }
-                            OuterObjectInfo::None => Err(RuntimeError::SystemError(
-                                SystemError::OuterObjectDoesNotExist,
-                            )),
-                        }
-                    }
-                    _ => Err(RuntimeError::SystemError(
-                        SystemError::ModulesDontHaveOuterObjects,
-                    )),
-                }?
-            }
-            ActorObjectRef::Global => {
-                let actor = self.current_actor();
-                if actor.is_direct_access() {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::GlobalAddressDoesNotExist,
-                    ));
-                }
-
-                if let Some(node_id) = actor.node_id() {
-                    let visibility = self.kernel_get_node_visibility(&node_id);
-                    if let ReferenceOrigin::Global(address) =
-                        visibility.reference_origin(node_id).unwrap()
-                    {
-                        address.into_node_id()
-                    } else {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::GlobalAddressDoesNotExist,
-                        ));
-                    }
-                } else {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::GlobalAddressDoesNotExist,
-                    ));
-                }
-            }
-            ActorObjectRef::AuthZone => self
-                .current_actor()
-                .self_auth_zone()
-                .ok_or_else(|| RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))?,
-        };
-
-        Ok(node_id)
-    }
 
     #[trace_resources]
-    fn actor_get_outer_object(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
-
-        let (node_id, module_id) = self.get_actor_object_id(ActorStateRef::SELF)?;
-        match module_id {
-            ObjectModuleId::Main => {
-                let info = self.get_object_info(&node_id)?;
-                match info.blueprint_info.outer_obj_info {
-                    OuterObjectInfo::Some { outer_object } => Ok(outer_object),
-                    OuterObjectInfo::None => Err(RuntimeError::SystemError(
-                        SystemError::OuterObjectDoesNotExist,
-                    )),
-                }
-            }
-            _ => Err(RuntimeError::SystemError(
-                SystemError::ModulesDontHaveOuterObjects,
-            )),
-        }
-    }
-
-    #[trace_resources]
-    fn actor_is_feature_enabled(
-        &mut self,
-        object_handle: ActorStateHandle,
-        feature: &str,
-    ) -> Result<bool, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
-
-        let actor_object_type: ActorStateRef = object_handle.try_into()?;
-        let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
-        self.is_feature_enabled(&node_id, module_id, feature)
+    fn actor_emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
+        self.emit_event_internal(EmitterActor::CurrentActor, event_name, event_data)
     }
 }
 
@@ -2500,8 +2483,35 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        self.emit_event_internal(EmitterActor::CurrentActor, event_name, event_data)
+    fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::QueryTransactionHash)?;
+
+        if let Some(hash) = self.api.kernel_get_system().modules.transaction_hash() {
+            Ok(hash)
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::TransactionRuntimeModuleNotEnabled,
+            ))
+        }
+    }
+
+    #[trace_resources]
+    fn generate_ruid(&mut self) -> Result<[u8; 32], RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::GenerateRuid)?;
+
+        if let Some(ruid) = self.api.kernel_get_system().modules.generate_ruid() {
+            Ok(ruid)
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::TransactionRuntimeModuleNotEnabled,
+            ))
+        }
     }
 
     #[trace_resources]
@@ -2535,38 +2545,6 @@ where
         Err(RuntimeError::ApplicationError(ApplicationError::Panic(
             message,
         )))
-    }
-
-    #[trace_resources]
-    fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryTransactionHash)?;
-
-        if let Some(hash) = self.api.kernel_get_system().modules.transaction_hash() {
-            Ok(hash)
-        } else {
-            Err(RuntimeError::SystemError(
-                SystemError::TransactionRuntimeModuleNotEnabled,
-            ))
-        }
-    }
-
-    #[trace_resources]
-    fn generate_ruid(&mut self) -> Result<[u8; 32], RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::GenerateRuid)?;
-
-        if let Some(ruid) = self.api.kernel_get_system().modules.generate_ruid() {
-            Ok(ruid)
-        } else {
-            Err(RuntimeError::SystemError(
-                SystemError::TransactionRuntimeModuleNotEnabled,
-            ))
-        }
     }
 }
 
