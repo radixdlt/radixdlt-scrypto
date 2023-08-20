@@ -1,5 +1,4 @@
 use crate::engine::wasm_api::*;
-use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
@@ -17,58 +16,6 @@ use sbor::rust::prelude::*;
 pub struct ScryptoVmV1Api;
 
 impl ScryptoVmV1Api {
-    // Costing
-    pub fn execution_cost_unit_limit(&mut self) -> u32 {
-        unsafe { costing::costing_get_execution_cost_unit_limit() }
-    }
-
-    pub fn execution_cost_unit_price(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { costing::costing_get_execution_cost_unit_price() });
-        scrypto_decode(&bytes).unwrap()
-    }
-
-    pub fn finalization_cost_unit_limit(&mut self) -> u32 {
-        unsafe { costing::costing_get_finalization_cost_unit_limit() }
-    }
-
-    pub fn finalization_cost_unit_price(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { costing::costing_get_finalization_cost_unit_price() });
-        scrypto_decode(&bytes).unwrap()
-    }
-
-    pub fn usd_price(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { costing::costing_get_usd_price() });
-        scrypto_decode(&bytes).unwrap()
-    }
-
-    pub fn tip_percentage(&mut self) -> u32 {
-        unsafe { costing::costing_get_tip_percentage() }
-    }
-
-    pub fn fee_balance(&mut self) -> Decimal {
-        let bytes = copy_buffer(unsafe { costing::costing_get_fee_balance() });
-        scrypto_decode(&bytes).unwrap()
-    }
-
-    pub fn allocate_global_address(
-        &mut self,
-        blueprint_id: BlueprintId,
-    ) -> (GlobalAddressReservation, GlobalAddress) {
-        let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
-        let bytes = copy_buffer(unsafe {
-            addr::address_allocate(blueprint_id.as_ptr(), blueprint_id.len())
-        });
-        scrypto_decode(&bytes).unwrap()
-    }
-
-    pub fn get_reservation_address(&mut self, node_id: &NodeId) -> GlobalAddress {
-        let bytes = copy_buffer(unsafe {
-            addr::address_get_reservation_address(node_id.as_ref().as_ptr(), node_id.as_ref().len())
-        });
-
-        scrypto_decode(&bytes).unwrap()
-    }
-
     pub fn new_simple_object(
         &mut self,
         blueprint_ident: &str,

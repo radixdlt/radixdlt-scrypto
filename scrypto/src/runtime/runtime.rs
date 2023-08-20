@@ -1,6 +1,5 @@
 use crate::component::ObjectStubHandle;
 use crate::prelude::{AnyComponent, Global};
-use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::{ACTOR_REF_AUTH_ZONE, ACTOR_REF_GLOBAL};
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -20,21 +19,30 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
+use crate::engine::wasm_api::{addr, copy_buffer};
 
 /// The transaction runtime.
 #[derive(Debug)]
 pub struct Runtime {}
 
 impl Runtime {
-    /// Returns the current epoch
-    pub fn current_epoch() -> Epoch {
-        let rtn = ScryptoVmV1Api.object_call(
-            CONSENSUS_MANAGER.as_node_id(),
-            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
-            scrypto_encode(&ConsensusManagerGetCurrentEpochInput).unwrap(),
-        );
+    pub fn allocate_component_address(
+        blueprint_id: BlueprintId,
+    ) -> (GlobalAddressReservation, ComponentAddress) {
+        let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
+        let bytes = copy_buffer(unsafe {
+            addr::address_allocate(blueprint_id.as_ptr(), blueprint_id.len())
+        });
+        scrypto_decode(&bytes).unwrap()
+    }
 
-        scrypto_decode(&rtn).unwrap()
+    /// Get the global address an address reservation is associated with
+    pub fn get_reservation_address(reservation: &GlobalAddressReservation) -> GlobalAddress {
+        let node_id = reservation.0.as_node_id();
+        let bytes = copy_buffer(unsafe {
+            addr::address_get_reservation_address(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
+        scrypto_decode(&bytes).unwrap()
     }
 
     pub fn global_component() -> Global<AnyComponent> {
@@ -58,21 +66,6 @@ impl Runtime {
         NonFungibleGlobalId::package_of_direct_caller_badge(Runtime::package_address())
     }
 
-    /// Get the global address an address reservation is associated with
-    pub fn get_reservation_address(reservation: &GlobalAddressReservation) -> GlobalAddress {
-        ScryptoVmV1Api.get_reservation_address(reservation.0.as_node_id())
-    }
-
-    /// Returns the transaction hash.
-    pub fn transaction_hash() -> Hash {
-        ScryptoVmV1Api.get_transaction_hash()
-    }
-
-    /// Returns the transaction hash.
-    pub fn generate_ruid() -> [u8; 32] {
-        ScryptoVmV1Api.generate_ruid()
-    }
-
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
         ScryptoVmV1Api
@@ -88,45 +81,30 @@ impl Runtime {
         );
     }
 
-    pub fn allocate_component_address(
-        blueprint_id: BlueprintId,
-    ) -> (GlobalAddressReservation, ComponentAddress) {
-        let (ownership, global_address) = ScryptoVmV1Api.allocate_global_address(blueprint_id);
-        (ownership, unsafe {
-            ComponentAddress::new_unchecked(global_address.as_node_id().0)
-        })
+    /// Returns the transaction hash.
+    pub fn transaction_hash() -> Hash {
+        ScryptoVmV1Api.get_transaction_hash()
     }
 
-    pub fn execution_cost_unit_limit() -> u32 {
-        ScryptoVmV1Api.execution_cost_unit_limit()
+    /// Returns the transaction hash.
+    pub fn generate_ruid() -> [u8; 32] {
+        ScryptoVmV1Api.generate_ruid()
     }
 
-    pub fn execution_cost_unit_price() -> Decimal {
-        ScryptoVmV1Api.execution_cost_unit_price()
-    }
-
-    pub fn finalization_cost_unit_limit() -> u32 {
-        ScryptoVmV1Api.finalization_cost_unit_limit()
-    }
-
-    pub fn finalization_cost_unit_price() -> Decimal {
-        ScryptoVmV1Api.finalization_cost_unit_price()
-    }
-
-    pub fn usd_price() -> Decimal {
-        ScryptoVmV1Api.usd_price()
-    }
-
-    pub fn tip_percentage() -> u32 {
-        ScryptoVmV1Api.tip_percentage()
-    }
-
-    pub fn fee_balance() -> Decimal {
-        ScryptoVmV1Api.fee_balance()
-    }
 
     pub fn panic(message: String) -> ! {
         ScryptoVmV1Api.panic(message);
         loop {}
+    }
+
+    /// Returns the current epoch
+    pub fn current_epoch() -> Epoch {
+        let rtn = ScryptoVmV1Api.object_call(
+            CONSENSUS_MANAGER.as_node_id(),
+            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+            scrypto_encode(&ConsensusManagerGetCurrentEpochInput).unwrap(),
+        );
+
+        scrypto_decode(&rtn).unwrap()
     }
 }
