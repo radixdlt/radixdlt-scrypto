@@ -25,10 +25,9 @@ impl BorrowedObject {
         V: MetadataVal,
         E: Debug + ScryptoDecode,
     {
-        api.call_method_advanced(
+        api.call_module_method(
             &self.0,
             ObjectModuleId::Metadata,
-            false,
             METADATA_SET_IDENT,
             scrypto_encode(&MetadataSetInput {
                 key: key.as_ref().to_owned(),

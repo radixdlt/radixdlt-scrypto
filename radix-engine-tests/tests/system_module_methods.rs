@@ -35,10 +35,9 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         {
             let node_id = input.references()[0];
-            let _ = api.call_method_advanced(
+            let _ = api.call_module_method(
                 &node_id,
                 ObjectModuleId::Royalty,
-                false,
                 COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
                 scrypto_encode(&ComponentRoyaltySetInput {
                     method: "some_method".to_string(),
@@ -120,10 +119,9 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
             match export_name {
                 "test" => {
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, vec![])?;
-                    let _ = api.call_method_advanced(
+                    let _ = api.call_module_method(
                         &node_id,
                         ObjectModuleId::Metadata,
-                        false,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: "key".to_string(),
@@ -229,10 +227,9 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                         api.actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::read_only())?;
                     let child: Option<Own> = api.field_read_typed(handle)?;
 
-                    let _ = api.call_method_advanced(
+                    let _ = api.call_module_method(
                         &child.unwrap().0,
                         ObjectModuleId::Metadata,
-                        false,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: "key".to_string(),

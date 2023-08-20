@@ -66,10 +66,9 @@ pub trait RoleAssignmentObject {
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_method_advanced(
+        let _rtn = api.call_module_method(
             node_id,
             module_id,
-            false,
             ROLE_ASSIGNMENT_SET_OWNER_IDENT,
             scrypto_encode(&RoleAssignmentSetOwnerInput { rule: rule.into() }).unwrap(),
         )?;
@@ -82,10 +81,9 @@ pub trait RoleAssignmentObject {
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_method_advanced(
+        let _rtn = api.call_module_method(
             node_id,
             module_id,
-            false,
             ROLE_ASSIGNMENT_SET_OWNER_IDENT,
             scrypto_encode(&RoleAssignmentLockOwnerInput {}).unwrap(),
         )?;
@@ -106,10 +104,9 @@ pub trait RoleAssignmentObject {
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_method_advanced(
+        let _rtn = api.call_module_method(
             node_id,
             module_id,
-            false,
             ROLE_ASSIGNMENT_SET_IDENT,
             scrypto_encode(&RoleAssignmentSetInput {
                 module,

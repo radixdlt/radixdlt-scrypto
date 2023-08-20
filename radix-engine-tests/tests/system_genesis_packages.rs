@@ -4,7 +4,7 @@ use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ObjectModuleId};
+use radix_engine_interface::api::{ClientApi};
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltiesInput, PackageDefinition, PACKAGE_CLAIM_ROYALTIES_IDENT,
 };
@@ -31,10 +31,8 @@ fn claiming_royalties_on_native_packages_should_be_unauthorized() {
         {
             match export_name {
                 "test" => {
-                    api.call_method_advanced(
+                    api.call_method(
                         PACKAGE_PACKAGE.as_node_id(),
-                        ObjectModuleId::Main,
-                        false,
                         PACKAGE_CLAIM_ROYALTIES_IDENT,
                         scrypto_encode(&PackageClaimRoyaltiesInput {}).unwrap(),
                     )?;

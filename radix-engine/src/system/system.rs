@@ -1362,13 +1362,93 @@ where
         Ok((global_address, inner_object))
     }
 
+    #[trace_resources]
+    fn call_method(&mut self, receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
+        let object_info = self.get_object_info(&receiver)?;
+
+        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+
+        let auth_actor_info = SystemModuleMixer::on_call_method(
+            self,
+            receiver,
+            ObjectModuleId::Main,
+            false,
+            method_name,
+            &args,
+        )?;
+
+        let rtn = self
+            .api
+            .kernel_invoke(Box::new(KernelInvocation {
+                call_frame_data: Actor::Method(MethodActor {
+                    direct_access: false,
+                    node_id: receiver.clone(),
+                    module_id: ObjectModuleId::Main,
+                    ident: method_name.to_string(),
+
+                    auth_zone: auth_actor_info.clone(),
+                    object_info,
+                }),
+                args,
+            }))
+            .map(|v| v.into())?;
+
+        SystemModuleMixer::on_call_method_finish(self, auth_actor_info)?;
+
+        Ok(rtn)
+    }
+
+    #[trace_resources]
+    fn call_direct_access_method(
+        &mut self,
+        receiver: &NodeId,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let object_info = self.get_object_info(&receiver)?;
+
+        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+
+        let auth_actor_info = SystemModuleMixer::on_call_method(
+            self,
+            receiver,
+            ObjectModuleId::Main,
+            true,
+            method_name,
+            &args,
+        )?;
+
+        let rtn = self
+            .api
+            .kernel_invoke(Box::new(KernelInvocation {
+                call_frame_data: Actor::Method(MethodActor {
+                    direct_access: true,
+                    node_id: receiver.clone(),
+                    module_id: ObjectModuleId::Main,
+                    ident: method_name.to_string(),
+
+                    auth_zone: auth_actor_info.clone(),
+                    object_info,
+                }),
+                args,
+            }))
+            .map(|v| v.into())?;
+
+        SystemModuleMixer::on_call_method_finish(self, auth_actor_info)?;
+
+        Ok(rtn)
+    }
+
     // Costing through kernel
     #[trace_resources]
-    fn call_method_advanced(
+    fn call_module_method(
         &mut self,
         receiver: &NodeId,
         module_id: ObjectModuleId,
-        direct_access: bool,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -1388,7 +1468,7 @@ where
             self,
             receiver,
             module_id,
-            direct_access,
+            false,
             method_name,
             &args,
         )?;
@@ -1397,7 +1477,7 @@ where
             .api
             .kernel_invoke(Box::new(KernelInvocation {
                 call_frame_data: Actor::Method(MethodActor {
-                    direct_access,
+                    direct_access: false,
                     node_id: receiver.clone(),
                     module_id,
                     ident: method_name.to_string(),

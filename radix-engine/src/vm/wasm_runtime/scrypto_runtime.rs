@@ -104,7 +104,7 @@ where
 
         let return_data =
             self.api
-                .call_method_advanced(&receiver, module_id, false, ident.as_str(), args)?;
+                .call_module_method(&receiver, module_id, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }
@@ -120,10 +120,8 @@ where
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
-        let return_data = self.api.call_method_advanced(
+        let return_data = self.api.call_direct_access_method(
             &receiver,
-            ObjectModuleId::Main,
-            true,
             ident.as_str(),
             args,
         )?;
