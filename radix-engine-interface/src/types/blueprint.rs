@@ -6,7 +6,7 @@ use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::PackageAddress;
 use radix_engine_common::types::{GenericSubstitution, GlobalAddress};
 use radix_engine_derive::ManifestSbor;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::{ModuleId, ObjectModuleId};
 use sbor::rust::prelude::*;
 use scrypto_schema::KeyValueStoreGenericSubstitutions;
 use utils::ContextualDisplay;
@@ -27,6 +27,7 @@ impl Default for OuterObjectInfo {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintInfo {
     pub blueprint_id: BlueprintId,
+    pub blueprint_version: BlueprintVersion,
     pub outer_obj_info: OuterObjectInfo,
     pub features: BTreeSet<String>,
     pub generic_substitutions: Vec<GenericSubstitution>,
@@ -36,7 +37,7 @@ pub struct BlueprintInfo {
 pub struct ObjectInfo {
     /// Whether this node is global or not, ie. true, if this node has no parent, false otherwise
     pub global: bool,
-    pub module_versions: BTreeMap<ObjectModuleId, BlueprintVersion>,
+    pub module_versions: BTreeMap<ModuleId, BlueprintVersion>,
 
     /// Blueprint Info of Object
     pub blueprint_info: BlueprintInfo,

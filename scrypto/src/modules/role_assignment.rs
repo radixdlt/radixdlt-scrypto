@@ -111,7 +111,7 @@ impl RoleAssignment {
 }
 
 impl Attachable for RoleAssignment {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::RoleAssignment;
+    const MODULE_ID: ModuleId = ModuleId::RoleAssignment;
 
     fn new(handle: ModuleHandle) -> Self {
         Self(handle)

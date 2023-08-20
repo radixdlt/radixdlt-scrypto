@@ -16,7 +16,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::FieldValue;
+use radix_engine_interface::api::{FieldValue, ModuleId};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit,
 };
@@ -293,10 +293,6 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
         // Main
         {
-            modules.insert(
-                ObjectModuleId::Main,
-                self.stub.handle().as_node_id().clone(),
-            );
             roles.insert(ObjectModuleId::Main, self.roles);
         }
 
@@ -309,7 +305,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
             let metadata = Metadata::new_with_data(metadata_config.init);
             modules.insert(
-                ObjectModuleId::Metadata,
+                ModuleId::Metadata,
                 metadata.handle().as_node_id().clone(),
             );
             roles.insert(ObjectModuleId::Metadata, metadata_config.roles);
@@ -320,7 +316,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             roles.insert(ObjectModuleId::Royalty, royalty_config.roles);
             let royalty = Royalty::new(royalty_config.init);
             modules.insert(
-                ObjectModuleId::Royalty,
+                ModuleId::Royalty,
                 royalty.handle().as_node_id().clone(),
             );
         }
@@ -329,12 +325,16 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         {
             let role_assignment = RoleAssignment::new(self.owner_role, roles);
             modules.insert(
-                ObjectModuleId::RoleAssignment,
+                ModuleId::RoleAssignment,
                 role_assignment.handle().as_node_id().clone(),
             );
         }
 
-        let address = ScryptoVmV1Api::object_globalize(modules, self.address_reservation);
+        let address = ScryptoVmV1Api::object_globalize(
+            self.stub.handle().as_node_id().clone(),
+            modules,
+            self.address_reservation,
+        );
 
         Global(C::Stub::new(ObjectStubHandle::Global(address)))
     }

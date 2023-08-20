@@ -29,7 +29,7 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ActorStateHandle;
+use radix_engine_interface::api::{ActorStateHandle, ModuleId};
 use radix_engine_interface::blueprints::package::CanonicalBlueprintId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -227,7 +227,7 @@ pub enum SystemError {
     CollectionIndexDoesNotExist(BlueprintId, u8),
     MutatingImmutableSubstate,
     MutatingImmutableFieldSubstate(ActorStateHandle, u8),
-    ObjectModuleDoesNotExist(ObjectModuleId),
+    ObjectModuleDoesNotExist(ModuleId),
     NotAKeyValueWriteLock,
     InvalidLockFlags,
     CannotGlobalize(CannotGlobalizeError),

@@ -4,8 +4,7 @@ use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ActorRefHandle, ClientApi, FieldValue};
+use radix_engine_interface::api::{ActorRefHandle, ClientApi, FieldValue, ModuleId};
 use radix_engine_interface::types::ClientCostingEntry;
 use radix_engine_interface::types::Level;
 use sbor::rust::vec::Vec;
@@ -99,7 +98,7 @@ where
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
         let module_id = u8::try_from(module_id)
             .ok()
-            .and_then(|x| ObjectModuleId::from_repr(x))
+            .and_then(|x| ModuleId::from_repr(x))
             .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
 
         let return_data =
@@ -200,16 +199,21 @@ where
 
     fn globalize_object(
         &mut self,
+        node_id: Vec<u8>,
         modules: Vec<u8>,
         address_reservation: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let modules = scrypto_decode::<BTreeMap<ObjectModuleId, NodeId>>(&modules)
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+        let modules = scrypto_decode::<BTreeMap<ModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
         let address_reservation =
             scrypto_decode::<Option<GlobalAddressReservation>>(&address_reservation)
                 .map_err(|_| WasmRuntimeError::InvalidGlobalAddressReservation)?;
 
-        let address = self.api.globalize(modules, address_reservation)?;
+        let address = self.api.globalize(node_id, modules, address_reservation)?;
 
         let address_encoded = scrypto_encode(&address).expect("Failed to encode object address");
 

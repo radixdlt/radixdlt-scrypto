@@ -5,7 +5,7 @@ use native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, FieldValue};
+use radix_engine_interface::api::{ClientApi, FieldValue, ModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
@@ -32,10 +32,10 @@ where
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let address = api.globalize(
+        object_id,
         btreemap!(
-            ObjectModuleId::Main => object_id,
-            ObjectModuleId::RoleAssignment => role_assignment.0,
-            ObjectModuleId::Metadata => metadata.0,
+            ModuleId::RoleAssignment => role_assignment.0,
+            ModuleId::Metadata => metadata.0,
         ),
         Some(resource_address_reservation),
     )?;
@@ -63,12 +63,12 @@ where
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let modules = btreemap!(
-        ObjectModuleId::Main => object_id,
-        ObjectModuleId::RoleAssignment => role_assignment.0,
-        ObjectModuleId::Metadata => metadata.0,
+        ModuleId::RoleAssignment => role_assignment.0,
+        ModuleId::Metadata => metadata.0,
     );
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
+        object_id,
         modules,
         resource_address_reservation,
         FUNGIBLE_BUCKET_BLUEPRINT,
@@ -110,10 +110,10 @@ where
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
+        object_id,
         btreemap!(
-            ObjectModuleId::Main => object_id,
-            ObjectModuleId::RoleAssignment => role_assignment.0,
-            ObjectModuleId::Metadata => metadata.0,
+            ModuleId::RoleAssignment => role_assignment.0,
+            ModuleId::Metadata => metadata.0,
         ),
         resource_address_reservation,
         NON_FUNGIBLE_BUCKET_BLUEPRINT,

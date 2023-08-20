@@ -13,7 +13,7 @@ use native_sdk::resource::NativeNonFungibleBucket;
 use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
 use native_sdk::runtime::LocalAuthZone;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
@@ -149,11 +149,10 @@ impl TransactionProcessorBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {
                         global: false,
-                        module_versions: btreemap!(
-                            ObjectModuleId::Main => BlueprintVersion::default(),
-                        ),
+                        module_versions: btreemap!(),
                         blueprint_info: BlueprintInfo {
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
+                            blueprint_version: BlueprintVersion::default(),
                             generic_substitutions: Vec::new(),
                             outer_obj_info: OuterObjectInfo::default(),
                             features: btreeset!(),
@@ -364,7 +363,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_module_method!(
-                        ObjectModuleId::Royalty,
+                        ModuleId::Royalty,
                         address.as_node_id(),
                         method_name,
                         args,
@@ -380,7 +379,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_module_method!(
-                        ObjectModuleId::Metadata,
+                        ModuleId::Metadata,
                         address.as_node_id(),
                         method_name,
                         args,
@@ -396,7 +395,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_module_method!(
-                        ObjectModuleId::RoleAssignment,
+                        ModuleId::RoleAssignment,
                         address.as_node_id(),
                         method_name,
                         args,

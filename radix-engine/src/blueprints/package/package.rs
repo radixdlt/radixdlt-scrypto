@@ -14,9 +14,7 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::{
-    ClientApi, FieldValue, GenericArgs, KVEntry, LockFlags, ObjectModuleId, ACTOR_STATE_SELF,
-};
+use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, KVEntry, LockFlags, ObjectModuleId, ACTOR_STATE_SELF, ModuleId};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
@@ -794,13 +792,13 @@ pub fn create_bootstrap_package_partitions(
             type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                 global: true,
                 module_versions: btreemap!(
-                    ObjectModuleId::Main => BlueprintVersion::default(),
-                    ObjectModuleId::Metadata => BlueprintVersion::default(),
-                    ObjectModuleId::RoleAssignment => BlueprintVersion::default(),
+                    ModuleId::Metadata => BlueprintVersion::default(),
+                    ModuleId::RoleAssignment => BlueprintVersion::default(),
                 ),
 
                 blueprint_info: BlueprintInfo {
                     blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+                    blueprint_version: BlueprintVersion::default(),
                     outer_obj_info: OuterObjectInfo::default(),
                     features: btreeset!(),
                     generic_substitutions: vec![],
@@ -950,10 +948,10 @@ where
     )?;
 
     let address = api.globalize(
+        package_object,
         btreemap!(
-            ObjectModuleId::Main => package_object,
-            ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::RoleAssignment => role_assignment.0.0,
+            ModuleId::Metadata => metadata.0,
+            ModuleId::RoleAssignment => role_assignment.0.0,
         ),
         package_address_reservation,
     )?;

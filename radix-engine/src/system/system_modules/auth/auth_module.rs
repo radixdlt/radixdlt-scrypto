@@ -307,11 +307,10 @@ impl AuthModule {
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
-                    module_versions: btreemap!(
-                        ObjectModuleId::Main => BlueprintVersion::default(),
-                    ),
+                    module_versions: btreemap!(),
                     blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                        blueprint_version: BlueprintVersion::default(),
                         outer_obj_info: OuterObjectInfo::default(),
                         features: btreeset!(),
                         generic_substitutions: vec![],

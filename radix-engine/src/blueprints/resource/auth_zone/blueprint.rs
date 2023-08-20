@@ -93,12 +93,11 @@ impl AuthZoneBlueprint {
                         TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                             global: false,
 
-                            module_versions: btreemap!(
-                                ObjectModuleId::Main => BlueprintVersion::default(),
-                            ),
+                            module_versions: btreemap!(),
 
                             blueprint_info: BlueprintInfo {
                                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                                blueprint_version: BlueprintVersion::default(),
                                 outer_obj_info: OuterObjectInfo::Some {
                                     outer_object: resource_address.into(),
                                 },
@@ -118,12 +117,11 @@ impl AuthZoneBlueprint {
                     TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                         global: false,
 
-                        module_versions: btreemap!(
-                            ObjectModuleId::Main => BlueprintVersion::default(),
-                        ),
+                        module_versions: btreemap!(),
 
                         blueprint_info: BlueprintInfo {
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                            blueprint_version: BlueprintVersion::default(),
                             outer_obj_info: OuterObjectInfo::Some {
                                 outer_object: resource_address.into(),
                             },
@@ -167,12 +165,11 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    module_versions: btreemap!(
-                        ObjectModuleId::Main => BlueprintVersion::default(),
-                    ),
+                    module_versions: btreemap!(),
 
                     blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                        blueprint_version: BlueprintVersion::default(),
                         outer_obj_info: OuterObjectInfo::Some {
                             outer_object: resource_address.into(),
                         },
@@ -218,12 +215,11 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    module_versions: btreemap!(
-                        ObjectModuleId::Main => BlueprintVersion::default(),
-                    ),
+                    module_versions: btreemap!(),
 
                     blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
+                        blueprint_version: BlueprintVersion::default(),
                         outer_obj_info: OuterObjectInfo::Some {
                             outer_object: resource_address.into(),
                         },

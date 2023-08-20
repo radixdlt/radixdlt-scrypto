@@ -3,6 +3,7 @@ use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::types::RoyaltyAmount;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentRoyaltyLockInput,
     ComponentRoyaltySetInput, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIMER_ROLE,
@@ -32,7 +33,7 @@ pub trait HasComponentRoyalties {
 pub struct Royalty(pub ModuleHandle);
 
 impl Attachable for Royalty {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::Royalty;
+    const MODULE_ID: ModuleId = ModuleId::Royalty;
 
     fn new(handle: ModuleHandle) -> Self {
         Royalty(handle)

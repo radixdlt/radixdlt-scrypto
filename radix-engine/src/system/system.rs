@@ -213,9 +213,10 @@ where
         };
 
         let blueprint_info = BlueprintInfo {
+            blueprint_id: blueprint_id.clone(),
+            blueprint_version: BlueprintVersion::default(),
             outer_obj_info,
             features: features.clone(),
-            blueprint_id: blueprint_id.clone(),
             generic_substitutions: generic_substitutions.clone(),
         };
 
@@ -553,9 +554,7 @@ where
             TYPE_INFO_FIELD_PARTITION => type_info_partition(
                 TypeInfoSubstate::Object(ObjectInfo {
                     global:false,
-                    module_versions: btreemap!(
-                        ObjectModuleId::Main => BlueprintVersion::default(),
-                    ),
+                    module_versions: btreemap!(),
                     blueprint_info,
                 })
             ),
@@ -699,6 +698,7 @@ where
             ObjectModuleId::Main => self.get_object_info(node_id)?.blueprint_info,
             _ => BlueprintInfo {
                 blueprint_id: module_id.static_blueprint().unwrap(),
+                blueprint_version: BlueprintVersion::default(),
                 outer_obj_info: OuterObjectInfo::None,
                 features: BTreeSet::default(),
                 generic_substitutions: vec![],
@@ -715,6 +715,7 @@ where
             Actor::BlueprintHook(actor) => Ok(BlueprintTypeTarget {
                 blueprint_info: BlueprintInfo {
                     blueprint_id: actor.blueprint_id.clone(),
+                    blueprint_version: BlueprintVersion::default(),
                     outer_obj_info: OuterObjectInfo::None,
                     features: btreeset!(),
                     generic_substitutions: vec![],
@@ -724,6 +725,7 @@ where
             Actor::Function(actor) => Ok(BlueprintTypeTarget {
                 blueprint_info: BlueprintInfo {
                     blueprint_id: actor.blueprint_id.clone(),
+                    blueprint_version: BlueprintVersion::default(),
                     outer_obj_info: OuterObjectInfo::None,
                     features: btreeset!(),
                     generic_substitutions: vec![],
@@ -885,25 +887,13 @@ where
         Ok((node_id, info, partition_num, field_schema.transience))
     }
 
-    fn resolve_blueprint_from_modules(
-        &mut self,
-        modules: &BTreeMap<ObjectModuleId, NodeId>,
-    ) -> Result<BlueprintId, RuntimeError> {
-        let node_id = modules
-            .get(&ObjectModuleId::Main)
-            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::Main,
-            )))?;
-
-        Ok(self.get_object_info(node_id)?.blueprint_info.blueprint_id)
-    }
-
     /// ASSUMPTIONS:
     /// Assumes the caller has already checked that the entity type on the GlobalAddress is valid
     /// against the given self module.
     fn globalize_with_address_internal(
         &mut self,
-        mut modules: BTreeMap<ObjectModuleId, NodeId>,
+        node_id: NodeId,
+        modules: BTreeMap<ModuleId, NodeId>,
         global_address_reservation: GlobalAddressReservation,
     ) -> Result<GlobalAddress, RuntimeError> {
         // Check global address reservation
@@ -959,22 +949,17 @@ where
         }
 
         // Check for required modules
-        if !modules.contains_key(&ObjectModuleId::RoleAssignment) {
+        if !modules.contains_key(&ModuleId::RoleAssignment) {
             return Err(RuntimeError::SystemError(SystemError::MissingModule(
                 ObjectModuleId::RoleAssignment,
             )));
         }
-        if !modules.contains_key(&ObjectModuleId::Metadata) {
+        if !modules.contains_key(&ModuleId::Metadata) {
             return Err(RuntimeError::SystemError(SystemError::MissingModule(
                 ObjectModuleId::Metadata,
             )));
         }
 
-        let node_id = modules
-            .remove(&ObjectModuleId::Main)
-            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::Main,
-            )))?;
         self.api
             .kernel_get_system_state()
             .system
@@ -1054,12 +1039,11 @@ where
         // Move other modules, and drop
         for (module_id, node_id) in modules {
             match module_id {
-                ObjectModuleId::Main => panic!("Should have been removed already"),
-                ObjectModuleId::RoleAssignment
-                | ObjectModuleId::Metadata
-                | ObjectModuleId::Royalty => {
+                ModuleId::RoleAssignment
+                | ModuleId::Metadata
+                | ModuleId::Royalty => {
                     let blueprint_id = self.get_object_info(&node_id)?.blueprint_info.blueprint_id;
-                    let expected_blueprint = module_id.static_blueprint().unwrap();
+                    let expected_blueprint = module_id.static_blueprint();
                     if !blueprint_id.eq(&expected_blueprint) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
                             Box::new(InvalidModuleType {
@@ -1075,14 +1059,15 @@ where
                         .modules
                         .add_replacement(
                             (node_id, ObjectModuleId::Main),
-                            (*global_address.as_node_id(), module_id),
+                            (*global_address.as_node_id(), module_id.into()),
                         );
 
                     // Move and drop
                     let interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
                     let num_logical_partitions = interface.state.num_logical_partitions();
 
-                    let module_base_partition = module_id.base_partition_num();
+                    let object_module_id: ObjectModuleId = module_id.into();
+                    let module_base_partition = object_module_id.base_partition_num();
                     for offset in 0u8..num_logical_partitions {
                         let src = MAIN_BASE_PARTITION
                             .at_offset(PartitionOffset(offset))
@@ -1306,7 +1291,8 @@ where
     #[trace_resources]
     fn globalize(
         &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
+        node_id: NodeId,
+        modules: BTreeMap<ModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, RuntimeError> {
         // TODO: optimize by skipping address allocation
@@ -1315,11 +1301,11 @@ where
                 let address = self.get_reservation_address(reservation.0.as_node_id())?;
                 (reservation, address)
             } else {
-                let blueprint_id = self.resolve_blueprint_from_modules(&modules)?;
+                let blueprint_id = self.get_object_info(&node_id)?.blueprint_info.blueprint_id;
                 self.allocate_global_address(blueprint_id)?
             };
 
-        self.globalize_with_address_internal(modules, global_address_reservation)?;
+        self.globalize_with_address_internal(node_id, modules, global_address_reservation)?;
 
         Ok(global_address)
     }
@@ -1328,16 +1314,18 @@ where
     #[trace_resources]
     fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
+        node_id: NodeId,
+        modules: BTreeMap<ModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<FieldValue>,
         event_name: String,
         event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
-        let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
 
-        let global_address = self.globalize_with_address_internal(modules, address_reservation)?;
+        let actor_blueprint = self.get_object_info(&node_id)?.blueprint_info.blueprint_id;
+
+        let global_address = self.globalize_with_address_internal(node_id, modules, address_reservation)?;
 
         let blueprint_id =
             BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
@@ -1448,7 +1436,7 @@ where
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        module_id: ObjectModuleId,
+        module_id: ModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -1467,7 +1455,7 @@ where
         let auth_actor_info = SystemModuleMixer::on_call_method(
             self,
             receiver,
-            module_id,
+            module_id.into(),
             false,
             method_name,
             &args,
@@ -1479,7 +1467,7 @@ where
                 call_frame_data: Actor::Method(MethodActor {
                     direct_access: false,
                     node_id: receiver.clone(),
-                    module_id,
+                    module_id: module_id.into(),
                     ident: method_name.to_string(),
 
                     auth_zone: auth_actor_info.clone(),

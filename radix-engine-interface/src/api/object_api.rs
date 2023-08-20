@@ -38,15 +38,6 @@ pub enum ObjectModuleId {
 }
 
 impl ObjectModuleId {
-    pub fn to_u8(&self) -> u8 {
-        match self {
-            ObjectModuleId::Main => 0u8,
-            ObjectModuleId::Metadata => 1u8,
-            ObjectModuleId::Royalty => 2u8,
-            ObjectModuleId::RoleAssignment => 3u8,
-        }
-    }
-
     pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
             ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
@@ -71,6 +62,57 @@ impl ObjectModuleId {
                 ROLE_ASSIGNMENT_BLUEPRINT,
             )),
             ObjectModuleId::Main => None,
+        }
+    }
+}
+
+#[repr(u8)]
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(
+Debug,
+Clone,
+Copy,
+PartialEq,
+Eq,
+Hash,
+PartialOrd,
+Ord,
+ScryptoSbor,
+ManifestSbor,
+FromRepr,
+EnumIter,
+)]
+pub enum ModuleId {
+    Metadata = 1,
+    Royalty = 2,
+    RoleAssignment = 3,
+}
+
+impl ModuleId {
+    pub fn static_blueprint(&self) -> BlueprintId {
+        match self {
+            ModuleId::Metadata => BlueprintId::new(
+                &METADATA_MODULE_PACKAGE,
+                METADATA_BLUEPRINT,
+            ),
+            ModuleId::Royalty => BlueprintId::new(
+                &ROYALTY_MODULE_PACKAGE,
+                COMPONENT_ROYALTY_BLUEPRINT,
+            ),
+            ModuleId::RoleAssignment => BlueprintId::new(
+                &ROLE_ASSIGNMENT_MODULE_PACKAGE,
+                ROLE_ASSIGNMENT_BLUEPRINT,
+            ),
+        }
+    }
+}
+
+impl Into<ObjectModuleId> for ModuleId {
+    fn into(self) -> ObjectModuleId {
+        match self {
+            ModuleId::Metadata => ObjectModuleId::Metadata,
+            ModuleId::Royalty => ObjectModuleId::Royalty,
+            ModuleId::RoleAssignment => ObjectModuleId::RoleAssignment,
         }
     }
 }
@@ -163,13 +205,15 @@ pub trait ClientObjectApi<E> {
     /// it accessible to all with the provided global address.
     fn globalize(
         &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
+        node_id: NodeId,
+        modules: BTreeMap<ModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, E>;
 
     fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
+        node_id: NodeId,
+        modules: BTreeMap<ModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<FieldValue>,
@@ -196,7 +240,7 @@ pub trait ClientObjectApi<E> {
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        module_id: ObjectModuleId,
+        module_id: ModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;

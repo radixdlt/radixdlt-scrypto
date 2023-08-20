@@ -5,7 +5,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{ClientApi, LockFlags, ACTOR_STATE_SELF, ModuleId};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_store_interface::interface::DatabaseUpdate;
 use scrypto_unit::*;
@@ -42,10 +42,10 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
                     let access_rules = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, vec![])?;
                     api.globalize(
+                        node_id,
                         btreemap!(
-                            ObjectModuleId::Main => node_id,
-                            ObjectModuleId::Metadata => metadata.0,
-                            ObjectModuleId::RoleAssignment => access_rules.0.0,
+                            ModuleId::Metadata => metadata.0,
+                            ModuleId::RoleAssignment => access_rules.0.0,
                         ),
                         None,
                     )?;

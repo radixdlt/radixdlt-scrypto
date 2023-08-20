@@ -4,7 +4,7 @@ use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::api::{LockFlags, ModuleId};
 use radix_engine_interface::api::{ActorRefHandle, FieldValue};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
@@ -53,7 +53,8 @@ impl ScryptoVmV1Api {
     }
 
     pub fn object_globalize(
-        modules: BTreeMap<ObjectModuleId, NodeId>,
+        object_id: NodeId,
+        modules: BTreeMap<ModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
     ) -> GlobalAddress {
         let modules = scrypto_encode(&modules).unwrap();
@@ -61,6 +62,8 @@ impl ScryptoVmV1Api {
 
         let bytes = copy_buffer(unsafe {
             object::object_globalize(
+                object_id.as_ref().as_ptr(),
+                object_id.as_ref().len(),
                 modules.as_ptr(),
                 modules.len(),
                 address_reservation.as_ptr(),
@@ -101,7 +104,7 @@ impl ScryptoVmV1Api {
 
     pub fn object_call_module(
         receiver: &NodeId,
-        module_id: ObjectModuleId,
+        module_id: ModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Vec<u8> {

@@ -14,7 +14,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, GenericArgs, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{ClientApi, GenericArgs, ACTOR_STATE_SELF, ModuleId};
 use radix_engine_interface::api::{CollectionIndex, FieldValue};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
@@ -78,7 +78,7 @@ impl AccountBlueprint {
         role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
-    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
+    ) -> Result<BTreeMap<ModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -86,9 +86,9 @@ impl AccountBlueprint {
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
-            ObjectModuleId::RoleAssignment => role_assignment.0,
-            ObjectModuleId::Metadata => metadata,
-            ObjectModuleId::Royalty => royalty,
+            ModuleId::RoleAssignment => role_assignment.0,
+            ModuleId::Metadata => metadata,
+            ModuleId::Royalty => royalty,
         );
 
         Ok(modules)
@@ -140,7 +140,7 @@ impl AccountBlueprint {
         let account = Self::create_local(api)?;
         let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
         let role_assignment = SecurifiedAccount::create_presecurified(owner_id, api)?;
-        let mut modules = Self::create_modules(
+        let modules = Self::create_modules(
             role_assignment,
             metadata_init!(
                 // NOTE:
@@ -154,9 +154,9 @@ impl AccountBlueprint {
             ),
             api,
         )?;
-        modules.insert(ObjectModuleId::Main, account);
 
         api.globalize(
+            account.0,
             modules.into_iter().map(|(k, v)| (k, v.0)).collect(),
             Some(address_reservation),
         )?;
@@ -188,17 +188,16 @@ impl AccountBlueprint {
     {
         let account = Self::create_local(api)?;
         let role_assignment = SecurifiedAccount::create_advanced(owner_role, api)?;
-        let mut modules = Self::create_modules(
+        let modules = Self::create_modules(
             role_assignment,
             metadata_init!(
                 "owner_badge" => EMPTY, locked;
             ),
             api,
         )?;
-        modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(modules, None)?;
+        let address = api.globalize(account.0, modules, None)?;
 
         Ok(address)
     }
@@ -221,17 +220,16 @@ impl AccountBlueprint {
             Some(NonFungibleLocalId::bytes(address.as_node_id().0).unwrap()),
             api,
         )?;
-        let mut modules = Self::create_modules(
+        let modules = Self::create_modules(
             role_assignment,
             metadata_init! {
                 "owner_badge" => NonFungibleLocalId::bytes(address.as_node_id().0).unwrap(), locked;
             },
             api,
         )?;
-        modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(modules, Some(address_reservation))?;
+        let address = api.globalize(account.0, modules, Some(address_reservation))?;
 
         Ok((address, bucket))
     }

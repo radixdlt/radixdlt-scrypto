@@ -4,7 +4,7 @@ use radix_engine_interface::api::node_modules::auth::{
     ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, OwnerRoleEntry, RoleAssignmentInit, RoleKey,
 };
@@ -44,21 +44,21 @@ impl RoleAssignment {
 }
 
 impl RoleAssignmentObject for RoleAssignment {
-    fn self_id(&self) -> (&NodeId, ObjectModuleId) {
-        (&self.0 .0, ObjectModuleId::Main)
+    fn self_id(&self) -> (&NodeId, Option<ModuleId>) {
+        (&self.0 .0, None)
     }
 }
 
 pub struct AttachedRoleAssignment(pub NodeId);
 
 impl RoleAssignmentObject for AttachedRoleAssignment {
-    fn self_id(&self) -> (&NodeId, ObjectModuleId) {
-        (&self.0, ObjectModuleId::RoleAssignment)
+    fn self_id(&self) -> (&NodeId, Option<ModuleId>) {
+        (&self.0, Some(ModuleId::RoleAssignment))
     }
 }
 
 pub trait RoleAssignmentObject {
-    fn self_id(&self) -> (&NodeId, ObjectModuleId);
+    fn self_id(&self) -> (&NodeId, Option<ModuleId>);
 
     fn set_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
         &self,
@@ -66,27 +66,24 @@ pub trait RoleAssignmentObject {
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_module_method(
-            node_id,
-            module_id,
-            ROLE_ASSIGNMENT_SET_OWNER_IDENT,
-            scrypto_encode(&RoleAssignmentSetOwnerInput { rule: rule.into() }).unwrap(),
-        )?;
+        match module_id {
+            None => {
+                api.call_method(
+                    node_id,
+                    ROLE_ASSIGNMENT_SET_OWNER_IDENT,
+                    scrypto_encode(&RoleAssignmentSetOwnerInput { rule: rule.into() }).unwrap(),
+                )?;
+            }
+            Some(module_id) => {
+                api.call_module_method(
+                    node_id,
+                    module_id,
+                    ROLE_ASSIGNMENT_SET_OWNER_IDENT,
+                    scrypto_encode(&RoleAssignmentSetOwnerInput { rule: rule.into() }).unwrap(),
+                )?;
+            }
+        }
 
-        Ok(())
-    }
-
-    fn lock_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
-        &self,
-        api: &mut Y,
-    ) -> Result<(), E> {
-        let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_module_method(
-            node_id,
-            module_id,
-            ROLE_ASSIGNMENT_SET_OWNER_IDENT,
-            scrypto_encode(&RoleAssignmentLockOwnerInput {}).unwrap(),
-        )?;
 
         Ok(())
     }
@@ -104,17 +101,33 @@ pub trait RoleAssignmentObject {
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_module_method(
-            node_id,
-            module_id,
-            ROLE_ASSIGNMENT_SET_IDENT,
-            scrypto_encode(&RoleAssignmentSetInput {
-                module,
-                role_key: role_key.into(),
-                rule: rule.into(),
-            })
-            .unwrap(),
-        )?;
+        match module_id {
+            None => {
+                api.call_method(
+                    node_id,
+                    ROLE_ASSIGNMENT_SET_IDENT,
+                    scrypto_encode(&RoleAssignmentSetInput {
+                        module,
+                        role_key: role_key.into(),
+                        rule: rule.into(),
+                    })
+                        .unwrap(),
+                )?;
+            }
+            Some(module_id) => {
+                api.call_module_method(
+                    node_id,
+                    module_id,
+                    ROLE_ASSIGNMENT_SET_IDENT,
+                    scrypto_encode(&RoleAssignmentSetInput {
+                        module,
+                        role_key: role_key.into(),
+                        rule: rule.into(),
+                    })
+                        .unwrap(),
+                )?;
+            }
+        }
 
         Ok(())
     }
