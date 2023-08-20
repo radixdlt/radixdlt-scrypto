@@ -17,7 +17,7 @@ use radix_engine_interface::data::scrypto::{
 use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::ACTOR_REF_SELF;
+use radix_engine_interface::api::ACTOR_REF_AUTH_ZONE;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
@@ -45,10 +45,6 @@ impl Runtime {
     pub fn global_address() -> ComponentAddress {
         let address: GlobalAddress = ScryptoVmV1Api.actor_get_global_address();
         ComponentAddress::new_or_panic(address.into())
-    }
-
-    pub fn node_id() -> NodeId {
-        ScryptoVmV1Api.actor_get_node_id(ACTOR_REF_SELF)
     }
 
     /// Returns the current package address.
@@ -82,9 +78,9 @@ impl Runtime {
     }
 
     pub fn assert_access_rule(rule: AccessRule) {
-        let node_id = ScryptoVmV1Api.actor_get_auth_zone();
+        let object_id = ScryptoVmV1Api.actor_get_object_id(ACTOR_REF_AUTH_ZONE);
         ScryptoVmV1Api.call_method(
-            &node_id,
+            &object_id,
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
             scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
         );

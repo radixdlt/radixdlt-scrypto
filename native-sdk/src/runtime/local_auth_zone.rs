@@ -1,5 +1,5 @@
 use crate::resource::NativeAuthZone;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ACTOR_REF_AUTH_ZONE, ClientApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{ScryptoCategorize, ScryptoDecode};
@@ -16,7 +16,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone()?;
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         AuthZoneRef(auth_zone).drain(api)
     }
 
@@ -26,7 +26,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone()?;
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         AuthZoneRef(auth_zone).drop_proofs(api)
     }
 
@@ -36,7 +36,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone()?;
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         AuthZoneRef(auth_zone).drop_regular_proofs(api)
     }
 
@@ -46,7 +46,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone()?;
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         AuthZoneRef(auth_zone).drop_signature_proofs(api)
     }
 
@@ -54,7 +54,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone()?;
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         AuthZoneRef(auth_zone).pop(api)
     }
 
@@ -66,7 +66,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone()?;
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         AuthZoneRef(auth_zone).create_proof_of_amount(amount, resource_address, api)
     }
 
@@ -78,7 +78,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone()?;
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         AuthZoneRef(auth_zone).create_proof_of_non_fungibles(ids, resource_address, api)
     }
 
@@ -89,7 +89,7 @@ impl LocalAuthZone {
     where
         Y: ClientApi<E>,
     {
-        let auth_zone = api.get_auth_zone()?;
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         AuthZoneRef(auth_zone).create_proof_of_all(resource_address, api)
     }
 
@@ -102,7 +102,7 @@ impl LocalAuthZone {
     {
         let proof: Proof = proof.into();
 
-        let auth_zone = api.get_auth_zone()?;
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         AuthZoneRef(auth_zone).push(proof, api)
     }
 }

@@ -147,8 +147,6 @@ pub trait WasmRuntime {
 
     fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
-
     fn consume_wasm_execution_units(&mut self, n: u32)
         -> Result<(), InvokeError<WasmRuntimeError>>;
 

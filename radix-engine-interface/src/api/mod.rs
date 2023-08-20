@@ -21,7 +21,6 @@ pub use field_api::LockFlags;
 use key_value_entry_api::ClientKeyValueEntryApi;
 use key_value_store_api::ClientKeyValueStoreApi;
 pub use object_api::*;
-pub use system_modules::auth_api::ClientAuthApi;
 pub use system_modules::costing_api::ClientCostingApi;
 pub use system_modules::execution_trace_api::ClientExecutionTraceApi;
 pub use system_modules::transaction_runtime_api::ClientTransactionRuntimeApi;
@@ -56,6 +55,5 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientCostingApi<E>
     + ClientTransactionRuntimeApi<E>
     + ClientExecutionTraceApi<E>
-    + ClientAuthApi<E>
 {
 }

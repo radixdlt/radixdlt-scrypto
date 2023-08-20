@@ -122,14 +122,20 @@ pub mod object {
 
 /// API to manipulate or get information about the current actor
 pub mod actor {
-    use radix_engine_interface::api::ActorRefHandle;
+    use radix_engine_interface::api::{ActorRefHandle, ActorStateHandle};
+    use radix_engine_interface::api::field_api::FieldHandle;
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     extern "C" {
         /// Get the blueprint id of the current actor
         pub fn actor_get_blueprint_id() -> Buffer;
 
-        pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
+        /// Open a field of the current actor
+        pub fn actor_open_field(
+            actor_state_handle: ActorStateHandle,
+            field_index: u32,
+            flags: u32,
+        ) -> FieldHandle;
 
         /// Call a module method of the current actor
         pub fn actor_call_module(
@@ -140,14 +146,12 @@ pub mod actor {
             args_len: usize,
         ) -> Buffer;
 
-        /// Get the object id of the current actor
+        /// Get the object id of a reference of the current actor
         pub fn actor_get_object_id(actor_ref_handle: ActorRefHandle) -> Buffer;
 
         /// Get the global address of the current actor
         /// If an owned object, this will refer to the global containing object's address
         pub fn actor_get_global_address() -> Buffer;
-
-        pub fn actor_get_auth_zone() -> Buffer;
 
         /// Emit an event
         pub fn actor_emit_event(

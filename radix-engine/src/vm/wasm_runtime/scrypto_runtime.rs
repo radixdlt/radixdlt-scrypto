@@ -376,13 +376,6 @@ where
         self.allocate_buffer(buffer)
     }
 
-    fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let auth_zone = self.api.get_auth_zone()?;
-
-        let buffer = scrypto_encode(&auth_zone).expect("Failed to encode auth_zone");
-        self.allocate_buffer(buffer)
-    }
-
     fn consume_wasm_execution_units(
         &mut self,
         n: u32,

@@ -524,12 +524,6 @@ fn get_actor(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRunti
     runtime.get_blueprint().map(|buffer| buffer.0)
 }
 
-fn get_auth_zone(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
-
-    runtime.get_auth_zone().map(|buffer| buffer.0)
-}
-
 fn consume_wasm_execution_units(
     caller: Caller<'_, HostState>,
     n: u64,
@@ -1022,13 +1016,6 @@ impl WasmiModule {
             },
         );
 
-        let host_get_auth_zone = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                get_auth_zone(caller).map_err(|e| e.into())
-            },
-        );
-
         let host_consume_wasm_execution_units = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, n: u64| -> Result<(), Trap> {
@@ -1225,11 +1212,6 @@ impl WasmiModule {
             linker,
             ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME,
             host_get_blueprint
-        );
-        linker_define!(
-            linker,
-            ACTOR_GET_AUTH_ZONE_FUNCTION_NAME,
-            host_get_auth_zone
         );
         linker_define!(
             linker,

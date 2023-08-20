@@ -4,7 +4,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi};
+use radix_engine_interface::api::{ACTOR_REF_AUTH_ZONE, ClientApi};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -28,7 +28,7 @@ fn should_not_be_able_to_move_auth_zone() {
         {
             match export_name {
                 "test" => {
-                    let auth_zone_id = api.get_auth_zone().unwrap();
+                    let auth_zone_id = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE).unwrap();
                     let self_blueprint_id = api.actor_get_blueprint_id()?;
                     api.call_function(
                         self_blueprint_id.package_address,

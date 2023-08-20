@@ -450,24 +450,6 @@ impl WasmModule {
                             ));
                         }
                     }
-                    ACTOR_GET_AUTH_ZONE_FUNCTION_NAME => {
-                        if let TypeRef::Func(type_index) = entry.ty {
-                            if Self::function_type_matches(
-                                &self.module,
-                                type_index,
-                                vec![],
-                                vec![ValType::I64],
-                            ) {
-                                continue;
-                            }
-
-                            return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    ACTOR_GET_AUTH_ZONE_FUNCTION_NAME.to_string(),
-                                ),
-                            ));
-                        }
-                    }
 
                     OBJECT_NEW_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {

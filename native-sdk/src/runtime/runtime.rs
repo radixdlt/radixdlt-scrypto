@@ -92,7 +92,7 @@ impl Runtime {
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        let auth_zone = api.get_auth_zone()?;
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         let _rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,

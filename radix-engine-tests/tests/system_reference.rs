@@ -5,7 +5,7 @@ use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
-use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, ACTOR_STATE_SELF, ACTOR_REF_AUTH_ZONE};
 use radix_engine_interface::blueprints::package::{KeyOrValue, PackageDefinition};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -29,7 +29,7 @@ fn cannot_store_reference_in_non_transient_blueprint() {
         {
             match export_name {
                 "new" => {
-                    let auth_zone = api.get_auth_zone()?;
+                    let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
                     let node_id = api.new_simple_object(
                         BLUEPRINT_NAME,
                         vec![FieldValue::new(Reference(auth_zone))],
@@ -98,7 +98,7 @@ fn cannot_write_reference_in_non_transient_blueprint() {
                 "test" => {
                     let handle =
                         api.actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE)?;
-                    let auth_zone = api.get_auth_zone()?;
+                    let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
                     api.field_write_typed(handle, Reference(auth_zone))?;
                 }
                 _ => {}
@@ -164,7 +164,7 @@ fn cannot_write_reference_in_kv_store() {
                         &scrypto_encode(&()).unwrap(),
                         LockFlags::MUTABLE,
                     )?;
-                    let auth_zone = api.get_auth_zone()?;
+                    let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
                     api.key_value_entry_set_typed(handle, Reference(auth_zone))?;
                 }
                 _ => {}

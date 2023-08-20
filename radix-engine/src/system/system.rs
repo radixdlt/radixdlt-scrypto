@@ -2488,26 +2488,6 @@ where
     }
 }
 
-impl<'a, Y, V> ClientAuthApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
-    #[trace_resources]
-    fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryAuthZone)?;
-
-        if let Some(auth_zone_id) = self.current_actor().self_auth_zone() {
-            Ok(auth_zone_id.into())
-        } else {
-            Err(RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))
-        }
-    }
-}
-
 impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,

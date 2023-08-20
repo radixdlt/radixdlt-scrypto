@@ -271,7 +271,7 @@ impl ScryptoVmV1Api {
         handle
     }
 
-    pub fn actor_get_node_id(&mut self, actor_ref_handle: ActorRefHandle) -> NodeId {
+    pub fn actor_get_object_id(&mut self, actor_ref_handle: ActorRefHandle) -> NodeId {
         let node_id = copy_buffer(unsafe { actor::actor_get_object_id(actor_ref_handle) });
 
         scrypto_decode(&node_id).unwrap()
@@ -306,12 +306,6 @@ impl ScryptoVmV1Api {
         });
 
         return_data
-    }
-
-    pub fn actor_get_auth_zone(&mut self) -> NodeId {
-        let auth_zone = copy_buffer(unsafe { actor::actor_get_auth_zone() });
-
-        scrypto_decode(&auth_zone).unwrap()
     }
 
     pub fn actor_emit_event(&mut self, event_name: String, event_data: Vec<u8>) {

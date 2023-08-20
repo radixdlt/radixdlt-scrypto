@@ -579,16 +579,6 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn get_auth_zone(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
-            let (_instance, runtime) = grab_runtime!(env);
-
-            let buffer = runtime
-                .get_auth_zone()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
-        }
-
         fn consume_wasm_execution_units(
             env: &WasmerInstanceEnv,
             n: u64,
@@ -703,7 +693,6 @@ impl WasmerModule {
                 ACTOR_GET_OBJECT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_node_id),
                 ACTOR_GET_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_global_address),
                 ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint),
-                ACTOR_GET_AUTH_ZONE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_auth_zone),
                 COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_wasm_execution_units),
                 ACTOR_EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
                 SYS_LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_log),
