@@ -98,7 +98,7 @@ fn consume_buffer(
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let result = runtime.consume_buffer(buffer_id);
+    let result = runtime.buffer_consume(buffer_id);
     match result {
         Ok(slice) => {
             write_memory(caller, memory, destination_ptr, &slice)?;
@@ -124,7 +124,7 @@ fn call_method(
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .call_method(receiver, ident, args)
+        .object_call(receiver, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -144,7 +144,7 @@ fn call_direct_method(
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .call_direct_method(receiver, ident, args)
+        .object_call_direct(receiver, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -165,7 +165,7 @@ fn call_module_method(
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .call_module_method(receiver, direct_access, ident, args)
+        .object_call_module(receiver, direct_access, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -190,7 +190,7 @@ fn call_function(
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .call_function(blueprint_id, ident, args)
+        .blueprint_call(blueprint_id, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -204,7 +204,7 @@ fn new_object(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .new_object(
+        .object_new(
             read_memory(
                 caller.as_context_mut(),
                 memory,
@@ -246,7 +246,7 @@ fn allocate_global_address(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .allocate_global_address(read_memory(
+        .address_allocate(read_memory(
             caller.as_context_mut(),
             memory,
             blueprint_id_ptr,
@@ -263,7 +263,7 @@ fn get_reservation_address(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .get_reservation_address(read_memory(
+        .address_get_reservation_address(read_memory(
             caller.as_context_mut(),
             memory,
             node_id_ptr,
@@ -277,7 +277,7 @@ fn execution_cost_unit_limit(
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.execution_cost_unit_limit()
+    runtime.costing_get_execution_cost_unit_limit()
 }
 
 fn execution_cost_unit_price(
@@ -285,7 +285,9 @@ fn execution_cost_unit_price(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.execution_cost_unit_price().map(|buffer| buffer.0)
+    runtime
+        .costing_get_execution_cost_unit_price()
+        .map(|buffer| buffer.0)
 }
 
 fn finalization_cost_unit_limit(
@@ -293,7 +295,7 @@ fn finalization_cost_unit_limit(
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.finalization_cost_unit_limit()
+    runtime.costing_get_finalization_cost_unit_limit()
 }
 
 fn finalization_cost_unit_price(
@@ -302,26 +304,26 @@ fn finalization_cost_unit_price(
     let (_memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .finalization_cost_unit_price()
+        .costing_get_finalization_cost_unit_price()
         .map(|buffer| buffer.0)
 }
 
 fn usd_price(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.usd_price().map(|buffer| buffer.0)
+    runtime.costing_get_usd_price().map(|buffer| buffer.0)
 }
 
 fn tip_percentage(caller: Caller<'_, HostState>) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.tip_percentage()
+    runtime.costing_get_tip_percentage()
 }
 
 fn fee_balance(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.fee_balance().map(|buffer| buffer.0)
+    runtime.costing_get_fee_balance().map(|buffer| buffer.0)
 }
 
 fn globalize_object(
@@ -460,7 +462,7 @@ fn field_lock_read(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.field_lock_read(handle).map(|buffer| buffer.0)
+    runtime.field_entry_read(handle).map(|buffer| buffer.0)
 }
 
 fn field_lock_write(
@@ -473,7 +475,7 @@ fn field_lock_write(
 
     let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
 
-    runtime.field_lock_write(handle, data)
+    runtime.field_entry_write(handle, data)
 }
 
 fn field_lock_release(
@@ -482,7 +484,7 @@ fn field_lock_release(
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.field_lock_release(handle)
+    runtime.field_entry_close(handle)
 }
 
 fn actor_get_node_id(
@@ -497,7 +499,7 @@ fn actor_get_node_id(
 fn get_actor(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.get_blueprint().map(|buffer| buffer.0)
+    runtime.actor_get_blueprint().map(|buffer| buffer.0)
 }
 
 fn consume_wasm_execution_units(
@@ -533,7 +535,7 @@ fn emit_event(
         event_data_len,
     )?;
 
-    runtime.emit_event(event_name, event_data)
+    runtime.actor_emit_event(event_name, event_data)
 }
 
 fn get_transaction_hash(
@@ -541,13 +543,13 @@ fn get_transaction_hash(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_, runtime) = grab_runtime!(caller);
 
-    runtime.get_transaction_hash().map(|buffer| buffer.0)
+    runtime.sys_get_transaction_hash().map(|buffer| buffer.0)
 }
 
 fn generate_ruid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_, runtime) = grab_runtime!(caller);
 
-    runtime.generate_ruid().map(|buffer| buffer.0)
+    runtime.sys_generate_ruid().map(|buffer| buffer.0)
 }
 
 fn emit_log(
@@ -562,7 +564,7 @@ fn emit_log(
     let level = read_memory(caller.as_context_mut(), memory, level_ptr, level_len)?;
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
 
-    runtime.emit_log(level, message)
+    runtime.sys_log(level, message)
 }
 
 fn panic(
@@ -574,7 +576,7 @@ fn panic(
 
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
 
-    runtime.panic(message)
+    runtime.sys_panic(message)
 }
 // native functions ends
 

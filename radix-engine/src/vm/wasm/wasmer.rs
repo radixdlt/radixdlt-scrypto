@@ -160,7 +160,7 @@ impl From<WasmRuntimeError> for RuntimeError {
 impl WasmerModule {
     fn instantiate(&self) -> WasmerInstance {
         // native functions starts
-        pub fn consume_buffer(
+        pub fn buffer_consume(
             env: &WasmerInstanceEnv,
             buffer_id: BufferId,
             destination_ptr: u32,
@@ -168,7 +168,7 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let slice = runtime
-                .consume_buffer(buffer_id)
+                .buffer_consume(buffer_id)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             write_memory(&instance, destination_ptr, &slice)?;
@@ -176,12 +176,64 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn call_method(
+        pub fn blueprint_call(
+            env: &WasmerInstanceEnv,
+            blueprint_id_ptr: u32,
+            blueprint_id_len: u32,
+            ident_ptr: u32,
+            ident_len: u32,
+            args_ptr: u32,
+            args_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let blueprint_ident = read_memory(&instance, blueprint_id_ptr, blueprint_id_len)?;
+            let ident = read_memory(&instance, ident_ptr, ident_len)?;
+            let args = read_memory(&instance, args_ptr, args_len)?;
+
+            let buffer = runtime
+                .blueprint_call(blueprint_ident, ident, args)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn address_allocate(
+            env: &WasmerInstanceEnv,
+            blueprint_ident_ptr: u32,
+            blueprint_ident_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .address_allocate(read_memory(
+                    &instance,
+                    blueprint_ident_ptr,
+                    blueprint_ident_len,
+                )?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn address_get_reservation_address(
+            env: &WasmerInstanceEnv,
+            node_id_ptr: u32,
+            node_id_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .address_get_reservation_address(read_memory(&instance, node_id_ptr, node_id_len)?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn object_call(
             env: &WasmerInstanceEnv,
             receiver_ptr: u32,
             receiver_len: u32,
-            direct_access: u32,
-            module_id: u32,
             ident_ptr: u32,
             ident_len: u32,
             args_ptr: u32,
@@ -194,18 +246,17 @@ impl WasmerModule {
             let args = read_memory(&instance, args_ptr, args_len)?;
 
             let buffer = runtime
-                .call_method(receiver, direct_access, module_id, ident, args)
+                .object_call(receiver, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
         }
 
-        pub fn call_function(
+        pub fn object_call_module(
             env: &WasmerInstanceEnv,
-            package_address_ptr: u32,
-            package_address_len: u32,
-            blueprint_ident_ptr: u32,
-            blueprint_ident_len: u32,
+            receiver_ptr: u32,
+            receiver_len: u32,
+            module: u32,
             ident_ptr: u32,
             ident_len: u32,
             args_ptr: u32,
@@ -213,19 +264,40 @@ impl WasmerModule {
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let package_address = read_memory(&instance, package_address_ptr, package_address_len)?;
-            let blueprint_ident = read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?;
+            let receiver = read_memory(&instance, receiver_ptr, receiver_len)?;
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
             let buffer = runtime
-                .call_function(package_address, blueprint_ident, ident, args)
+                .object_call_module(receiver, module, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
         }
 
-        pub fn new_object(
+        pub fn object_call_direct(
+            env: &WasmerInstanceEnv,
+            receiver_ptr: u32,
+            receiver_len: u32,
+            ident_ptr: u32,
+            ident_len: u32,
+            args_ptr: u32,
+            args_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let receiver = read_memory(&instance, receiver_ptr, receiver_len)?;
+            let ident = read_memory(&instance, ident_ptr, ident_len)?;
+            let args = read_memory(&instance, args_ptr, args_len)?;
+
+            let buffer = runtime
+                .object_call_direct(receiver, ident, args)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn object_new(
             env: &WasmerInstanceEnv,
             blueprint_ident_ptr: u32,
             blueprint_ident_len: u32,
@@ -235,7 +307,7 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .new_object(
+                .object_new(
                     read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?,
                     read_memory(&instance, object_states_ptr, object_states_len)?,
                 )
@@ -244,79 +316,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn allocate_global_address(
-            env: &WasmerInstanceEnv,
-            blueprint_ident_ptr: u32,
-            blueprint_ident_len: u32,
-        ) -> Result<u64, RuntimeError> {
-            let (instance, runtime) = grab_runtime!(env);
-
-            let buffer = runtime
-                .allocate_global_address(read_memory(
-                    &instance,
-                    blueprint_ident_ptr,
-                    blueprint_ident_len,
-                )?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
-        }
-
-        pub fn execution_cost_unit_limit(env: &WasmerInstanceEnv) -> Result<u32, RuntimeError> {
-            let (_instance, runtime) = grab_runtime!(env);
-
-            runtime
-                .execution_cost_unit_limit()
-                .map_err(|e| RuntimeError::user(Box::new(e)))
-        }
-
-        pub fn execution_cost_unit_price(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
-            let (_instance, runtime) = grab_runtime!(env);
-
-            let buffer = runtime
-                .execution_cost_unit_price()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
-        }
-
-        pub fn finalization_cost_unit_limit(env: &WasmerInstanceEnv) -> Result<u32, RuntimeError> {
-            let (_instance, runtime) = grab_runtime!(env);
-
-            runtime
-                .finalization_cost_unit_limit()
-                .map_err(|e| RuntimeError::user(Box::new(e)))
-        }
-
-        pub fn finalization_cost_unit_price(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
-            let (_instance, runtime) = grab_runtime!(env);
-
-            let buffer = runtime
-                .finalization_cost_unit_price()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
-        }
-
-        pub fn tip_percentage(env: &WasmerInstanceEnv) -> Result<u32, RuntimeError> {
-            let (_instance, runtime) = grab_runtime!(env);
-
-            runtime
-                .tip_percentage()
-                .map_err(|e| RuntimeError::user(Box::new(e)))
-        }
-
-        pub fn fee_balance(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
-            let (_instance, runtime) = grab_runtime!(env);
-
-            let buffer = runtime
-                .fee_balance()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
-        }
-
-        pub fn globalize_object(
+        pub fn object_globalize(
             env: &WasmerInstanceEnv,
             modules_ptr: u32,
             modules_len: u32,
@@ -335,7 +335,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn get_blueprint_id(
+        pub fn object_get_blueprint_id(
             env: &WasmerInstanceEnv,
             component_id_ptr: u32,
             component_id_len: u32,
@@ -349,7 +349,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn get_outer_object(
+        pub fn object_get_outer_object(
             env: &WasmerInstanceEnv,
             component_id_ptr: u32,
             component_id_len: u32,
@@ -358,20 +358,6 @@ impl WasmerModule {
 
             let buffer = runtime
                 .get_outer_object(read_memory(&instance, component_id_ptr, component_id_len)?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
-        }
-
-        pub fn get_reservation_address(
-            env: &WasmerInstanceEnv,
-            node_id_ptr: u32,
-            node_id_len: u32,
-        ) -> Result<u64, RuntimeError> {
-            let (instance, runtime) = grab_runtime!(env);
-
-            let buffer = runtime
-                .get_reservation_address(read_memory(&instance, node_id_ptr, node_id_len)?)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -431,7 +417,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn key_value_entry_get(
+        pub fn key_value_entry_read(
             env: &WasmerInstanceEnv,
             handle: u32,
         ) -> Result<u64, RuntimeError> {
@@ -444,7 +430,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn key_value_entry_set(
+        pub fn key_value_entry_write(
             env: &WasmerInstanceEnv,
             handle: u32,
             data_ptr: u32,
@@ -461,7 +447,7 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn key_value_entry_release(
+        pub fn key_value_entry_close(
             env: &WasmerInstanceEnv,
             handle: u32,
         ) -> Result<(), RuntimeError> {
@@ -469,6 +455,43 @@ impl WasmerModule {
 
             runtime
                 .key_value_entry_release(handle)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(())
+        }
+
+        pub fn field_entry_read(env: &WasmerInstanceEnv, handle: u32) -> Result<u64, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .field_entry_read(handle)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn field_entry_write(
+            env: &WasmerInstanceEnv,
+            handle: u32,
+            data_ptr: u32,
+            data_len: u32,
+        ) -> Result<(), RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let data = read_memory(&instance, data_ptr, data_len)?;
+
+            runtime
+                .field_entry_write(handle, data)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(())
+        }
+
+        pub fn field_entry_close(env: &WasmerInstanceEnv, handle: u32) -> Result<(), RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            runtime
+                .field_entry_close(handle)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(())
@@ -489,61 +512,111 @@ impl WasmerModule {
             Ok(handle)
         }
 
-        pub fn field_lock_read(env: &WasmerInstanceEnv, handle: u32) -> Result<u64, RuntimeError> {
+        pub fn actor_get_node_id(
+            env: &WasmerInstanceEnv,
+            actor_ref_handle: u32,
+        ) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .field_lock_read(handle)
+                .actor_get_node_id(actor_ref_handle)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
         }
 
-        pub fn field_lock_write(
+        pub fn actor_get_blueprint(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .actor_get_blueprint()
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        fn actor_emit_event(
             env: &WasmerInstanceEnv,
-            handle: u32,
-            data_ptr: u32,
-            data_len: u32,
-        ) -> Result<(), RuntimeError> {
+            event_name_ptr: u32,
+            event_name_len: u32,
+            event_data_ptr: u32,
+            event_data_len: u32,
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let data = read_memory(&instance, data_ptr, data_len)?;
+            let event_name = read_memory(&instance, event_name_ptr, event_name_len)?;
+            let event_data = read_memory(&instance, event_data_ptr, event_data_len)?;
 
-            runtime
-                .field_lock_write(handle, data)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(())
+            runtime.actor_emit_event(event_name, event_data)
         }
 
-        pub fn field_lock_release(
+        pub fn costing_get_execution_cost_unit_limit(
             env: &WasmerInstanceEnv,
-            handle: u32,
-        ) -> Result<(), RuntimeError> {
+        ) -> Result<u32, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             runtime
-                .field_lock_release(handle)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(())
+                .costing_get_execution_cost_unit_limit()
+                .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
-        pub fn get_node_id(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn costing_get_execution_cost_unit_price(
+            env: &WasmerInstanceEnv,
+        ) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .actor_get_node_id()
+                .costing_get_execution_cost_unit_price()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
         }
 
-        pub fn get_blueprint(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn costing_get_finalization_cost_unit_limit(
+            env: &WasmerInstanceEnv,
+        ) -> Result<u32, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            runtime
+                .costing_get_finalization_cost_unit_limit()
+                .map_err(|e| RuntimeError::user(Box::new(e)))
+        }
+
+        pub fn costing_get_finalization_cost_unit_price(
+            env: &WasmerInstanceEnv,
+        ) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .get_blueprint()
+                .costing_get_finalization_cost_unit_price()
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn costing_get_tip_percentage(env: &WasmerInstanceEnv) -> Result<u32, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            runtime
+                .costing_get_tip_percentage()
+                .map_err(|e| RuntimeError::user(Box::new(e)))
+        }
+
+        pub fn costing_get_fee_balance(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .costing_get_fee_balance()
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn costing_get_usd_price(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .costing_get_usd_price()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -561,22 +634,7 @@ impl WasmerModule {
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
-        fn emit_event(
-            env: &WasmerInstanceEnv,
-            event_name_ptr: u32,
-            event_name_len: u32,
-            event_data_ptr: u32,
-            event_data_len: u32,
-        ) -> Result<(), InvokeError<WasmRuntimeError>> {
-            let (instance, runtime) = grab_runtime!(env);
-
-            let event_name = read_memory(&instance, event_name_ptr, event_name_len)?;
-            let event_data = read_memory(&instance, event_data_ptr, event_data_len)?;
-
-            runtime.emit_event(event_name, event_data)
-        }
-
-        fn emit_log(
+        fn sys_log(
             env: &WasmerInstanceEnv,
             level_ptr: u32,
             level_len: u32,
@@ -588,10 +646,10 @@ impl WasmerModule {
             let level = read_memory(&instance, level_ptr, level_len)?;
             let message = read_memory(&instance, message_ptr, message_len)?;
 
-            runtime.emit_log(level, message)
+            runtime.sys_log(level, message)
         }
 
-        fn panic(
+        fn sys_panic(
             env: &WasmerInstanceEnv,
             message_ptr: u32,
             message_len: u32,
@@ -600,24 +658,24 @@ impl WasmerModule {
 
             let message = read_memory(&instance, message_ptr, message_len)?;
 
-            runtime.panic(message)
+            runtime.sys_panic(message)
         }
 
-        pub fn get_transaction_hash(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn sys_get_transaction_hash(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .get_transaction_hash()
+                .sys_get_transaction_hash()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
         }
 
-        pub fn generate_ruid(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn sys_generate_ruid(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .generate_ruid()
+                .sys_generate_ruid()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -634,39 +692,42 @@ impl WasmerModule {
         // imports
         let import_object = imports! {
             MODULE_ENV_NAME => {
-                BUFFER_CONSUME_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_buffer),
-                OBJECT_CALL_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
-                BLUEPRINT_CALL_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
-                OBJECT_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_object),
-                ADDRESS_ALLOCATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), allocate_global_address),
-                COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), execution_cost_unit_limit),
-                COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), execution_cost_unit_price),
-                COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), finalization_cost_unit_limit),
-                COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), finalization_cost_unit_price),
-                COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), tip_percentage),
-                COSTING_GET_FEE_BALANCE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), fee_balance),
-                OBJECT_GLOBALIZE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
-                OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint_id),
-                OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_outer_object),
-                ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_reservation_address),
-                ACTOR_OPEN_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_open_field),
+                BLUEPRINT_CALL_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), blueprint_call),
+                ADDRESS_ALLOCATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), address_allocate),
+                ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), address_get_reservation_address),
+                OBJECT_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_new),
+                OBJECT_GLOBALIZE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_globalize),
+                OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_get_blueprint_id),
+                OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_get_outer_object),
+                OBJECT_CALL_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_call),
+                OBJECT_CALL_MODULE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_call_module),
+                OBJECT_CALL_DIRECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_call_direct),
                 KEY_VALUE_STORE_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_new),
                 KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_open_entry),
                 KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_remove_entry),
-                KEY_VALUE_ENTRY_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_get),
-                KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_set),
-                KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_release),
-                FIELD_ENTRY_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_read),
-                FIELD_ENTRY_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_write),
-                FIELD_ENTRY_CLOSE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_release),
-                ACTOR_GET_OBJECT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_node_id),
-                ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint),
+                KEY_VALUE_ENTRY_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_read),
+                KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_write),
+                KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_close),
+                FIELD_ENTRY_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_entry_read),
+                FIELD_ENTRY_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_entry_write),
+                FIELD_ENTRY_CLOSE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_entry_close),
+                ACTOR_OPEN_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_open_field),
+                ACTOR_GET_OBJECT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_get_node_id),
+                ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_get_blueprint),
+                ACTOR_EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_emit_event),
                 COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_wasm_execution_units),
-                ACTOR_EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
-                SYS_LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_log),
-                SYS_PANIC_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), panic),
-                SYS_GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_transaction_hash),
-                SYS_GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), generate_ruid),
+                COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), costing_get_execution_cost_unit_limit),
+                COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), costing_get_execution_cost_unit_price),
+                COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), costing_get_finalization_cost_unit_limit),
+                COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), costing_get_finalization_cost_unit_price),
+                COSTING_GET_USD_PRICE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), costing_get_usd_price),
+                COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), costing_get_tip_percentage),
+                COSTING_GET_FEE_BALANCE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), costing_get_fee_balance),
+                SYS_LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_log),
+                SYS_PANIC_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_panic),
+                SYS_GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_get_transaction_hash),
+                SYS_GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_generate_ruid),
+                BUFFER_CONSUME_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), buffer_consume),
             }
         };
 
