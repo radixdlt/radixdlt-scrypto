@@ -35,8 +35,8 @@ pub mod blueprint {
         pub fn blueprint_call(
             blueprint_id_ptr: *const u8,
             blueprint_id_len: usize,
-            function_ident_ptr: *const u8,
-            function_ident_len: usize,
+            ident_ptr: *const u8,
+            ident_len: usize,
             args_ptr: *const u8,
             args_len: usize,
         ) -> Buffer;
@@ -130,24 +130,15 @@ pub mod actor {
         /// Get the blueprint id of the current actor
         pub fn actor_get_blueprint_id() -> Buffer;
 
+        /// Get the object id of a reference of the current actor
+        pub fn actor_get_object_id(actor_ref_handle: ActorRefHandle) -> Buffer;
+
         /// Open a field of the current actor
         pub fn actor_open_field(
             actor_state_handle: ActorStateHandle,
             field_index: u32,
             flags: u32,
         ) -> FieldHandle;
-
-        /// Call a module method of the current actor
-        pub fn actor_call_module(
-            module_id: u32,
-            ident_ptr: *const u8,
-            ident_len: usize,
-            args_ptr: *const u8,
-            args_len: usize,
-        ) -> Buffer;
-
-        /// Get the object id of a reference of the current actor
-        pub fn actor_get_object_id(actor_ref_handle: ActorRefHandle) -> Buffer;
 
         /// Get the global address of the current actor
         /// If an owned object, this will refer to the global containing object's address

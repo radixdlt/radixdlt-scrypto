@@ -18,15 +18,15 @@ mod reentrant_component {
         pub fn mut_func(&mut self) {}
 
         pub fn call_mut_self(&mut self, address: ComponentAddress) {
-            ScryptoVmV1Api.call_method(&address.into(), "mut_func", scrypto_args!());
+            ScryptoVmV1Api.object_call(&address.into(), "mut_func", scrypto_args!());
         }
 
         pub fn call_self(&self, address: ComponentAddress) {
-            ScryptoVmV1Api.call_method(&address.into(), "func", scrypto_args!());
+            ScryptoVmV1Api.object_call(&address.into(), "func", scrypto_args!());
         }
 
         pub fn call_mut_self_2(&self, address: ComponentAddress) {
-            ScryptoVmV1Api.call_method(&address.into(), "mut_func", scrypto_args!());
+            ScryptoVmV1Api.object_call(&address.into(), "mut_func", scrypto_args!());
         }
     }
 }

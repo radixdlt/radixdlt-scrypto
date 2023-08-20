@@ -2372,18 +2372,6 @@ where
         }
     }
 
-    // Costing through kernel
-    #[trace_resources]
-    fn actor_call_module(
-        &mut self,
-        module_id: ObjectModuleId,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let node_id = self.actor_get_node_id(ACTOR_REF_SELF)?;
-        self.call_method_advanced(&node_id, module_id, false, method_name, args)
-    }
-
     #[trace_resources]
     fn actor_is_feature_enabled(
         &mut self,

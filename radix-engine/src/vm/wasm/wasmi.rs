@@ -128,24 +128,6 @@ fn call_method(
         .map(|buffer| buffer.0)
 }
 
-fn actor_call_module_method(
-    mut caller: Caller<'_, HostState>,
-    module_id: u32,
-    ident_ptr: u32,
-    ident_len: u32,
-    args_ptr: u32,
-    args_len: u32,
-) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
-
-    let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
-    let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
-
-    runtime
-        .actor_call_module_method(module_id, ident, args)
-        .map(|buffer| buffer.0)
-}
-
 fn call_direct_method(
     mut caller: Caller<'_, HostState>,
     receiver_ptr: u32,
@@ -651,22 +633,6 @@ impl WasmiModule {
             },
         );
 
-        let host_actor_call_module_method = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             module_id: u32,
-             ident_ptr: u32,
-             ident_len: u32,
-             args_ptr: u32,
-             args_len: u32|
-             -> Result<u64, Trap> {
-                actor_call_module_method(
-                    caller, module_id, ident_ptr, ident_len, args_ptr, args_len,
-                )
-                .map_err(|e| e.into())
-            },
-        );
-
         let host_call_method = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -1149,11 +1115,6 @@ impl WasmiModule {
             host_get_outer_object
         );
         linker_define!(linker, ACTOR_OPEN_FIELD_FUNCTION_NAME, host_lock_field);
-        linker_define!(
-            linker,
-            ACTOR_CALL_MODULE_FUNCTION_NAME,
-            host_actor_call_module_method
-        );
 
         linker_define!(
             linker,

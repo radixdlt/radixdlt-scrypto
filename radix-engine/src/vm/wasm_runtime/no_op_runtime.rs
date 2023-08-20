@@ -40,15 +40,6 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn actor_call_module_method(
-        &mut self,
-        module_id: u32,
-        ident: Vec<u8>,
-        args: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
     fn call_method(
         &mut self,
         receiver: Vec<u8>,

@@ -175,7 +175,7 @@ impl ScryptoVmV1Api {
         removed
     }
 
-    pub fn call_method(&mut self, receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
+    pub fn object_call(&mut self, receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
         copy_buffer(unsafe {
             object::object_call(
                 receiver.as_ref().as_ptr(),
@@ -188,7 +188,7 @@ impl ScryptoVmV1Api {
         })
     }
 
-    pub fn call_module_method(
+    pub fn object_call_module(
         &mut self,
         receiver: &NodeId,
         module_id: ObjectModuleId,
@@ -287,25 +287,6 @@ impl ScryptoVmV1Api {
         let blueprint_id = copy_buffer(unsafe { actor::actor_get_blueprint_id() });
 
         scrypto_decode(&blueprint_id).unwrap()
-    }
-
-    pub fn actor_call_module(
-        &mut self,
-        module_id: ObjectModuleId,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Vec<u8> {
-        let return_data = copy_buffer(unsafe {
-            actor::actor_call_module(
-                module_id as u8 as u32,
-                method_name.as_ptr(),
-                method_name.len(),
-                args.as_ptr(),
-                args.len(),
-            )
-        });
-
-        return_data
     }
 
     pub fn actor_emit_event(&mut self, event_name: String, event_data: Vec<u8>) {

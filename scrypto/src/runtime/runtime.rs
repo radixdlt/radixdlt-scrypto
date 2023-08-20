@@ -28,7 +28,7 @@ pub struct Runtime {}
 impl Runtime {
     /// Returns the current epoch
     pub fn current_epoch() -> Epoch {
-        let rtn = ScryptoVmV1Api.call_method(
+        let rtn = ScryptoVmV1Api.object_call(
             CONSENSUS_MANAGER.as_node_id(),
             CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
             scrypto_encode(&ConsensusManagerGetCurrentEpochInput).unwrap(),
@@ -79,7 +79,7 @@ impl Runtime {
 
     pub fn assert_access_rule(rule: AccessRule) {
         let object_id = ScryptoVmV1Api.actor_get_object_id(ACTOR_REF_AUTH_ZONE);
-        ScryptoVmV1Api.call_method(
+        ScryptoVmV1Api.object_call(
             &object_id,
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
             scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),

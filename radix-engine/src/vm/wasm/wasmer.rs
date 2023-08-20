@@ -176,26 +176,6 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn actor_call_module_method(
-            env: &WasmerInstanceEnv,
-            module_id: u32,
-            ident_ptr: u32,
-            ident_len: u32,
-            args_ptr: u32,
-            args_len: u32,
-        ) -> Result<u64, RuntimeError> {
-            let (instance, runtime) = grab_runtime!(env);
-
-            let ident = read_memory(&instance, ident_ptr, ident_len)?;
-            let args = read_memory(&instance, args_ptr, args_len)?;
-
-            let buffer = runtime
-                .actor_call_module_method(module_id, ident, args)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
-        }
-
         pub fn call_method(
             env: &WasmerInstanceEnv,
             receiver_ptr: u32,
@@ -680,7 +660,6 @@ impl WasmerModule {
                 OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_outer_object),
                 ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_reservation_address),
                 ACTOR_OPEN_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_open_field),
-                ACTOR_CALL_MODULE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_call_module_method),
                 KEY_VALUE_STORE_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_new),
                 KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_open_entry),
                 KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_remove_entry),

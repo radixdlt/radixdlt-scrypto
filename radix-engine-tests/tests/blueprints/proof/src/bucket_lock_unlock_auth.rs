@@ -18,7 +18,7 @@ mod bucket_lock_unlock_auth {
         pub fn call_lock_fungible_amount_directly() {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
 
-            ScryptoVmV1Api.call_method(
+            ScryptoVmV1Api.object_call(
                 bucket.0.as_node_id(),
                 FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT,
                 scrypto_args!(Decimal::from(1)),
@@ -30,7 +30,7 @@ mod bucket_lock_unlock_auth {
 
             let _proof = bucket.create_proof_of_all();
 
-            ScryptoVmV1Api.call_method(
+            ScryptoVmV1Api.object_call(
                 bucket.0.as_node_id(),
                 FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT,
                 scrypto_args!(Decimal::from(1)),
@@ -47,7 +47,7 @@ mod bucket_lock_unlock_auth {
                     },
                 )]);
 
-            ScryptoVmV1Api.call_method(
+            ScryptoVmV1Api.object_call(
                 bucket.0.as_node_id(),
                 NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
                 scrypto_args!([NonFungibleLocalId::integer(1)]),
@@ -66,7 +66,7 @@ mod bucket_lock_unlock_auth {
 
             let _proof = bucket.create_proof_of_all();
 
-            ScryptoVmV1Api.call_method(
+            ScryptoVmV1Api.object_call(
                 bucket.0.as_node_id(),
                 NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
                 scrypto_args!([NonFungibleLocalId::integer(1)]),

@@ -97,7 +97,7 @@ impl ScryptoBucket for Bucket {
 
     fn new(resource_address: ResourceAddress) -> Self {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             resource_address.as_node_id(),
             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateEmptyBucketInput {}).unwrap(),
@@ -107,7 +107,7 @@ impl ScryptoBucket for Bucket {
 
     fn drop_empty(self) {
         let resource_address = self.resource_address();
-        ScryptoVmV1Api.call_method(
+        ScryptoVmV1Api.object_call(
             resource_address.as_node_id(),
             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerDropEmptyBucketInput {
@@ -124,7 +124,7 @@ impl ScryptoBucket for Bucket {
 
     fn create_proof_of_all(&self) -> Proof {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             self.0.as_node_id(),
             BUCKET_CREATE_PROOF_OF_ALL_IDENT,
             scrypto_encode(&BucketCreateProofOfAllInput {}).unwrap(),
@@ -138,7 +138,7 @@ impl ScryptoBucket for Bucket {
 
     fn resource_address(&self) -> ResourceAddress {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             self.0.as_node_id(),
             BUCKET_GET_RESOURCE_ADDRESS_IDENT,
             scrypto_encode(&BucketGetResourceAddressInput {}).unwrap(),
@@ -148,7 +148,7 @@ impl ScryptoBucket for Bucket {
 
     fn put(&mut self, other: Self) -> () {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             self.0.as_node_id(),
             BUCKET_PUT_IDENT,
             scrypto_encode(&BucketPutInput { bucket: other }).unwrap(),
@@ -158,7 +158,7 @@ impl ScryptoBucket for Bucket {
 
     fn amount(&self) -> Decimal {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             self.0.as_node_id(),
             BUCKET_GET_AMOUNT_IDENT,
             scrypto_encode(&BucketGetAmountInput {}).unwrap(),
@@ -169,7 +169,7 @@ impl ScryptoBucket for Bucket {
     /// Takes some amount of resources from this bucket.
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             self.0.as_node_id(),
             BUCKET_TAKE_IDENT,
             scrypto_encode(&BucketTakeInput {
@@ -186,7 +186,7 @@ impl ScryptoBucket for Bucket {
         withdraw_strategy: WithdrawStrategy,
     ) -> Self {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             self.0.as_node_id(),
             BUCKET_TAKE_ADVANCED_IDENT,
             scrypto_encode(&BucketTakeAdvancedInput {
@@ -301,7 +301,7 @@ impl ScryptoBucket for FungibleBucket {
 impl ScryptoFungibleBucket for FungibleBucket {
     fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> FungibleProof {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             self.0 .0.as_node_id(),
             FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT,
             scrypto_encode(&FungibleBucketCreateProofOfAmountInput {
@@ -390,7 +390,7 @@ impl ScryptoBucket for NonFungibleBucket {
 impl ScryptoNonFungibleBucket for NonFungibleBucket {
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             self.0 .0.as_node_id(),
             NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
             scrypto_encode(&BucketGetNonFungibleLocalIdsInput {}).unwrap(),
@@ -400,7 +400,7 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
 
     fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             self.0 .0.as_node_id(),
             NON_FUNGIBLE_BUCKET_CONTAINS_NON_FUNGIBLE_IDENT,
             scrypto_encode(&NonFungibleBucketContainsNonFungibleInput { id: id.clone() }).unwrap(),
@@ -457,7 +457,7 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
         non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Self {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             self.0 .0.as_node_id(),
             NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT,
             scrypto_encode(&BucketTakeNonFungiblesInput {
@@ -473,7 +473,7 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> NonFungibleProof {
         let mut env = ScryptoVmV1Api;
-        let rtn = env.call_method(
+        let rtn = env.object_call(
             self.0 .0.as_node_id(),
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
             scrypto_encode(&NonFungibleBucketCreateProofOfNonFungiblesInput { ids: ids.clone() })

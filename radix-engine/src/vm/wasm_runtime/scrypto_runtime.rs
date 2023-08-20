@@ -69,26 +69,6 @@ where
             )))
     }
 
-    fn actor_call_module_method(
-        &mut self,
-        module_id: u32,
-        ident: Vec<u8>,
-        args: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
-
-        let module_id = u8::try_from(module_id)
-            .ok()
-            .and_then(|x| ObjectModuleId::from_repr(x))
-            .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
-
-        let return_data = self
-            .api
-            .actor_call_module(module_id, ident.as_str(), args)?;
-
-        self.allocate_buffer(return_data)
-    }
-
     fn call_method(
         &mut self,
         receiver: Vec<u8>,

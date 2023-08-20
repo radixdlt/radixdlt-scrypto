@@ -1,4 +1,3 @@
-use scrypto::api::ClientObjectApi;
 use scrypto::api::FieldValue;
 use scrypto::prelude::*;
 
@@ -17,7 +16,7 @@ mod fake_bucket {
                 bucket: Bucket(Own(custom_node)),
             })
             .unwrap();
-            ScryptoVmV1Api.call_method(bucket.0.as_node_id(), BUCKET_PUT_IDENT, fake_bucket);
+            ScryptoVmV1Api.object_call(bucket.0.as_node_id(), BUCKET_PUT_IDENT, fake_bucket);
             bucket
         }
     }

@@ -29,7 +29,7 @@ pub trait ObjectStub: Copy {
     fn handle(&self) -> &ObjectStubHandle;
 
     fn call<A: ScryptoEncode, T: ScryptoDecode>(&self, method: &str, args: &A) -> T {
-        let output = ScryptoVmV1Api.call_method(
+        let output = ScryptoVmV1Api.object_call(
             self.handle().as_node_id(),
             method,
             scrypto_encode(args).unwrap(),
@@ -38,7 +38,7 @@ pub trait ObjectStub: Copy {
     }
 
     fn call_ignore_rtn<A: ScryptoEncode>(&self, method: &str, args: &A) {
-        ScryptoVmV1Api.call_method(
+        ScryptoVmV1Api.object_call(
             self.handle().as_node_id(),
             method,
             scrypto_encode(args).unwrap(),
@@ -46,7 +46,7 @@ pub trait ObjectStub: Copy {
     }
 
     fn call_raw<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoVmV1Api.call_method(self.handle().as_node_id(), method, args);
+        let output = ScryptoVmV1Api.object_call(self.handle().as_node_id(), method, args);
         scrypto_decode(&output).unwrap()
     }
 

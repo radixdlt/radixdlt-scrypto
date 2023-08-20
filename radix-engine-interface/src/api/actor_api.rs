@@ -1,9 +1,8 @@
 use crate::api::field_api::FieldHandle;
-use crate::api::{ActorRefHandle, FieldIndex, ObjectModuleId};
+use crate::api::{ActorRefHandle, FieldIndex};
 use crate::types::*;
 use radix_engine_interface::api::{LockFlags, ActorStateHandle};
 use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
 
 /// Api which exposes methods in the context of the actor
 pub trait ClientActorApi<E: Debug> {
@@ -35,12 +34,4 @@ pub trait ClientActorApi<E: Debug> {
 
     /// Retrieve the current method actor's global address
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
-
-    /// Call a method on a module of the current method actor
-    fn actor_call_module(
-        &mut self,
-        module_id: ObjectModuleId,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, E>;
 }
