@@ -42,7 +42,7 @@ impl Default for Metadata {
 
 impl Metadata {
     pub fn new() -> Self {
-        let rtn = ScryptoVmV1Api.call_function(
+        let rtn = ScryptoVmV1Api::blueprint_call(
             METADATA_MODULE_PACKAGE,
             METADATA_BLUEPRINT,
             METADATA_CREATE_IDENT,
@@ -53,7 +53,7 @@ impl Metadata {
     }
 
     pub fn new_with_data(data: MetadataInit) -> Self {
-        let rtn = ScryptoVmV1Api.call_function(
+        let rtn = ScryptoVmV1Api::blueprint_call(
             METADATA_MODULE_PACKAGE,
             METADATA_BLUEPRINT,
             METADATA_CREATE_WITH_DATA_IDENT,

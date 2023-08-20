@@ -36,7 +36,7 @@ impl RoleAssignment {
         owner_role: R,
         roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>,
     ) -> Self {
-        let rtn = ScryptoVmV1Api.call_function(
+        let rtn = ScryptoVmV1Api::blueprint_call(
             ROLE_ASSIGNMENT_MODULE_PACKAGE,
             ROLE_ASSIGNMENT_BLUEPRINT,
             ROLE_ASSIGNMENT_CREATE_IDENT,

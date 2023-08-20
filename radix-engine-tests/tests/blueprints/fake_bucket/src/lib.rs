@@ -11,12 +11,12 @@ mod fake_bucket {
             let first_substate = Decimal::from(1000u32);
             let substates: Vec<FieldValue> = vec![FieldValue::new(&first_substate)];
 
-            let custom_node = ScryptoVmV1Api.new_simple_object("FakeBucket", substates);
+            let custom_node = ScryptoVmV1Api::object_new("FakeBucket", substates);
             let fake_bucket = scrypto_encode(&BucketPutInput {
                 bucket: Bucket(Own(custom_node)),
             })
             .unwrap();
-            ScryptoVmV1Api.object_call(bucket.0.as_node_id(), BUCKET_PUT_IDENT, fake_bucket);
+            ScryptoVmV1Api::object_call(bucket.0.as_node_id(), BUCKET_PUT_IDENT, fake_bucket);
             bucket
         }
     }

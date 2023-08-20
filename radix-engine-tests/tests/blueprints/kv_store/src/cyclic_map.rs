@@ -28,9 +28,8 @@ mod cyclic_map {
                 value: PhantomData,
             };
 
-            let handle =
-                ScryptoVmV1Api.key_value_store_open_entry(node_id, &key, LockFlags::MUTABLE);
-            ScryptoVmV1Api.key_value_entry_set(handle, scrypto_encode(&substate).unwrap());
+            let handle = ScryptoVmV1Api::kv_store_open_entry(node_id, &key, LockFlags::MUTABLE);
+            ScryptoVmV1Api::kv_entry_write(handle, scrypto_encode(&substate).unwrap());
 
             CyclicMap { store: kv_store0 }
                 .instantiate()
@@ -50,9 +49,8 @@ mod cyclic_map {
                 value: PhantomData,
             };
 
-            let handle =
-                ScryptoVmV1Api.key_value_store_open_entry(node_id, &key, LockFlags::MUTABLE);
-            ScryptoVmV1Api.key_value_entry_set(handle, scrypto_encode(&substate).unwrap());
+            let handle = ScryptoVmV1Api::kv_store_open_entry(node_id, &key, LockFlags::MUTABLE);
+            ScryptoVmV1Api::kv_entry_write(handle, scrypto_encode(&substate).unwrap());
 
             CyclicMap { store: kv_store }
                 .instantiate()

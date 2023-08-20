@@ -1085,7 +1085,11 @@ impl WasmiModule {
             COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME,
             host_tip_percentage
         );
-        linker_define!(linker, COSTING_GET_FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
+        linker_define!(
+            linker,
+            COSTING_GET_FEE_BALANCE_FUNCTION_NAME,
+            host_fee_balance
+        );
         linker_define!(
             linker,
             OBJECT_GLOBALIZE_FUNCTION_NAME,

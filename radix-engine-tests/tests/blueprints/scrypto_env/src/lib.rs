@@ -7,7 +7,7 @@ mod scrypto_env_test {
 
     impl ScryptoEnvTest {
         pub fn create_node_with_invalid_blueprint() {
-            ScryptoVmV1Api.new_simple_object(
+            ScryptoVmV1Api::object_new(
                 "invalid_blueprint",
                 vec![FieldValue::new(&ScryptoEnvTest {})],
             );
@@ -25,9 +25,9 @@ mod scrypto_env_test {
         }
 
         pub fn open_mut_substate_twice(&mut self) {
-            ScryptoVmV1Api.actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE);
+            ScryptoVmV1Api::actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE);
 
-            ScryptoVmV1Api.actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE);
+            ScryptoVmV1Api::actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE);
         }
     }
 }

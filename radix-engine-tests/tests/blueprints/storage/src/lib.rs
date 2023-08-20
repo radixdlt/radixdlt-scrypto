@@ -16,7 +16,7 @@ mod large_key {
             for i in 0..n {
                 let n = key_payload.len();
                 key_payload[n - 4..n].copy_from_slice(&i.to_le_bytes());
-                let handle = ScryptoVmV1Api.key_value_store_open_entry(
+                let handle = ScryptoVmV1Api::kv_store_open_entry(
                     kv_store.id.as_node_id(),
                     &key_payload,
                     LockFlags::MUTABLE,
@@ -28,7 +28,7 @@ mod large_key {
                         value_payload.len(),
                     )
                 };
-                ScryptoVmV1Api.key_value_entry_close(handle);
+                ScryptoVmV1Api::kv_entry_close(handle);
             }
 
             LargeKey { kv_store }

@@ -51,7 +51,7 @@ impl Default for Royalty {
 
 impl Royalty {
     pub fn new(royalty_config: ComponentRoyaltyConfig) -> Self {
-        let rtn = ScryptoVmV1Api.call_function(
+        let rtn = ScryptoVmV1Api::blueprint_call(
             ROYALTY_MODULE_PACKAGE,
             COMPONENT_ROYALTY_BLUEPRINT,
             COMPONENT_ROYALTY_CREATE_IDENT,

@@ -165,8 +165,7 @@ impl ScryptoUncheckedProof for Proof {
     }
 
     fn resource_address(&self) -> ResourceAddress {
-        let mut env = ScryptoVmV1Api;
-        let rtn = env.object_call(
+        let rtn = ScryptoVmV1Api::object_call(
             self.0.as_node_id(),
             PROOF_GET_RESOURCE_ADDRESS_IDENT,
             scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
@@ -179,9 +178,8 @@ impl ScryptoUncheckedProof for Proof {
     }
 
     fn drop(self) {
-        let mut env = ScryptoVmV1Api;
-        let blueprint_id = env.get_blueprint_id(self.0.as_node_id());
-        env.call_function(
+        let blueprint_id = ScryptoVmV1Api::object_get_blueprint_id(self.0.as_node_id());
+        ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
             blueprint_id.blueprint_name.as_str(),
             PROOF_DROP_IDENT,
@@ -193,8 +191,7 @@ impl ScryptoUncheckedProof for Proof {
     }
 
     fn clone(&self) -> Self {
-        let mut env = ScryptoVmV1Api;
-        let rtn = env.object_call(
+        let rtn = ScryptoVmV1Api::object_call(
             self.0.as_node_id(),
             PROOF_CLONE_IDENT,
             scrypto_encode(&ProofCloneInput {}).unwrap(),
@@ -300,8 +297,7 @@ impl ScryptoProof for CheckedProof {
     }
 
     fn amount(&self) -> Decimal {
-        let mut env = ScryptoVmV1Api;
-        let rtn = env.object_call(
+        let rtn = ScryptoVmV1Api::object_call(
             self.0 .0.as_node_id(),
             PROOF_GET_AMOUNT_IDENT,
             scrypto_encode(&ProofGetAmountInput {}).unwrap(),
@@ -482,8 +478,7 @@ impl ScryptoNonFungibleProof for CheckedNonFungibleProof {
     }
 
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
-        let mut env = ScryptoVmV1Api;
-        let rtn = env.object_call(
+        let rtn = ScryptoVmV1Api::object_call(
             self.0 .0 .0.as_node_id(),
             NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
             scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),

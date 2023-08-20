@@ -27,7 +27,7 @@ mod vault_lock_unlock_auth {
         }
 
         pub fn call_lock_fungible_amount_directly(&self) {
-            ScryptoVmV1Api.object_call(
+            ScryptoVmV1Api::object_call(
                 self.vault.0.as_node_id(),
                 FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
                 scrypto_args!(Decimal::from(1)),
@@ -37,7 +37,7 @@ mod vault_lock_unlock_auth {
         pub fn call_unlock_fungible_amount_directly(&self) {
             let _proof = self.vault.as_fungible().create_proof_of_amount(dec!(1));
 
-            ScryptoVmV1Api.object_call(
+            ScryptoVmV1Api::object_call(
                 self.vault.0.as_node_id(),
                 FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
                 scrypto_args!(Decimal::from(1)),
@@ -63,7 +63,7 @@ mod vault_lock_unlock_auth {
         }
 
         pub fn call_lock_non_fungibles_directly(&self) {
-            ScryptoVmV1Api.object_call(
+            ScryptoVmV1Api::object_call(
                 self.vault.0.as_node_id(),
                 NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
                 scrypto_args!([NonFungibleLocalId::integer(1)]),
@@ -73,7 +73,7 @@ mod vault_lock_unlock_auth {
         pub fn call_unlock_non_fungibles_directly(&self) {
             let _proof = self.vault.as_fungible().create_proof_of_amount(dec!(1));
 
-            ScryptoVmV1Api.object_call(
+            ScryptoVmV1Api::object_call(
                 self.vault.0.as_node_id(),
                 NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
                 scrypto_args!([NonFungibleLocalId::integer(1)]),

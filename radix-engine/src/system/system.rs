@@ -2197,7 +2197,6 @@ where
             .ok_or(RuntimeError::SystemError(SystemError::NoBlueprintId))
     }
 
-
     #[trace_resources]
     fn actor_get_node_id(&mut self, ref_handle: ActorRefHandle) -> Result<NodeId, RuntimeError> {
         self.api
@@ -2367,9 +2366,12 @@ where
         Ok(handle)
     }
 
-
     #[trace_resources]
-    fn actor_emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
+    fn actor_emit_event(
+        &mut self,
+        event_name: String,
+        event_data: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
         self.emit_event_internal(EmitterActor::CurrentActor, event_name, event_data)
     }
 }

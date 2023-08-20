@@ -18,13 +18,13 @@ mod globalize_test {
                 ObjectModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
             );
 
-            ScryptoVmV1Api.globalize(modules, None);
+            ScryptoVmV1Api::object_globalize(modules, None);
         }
 
         pub fn globalize_in_package(package_address: PackageAddress) {
             let x = GlobalizeTest { own: None }.instantiate();
 
-            ScryptoVmV1Api.call_function(
+            ScryptoVmV1Api::blueprint_call(
                 package_address,
                 "GlobalizeTest",
                 "globalize",
@@ -119,7 +119,7 @@ mod drop_test {
         pub fn drop_in_package(package_address: PackageAddress) {
             let x = DropTest {}.instantiate();
 
-            ScryptoVmV1Api.call_function(package_address, "DropTest", "drop", scrypto_args!(x));
+            ScryptoVmV1Api::blueprint_call(package_address, "DropTest", "drop", scrypto_args!(x));
         }
     }
 }

@@ -52,7 +52,7 @@ impl<C: HasTypeInfo> Blueprint<C> {
     pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: A) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
 
-        let output = ScryptoVmV1Api.call_function(
+        let output = ScryptoVmV1Api::blueprint_call(
             package_address,
             C::BLUEPRINT_NAME,
             function_name,
@@ -64,7 +64,7 @@ impl<C: HasTypeInfo> Blueprint<C> {
     pub fn call_function_raw<T: ScryptoDecode>(function_name: &str, args: Vec<u8>) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
         let output =
-            ScryptoVmV1Api.call_function(package_address, C::BLUEPRINT_NAME, function_name, args);
+            ScryptoVmV1Api::blueprint_call(package_address, C::BLUEPRINT_NAME, function_name, args);
         scrypto_decode(&output).unwrap()
     }
 }
@@ -83,7 +83,7 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
 
     fn instantiate(self) -> Owned<Self> {
         let node_id =
-            ScryptoVmV1Api.new_simple_object(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)]);
+            ScryptoVmV1Api::object_new(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)]);
 
         let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
         Owned(stub)
@@ -334,7 +334,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             );
         }
 
-        let address = ScryptoVmV1Api.globalize(modules, self.address_reservation);
+        let address = ScryptoVmV1Api::object_globalize(modules, self.address_reservation);
 
         Global(C::Stub::new(ObjectStubHandle::Global(address)))
     }
@@ -466,7 +466,7 @@ trait TypeCheckable {
 
 impl<O: HasTypeInfo> TypeCheckable for O {
     fn check(node_id: &NodeId) -> Result<(), ComponentCastError> {
-        let blueprint_id = ScryptoVmV1Api.get_blueprint_id(node_id);
+        let blueprint_id = ScryptoVmV1Api::object_get_blueprint_id(node_id);
         let to = O::blueprint_id();
         if !blueprint_id.eq(&to) {
             return Err(ComponentCastError::CannotCast {

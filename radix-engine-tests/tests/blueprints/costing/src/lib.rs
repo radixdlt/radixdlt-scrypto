@@ -6,7 +6,7 @@ mod costing_test {
 
     impl CostingTest {
         pub fn usd_price() -> Decimal {
-            Runtime::usd_price()
+            Runtime::get_usd_price()
         }
     }
 }

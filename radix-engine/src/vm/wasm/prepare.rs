@@ -475,7 +475,8 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME
+                                        .to_string(),
                                 ),
                             ));
                         }
@@ -492,7 +493,8 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME
+                                        .to_string(),
                                 ),
                             ));
                         }

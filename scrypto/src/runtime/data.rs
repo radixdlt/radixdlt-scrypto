@@ -40,8 +40,7 @@ impl<V: ScryptoEncode> Deref for DataRef<V> {
 
 impl<V: ScryptoEncode> Drop for DataRef<V> {
     fn drop(&mut self) {
-        let mut env = ScryptoVmV1Api;
-        env.field_close(self.lock_handle);
+        ScryptoVmV1Api::field_entry_close(self.lock_handle);
     }
 }
 
@@ -78,13 +77,12 @@ impl<V: ScryptoEncode> DataRefMut<V> {
 
 impl<V: ScryptoEncode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
-        let mut env = ScryptoVmV1Api;
         let substate = match &self.original_data {
             OriginalData::KeyValueStoreEntry(_) => scrypto_encode(&Some(&self.value)).unwrap(),
             OriginalData::ComponentAppState(_) => scrypto_encode(&self.value).unwrap(),
         };
-        env.field_write(self.lock_handle, substate);
-        env.field_close(self.lock_handle);
+        ScryptoVmV1Api::field_entry_write(self.lock_handle, substate);
+        ScryptoVmV1Api::field_entry_close(self.lock_handle);
     }
 }
 
@@ -114,23 +112,23 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
     }
 
     pub fn get(&self) -> DataRef<V> {
-        let lock_handle = ScryptoVmV1Api.actor_open_field(
+        let lock_handle = ScryptoVmV1Api::actor_open_field(
             ACTOR_STATE_SELF,
             ComponentField::State0 as u8,
             LockFlags::read_only(),
         );
-        let raw_substate = ScryptoVmV1Api.field_read(lock_handle);
+        let raw_substate = ScryptoVmV1Api::field_entry_read(lock_handle);
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRef { lock_handle, value }
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
-        let lock_handle = ScryptoVmV1Api.actor_open_field(
+        let lock_handle = ScryptoVmV1Api::actor_open_field(
             ACTOR_STATE_SELF,
             ComponentField::State0 as u8,
             LockFlags::MUTABLE,
         );
-        let raw_substate = ScryptoVmV1Api.field_read(lock_handle);
+        let raw_substate = ScryptoVmV1Api::field_entry_read(lock_handle);
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRefMut {
             lock_handle,

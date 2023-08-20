@@ -1,5 +1,7 @@
 use crate::component::ObjectStubHandle;
+use crate::engine::wasm_api::{addr, copy_buffer};
 use crate::prelude::{AnyComponent, Global};
+use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::{ACTOR_REF_AUTH_ZONE, ACTOR_REF_GLOBAL};
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -19,7 +21,6 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
-use crate::engine::wasm_api::{addr, copy_buffer};
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -46,20 +47,20 @@ impl Runtime {
     }
 
     pub fn global_component() -> Global<AnyComponent> {
-        let id = ScryptoVmV1Api.actor_get_object_id(ACTOR_REF_GLOBAL);
+        let id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_GLOBAL);
         Global(AnyComponent(ObjectStubHandle::Global(
             GlobalAddress::new_or_panic(id.0),
         )))
     }
 
     pub fn global_address() -> ComponentAddress {
-        let address = ScryptoVmV1Api.actor_get_object_id(ACTOR_REF_GLOBAL);
+        let address = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_GLOBAL);
         ComponentAddress::new_or_panic(address.into())
     }
 
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
-        ScryptoVmV1Api.actor_get_blueprint_id().package_address
+        ScryptoVmV1Api::actor_get_blueprint_id().package_address
     }
 
     pub fn package_token() -> NonFungibleGlobalId {
@@ -68,13 +69,15 @@ impl Runtime {
 
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
-        ScryptoVmV1Api
-            .actor_emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap());
+        ScryptoVmV1Api::actor_emit_event(
+            T::event_name().to_owned(),
+            scrypto_encode(&event).unwrap(),
+        );
     }
 
     pub fn assert_access_rule(rule: AccessRule) {
-        let object_id = ScryptoVmV1Api.actor_get_object_id(ACTOR_REF_AUTH_ZONE);
-        ScryptoVmV1Api.object_call(
+        let object_id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_AUTH_ZONE);
+        ScryptoVmV1Api::object_call(
             &object_id,
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
             scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
@@ -83,28 +86,55 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        ScryptoVmV1Api.get_transaction_hash()
+        ScryptoVmV1Api::sys_get_transaction_hash()
     }
 
     /// Returns the transaction hash.
     pub fn generate_ruid() -> [u8; 32] {
-        ScryptoVmV1Api.generate_ruid()
+        ScryptoVmV1Api::sys_generate_ruid()
     }
 
-
     pub fn panic(message: String) -> ! {
-        ScryptoVmV1Api.panic(message);
+        ScryptoVmV1Api::sys_panic(message);
         loop {}
     }
 
     /// Returns the current epoch
     pub fn current_epoch() -> Epoch {
-        let rtn = ScryptoVmV1Api.object_call(
+        let rtn = ScryptoVmV1Api::object_call(
             CONSENSUS_MANAGER.as_node_id(),
             CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
             scrypto_encode(&ConsensusManagerGetCurrentEpochInput).unwrap(),
         );
 
         scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn get_execution_cost_unit_limit() -> u32 {
+        ScryptoVmV1Api::costing_get_execution_cost_unit_limit()
+    }
+
+    pub fn get_execution_cost_unit_price() -> Decimal {
+        ScryptoVmV1Api::costing_get_execution_cost_unit_price()
+    }
+
+    pub fn get_finalization_cost_unit_limit() -> u32 {
+        ScryptoVmV1Api::costing_get_finalization_cost_unit_limit()
+    }
+
+    pub fn get_finalization_cost_unit_price() -> Decimal {
+        ScryptoVmV1Api::costing_get_finalization_cost_unit_price()
+    }
+
+    pub fn get_usd_price() -> Decimal {
+        ScryptoVmV1Api::costing_get_usd_price()
+    }
+
+    pub fn get_tip_percentage() -> u32 {
+        ScryptoVmV1Api::costing_get_tip_percentage()
+    }
+
+    pub fn get_fee_balance() -> Decimal {
+        ScryptoVmV1Api::costing_get_fee_balance()
     }
 }

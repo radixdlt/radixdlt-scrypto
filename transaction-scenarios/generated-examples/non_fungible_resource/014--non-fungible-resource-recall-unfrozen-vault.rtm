@@ -1,0 +1,17 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+RECALL_NON_FUNGIBLES_FROM_VAULT
+    Address("internal_vault_sim1nz6g6eyn7e3etkggcp2jwqkdq3nf4mzdhdgunaje7sphpmex6gfjha")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#130#")
+    )
+;
+CALL_METHOD
+    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

@@ -473,7 +473,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
-                let bytes = ScryptoVmV1Api.call_function(
+                let bytes = ScryptoVmV1Api::blueprint_call(
                     RESOURCE_PACKAGE,
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
@@ -499,7 +499,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
-                let bytes = ScryptoVmV1Api.call_function(
+                let bytes = ScryptoVmV1Api::blueprint_call(
                     RESOURCE_PACKAGE,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
@@ -563,7 +563,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let bytes = ScryptoVmV1Api.call_function(
+        let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
@@ -619,7 +619,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let bytes = ScryptoVmV1Api.call_function(
+        let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
@@ -675,7 +675,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let bytes = ScryptoVmV1Api.call_function(
+        let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
@@ -731,7 +731,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let bytes = ScryptoVmV1Api.call_function(
+        let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
@@ -790,7 +790,7 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let bytes = ScryptoVmV1Api.call_function(
+        let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
