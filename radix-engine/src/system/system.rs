@@ -5,7 +5,7 @@ use crate::errors::{
     InvalidGlobalizeAccess, InvalidModuleType, RuntimeError, SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
 use crate::kernel::call_frame::{NodeVisibility, ReferenceOrigin};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
@@ -639,11 +639,11 @@ where
             )),
             EmitterActor::CurrentActor => match self.current_actor() {
                 Actor::Method(MethodActor {
+                    method_type,
                     node_id,
-                    as_module: module_id,
                     ..
                 }) => Ok(EventTypeIdentifier(
-                    Emitter::Method(node_id, module_id.into()),
+                    Emitter::Method(node_id, method_type.module_id()),
                     event_name,
                 )),
                 Actor::Function(FunctionActor { blueprint_id, .. }) => Ok(EventTypeIdentifier(
@@ -734,7 +734,8 @@ where
                 meta: SchemaValidationMeta::Blueprint,
             }),
             Actor::Method(actor) => {
-                let blueprint_info = self.get_blueprint_info(&actor.node_id, actor.as_module)?;
+                let blueprint_info =
+                    self.get_blueprint_info(&actor.node_id, actor.method_type.module_id().into())?;
                 Ok(BlueprintTypeTarget {
                     blueprint_info,
                     meta: SchemaValidationMeta::ExistingObject {
@@ -1388,11 +1389,9 @@ where
             .api
             .kernel_invoke(Box::new(KernelInvocation {
                 call_frame_data: Actor::Method(MethodActor {
-                    direct_access: false,
+                    method_type: MethodType::Main,
                     node_id: receiver.clone(),
-                    as_module: None,
                     ident: method_name.to_string(),
-
                     auth_zone: auth_actor_info.clone(),
                     object_info,
                 }),
@@ -1431,9 +1430,8 @@ where
             .api
             .kernel_invoke(Box::new(KernelInvocation {
                 call_frame_data: Actor::Method(MethodActor {
-                    direct_access: true,
+                    method_type: MethodType::Direct,
                     node_id: receiver.clone(),
-                    as_module: None,
                     ident: method_name.to_string(),
 
                     auth_zone: auth_actor_info.clone(),
@@ -1491,9 +1489,8 @@ where
             .api
             .kernel_invoke(Box::new(KernelInvocation {
                 call_frame_data: Actor::Method(MethodActor {
-                    direct_access: false,
+                    method_type: MethodType::Module(module_id),
                     node_id: receiver.clone(),
-                    as_module: module_id.into(),
                     ident: method_name.to_string(),
 
                     auth_zone: auth_actor_info.clone(),

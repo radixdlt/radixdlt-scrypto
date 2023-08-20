@@ -1,7 +1,7 @@
 use super::*;
 use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
-use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor, MethodType};
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
@@ -211,15 +211,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         let (optional_blueprint_id, ident, maybe_object_royalties) = {
             let (maybe_component, ident) = match &invocation.call_frame_data {
                 Actor::Method(MethodActor {
+                    method_type,
                     node_id,
-                    as_module: module_id,
                     ident,
                     object_info,
                     ..
                 }) => {
                     // Only do royalty costing for Main
-                    if module_id.is_some() {
-                        return Ok(());
+                    match method_type {
+                        MethodType::Main | MethodType::Direct => {}
+                        MethodType::Module(..) => return Ok(()),
                     }
 
                     match &object_info.object_type {

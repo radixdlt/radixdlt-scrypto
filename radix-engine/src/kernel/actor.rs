@@ -1,6 +1,6 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::types::*;
-use radix_engine_interface::api::ModuleId;
+use radix_engine_interface::api::{ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 
@@ -10,10 +10,25 @@ pub struct InstanceContext {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MethodType {
+    Main,
+    Direct,
+    Module(ModuleId),
+}
+
+impl MethodType {
+    pub fn module_id(&self) -> ObjectModuleId {
+        match self {
+            MethodType::Module(module_id) => module_id.clone().into(),
+            MethodType::Main | MethodType::Direct => ObjectModuleId::Main,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MethodActor {
-    pub direct_access: bool,
+    pub method_type: MethodType,
     pub node_id: NodeId,
-    pub as_module: Option<ModuleId>,
     pub ident: String,
 
     pub auth_zone: NodeId,
@@ -24,9 +39,11 @@ pub struct MethodActor {
 
 impl MethodActor {
     pub fn get_blueprint_id(&self) -> BlueprintId {
-        match self.as_module {
-            None => self.object_info.blueprint_info.blueprint_id.clone(),
-            Some(module_id) => module_id.static_blueprint(),
+        match self.method_type {
+            MethodType::Main | MethodType::Direct => {
+                self.object_info.blueprint_info.blueprint_id.clone()
+            }
+            MethodType::Module(module_id) => module_id.static_blueprint(),
         }
     }
 
@@ -158,8 +175,8 @@ impl Actor {
             _ => return None,
         };
 
-        match method_actor.as_module {
-            None => {
+        match method_actor.method_type {
+            MethodType::Main | MethodType::Direct => {
                 if method_actor.object_info.is_global() {
                     Some(InstanceContext {
                         outer_object: GlobalAddress::new_or_panic(method_actor.node_id.0),
@@ -179,7 +196,10 @@ impl Actor {
 
     pub fn get_object_id(self) -> Option<(NodeId, Option<ModuleId>)> {
         match self {
-            Actor::Method(method_actor) => Some((method_actor.node_id, method_actor.as_module)),
+            Actor::Method(method_actor) => Some((
+                method_actor.node_id,
+                method_actor.method_type.module_id().into(),
+            )),
             Actor::BlueprintHook(BlueprintHookActor {
                 receiver: Some(node_id),
                 ..
@@ -258,7 +278,9 @@ impl Actor {
 
     pub fn is_direct_access(&self) -> bool {
         match self {
-            Actor::Method(MethodActor { direct_access, .. }) => *direct_access,
+            Actor::Method(MethodActor { method_type, .. }) => {
+                matches!(method_type, MethodType::Direct)
+            }
             _ => false,
         }
     }
