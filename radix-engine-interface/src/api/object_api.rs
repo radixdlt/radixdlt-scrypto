@@ -37,6 +37,28 @@ pub enum ObjectModuleId {
     RoleAssignment,
 }
 
+impl From<Option<ModuleId>> for ObjectModuleId {
+    fn from(value: Option<ModuleId>) -> Self {
+        match value {
+            None => ObjectModuleId::Main,
+            Some(ModuleId::Metadata) => ObjectModuleId::Metadata,
+            Some(ModuleId::Royalty) => ObjectModuleId::Royalty,
+            Some(ModuleId::RoleAssignment) => ObjectModuleId::RoleAssignment,
+        }
+    }
+}
+
+impl Into<Option<ModuleId>> for ObjectModuleId {
+    fn into(self) -> Option<ModuleId> {
+        match self {
+            ObjectModuleId::Main => None,
+            ObjectModuleId::Metadata => Some(ModuleId::Metadata),
+            ObjectModuleId::Royalty => Some(ModuleId::Royalty),
+            ObjectModuleId::RoleAssignment => Some(ModuleId::RoleAssignment),
+        }
+    }
+}
+
 impl ObjectModuleId {
     pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
@@ -69,18 +91,18 @@ impl ObjectModuleId {
 #[repr(u8)]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(
-Debug,
-Clone,
-Copy,
-PartialEq,
-Eq,
-Hash,
-PartialOrd,
-Ord,
-ScryptoSbor,
-ManifestSbor,
-FromRepr,
-EnumIter,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoSbor,
+    ManifestSbor,
+    FromRepr,
+    EnumIter,
 )]
 pub enum ModuleId {
     Metadata = 1,
@@ -91,18 +113,13 @@ pub enum ModuleId {
 impl ModuleId {
     pub fn static_blueprint(&self) -> BlueprintId {
         match self {
-            ModuleId::Metadata => BlueprintId::new(
-                &METADATA_MODULE_PACKAGE,
-                METADATA_BLUEPRINT,
-            ),
-            ModuleId::Royalty => BlueprintId::new(
-                &ROYALTY_MODULE_PACKAGE,
-                COMPONENT_ROYALTY_BLUEPRINT,
-            ),
-            ModuleId::RoleAssignment => BlueprintId::new(
-                &ROLE_ASSIGNMENT_MODULE_PACKAGE,
-                ROLE_ASSIGNMENT_BLUEPRINT,
-            ),
+            ModuleId::Metadata => BlueprintId::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT),
+            ModuleId::Royalty => {
+                BlueprintId::new(&ROYALTY_MODULE_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
+            }
+            ModuleId::RoleAssignment => {
+                BlueprintId::new(&ROLE_ASSIGNMENT_MODULE_PACKAGE, ROLE_ASSIGNMENT_BLUEPRINT)
+            }
         }
     }
 }

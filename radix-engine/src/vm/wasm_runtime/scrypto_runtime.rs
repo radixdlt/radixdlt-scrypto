@@ -119,11 +119,9 @@ where
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
-        let return_data = self.api.call_direct_access_method(
-            &receiver,
-            ident.as_str(),
-            args,
-        )?;
+        let return_data = self
+            .api
+            .call_direct_access_method(&receiver, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }

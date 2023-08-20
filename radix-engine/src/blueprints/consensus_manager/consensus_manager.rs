@@ -16,7 +16,9 @@ use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, ACTOR_STATE_SELF, ModuleId};
+use radix_engine_interface::api::{
+    ClientApi, CollectionIndex, FieldValue, ModuleId, ACTOR_STATE_SELF,
+};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{metadata_init, mint_roles, rule};

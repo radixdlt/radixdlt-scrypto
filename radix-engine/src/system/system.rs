@@ -159,7 +159,7 @@ impl TryFrom<ActorRefHandle> for ActorObjectRef {
 
 enum EmitterActor {
     CurrentActor,
-    AsObject(NodeId, ObjectModuleId),
+    AsObject(NodeId, Option<ModuleId>),
 }
 
 impl<'a, Y, V> SystemService<'a, Y, V>
@@ -635,14 +635,16 @@ where
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
             EmitterActor::AsObject(node_id, module_id, ..) => Ok(EventTypeIdentifier(
-                Emitter::Method(node_id, module_id),
+                Emitter::Method(node_id, module_id.into()),
                 event_name,
             )),
             EmitterActor::CurrentActor => match self.current_actor() {
                 Actor::Method(MethodActor {
-                    node_id, module_id, ..
+                    node_id,
+                    as_module: module_id,
+                    ..
                 }) => Ok(EventTypeIdentifier(
-                    Emitter::Method(node_id, module_id),
+                    Emitter::Method(node_id, module_id.into()),
                     event_name,
                 )),
                 Actor::Function(FunctionActor { blueprint_id, .. }) => Ok(EventTypeIdentifier(
@@ -692,12 +694,12 @@ where
     pub fn get_blueprint_info(
         &mut self,
         node_id: &NodeId,
-        module_id: ObjectModuleId,
+        module_id: Option<ModuleId>,
     ) -> Result<BlueprintInfo, RuntimeError> {
         let info = match module_id {
-            ObjectModuleId::Main => self.get_object_info(node_id)?.blueprint_info,
-            _ => BlueprintInfo {
-                blueprint_id: module_id.static_blueprint().unwrap(),
+            None => self.get_object_info(node_id)?.blueprint_info,
+            Some(module_id) => BlueprintInfo {
+                blueprint_id: module_id.static_blueprint(),
                 blueprint_version: BlueprintVersion::default(),
                 outer_obj_info: OuterObjectInfo::None,
                 features: BTreeSet::default(),
@@ -733,7 +735,7 @@ where
                 meta: SchemaValidationMeta::Blueprint,
             }),
             Actor::Method(actor) => {
-                let blueprint_info = self.get_blueprint_info(&actor.node_id, actor.module_id)?;
+                let blueprint_info = self.get_blueprint_info(&actor.node_id, actor.as_module)?;
                 Ok(BlueprintTypeTarget {
                     blueprint_info,
                     meta: SchemaValidationMeta::ExistingObject {
@@ -747,7 +749,7 @@ where
     fn get_actor_object_id(
         &mut self,
         actor_object_type: ActorStateRef,
-    ) -> Result<(NodeId, ObjectModuleId), RuntimeError> {
+    ) -> Result<(NodeId, Option<ModuleId>), RuntimeError> {
         let actor = self.current_actor();
         let object_id = actor
             .get_object_id()
@@ -758,11 +760,11 @@ where
                 let module_id = object_id.1;
 
                 match module_id {
-                    ObjectModuleId::Main => {
+                    None => {
                         let node_id = object_id.0;
                         let address = self.get_outer_object(&node_id)?;
 
-                        (address.into_node_id(), ObjectModuleId::Main)
+                        (address.into_node_id(), None)
                     }
                     _ => {
                         return Err(RuntimeError::SystemError(
@@ -811,10 +813,16 @@ where
 
             match partition_description {
                 PartitionDescription::Physical(partition_num) => partition_num,
-                PartitionDescription::Logical(offset) => module_id
-                    .base_partition_num()
-                    .at_offset(offset)
-                    .expect("Module number overflow"),
+                PartitionDescription::Logical(offset) => {
+                    let base = match module_id {
+                        None => MAIN_BASE_PARTITION,
+                        Some(module_id) => {
+                            let object_module: ObjectModuleId = module_id.into();
+                            object_module.base_partition_num()
+                        }
+                    };
+                    base.at_offset(offset).expect("Module number overflow")
+                }
             }
         };
 
@@ -824,7 +832,7 @@ where
     fn get_actor_info(
         &mut self,
         actor_object_type: ActorStateRef,
-    ) -> Result<(NodeId, ObjectModuleId, BlueprintInterface, BlueprintInfo), RuntimeError> {
+    ) -> Result<(NodeId, Option<ModuleId>, BlueprintInterface, BlueprintInfo), RuntimeError> {
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
         let blueprint_info = self.get_blueprint_info(&node_id, module_id)?;
         let blueprint_interface =
@@ -864,9 +872,8 @@ where
                         panic!("Outer object should not have IfOuterFeature.")
                     }
                 };
-                let parent_module = ObjectModuleId::Main;
 
-                if !self.is_feature_enabled(&parent_id, parent_module, feature.as_str())? {
+                if !self.is_feature_enabled(&parent_id, None, feature.as_str())? {
                     return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                         info.blueprint_id.clone(),
                         field_index,
@@ -878,10 +885,16 @@ where
 
         let partition_num = match partition_description {
             PartitionDescription::Physical(partition_num) => partition_num,
-            PartitionDescription::Logical(offset) => module_id
-                .base_partition_num()
-                .at_offset(offset)
-                .expect("Module number overflow"),
+            PartitionDescription::Logical(offset) => {
+                let base = match module_id {
+                    None => MAIN_BASE_PARTITION,
+                    Some(module_id) => {
+                        let object_module: ObjectModuleId = module_id.into();
+                        object_module.base_partition_num()
+                    }
+                };
+                base.at_offset(offset).expect("Module number overflow")
+            }
         };
 
         Ok((node_id, info, partition_num, field_schema.transience))
@@ -1039,9 +1052,7 @@ where
         // Move other modules, and drop
         for (module_id, node_id) in modules {
             match module_id {
-                ModuleId::RoleAssignment
-                | ModuleId::Metadata
-                | ModuleId::Royalty => {
+                ModuleId::RoleAssignment | ModuleId::Metadata | ModuleId::Royalty => {
                     let blueprint_id = self.get_object_info(&node_id)?.blueprint_info.blueprint_id;
                     let expected_blueprint = module_id.static_blueprint();
                     if !blueprint_id.eq(&expected_blueprint) {
@@ -1112,11 +1123,11 @@ where
     pub fn is_feature_enabled(
         &mut self,
         node_id: &NodeId,
-        module_id: ObjectModuleId,
+        module_id: Option<ModuleId>,
         feature: &str,
     ) -> Result<bool, RuntimeError> {
         match module_id {
-            ObjectModuleId::Main => {
+            None => {
                 let object_info = self.get_object_info(node_id)?;
                 let enabled = object_info.blueprint_info.features.contains(feature);
                 Ok(enabled)
@@ -1322,10 +1333,10 @@ where
         event_name: String,
         event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
-
         let actor_blueprint = self.get_object_info(&node_id)?.blueprint_info.blueprint_id;
 
-        let global_address = self.globalize_with_address_internal(node_id, modules, address_reservation)?;
+        let global_address =
+            self.globalize_with_address_internal(node_id, modules, address_reservation)?;
 
         let blueprint_id =
             BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
@@ -1342,7 +1353,7 @@ where
         )?;
 
         self.emit_event_internal(
-            EmitterActor::AsObject(global_address.as_node_id().clone(), ObjectModuleId::Main),
+            EmitterActor::AsObject(global_address.as_node_id().clone(), None),
             event_name,
             event_data,
         )?;
@@ -1351,7 +1362,12 @@ where
     }
 
     #[trace_resources]
-    fn call_method(&mut self, receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
+    fn call_method(
+        &mut self,
+        receiver: &NodeId,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
         let object_info = self.get_object_info(&receiver)?;
 
         let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
@@ -1373,7 +1389,7 @@ where
                 call_frame_data: Actor::Method(MethodActor {
                     direct_access: false,
                     node_id: receiver.clone(),
-                    module_id: ObjectModuleId::Main,
+                    as_module: None,
                     ident: method_name.to_string(),
 
                     auth_zone: auth_actor_info.clone(),
@@ -1416,7 +1432,7 @@ where
                 call_frame_data: Actor::Method(MethodActor {
                     direct_access: true,
                     node_id: receiver.clone(),
-                    module_id: ObjectModuleId::Main,
+                    as_module: None,
                     ident: method_name.to_string(),
 
                     auth_zone: auth_actor_info.clone(),
@@ -1467,7 +1483,7 @@ where
                 call_frame_data: Actor::Method(MethodActor {
                     direct_access: false,
                     node_id: receiver.clone(),
-                    module_id: module_id.into(),
+                    as_module: module_id.into(),
                     ident: method_name.to_string(),
 
                     auth_zone: auth_actor_info.clone(),
@@ -2285,7 +2301,7 @@ where
             ActorObjectRef::Outer => {
                 let (node_id, module_id) = self.get_actor_object_id(ActorStateRef::SELF)?;
                 match module_id {
-                    ObjectModuleId::Main => {
+                    None => {
                         let info = self.get_object_info(&node_id)?;
                         match info.blueprint_info.outer_obj_info {
                             OuterObjectInfo::Some { outer_object } => {

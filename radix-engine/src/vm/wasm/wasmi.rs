@@ -833,8 +833,16 @@ impl WasmiModule {
              address_ptr: u32,
              address_len: u32|
              -> Result<u64, Trap> {
-                globalize_object(caller, obj_ptr, obj_len, modules_ptr, modules_len, address_ptr, address_len)
-                    .map_err(|e| e.into())
+                globalize_object(
+                    caller,
+                    obj_ptr,
+                    obj_len,
+                    modules_ptr,
+                    modules_len,
+                    address_ptr,
+                    address_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 

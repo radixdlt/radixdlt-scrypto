@@ -14,7 +14,9 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, KVEntry, LockFlags, ObjectModuleId, ACTOR_STATE_SELF, ModuleId};
+use radix_engine_interface::api::{
+    ClientApi, FieldValue, GenericArgs, KVEntry, LockFlags, ModuleId, ACTOR_STATE_SELF,
+};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
@@ -1527,11 +1529,7 @@ impl PackageRoyaltyNativeBlueprint {
     {
         {
             let mut service = SystemService::new(api);
-            if !service.is_feature_enabled(
-                receiver,
-                ObjectModuleId::Main,
-                PACKAGE_ROYALTY_FEATURE,
-            )? {
+            if !service.is_feature_enabled(receiver, None, PACKAGE_ROYALTY_FEATURE)? {
                 return Ok(());
             }
         }

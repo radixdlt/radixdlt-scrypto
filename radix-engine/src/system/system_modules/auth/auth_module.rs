@@ -13,7 +13,7 @@ use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
-use radix_engine_interface::api::{ClientBlueprintApi, LockFlags, ObjectModuleId};
+use radix_engine_interface::api::{ClientBlueprintApi, LockFlags, ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
 };
@@ -139,7 +139,7 @@ impl AuthModule {
     pub fn on_call_method<V, Y>(
         api: &mut SystemService<Y, V>,
         receiver: &NodeId,
-        module_id: ObjectModuleId,
+        obj_module_id: ObjectModuleId,
         direct_access: bool,
         ident: &str,
         args: &IndexedScryptoValue,
@@ -156,10 +156,23 @@ impl AuthModule {
         )?;
 
         // Step 1: Resolve method to permission
+        let module_id = match obj_module_id {
+            ObjectModuleId::Main => None,
+            ObjectModuleId::Metadata => Some(ModuleId::Metadata),
+            ObjectModuleId::Royalty => Some(ModuleId::Royalty),
+            ObjectModuleId::RoleAssignment => Some(ModuleId::RoleAssignment),
+        };
+
         let blueprint_id = api.get_blueprint_info(receiver, module_id)?.blueprint_id;
 
-        let permission =
-            Self::resolve_method_permission(api, &blueprint_id, receiver, &module_id, ident, args)?;
+        let permission = Self::resolve_method_permission(
+            api,
+            &blueprint_id,
+            receiver,
+            &obj_module_id,
+            ident,
+            args,
+        )?;
 
         // Step 2: Check permission
         let fn_identifier = FnIdentifier {

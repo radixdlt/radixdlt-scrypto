@@ -7,7 +7,6 @@ use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{

@@ -84,7 +84,6 @@ pub trait RoleAssignmentObject {
             }
         }
 
-
         Ok(())
     }
 
@@ -111,7 +110,7 @@ pub trait RoleAssignmentObject {
                         role_key: role_key.into(),
                         rule: rule.into(),
                     })
-                        .unwrap(),
+                    .unwrap(),
                 )?;
             }
             Some(module_id) => {
@@ -124,7 +123,7 @@ pub trait RoleAssignmentObject {
                         role_key: role_key.into(),
                         rule: rule.into(),
                     })
-                        .unwrap(),
+                    .unwrap(),
                 )?;
             }
         }

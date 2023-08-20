@@ -13,8 +13,9 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF, ModuleId};
+use radix_engine_interface::api::{
+    ClientApi, FieldValue, ModuleId, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
+};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{burn_roles, metadata_init, mint_roles, rule};

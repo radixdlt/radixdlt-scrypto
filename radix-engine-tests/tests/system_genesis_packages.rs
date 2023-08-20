@@ -4,7 +4,7 @@ use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltiesInput, PackageDefinition, PACKAGE_CLAIM_ROYALTIES_IDENT,
 };

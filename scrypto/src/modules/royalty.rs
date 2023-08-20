@@ -3,7 +3,6 @@ use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::types::RoyaltyAmount;
-use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentRoyaltyLockInput,
     ComponentRoyaltySetInput, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIMER_ROLE,
@@ -13,7 +12,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_SETTER_ROLE, COMPONENT_ROYALTY_SETTER_UPDATER_ROLE,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
-use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};

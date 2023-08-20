@@ -304,10 +304,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
                 .unwrap_or_else(|| Default::default());
 
             let metadata = Metadata::new_with_data(metadata_config.init);
-            modules.insert(
-                ModuleId::Metadata,
-                metadata.handle().as_node_id().clone(),
-            );
+            modules.insert(ModuleId::Metadata, metadata.handle().as_node_id().clone());
             roles.insert(ObjectModuleId::Metadata, metadata_config.roles);
         };
 
@@ -315,10 +312,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         if let Some(royalty_config) = self.royalty_config {
             roles.insert(ObjectModuleId::Royalty, royalty_config.roles);
             let royalty = Royalty::new(royalty_config.init);
-            modules.insert(
-                ModuleId::Royalty,
-                royalty.handle().as_node_id().clone(),
-            );
+            modules.insert(ModuleId::Royalty, royalty.handle().as_node_id().clone());
         }
 
         // Role Assignment

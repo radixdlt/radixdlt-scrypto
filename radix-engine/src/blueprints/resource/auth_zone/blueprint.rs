@@ -7,9 +7,7 @@ use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{Authorization, AuthorizationCheckResult};
 use crate::types::*;
 use native_sdk::resource::NativeProof;
-use radix_engine_interface::api::{
-    ClientApi, LockFlags, ObjectModuleId, ACTOR_REF_SELF, ACTOR_STATE_SELF,
-};
+use radix_engine_interface::api::{ClientApi, LockFlags, ACTOR_REF_SELF, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 

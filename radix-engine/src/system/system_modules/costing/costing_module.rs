@@ -17,7 +17,7 @@ use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
     transaction::AbortReason,
 };
-use radix_engine_interface::api::{ModuleId, ObjectModuleId};
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
@@ -212,20 +212,17 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             let (maybe_component, ident) = match &invocation.call_frame_data {
                 Actor::Method(MethodActor {
                     node_id,
-                    module_id,
+                    as_module: module_id,
                     ident,
                     object_info,
                     ..
                 }) => {
                     // Only do royalty costing for Main
-                    if module_id.ne(&ObjectModuleId::Main) {
+                    if module_id.is_some() {
                         return Ok(());
                     }
 
-                    if object_info
-                        .module_versions
-                        .contains_key(&ModuleId::Royalty)
-                    {
+                    if object_info.module_versions.contains_key(&ModuleId::Royalty) {
                         (Some(node_id.clone()), ident)
                     } else {
                         (None, ident)

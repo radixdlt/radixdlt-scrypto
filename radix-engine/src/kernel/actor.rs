@@ -1,6 +1,6 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::types::*;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 
@@ -13,7 +13,7 @@ pub struct InstanceContext {
 pub struct MethodActor {
     pub direct_access: bool,
     pub node_id: NodeId,
-    pub module_id: ObjectModuleId,
+    pub as_module: Option<ModuleId>,
     pub ident: String,
 
     pub auth_zone: NodeId,
@@ -24,9 +24,9 @@ pub struct MethodActor {
 
 impl MethodActor {
     pub fn get_blueprint_id(&self) -> BlueprintId {
-        match self.module_id {
-            ObjectModuleId::Main => self.object_info.blueprint_info.blueprint_id.clone(),
-            _ => self.module_id.static_blueprint().unwrap(),
+        match self.as_module {
+            None => self.object_info.blueprint_info.blueprint_id.clone(),
+            Some(module_id) => module_id.static_blueprint(),
         }
     }
 
@@ -158,8 +158,8 @@ impl Actor {
             _ => return None,
         };
 
-        match method_actor.module_id {
-            ObjectModuleId::Main => {
+        match method_actor.as_module {
+            None => {
                 if method_actor.object_info.global {
                     Some(InstanceContext {
                         outer_object: GlobalAddress::new_or_panic(method_actor.node_id.0),
@@ -177,13 +177,13 @@ impl Actor {
         }
     }
 
-    pub fn get_object_id(self) -> Option<(NodeId, ObjectModuleId)> {
+    pub fn get_object_id(self) -> Option<(NodeId, Option<ModuleId>)> {
         match self {
-            Actor::Method(method_actor) => Some((method_actor.node_id, method_actor.module_id)),
+            Actor::Method(method_actor) => Some((method_actor.node_id, method_actor.as_module)),
             Actor::BlueprintHook(BlueprintHookActor {
                 receiver: Some(node_id),
                 ..
-            }) => Some((node_id, ObjectModuleId::Main)),
+            }) => Some((node_id, None)),
             Actor::BlueprintHook(..) | Actor::Root | Actor::Function(..) => None,
         }
     }

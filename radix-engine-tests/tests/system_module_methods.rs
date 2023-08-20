@@ -9,7 +9,7 @@ use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentRoyaltySetInput, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
-use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, ACTOR_STATE_SELF, ModuleId};
+use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, ModuleId, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -79,9 +79,7 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(
-                ModuleId::Royalty
-            ))
+            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(ModuleId::Royalty))
         )
     });
 }
@@ -158,9 +156,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(
-                ModuleId::Metadata
-            ))
+            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(ModuleId::Metadata))
         )
     });
 }
@@ -272,9 +268,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(
-                ModuleId::Metadata
-            ))
+            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(ModuleId::Metadata))
         )
     });
 }
