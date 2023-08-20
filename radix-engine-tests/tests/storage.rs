@@ -22,6 +22,6 @@ fn test_kv_store_with_many_large_keys() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     assert_eq!(
         receipt.fee_summary.total_storage_cost_in_xrd,
-        dec!("66.670576731360297015")
+        dec!("66.670735677079698048")
     );
 }

@@ -89,10 +89,6 @@ impl AuthZoneBlueprint {
                     btreemap!(
                         MAIN_BASE_PARTITION => composed_proof.into(),
                         TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                            global: false,
-
-                            module_versions: btreemap!(),
-
                             blueprint_info: BlueprintInfo {
                                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                                 blueprint_version: BlueprintVersion::default(),
@@ -101,7 +97,8 @@ impl AuthZoneBlueprint {
                                 },
                                 features: btreeset!(),
                                 generic_substitutions: vec![],
-                            }
+                            },
+                            object_type: ObjectType::Owned,
                         })),
                     ),
                 )?;
@@ -113,10 +110,6 @@ impl AuthZoneBlueprint {
                     btreemap!(
                     MAIN_BASE_PARTITION => composed_proof.into(),
                     TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                        global: false,
-
-                        module_versions: btreemap!(),
-
                         blueprint_info: BlueprintInfo {
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                             blueprint_version: BlueprintVersion::default(),
@@ -125,7 +118,8 @@ impl AuthZoneBlueprint {
                             },
                             features: btreeset!(),
                             generic_substitutions: vec![],
-                        }
+                        },
+                        object_type: ObjectType::Owned,
                     }))),
                 )?;
                 api.kernel_pin_node(node_id)?;
@@ -161,10 +155,6 @@ impl AuthZoneBlueprint {
             btreemap!(
                 MAIN_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                    global: false,
-
-                    module_versions: btreemap!(),
-
                     blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                         blueprint_version: BlueprintVersion::default(),
@@ -173,7 +163,8 @@ impl AuthZoneBlueprint {
                         },
                         features: btreeset!(),
                         generic_substitutions: vec![],
-                    }
+                    },
+                    object_type: ObjectType::Owned,
                 }))
             ),
         )?;
@@ -211,10 +202,6 @@ impl AuthZoneBlueprint {
             btreemap!(
                 MAIN_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                    global: false,
-
-                    module_versions: btreemap!(),
-
                     blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
                         blueprint_version: BlueprintVersion::default(),
@@ -224,6 +211,7 @@ impl AuthZoneBlueprint {
                         features: btreeset!(),
                         generic_substitutions: vec![],
                     },
+                    object_type: ObjectType::Owned,
                 }))
             ),
         )?;

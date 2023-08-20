@@ -222,10 +222,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                         return Ok(());
                     }
 
-                    if object_info.module_versions.contains_key(&ModuleId::Royalty) {
-                        (Some(node_id.clone()), ident)
-                    } else {
-                        (None, ident)
+                    match &object_info.object_type {
+                        ObjectType::Global { modules }
+                            if modules.contains_key(&ModuleId::Royalty) =>
+                        {
+                            (Some(node_id.clone()), ident)
+                        }
+                        _ => (None, ident),
                     }
                 }
                 Actor::Function(FunctionActor { ident, .. }) => (None, ident),

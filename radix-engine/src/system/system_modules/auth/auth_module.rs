@@ -242,7 +242,7 @@ impl AuthModule {
         let (auth_zone, parent_lock_handle) = {
             let next_is_barrier = if let Some((receiver, direct_access)) = receiver {
                 let object_info = system.get_object_info(receiver)?;
-                object_info.global || direct_access
+                object_info.is_global() || direct_access
             } else {
                 true
             };
@@ -319,15 +319,14 @@ impl AuthModule {
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                    global: false,
-                    module_versions: btreemap!(),
                     blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                         blueprint_version: BlueprintVersion::default(),
                         outer_obj_info: OuterObjectInfo::default(),
                         features: btreeset!(),
                         generic_substitutions: vec![],
-                    }
+                    },
+                    object_type: ObjectType::Owned,
                 }))
             ),
         )?;
@@ -463,7 +462,7 @@ impl AuthModule {
                 let role_assignment_of = match static_roles.roles {
                     RoleSpecification::Normal(..) => {
                         // Non-globalized objects do not have access rules module
-                        if !receiver_object_info.global {
+                        if !receiver_object_info.is_global() {
                             return Ok(ResolvedPermission::AllowAll);
                         }
 

@@ -553,9 +553,8 @@ where
         let mut node_substates = btreemap!(
             TYPE_INFO_FIELD_PARTITION => type_info_partition(
                 TypeInfoSubstate::Object(ObjectInfo {
-                    global:false,
-                    module_versions: btreemap!(),
                     blueprint_info,
+                    object_type: ObjectType::Owned,
                 })
             ),
         );
@@ -987,7 +986,7 @@ where
 
         // Verify can globalize with address
         {
-            if object_info.global {
+            if object_info.is_global() {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
                     CannotGlobalizeError::AlreadyGlobalized,
                 )));
@@ -1005,12 +1004,14 @@ where
 
         // Update Object Info
         {
-            object_info.global = true;
+            let mut module_versions = BTreeMap::new();
             for module_id in modules.keys() {
-                object_info
-                    .module_versions
-                    .insert(module_id.clone(), BlueprintVersion::default());
+                module_versions.insert(module_id.clone(), BlueprintVersion::default());
             }
+
+            object_info.object_type = ObjectType::Global {
+                modules: module_versions,
+            };
         }
 
         let num_main_partitions = {
@@ -1458,10 +1459,19 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         // Key Value Stores do not have methods so we remove that possibility here
         let object_info = self.get_object_info(&receiver)?;
-        if !object_info.module_versions.contains_key(&module_id) {
-            return Err(RuntimeError::SystemError(
-                SystemError::ObjectModuleDoesNotExist(module_id),
-            ));
+        match &object_info.object_type {
+            ObjectType::Owned => {
+                return Err(RuntimeError::SystemError(
+                    SystemError::ObjectModuleDoesNotExist(module_id),
+                ));
+            }
+            ObjectType::Global { modules } => {
+                if !modules.contains_key(&module_id) {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::ObjectModuleDoesNotExist(module_id),
+                    ));
+                }
+            }
         }
 
         let args = IndexedScryptoValue::from_vec(args).map_err(|e| {

@@ -1,7 +1,7 @@
 use radix_engine_interface::api::node_modules::auth::{
-    RoleAssignmentCreateInput, RoleAssignmentLockOwnerInput, RoleAssignmentSetInput,
-    RoleAssignmentSetOwnerInput, ROLE_ASSIGNMENT_BLUEPRINT, ROLE_ASSIGNMENT_CREATE_IDENT,
-    ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
+    RoleAssignmentCreateInput, RoleAssignmentSetInput, RoleAssignmentSetOwnerInput,
+    ROLE_ASSIGNMENT_BLUEPRINT, ROLE_ASSIGNMENT_CREATE_IDENT, ROLE_ASSIGNMENT_SET_IDENT,
+    ROLE_ASSIGNMENT_SET_OWNER_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, ModuleId};

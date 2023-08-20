@@ -34,16 +34,28 @@ pub struct BlueprintInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ObjectInfo {
-    /// Whether this node is global or not, ie. true, if this node has no parent, false otherwise
-    pub global: bool,
-    pub module_versions: BTreeMap<ModuleId, BlueprintVersion>,
+pub enum ObjectType {
+    Global {
+        modules: BTreeMap<ModuleId, BlueprintVersion>,
+    },
+    Owned,
+}
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct ObjectInfo {
     /// Blueprint Info of Object
     pub blueprint_info: BlueprintInfo,
+    pub object_type: ObjectType,
 }
 
 impl ObjectInfo {
+    pub fn is_global(&self) -> bool {
+        match self.object_type {
+            ObjectType::Global { .. } => true,
+            ObjectType::Owned => false,
+        }
+    }
+
     pub fn get_outer_object(&self) -> GlobalAddress {
         match &self.blueprint_info.outer_obj_info {
             OuterObjectInfo::Some { outer_object } => outer_object.clone(),

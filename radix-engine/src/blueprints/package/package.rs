@@ -792,18 +792,18 @@ pub fn create_bootstrap_package_partitions(
         partitions.insert(
             TYPE_INFO_FIELD_PARTITION,
             type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                global: true,
-                module_versions: btreemap!(
-                    ModuleId::Metadata => BlueprintVersion::default(),
-                    ModuleId::RoleAssignment => BlueprintVersion::default(),
-                ),
-
                 blueprint_info: BlueprintInfo {
                     blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
                     blueprint_version: BlueprintVersion::default(),
                     outer_obj_info: OuterObjectInfo::default(),
                     features: btreeset!(),
                     generic_substitutions: vec![],
+                },
+                object_type: ObjectType::Global {
+                    modules: btreemap!(
+                        ModuleId::Metadata => BlueprintVersion::default(),
+                        ModuleId::RoleAssignment => BlueprintVersion::default(),
+                    ),
                 },
             })),
         );

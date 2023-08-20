@@ -160,7 +160,7 @@ impl Actor {
 
         match method_actor.as_module {
             None => {
-                if method_actor.object_info.global {
+                if method_actor.object_info.is_global() {
                     Some(InstanceContext {
                         outer_object: GlobalAddress::new_or_panic(method_actor.node_id.0),
                     })
@@ -210,7 +210,7 @@ impl Actor {
 
     pub fn is_barrier(&self) -> bool {
         match self {
-            Actor::Method(MethodActor { object_info, .. }) => object_info.global,
+            Actor::Method(MethodActor { object_info, .. }) => object_info.is_global(),
             Actor::Function { .. } => true,
             Actor::BlueprintHook { .. } => true,
             Actor::Root { .. } => false,

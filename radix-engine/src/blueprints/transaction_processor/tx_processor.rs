@@ -147,15 +147,14 @@ impl TransactionProcessorBlueprint {
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {
-                        global: false,
-                        module_versions: btreemap!(),
                         blueprint_info: BlueprintInfo {
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                             blueprint_version: BlueprintVersion::default(),
                             generic_substitutions: Vec::new(),
                             outer_obj_info: OuterObjectInfo::default(),
                             features: btreeset!(),
-                        }
+                        },
+                        object_type: ObjectType::Owned,
                     })
                 )
             ),
