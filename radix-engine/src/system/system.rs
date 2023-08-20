@@ -1771,6 +1771,7 @@ where
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
             return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
         }
@@ -2481,6 +2482,10 @@ where
         key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
+        if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
+            return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
+        }
+
         let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
