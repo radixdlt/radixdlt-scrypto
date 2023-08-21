@@ -12,6 +12,18 @@ use crate::prelude::*;
 /// [`SystemService`] from native.
 pub struct TestRuntime(TestRuntimeInternal);
 
+impl TestRuntime {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for TestRuntime {
+    fn default() -> Self {
+        Self(TestRuntimeInternal::new_internal())
+    }
+}
+
 /// The internal implementation of the [`TestRuntime`].
 ///
 /// This struct defines a self-contained instance of the Radix Engine that has all parts of the
@@ -37,6 +49,114 @@ struct TestRuntimeInternal {
     #[borrows(mut system_config, mut track, mut id_allocator)]
     #[not_covariant]
     kernel: TestRuntimeKernel<'this>,
+}
+
+impl TestRuntimeInternal {
+    const DEFAULT_INTENT_HASH: Hash = Hash([0; 32]);
+
+    fn new_internal() -> Self {
+        let mut substate_db = InMemorySubstateDatabase::standard();
+
+        // Create the various VMs we will use
+        let native_vm = NativeVm::new();
+        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+        let vm = Vm::new(&scrypto_vm, native_vm.clone());
+
+        // Run genesis against the substate store.
+        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
+        bootstrapper.bootstrap_test_default().unwrap();
+
+        // Create the Id allocator we will be using throughout this test
+        let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
+
+        TestRuntimeInternalBuilder {
+            substate_db,
+            scrypto_vm,
+            native_vm: native_vm.clone(),
+            id_allocator,
+            track_builder: |substate_store| Track::new(substate_store),
+            system_config_builder: |scrypto_vm| SystemConfig {
+                blueprint_cache: NonIterMap::new(),
+                auth_cache: NonIterMap::new(),
+                schema_cache: NonIterMap::new(),
+                callback_obj: Vm::new(scrypto_vm, native_vm),
+                modules: SystemModuleMixer::new(
+                    EnabledModules::LIMITS | EnabledModules::AUTH,
+                    Self::DEFAULT_INTENT_HASH,
+                    AuthZoneParams {
+                        initial_proofs: Default::default(),
+                        virtual_resources: Default::default(),
+                    },
+                    SystemLoanFeeReserve::default(),
+                    FeeTable::new(),
+                    0,
+                    0,
+                    &ExecutionConfig::for_test_transaction().with_kernel_trace(false),
+                ),
+            },
+            kernel_builder: |system, track, id_allocator| {
+                // Create the kernel
+                let mut kernel = Kernel::kernel_create_kernel_for_testing(
+                    SubstateIO {
+                        heap: Heap::new(),
+                        store: track,
+                        non_global_node_refs: NonGlobalNodeRefs::new(),
+                        substate_locks: SubstateLocks::new(),
+                    },
+                    id_allocator,
+                    CallFrame::new_root(Actor::Root),
+                    vec![],
+                    system,
+                );
+
+                // Add references to all of the well-known node ids to the root call frame.
+                let current_frame = kernel.kernel_current_frame_mut();
+                for node_id in GLOBAL_VISIBLE_NODES {
+                    let Ok(global_address) = GlobalAddress::try_from(node_id.0) else {
+                        continue;
+                    };
+                    current_frame.add_global_reference(global_address)
+                }
+
+                // Create a new call-frame along with an auth-zone for this call-frame
+                // TODO: For the time being, the call-frame that we create has a function-actor of
+                // the transaction processor. Maybe we should not use this and use another native
+                // or non-native blueprints
+                let auth_zone = {
+                    let mut system_service = SystemService {
+                        api: &mut kernel,
+                        phantom: PhantomData,
+                    };
+                    AuthModule::create_mock(
+                        &mut system_service,
+                        Some((TRANSACTION_PROCESSOR_PACKAGE.as_node_id(), false)),
+                        Default::default(),
+                        Default::default(),
+                    )
+                }
+                .unwrap();
+                let actor = Actor::Function(FunctionActor {
+                    blueprint_id: BlueprintId {
+                        package_address: TRANSACTION_PROCESSOR_PACKAGE,
+                        blueprint_name: TRANSACTION_PROCESSOR_BLUEPRINT.to_owned(),
+                    },
+                    ident: TRANSACTION_PROCESSOR_RUN_IDENT.to_owned(),
+                    auth_zone: auth_zone,
+                });
+
+                let message =
+                    CallFrameMessage::from_input(&IndexedScryptoValue::from_typed(&()), &actor);
+                let current_frame = kernel.kernel_current_frame_mut();
+                let new_frame =
+                    CallFrame::new_child_from_parent(current_frame, actor, message).unwrap();
+                let old = core::mem::replace(current_frame, new_frame);
+                kernel.kernel_prev_frame_stack_mut().push(old);
+
+                kernel
+            },
+        }
+        .build()
+    }
 }
 
 /// Implements the [`ClientApi`] for the [`TestRuntime`] struct.

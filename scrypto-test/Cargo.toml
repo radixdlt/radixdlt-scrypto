@@ -7,7 +7,7 @@ edition = "2021"
 # The Radix Engine Stack
 sbor = { path = "../sbor" }
 transaction = { path = "../transaction" }
-radix-engine = { path = "../radix-engine" }
+radix-engine = { path = "../radix-engine", features = ["radix_engine_tests"] }
 radix-engine-stores = { path = "../radix-engine-stores" }
 radix-engine-common = { path = "../radix-engine-common" }
 radix-engine-interface = { path = "../radix-engine-interface" }
