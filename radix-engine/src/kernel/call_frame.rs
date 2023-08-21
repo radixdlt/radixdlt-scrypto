@@ -1,6 +1,7 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
-    ProcessSubstateIOWriteError, SubstateDevice, SubstateIO, SubstateIOHandler, SubstateReadHandler,
+    IOStoreAccessHandler, IOSubstateReadHandler, ProcessSubstateIOWriteError, SubstateDevice,
+    SubstateIO,
 };
 use crate::track::interface::{CallbackError, CommitableSubstateStore, NodeSubstates, StoreAccess};
 use crate::types::*;
@@ -315,7 +316,7 @@ impl NodeVisibility {
     }
 }
 
-pub trait StoreAccessHandler<C, L, E> {
+pub trait CallFrameStoreAccessHandler<C, L, E> {
     fn on_store_access(
         &mut self,
         current_frame: &CallFrame<C, L>,
@@ -337,14 +338,14 @@ pub trait CallFrameSubstateReadHandler<C, L> {
     ) -> Result<(), Self::Error>;
 }
 
-struct WrapperHandler<'g, C, L, E, H: StoreAccessHandler<C, L, E>> {
+struct CallFrameToIOStoreAccessAdapter<'g, C, L, E, H: CallFrameStoreAccessHandler<C, L, E>> {
     handler: &'g mut H,
     call_frame: &'g CallFrame<C, L>,
     phantom: PhantomData<E>,
 }
 
-impl<'g, C, L, E, H: StoreAccessHandler<C, L, E>> SubstateIOHandler<E>
-    for WrapperHandler<'g, C, L, E, H>
+impl<'g, C, L, E, H: CallFrameStoreAccessHandler<C, L, E>> IOStoreAccessHandler<E>
+    for CallFrameToIOStoreAccessAdapter<'g, C, L, E, H>
 {
     fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E> {
         self.handler
@@ -352,14 +353,14 @@ impl<'g, C, L, E, H: StoreAccessHandler<C, L, E>> SubstateIOHandler<E>
     }
 }
 
-struct WrapperHandler2<'g, C, L, H: CallFrameSubstateReadHandler<C, L>> {
+struct CallFrameToIOSubstateReadAdapter<'g, C, L, H: CallFrameSubstateReadHandler<C, L>> {
     handler: &'g mut H,
     call_frame: &'g CallFrame<C, L>,
     handle: SubstateHandle,
 }
 
-impl<'g, C, L, H: CallFrameSubstateReadHandler<C, L>> SubstateReadHandler
-    for WrapperHandler2<'g, C, L, H>
+impl<'g, C, L, H: CallFrameSubstateReadHandler<C, L>> IOSubstateReadHandler
+    for CallFrameToIOSubstateReadAdapter<'g, C, L, H>
 {
     type Error = H::Error;
 
@@ -722,7 +723,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn create_node<'f, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
-        handler: &mut impl StoreAccessHandler<C, L, E>,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
         node_id: NodeId,
         node_substates: NodeSubstates,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
@@ -759,7 +760,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        let mut handler = WrapperHandler {
+        let mut handler = CallFrameToIOStoreAccessAdapter {
             call_frame: self,
             handler,
             phantom: PhantomData::default(),
@@ -775,12 +776,12 @@ impl<C, L: Clone> CallFrame<C, L> {
         &mut self,
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
-        handler: &mut impl StoreAccessHandler<C, L, E>,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
     ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
         self.take_node_internal(node_id)
             .map_err(|e| CallbackError::Error(DropNodeError::TakeNodeError(e)))?;
 
-        let mut handler = WrapperHandler {
+        let mut handler = CallFrameToIOStoreAccessAdapter {
             call_frame: self,
             handler,
             phantom: PhantomData::default(),
@@ -815,7 +816,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn move_partition<'f, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
-        handler: &mut impl StoreAccessHandler<C, L, E>,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
@@ -831,7 +832,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             CallbackError::Error(MovePartitionError::NodeNotAvailable(dest_node_id.clone()))
         })?;
 
-        let mut handler = WrapperHandler {
+        let mut handler = CallFrameToIOStoreAccessAdapter {
             call_frame: self,
             handler,
             phantom: PhantomData::default(),
@@ -900,7 +901,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn open_substate<
         S: CommitableSubstateStore,
         E,
-        H: StoreAccessHandler<C, L, E>,
+        H: CallFrameStoreAccessHandler<C, L, E>,
         F: FnOnce() -> IndexedScryptoValue,
     >(
         &mut self,
@@ -982,7 +983,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 lock_handle,
             )))?;
 
-        let mut handler = WrapperHandler2 {
+        let mut handler = CallFrameToIOSubstateReadAdapter {
             call_frame: self,
             handler,
             handle: *global_substate_handle,
@@ -998,7 +999,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn write_substate<'f, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
-        handler: &mut impl StoreAccessHandler<C, L, E>,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
         lock_handle: SubstateHandle,
         substate: IndexedScryptoValue,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
@@ -1343,7 +1344,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     fn process_substate_diff<S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
-        handler: &mut impl StoreAccessHandler<C, L, E>,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
         device: SubstateDevice,
         diff: &SubstateDiff,
     ) -> Result<(), CallbackError<ProcessSubstateError, E>> {
@@ -1398,7 +1399,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 }
             }
             SubstateDevice::Store => {
-                let mut handler = WrapperHandler {
+                let mut handler = CallFrameToIOStoreAccessAdapter {
                     call_frame: self,
                     handler,
                     phantom: PhantomData::default(),

@@ -10,7 +10,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorRunInputEffici
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::{
-    CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs, StoreAccessHandler,
+    CallFrameMessage, CallFrameStoreAccessHandler, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
     TransientSubstates,
 };
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
@@ -232,7 +232,8 @@ struct KernelHandler<
 impl<
         M: KernelCallbackObject,
         F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
-    > StoreAccessHandler<M::CallFrameData, M::LockData, RuntimeError> for KernelHandler<'_, M, F>
+    > CallFrameStoreAccessHandler<M::CallFrameData, M::LockData, RuntimeError>
+    for KernelHandler<'_, M, F>
 {
     fn on_store_access(
         &mut self,
