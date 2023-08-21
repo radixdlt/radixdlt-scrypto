@@ -15,7 +15,6 @@ use sbor::rust::prelude::*;
 pub struct Runtime {}
 
 impl Runtime {
-    /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
         api: &mut Y,
         event: T,
@@ -24,23 +23,25 @@ impl Runtime {
         Y: ClientTransactionRuntimeApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
+        api.emit_event(
+            T::event_name().to_string(),
+            scrypto_encode(&event).unwrap(),
+            true,
+        )
     }
 
-    /// Emits an application event
-    pub fn emit_event_advanced<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
+    pub fn emit_event_no_revert<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
         api: &mut Y,
         event: T,
-        abort_on_failure: bool,
     ) -> Result<(), E>
     where
         Y: ClientTransactionRuntimeApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.emit_event_advanced(
+        api.emit_event(
             T::event_name().to_string(),
             scrypto_encode(&event).unwrap(),
-            abort_on_failure,
+            false,
         )
     }
 

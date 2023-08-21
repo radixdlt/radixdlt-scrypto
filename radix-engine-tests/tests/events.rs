@@ -29,6 +29,94 @@ use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
+fn test_events_of_commit_failure() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, dec!(100))
+        .withdraw_from_account(account, XRD, dec!(100)) // reverted
+        .assert_worktop_contains(XRD, dec!(500))
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    let events = &receipt.expect_commit_failure().application_events;
+    for event in events {
+        let name = test_runner.event_name(&event.0);
+        println!("{:?} - {}", event.0, name);
+    }
+    assert_eq!(events.len(), 4);
+    assert!(match events.get(0) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::LockFeeEvent { amount: 100.into() },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(1) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::PayFeeEvent {
+                    amount: receipt.fee_summary.total_cost()
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(2) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::DepositEvent {
+                    amount: receipt
+                        .expect_commit_failure()
+                        .fee_destination
+                        .to_proposer
+                        .safe_add(
+                            receipt
+                                .expect_commit_failure()
+                                .fee_destination
+                                .to_validator_set
+                        )
+                        .unwrap()
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(3) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
+            && is_decoded_equal(
+                &BurnFungibleResourceEvent {
+                    amount: receipt.expect_commit_failure().fee_destination.to_burn
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+}
+
+#[test]
 fn create_proof_emits_correct_events() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -48,6 +136,7 @@ fn create_proof_emits_correct_events() {
         let name = test_runner.event_name(&event.0);
         println!("{:?} - {}", event.0, name);
     }
+    assert_eq!(events.len(), 4);
     assert!(match events.get(0) {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),

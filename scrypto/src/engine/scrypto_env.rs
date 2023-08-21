@@ -438,6 +438,7 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         &mut self,
         event_name: String,
         event_data: Vec<u8>,
+        revert_on_tx_failure: bool,
     ) -> Result<(), ClientApiError> {
         unsafe {
             emit_event(
@@ -445,18 +446,10 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
                 event_name.len(),
                 event_data.as_ptr(),
                 event_data.len(),
+                revert_on_tx_failure,
             )
         };
         Ok(())
-    }
-
-    fn emit_event_advanced(
-        &mut self,
-        _event_name: String,
-        _event_data: Vec<u8>,
-        _discard_on_failure: bool,
-    ) -> Result<(), ClientApiError> {
-        unimplemented!("Not available for Scrypto")
     }
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {

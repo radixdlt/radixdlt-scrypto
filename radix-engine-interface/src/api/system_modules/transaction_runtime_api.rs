@@ -9,13 +9,11 @@ pub trait ClientTransactionRuntimeApi<E> {
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
 
-    fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), E>;
-
-    fn emit_event_advanced(
+    fn emit_event(
         &mut self,
         event_name: String,
         event_data: Vec<u8>,
-        discard_on_failure: bool,
+        revert_on_tx_failure: bool,
     ) -> Result<(), E>;
 
     fn panic(&mut self, message: String) -> Result<(), E>;

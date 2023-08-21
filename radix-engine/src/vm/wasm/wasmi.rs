@@ -509,6 +509,7 @@ fn emit_event(
     event_name_len: u32,
     event_data_ptr: u32,
     event_data_len: u32,
+    revert_on_tx_failure: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
@@ -525,7 +526,13 @@ fn emit_event(
         event_data_len,
     )?;
 
-    runtime.emit_event(event_name, event_data)
+    if revert_on_tx_failure != 1 {
+        return Err(InvokeError::SelfError(
+            WasmRuntimeError::UnsupportedRevertOnFailureValue(revert_on_tx_failure),
+        ));
+    }
+
+    runtime.emit_event(event_name, event_data, true)
 }
 
 fn get_transaction_hash(
@@ -960,7 +967,8 @@ impl WasmiModule {
              event_name_ptr: u32,
              event_name_len: u32,
              event_data_ptr: u32,
-             event_data_len: u32|
+             event_data_len: u32,
+             revert_on_tx_failure: u32|
              -> Result<(), Trap> {
                 emit_event(
                     caller,
@@ -968,6 +976,7 @@ impl WasmiModule {
                     event_name_len,
                     event_data_ptr,
                     event_data_len,
+                    revert_on_tx_failure,
                 )
                 .map_err(|e| e.into())
             },

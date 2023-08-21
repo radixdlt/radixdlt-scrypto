@@ -418,10 +418,12 @@ where
         &mut self,
         event_name: Vec<u8>,
         event: Vec<u8>,
+        revert_on_tx_failure: bool,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.emit_event(
             String::from_utf8(event_name).map_err(|_| WasmRuntimeError::InvalidString)?,
             event,
+            revert_on_tx_failure,
         )?;
         Ok(())
     }

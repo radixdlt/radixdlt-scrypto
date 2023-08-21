@@ -83,7 +83,11 @@ impl Runtime {
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
         ScryptoEnv
-            .emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap())
+            .emit_event(
+                T::event_name().to_owned(),
+                scrypto_encode(&event).unwrap(),
+                true,
+            )
             .unwrap();
     }
 

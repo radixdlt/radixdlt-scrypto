@@ -8,7 +8,7 @@ use radix_engine_interface::crypto::Hash;
 pub struct Event {
     pub type_identifier: EventTypeIdentifier,
     pub payload: Vec<u8>,
-    pub discard_on_failure: bool,
+    pub revert_on_tx_failure: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -65,11 +65,11 @@ impl TransactionRuntimeModule {
         for Event {
             mut type_identifier,
             payload,
-            discard_on_failure,
+            revert_on_tx_failure,
         } in self.events.into_iter()
         {
             // Revert if failure
-            if discard_on_failure && !is_success {
+            if revert_on_tx_failure && !is_success {
                 continue;
             }
 

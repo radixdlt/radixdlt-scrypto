@@ -222,6 +222,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         &mut self,
         event_name: Vec<u8>,
         event: Vec<u8>,
+        revert_on_tx_failure: bool,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

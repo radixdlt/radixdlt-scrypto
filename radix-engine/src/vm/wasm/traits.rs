@@ -152,6 +152,7 @@ pub trait WasmRuntime {
         &mut self,
         event_name: Vec<u8>,
         event: Vec<u8>,
+        revert_on_tx_failure: bool,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn emit_log(
