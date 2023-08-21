@@ -434,6 +434,14 @@ impl ClientAuthApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
+    fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, ClientApiError> {
+        let encoded = copy_buffer(unsafe {
+            bech32_encode_address(address.as_ref().as_ptr(), address.as_ref().len())
+        });
+
+        scrypto_decode(&encoded).map_err(ClientApiError::DecodeError)
+    }
+
     fn emit_event(
         &mut self,
         event_name: String,

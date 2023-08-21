@@ -2447,8 +2447,9 @@ where
 {
     #[trace_resources]
     fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, RuntimeError> {
-        AddressBech32Encoder::new(&NetworkDefinition::mainnet()).encode(&address.into_node_id().0)
-            .map_err(|e| RuntimeError::SystemError(SystemError::AddressBech32EncodeError(e)))
+        AddressBech32Encoder::new(&NetworkDefinition::mainnet())
+            .encode(&address.into_node_id().0)
+            .map_err(|_| RuntimeError::SystemError(SystemError::AddressBech32EncodeError))
     }
 
     #[trace_resources]

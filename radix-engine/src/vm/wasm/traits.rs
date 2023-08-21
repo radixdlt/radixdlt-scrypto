@@ -163,6 +163,11 @@ pub trait WasmRuntime {
 
     fn panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
+    fn bech32_encode_address(
+        &mut self,
+        address: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;

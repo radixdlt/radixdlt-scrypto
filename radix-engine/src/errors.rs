@@ -221,7 +221,7 @@ pub enum SystemError {
     NotAFieldHandle,
     NotAFieldWriteHandle,
     RootHasNoType,
-    AddressBech32EncodeError(AddressBech32EncodeError),
+    AddressBech32EncodeError,
     TypeCheckError(TypeCheckError),
     FieldDoesNotExist(BlueprintId, u8),
     CollectionIndexDoesNotExist(BlueprintId, u8),

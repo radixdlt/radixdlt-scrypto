@@ -171,6 +171,8 @@ extern "C" {
 
     pub fn get_auth_zone() -> Buffer;
 
+    pub fn bech32_encode_address(address_ptr: *const u8, address_len: usize) -> Buffer;
+
     pub fn emit_event(
         event_name_ptr: *const u8,
         event_name_len: usize,
@@ -394,6 +396,11 @@ pub unsafe fn actor_call_module_method(
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_auth_zone() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn bech32_encode_address(_address_ptr: *const u8, _address_len: usize) -> Buffer {
     unreachable!()
 }
 

@@ -87,6 +87,10 @@ impl Runtime {
             .unwrap();
     }
 
+    pub fn bech32_encode_address<A: Into<GlobalAddress>>(address: A) -> String {
+        ScryptoEnv.bech32_encode_address(address.into()).unwrap()
+    }
+
     pub fn assert_access_rule(rule: AccessRule) {
         let mut env = ScryptoEnv;
 
