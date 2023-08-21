@@ -1,6 +1,7 @@
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::errors::*;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use sbor::rust::boxed::Box;
 use sbor::rust::vec::Vec;
 
@@ -151,7 +152,8 @@ pub trait WasmRuntime {
     fn emit_event(
         &mut self,
         event_name: Vec<u8>,
-        event: Vec<u8>,
+        event_payload: Vec<u8>,
+        event_flags: EventFlags,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn emit_log(

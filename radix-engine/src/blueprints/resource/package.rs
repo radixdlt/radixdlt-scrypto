@@ -929,6 +929,7 @@ impl ResourceNativePackage {
                 aggregator,
                 [
                     fungible_vault::LockFeeEvent,
+                    fungible_vault::PayFeeEvent,
                     fungible_vault::WithdrawEvent,
                     fungible_vault::DepositEvent,
                     fungible_vault::RecallEvent
