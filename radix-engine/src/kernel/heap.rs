@@ -51,7 +51,7 @@ impl Heap {
             for (substate_key, substate_value) in &module {
                 on_store_access(
                     self,
-                    StoreAccess::SubstateUpdatedInHeap {
+                    StoreAccess::HeapSubstateUpdated {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id: *node_id,
                             partition_number,
@@ -117,7 +117,7 @@ impl Heap {
 
         on_store_access(
             self,
-            StoreAccess::SubstateUpdatedInHeap {
+            StoreAccess::HeapSubstateUpdated {
                 canonical_substate_key: CanonicalSubstateKey {
                     node_id,
                     partition_number,
@@ -147,7 +147,7 @@ impl Heap {
         if let Some(value) = &substate_value {
             on_store_access(
                 self,
-                StoreAccess::SubstateUpdatedInHeap {
+                StoreAccess::HeapSubstateUpdated {
                     canonical_substate_key: CanonicalSubstateKey {
                         node_id: *node_id,
                         partition_number,
@@ -217,7 +217,7 @@ impl Heap {
             for (key, value) in &items {
                 on_store_access(
                     self,
-                    StoreAccess::SubstateUpdatedInHeap {
+                    StoreAccess::HeapSubstateUpdated {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id: *node_id,
                             partition_number,
@@ -260,7 +260,7 @@ impl Heap {
             for (substate_key, substate_size) in partition {
                 on_store_access(
                     self,
-                    StoreAccess::SubstateUpdatedInHeap {
+                    StoreAccess::HeapSubstateUpdated {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id,
                             partition_number,
@@ -293,7 +293,7 @@ impl Heap {
             for (substate_key, substate_value) in partition {
                 on_store_access(
                     self,
-                    StoreAccess::SubstateUpdatedInHeap {
+                    StoreAccess::HeapSubstateUpdated {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id: *node_id,
                             partition_number: *partition_number,

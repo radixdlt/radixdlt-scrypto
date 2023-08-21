@@ -84,7 +84,7 @@ impl LimitsModule {
         match store_access {
             StoreAccess::ReadFromDb(..) | StoreAccess::ReadFromDbNotFound(..) => {}
 
-            StoreAccess::SubstateUpdatedInHeap {
+            StoreAccess::HeapSubstateUpdated {
                 canonical_substate_key,
                 old_size,
                 new_size,
@@ -104,7 +104,7 @@ impl LimitsModule {
                     self.heap_substate_total_bytes -= old_size - new_size;
                 }
             }
-            StoreAccess::SubstateUpdatedInTrack {
+            StoreAccess::TrackSubstateUpdated {
                 canonical_substate_key,
                 old_size,
                 new_size,

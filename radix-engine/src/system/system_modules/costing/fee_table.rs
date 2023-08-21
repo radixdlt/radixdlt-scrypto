@@ -99,8 +99,7 @@ impl FeeTable {
                 // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
                 160_000
             }
-            StoreAccess::SubstateUpdatedInHeap { .. }
-            | StoreAccess::SubstateUpdatedInTrack { .. } => {
+            StoreAccess::HeapSubstateUpdated { .. } | StoreAccess::TrackSubstateUpdated { .. } => {
                 // Heap/track substate total size is limited by limits module.
                 0
             }

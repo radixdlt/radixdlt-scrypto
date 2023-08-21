@@ -68,8 +68,8 @@ impl<'a> ReadSubstateEvent<'a> {
             ReadSubstateEvent::StoreAccess(access) => match access {
                 StoreAccess::ReadFromDb(_, _) => false,
                 StoreAccess::ReadFromDbNotFound(_) => false,
-                StoreAccess::SubstateUpdatedInTrack { .. } => false,
-                StoreAccess::SubstateUpdatedInHeap { .. } => true,
+                StoreAccess::TrackSubstateUpdated { .. } => false,
+                StoreAccess::HeapSubstateUpdated { .. } => true,
             },
         }
     }
