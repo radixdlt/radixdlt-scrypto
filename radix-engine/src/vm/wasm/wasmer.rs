@@ -623,20 +623,17 @@ impl WasmerModule {
             event_name_len: u32,
             event_data_ptr: u32,
             event_data_len: u32,
-            revert_on_tx_failure: u32,
+            flags: u32,
         ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
             let event_name = read_memory(&instance, event_name_ptr, event_name_len)?;
             let event_data = read_memory(&instance, event_data_ptr, event_data_len)?;
+            let event_flags = EventFlags::from_bits(flags).ok_or(InvokeError::SelfError(
+                WasmRuntimeError::InvalidEventFlags(flags),
+            ))?;
 
-            if revert_on_tx_failure != 1 {
-                return Err(InvokeError::SelfError(
-                    WasmRuntimeError::UnsupportedRevertOnFailureValue(revert_on_tx_failure),
-                ));
-            }
-
-            runtime.emit_event(event_name, event_data, true)
+            runtime.emit_event(event_name, event_data, event_flags)
         }
 
         fn emit_log(

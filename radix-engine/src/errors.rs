@@ -244,6 +244,7 @@ pub enum SystemError {
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
+    ForceWriteEventFlagsNotAllowed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

@@ -1,6 +1,7 @@
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::KernelModule;
 use crate::types::*;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 
@@ -8,7 +9,7 @@ use radix_engine_interface::crypto::Hash;
 pub struct Event {
     pub type_identifier: EventTypeIdentifier,
     pub payload: Vec<u8>,
-    pub revert_on_tx_failure: bool,
+    pub flags: EventFlags,
 }
 
 #[derive(Debug, Clone)]
@@ -65,11 +66,11 @@ impl TransactionRuntimeModule {
         for Event {
             mut type_identifier,
             payload,
-            revert_on_tx_failure,
+            flags,
         } in self.events.into_iter()
         {
             // Revert if failure
-            if revert_on_tx_failure && !is_success {
+            if !flags.contains(EventFlags::FORCE_WRITE) && !is_success {
                 continue;
             }
 

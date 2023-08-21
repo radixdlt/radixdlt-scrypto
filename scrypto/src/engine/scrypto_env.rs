@@ -10,6 +10,7 @@ use radix_engine_interface::api::key_value_store_api::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::api::{
     ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldValue, GenericArgs,
     ObjectHandle,
@@ -438,7 +439,7 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         &mut self,
         event_name: String,
         event_data: Vec<u8>,
-        revert_on_tx_failure: bool,
+        event_flags: EventFlags,
     ) -> Result<(), ClientApiError> {
         unsafe {
             emit_event(
@@ -446,7 +447,7 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
                 event_name.len(),
                 event_data.as_ptr(),
                 event_data.len(),
-                revert_on_tx_failure,
+                event_flags.bits(),
             )
         };
         Ok(())

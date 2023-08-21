@@ -149,7 +149,7 @@ pub enum WasmRuntimeError {
     /// Costing error (no-op runtime only!)
     FeeReserveError(FeeReserveError),
 
-    UnsupportedRevertOnFailureValue(u32),
+    InvalidEventFlags(u32),
 }
 
 impl SelfError for WasmRuntimeError {

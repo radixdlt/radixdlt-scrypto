@@ -1,4 +1,5 @@
 use radix_engine_common::types::NodeId;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::{
@@ -26,7 +27,7 @@ impl Runtime {
         api.emit_event(
             T::event_name().to_string(),
             scrypto_encode(&event).unwrap(),
-            true,
+            EventFlags::empty(),
         )
     }
 
@@ -41,7 +42,7 @@ impl Runtime {
         api.emit_event(
             T::event_name().to_string(),
             scrypto_encode(&event).unwrap(),
-            false,
+            EventFlags::FORCE_WRITE,
         )
     }
 
