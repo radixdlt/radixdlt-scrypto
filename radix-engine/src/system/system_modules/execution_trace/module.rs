@@ -339,6 +339,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
                     .execution_trace
                     .handle_after_drop_node(system_state.current_call_frame, current_depth);
             }
+            DropNodeEvent::StoreAccess(_) => {}
         }
 
         Ok(())

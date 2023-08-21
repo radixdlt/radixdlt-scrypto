@@ -175,6 +175,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
                     device
                 );
             }
+            ReadSubstateEvent::StoreAccess(_) => {}
         }
 
         Ok(())

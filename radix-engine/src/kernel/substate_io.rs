@@ -257,13 +257,15 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         for (substate_key, substate_value) in partition_substates {
             match dest_device {
                 SubstateDevice::Heap => {
-                    self.heap.set_substate(
-                        *dest_node_id,
-                        dest_partition_number,
-                        substate_key,
-                        substate_value,
-                        &mut |heap, store_access| handler.on_store_access(heap, store_access),
-                    );
+                    self.heap
+                        .set_substate(
+                            *dest_node_id,
+                            dest_partition_number,
+                            substate_key,
+                            substate_value,
+                            &mut |heap, store_access| handler.on_store_access(heap, store_access),
+                        )
+                        .map_err(CallbackError::CallbackError)?;
                 }
                 SubstateDevice::Store => {
                     if self.heap_transient_substates.is_transient(
