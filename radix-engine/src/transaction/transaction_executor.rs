@@ -1,5 +1,7 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
-use crate::blueprints::resource::{BurnFungibleResourceEvent, DepositEvent, PayFeeEvent};
+use crate::blueprints::resource::{
+    BurnFungibleResourceEvent, DepositEvent, PayFeeEvent, ReceiveRoyaltyEvent,
+};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
@@ -705,6 +707,13 @@ where
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
+            events.push((
+                EventTypeIdentifier(
+                    Emitter::Method(node_id, ObjectModuleId::Main),
+                    "ReceiveRoyaltyEvent".to_string(),
+                ),
+                scrypto_encode(&ReceiveRoyaltyEvent { amount }).unwrap(),
+            ));
         }
 
         // Take fee payments
