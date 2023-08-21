@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 proc-macro2 = { version = "1.0.38" }
-syn = { version = "1.0.93", features = ["full", "extra-traits"] }
+syn = { version = "=1.0.109", features = ["full", "extra-traits"] }
 quote = { version = "1.0.18" }
 const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
 itertools = { version = "0.10.3" }
