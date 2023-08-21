@@ -151,10 +151,21 @@ pub enum Condition {
     IfOuterFeature(String),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum FieldTransience {
+    NotTransient,
+    // TODO: Will need to change this Vec<u8> to ScryptoValue to support default values with global references
+    TransientStatic {
+        /// The default value a transient substate will have on first read
+        default_value: Vec<u8>,
+    },
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct FieldSchema<V> {
     pub field: V,
     pub condition: Condition,
+    pub transience: FieldTransience,
 }
 
 impl FieldSchema<TypeRef<LocalTypeIndex>> {
@@ -162,6 +173,7 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::IfFeature(feature.to_string()),
+            transience: FieldTransience::NotTransient,
         }
     }
 
@@ -169,6 +181,7 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::IfOuterFeature(feature.to_string()),
+            transience: FieldTransience::NotTransient,
         }
     }
 
@@ -176,6 +189,20 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::Always,
+            transience: FieldTransience::NotTransient,
+        }
+    }
+
+    pub fn transient_field<I: Into<LocalTypeIndex>, E: ScryptoEncode>(
+        value: I,
+        default_value: E,
+    ) -> Self {
+        FieldSchema {
+            field: TypeRef::Static(value.into()),
+            condition: Condition::Always,
+            transience: FieldTransience::TransientStatic {
+                default_value: scrypto_encode(&default_value).unwrap(),
+            },
         }
     }
 }

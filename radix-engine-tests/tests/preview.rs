@@ -54,6 +54,13 @@ fn test_transaction_preview_cost_estimate() {
                     .safe_mul(FeeTable::new().validate_tx_payload_cost(size_diff))
                     .unwrap()
             )
+            .unwrap()
+            .safe_add(
+                Decimal::try_from(ARCHIVE_STORAGE_PRICE_IN_XRD)
+                    .unwrap()
+                    .safe_mul(size_diff)
+                    .unwrap()
+            )
             .unwrap(),
         actual_receipt.fee_summary.total_cost(),
     );
@@ -86,7 +93,7 @@ fn test_transaction_preview_without_locking_fee() {
     println!("{:?}", preview_receipt);
     assert!(fee_summary.total_execution_cost_in_xrd.is_positive());
     assert_eq!(fee_summary.total_tipping_cost_in_xrd, dec!("0"));
-    assert_eq!(fee_summary.total_storage_cost_in_xrd, dec!("0"));
+    assert!(fee_summary.total_storage_cost_in_xrd.is_positive()); // payload cost
     assert_eq!(fee_summary.total_royalty_cost_in_xrd, dec!("0"));
 }
 

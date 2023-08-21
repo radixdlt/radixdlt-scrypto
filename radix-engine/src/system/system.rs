@@ -23,7 +23,6 @@ use crate::system::system_type_checker::{
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
-use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_api::{FieldHandle, LockFlags};
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
@@ -387,6 +386,8 @@ where
             ),
         )?;
 
+        self.api.kernel_pin_node(global_address_reservation)?;
+
         Ok(GlobalAddressReservation(Own(global_address_reservation)))
     }
 
@@ -496,6 +497,28 @@ where
         );
 
         self.api.kernel_create_node(node_id, node_substates)?;
+
+        if blueprint_interface.is_transient {
+            self.api.kernel_pin_node(node_id)?;
+        }
+
+        if let Some((partition_offset, fields)) = blueprint_interface.state.fields {
+            for (index, field) in fields.iter().enumerate() {
+                if let FieldTransience::TransientStatic { .. } = field.transience {
+                    let partition_number = match partition_offset {
+                        PartitionDescription::Physical(partition_number) => partition_number,
+                        PartitionDescription::Logical(offset) => {
+                            MAIN_BASE_PARTITION.at_offset(offset).unwrap()
+                        }
+                    };
+                    self.api.kernel_mark_substate_as_transient(
+                        node_id,
+                        partition_number,
+                        SubstateKey::Field(index as u8),
+                    )?;
+                }
+            }
+        }
 
         Ok(node_id.into())
     }
@@ -736,7 +759,7 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
         field_index: u8,
-    ) -> Result<(NodeId, BlueprintInfo, PartitionNumber), RuntimeError> {
+    ) -> Result<(NodeId, BlueprintInfo, PartitionNumber, FieldTransience), RuntimeError> {
         let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
 
         let (partition_description, field_schema) =
@@ -783,7 +806,7 @@ where
                 .expect("Module number overflow"),
         };
 
-        Ok((node_id, info, partition_num))
+        Ok((node_id, info, partition_num, field_schema.transience))
     }
 
     fn resolve_blueprint_from_modules(
@@ -1865,7 +1888,7 @@ where
             .api
             .kernel_scan_sorted_substates(&node_id, partition_num, limit)?
             .into_iter()
-            .map(|(key, value)| (SortedKey(key.0, key.1), value.into()))
+            .map(|(key, value)| (key, value.into()))
             .collect();
 
         Ok(substates)
@@ -2108,7 +2131,7 @@ where
     ) -> Result<SubstateHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, blueprint_info, partition_num) =
+        let (node_id, blueprint_info, partition_num, transient) =
             self.get_actor_field_info(actor_object_type, field_index)?;
 
         // TODO: Remove
@@ -2137,13 +2160,33 @@ where
             FieldLockData::Read
         };
 
-        let handle = self.api.kernel_open_substate(
-            &node_id,
-            partition_num,
-            &SubstateKey::Field(field_index),
-            flags,
-            SystemLockData::Field(lock_data),
-        )?;
+        let handle = match transient {
+            FieldTransience::NotTransient => self.api.kernel_open_substate(
+                &node_id,
+                partition_num,
+                &SubstateKey::Field(field_index),
+                flags,
+                SystemLockData::Field(lock_data),
+            )?,
+            FieldTransience::TransientStatic { default_value } => {
+                let default_value: ScryptoValue = scrypto_decode(&default_value).unwrap();
+                self.api.kernel_mark_substate_as_transient(
+                    node_id,
+                    partition_num,
+                    SubstateKey::Field(field_index),
+                )?;
+                self.api.kernel_open_substate_with_default(
+                    &node_id,
+                    partition_num,
+                    &SubstateKey::Field(field_index),
+                    flags,
+                    Some(|| {
+                        IndexedScryptoValue::from_typed(&FieldSubstate::new_field(default_value))
+                    }),
+                    SystemLockData::Field(lock_data),
+                )?
+            }
+        };
 
         if flags.contains(LockFlags::MUTABLE) {
             let mutability = self.api.kernel_read_substate(handle).map(|v| {
@@ -2466,6 +2509,20 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+        self.api.kernel_pin_node(node_id)
+    }
+
+    fn kernel_mark_substate_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        key: SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        self.api
+            .kernel_mark_substate_as_transient(node_id, partition_num, key)
+    }
+
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         self.api.kernel_drop_node(node_id)
     }
@@ -2503,13 +2560,13 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_open_substate_with_default(
+    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        default: Option<fn() -> IndexedScryptoValue>,
+        default: Option<F>,
         data: SystemLockData,
     ) -> Result<SubstateHandle, RuntimeError> {
         self.api.kernel_open_substate_with_default(
@@ -2574,12 +2631,12 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
-    ) -> Result<Vec<(SortedU16Key, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError> {
         self.api
             .kernel_scan_sorted_substates(node_id, partition_num, limit)
     }
 
-    fn kernel_scan_keys<K: SubstateKeyContent>(
+    fn kernel_scan_keys<K: SubstateKeyContent + 'static>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -2589,7 +2646,7 @@ where
             .kernel_scan_keys::<K>(node_id, partition_num, limit)
     }
 
-    fn kernel_drain_substates<K: SubstateKeyContent>(
+    fn kernel_drain_substates<K: SubstateKeyContent + 'static>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
