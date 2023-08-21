@@ -17,10 +17,12 @@ use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::track::SystemUpdates;
 use crate::transaction::{
     execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
-    TransactionOutcome, TransactionReceipt, TransactionResult,
+    SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
+    TransactionResult,
 };
 use crate::types::*;
 use lazy_static::lazy_static;
@@ -42,7 +44,9 @@ use radix_engine_interface::{
     burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
+use radix_engine_store_interface::interface::{
+    DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry,
+};
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, SubstateDatabase},
@@ -177,6 +181,7 @@ pub struct FlashReceipt {
     pub database_updates: DatabaseUpdates,
     pub system_updates: SystemUpdates,
     pub state_update_summary: StateUpdateSummary,
+    pub substate_system_structures: SubstateSystemStructures,
 }
 
 impl From<FlashReceipt> for TransactionReceipt {
@@ -224,6 +229,22 @@ impl FlashReceipt {
 
                 result.state_updates.system_updates = system_updates;
                 result.state_updates.database_updates = database_updates;
+
+                let mut substate_system_structures = self.substate_system_structures;
+                for (node_id, by_partition_num) in
+                    result.system_structure.substate_system_structures.drain(..)
+                {
+                    let merged_by_partition_num = substate_system_structures
+                        .entry(node_id)
+                        .or_insert_with(|| index_map_new());
+                    for (partition_num, by_substate_key) in by_partition_num {
+                        merged_by_partition_num
+                            .entry(partition_num)
+                            .or_insert_with(|| index_map_new())
+                            .extend(by_substate_key);
+                    }
+                }
+                result.system_structure.substate_system_structures = substate_system_structures;
             }
             _ => {}
         }
@@ -545,6 +566,14 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
         }
     }
 
+    let flashed_db = FlashedSubstateDatabase {
+        flash_updates: &database_updates,
+    };
+    let mut substate_schema_mapper =
+        SubstateSchemaMapper::new(SystemDatabaseReader::new(&flashed_db));
+    substate_schema_mapper.add_all_system_updates(&system_updates);
+    let substate_system_structures = substate_schema_mapper.done();
+
     FlashReceipt {
         database_updates,
         system_updates,
@@ -556,6 +585,48 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
             balance_changes: index_map_new(),
             direct_vault_updates: index_map_new(),
         },
+        substate_system_structures,
+    }
+}
+
+/// A [`SubstateDatabase`] implementation holding only the initial [`DatabaseUpdates`] from a system
+/// bootstrap flash.
+struct FlashedSubstateDatabase<'a> {
+    flash_updates: &'a DatabaseUpdates,
+}
+
+impl<'a> SubstateDatabase for FlashedSubstateDatabase<'a> {
+    fn get_substate(
+        &self,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+    ) -> Option<DbSubstateValue> {
+        self.flash_updates
+            .get(partition_key)
+            .and_then(|partition_updates| partition_updates.get(sort_key))
+            .and_then(|update| match update {
+                DatabaseUpdate::Set(value) => Some(value.clone()),
+                DatabaseUpdate::Delete => None,
+            })
+    }
+
+    fn list_entries(
+        &self,
+        partition_key: &DbPartitionKey,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        Box::new(
+            self.flash_updates
+                .get(partition_key)
+                .into_iter()
+                .flat_map(|partition_updates| {
+                    partition_updates
+                        .iter()
+                        .filter_map(|(sort_key, update)| match update {
+                            DatabaseUpdate::Set(value) => Some((sort_key.clone(), value.clone())),
+                            DatabaseUpdate::Delete => None,
+                        })
+                }),
+        )
     }
 }
 
