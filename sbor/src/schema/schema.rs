@@ -1,14 +1,36 @@
 use crate::rust::prelude::*;
 use crate::*;
 
+define_versioned!(
+    #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+    #[sbor(child_types = "S::CustomTypeKind<LocalTypeIndex>, S::CustomTypeValidation")]
+    pub enum VersionedSchema<S: CustomSchema> {
+        latest_version: {
+            1 => Schema<S> = SchemaV1::<S>,
+        }
+    }
+);
+
+impl<S: CustomSchema> VersionedSchema<S> {
+    pub fn empty() -> Self {
+        Schema::empty().into()
+    }
+}
+
+impl<S: CustomSchema> Default for VersionedSchema<S> {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
 /// An array of custom type kinds, and associated extra information which can attach to the type kinds
-#[derive(Default, Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 // NB - the generic parameter E isn't embedded in the value model itself - instead:
-// * Via TypeKind, E::CustomTypeKind<LocalTypeIndex> gets embedded
-// * Via TypeValidation, E::CustomTypeValidation gets embedded
+// * Via TypeKind, S::CustomTypeKind<LocalTypeIndex> gets embedded
+// * Via TypeValidation, S::CustomTypeValidation gets embedded
 // So theses are the child types which need to be registered with the sbor macro for it to compile
 #[sbor(child_types = "S::CustomTypeKind<LocalTypeIndex>, S::CustomTypeValidation")]
-pub struct Schema<S: CustomSchema> {
+pub struct SchemaV1<S: CustomSchema> {
     pub type_kinds: Vec<SchemaTypeKind<S>>,
     pub type_metadata: Vec<TypeMetadata>, // TODO: reconsider adding type hash when it's ready!
     pub type_validations: Vec<TypeValidation<S::CustomTypeValidation>>,
@@ -17,7 +39,7 @@ pub struct Schema<S: CustomSchema> {
 pub type SchemaTypeKind<S> =
     TypeKind<<S as CustomSchema>::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>;
 
-impl<S: CustomSchema> Schema<S> {
+impl<S: CustomSchema> SchemaV1<S> {
     pub fn empty() -> Self {
         Self {
             type_kinds: vec![],
@@ -118,6 +140,12 @@ impl<S: CustomSchema> Schema<S> {
 
     pub fn validate(&self) -> Result<(), SchemaValidationError> {
         validate_schema(self)
+    }
+}
+
+impl<S: CustomSchema> Default for SchemaV1<S> {
+    fn default() -> Self {
+        Self::empty()
     }
 }
 

@@ -121,6 +121,8 @@ impl TransactionProcessorBlueprint {
                 )
             ),
         )?;
+        api.kernel_pin_node(worktop_node_id)?;
+
         let worktop = Worktop(Own(worktop_node_id));
         let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)
             .map_err(|e| {

@@ -3,14 +3,12 @@ use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
-use crate::errors::SystemUpstreamError;
-use crate::errors::{RuntimeError, SystemError};
+use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
 use crate::kernel::call_frame::CallFrameMessage;
-use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_callback_api::{
@@ -18,7 +16,7 @@ use crate::kernel::kernel_callback_api::{
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
-use crate::system::module::KernelModule;
+use crate::system::module::SystemModule;
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -82,7 +80,7 @@ impl SystemLockData {
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, BlueprintDefinition>,
-    pub schema_cache: NonIterMap<Hash, ScryptoSchema>,
+    pub schema_cache: NonIterMap<SchemaHash, ScryptoSchema>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
 }
@@ -103,6 +101,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_teardown(api)
+    }
+
+    fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_pin_node(self, node_id)
     }
 
     fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
@@ -447,6 +449,20 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(())
     }
 
+    fn on_mark_substate_as_transient(
+        &mut self,
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_mark_substate_as_transient(
+            self,
+            node_id,
+            partition_number,
+            substate_key,
+        )
+    }
+
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
         partition_num: PartitionNumber,
@@ -610,51 +626,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             TypeInfoSubstate::KeyValueStore(_)
             | TypeInfoSubstate::GlobalAddressReservation(_)
             | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
-        }
-    }
-
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError> {
-        // Read type info
-        let maybe_type_info = if let Some(substate) = heap.get_substate(
-            node_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        ) {
-            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
-            Some(type_info)
-        } else {
-            None
-        };
-
-        let is_persist_allowed = if let Some(type_info) = maybe_type_info {
-            match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint_info, .. }) => {
-                    let canonical_id = CanonicalBlueprintId {
-                        address: blueprint_info.blueprint_id.package_address,
-                        blueprint: blueprint_info.blueprint_id.blueprint_name.clone(),
-                        version: BlueprintVersion::default(),
-                    };
-                    let maybe_definition = self.blueprint_cache.get(&canonical_id);
-                    if let Some(definition) = maybe_definition {
-                        !definition.interface.is_transient
-                    } else {
-                        panic!("Blueprint definition not available for heap node");
-                    }
-                }
-                TypeInfoSubstate::KeyValueStore(_) => true,
-                TypeInfoSubstate::GlobalAddressReservation(_) => false,
-                TypeInfoSubstate::GlobalAddressPhantom(_) => true,
-            }
-        } else {
-            false
-        };
-
-        if is_persist_allowed {
-            Ok(())
-        } else {
-            Err(RuntimeError::SystemError(
-                SystemError::PersistenceProhibited,
-            ))
         }
     }
 }

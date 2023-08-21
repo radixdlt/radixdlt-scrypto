@@ -259,6 +259,7 @@ pub type BasicRawValue<'a> = RawValue<'a, NoCustomExtension>;
 pub type BasicOwnedRawValue = RawValue<'static, NoCustomExtension>;
 pub type BasicTypeKind<L> = TypeKind<NoCustomTypeKind, L>;
 pub type BasicSchema = Schema<NoCustomSchema>;
+pub type BasicVersionedSchema = VersionedSchema<NoCustomSchema>;
 pub type BasicTypeData<L> = TypeData<NoCustomTypeKind, L>;
 
 impl<'a> CustomDisplayContext<'a> for () {

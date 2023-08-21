@@ -1,8 +1,6 @@
 use scrypto::api::*;
 use scrypto::prelude::*;
 
-// TODO: need to update XyzComponent schema type!!!
-
 #[blueprint]
 mod mini_proof {
     struct MiniProof {

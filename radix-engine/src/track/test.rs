@@ -6,7 +6,7 @@ use sbor::rust::vec::Vec;
 #[test]
 fn overlaying_iterator_overlays_changes() {
     let underlying = vec![(1, "cat"), (2, "dog"), (5, "ant"), (7, "bat")].into_iter();
-    let overlaid = vec![
+    let overlaying = vec![
         (0, Some("bee")),  // add element before all existing ones
         (2, None),         // delete some existing element
         (3, Some("rat")),  // add element between some existing ones
@@ -15,9 +15,9 @@ fn overlaying_iterator_overlays_changes() {
         (10, Some("fox")), // add element after all existing ones
     ]
     .into_iter();
-    let overlying = OverlayingIterator::new(underlying, overlaid);
+    let overlaying = OverlayingIterator::new(underlying, overlaying);
     assert_eq!(
-        overlying.collect::<Vec<_>>(),
+        overlaying.collect::<Vec<_>>(),
         vec![
             (0, "bee"),
             (1, "cat"),
@@ -32,10 +32,10 @@ fn overlaying_iterator_overlays_changes() {
 #[test]
 fn overlaying_iterator_returns_underlying_when_no_changes() {
     let underlying = vec![(1, "cat"), (2, "dog"), (5, "ant"), (7, "bat")].into_iter();
-    let overlaid = vec![].into_iter();
-    let overlying = OverlayingIterator::new(underlying, overlaid);
+    let overlaying = vec![].into_iter();
+    let overlaying = OverlayingIterator::new(underlying, overlaying);
     assert_eq!(
-        overlying.collect::<Vec<_>>(),
+        overlaying.collect::<Vec<_>>(),
         vec![(1, "cat"), (2, "dog"), (5, "ant"), (7, "bat")]
     );
 }
@@ -43,9 +43,9 @@ fn overlaying_iterator_returns_underlying_when_no_changes() {
 #[test]
 fn overlaying_iterator_returns_upserted_values_when_no_underlying() {
     let underlying = vec![].into_iter();
-    let overlaid = vec![(0, Some("bee")), (2, None), (5, Some("ant")), (7, None)].into_iter();
-    let overlying = OverlayingIterator::new(underlying, overlaid);
-    assert_eq!(overlying.collect::<Vec<_>>(), vec![(0, "bee"), (5, "ant")]);
+    let overlaying = vec![(0, Some("bee")), (2, None), (5, Some("ant")), (7, None)].into_iter();
+    let overlaying = OverlayingIterator::new(underlying, overlaying);
+    assert_eq!(overlaying.collect::<Vec<_>>(), vec![(0, "bee"), (5, "ant")]);
 }
 
 #[test]
@@ -57,7 +57,7 @@ fn overlaying_result_iterator_overlays_changes() {
         Ok((7, "bat")),
     ]
     .into_iter();
-    let overlaid = vec![
+    let overlaying = vec![
         (0, Some("bee")),  // add element before all existing ones
         (2, None),         // delete some existing element
         (3, Some("rat")),  // add element between some existing ones
@@ -66,9 +66,9 @@ fn overlaying_result_iterator_overlays_changes() {
         (10, Some("fox")), // add element after all existing ones
     ]
     .into_iter();
-    let overlying = OverlayingResultIterator::new(underlying, overlaid);
+    let overlaying = OverlayingResultIterator::new(underlying, overlaying);
     assert_eq!(
-        overlying.collect::<Vec<_>>(),
+        overlaying.collect::<Vec<_>>(),
         vec![
             Ok((0, "bee")),
             Ok((1, "cat")),
@@ -89,10 +89,10 @@ fn overlaying_result_iterator_returns_underlying_when_no_changes() {
         Ok((7, "bat")),
     ]
     .into_iter();
-    let overlaid = vec![].into_iter();
-    let overlying = OverlayingResultIterator::new(underlying, overlaid);
+    let overlaying = vec![].into_iter();
+    let overlaying = OverlayingResultIterator::new(underlying, overlaying);
     assert_eq!(
-        overlying.collect::<Vec<_>>(),
+        overlaying.collect::<Vec<_>>(),
         vec![
             Ok((1, "cat")),
             Ok((2, "dog")),
@@ -105,10 +105,10 @@ fn overlaying_result_iterator_returns_underlying_when_no_changes() {
 #[test]
 fn overlaying_result_iterator_returns_upserted_values_when_no_underlying() {
     let underlying = Vec::<Result<_, ()>>::new().into_iter();
-    let overlaid = vec![(0, Some("bee")), (2, None), (5, Some("ant")), (7, None)].into_iter();
-    let overlying = OverlayingResultIterator::new(underlying, overlaid);
+    let overlaying = vec![(0, Some("bee")), (2, None), (5, Some("ant")), (7, None)].into_iter();
+    let overlaying = OverlayingResultIterator::new(underlying, overlaying);
     assert_eq!(
-        overlying.collect::<Vec<_>>(),
+        overlaying.collect::<Vec<_>>(),
         vec![Ok((0, "bee")), Ok((5, "ant"))]
     );
 }
@@ -122,7 +122,7 @@ fn underlying_error_returns_error() {
         Ok((7, "bat")),
     ]
     .into_iter();
-    let overlaid = vec![
+    let overlaying = vec![
         (0, Some("bee")),  // add element before all existing ones
         (2, None),         // delete some existing element
         (3, Some("rat")),  // add element between some existing ones
@@ -131,9 +131,9 @@ fn underlying_error_returns_error() {
         (10, Some("fox")), // add element after all existing ones
     ]
     .into_iter();
-    let overlying = OverlayingResultIterator::new(underlying, overlaid);
+    let overlaying = OverlayingResultIterator::new(underlying, overlaying);
     assert_eq!(
-        overlying.collect::<Vec<_>>(),
+        overlaying.collect::<Vec<_>>(),
         vec![Ok((0, "bee")), Ok((1, "cat")), Err(()),]
     );
 }

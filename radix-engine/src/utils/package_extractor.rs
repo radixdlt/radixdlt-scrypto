@@ -3,7 +3,7 @@ use crate::types::*;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::NoOpWasmRuntime;
 use crate::{errors::InvokeError, transaction::CostingParameters};
-use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageDefinition};
+use radix_engine_interface::blueprints::package::*;
 use sbor::rust::iter;
 use transaction::prelude::TransactionCostingParameters;
 
@@ -29,7 +29,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
 
     // Validate WASM
     let validator = WasmValidator::default();
-    let code_hash = Hash([0u8; 32]);
+    let code_hash = CodeHash(Hash([0u8; 32]));
     let instrumented_code = validator
         .validate(&code, iter::empty())
         .map_err(|e| ExtractSchemaError::InvalidWasm(e))?

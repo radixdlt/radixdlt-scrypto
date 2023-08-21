@@ -645,7 +645,7 @@ impl SystemDatabaseChecker {
                                     .ok_or_else(|| SystemPartitionCheckError::MissingSortedIndexCollectionValueSchema)?
                             };
 
-                            for (key, value) in reader.substates_iter::<SortedU16Key>(
+                            for (key, value) in reader.substates_iter::<SortedKey>(
                                 &node_checker_state.node_id,
                                 partition_number,
                             ) {

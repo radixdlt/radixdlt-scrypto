@@ -56,6 +56,7 @@ use clap::{Parser, Subcommand};
 use radix_engine::blueprints::consensus_manager::{
     ConsensusManagerSubstate, ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
 };
+use radix_engine::blueprints::models::KeyValueEntryContentSource;
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
@@ -76,6 +77,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::{
     db_key_mapper::{
         MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
@@ -354,7 +356,7 @@ pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectI
         .ok_or_else(|| Error::ComponentNotFound(component_address))
 }
 
-pub fn export_schema(node_id: &NodeId, schema_hash: Hash) -> Result<ScryptoSchema, Error> {
+pub fn export_schema(node_id: &NodeId, schema_hash: SchemaHash) -> Result<ScryptoSchema, Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
@@ -415,13 +417,19 @@ pub fn get_event_schema<S: SubstateDatabase>(
     };
 
     let version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str());
-    let bp_definition: BlueprintDefinition = system_reader.read_object_collection_entry(
-        blueprint_id.package_address.as_node_id(),
-        ObjectModuleId::Main,
-        ObjectCollectionKey::KeyValue(PACKAGE_BLUEPRINTS_COLLECTION_INDEX, &version_key),
-    )?;
+    let bp_definition: VersionedPackageBlueprintVersionDefinition = system_reader
+        .read_object_collection_entry(
+            blueprint_id.package_address.as_node_id(),
+            ObjectModuleId::Main,
+            ObjectCollectionKey::KeyValue(
+                PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+                &version_key,
+            ),
+        )?;
 
-    let bp_interface = bp_definition.interface;
+    let bp_interface = match bp_definition {
+        VersionedPackageBlueprintVersionDefinition::V1(blueprint) => blueprint.interface,
+    };
 
     let event_def = bp_interface.events.get(event_name)?;
     match event_def {
@@ -429,10 +437,13 @@ pub fn get_event_schema<S: SubstateDatabase>(
             let schema: ScryptoSchema = system_reader.read_object_collection_entry(
                 blueprint_id.package_address.as_node_id(),
                 ObjectModuleId::Main,
-                ObjectCollectionKey::KeyValue(PACKAGE_SCHEMAS_COLLECTION_INDEX, &type_id.0),
+                ObjectCollectionKey::KeyValue(
+                    PackageCollection::SchemaKeyValue.collection_index(),
+                    &type_id.0,
+                ),
             )?;
 
-            Some((type_id.1, schema))
+            Some((type_id.1, schema.content))
         }
         BlueprintPayloadDef::Generic(..) => {
             panic!("Not expecting any events to use generics")

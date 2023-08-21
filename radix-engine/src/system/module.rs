@@ -10,7 +10,7 @@ use crate::kernel::kernel_callback_api::{
 };
 use crate::types::*;
 
-pub trait KernelModule<M: KernelCallbackObject> {
+pub trait SystemModule<M: KernelCallbackObject> {
     //======================
     // System module setup
     //======================
@@ -67,6 +67,11 @@ pub trait KernelModule<M: KernelCallbackObject> {
     //======================
 
     #[inline(always)]
+    fn on_pin_node(_system: &mut M, _node_id: &NodeId) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
     fn on_allocate_node_id<Y: KernelApi<M>>(
         _api: &mut Y,
         _entity_type: EntityType,
@@ -101,6 +106,15 @@ pub trait KernelModule<M: KernelCallbackObject> {
     //======================
     // Substate events
     //======================
+    #[inline(always)]
+    fn on_mark_substate_as_transient(
+        _system: &mut M,
+        _node_id: &NodeId,
+        _partition_number: &PartitionNumber,
+        _substate_key: &SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
 
     #[inline(always)]
     fn on_open_substate<Y: KernelInternalApi<M>>(
@@ -134,6 +148,7 @@ pub trait KernelModule<M: KernelCallbackObject> {
         Ok(())
     }
 
+    #[inline(always)]
     fn on_set_substate(_system: &mut M, _event: &SetSubstateEvent) -> Result<(), RuntimeError> {
         Ok(())
     }

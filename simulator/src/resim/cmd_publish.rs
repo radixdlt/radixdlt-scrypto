@@ -1,13 +1,12 @@
 use clap::Parser;
 use colored::*;
+use radix_engine::blueprints::models::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, BlueprintPayloadDef, FunctionSchema,
     IndexedStateSchema, PackageExport, VmType, *,
 };
-use radix_engine_interface::blueprints::package::{PackageDefinition, PackageOriginalCodeSubstate};
-use radix_engine_interface::schema::TypeRef;
-use radix_engine_queries::typed_substate_layout::PackageVmTypeSubstate;
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
@@ -74,6 +73,7 @@ impl Publish {
 
             let node_id: NodeId = package_address.0.into();
 
+            let code_hash = CodeHash::from(hash(&code));
             let blueprints_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,
                 MAIN_BASE_PARTITION
@@ -86,6 +86,18 @@ impl Publish {
                 &node_id,
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
+                    .unwrap(),
+            );
+            let royalty_configs_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                &node_id,
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET)
+                    .unwrap(),
+            );
+            let auth_configs_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                &node_id,
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET)
                     .unwrap(),
             );
             let vm_type_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
@@ -108,69 +120,67 @@ impl Publish {
             );
             let mut blueprint_updates = index_map_new();
             let mut dependency_updates = index_map_new();
+            let mut auth_config_updates = index_map_new();
+            let mut royalty_config_updates = index_map_new();
             let mut schema_updates = index_map_new();
             let mut vm_type_updates = index_map_new();
             let mut original_code_updates = index_map_new();
             let mut instrumented_code_updates = index_map_new();
-
-            let code_hash = hash(&code);
             let instrumented_code = WasmValidator::default()
                 .validate(&code, package_definition.blueprints.values())
                 .map_err(Error::InvalidPackage)?
                 .0;
-            let vm_type = PackageVmTypeSubstate {
+
+            let vm_type = PackageCodeVmType {
                 vm_type: VmType::ScryptoV1,
             };
-            let original_code = PackageOriginalCodeSubstate { code };
-            let instrumented_code = PackageOriginalCodeSubstate {
-                code: instrumented_code,
-            };
+            let original_code = PackageCodeOriginalCode { code };
+            let instrumented_code = PackageCodeInstrumentedCode { instrumented_code };
             {
                 let key =
                     SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
-                let update = DatabaseUpdate::Set(scrypto_encode(&vm_type).unwrap());
+                let update =
+                    DatabaseUpdate::Set(scrypto_encode(&vm_type.into_locked_substate()).unwrap());
                 vm_type_updates.insert(key, update);
 
                 let key =
                     SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
-                let update = DatabaseUpdate::Set(scrypto_encode(&original_code).unwrap());
+                let update = DatabaseUpdate::Set(
+                    scrypto_encode(&original_code.into_locked_substate()).unwrap(),
+                );
                 original_code_updates.insert(key, update);
 
                 let key =
                     SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
-                let update = DatabaseUpdate::Set(scrypto_encode(&instrumented_code).unwrap());
+                let update = DatabaseUpdate::Set(
+                    scrypto_encode(&instrumented_code.into_locked_substate()).unwrap(),
+                );
                 instrumented_code_updates.insert(key, update);
             }
 
-            for (b, s) in package_definition.blueprints {
+            for (blueprint_name, blueprint_definition) in package_definition.blueprints {
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
 
-                let blueprint_schema = s.schema.clone();
+                let blueprint_version_key = BlueprintVersionKey::new_default(blueprint_name);
+                let blueprint_schema = blueprint_definition.schema.clone();
                 let schema_hash = blueprint_schema.schema.generate_schema_hash();
-                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(
-                    &scrypto_encode(&schema_hash).unwrap(),
+                schema_updates.insert(
+                    SpreadPrefixKeyMapper::map_to_db_sort_key(
+                        &scrypto_encode(&schema_hash).unwrap(),
+                    ),
+                    DatabaseUpdate::Set(
+                        scrypto_encode(&blueprint_schema.schema.into_locked_substate()).unwrap(),
+                    ),
                 );
-                let update = DatabaseUpdate::Set(scrypto_encode(&blueprint_schema).unwrap());
-                schema_updates.insert(key, update);
 
-                for (function, setup) in s.schema.functions.functions {
+                for (function, setup) in blueprint_definition.schema.functions.functions {
                     functions.insert(
                         function.clone(),
                         FunctionSchema {
                             receiver: setup.receiver,
-                            input: match setup.input {
-                                TypeRef::Static(type_index) => BlueprintPayloadDef::Static(
-                                    TypeIdentifier(schema_hash, type_index),
-                                ),
-                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
-                            },
-                            output: match setup.output {
-                                TypeRef::Static(type_index) => BlueprintPayloadDef::Static(
-                                    TypeIdentifier(schema_hash, type_index),
-                                ),
-                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
-                            },
+                            input: BlueprintPayloadDef::from_type_ref(setup.input, schema_hash),
+                            output: BlueprintPayloadDef::from_type_ref(setup.output, schema_hash),
                         },
                     );
                     let export = PackageExport {
@@ -180,36 +190,31 @@ impl Publish {
                     function_exports.insert(function, export);
                 }
 
-                let events = s
+                let events = blueprint_definition
                     .schema
                     .events
                     .event_schema
                     .into_iter()
-                    .map(|(key, index)| {
+                    .map(|(key, type_ref)| {
                         (
                             key,
-                            match index {
-                                TypeRef::Static(index) => {
-                                    BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, index))
-                                }
-                                TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
-                            },
+                            BlueprintPayloadDef::from_type_ref(type_ref, schema_hash),
                         )
                     })
                     .collect();
 
                 let state = IndexedStateSchema::from_schema(
                     schema_hash,
-                    s.schema.state,
+                    blueprint_definition.schema.state,
                     Default::default(),
                 );
 
                 let def = BlueprintDefinition {
                     interface: BlueprintInterface {
-                        generics: s.schema.generics,
-                        blueprint_type: s.blueprint_type,
+                        generics: blueprint_definition.schema.generics,
+                        blueprint_type: blueprint_definition.blueprint_type,
                         is_transient: false,
-                        feature_set: s.feature_set,
+                        feature_set: blueprint_definition.feature_set,
                         functions,
                         events,
                         state,
@@ -217,23 +222,51 @@ impl Publish {
                     function_exports,
                     hook_exports: BTreeMap::new(),
                 };
-                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
-                let update = DatabaseUpdate::Set(scrypto_encode(&def).unwrap());
-                blueprint_updates.insert(key, update);
-
-                let config = BlueprintDependencies {
-                    dependencies: s.dependencies,
-                };
-                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
-                let update = DatabaseUpdate::Set(
-                    scrypto_encode(&KeyValueEntrySubstate::entry(config)).unwrap(),
+                blueprint_updates.insert(
+                    SpreadPrefixKeyMapper::map_to_db_sort_key(
+                        &scrypto_encode(&blueprint_version_key.clone()).unwrap(),
+                    ),
+                    DatabaseUpdate::Set(scrypto_encode(&def.into_locked_substate()).unwrap()),
                 );
-                dependency_updates.insert(key, update);
+                dependency_updates.insert(
+                    SpreadPrefixKeyMapper::map_to_db_sort_key(
+                        &scrypto_encode(&blueprint_version_key.clone()).unwrap(),
+                    ),
+                    DatabaseUpdate::Set(
+                        scrypto_encode(
+                            &BlueprintDependencies {
+                                dependencies: blueprint_definition.dependencies,
+                            }
+                            .into_locked_substate(),
+                        )
+                        .unwrap(),
+                    ),
+                );
+                auth_config_updates.insert(
+                    SpreadPrefixKeyMapper::map_to_db_sort_key(
+                        &scrypto_encode(&blueprint_version_key.clone()).unwrap(),
+                    ),
+                    DatabaseUpdate::Set(
+                        scrypto_encode(&blueprint_definition.auth_config.into_locked_substate())
+                            .unwrap(),
+                    ),
+                );
+                royalty_config_updates.insert(
+                    SpreadPrefixKeyMapper::map_to_db_sort_key(
+                        &scrypto_encode(&blueprint_version_key.clone()).unwrap(),
+                    ),
+                    DatabaseUpdate::Set(
+                        scrypto_encode(&blueprint_definition.royalty_config.into_locked_substate())
+                            .unwrap(),
+                    ),
+                );
             }
 
             let database_updates = indexmap!(
                 blueprints_partition_key => blueprint_updates,
                 dependencies_partition_key => dependency_updates,
+                auth_configs_partition_key => auth_config_updates,
+                royalty_configs_partition_key => royalty_config_updates,
                 schemas_partition_key => schema_updates,
                 vm_type_partition_key => vm_type_updates,
                 original_code_partition_key => original_code_updates,
