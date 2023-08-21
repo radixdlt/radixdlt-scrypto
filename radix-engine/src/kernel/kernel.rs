@@ -379,11 +379,23 @@ where
         M::on_drop_node(&mut read_only, DropNodeEvent::Start(node_id))?;
 
         M::on_drop_node_mut(node_id, self)?;
+
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                M::on_drop_node(api, DropNodeEvent::StoreAccess(&store_access))
+            },
+        };
         let node_substates = self
             .current_frame
-            .drop_node(&mut self.substate_io, node_id)
-            .map_err(CallFrameError::DropNodeError)
-            .map_err(KernelError::CallFrameError)?;
+            .drop_node(&mut self.substate_io, node_id, &mut handler)
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::DropNodeError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
 
         let mut read_only = as_read_only!(self);
         M::on_drop_node(&mut read_only, DropNodeEvent::End(node_id, &node_substates))?;

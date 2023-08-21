@@ -771,24 +771,41 @@ impl<C, L: Clone> CallFrame<C, L> {
     }
 
     /// Removes node from call frame and owned nodes will be possessed by this call frame.
-    pub fn drop_node<S: CommitableSubstateStore>(
+    pub fn drop_node<'x, E: 'x, S: CommitableSubstateStore>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
-    ) -> Result<NodeSubstates, DropNodeError> {
+        handler: &mut impl StoreAccessHandler<C, L, E>,
+    ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
         self.take_node_internal(node_id)
-            .map_err(DropNodeError::TakeNodeError)?;
+            .map_err(|e| CallbackError::Error(DropNodeError::TakeNodeError(e)))?;
 
-        let node_substates = substate_io.drop_node(SubstateDevice::Heap, node_id)?;
-        let mut handler = NullHandler::new();
+        let mut handler = WrapperHandler {
+            call_frame: self,
+            handler,
+            phantom: PhantomData::default(),
+        };
+        let node_substates = substate_io
+            .drop_node(SubstateDevice::Heap, node_id, &mut handler)
+            .map_err(|e| match e {
+                CallbackError::Error(e) => CallbackError::Error(e),
+                CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
+            })?;
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
                 let diff = SubstateDiff::from_drop_substate(&substate_value);
-                self.process_substate_diff(substate_io, &mut handler, SubstateDevice::Heap, &diff)
-                    .map_err(|e| match e {
-                        CallbackError::Error(e) => DropNodeError::ProcessSubstateError(e),
-                        CallbackError::CallbackError(..) => panic!("Should never get here."),
-                    })?;
+                self.process_substate_diff(
+                    substate_io,
+                    handler.handler,
+                    SubstateDevice::Heap,
+                    &diff,
+                )
+                .map_err(|e| match e {
+                    CallbackError::Error(e) => {
+                        CallbackError::Error(DropNodeError::ProcessSubstateError(e))
+                    }
+                    CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
+                })?;
             }
         }
 
@@ -1529,31 +1546,6 @@ impl NonGlobalNodeRefs {
             .get_mut(node_id)
             .unwrap_or_else(|| panic!("Node {:?} not found", node_id));
         ref_count.sub_assign(1);
-    }
-}
-
-pub struct NullHandler<C, L> {
-    phantom0: PhantomData<C>,
-    phantom1: PhantomData<L>,
-}
-
-impl<C, L> NullHandler<C, L> {
-    fn new() -> Self {
-        NullHandler {
-            phantom0: PhantomData::default(),
-            phantom1: PhantomData::default(),
-        }
-    }
-}
-
-impl<C, L> StoreAccessHandler<C, L, ()> for NullHandler<C, L> {
-    fn on_store_access(
-        &mut self,
-        _current_frame: &CallFrame<C, L>,
-        _heap: &Heap,
-        _store_access: StoreAccess,
-    ) -> Result<(), ()> {
-        Ok(())
     }
 }
 

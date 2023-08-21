@@ -26,6 +26,7 @@ pub enum CreateNodeEvent<'a> {
 #[derive(Debug)]
 pub enum DropNodeEvent<'a> {
     Start(&'a NodeId),
+    StoreAccess(&'a StoreAccess),
     End(&'a NodeId, &'a NodeSubstates),
 }
 
