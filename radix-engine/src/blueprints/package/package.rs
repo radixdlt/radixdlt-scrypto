@@ -1350,7 +1350,11 @@ impl PackageRoyaltyNativeBlueprint {
     {
         {
             let mut service = SystemService::new(api);
-            if !service.is_feature_enabled(receiver, None, PackageFeature::PackageRoyalty.feature_name())? {
+            if !service.is_feature_enabled(
+                receiver,
+                None,
+                PackageFeature::PackageRoyalty.feature_name(),
+            )? {
                 return Ok(());
             }
         }
