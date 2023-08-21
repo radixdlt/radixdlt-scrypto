@@ -28,7 +28,7 @@ use crate::internal_prelude::*;
 ///     }
 ///     {
 ///         kind: Static,
-///         the_type: x,
+///         content_type: x,
 ///     },
 ///     {
 ///         kind: Generic,
@@ -106,6 +106,8 @@ macro_rules! declare_native_blueprint_state {
                 $collection_property_name:ident: $collection_type:ident {
                     entry_ident: $collection_ident:ident,
                     key_type: $collection_key_type:tt,
+                    // The full_key_content is required if it's a sorted index
+                    $(full_key_content: $full_key_content:tt,)?
                     value_type: $collection_value_type:tt,
                     allow_ownership: $collection_allow_ownership:expr
                     // Advanced collection options for (eg):
@@ -144,7 +146,7 @@ macro_rules! declare_native_blueprint_state {
                     // > Set up the (transparent) _FieldPayload new type for the content of the field
                     // > Set up the FieldContent trait for anything which can be resolved into the field payload
                     generate_content_type!(
-                        content_trait: FieldContent,
+                        content_trait: FieldContentSource,
                         payload_trait: FieldPayload,
                         ident_core: [<$blueprint_ident $field_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
@@ -161,35 +163,13 @@ macro_rules! declare_native_blueprint_state {
                 // Generate models for each collection
                 $(
                     // Key
-                    // > Set up Versioned types (if relevant). Assumes __KeyInnerV1 exists and then creates
-                    //   - Versioned__KeyInner
-                    //   - __KeyInner (alias for __KeyInnerV1)
-                    // > Create the (transparent) _Key new type for the key
-                    // > Set up the KeyContent traits for anything which can be resolved into a key
-                    generate_content_type!(
-                        content_trait: KeyContent,
-                        payload_trait: KeyPayload,
-                        ident_core: [<$blueprint_ident $collection_ident KeyInner>],
+                    generate_key_type!(
+                        content_trait: [<$collection_type KeyContentSource>],
+                        payload_trait: [<$collection_type KeyPayload>],
+                        $(full_key_content: $full_key_content,)?
                         #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
-                        #[sbor(transparent_name)]
                         struct [<$blueprint_ident $collection_ident KeyPayload>] = $collection_key_type
                     );
-
-                    // TODO(David): Tweak when I work out the right strategy for keys. Probably just want a single new-type.
-                    // So probably just don't use generate_content_type but use generate_key_type or something instead?
-                    pub type [<$blueprint_ident $collection_ident SubstateKey>] = [<$blueprint_ident $collection_ident KeyPayload>];
-
-                    // TODO(David) - Properly handle SortedIndex:
-                    // Fix Key types for SortedIndex to have a named u16 part of the key,
-                    // use a different key trait, and use .for_sorted_key in the below.
-                    impl TryFrom<&SubstateKey> for [<$blueprint_ident $collection_ident SubstateKey>] {
-                        type Error = ();
-
-                        fn try_from(substate_key: &SubstateKey) -> Result<Self, Self::Error> {
-                            let key = substate_key.for_map().ok_or(())?;
-                            scrypto_decode::<Self>(&key).map_err(|_| ())
-                        }
-                    }
 
                     // Values
                     // > If relevant, set up Versioned types, which:
@@ -202,7 +182,7 @@ macro_rules! declare_native_blueprint_state {
                     //   - The Versioned[BlueprintCollection] if it exists
                     //   - The static content type, if it exists
                     generate_content_type!(
-                        content_trait: [<$collection_type EntryContent>],
+                        content_trait: [<$collection_type EntryContentSource>],
                         payload_trait: [<$collection_type EntryPayload>],
                         ident_core: [<$blueprint_ident $collection_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
@@ -404,7 +384,7 @@ macro_rules! declare_native_blueprint_state {
                     )*
                     $(
                         pub $collection_property_name: IndexMap<
-                            [<$blueprint_ident $collection_ident SubstateKey>],
+                            [<$blueprint_ident $collection_ident KeyPayload>],
                             [<$blueprint_ident $collection_ident EntrySubstate>]
                         >,
                     )*
@@ -610,7 +590,7 @@ macro_rules! declare_native_blueprint_state {
                 #[derive(Debug, Clone)]
                 pub enum [<$blueprint_ident TypedSubstateKey>] {
                     Fields([<$blueprint_ident Field>]),
-                    $([<$collection_ident $collection_type Entries>]([<$blueprint_ident $collection_ident SubstateKey>]),)*
+                    $([<$collection_ident $collection_type Entries>]([<$blueprint_ident $collection_ident KeyPayload>]),)*
                 }
 
                 impl [<$blueprint_ident TypedSubstateKey>] {
@@ -624,7 +604,7 @@ macro_rules! declare_native_blueprint_state {
                             $(
                                 [<$blueprint_ident Partition>]::[<$collection_ident $collection_type>] => {
                                     [<$blueprint_ident TypedSubstateKey>]::[<$collection_ident $collection_type Entries>](
-                                        [<$blueprint_ident $collection_ident SubstateKey>]::try_from(substate_key)?,
+                                        [<$blueprint_ident $collection_ident KeyPayload>]::try_from(substate_key)?,
                                     )
                                 }
                             )*
@@ -809,8 +789,8 @@ mod helper_macros {
                 // Now implement other relevant content traits, for:
                 // > The "latest" type: $ident_core
                 impl $content_trait<$payload_type_name> for $ident_core {
-                    fn into_payload(self) -> $payload_type_name {
-                        $payload_type_name(self.into())
+                    fn into_content(self) -> [<Versioned $ident_core>] {
+                        self.into()
                     }
                 }
             }
@@ -822,7 +802,7 @@ mod helper_macros {
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
                 kind: Static,
-                the_type: $static_type:ty
+                content_type: $static_type:ty
                 $(,)?
             }$(,)?
         ) => {
@@ -868,6 +848,64 @@ mod helper_macros {
 
     #[allow(unused)]
     pub(crate) use generate_content_type;
+
+    macro_rules! generate_key_type {
+        (
+            content_trait: $content_trait:ident,
+            payload_trait: $payload_trait:ident,
+            $(full_key_content: $full_key_content:tt,)?
+            $(#[$attributes:meta])*
+            struct $payload_type_name:ident = {
+                kind: StaticSingleVersioned
+                $(,)?
+            }$(,)?
+        ) => {
+            compile_error!(
+                "A StaticSingleVersioned key is not supported, because keys cannot be lazily updated, because they need to be static"
+            );
+        };
+        (
+            content_trait: $content_trait:ident,
+            payload_trait: $payload_trait:ident,
+            $(full_key_content: $full_key_content:tt,)?
+            $(#[$attributes:meta])*
+            struct $payload_type_name:ident = {
+                kind: Static,
+                content_type: $static_type:ty
+                $(,)?
+            }$(,)?
+        ) => {
+            paste::paste! {
+                declare_key_new_type!(
+                    content_trait: $content_trait,
+                    payload_trait: $payload_trait,
+                    $(full_key_content: $full_key_content,)?
+                    $(#[$attributes])*
+                    pub struct $payload_type_name($static_type);
+                );
+            }
+        };
+        (
+            content_trait: $content_trait:ident,
+            payload_trait: $payload_trait:ident,
+            $(full_key_content: $full_key_content:tt,)?
+            $(#[$attributes:meta])*
+            struct $payload_type_name:ident = {
+                kind: Generic,
+                ident: $generic_ident:ident
+                $(,)?
+            }
+        ) => {
+            paste::paste! {
+                compile_error!(
+                    "A Generic key is not currently supported by these macros"
+                );
+            }
+        };
+    }
+
+    #[allow(unused)]
+    pub(crate) use generate_key_type;
 
     macro_rules! generate_system_substate_type_alias {
         (SystemField, type $alias:ident = WRAPPED $content:ty$(,)?) => {
@@ -966,7 +1004,7 @@ mod helper_macros {
             $aggregator:ident,
             {
                 kind: Static,
-                the_type: $static_type:ty
+                content_type: $static_type:ty
                 $(,)?
             },
             $payload_alias:ident$(,)?
@@ -1108,7 +1146,7 @@ mod tests {
                 entry_ident: MyCoolKeyValueStore,
                 key_type: {
                     kind: Static,
-                    the_type: BlueprintVersion,
+                    content_type: BlueprintVersion,
                 },
                 value_type: {
                     kind: StaticSingleVersioned,
@@ -1119,7 +1157,7 @@ mod tests {
                 entry_ident: MyCoolIndex,
                 key_type: {
                     kind: Static,
-                    the_type: BlueprintVersion,
+                    content_type: BlueprintVersion,
                 },
                 value_type: {
                     kind: StaticSingleVersioned,
@@ -1130,13 +1168,33 @@ mod tests {
                 entry_ident: MyCoolSortedIndex,
                 key_type: {
                     kind: Static,
-                    the_type: BlueprintVersion,
+                    content_type: BlueprintVersion,
+                },
+                full_key_content: {
+                    full_content_type: ExampleSortedIndexKey,
+                    sort_prefix_property_name: sort_prefix,
                 },
                 value_type: {
                     kind: StaticSingleVersioned,
                 },
                 allow_ownership: true,
             },
+        }
+    }
+
+    pub struct ExampleSortedIndexKey(u16, BlueprintVersion);
+
+    impl SortedIndexKeyFullContent<TestBlueprintMyCoolSortedIndexKeyPayload> for ExampleSortedIndexKey {
+        fn from_sort_key_and_content(sort_key: u16, content: BlueprintVersion) -> Self {
+            ExampleSortedIndexKey(sort_key, content)
+        }
+    }
+
+    impl SortedIndexKeyContentSource<TestBlueprintMyCoolSortedIndexKeyPayload>
+        for ExampleSortedIndexKey
+    {
+        fn into_sort_key_and_content(self) -> (u16, BlueprintVersion) {
+            (self.0, self.1)
         }
     }
 }

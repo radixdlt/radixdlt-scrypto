@@ -24,7 +24,7 @@ declare_native_blueprint_state! {
             entry_ident: BlueprintVersionDefinition,
             key_type: {
                 kind: Static,
-                the_type: BlueprintVersionKey,
+                content_type: BlueprintVersionKey,
             },
             value_type: {
                 kind: StaticSingleVersioned,
@@ -35,7 +35,7 @@ declare_native_blueprint_state! {
             entry_ident: BlueprintVersionDependencies,
             key_type: {
                 kind: Static,
-                the_type: BlueprintVersionKey,
+                content_type: BlueprintVersionKey,
             },
             value_type: {
                 kind: StaticSingleVersioned,
@@ -46,12 +46,12 @@ declare_native_blueprint_state! {
             entry_ident: Schema,
             key_type: {
                 kind: Static,
-                the_type: SchemaHash,
+                content_type: SchemaHash,
             },
             value_type: {
                 kind: Static,
                 // TODO(David): Change to VersionedSchema in this substate in the SCHEMAS_PARTITION
-                the_type: ScryptoSchema,
+                content_type: ScryptoSchema,
             },
             allow_ownership: false,
             options: {
@@ -62,7 +62,7 @@ declare_native_blueprint_state! {
             entry_ident: BlueprintVersionRoyaltyConfig,
             key_type: {
                 kind: Static,
-                the_type: BlueprintVersionKey,
+                content_type: BlueprintVersionKey,
             },
             value_type: {
                 kind: StaticSingleVersioned,
@@ -73,7 +73,7 @@ declare_native_blueprint_state! {
             entry_ident: BlueprintVersionAuthConfig,
             key_type: {
                 kind: Static,
-                the_type: BlueprintVersionKey,
+                content_type: BlueprintVersionKey,
             },
             value_type: {
                 kind: StaticSingleVersioned,
@@ -84,7 +84,7 @@ declare_native_blueprint_state! {
             entry_ident: CodeVmType,
             key_type: {
                 kind: Static,
-                the_type: CodeHash,
+                content_type: CodeHash,
             },
             value_type: {
                 kind: StaticSingleVersioned,
@@ -95,7 +95,7 @@ declare_native_blueprint_state! {
             entry_ident: CodeOriginalCode,
             key_type: {
                 kind: Static,
-                the_type: CodeHash,
+                content_type: CodeHash,
             },
             value_type: {
                 kind: StaticSingleVersioned,
@@ -106,7 +106,7 @@ declare_native_blueprint_state! {
             entry_ident: CodeInstrumentedCode,
             key_type: {
                 kind: Static,
-                the_type: CodeHash,
+                content_type: CodeHash,
             },
             value_type: {
                 kind: StaticSingleVersioned,

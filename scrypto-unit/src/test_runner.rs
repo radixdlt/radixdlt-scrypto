@@ -603,7 +603,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             let value: PackageSchemaEntrySubstate = scrypto_decode(&entry.1).unwrap();
             match value.value {
                 Some(schema) => {
-                    schemas.insert(hash, schema.0);
+                    schemas.insert(hash, schema.content);
                 }
                 None => {}
             }
