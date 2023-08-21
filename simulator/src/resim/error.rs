@@ -3,11 +3,12 @@ use std::path::PathBuf;
 
 use radix_engine::errors::{RejectionReason, RuntimeError};
 use radix_engine::transaction::AbortReason;
-use radix_engine::types::{ComponentAddress, Hash, NodeId, PackageAddress};
+use radix_engine::types::{ComponentAddress, NodeId, PackageAddress};
 use radix_engine::utils::ExtractSchemaError;
 use radix_engine::vm::wasm::PrepareError;
 use radix_engine_interface::blueprints::resource::ParseNonFungibleGlobalIdError;
 use radix_engine_interface::network::ParseNetworkError;
+use radix_engine_interface::types::SchemaHash;
 use sbor::*;
 use transaction::errors::*;
 use transaction::model::PrepareError as TransactionPrepareError;
@@ -25,7 +26,7 @@ pub enum Error {
     HomeDirUnknown,
 
     PackageNotFound(PackageAddress),
-    SchemaNotFound(NodeId, Hash),
+    SchemaNotFound(NodeId, SchemaHash),
     BlueprintNotFound(PackageAddress, String),
     ComponentNotFound(ComponentAddress),
     InstanceSchemaNot(ComponentAddress, u8),

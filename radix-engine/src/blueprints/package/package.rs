@@ -1,5 +1,6 @@
+use super::substates::*;
 use crate::blueprints::util::SecurifiedRoleAssignment;
-use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::metadata::MetadataEntrySubstate;
@@ -14,16 +15,10 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::{
-    ClientApi, FieldValue, GenericArgs, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
-};
+use radix_engine_interface::api::*;
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
-    BlueprintKeyValueSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
-    FunctionSchemaInit, TypeRef,
-};
+use radix_engine_interface::schema::*;
 use sbor::LocalTypeIndex;
 use syn::Ident;
 
@@ -33,18 +28,11 @@ use crate::system::node_modules::role_assignment::{
     OwnerRoleSubstate, RoleAssignmentNativePackage,
 };
 use crate::system::node_modules::royalty::RoyaltyUtil;
-use crate::system::system::{
-    FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
-};
+use crate::system::system::*;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 use crate::vm::VmPackageValidation;
-pub use radix_engine_interface::blueprints::package::{
-    PackageInstrumentedCodeSubstate, PackageOriginalCodeSubstate, PackageRoyaltyAccumulatorSubstate,
-};
-
-pub const PACKAGE_ROYALTY_FEATURE: &str = "package_royalty";
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -590,6 +578,17 @@ pub fn create_bootstrap_package_partitions(
 ) -> NodeSubstates {
     let mut partitions: NodeSubstates = BTreeMap::new();
 
+    // No features necessary
+    let own_features = PackageFeatureSet {
+        package_royalty: false,
+    };
+
+    //-----------------
+    // MAIN PARTITIONS:
+    //-----------------
+
+    // (Don't include royalty field because it's been disabled)
+
     {
         let blueprints_partition = package_structure
             .definitions
@@ -746,6 +745,10 @@ pub fn create_bootstrap_package_partitions(
         );
     }
 
+    //-------------------
+    // MODULE PARTITIONS:
+    //-------------------
+
     // Metadata
     {
         let mut metadata_partition = BTreeMap::new();
@@ -768,7 +771,6 @@ pub fn create_bootstrap_package_partitions(
         partitions.insert(METADATA_BASE_PARTITION, metadata_partition);
     }
 
-    // Role Assignment
     {
         let mut role_assignment_fields_partition = BTreeMap::new();
 
@@ -788,6 +790,9 @@ pub fn create_bootstrap_package_partitions(
         );
     }
 
+    //-------------------
+    // SYSTEM PARTITIONS:
+    //-------------------
     {
         partitions.insert(
             TYPE_INFO_FIELD_PARTITION,
@@ -802,7 +807,7 @@ pub fn create_bootstrap_package_partitions(
                 blueprint_info: BlueprintInfo {
                     blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
                     outer_obj_info: OuterObjectInfo::default(),
-                    features: btreeset!(),
+                    features: own_features.feature_names_string_set(),
                     generic_substitutions: vec![],
                 },
             })),
@@ -825,9 +830,10 @@ where
     let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>> = BTreeMap::new();
 
     let vault = ResourceManager(XRD).new_empty_vault(api)?;
-    let royalty = PackageRoyaltyAccumulatorSubstate {
+    let royalty = PackageRoyaltyAccumulator {
         royalty_vault: Vault(vault),
-    };
+    }
+    .into_payload();
 
     {
         let mut definition_partition = BTreeMap::new();
@@ -839,7 +845,10 @@ where
             };
             definition_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
-        kv_entries.insert(PACKAGE_BLUEPRINTS_COLLECTION_INDEX, definition_partition);
+        kv_entries.insert(
+            PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+            definition_partition,
+        );
     }
 
     {
@@ -853,7 +862,7 @@ where
             dependency_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
         kv_entries.insert(
-            PACKAGE_BLUEPRINT_DEPENDENCIES_COLLECTION_INDEX,
+            PackageCollection::BlueprintVersionDependenciesKeyValue.collection_index(),
             dependency_partition,
         );
     }
@@ -869,7 +878,7 @@ where
             package_royalties_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
         kv_entries.insert(
-            PACKAGE_ROYALTY_COLLECTION_INDEX,
+            PackageCollection::BlueprintVersionRoyaltyConfigKeyValue.collection_index(),
             package_royalties_partition,
         );
     }
@@ -884,7 +893,10 @@ where
             };
             auth_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
-        kv_entries.insert(PACKAGE_AUTH_TEMPLATE_COLLECTION_INDEX, auth_partition);
+        kv_entries.insert(
+            PackageCollection::BlueprintVersionAuthConfigKeyValue.collection_index(),
+            auth_partition,
+        );
     }
 
     {
@@ -896,7 +908,10 @@ where
             };
             vm_type_partition.insert(scrypto_encode(&hash).unwrap(), entry);
         }
-        kv_entries.insert(PACKAGE_VM_TYPE_COLLECTION_INDEX, vm_type_partition);
+        kv_entries.insert(
+            PackageCollection::CodeVmTypeKeyValue.collection_index(),
+            vm_type_partition,
+        );
     }
 
     {
@@ -909,7 +924,7 @@ where
             original_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
         }
         kv_entries.insert(
-            PACKAGE_ORIGINAL_CODE_COLLECTION_INDEX,
+            PackageCollection::CodeOriginalCodeKeyValue.collection_index(),
             original_code_partition,
         );
     }
@@ -924,7 +939,7 @@ where
             instrumented_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
         }
         kv_entries.insert(
-            PACKAGE_INSTRUMENTED_CODE_COLLECTION_INDEX,
+            PackageCollection::CodeInstrumentedCodeKeyValue.collection_index(),
             instrumented_code_partition,
         );
     }
@@ -938,12 +953,15 @@ where
             };
             schemas_partition.insert(scrypto_encode(&hash).unwrap(), entry);
         }
-        kv_entries.insert(PACKAGE_SCHEMAS_COLLECTION_INDEX, schemas_partition);
+        kv_entries.insert(
+            PackageCollection::SchemaKeyValue.collection_index(),
+            schemas_partition,
+        );
     }
 
     let package_object = api.new_object(
         PACKAGE_BLUEPRINT,
-        vec![PACKAGE_ROYALTY_FEATURE],
+        vec![PackageFeature::PackageRoyalty.feature_name()],
         GenericArgs::default(),
         vec![FieldValue::immutable(&royalty)],
         kv_entries,
@@ -962,14 +980,14 @@ where
 }
 
 pub struct PackageStructure {
-    pub definitions: BTreeMap<String, BlueprintDefinition>,
-    pub dependencies: BTreeMap<String, BlueprintDependencies>,
-    pub schemas: BTreeMap<Hash, ScryptoSchema>,
-    pub vm_type: BTreeMap<Hash, PackageVmTypeSubstate>,
-    pub original_code: BTreeMap<Hash, PackageOriginalCodeSubstate>,
-    pub instrumented_code: BTreeMap<Hash, PackageInstrumentedCodeSubstate>,
-    pub auth_configs: BTreeMap<String, AuthConfig>,
-    pub package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
+    pub definitions: BTreeMap<String, PackageBlueprintVersionDefinitionEntryPayload>,
+    pub dependencies: BTreeMap<String, PackageBlueprintVersionDependenciesEntryPayload>,
+    pub schemas: BTreeMap<SchemaHash, PackageSchemaEntryPayload>,
+    pub vm_type: BTreeMap<CodeHash, PackageCodeVmTypeEntryPayload>,
+    pub original_code: BTreeMap<CodeHash, PackageCodeOriginalCodeEntryPayload>,
+    pub instrumented_code: BTreeMap<CodeHash, PackageCodeInstrumentedCodeEntryPayload>,
+    pub auth_configs: BTreeMap<String, PackageBlueprintVersionAuthConfigEntryPayload>,
+    pub package_royalties: BTreeMap<String, PackageBlueprintVersionRoyaltyConfigEntryPayload>,
 }
 
 pub struct PackageNativePackage;
@@ -978,91 +996,7 @@ impl PackageNativePackage {
     pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut fields = Vec::new();
-        fields.push(FieldSchema::if_feature(
-            aggregator.add_child_type_and_descendents::<PackageRoyaltyAccumulatorSubstate>(),
-            PACKAGE_ROYALTY_FEATURE,
-        ));
-
-        let mut collections = Vec::new();
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
-                ),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintDefinition>(),
-                ),
-                allow_ownership: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
-                ),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintDependencies>(),
-                ),
-                allow_ownership: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<ScryptoSchema>(),
-                ),
-                allow_ownership: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
-                ),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<PackageRoyaltyConfig>(),
-                ),
-                allow_ownership: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
-                ),
-                value: TypeRef::Static(aggregator.add_child_type_and_descendents::<AuthConfig>()),
-                allow_ownership: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<PackageVmTypeSubstate>(),
-                ),
-                allow_ownership: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<PackageOriginalCodeSubstate>(),
-                ),
-                allow_ownership: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<PackageInstrumentedCodeSubstate>(),
-                ),
-                allow_ownership: false,
-            },
-        ));
+        let state = PackageStateSchemaInit::create_schema_init(&mut aggregator);
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -1123,28 +1057,21 @@ impl PackageNativePackage {
             PACKAGE_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 is_transient: false,
-                feature_set: btreeset!(
-                    PACKAGE_ROYALTY_FEATURE.to_string(),
-                ),
+                feature_set: PackageFeatureSet::all_features(),
                 dependencies: btreeset!(
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     PACKAGE_OWNER_BADGE.into(),
                 ),
-
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,
-                    state: BlueprintStateSchemaInit {
-                        fields,
-                        collections,
-                    },
+                    state,
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
                     hooks: BlueprintHooksInit::default(),
                 },
-
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AccessRules(
@@ -1263,26 +1190,32 @@ impl PackageNativePackage {
         let mut original_code_substates = BTreeMap::new();
         let mut instrumented_code_substates = BTreeMap::new();
 
-        let code_hash = hash(&original_code);
-        vm_type_substates.insert(code_hash, PackageVmTypeSubstate { vm_type });
+        let code_hash = CodeHash::from_hash(hash(&original_code));
+        vm_type_substates.insert(code_hash, PackageCodeVmType { vm_type }.into_payload());
         original_code_substates.insert(
             code_hash,
-            PackageOriginalCodeSubstate {
+            PackageCodeOriginalCode {
                 code: original_code,
-            },
+            }
+            .into_payload(),
         );
-        if let Some(code) = instrumented_code {
-            instrumented_code_substates
-                .insert(code_hash, PackageInstrumentedCodeSubstate { code: code });
+        if let Some(instrumented_code) = instrumented_code {
+            instrumented_code_substates.insert(
+                code_hash,
+                PackageCodeInstrumentedCode { instrumented_code }.into_payload(),
+            );
         };
 
         {
             for (blueprint, definition_init) in definition.blueprints {
-                auth_configs.insert(blueprint.clone(), definition_init.auth_config);
+                auth_configs.insert(
+                    blueprint.clone(),
+                    definition_init.auth_config.into_payload(),
+                );
 
                 let blueprint_schema = definition_init.schema.schema.clone();
                 let schema_hash = blueprint_schema.generate_schema_hash();
-                schemas.insert(schema_hash, blueprint_schema);
+                schemas.insert(schema_hash, blueprint_schema.into_payload());
 
                 let mut functions = BTreeMap::new();
                 let mut function_exports = BTreeMap::new();
@@ -1327,13 +1260,10 @@ impl PackageNativePackage {
 
                 let mut events = BTreeMap::new();
                 for (key, type_ref) in definition_init.schema.events.event_schema {
-                    let index = match type_ref {
-                        TypeRef::Static(index) => {
-                            BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, index))
-                        }
-                        TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
-                    };
-                    events.insert(key, index);
+                    events.insert(
+                        key,
+                        BlueprintPayloadDef::from_type_ref(type_ref, schema_hash),
+                    );
                 }
 
                 let system_instructions = system_instructions
@@ -1386,14 +1316,17 @@ impl PackageNativePackage {
                             .collect()
                     },
                 };
-                definitions.insert(blueprint.clone(), definition);
+                definitions.insert(blueprint.clone(), definition.into_payload());
 
                 let minor_version_config = BlueprintDependencies {
                     dependencies: definition_init.dependencies,
                 };
-                dependencies.insert(blueprint.clone(), minor_version_config);
+                dependencies.insert(blueprint.clone(), minor_version_config.into_payload());
 
-                package_royalties.insert(blueprint.clone(), definition_init.royalty_config);
+                package_royalties.insert(
+                    blueprint.clone(),
+                    definition_init.royalty_config.into_payload(),
+                );
             }
         };
 
@@ -1532,7 +1465,7 @@ impl PackageRoyaltyNativeBlueprint {
             if !service.is_feature_enabled(
                 receiver,
                 ObjectModuleId::Main,
-                PACKAGE_ROYALTY_FEATURE,
+                PackageFeature::PackageRoyalty.feature_name(),
             )? {
                 return Ok(());
             }
@@ -1552,13 +1485,13 @@ impl PackageRoyaltyNativeBlueprint {
             SystemLockData::default(),
         )?;
 
-        let substate: KeyValueEntrySubstate<PackageRoyaltyConfig> =
+        let substate: PackageBlueprintVersionRoyaltyConfigEntrySubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_close_substate(handle)?;
 
         let royalty_charge = substate
             .value
-            .and_then(|royalty_config| match royalty_config {
+            .and_then(|royalty_config| match royalty_config.into_latest() {
                 PackageRoyaltyConfig::Enabled(royalty_amounts) => {
                     royalty_amounts.get(ident).cloned()
                 }
@@ -1570,15 +1503,15 @@ impl PackageRoyaltyNativeBlueprint {
             let handle = api.kernel_open_substate(
                 receiver,
                 MAIN_BASE_PARTITION,
-                &PackageField::Royalty.into(),
+                &PackageField::RoyaltyAccumulator.into(),
                 LockFlags::MUTABLE,
                 SystemLockData::default(),
             )?;
 
-            let substate: FieldSubstate<PackageRoyaltyAccumulatorSubstate> =
+            let substate: PackageRoyaltyAccumulatorFieldSubstate =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            let vault_id = substate.value.0.royalty_vault.0;
+            let vault_id = substate.into_payload().into_latest().royalty_vault.0;
             let package_address = PackageAddress::new_or_panic(receiver.0);
             apply_royalty_cost(
                 api,
@@ -1596,7 +1529,10 @@ impl PackageRoyaltyNativeBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, PACKAGE_ROYALTY_FEATURE)? {
+        if !api.actor_is_feature_enabled(
+            OBJECT_HANDLE_SELF,
+            PackageFeature::PackageRoyalty.feature_name(),
+        )? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::PackageError(PackageError::RoyaltiesNotEnabled),
             ));
@@ -1604,12 +1540,12 @@ impl PackageRoyaltyNativeBlueprint {
 
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            PackageField::Royalty.into(),
+            PackageField::RoyaltyAccumulator.into(),
             LockFlags::read_only(),
         )?;
 
-        let mut substate: PackageRoyaltyAccumulatorSubstate = api.field_read_typed(handle)?;
-        let bucket = substate.royalty_vault.take_all(api)?;
+        let substate: PackageRoyaltyAccumulatorFieldPayload = api.field_read_typed(handle)?;
+        let bucket = substate.into_latest().royalty_vault.take_all(api)?;
 
         Ok(bucket)
     }
@@ -1695,12 +1631,12 @@ impl PackageAuthNativeBlueprint {
             SystemLockData::default(),
         )?;
 
-        let auth_template: KeyValueEntrySubstate<AuthConfig> =
+        let auth_template: PackageBlueprintVersionAuthConfigEntrySubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_close_substate(handle)?;
 
         let template = match auth_template.value {
-            Some(template) => template,
+            Some(template) => template.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(
                     SystemError::AuthTemplateDoesNotExist(package_bp_version_id),

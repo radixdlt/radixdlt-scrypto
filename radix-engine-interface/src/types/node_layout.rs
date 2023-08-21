@@ -62,52 +62,85 @@ pub enum ComponentField {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum PackageField {
-    Royalty,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum FungibleResourceManagerField {
     Divisibility,
     TotalSupply,
 }
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum PackagePartitionOffset {
-    Fields,
-    Blueprints,
-    BlueprintDependencies,
-    RoyaltyConfig,
-    AuthConfig,
-    VmType,
-    OriginalCode,
-    InstrumentedCode,
+macro_rules! blueprint_partition_offset {
+    (
+        $(#[$attributes:meta])*
+        $vis:vis enum $t:ident {
+            $(
+                $(#[$variant_attributes:meta])*
+                $variant:ident
+            ),*
+            $(,)?
+        }
+    ) => {
+        #[repr(u8)]
+        #[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+        $(#[$attributes])*
+        $vis enum $t {
+            $(
+                $(#[$variant_attributes])*
+                $variant,
+            )*
+        }
+
+        impl $t {
+            pub const fn as_main_partition(&self) -> PartitionNumber {
+                match MAIN_BASE_PARTITION.at_offset(PartitionOffset(*self as u8)) {
+                    // This match works around unwrap/expect on Option not being const
+                    Some(x) => x,
+                    None => panic!("Offset larger than allowed value")
+                }
+            }
+        }
+
+        impl From<$t> for PartitionOffset {
+            fn from(value: $t) -> Self {
+                PartitionOffset(value as u8)
+            }
+        }
+
+        impl TryFrom<PartitionOffset> for $t {
+            type Error = ();
+
+            fn try_from(offset: PartitionOffset) -> Result<Self, Self::Error> {
+                Self::from_repr(offset.0).ok_or(())
+            }
+        }
+
+        impl TryFrom<u8> for $t {
+            type Error = ();
+
+            fn try_from(offset: u8) -> Result<Self, Self::Error> {
+                Self::from_repr(offset).ok_or(())
+            }
+        }
+    };
 }
 
-impl TryFrom<u8> for PackagePartitionOffset {
-    type Error = ();
-
-    fn try_from(offset: u8) -> Result<Self, Self::Error> {
-        Self::from_repr(offset).ok_or(())
+blueprint_partition_offset!(
+    pub enum PackagePartitionOffset {
+        Field,
+        BlueprintVersionDefinitionKeyValue,
+        BlueprintVersionDependenciesKeyValue,
+        BlueprintVersionRoyaltyConfigKeyValue,
+        BlueprintVersionAuthConfigKeyValue,
+        CodeVmTypeKeyValue,
+        CodeOriginalCodeKeyValue,
+        CodeInstrumentedCodeKeyValue,
     }
-}
+);
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum NonFungibleResourceManagerPartitionOffset {
-    ResourceManager,
-    NonFungibleData,
-}
-
-impl TryFrom<u8> for NonFungibleResourceManagerPartitionOffset {
-    type Error = ();
-
-    fn try_from(offset: u8) -> Result<Self, Self::Error> {
-        Self::from_repr(offset).ok_or(())
+blueprint_partition_offset!(
+    pub enum NonFungibleResourceManagerPartitionOffset {
+        ResourceManager,
+        NonFungibleData,
     }
-}
+);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -125,20 +158,12 @@ pub enum FungibleVaultField {
     VaultFrozenFlag,
 }
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum NonFungibleVaultPartitionOffset {
-    Balance,
-    NonFungibles,
-}
-
-impl TryFrom<u8> for NonFungibleVaultPartitionOffset {
-    type Error = ();
-
-    fn try_from(offset: u8) -> Result<Self, Self::Error> {
-        Self::from_repr(offset).ok_or(())
+blueprint_partition_offset!(
+    pub enum NonFungibleVaultPartitionOffset {
+        Balance,
+        NonFungibles,
     }
-}
+);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -148,26 +173,12 @@ pub enum NonFungibleVaultField {
     VaultFrozenFlag,
 }
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum ConsensusManagerPartitionOffset {
-    ConsensusManager,
-    RegisteredValidatorsByStakeIndex,
-}
-
-impl From<ConsensusManagerPartitionOffset> for PartitionOffset {
-    fn from(value: ConsensusManagerPartitionOffset) -> Self {
-        PartitionOffset(value as u8)
+blueprint_partition_offset!(
+    pub enum ConsensusManagerPartitionOffset {
+        ConsensusManager,
+        RegisteredValidatorsByStakeIndex,
     }
-}
-
-impl TryFrom<u8> for ConsensusManagerPartitionOffset {
-    type Error = ();
-
-    fn try_from(offset: u8) -> Result<Self, Self::Error> {
-        Self::from_repr(offset).ok_or(())
-    }
-}
+);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
@@ -234,30 +245,16 @@ pub enum AuthZoneField {
     AuthZone,
 }
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum AccountPartitionOffset {
-    Account,
-    AccountVaultsByResourceAddress,
-    AccountResourcePreferenceByAddress,
-    /// Map<ResourceOrNonFungible, ()> - A map of a [`ResourceOrNonFungible`] to Unit that stores
-    /// the badges of allowed depositors into accounts
-    AccountAuthorizedDepositorByResourceOrNonFungible,
-}
-
-impl From<AccountPartitionOffset> for PartitionOffset {
-    fn from(value: AccountPartitionOffset) -> Self {
-        PartitionOffset(value as u8)
+blueprint_partition_offset!(
+    pub enum AccountPartitionOffset {
+        Account,
+        AccountVaultsByResourceAddress,
+        AccountResourcePreferenceByAddress,
+        /// Map<ResourceOrNonFungible, ()> - A map of a [`ResourceOrNonFungible`] to Unit that stores
+        /// the badges of allowed depositors into accounts
+        AccountAuthorizedDepositorByResourceOrNonFungible,
     }
-}
-
-impl TryFrom<u8> for AccountPartitionOffset {
-    type Error = ();
-
-    fn try_from(offset: u8) -> Result<Self, Self::Error> {
-        Self::from_repr(offset).ok_or(())
-    }
-}
+);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -320,7 +317,6 @@ substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
 substate_key!(RoleAssignmentField);
 substate_key!(ComponentField);
-substate_key!(PackageField);
 substate_key!(FungibleResourceManagerField);
 substate_key!(FungibleVaultField);
 substate_key!(FungibleBucketField);
