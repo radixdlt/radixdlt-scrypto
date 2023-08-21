@@ -96,7 +96,10 @@ impl FungibleProofBlueprint {
 
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
-            vec![FieldValue::new(&moveable), FieldValue::new(&clone)],
+            btreemap! {
+                0u8 => FieldValue::new(&moveable),
+                1u8 => FieldValue::new(&clone),
+            },
         )?;
 
         // Drop after object creation to keep the reference alive

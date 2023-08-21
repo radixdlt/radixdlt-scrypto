@@ -40,7 +40,7 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
                 "new" => {
                     let metadata = Metadata::create(api)?;
                     let access_rules = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
-                    let node_id = api.new_simple_object(BLUEPRINT_NAME, vec![])?;
+                    let node_id = api.new_simple_object(BLUEPRINT_NAME, btreemap![])?;
                     api.globalize(
                         btreemap!(
                             ObjectModuleId::Main => node_id,

@@ -17,7 +17,7 @@ pub trait ClientActorApi<E: Debug> {
     /// Check if a feature is enabled for a given object
     fn actor_is_feature_enabled(
         &mut self,
-        ref_handle: ActorStateHandle,
+        state_handle: ActorStateHandle,
         feature: &str,
     ) -> Result<bool, E>;
 

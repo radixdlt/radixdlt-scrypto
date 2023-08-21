@@ -114,7 +114,9 @@ impl MultiResourcePoolBlueprint {
             };
             api.new_simple_object(
                 MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![FieldValue::immutable(&substate)],
+                btreemap! {
+                    0u8 => FieldValue::immutable(&substate),
+                },
             )?
         };
 

@@ -211,6 +211,7 @@ pub enum SystemError {
     NoPackageAddress,
     InvalidActorStateHandle,
     InvalidActorRefHandle,
+
     GlobalAddressDoesNotExist,
     NotAnAddressReservation,
     NotAnObject,
@@ -289,9 +290,9 @@ pub enum NativeRuntimeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateObjectError {
     BlueprintNotFound(String),
-    InvalidModule,
-    WrongNumberOfKeyValueStores(BlueprintId, usize, usize),
-    WrongNumberOfSubstates(BlueprintId, usize, usize),
+    InvalidFieldDueToFeature(BlueprintId, u8),
+    MissingField(BlueprintId, u8),
+    InvalidFieldIndex(BlueprintId, u8),
     SchemaValidationError(BlueprintId, String),
     InvalidSubstateWrite(String),
 }

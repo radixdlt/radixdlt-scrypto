@@ -182,7 +182,7 @@ where
         features: BTreeSet<String>,
         outer_blueprint_features: &BTreeSet<String>,
         generic_args: GenericArgs,
-        fields: Vec<FieldValue>,
+        fields: BTreeMap<u8, FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<
         (
@@ -231,48 +231,107 @@ where
         // Fields
         {
             let expected_num_fields = blueprint_interface.state.num_fields();
-            if expected_num_fields != fields.len() {
-                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::WrongNumberOfSubstates(
-                        blueprint_id.clone(),
-                        fields.len(),
-                        expected_num_fields,
-                    )),
-                )));
+            for field_index in fields.keys() {
+                let field_index: usize = (*field_index) as usize;
+                if field_index >= expected_num_fields {
+                    return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                        Box::new(CreateObjectError::InvalidFieldIndex(
+                            blueprint_id.clone(),
+                            field_index as u8,
+                        )),
+                    )));
+                }
             }
 
             if let Some((partition_description, field_schemas)) = &blueprint_interface.state.fields
             {
                 let mut field_partition = BTreeMap::new();
 
-                for (i, field) in fields.iter().enumerate() {
-                    // Check for any feature conditions
-                    match &field_schemas[i].condition {
+                for (i, field) in field_schemas.iter().enumerate() {
+                    let index = i as u8;
+
+                    let maybe_field = fields.get(&index);
+
+                    let field_value = match &field.condition {
                         Condition::IfFeature(feature) => {
-                            if !features.contains(feature) {
-                                continue;
+                            match (features.contains(feature), maybe_field) {
+                                (false, Some(..)) => {
+                                    return Err(RuntimeError::SystemError(
+                                        SystemError::CreateObjectError(Box::new(
+                                            CreateObjectError::InvalidFieldDueToFeature(
+                                                blueprint_id.clone(),
+                                                index,
+                                            ),
+                                        )),
+                                    ));
+                                }
+                                (true, None) => {
+                                    return Err(RuntimeError::SystemError(
+                                        SystemError::CreateObjectError(Box::new(
+                                            CreateObjectError::MissingField(
+                                                blueprint_id.clone(),
+                                                index,
+                                            ),
+                                        )),
+                                    ));
+                                }
+                                (false, None) => continue,
+                                (true, Some(field_value)) => field_value,
                             }
                         }
                         Condition::IfOuterFeature(feature) => {
-                            if !outer_blueprint_features.contains(feature) {
-                                continue;
+                            match (outer_blueprint_features.contains(feature), maybe_field) {
+                                (false, Some(..)) => {
+                                    return Err(RuntimeError::SystemError(
+                                        SystemError::CreateObjectError(Box::new(
+                                            CreateObjectError::InvalidFieldDueToFeature(
+                                                blueprint_id.clone(),
+                                                index,
+                                            ),
+                                        )),
+                                    ));
+                                }
+                                (true, None) => {
+                                    return Err(RuntimeError::SystemError(
+                                        SystemError::CreateObjectError(Box::new(
+                                            CreateObjectError::MissingField(
+                                                blueprint_id.clone(),
+                                                index,
+                                            ),
+                                        )),
+                                    ));
+                                }
+                                (false, None) => continue,
+                                (true, Some(field_value)) => field_value,
                             }
                         }
-                        Condition::Always => {}
-                    }
+                        Condition::Always => match maybe_field {
+                            None => {
+                                return Err(RuntimeError::SystemError(
+                                    SystemError::CreateObjectError(Box::new(
+                                        CreateObjectError::MissingField(
+                                            blueprint_id.clone(),
+                                            index,
+                                        ),
+                                    )),
+                                ));
+                            }
+                            Some(field_value) => field_value,
+                        },
+                    };
 
                     self.validate_blueprint_payload(
                         &validation_target,
                         BlueprintPayloadIdentifier::Field(i as u8),
-                        &field.value,
+                        &field_value.value,
                     )?;
 
-                    let value: ScryptoValue =
-                        scrypto_decode(&field.value).expect("Checked by payload-schema validation");
+                    let value: ScryptoValue = scrypto_decode(&field_value.value)
+                        .expect("Checked by payload-schema validation");
 
                     let substate = FieldSubstate {
                         value: (value,),
-                        mutability: if field.locked {
+                        mutability: if field_value.locked {
                             SubstateMutability::Immutable
                         } else {
                             SubstateMutability::Mutable
@@ -478,7 +537,7 @@ where
         features: Vec<&str>,
         instance_context: Option<InstanceContext>,
         generic_args: GenericArgs,
-        fields: Vec<FieldValue>,
+        fields: BTreeMap<u8, FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let blueprint_interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
@@ -1242,7 +1301,7 @@ where
         blueprint_ident: &str,
         features: Vec<&str>,
         generic_args: GenericArgs,
-        fields: Vec<FieldValue>,
+        fields: BTreeMap<u8, FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.current_actor();
@@ -1331,7 +1390,7 @@ where
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
-        inner_object_fields: Vec<FieldValue>,
+        inner_object_fields: BTreeMap<u8, FieldValue>,
         event_name: String,
         event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {

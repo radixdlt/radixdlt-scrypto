@@ -253,10 +253,10 @@ impl FungibleVaultBlueprint {
 
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&proof_info),
-                FieldValue::new(&proof_evidence),
-            ],
+            btreemap! {
+                0u8 => FieldValue::new(&proof_info),
+                1u8 => FieldValue::new(&proof_evidence),
+            },
         )?;
 
         Ok(Proof(Own(proof_id)))

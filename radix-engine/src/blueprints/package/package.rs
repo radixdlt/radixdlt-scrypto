@@ -945,7 +945,9 @@ where
         PACKAGE_BLUEPRINT,
         vec![PACKAGE_ROYALTY_FEATURE],
         GenericArgs::default(),
-        vec![FieldValue::immutable(&royalty)],
+        btreemap! {
+            0u8 => FieldValue::immutable(&royalty),
+        },
         kv_entries,
     )?;
 

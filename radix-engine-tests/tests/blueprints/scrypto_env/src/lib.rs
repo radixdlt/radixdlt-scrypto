@@ -9,7 +9,7 @@ mod scrypto_env_test {
         pub fn create_node_with_invalid_blueprint() {
             ScryptoVmV1Api::object_new(
                 "invalid_blueprint",
-                vec![FieldValue::new(&ScryptoEnvTest {})],
+                btreemap![0u8 => FieldValue::new(&ScryptoEnvTest {})],
             );
         }
 

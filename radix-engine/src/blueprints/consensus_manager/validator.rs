@@ -1307,10 +1307,10 @@ impl ValidatorCreator {
 
         let validator_id = api.new_simple_object(
             VALIDATOR_BLUEPRINT,
-            vec![
-                FieldValue::new(&substate),
-                FieldValue::new(&protocol_update_readiness_signal),
-            ],
+            btreemap! {
+                0u8 => FieldValue::new(&substate),
+                1u8 => FieldValue::new(&protocol_update_readiness_signal),
+            },
         )?;
 
         let (role_assignment, owner_token_bucket) = SecurifiedValidator::create_securified(
