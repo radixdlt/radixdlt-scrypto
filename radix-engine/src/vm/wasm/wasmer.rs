@@ -3,6 +3,7 @@ use crate::types::*;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
