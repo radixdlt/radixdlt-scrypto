@@ -16,7 +16,7 @@ pub struct FeeReserveFinalizationSummary {
     pub total_finalization_cost_in_xrd: Decimal,
     /// The total cost for tipping
     pub total_tipping_cost_in_xrd: Decimal,
-    /// The total cost for state expansion
+    /// The total cost for storage
     pub total_storage_cost_in_xrd: Decimal,
     /// The total cost for royalty
     pub total_royalty_cost_in_xrd: Decimal,
@@ -95,16 +95,12 @@ impl FeeReserveFinalizationSummary {
     }
 
     pub fn to_burn_amount(&self) -> Decimal {
-        let dec_100 = dec!(100);
-
         self.total_tipping_cost_in_xrd
-            .safe_mul(TIPS_TO_BURN_PERCENTAGE.safe_div(dec_100).unwrap())
+            .safe_add(self.network_fees())
             .unwrap()
-            .safe_add(
-                self.network_fees()
-                    .safe_mul(NETWORK_FEES_TO_BURN_PERCENTAGE.safe_div(dec_100).unwrap())
-                    .unwrap(),
-            )
+            .safe_sub(self.to_proposer_amount())
+            .unwrap()
+            .safe_sub(self.to_validator_set_amount())
             .unwrap()
     }
 }

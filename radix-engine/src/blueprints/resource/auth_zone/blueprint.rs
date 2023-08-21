@@ -106,6 +106,7 @@ impl AuthZoneBlueprint {
                         })),
                     ),
                 )?;
+                api.kernel_pin_node(node_id)?;
             }
             ComposedProof::NonFungible(..) => {
                 api.kernel_create_node(
@@ -129,6 +130,7 @@ impl AuthZoneBlueprint {
                         }
                     }))),
                 )?;
+                api.kernel_pin_node(node_id)?;
             }
         }
 
@@ -178,6 +180,7 @@ impl AuthZoneBlueprint {
                 }))
             ),
         )?;
+        api.kernel_pin_node(node_id)?;
 
         Ok(Proof(Own(node_id)))
     }
@@ -228,6 +231,7 @@ impl AuthZoneBlueprint {
                 }))
             ),
         )?;
+        api.kernel_pin_node(node_id)?;
 
         Ok(Proof(Own(node_id)))
     }

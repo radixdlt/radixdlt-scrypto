@@ -290,6 +290,7 @@ impl IndexedStateSchema {
                 .map(|field_schema| FieldSchema {
                     field: BlueprintPayloadDef::from_type_ref(field_schema.field, schema_hash),
                     condition: field_schema.condition,
+                    transience: field_schema.transience,
                 })
                 .collect();
             fields = Some((

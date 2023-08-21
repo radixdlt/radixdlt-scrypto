@@ -21,6 +21,8 @@ use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
 use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
     ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
@@ -815,6 +817,78 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         (key_pair.0, key_pair.1, account)
     }
 
+    pub fn new_virtual_account_with_access_controller(
+        &mut self,
+    ) -> (
+        Secp256k1PublicKey,
+        Secp256k1PrivateKey,
+        Secp256k1PublicKey,
+        Secp256k1PrivateKey,
+        Secp256k1PublicKey,
+        Secp256k1PrivateKey,
+        Secp256k1PublicKey,
+        Secp256k1PrivateKey,
+        ComponentAddress,
+        ComponentAddress,
+    ) {
+        let (pk1, sk1, account) = self.new_virtual_account();
+        let (pk2, sk2) = self.new_key_pair();
+        let (pk3, sk3) = self.new_key_pair();
+        let (pk4, sk4) = self.new_key_pair();
+
+        let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(
+            1,
+            vec![
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk3)),
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk4)),
+            ],
+        )));
+
+        let access_controller = self
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .call_method(account, ACCOUNT_SECURIFY_IDENT, manifest_args!())
+                    .take_all_from_worktop(ACCOUNT_OWNER_BADGE, "owner_badge")
+                    .call_function_with_name_lookup(
+                        ACCESS_CONTROLLER_PACKAGE,
+                        ACCESS_CONTROLLER_BLUEPRINT,
+                        ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+                        |lookup| {
+                            (
+                                lookup.bucket("owner_badge"),
+                                RuleSet {
+                                    primary_role: access_rule.clone(),
+                                    recovery_role: access_rule.clone(),
+                                    confirmation_role: access_rule.clone(),
+                                },
+                                Some(1000u32),
+                            )
+                        },
+                    )
+                    .build(),
+                vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            )
+            .expect_commit_success()
+            .new_component_addresses()[0]
+            .clone();
+
+        (
+            pk1,
+            sk1,
+            pk2,
+            sk2,
+            pk3,
+            sk3,
+            pk4,
+            sk4,
+            account,
+            access_controller,
+        )
+    }
+
     pub fn new_account(
         &mut self,
         is_virtual: bool,
@@ -1102,7 +1176,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn execute_transaction(
         &mut self,
         executable: Executable,
-        fee_reserve_config: CostingParameters,
+        costing_parameters: CostingParameters,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         // Override the kernel trace config
@@ -1116,7 +1190,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let transaction_receipt = execute_transaction(
             &mut self.database,
             vm,
-            &fee_reserve_config,
+            &costing_parameters,
             &execution_config,
             &executable,
         );
@@ -1501,18 +1575,29 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        self.create_non_fungible_resource_with_roles(NonFungibleResourceRoles::default(), account)
+        self.create_non_fungible_resource_advanced(NonFungibleResourceRoles::default(), account, 3)
     }
-
     pub fn create_non_fungible_resource_with_roles(
         &mut self,
         resource_roles: NonFungibleResourceRoles,
         account: ComponentAddress,
     ) -> ResourceAddress {
+        self.create_non_fungible_resource_advanced(resource_roles, account, 3)
+    }
+
+    pub fn create_non_fungible_resource_advanced(
+        &mut self,
+        resource_roles: NonFungibleResourceRoles,
+        account: ComponentAddress,
+        n: usize,
+    ) -> ResourceAddress {
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleLocalId::integer(1), EmptyNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(2), EmptyNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
+        for i in 1..n + 1 {
+            entries.insert(
+                NonFungibleLocalId::integer(i as u64),
+                EmptyNonFungibleData {},
+            );
+        }
 
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()

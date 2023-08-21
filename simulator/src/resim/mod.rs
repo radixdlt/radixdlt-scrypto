@@ -475,7 +475,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                 .value
                 .unwrap();
 
-            Some((type_id.1, schema.0))
+            Some((type_id.1, schema.content))
         }
         BlueprintPayloadDef::Generic(..) => {
             panic!("Not expecting any events to use generics")

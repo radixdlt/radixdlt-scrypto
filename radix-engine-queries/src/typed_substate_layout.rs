@@ -52,7 +52,7 @@ use transaction::prelude::IntentHash;
 //   => Iteration exposed to engine via the MapKey's database key (ie hash of the key)
 //   => Is versioned / locked in its entirety
 // - SortedU16Index
-//   => Has key: SortedU16Key(U16, Vec<u8>)
+//   => Has key: SortedKey([u8; 2], Vec<u8>)
 //   => Iteration exposed to engine via the user-controlled U16 prefix and then the MapKey's database key (ie hash of the key)
 //   => Is versioned / locked in its entirety
 //
@@ -64,7 +64,7 @@ use transaction::prelude::IntentHash;
 //    Field(TupleKey),
 //    KeyValue(MapKey),
 //    Index(MapKey),
-//    SortedU16Index(SortedU16Key),
+//    SortedU16Index(SortedKey),
 // }
 //=========================================================================
 
@@ -159,13 +159,13 @@ pub struct ValidatorByStakeKey {
     pub validator_address: ComponentAddress,
 }
 
-impl TryFrom<SortedU16Key> for ValidatorByStakeKey {
+impl TryFrom<SortedKey> for ValidatorByStakeKey {
     type Error = DecodeError;
 
-    fn try_from(value: SortedU16Key) -> Result<Self, Self::Error> {
+    fn try_from(value: SortedKey) -> Result<Self, Self::Error> {
         // See to_sorted_key in validator.rs
         Ok(Self {
-            divided_stake: u16::MAX - value.0,
+            divided_stake: u16::MAX - u16::from_be_bytes(value.0),
             validator_address: scrypto_decode(&value.1)?,
         })
     }

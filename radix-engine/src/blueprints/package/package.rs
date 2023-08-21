@@ -40,6 +40,8 @@ pub enum PackageError {
 
     InvalidBlueprintSchema(SchemaValidationError),
     TooManySubstateSchemas,
+    FeatureDoesNotExist(String),
+    InvalidTransientField,
     SystemInstructionsNotSupported,
 
     FailedToResolveLocalSchema {
@@ -66,6 +68,18 @@ pub enum PackageError {
         actual: usize,
     },
     ExceededMaxRoleNameLen {
+        limit: usize,
+        actual: usize,
+    },
+    ExceededMaxEventNameLen {
+        limit: usize,
+        actual: usize,
+    },
+    ExceededMaxFunctionNameLen {
+        limit: usize,
+        actual: usize,
+    },
+    ExceededMaxFeatureNameLen {
         limit: usize,
         actual: usize,
     },
@@ -109,44 +123,85 @@ pub enum PackageError {
     RoyaltiesNotEnabled,
 }
 
-fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
-    blueprints: I,
+fn validate_package_schema(
+    blueprints: &BTreeMap<String, BlueprintDefinitionInit>,
 ) -> Result<(), PackageError> {
-    for bp_init in blueprints {
-        validate_schema(&bp_init.schema).map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
+    for bp_def in blueprints.values() {
+        let bp_schema = &bp_def.schema;
 
-        if bp_init.state.fields.len() > 0xff {
+        validate_schema(&bp_schema.schema).map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
+
+        if bp_schema.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
         }
 
-        for field in &bp_init.state.fields {
-            validate_package_schema_type_ref(bp_init, field.field)?;
+        for field in &bp_schema.state.fields {
+            validate_package_schema_type_ref(bp_schema, field.field)?;
+
+            match &field.condition {
+                Condition::IfFeature(feature) => {
+                    if !bp_def.feature_set.contains(feature) {
+                        return Err(PackageError::FeatureDoesNotExist(feature.clone()));
+                    }
+                }
+                Condition::IfOuterFeature(feature) => match &bp_def.blueprint_type {
+                    BlueprintType::Inner { outer_blueprint } => {
+                        if let Some(outer_bp_def) = blueprints.get(outer_blueprint) {
+                            if !outer_bp_def.feature_set.contains(feature) {
+                                return Err(PackageError::FeatureDoesNotExist(feature.clone()));
+                            }
+                        } else {
+                            return Err(PackageError::FeatureDoesNotExist(feature.clone()));
+                        }
+                    }
+                    _ => {
+                        return Err(PackageError::FeatureDoesNotExist(feature.clone()));
+                    }
+                },
+                Condition::Always => {}
+            }
+
+            match &field.transience {
+                FieldTransience::NotTransient => {}
+                FieldTransience::TransientStatic { default_value } => match field.field {
+                    TypeRef::Static(local_index) => {
+                        validate_payload_against_schema::<ScryptoCustomExtension, ()>(
+                            default_value,
+                            &bp_schema.schema,
+                            local_index,
+                            &mut (),
+                        )
+                        .map_err(|_| PackageError::InvalidTransientField)?;
+                    }
+                    TypeRef::Generic(..) => return Err(PackageError::InvalidTransientField),
+                },
+            }
         }
 
-        for collection in &bp_init.state.collections {
+        for collection in &bp_schema.state.collections {
             match collection {
                 BlueprintCollectionSchema::KeyValueStore(kv_store_schema) => {
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.key)?;
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.value)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.key)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.value)?;
                 }
                 BlueprintCollectionSchema::SortedIndex(kv_store_schema) => {
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.key)?;
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.value)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.key)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.value)?;
                 }
                 BlueprintCollectionSchema::Index(kv_store_schema) => {
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.key)?;
-                    validate_package_schema_type_ref(bp_init, kv_store_schema.value)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.key)?;
+                    validate_package_schema_type_ref(bp_schema, kv_store_schema.value)?;
                 }
             }
         }
 
-        for (_name, event) in &bp_init.events.event_schema {
-            validate_package_schema_type_ref(bp_init, *event)?;
+        for (_name, event) in &bp_schema.events.event_schema {
+            validate_package_schema_type_ref(bp_schema, *event)?;
         }
 
-        for (_name, function) in &bp_init.functions.functions {
-            validate_package_schema_type_ref(bp_init, function.input)?;
-            validate_package_schema_type_ref(bp_init, function.output)?;
+        for (_name, function) in &bp_schema.functions.functions {
+            validate_package_schema_type_ref(bp_schema, function.input)?;
+            validate_package_schema_type_ref(bp_schema, function.output)?;
         }
     }
 
@@ -368,13 +423,6 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                     for (role_key, role_list) in roles {
                         check_list(role_list)?;
 
-                        if role_key.key.len() > MAX_ROLE_NAME_LEN {
-                            return Err(PackageError::ExceededMaxRoleNameLen {
-                                limit: MAX_ROLE_NAME_LEN,
-                                actual: role_key.key.len(),
-                            });
-                        }
-
                         if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
                             return Err(PackageError::DefiningReservedRoleKey(
                                 blueprint.to_string(),
@@ -438,18 +486,39 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
         condition(bp_name)?;
 
         for (name, _) in bp_init.schema.events.event_schema.iter() {
+            if name.len() > MAX_EVENT_NAME_LEN {
+                return Err(PackageError::ExceededMaxEventNameLen {
+                    limit: MAX_EVENT_NAME_LEN,
+                    actual: name.len(),
+                });
+            }
+
             condition(name)?;
         }
 
         for (name, _) in bp_init.schema.functions.functions.iter() {
+            if name.len() > MAX_FUNCTION_NAME_LEN {
+                return Err(PackageError::ExceededMaxFunctionNameLen {
+                    limit: MAX_FUNCTION_NAME_LEN,
+                    actual: name.len(),
+                });
+            }
+
             condition(name)?;
         }
 
-        for (_, name) in bp_init.schema.hooks.hooks.iter() {
-            condition(name)?;
+        for (_, export_name) in bp_init.schema.hooks.hooks.iter() {
+            condition(export_name)?;
         }
 
         for name in bp_init.feature_set.iter() {
+            if name.len() > MAX_FEATURE_NAME_LEN {
+                return Err(PackageError::ExceededMaxFeatureNameLen {
+                    limit: MAX_FEATURE_NAME_LEN,
+                    actual: name.len(),
+                });
+            }
+
             condition(name)?;
         }
 
@@ -470,9 +539,16 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
         {
             if let RoleSpecification::Normal(list) = &static_roles.roles {
                 for (role_key, _) in list.iter() {
+                    if role_key.key.len() > MAX_ROLE_NAME_LEN {
+                        return Err(PackageError::ExceededMaxRoleNameLen {
+                            limit: MAX_ROLE_NAME_LEN,
+                            actual: role_key.key.len(),
+                        });
+                    }
                     condition(&role_key.key)?;
                 }
             }
+
             for (key, accessibility) in static_roles.methods.iter() {
                 condition(&key.ident)?;
                 if let MethodAccessibility::RoleProtected(role_list) = accessibility {
@@ -798,7 +874,7 @@ impl PackageNativePackage {
         system_instructions: BTreeMap<String, Vec<SystemInstruction>>,
     ) -> Result<PackageStateInit, RuntimeError> {
         // Validate schema
-        validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
+        validate_package_schema(&definition.blueprints)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_package_event_schema(definition.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;

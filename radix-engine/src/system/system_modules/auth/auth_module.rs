@@ -5,7 +5,7 @@ use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::ReferenceOrigin;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
-use crate::system::module::KernelModule;
+use crate::system::module::SystemModule;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -319,6 +319,7 @@ impl AuthModule {
                 }))
             ),
         )?;
+        system.api.kernel_pin_node(self_auth_zone)?;
 
         if let Some(parent_lock_handle) = parent_lock_handle {
             system.kernel_close_substate(parent_lock_handle)?;
@@ -510,4 +511,4 @@ impl AuthModule {
     }
 }
 
-impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for AuthModule {}
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {}

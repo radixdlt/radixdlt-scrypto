@@ -2,27 +2,10 @@ use crate::api::ObjectHandle;
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
-use radix_engine_derive::{ManifestSbor, ScryptoSbor};
+use radix_engine_common::types::SortedKey;
 use radix_engine_interface::api::CollectionIndex;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
-
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct SortedKey(pub u16, pub Vec<u8>);
-
-impl SortedKey {
-    pub fn new(sorted: u16, key: Vec<u8>) -> Self {
-        Self(sorted, key)
-    }
-}
-
-impl Into<Vec<u8>> for SortedKey {
-    fn into(self) -> Vec<u8> {
-        let mut bytes = self.0.to_be_bytes().to_vec();
-        bytes.extend(self.1);
-        bytes
-    }
-}
 
 // TODO: Add locked entry interface
 pub trait ClientActorSortedIndexApi<E> {

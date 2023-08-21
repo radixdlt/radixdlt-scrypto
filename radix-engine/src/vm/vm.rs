@@ -191,7 +191,11 @@ impl VmPackageValidation {
                     schema:
                         BlueprintSchemaInit {
                             generics,
-                            state: BlueprintStateSchemaInit { collections, .. },
+                            state:
+                                BlueprintStateSchemaInit {
+                                    collections,
+                                    fields,
+                                },
                             functions,
                             hooks,
                             ..
@@ -224,6 +228,30 @@ impl VmPackageValidation {
                                 "Static collections not supported".to_string(),
                             )),
                         ));
+                    }
+
+                    for field in fields {
+                        match &field.condition {
+                            Condition::Always => {}
+                            _ => {
+                                return Err(RuntimeError::ApplicationError(
+                                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                        "Conditional fields are not supported".to_string(),
+                                    )),
+                                ));
+                            }
+                        }
+
+                        match field.transience {
+                            FieldTransience::NotTransient => {}
+                            _ => {
+                                return Err(RuntimeError::ApplicationError(
+                                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                        "Transient fields are not supported".to_string(),
+                                    )),
+                                ));
+                            }
+                        }
                     }
 
                     if !hooks.hooks.is_empty() {

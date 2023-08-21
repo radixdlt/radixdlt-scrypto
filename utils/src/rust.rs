@@ -593,6 +593,11 @@ pub mod collections {
             pub fn len(&self) -> usize {
                 self.0.len()
             }
+
+            /// Returns whether the map is empty
+            pub fn is_empty(&self) -> bool {
+                self.0.is_empty()
+            }
         }
 
         impl<K: Hash + Eq, V> Default for NonIterMap<K, V> {

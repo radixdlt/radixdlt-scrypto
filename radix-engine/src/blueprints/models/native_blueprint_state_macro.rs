@@ -94,8 +94,9 @@ macro_rules! declare_native_blueprint_state {
             $(
                 $field_property_name:ident: {
                     ident: $field_ident:ident,
-                    field_type: $field_type:tt,
-                    condition: $field_condition:expr
+                    field_type: $field_type:tt
+                    $(, condition: $field_condition:expr)?
+                    $(, transience: $field_transience:expr)?
                     $(,)? // Optional trailing comma
                 }
             ),*
@@ -213,7 +214,8 @@ macro_rules! declare_native_blueprint_state {
                                     $field_type,
                                     [<$blueprint_ident $field_ident FieldPayload>],
                                 ),
-                                condition: $field_condition,
+                                condition: optional_expression_to_option!($($field_condition)?).unwrap_or(Condition::Always),
+                                transience: optional_expression_to_option!($($field_transience)?).unwrap_or(FieldTransience::NotTransient),
                             });
                         )*
                         let mut collections = vec![];
@@ -402,7 +404,7 @@ macro_rules! declare_native_blueprint_state {
                             {
                                 feature_checks.assert_valid(
                                     stringify!($field_ident),
-                                    &$field_condition,
+                                    &optional_expression_to_option!($($field_condition)?).unwrap_or(Condition::Always),
                                     self.$field_property_name.is_some(),
                                 )?;
                                 if let Some(field) = self.$field_property_name {
@@ -1064,6 +1066,14 @@ mod helper_macros {
     #[allow(unused)]
     pub(crate) use map_entry_substate_to_kv_entry;
 
+    macro_rules! optional_expression_to_option {
+        ($expression:expr$(,)?) => { Some($expression) };
+        () => { None };
+    }
+
+    #[allow(unused)]
+    pub(crate) use optional_expression_to_option;
+
     macro_rules! extract_collection_option {
         (
             mapped_physical_partition, // Name of field
@@ -1138,7 +1148,6 @@ mod tests {
                     kind: Generic,
                     ident: Abc,
                 },
-                condition: Condition::Always,
             }
         },
         collections: {
