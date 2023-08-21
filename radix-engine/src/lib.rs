@@ -30,3 +30,17 @@ pub mod errors;
 
 pub mod utils;
 pub mod vm;
+
+pub mod prelude {
+    // Note - radix_engine::types was previously something like an internal/
+    // external prelude, but let's normalize radix-engine to have a prelude
+    // like everything else, and add to it where needed
+    pub use crate::types::*;
+}
+
+pub(crate) mod internal_prelude {
+    pub use super::prelude::*;
+    pub use crate::blueprints::internal_prelude::*;
+    pub use crate::errors::*;
+    pub use crate::system::system::*;
+}

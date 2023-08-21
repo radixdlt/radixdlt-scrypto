@@ -1,5 +1,6 @@
 use super::id_allocation::IDAllocation;
 use super::system_modules::costing::ExecutionCostingEntry;
+use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
     InvalidGlobalizeAccess, InvalidModuleType, RuntimeError, SystemError, SystemModuleError,
@@ -71,6 +72,21 @@ impl<V> FieldSubstate<V> {
             mutability: SubstateMutability::Mutable,
         }
     }
+
+    pub fn new_locked_field(value: V) -> Self {
+        Self {
+            value: (value,),
+            mutability: SubstateMutability::Immutable,
+        }
+    }
+
+    pub fn payload(&self) -> &V {
+        &self.value.0
+    }
+
+    pub fn into_payload(self) -> V {
+        self.value.0
+    }
 }
 
 pub type KeyValueEntrySubstate<V> = DynSubstate<Option<V>>;
@@ -110,6 +126,9 @@ impl<V> Default for KeyValueEntrySubstate<V> {
         }
     }
 }
+
+pub type IndexEntrySubstate<V> = V;
+pub type SortedIndexEntrySubstate<V> = V;
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
@@ -333,12 +352,12 @@ where
             SystemLockData::default(),
         )?;
 
-        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
+        let substate: PackageBlueprintVersionDefinitionEntrySubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
         let definition = match substate.value {
-            Some(definition) => definition,
+            Some(definition) => definition.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(
                     SystemError::BlueprintDoesNotExist(canonical_bp_id),

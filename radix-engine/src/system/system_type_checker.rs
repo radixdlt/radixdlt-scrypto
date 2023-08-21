@@ -22,7 +22,7 @@ pub enum SchemaValidationMeta {
         additional_schemas: NodeId,
     },
     NewObject {
-        additional_schemas: NonIterMap<Hash, ScryptoSchema>,
+        additional_schemas: NonIterMap<SchemaHash, ScryptoSchema>,
     },
     Blueprint,
 }
@@ -64,7 +64,7 @@ where
     pub fn validate_bp_generic_args(
         &mut self,
         blueprint_interface: &BlueprintInterface,
-        schemas: &IndexMap<Hash, ScryptoSchema>,
+        schemas: &IndexMap<SchemaHash, ScryptoSchema>,
         generic_substitutions: &Vec<GenericSubstitution>,
     ) -> Result<(), TypeCheckError> {
         let generics = &blueprint_interface.generics;
@@ -86,7 +86,7 @@ where
     /// Validate that the type substitutions for a kv store exist in a given schema
     pub fn validate_kv_store_generic_args(
         &mut self,
-        schemas: &IndexMap<Hash, ScryptoSchema>,
+        schemas: &IndexMap<SchemaHash, ScryptoSchema>,
         key: &GenericSubstitution,
         value: &GenericSubstitution,
     ) -> Result<(), TypeCheckError> {
@@ -97,7 +97,7 @@ where
     }
 
     fn validate_generic_arg(
-        schemas: &IndexMap<Hash, ScryptoSchema>,
+        schemas: &IndexMap<SchemaHash, ScryptoSchema>,
         substitution: &GenericSubstitution,
     ) -> Result<(), TypeCheckError> {
         match substitution {
@@ -327,7 +327,7 @@ where
     fn get_schema(
         &mut self,
         node_id: &NodeId,
-        schema_hash: &Hash,
+        schema_hash: &SchemaHash,
     ) -> Result<ScryptoSchema, RuntimeError> {
         let def = self
             .api

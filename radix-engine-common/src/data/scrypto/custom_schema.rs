@@ -2,6 +2,7 @@ use crate::internal_prelude::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomTypeKind, L>;
 pub type ScryptoSchema = Schema<ScryptoCustomSchema>;
+pub type VersionedScryptoSchema = VersionedSchema<ScryptoCustomSchema>;
 pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 
 /// A schema for the values that a codec can decode / views as valid
@@ -202,12 +203,13 @@ impl CustomSchema for ScryptoCustomSchema {
 }
 
 pub trait HasSchemaHash {
-    fn generate_schema_hash(&self) -> Hash;
+    fn generate_schema_hash(&self) -> SchemaHash;
 }
 
-impl HasSchemaHash for Schema<ScryptoCustomSchema> {
-    fn generate_schema_hash(&self) -> Hash {
-        hash(scrypto_encode(self).unwrap())
+// TODO(David) - change to hash the VersionedScryptoSchema when we use that in substates
+impl HasSchemaHash for ScryptoSchema {
+    fn generate_schema_hash(&self) -> SchemaHash {
+        SchemaHash::from(hash(scrypto_encode(self).unwrap()))
     }
 }
 

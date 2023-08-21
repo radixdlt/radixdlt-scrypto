@@ -3,12 +3,11 @@ use crate::utils::*;
 use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
-use radix_engine_queries::typed_substate_layout::MetadataEntrySubstate;
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -32,11 +31,9 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
     let (_, substate) = substate_db
-        .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<PackageOriginalCodeSubstate>, MapKey>(
+        .list_mapped::<SpreadPrefixKeyMapper, PackageCodeOriginalCodeEntrySubstate, MapKey>(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET)
-                .unwrap(),
+            PackagePartitionOffset::CodeOriginalCodeKeyValue.as_main_partition(),
         )
         .next()
         .ok_or(EntityDumpError::PackageNotFound)?;
@@ -51,7 +48,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {} bytes",
         "Code size".green().bold(),
-        substate.value.unwrap().code.len()
+        substate.value.unwrap().into_latest().code.len()
     );
 
     let metadata = get_entity_metadata(package_address.as_node_id(), substate_db);

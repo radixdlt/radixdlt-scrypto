@@ -3,8 +3,8 @@ use crate::blueprints::account::{AccountNativePackage, AccountOwnerBadgeData};
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::{IdentityNativePackage, IdentityOwnerBadgeData};
 use crate::blueprints::package::{
-    create_bootstrap_package_partitions, PackageNativePackage, PackageOwnerBadgeData,
-    SystemInstruction,
+    create_bootstrap_package_partitions, PackageCollection, PackageNativePackage,
+    PackageOwnerBadgeData, SystemInstruction,
 };
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceNativePackage;
@@ -424,7 +424,7 @@ pub fn create_system_bootstrap_flash(
             // Maps the application layer schema collection index to the system layer schema partition
             btreemap! {
                 PACKAGE_BLUEPRINT.to_string() => vec![SystemInstruction::MapCollectionToPhysicalPartition {
-                    collection_index: PACKAGE_SCHEMAS_COLLECTION_INDEX,
+                    collection_index: PackageCollection::SchemaKeyValue.collection_index(),
                     partition_num: SCHEMAS_PARTITION,
                 }],
             },
