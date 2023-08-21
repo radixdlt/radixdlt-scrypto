@@ -1,4 +1,4 @@
-use crate::track::interface::{CallbackError, NodeSubstates};
+use crate::track::interface::{CallbackError, CanonicalSubstateKey, NodeSubstates};
 use crate::types::*;
 use crate::{blueprints::resource::*, track::interface::StoreAccess};
 use radix_engine_interface::blueprints::resource::{
@@ -47,6 +47,23 @@ impl Heap {
                 .ok_or(CallbackError::Error(
                     HeapRemovePartitionError::ModuleNotFound(partition_number),
                 ))?;
+
+            for (substate_key, substate_value) in &module {
+                on_store_access(
+                    self,
+                    StoreAccess::UpdateSubstateInHeap {
+                        canonical_substate_key: CanonicalSubstateKey {
+                            node_id: *node_id,
+                            partition_number,
+                            substate_key: substate_key.clone(),
+                        },
+                        old_size: Some(substate_value.len()),
+                        new_size: None,
+                    },
+                )
+                .map_err(CallbackError::CallbackError)?;
+            }
+
             Ok(module)
         } else {
             Err(CallbackError::Error(
