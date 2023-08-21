@@ -897,7 +897,7 @@ fn consensus_manager_round_update_emits_correct_event() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 2); // Two events: round change event, burn fee
+        assert_eq!(events.len(), 1);
         assert!(match events.get(0) {
             Some((
                 event_identifier

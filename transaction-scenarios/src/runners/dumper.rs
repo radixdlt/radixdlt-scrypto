@@ -139,7 +139,7 @@ mod test {
     use super::*;
 
     #[test]
-    pub fn regenerate_all() {
+    pub fn update_expected_scenario_output() {
         let network_definition = NetworkDefinition::simulator();
         let scenarios_dir =
             std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("generated-examples");

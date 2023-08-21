@@ -9,7 +9,6 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
@@ -1031,7 +1030,7 @@ impl ValidatorBlueprint {
         if !registered || stake.is_zero() {
             None
         } else {
-            Some(SortedKey::new(
+            Some((
                 create_sort_prefix_from_stake(stake),
                 scrypto_encode(&address).unwrap(),
             ))
@@ -1157,7 +1156,7 @@ fn check_validator_fee_factor(fee_factor: Decimal) -> Result<(), RuntimeError> {
     Ok(())
 }
 
-fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
+fn create_sort_prefix_from_stake(stake: Decimal) -> [u8; 2] {
     // Note: XRD max supply is 24bn
     // 24bn / MAX::16 = 366210.9375 - so 100k as a divisor here is sensible.
     // If all available XRD was staked to one validator, they'd have 3.6 * u16::MAX * 100k stake
@@ -1173,7 +1172,7 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
         stake_100k_whole_units.try_into().unwrap()
     };
     // We invert the key because we need high stake to appear first and it's ordered ASC
-    u16::MAX - stake_u16
+    (u16::MAX - stake_u16).to_be_bytes()
 }
 
 struct SecurifiedValidator;
@@ -1360,14 +1359,32 @@ mod tests {
 
     #[test]
     fn sort_key_is_calculated_correctly() {
-        assert_eq!(create_sort_prefix_from_stake(Decimal::ZERO), u16::MAX);
-        assert_eq!(create_sort_prefix_from_stake(dec!(99_999)), u16::MAX);
-        assert_eq!(create_sort_prefix_from_stake(dec!(100_000)), u16::MAX - 1);
-        assert_eq!(create_sort_prefix_from_stake(dec!(199_999)), u16::MAX - 1);
-        assert_eq!(create_sort_prefix_from_stake(dec!(200_000)), u16::MAX - 2);
+        assert_eq!(
+            create_sort_prefix_from_stake(Decimal::ZERO),
+            u16::MAX.to_be_bytes()
+        );
+        assert_eq!(
+            create_sort_prefix_from_stake(dec!(99_999)),
+            u16::MAX.to_be_bytes()
+        );
+        assert_eq!(
+            create_sort_prefix_from_stake(dec!(100_000)),
+            (u16::MAX - 1).to_be_bytes()
+        );
+        assert_eq!(
+            create_sort_prefix_from_stake(dec!(199_999)),
+            (u16::MAX - 1).to_be_bytes()
+        );
+        assert_eq!(
+            create_sort_prefix_from_stake(dec!(200_000)),
+            (u16::MAX - 2).to_be_bytes()
+        );
         // https://learn.radixdlt.com/article/start-here-radix-tokens-and-tokenomics
         let max_xrd_supply = dec!(24).safe_mul(dec!(10).safe_powi(12).unwrap()).unwrap();
-        assert_eq!(create_sort_prefix_from_stake(max_xrd_supply), 0);
+        assert_eq!(
+            create_sort_prefix_from_stake(max_xrd_supply),
+            0u16.to_be_bytes()
+        );
     }
 }
 

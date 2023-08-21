@@ -1,6 +1,7 @@
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::errors::*;
+use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::boxed::Box;
 use sbor::rust::vec::Vec;
 
@@ -193,6 +194,6 @@ pub trait WasmEngine {
 
     /// Instantiate a Scrypto module.
     ///
-    /// The code must have been validated and instrumented!!!
-    fn instantiate(&self, code_hash: Hash, instrumented_code: &[u8]) -> Self::WasmInstance;
+    /// The code must have been validated and instrumented!
+    fn instantiate(&self, code_hash: CodeHash, instrumented_code: &[u8]) -> Self::WasmInstance;
 }

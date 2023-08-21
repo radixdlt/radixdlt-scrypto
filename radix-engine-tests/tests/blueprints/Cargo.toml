@@ -42,6 +42,7 @@ members = [
     "role_assignment",
     "static_dependencies",
     "static_dependencies2",
+    "storage",
     "stored_external_component",
     "stored_resource",
     "stored_values",

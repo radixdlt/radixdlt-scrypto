@@ -36,9 +36,9 @@ pub enum SystemFieldKind {
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct KeyValueStoreEntryStructure {
     pub key_value_store_address: InternalAddress,
-    pub key_schema_hash: Hash,
+    pub key_schema_hash: SchemaHash,
     pub key_local_type_index: LocalTypeIndex,
-    pub value_schema_hash: Hash,
+    pub value_schema_hash: SchemaHash,
     pub value_local_type_index: LocalTypeIndex,
 }
 
@@ -74,24 +74,16 @@ pub enum ObjectSubstateTypeReference {
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct PackageTypeReference {
     pub package_address: PackageAddress,
-    pub schema_hash: Hash,
+    pub schema_hash: SchemaHash,
     pub local_type_index: LocalTypeIndex,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct ObjectInstanceTypeReference {
     pub entity_address: NodeId,
-    pub schema_hash: Hash,
+    pub schema_hash: SchemaHash,
     pub instance_type_index: u8,
     pub local_type_index: LocalTypeIndex,
-}
-
-#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
-pub struct KeyValueTypeReference {
-    pub key_value_store_address: InternalAddress,
-    pub schema_hash: Hash,
-    pub key_local_type_index: LocalTypeIndex,
-    pub value_local_type_index: LocalTypeIndex,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
