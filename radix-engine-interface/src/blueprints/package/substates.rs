@@ -432,6 +432,13 @@ impl IndexedStateSchema {
         }
     }
 
+    pub fn fields_partition(&self) -> Option<PartitionDescription> {
+        match &self.fields {
+            Some((partition, ..)) => Some(partition.clone()),
+            _ => None,
+        }
+    }
+
     pub fn field(
         &self,
         field_index: u8,
