@@ -76,7 +76,37 @@ pub enum TrackedSubstateValue {
     Garbage,
 }
 
+impl TrackedSubstate {
+    fn size(&self) -> usize {
+        // `substate_key` is accounted as part of the CanonicalSubstateKey
+        self.substate_value.size()
+    }
+}
+
 impl TrackedSubstateValue {
+    fn size(&self) -> usize {
+        match self {
+            TrackedSubstateValue::New(x) => x.value.len(),
+            TrackedSubstateValue::ReadOnly(r) => match r {
+                ReadOnly::NonExistent => 0,
+                ReadOnly::Existent(x) => x.value.len(),
+            },
+            TrackedSubstateValue::ReadExistAndWrite(e, w) => {
+                e.len()
+                    + match w {
+                        Write::Update(x) => x.value.len(),
+                        Write::Delete => 0,
+                    }
+            }
+            TrackedSubstateValue::ReadNonExistAndWrite(x) => x.value.len(),
+            TrackedSubstateValue::WriteOnly(w) => match w {
+                Write::Update(x) => x.value.len(),
+                Write::Delete => 0,
+            },
+            TrackedSubstateValue::Garbage => 0,
+        }
+    }
+
     fn get_runtime_substate_mut(&mut self) -> Option<&mut RuntimeSubstate> {
         match self {
             TrackedSubstateValue::New(substate)
@@ -532,7 +562,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                         substate_key: substate_key.clone(),
                         substate_value: TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent),
                     };
+                    let new_size = Some(tracked.size());
                     e.insert(tracked);
+
                     on_store_access(StoreAccess::TrackSubstateUpdated {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id: *node_id,
@@ -540,7 +572,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                             substate_key,
                         },
                         old_size: None,
-                        new_size: Some(0),
+                        new_size,
                     })?;
                 } else {
                     let db_partition_key = M::to_db_partition_key(node_id, partition_number);
@@ -556,8 +588,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                         },
                     )?;
 
-                    let new_size =
-                        Some(substate_value.as_ref().map(|x| x.len()).unwrap_or_default());
+                    let new_size;
                     if let Some(value) = substate_value {
                         let tracked = TrackedSubstate {
                             substate_key: substate_key.clone(),
@@ -565,14 +596,16 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                                 RuntimeSubstate::new(value),
                             )),
                         };
+                        new_size = Some(tracked.size());
                         e.insert(tracked);
                     } else {
                         let tracked = TrackedSubstate {
                             substate_key: substate_key.clone(),
                             substate_value: TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent),
                         };
+                        new_size = Some(tracked.size());
                         e.insert(tracked);
-                    }
+                    };
 
                     // Notify upper layer
                     on_store_access(StoreAccess::TrackSubstateUpdated {
@@ -619,12 +652,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
             for (substate_key, substate_value) in partition {
                 let db_sort_key = M::to_db_sort_key(&substate_key);
 
-                let new_size = Some(substate_value.len());
                 let tracked = TrackedSubstate {
                     substate_key: substate_key.clone(),
                     substate_value: TrackedSubstateValue::New(RuntimeSubstate::new(substate_value)),
                 };
-                partition_substates.insert(db_sort_key, tracked);
+                let new_size = Some(tracked.size());
+                let old_tracked = partition_substates.insert(db_sort_key, tracked);
+                assert!(old_tracked.is_none());
 
                 // Notify upper layer
                 on_store_access(StoreAccess::TrackSubstateUpdated {
@@ -718,14 +752,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
 
         match entry {
             Entry::Vacant(e) => {
-                let new_size = Some(substate_value.len());
-
                 let tracked = TrackedSubstate {
                     substate_key: substate_key.clone(),
                     substate_value: TrackedSubstateValue::WriteOnly(Write::Update(
                         RuntimeSubstate::new(substate_value),
                     )),
                 };
+                let new_size = Some(tracked.size());
                 e.insert(tracked);
 
                 // Notify upper layer
@@ -742,16 +775,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
             Entry::Occupied(mut e) => {
                 let tracked = e.get_mut();
 
-                let old_size = Some(
-                    tracked
-                        .substate_value
-                        .get()
-                        .map(|x| x.len())
-                        .unwrap_or_default(),
-                );
-                let new_size = Some(substate_value.len());
-
+                let old_size = Some(tracked.size());
                 tracked.substate_value.set(substate_value);
+                let new_size = Some(tracked.size());
 
                 // Notify upper layer
                 on_store_access(StoreAccess::TrackSubstateUpdated {
@@ -819,7 +845,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
             on_store_access,
         )?;
 
+        let old_size = Some(tracked.size());
         let taken = tracked.take();
+        let new_size = Some(tracked.size());
 
         // Notify upper layer
         on_store_access(StoreAccess::TrackSubstateUpdated {
@@ -828,8 +856,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                 partition_number,
                 substate_key: substate_key.clone(),
             },
-            old_size: Some(taken.as_ref().map(|x| x.len()).unwrap_or_default()),
-            new_size: Some(0), // Tracked substates are never "removed"
+            old_size,
+            new_size,
         })?;
 
         Ok(taken)
@@ -938,20 +966,22 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                 }
 
                 // TODO: Check that substate is not locked, before use outside of native blueprints
+                let old_size = Some(tracked_substate.size());
                 if let Some(value) = tracked_substate.substate_value.take() {
-                    // Notify upper layer
-                    on_store_access(StoreAccess::TrackSubstateUpdated {
-                        canonical_substate_key: CanonicalSubstateKey {
-                            node_id: *node_id,
-                            partition_number,
-                            substate_key: tracked_substate.substate_key.clone(),
-                        },
-                        old_size: Some(value.len()),
-                        new_size: Some(0), // Tracked substates are never "removed"
-                    })?;
-
                     items.push((tracked_substate.substate_key.clone(), value));
                 }
+                let new_size = Some(tracked_substate.size());
+
+                // Notify upper layer
+                on_store_access(StoreAccess::TrackSubstateUpdated {
+                    canonical_substate_key: CanonicalSubstateKey {
+                        node_id: *node_id,
+                        partition_number,
+                        substate_key: tracked_substate.substate_key.clone(),
+                    },
+                    old_size,
+                    new_size,
+                })?;
             }
         }
 
@@ -1016,9 +1046,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
 
             for (db_sort_key, tracked_substate) in new_updates {
                 let substate_key = tracked_substate.substate_key.clone();
-                tracked_partition
+                let new_size = Some(tracked_substate.size());
+                let old_size = tracked_partition
                     .substates
-                    .insert(db_sort_key, tracked_substate);
+                    .insert(db_sort_key, tracked_substate)
+                    .map(|x| x.size());
 
                 // Notify upper layer
                 on_store_access(StoreAccess::TrackSubstateUpdated {
@@ -1027,8 +1059,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                         partition_number,
                         substate_key,
                     },
-                    old_size: None,
-                    new_size: Some(0), // Tracked substates are never "removed"
+                    old_size,
+                    new_size,
                 })?;
             }
         }
