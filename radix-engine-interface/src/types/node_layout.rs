@@ -6,7 +6,17 @@ use sbor::rust::prelude::*;
 // Please update REP-60 after updating types/configs defined in this file!
 //=========================================================================
 
+//============================
+// System Partitions + Modules
+//============================
+
 pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum TypeInfoField {
+    TypeInfo,
+}
 
 pub const SCHEMAS_PARTITION: PartitionNumber = PartitionNumber(1u8);
 
@@ -19,26 +29,18 @@ pub const ROYALTY_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8
 pub const ROYALTY_CONFIG_PARTITION: PartitionNumber = PartitionNumber(4u8);
 pub const ROYALTY_CONFIG_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum RoyaltyField {
+    RoyaltyAccumulator,
+}
+
 pub const ROLE_ASSIGNMENT_BASE_PARTITION: PartitionNumber = PartitionNumber(5u8);
 pub const ROLE_ASSIGNMENT_FIELDS_PARTITION: PartitionNumber = PartitionNumber(5u8);
 pub const ROLE_ASSIGNMENT_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION: PartitionNumber = PartitionNumber(6u8);
 pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 pub const ROLE_ASSIGNMENT_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
-
-pub const MAIN_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum TypeInfoField {
-    TypeInfo,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum RoyaltyField {
-    RoyaltyAccumulator,
-}
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -54,17 +56,25 @@ impl TryFrom<u8> for RoleAssignmentField {
     }
 }
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum ComponentField {
-    State0,
-}
+//=============================
+// Blueprint partition - common
+//=============================
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum FungibleResourceManagerField {
-    Divisibility,
-    TotalSupply,
+pub const MAIN_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
+
+pub trait BlueprintPartitionOffset: Copy + Into<PartitionOffset> {
+    fn as_partition_offset(self) -> PartitionOffset {
+        self.into()
+    }
+
+    fn as_main_partition(self) -> PartitionNumber {
+        self.as_partition(MAIN_BASE_PARTITION)
+    }
+
+    fn as_partition(self, base: PartitionNumber) -> PartitionNumber {
+        base.at_offset(self.into())
+            .expect("Offset larger than allowed value")
+    }
 }
 
 macro_rules! blueprint_partition_offset {
@@ -88,9 +98,12 @@ macro_rules! blueprint_partition_offset {
             )*
         }
 
+        impl BlueprintPartitionOffset for $t {}
+
         impl $t {
-            pub const fn as_main_partition(&self) -> PartitionNumber {
-                match MAIN_BASE_PARTITION.at_offset(PartitionOffset(*self as u8)) {
+            // Implemented as const, unlike the trait version
+            pub const fn as_partition(&self, base: PartitionNumber) -> PartitionNumber {
+                match base.at_offset(PartitionOffset(*self as u8)) {
                     // This match works around unwrap/expect on Option not being const
                     Some(x) => x,
                     None => panic!("Offset larger than allowed value")
@@ -120,6 +133,23 @@ macro_rules! blueprint_partition_offset {
             }
         }
     };
+}
+
+//===========
+// Blueprints
+//===========
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum ComponentField {
+    State0,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum FungibleResourceManagerField {
+    Divisibility,
+    TotalSupply,
 }
 
 blueprint_partition_offset!(

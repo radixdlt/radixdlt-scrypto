@@ -127,6 +127,9 @@ impl<V> Default for KeyValueEntrySubstate<V> {
     }
 }
 
+pub type IndexEntrySubstate<V> = V;
+pub type SortedIndexEntrySubstate<V> = V;
+
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,

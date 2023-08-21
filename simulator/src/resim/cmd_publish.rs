@@ -135,9 +135,7 @@ impl Publish {
                 vm_type: VmType::ScryptoV1,
             };
             let original_code = PackageCodeOriginalCode { code };
-            let instrumented_code = PackageCodeOriginalCode {
-                code: instrumented_code,
-            };
+            let instrumented_code = PackageCodeInstrumentedCode { instrumented_code };
             {
                 let key =
                     SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());

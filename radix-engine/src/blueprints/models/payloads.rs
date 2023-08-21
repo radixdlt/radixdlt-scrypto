@@ -87,6 +87,14 @@ pub trait FieldPayload:
     fn from_content_source<T: FieldContentSource<Self>>(content: T) -> Self {
         Self::from_content(content.into_content())
     }
+
+    fn into_locked_substate(self) -> FieldSubstate<Self> {
+        FieldSubstate::new_locked_field(self)
+    }
+
+    fn into_mutable_substate(self) -> FieldSubstate<Self> {
+        FieldSubstate::new_field(self)
+    }
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -105,11 +113,11 @@ pub trait FieldContentSource<Payload: FieldPayload>: Sized {
     }
 
     fn into_locked_substate(self) -> FieldSubstate<Payload> {
-        FieldSubstate::new_locked_field(self.into_payload())
+        self.into_payload().into_locked_substate()
     }
 
     fn into_mutable_substate(self) -> FieldSubstate<Payload> {
-        FieldSubstate::new_field(self.into_payload())
+        self.into_payload().into_mutable_substate()
     }
 }
 
@@ -121,12 +129,21 @@ pub trait KeyValueEntryPayload:
     type Content: KeyValueEntryContentSource<Self>;
 
     fn into_content(self) -> Self::Content;
+
     fn from_content(inner_content: Self::Content) -> Self {
         Self::from(inner_content)
     }
 
     fn from_content_source<T: KeyValueEntryContentSource<Self>>(content: T) -> Self {
         Self::from_content(content.into_content())
+    }
+
+    fn into_locked_substate(self) -> KeyValueEntrySubstate<Self> {
+        KeyValueEntrySubstate::entry(self)
+    }
+
+    fn into_mutable_substate(self) -> KeyValueEntrySubstate<Self> {
+        KeyValueEntrySubstate::locked_entry(self)
     }
 }
 
@@ -146,11 +163,11 @@ pub trait KeyValueEntryContentSource<Payload: KeyValueEntryPayload>: Sized {
     }
 
     fn into_locked_substate(self) -> KeyValueEntrySubstate<Payload> {
-        KeyValueEntrySubstate::entry(self.into_payload())
+        self.into_payload().into_locked_substate()
     }
 
     fn into_mutable_substate(self) -> KeyValueEntrySubstate<Payload> {
-        KeyValueEntrySubstate::locked_entry(self.into_payload())
+        self.into_payload().into_mutable_substate()
     }
 }
 
@@ -169,6 +186,10 @@ pub trait IndexEntryPayload:
     fn from_content_source<T: IndexEntryContentSource<Self>>(content: T) -> Self {
         Self::from_content(content.into_content())
     }
+
+    fn into_substate(self) -> IndexEntrySubstate<Self> {
+        self
+    }
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -186,8 +207,8 @@ pub trait IndexEntryContentSource<Payload: IndexEntryPayload>: Sized {
         Payload::from_content_source(self)
     }
 
-    fn into_substate(self) -> Payload {
-        self.into_payload()
+    fn into_substate(self) -> IndexEntrySubstate<Payload> {
+        self.into_payload().into_substate()
     }
 }
 
@@ -207,6 +228,10 @@ pub trait SortedIndexEntryPayload:
     fn from_content_source<T: SortedIndexEntryContentSource<Self>>(content: T) -> Self {
         Self::from_content(content.into_content())
     }
+
+    fn into_substate(self) -> SortedIndexEntrySubstate<Self> {
+        self
+    }
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -224,7 +249,7 @@ pub trait SortedIndexEntryContentSource<Payload: SortedIndexEntryPayload>: Sized
         Payload::from_content_source(self)
     }
 
-    fn into_substate(self) -> Payload {
-        self.into_payload()
+    fn into_substate(self) -> SortedIndexEntrySubstate<Payload> {
+        self.into_payload().into_substate()
     }
 }
