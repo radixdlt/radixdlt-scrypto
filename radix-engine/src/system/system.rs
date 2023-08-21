@@ -254,7 +254,6 @@ where
                 }
             }
 
-
             if let Some((_partition, field_schemas)) = &blueprint_interface.state.fields {
                 for (i, field) in field_schemas.iter().enumerate() {
                     let index = i as u8;
