@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,      0.1209222,    100.0%
-- Execution Cost (XRD)                                                     ,     0.11288075,     93.3%
+Total Cost (XRD)                                                           ,      0.1209272,    100.0%
+- Execution Cost (XRD)                                                     ,     0.11288575,     93.4%
 - Finalization Cost (XRD)                                                  ,     0.00795145,      6.6%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - State Expansion Cost (XRD)                                               ,        0.00009,      0.1%
 - Tipping Cost (XRD)                                                       ,              0,      0.0%
 - Royalty Cost (XRD)                                                       ,              0,      0.0%
-Execution Cost Breakdown                                                   ,       11288075,    100.0%
+Execution Cost Breakdown                                                   ,       11288575,    100.0%
 - AllocateNodeId                                                           ,           5512,      0.0%
 - BeforeInvoke                                                             ,           9344,      0.1%
 - CloseSubstate                                                            ,          93765,      0.8%
@@ -22,7 +22,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::InternalFungibleVault                                      ,         364875,      3.2%
 - OpenSubstate::InternalGenericComponent                                   ,         185848,      1.6%
 - PrepareWasmCode                                                          ,        1624664,     14.4%
-- QueryActor                                                               ,           9500,      0.1%
+- QueryActor                                                               ,          10000,      0.1%
 - QueryAuthZone                                                            ,           2000,      0.0%
 - ReadSubstate                                                             ,        1977634,     17.5%
 - RunNativeCode::AuthZone_pop                                              ,          37132,      0.3%
