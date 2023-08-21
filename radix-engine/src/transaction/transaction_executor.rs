@@ -1,5 +1,5 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
-use crate::blueprints::resource::{BurnFungibleResourceEvent, DepositEvent};
+use crate::blueprints::resource::{BurnFungibleResourceEvent, DepositEvent, UnlockFeeEvent};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
@@ -753,6 +753,14 @@ where
             // Record final payments
             let entry = fee_payments.entry(vault_id).or_default();
             *entry = entry.safe_add(amount).unwrap();
+
+            events.push((
+                EventTypeIdentifier(
+                    Emitter::Method(vault_id, ObjectModuleId::Main),
+                    "UnlockFeeEvent".to_string(),
+                ),
+                scrypto_encode(&UnlockFeeEvent { amount }).unwrap(),
+            ));
         }
         // Free credit is locked first and thus used last
         if free_credit.is_positive() {
