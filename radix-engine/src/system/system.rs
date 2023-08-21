@@ -1,5 +1,6 @@
 use super::id_allocation::IDAllocation;
 use super::system_modules::costing::ExecutionCostingEntry;
+use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
     InvalidGlobalizeAccess, InvalidModuleType, RuntimeError, SystemError, SystemModuleError,
@@ -18,7 +19,7 @@ use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapsh
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::system::system_type_checker::{
-    BlueprintTypeTarget, KVStoreValidationTarget, SchemaValidationMeta,
+    BlueprintTypeTarget, KVStoreValidationTarget, SchemaValidationMeta, SystemMapper,
 };
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -71,6 +72,21 @@ impl<V> FieldSubstate<V> {
             mutability: SubstateMutability::Mutable,
         }
     }
+
+    pub fn new_locked_field(value: V) -> Self {
+        Self {
+            value: (value,),
+            mutability: SubstateMutability::Immutable,
+        }
+    }
+
+    pub fn payload(&self) -> &V {
+        &self.value.0
+    }
+
+    pub fn into_payload(self) -> V {
+        self.value.0
+    }
 }
 
 pub type KeyValueEntrySubstate<V> = DynSubstate<Option<V>>;
@@ -110,6 +126,9 @@ impl<V> Default for KeyValueEntrySubstate<V> {
         }
     }
 }
+
+pub type IndexEntrySubstate<V> = V;
+pub type SortedIndexEntrySubstate<V> = V;
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
@@ -183,14 +202,8 @@ where
         outer_blueprint_features: &BTreeSet<String>,
         generic_args: GenericArgs,
         fields: Vec<FieldValue>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
-    ) -> Result<
-        (
-            BlueprintInfo,
-            IndexMap<PartitionDescription, BTreeMap<SubstateKey, IndexedScryptoValue>>,
-        ),
-        RuntimeError,
-    > {
+        mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+    ) -> Result<(BlueprintInfo, NodeSubstates), RuntimeError> {
         // Validate generic arguments
         let (generic_substitutions, additional_schemas) = {
             let mut additional_schemas = index_map_new();
@@ -226,10 +239,8 @@ where
             },
         };
 
-        let mut partitions = index_map_new();
-
         // Fields
-        {
+        let system_fields = {
             let expected_num_fields = blueprint_interface.state.num_fields();
             if expected_num_fields != fields.len() {
                 return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
@@ -241,20 +252,22 @@ where
                 )));
             }
 
-            if let Some((partition_description, field_schemas)) = &blueprint_interface.state.fields
-            {
-                let mut field_partition = BTreeMap::new();
+            let mut system_fields = Vec::new();
 
-                for (i, field) in fields.iter().enumerate() {
+            if let Some((_partition_description, field_schemas)) = &blueprint_interface.state.fields
+            {
+                for (i, field) in fields.into_iter().enumerate() {
                     // Check for any feature conditions
                     match &field_schemas[i].condition {
                         Condition::IfFeature(feature) => {
                             if !features.contains(feature) {
+                                system_fields.push(None);
                                 continue;
                             }
                         }
                         Condition::IfOuterFeature(feature) => {
                             if !outer_blueprint_features.contains(feature) {
+                                system_fields.push(None);
                                 continue;
                             }
                         }
@@ -267,78 +280,44 @@ where
                         &field.value,
                     )?;
 
-                    let value: ScryptoValue =
-                        scrypto_decode(&field.value).expect("Checked by payload-schema validation");
-
-                    let substate = FieldSubstate {
-                        value: (value,),
-                        mutability: if field.locked {
-                            SubstateMutability::Immutable
-                        } else {
-                            SubstateMutability::Mutable
-                        },
-                    };
-
-                    field_partition.insert(
-                        SubstateKey::Field(i as u8),
-                        IndexedScryptoValue::from_typed(&substate),
-                    );
+                    system_fields.push(Some(field));
                 }
-
-                partitions.insert(partition_description.clone(), field_partition);
             }
-        }
+
+            system_fields
+        };
 
         // Collections
         {
-            for (collection_index, entries) in kv_entries {
+            for (collection_index, entries) in &kv_entries {
                 let payloads: Vec<(&Vec<u8>, &Vec<u8>)> = entries
                     .iter()
                     .filter_map(|(key, entry)| entry.value.as_ref().map(|e| (key, e)))
                     .collect();
 
-                let partition_description = self.validate_blueprint_kv_collection(
+                self.validate_blueprint_kv_collection(
                     &validation_target,
-                    collection_index,
+                    *collection_index,
                     &payloads,
                 )?;
-
-                let mut partition = BTreeMap::new();
-                for (key, kv_entry) in entries {
-                    let kv_entry = if let Some(value) = kv_entry.value {
-                        let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                        let kv_entry = if kv_entry.locked {
-                            KeyValueEntrySubstate::locked_entry(value)
-                        } else {
-                            KeyValueEntrySubstate::entry(value)
-                        };
-                        kv_entry
-                    } else {
-                        if kv_entry.locked {
-                            KeyValueEntrySubstate::locked_empty_entry()
-                        } else {
-                            continue;
-                        }
-                    };
-
-                    let value = IndexedScryptoValue::from_typed(&kv_entry);
-                    partition.insert(SubstateKey::Map(key), value);
-                }
-
-                partitions.insert(partition_description, partition);
             }
 
-            for (partition_description, _blueprint_partition_schema) in
-                blueprint_interface.state.collections.iter()
-            {
-                if !partitions.contains_key(partition_description) {
-                    partitions.insert(partition_description.clone(), BTreeMap::new());
+            for (collection_index, ..) in blueprint_interface.state.collections.iter().enumerate() {
+                let index = collection_index as u8;
+                if !kv_entries.contains_key(&index) {
+                    kv_entries.insert(index, BTreeMap::new());
                 }
             }
         }
 
-        let schema_partition = partitions
-            .entry(PartitionDescription::Physical(SCHEMAS_PARTITION))
+        let mut node_substates = SystemMapper::system_struct_to_node_substates(
+            &blueprint_interface.state,
+            (system_fields, kv_entries),
+            MAIN_BASE_PARTITION,
+        );
+
+        let schema_partition = node_substates
+            .entry(SCHEMAS_PARTITION)
             .or_insert(BTreeMap::new());
 
         for (schema_hash, schema) in additional_schemas {
@@ -348,7 +327,7 @@ where
             schema_partition.insert(key, value);
         }
 
-        Ok((validation_target.blueprint_info, partitions))
+        Ok((validation_target.blueprint_info, node_substates))
     }
 
     pub fn get_blueprint_default_interface(
@@ -397,12 +376,12 @@ where
             SystemLockData::default(),
         )?;
 
-        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
+        let substate: PackageBlueprintVersionDefinitionEntrySubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
         let definition = match substate.value {
-            Some(definition) => definition,
+            Some(definition) => definition.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(
                     SystemError::BlueprintDoesNotExist(canonical_bp_id),
@@ -530,7 +509,7 @@ where
                 (OuterObjectInfo::None, BTreeSet::new())
             };
 
-        let (blueprint_info, partitions) = self.validate_new_object(
+        let (blueprint_info, mut node_substates) = self.validate_new_object(
             blueprint_id,
             &blueprint_interface,
             outer_obj_info,
@@ -549,28 +528,16 @@ where
             .entity_type(),
         )?;
 
-        let mut node_substates = btreemap!(
-            TYPE_INFO_FIELD_PARTITION => type_info_partition(
-                TypeInfoSubstate::Object(ObjectInfo {
-                    global:false,
-                    module_versions: btreemap!(
-                        ObjectModuleId::Main => BlueprintVersion::default(),
-                    ),
-                    blueprint_info,
-                })
-            ),
+        node_substates.insert(
+            TYPE_INFO_FIELD_PARTITION,
+            type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                global: false,
+                module_versions: btreemap!(
+                    ObjectModuleId::Main => BlueprintVersion::default(),
+                ),
+                blueprint_info,
+            })),
         );
-
-        for (partition_description, substates) in partitions.into_iter() {
-            let partition_num = match partition_description {
-                PartitionDescription::Physical(partition_num) => partition_num,
-                PartitionDescription::Logical(offset) => MAIN_BASE_PARTITION
-                    .at_offset(offset)
-                    .expect("Module number overflow"),
-            };
-
-            node_substates.insert(partition_num, substates);
-        }
 
         self.api.kernel_create_node(node_id, node_substates)?;
 
