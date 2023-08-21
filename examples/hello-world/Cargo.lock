@@ -519,9 +519,9 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.9.6"
+version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b49a05f67020456541f4f29cbaa812016a266a86ec76f96d3873d459c68fe5e"
+checksum = "b28455ac4363046076054a7e9cfbd7f168019c29dba32a625f59fc0aeffaaea4"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-epoch",
@@ -685,7 +685,7 @@ dependencies = [
  "sbor",
  "serde_json",
  "strum",
- "syn 2.0.28",
+ "syn",
  "transaction",
  "utils",
  "wasm-instrument",
@@ -720,7 +720,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "sbor-derive-common",
- "syn 1.0.107",
+ "syn",
 ]
 
 [[package]]
@@ -855,7 +855,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "radix-engine-profiling",
- "syn 1.0.107",
+ "syn",
 ]
 
 [[package]]
@@ -917,14 +917,14 @@ dependencies = [
  "itertools",
  "proc-macro2",
  "quote",
- "syn 1.0.107",
+ "syn",
 ]
 
 [[package]]
 name = "scheduled-thread-pool"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "977a7519bff143a44f842fd07e80ad1329295bd71686457f18e496736f4bf9bf"
+checksum = "3cbc66816425a074528352f5789333ecff06ca41b36b0b0efdfbb29edc391a19"
 dependencies = [
  "parking_lot",
 ]
@@ -967,7 +967,7 @@ dependencies = [
  "scrypto-schema",
  "serde",
  "serde_json",
- "syn 1.0.107",
+ "syn",
 ]
 
 [[package]]
@@ -1042,7 +1042,7 @@ checksum = "af487d118eecd09402d70a5d72551860e788df87b464af30e5ea6a38c75c541e"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.107",
+ "syn",
 ]
 
 [[package]]
@@ -1121,7 +1121,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 1.0.107",
+ "syn",
 ]
 
 [[package]]
@@ -1142,16 +1142,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "syn"
-version = "2.0.28"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04361975b3f5e348b2189d8dc55bc942f278b2d482a6a0365de5bdd62d351567"
-dependencies = [
- "proc-macro2",
- "unicode-ident",
-]
-
-[[package]]
 name = "synstructure"
 version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1159,7 +1149,7 @@ checksum = "f36bdaa60a83aca3921b5259d5400cbf5e90fc51931376a9bd4a0eb79aa7210f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.107",
+ "syn",
  "unicode-xid",
 ]
 
@@ -1200,7 +1190,7 @@ checksum = "1fb327af4685e4d03fa8cbcf1716380da910eeb2bb8be417e7f9fd3fb164f36f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.107",
+ "syn",
 ]
 
 [[package]]
@@ -1513,6 +1503,6 @@ checksum = "44bf07cb3e50ea2003396695d58bf46bc9887a1f362260446fad6bc4e79bd36c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.107",
+ "syn",
  "synstructure",
 ]

@@ -769,7 +769,7 @@ dependencies = [
  "sbor",
  "serde_json",
  "strum",
- "syn 2.0.28",
+ "syn 1.0.109",
  "transaction",
  "utils",
  "wasm-instrument",

@@ -3,6 +3,12 @@
 version = 3
 
 [[package]]
+name = "anyhow"
+version = "1.0.75"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
+
+[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -268,6 +274,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
+name = "equivalent"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
+
+[[package]]
 name = "errno"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -370,9 +382,21 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "hashbrown"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
+
+[[package]]
+name = "hashbrown"
 version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
+
+[[package]]
+name = "hashbrown"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c6201b9ff9fd90a5a3bac2e56a830d0caa509576f0e503818ee82c181b3437a"
 
 [[package]]
 name = "heck"
@@ -406,11 +430,31 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
+version = "1.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
+dependencies = [
+ "autocfg",
+ "hashbrown 0.12.3",
+]
+
+[[package]]
+name = "indexmap"
 version = "2.0.0-pre"
 source = "git+https://github.com/bluss/indexmap?rev=eedabaca9f84e520eab01325b305c08f3773e66c#eedabaca9f84e520eab01325b305c08f3773e66c"
 dependencies = [
- "hashbrown",
+ "hashbrown 0.13.2",
  "serde",
+]
+
+[[package]]
+name = "indexmap"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5477fe2230a79769d8dc68e0eabf5437907c0457a5614a9e8dddb67f65eb65d"
+dependencies = [
+ "equivalent",
+ "hashbrown 0.14.0",
 ]
 
 [[package]]
@@ -461,6 +505,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
+name = "leb128"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "884e2677b40cc8c339eaefcb701c32ef1fd2493d71118dc0ca4b6a736c93bd67"
+
+[[package]]
 name = "libc"
 version = "0.2.147"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -505,9 +555,9 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.9.7"
+version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19b9268097a2cf211ac9955b1cc95e80fa84fff5c2d13ba292916445dc8a311f"
+checksum = "b28455ac4363046076054a7e9cfbd7f168019c29dba32a625f59fc0aeffaaea4"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-epoch",
@@ -527,7 +577,7 @@ dependencies = [
 
 [[package]]
 name = "native-sdk"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "radix-engine-common",
  "radix-engine-derive",
@@ -589,12 +639,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
-name = "parity-wasm"
-version = "0.42.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be5e13c266502aadf83426d87d81a0f5d1ef45b8027f5a471c360abfe4bfae92"
-
-[[package]]
 name = "parking_lot"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -619,9 +663,9 @@ dependencies = [
 
 [[package]]
 name = "paste"
-version = "1.0.12"
+version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f746c4065a8fa3fe23974dd82f15431cc8d40779821001404d10d2e79ca7d79"
+checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "ppv-lite86"
@@ -660,7 +704,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "bitflags",
  "colored",
@@ -669,26 +713,25 @@ dependencies = [
  "moka",
  "native-sdk",
  "num-traits",
- "parity-wasm",
  "paste",
  "radix-engine-common",
- "radix-engine-constants",
  "radix-engine-interface",
  "radix-engine-store-interface",
  "resources-tracker-macro",
  "sbor",
  "serde_json",
  "strum",
+ "syn 1.0.109",
  "transaction",
  "utils",
  "wasm-instrument",
  "wasmi",
- "wasmparser-nostd 0.100.1",
+ "wasmparser 0.107.0",
 ]
 
 [[package]]
 name = "radix-engine-common"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "bech32",
  "blake2",
@@ -699,7 +742,6 @@ dependencies = [
  "num-integer",
  "num-traits",
  "paste",
- "radix-engine-constants",
  "radix-engine-derive",
  "sbor",
  "serde",
@@ -708,12 +750,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-constants"
-version = "0.10.0"
-
-[[package]]
 name = "radix-engine-derive"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -723,7 +761,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "bitflags",
  "const-sha1",
@@ -748,12 +786,12 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-queries"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "hex",
  "itertools",
+ "paste",
  "radix-engine",
- "radix-engine-constants",
  "radix-engine-interface",
  "radix-engine-store-interface",
  "sbor",
@@ -763,7 +801,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-store-interface"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "hex",
  "itertools",
@@ -776,7 +814,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-stores"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "hex",
  "itertools",
@@ -893,7 +931,7 @@ dependencies = [
 
 [[package]]
 name = "sbor"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "const-sha1",
  "hex",
@@ -906,7 +944,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -914,7 +952,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive-common"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "const-sha1",
  "itertools",
@@ -940,7 +978,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "scrypto"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "bech32",
  "const-sha1",
@@ -961,7 +999,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-derive"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -975,7 +1013,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-schema"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "bitflags",
  "radix-engine-common",
@@ -985,10 +1023,9 @@ dependencies = [
 
 [[package]]
 name = "scrypto-unit"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "radix-engine",
- "radix-engine-constants",
  "radix-engine-interface",
  "radix-engine-queries",
  "radix-engine-store-interface",
@@ -1198,17 +1235,17 @@ dependencies = [
 
 [[package]]
 name = "transaction"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "bech32",
  "ed25519-dalek",
  "hex",
  "lazy_static",
  "radix-engine-common",
- "radix-engine-constants",
  "radix-engine-interface",
  "sbor",
  "secp256k1",
+ "strum",
  "utils",
 ]
 
@@ -1241,9 +1278,9 @@ checksum = "b15811caf2415fb889178633e7724bad2509101cde276048e013b9def5e51fa0"
 
 [[package]]
 name = "utils"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
- "indexmap",
+ "indexmap 2.0.0-pre",
  "serde",
 ]
 
@@ -1308,12 +1345,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
-name = "wasm-instrument"
-version = "0.1.1"
+name = "wasm-encoder"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "962e5b0401bbb6c887f54e69b8c496ea36f704df65db73e81fd5ff8dc3e63a9f"
+checksum = "18c41dbd92eaebf3612a39be316540b8377c871cb9bde6b064af962984912881"
 dependencies = [
- "parity-wasm",
+ "leb128",
+]
+
+[[package]]
+name = "wasm-instrument"
+version = "0.4.0"
+source = "git+https://github.com/radixdlt/wasm-instrument?branch=radix-master#22fdb4d3fca5619ada88de26d71e5608c6c18c9c"
+dependencies = [
+ "anyhow",
+ "paste",
+ "wasm-encoder",
+ "wasmparser 0.107.0",
+ "wasmprinter",
 ]
 
 [[package]]
@@ -1324,7 +1373,7 @@ dependencies = [
  "spin",
  "wasmi_arena",
  "wasmi_core",
- "wasmparser-nostd 0.91.0",
+ "wasmparser-nostd",
 ]
 
 [[package]]
@@ -1344,6 +1393,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmparser"
+version = "0.107.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29e3ac9b780c7dda0cac7a52a5d6d2d6707cc6e3451c9db209b6c758f40d7acb"
+dependencies = [
+ "indexmap 1.9.3",
+ "semver",
+]
+
+[[package]]
+name = "wasmparser"
+version = "0.111.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad71036aada3f6b09251546e97e4f4f176dd6b41cf6fa55e7e0f65e86aec319a"
+dependencies = [
+ "indexmap 2.0.0",
+ "semver",
+]
+
+[[package]]
 name = "wasmparser-nostd"
 version = "0.91.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1353,12 +1422,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasmparser-nostd"
-version = "0.100.1"
+name = "wasmprinter"
+version = "0.2.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9157cab83003221bfd385833ab587a039f5d6fa7304854042ba358a3b09e0724"
+checksum = "eeb8cc41d341939dce08ee902b50e36cd35add940f6044c94b144e8f73fe07a6"
 dependencies = [
- "indexmap-nostd",
+ "anyhow",
+ "wasmparser 0.111.0",
 ]
 
 [[package]]
