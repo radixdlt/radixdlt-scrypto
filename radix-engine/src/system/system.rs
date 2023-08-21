@@ -2446,6 +2446,12 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
+    fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, RuntimeError> {
+        AddressBech32Encoder::new(&NetworkDefinition::mainnet()).encode(&address.into_node_id().0)
+            .map_err(|e| RuntimeError::SystemError(SystemError::AddressBech32EncodeError(e)))
+    }
+
+    #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         self.emit_event_internal(EmitterActor::CurrentActor, event_name, event_data)
     }
