@@ -70,6 +70,7 @@ impl CostingParameters {
 
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
+    pub network_definition: NetworkDefinition,
     pub enabled_modules: EnabledModules,
     pub abort_when_loan_repaid: bool,
     pub enable_cost_breakdown: bool,
@@ -93,6 +94,7 @@ impl ExecutionConfig {
     /// This is internal. Clients should use `for_xxx` constructors instead.
     fn default() -> Self {
         Self {
+            network_definition: NetworkDefinition::simulator(),
             enabled_modules: EnabledModules::for_notarized_transaction(),
             abort_when_loan_repaid: false,
             enable_cost_breakdown: false,
@@ -560,6 +562,7 @@ where
             callback_obj: self.vm.clone(),
             modules: SystemModuleMixer::new(
                 execution_config.enabled_modules,
+                execution_config.network_definition.clone(),
                 executable.intent_hash().to_hash(),
                 executable.auth_zone_params().clone(),
                 fee_reserve,
