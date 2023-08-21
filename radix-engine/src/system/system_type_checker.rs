@@ -1,12 +1,15 @@
 use super::payload_validation::*;
 use crate::errors::{RuntimeError, SystemError};
 use crate::kernel::kernel_api::KernelApi;
-use crate::system::system::{KeyValueEntrySubstate, SystemService};
+use crate::system::system::{
+    FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
+};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::CollectionIndex;
+use radix_engine_interface::api::{CollectionIndex, FieldValue, KVEntry};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::KeyValueStoreGenericSubstitutions;
 use sbor::rust::vec::Vec;
@@ -361,5 +364,90 @@ where
             .insert(schema_hash.clone(), schema.clone());
 
         Ok(schema)
+    }
+}
+
+pub struct SystemMapper;
+
+impl SystemMapper {
+    pub fn system_struct_to_node_substates(
+        schema: &IndexedStateSchema,
+        system_struct: (
+            Vec<Option<FieldValue>>,
+            BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+        ),
+        base_partition_num: PartitionNumber,
+    ) -> NodeSubstates {
+        let mut partitions: NodeSubstates = BTreeMap::new();
+
+        if !system_struct.0.is_empty() {
+            let partition_description = schema.fields_partition().unwrap();
+            let partition_num = match partition_description {
+                PartitionDescription::Physical(partition_num) => partition_num,
+                PartitionDescription::Logical(offset) => {
+                    base_partition_num.at_offset(offset).unwrap()
+                }
+            };
+
+            let mut field_partition = BTreeMap::new();
+
+            for (index, field) in system_struct.0.into_iter().enumerate() {
+                if let Some(field) = field {
+                    let value: ScryptoValue =
+                        scrypto_decode(&field.value).expect("Checked by payload-schema validation");
+
+                    let substate = FieldSubstate {
+                        value: (value,),
+                        mutability: if field.locked {
+                            SubstateMutability::Immutable
+                        } else {
+                            SubstateMutability::Mutable
+                        },
+                    };
+
+                    let value = IndexedScryptoValue::from_typed(&substate);
+                    field_partition.insert(SubstateKey::Field(index as u8), value);
+                }
+            }
+
+            partitions.insert(partition_num, field_partition);
+        }
+
+        for (collection_index, substates) in system_struct.1 {
+            let (partition_description, _) = schema.get_partition(collection_index).unwrap();
+            let partition_num = match partition_description {
+                PartitionDescription::Physical(partition_num) => partition_num,
+                PartitionDescription::Logical(offset) => {
+                    base_partition_num.at_offset(offset).unwrap()
+                }
+            };
+
+            let mut partition = BTreeMap::new();
+
+            for (key, kv_entry) in substates {
+                let kv_entry = if let Some(value) = kv_entry.value {
+                    let value: ScryptoValue = scrypto_decode(&value).unwrap();
+                    let kv_entry = if kv_entry.locked {
+                        KeyValueEntrySubstate::locked_entry(value)
+                    } else {
+                        KeyValueEntrySubstate::entry(value)
+                    };
+                    kv_entry
+                } else {
+                    if kv_entry.locked {
+                        KeyValueEntrySubstate::locked_empty_entry()
+                    } else {
+                        continue;
+                    }
+                };
+
+                let value = IndexedScryptoValue::from_typed(&kv_entry);
+                partition.insert(SubstateKey::Map(key), value);
+            }
+
+            partitions.insert(partition_num, partition);
+        }
+
+        partitions
     }
 }
