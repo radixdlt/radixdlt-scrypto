@@ -366,8 +366,6 @@ fn run_basic_transfer(mode: Mode) {
     );
     receipt.expect_commit(true);
 
-    println!("{:?}", receipt);
-
     mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 

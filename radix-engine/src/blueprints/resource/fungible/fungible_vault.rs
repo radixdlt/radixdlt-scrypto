@@ -275,7 +275,6 @@ impl FungibleVaultBlueprint {
     // Protected methods
     //===================
 
-    // protected method
     pub fn lock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
@@ -302,7 +301,6 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    // protected method
     pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,

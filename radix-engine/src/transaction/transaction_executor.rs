@@ -1,5 +1,5 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
-use crate::blueprints::resource::{BurnFungibleResourceEvent, DepositEvent, UnlockFeeEvent};
+use crate::blueprints::resource::{BurnFungibleResourceEvent, DepositEvent, PayFeeEvent};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
@@ -757,9 +757,9 @@ where
             events.push((
                 EventTypeIdentifier(
                     Emitter::Method(vault_id, ObjectModuleId::Main),
-                    "UnlockFeeEvent".to_string(),
+                    "PayFeeEvent".to_string(),
                 ),
-                scrypto_encode(&UnlockFeeEvent { amount }).unwrap(),
+                scrypto_encode(&PayFeeEvent { amount }).unwrap(),
             ));
         }
         // Free credit is locked first and thus used last
