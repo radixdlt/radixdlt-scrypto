@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,     7.648985877994528824,    100.0%
-- Execution Cost (XRD)                                                     ,                0.3321025,      4.3%
+Total Cost (XRD)                                                           ,     7.649342427994528824,    100.0%
+- Execution Cost (XRD)                                                     ,               0.33245905,      4.3%
 - Finalization Cost (XRD)                                                  ,                2.4963776,     32.6%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,     4.820505777994528824,     63.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  6642050,    100.0%
+Execution Cost Breakdown                                                   ,                  6649181,    100.0%
 - AllocateNodeId                                                           ,                     2288,      0.0%
 - BeforeInvoke                                                             ,                    10818,      0.2%
 - CloseSubstate                                                            ,                    51870,      0.8%
@@ -17,17 +17,17 @@ Execution Cost Breakdown                                                   ,    
 - MoveModule                                                               ,                    21165,      0.3%
 - OpenSubstate::GlobalAccount                                              ,                   406436,      6.1%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   121580,      1.8%
-- OpenSubstate::GlobalGenericComponent                                     ,                    43212,      0.7%
+- OpenSubstate::GlobalGenericComponent                                     ,                    43212,      0.6%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    12273,      0.2%
-- OpenSubstate::GlobalPackage                                              ,                  3266898,     49.2%
+- OpenSubstate::GlobalPackage                                              ,                  3269449,     49.2%
 - OpenSubstate::InternalFungibleVault                                      ,                    85452,      1.3%
 - OpenSubstate::InternalGenericComponent                                   ,                    50737,      0.8%
 - OpenSubstate::InternalKeyValueStore                                      ,                    40474,      0.6%
 - OpenSubstate::InternalNonFungibleVault                                   ,                   117874,      1.8%
 - PinNode                                                                  ,                     1900,      0.0%
-- PrepareWasmCode                                                          ,                   644328,      9.7%
+- PrepareWasmCode                                                          ,                   646474,      9.7%
 - QueryActor                                                               ,                     2000,      0.0%
-- ReadSubstate                                                             ,                   916112,     13.8%
+- ReadSubstate                                                             ,                   918546,     13.8%
 - RunNativeCode::Worktop_drain                                             ,                    13505,      0.2%
 - RunNativeCode::Worktop_drop                                              ,                    15385,      0.2%
 - RunNativeCode::Worktop_put                                               ,                    18262,      0.3%

@@ -17,3 +17,10 @@ pub use type_aggregator::*;
 pub use type_data::*;
 pub use type_link::*;
 pub use well_known_types::*;
+
+pub mod prelude {
+    pub use super::schema::*;
+    pub use super::type_aggregator::*;
+    pub use super::type_data::*;
+    pub use super::type_link::*;
+}
