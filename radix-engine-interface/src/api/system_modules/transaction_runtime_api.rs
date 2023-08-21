@@ -8,7 +8,7 @@ bitflags! {
     #[derive(Sbor)]
     pub struct EventFlags: u32 {
         /// With this flag on, an event will not be reverted if the transaction fails.
-        const FORCE_WRITE = 0b00000100;
+        const FORCE_WRITE = 0b00000001;
     }
 }
 
