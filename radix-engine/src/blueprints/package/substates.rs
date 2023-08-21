@@ -44,6 +44,7 @@ declare_native_blueprint_state! {
         },
         schemas: KeyValue {
             entry_ident: Schema,
+            mapped_physical_partition: SCHEMAS_PARTITION,
             key_type: {
                 kind: Static,
                 content_type: SchemaHash,
@@ -54,9 +55,6 @@ declare_native_blueprint_state! {
                 content_type: ScryptoSchema,
             },
             allow_ownership: false,
-            options: {
-                mapped_physical_partition: SCHEMAS_PARTITION,
-            },
         },
         blueprint_version_royalty_configs: KeyValue {
             entry_ident: BlueprintVersionRoyaltyConfig,

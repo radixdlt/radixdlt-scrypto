@@ -106,15 +106,12 @@ macro_rules! declare_native_blueprint_state {
             $(
                 $collection_property_name:ident: $collection_type:ident {
                     entry_ident: $collection_ident:ident,
+                    $(mapped_physical_partition: $mapped_physical_partition:expr,)?
                     key_type: $collection_key_type:tt,
                     // The full_key_content is required if it's a sorted index
                     $(full_key_content: $full_key_content:tt,)?
                     value_type: $collection_value_type:tt,
                     allow_ownership: $collection_allow_ownership:expr
-                    // Advanced collection options for (eg):
-                    // - Passing in a property name of the sorted index parameter for SortedIndex
-                    // - Specifying a Logical partition mapping
-                    $(, options: $collection_options:tt)?
                     $(,)? // Optional trailing comma
                 }
             ),*
@@ -214,8 +211,8 @@ macro_rules! declare_native_blueprint_state {
                                     $field_type,
                                     [<$blueprint_ident $field_ident FieldPayload>],
                                 ),
-                                condition: optional_expression_to_option!($($field_condition)?).unwrap_or(Condition::Always),
-                                transience: optional_expression_to_option!($($field_transience)?).unwrap_or(FieldTransience::NotTransient),
+                                condition: optional_or_fallback!($({ $field_condition })?, { Condition::Always }),
+                                transience: optional_or_fallback!($({ $field_transience})?, { FieldTransience::NotTransient }),
                             });
                         )*
                         let mut collections = vec![];
@@ -404,7 +401,7 @@ macro_rules! declare_native_blueprint_state {
                             {
                                 feature_checks.assert_valid(
                                     stringify!($field_ident),
-                                    &optional_expression_to_option!($($field_condition)?).unwrap_or(Condition::Always),
+                                    &optional_or_fallback!($({ $field_condition })?, { Condition::Always }),
                                     self.$field_property_name.is_some(),
                                 )?;
                                 if let Some(field) = self.$field_property_name {
@@ -514,19 +511,15 @@ macro_rules! declare_native_blueprint_state {
                             return PartitionDescription::Logical(PartitionOffset(module_partition_offset));
                         }
                         $(
-                            let mapped_physical_partition = extract_collection_option!(
-                                mapped_physical_partition,
-                                $($collection_options)?
-                            );
-                            let current_partition_description = match mapped_physical_partition {
-                                Some(physical_partition) => {
-                                    PartitionDescription::Physical(physical_partition)
-                                },
-                                None => {
+                            let current_partition_description = optional_or_fallback!(
+                                $({
+                                    PartitionDescription::Physical($mapped_physical_partition)
+                                })?,
+                                {
                                     module_partition_offset += 1;
                                     PartitionDescription::Logical(PartitionOffset(module_partition_offset))
-                                },
-                            };
+                                }
+                            );
                             if (*self as u8) == (Self::[<$collection_ident $collection_type>] as u8) {
                                 return current_partition_description;
                             }
@@ -1066,43 +1059,17 @@ mod helper_macros {
     #[allow(unused)]
     pub(crate) use map_entry_substate_to_kv_entry;
 
-    macro_rules! optional_expression_to_option {
-        ($expression:expr$(,)?) => { Some($expression) };
-        () => { None };
-    }
-
-    #[allow(unused)]
-    pub(crate) use optional_expression_to_option;
-
-    macro_rules! extract_collection_option {
-        (
-            mapped_physical_partition, // Name of field
-            {
-                mapped_physical_partition: $value:tt$(,)?
-                $(sorted_index_key_property: $ignored:tt$(,)?)?
-            }$(,)?
-        ) => {
-            Some($value)
+    macro_rules! optional_or_fallback {
+        ($value:tt, $fallback:tt$(,)?) => {
+            $value
         };
-        (
-            sorted_index_key_property, // Name of field
-            {
-                $(mapped_physical_partition: $ignored:tt$(,)?)?
-                sorted_index_key_property: $value:tt$(,)?
-            }$(,)?
-        ) => {
-            Some($value)
-        };
-        (
-            $option_field_name:ident,
-            $($non_matching_stuff:tt)?$(,)?
-        ) => {
-            None
+        (, $fallback:tt$(,)?) => {
+            $fallback
         };
     }
 
     #[allow(unused)]
-    pub(crate) use extract_collection_option;
+    pub(crate) use optional_or_fallback;
 }
 
 #[cfg(test)]
