@@ -158,7 +158,7 @@ impl FungibleVaultBlueprint {
         api.field_close(vault_handle)?;
 
         // Emitting an event once the fee has been locked
-        Runtime::emit_event(api, events::fungible_vault::LockFeeEvent { amount })?;
+        Runtime::emit_event_advanced(api, events::fungible_vault::LockFeeEvent { amount }, false)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

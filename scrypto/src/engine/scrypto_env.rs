@@ -450,6 +450,15 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         Ok(())
     }
 
+    fn emit_event_advanced(
+        &mut self,
+        _event_name: String,
+        _event_data: Vec<u8>,
+        _discard_on_failure: bool,
+    ) -> Result<(), ClientApiError> {
+        unimplemented!("Not available for Scrypto")
+    }
+
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
         let level = scrypto_encode(&level).unwrap();
         unsafe { emit_log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }

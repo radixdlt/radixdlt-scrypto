@@ -11,5 +11,12 @@ pub trait ClientTransactionRuntimeApi<E> {
 
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), E>;
 
+    fn emit_event_advanced(
+        &mut self,
+        event_name: String,
+        event_data: Vec<u8>,
+        discard_on_failure: bool,
+    ) -> Result<(), E>;
+
     fn panic(&mut self, message: String) -> Result<(), E>;
 }

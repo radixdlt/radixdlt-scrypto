@@ -557,6 +557,7 @@ where
         actor: EmitterActor,
         event_name: String,
         event_data: Vec<u8>,
+        discard_on_failure: bool,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_get_system().modules.apply_execution_cost(
             ExecutionCostingEntry::EmitEvent {
@@ -612,7 +613,7 @@ where
         let event = Event {
             type_identifier: event_type_identifier,
             payload: event_data,
-            discard_on_failure: true,
+            discard_on_failure,
         };
 
         // Adding the event to the event store
@@ -1310,6 +1311,7 @@ where
             EmitterActor::AsObject(global_address.as_node_id().clone(), ObjectModuleId::Main),
             event_name,
             event_data,
+            true,
         )?;
 
         Ok((global_address, inner_object))
@@ -2437,7 +2439,22 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        self.emit_event_internal(EmitterActor::CurrentActor, event_name, event_data)
+        self.emit_event_advanced(event_name, event_data, true)
+    }
+
+    #[trace_resources]
+    fn emit_event_advanced(
+        &mut self,
+        event_name: String,
+        event_data: Vec<u8>,
+        discard_on_failure: bool,
+    ) -> Result<(), RuntimeError> {
+        self.emit_event_internal(
+            EmitterActor::CurrentActor,
+            event_name,
+            event_data,
+            discard_on_failure,
+        )
     }
 
     #[trace_resources]

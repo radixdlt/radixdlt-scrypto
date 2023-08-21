@@ -27,6 +27,23 @@ impl Runtime {
         api.emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
     }
 
+    /// Emits an application event
+    pub fn emit_event_advanced<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
+        api: &mut Y,
+        event: T,
+        abort_on_failure: bool,
+    ) -> Result<(), E>
+    where
+        Y: ClientTransactionRuntimeApi<E>,
+        E: Debug + ScryptoCategorize + ScryptoDecode,
+    {
+        api.emit_event_advanced(
+            T::event_name().to_string(),
+            scrypto_encode(&event).unwrap(),
+            abort_on_failure,
+        )
+    }
+
     pub fn current_epoch<Y, E>(api: &mut Y) -> Result<Epoch, E>
     where
         Y: ClientObjectApi<E>,
