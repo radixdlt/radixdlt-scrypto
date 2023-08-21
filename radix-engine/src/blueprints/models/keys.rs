@@ -84,7 +84,7 @@ macro_rules! declare_key_new_type {
             fn try_from(substate_key: &SubstateKey) -> Result<Self, Self::Error> {
                 let (sort_prefix, payload_bytes) = substate_key.for_sorted().ok_or(())?;
                 let content = scrypto_decode(payload_bytes).map_err(|_| ())?;
-                Ok(Self::from_sort_key_and_content(*sort_prefix, content))
+                Ok(Self::from_sort_key_and_content(u16::from_be_bytes(*sort_prefix), content))
             }
         }
 
