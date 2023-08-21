@@ -1,8 +1,7 @@
 use crate::internal_prelude::*;
 
 /// Generates types and typed-interfaces for native blueprints, their
-/// state models, features, partitions, and their interaction with
-/// the substate store.
+/// state models, features, and schemas.
 ///
 /// See the below structure for detail on how it should look - or check
 /// out [../package/substates.rs](the package substates definition).
@@ -18,9 +17,8 @@ use crate::internal_prelude::*;
 /// For each collection key, the following types will be created:
 /// * `<BlueprintIdent><CollectionIdent>KeyPayload` - a new type for the key payload (eg includes the u16 for a sorted index key)
 ///
-/// The content of each of the above can take a number of forms.
-/// This is configured via specifying the type as one of the following.
-/// By default, choose StaticSingleVersioned for fields and collection values.
+/// The content of each of the above can take a number of forms. This is configured via specifying the type as one of the following.
+/// Only Static is supported for keys at present. By default, you should choose StaticSingleVersioned for fields and collection values.
 /// ```
 ///     {
 ///         kind: StaticSingleVersioned,
@@ -327,7 +325,7 @@ macro_rules! declare_native_blueprint_state {
                     }
                 }
 
-                impl FeatureSetResolver for [<$blueprint_ident FeatureSet>] {
+                impl HasFeatures for [<$blueprint_ident FeatureSet>] {
                     fn feature_names_str(&self) -> Vec<&'static str> {
                         let mut names = vec![];
                         $(
