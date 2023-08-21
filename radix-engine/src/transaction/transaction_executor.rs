@@ -710,7 +710,7 @@ where
             events.push((
                 EventTypeIdentifier(
                     Emitter::Method(node_id, ObjectModuleId::Main),
-                    "ReceiveRoyaltyEvent".to_string(),
+                    ReceiveRoyaltyEvent::event_name().to_string(),
                 ),
                 scrypto_encode(&ReceiveRoyaltyEvent { amount }).unwrap(),
             ));
@@ -766,7 +766,7 @@ where
             events.push((
                 EventTypeIdentifier(
                     Emitter::Method(vault_id, ObjectModuleId::Main),
-                    "PayFeeEvent".to_string(),
+                    PayFeeEvent::event_name().to_string(),
                 ),
                 scrypto_encode(&PayFeeEvent { amount }).unwrap(),
             ));
@@ -881,7 +881,7 @@ where
             events.push((
                 EventTypeIdentifier(
                     Emitter::Method(vault_node_id, ObjectModuleId::Main),
-                    "DepositEvent".to_string(),
+                    DepositEvent::event_name().to_string(),
                 ),
                 scrypto_encode(&DepositEvent {
                     amount: total_amount,
