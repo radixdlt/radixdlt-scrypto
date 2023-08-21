@@ -528,7 +528,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                     .transient_substates
                     .is_transient(node_id, partition_number, &substate_key)
                 {
-                    on_store_access(StoreAccess::UpdateSubstateInTrack {
+                    on_store_access(StoreAccess::SubstateUpdatedInTrack {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id: *node_id,
                             partition_number,
@@ -557,7 +557,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                     )?;
 
                     // Notify upper layer
-                    on_store_access(StoreAccess::UpdateSubstateInTrack {
+                    on_store_access(StoreAccess::SubstateUpdatedInTrack {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id: *node_id,
                             partition_number,
@@ -620,7 +620,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                 let db_sort_key = M::to_db_sort_key(&substate_key);
 
                 // Notify upper layer
-                on_store_access(StoreAccess::UpdateSubstateInTrack {
+                on_store_access(StoreAccess::SubstateUpdatedInTrack {
                     canonical_substate_key: CanonicalSubstateKey {
                         node_id,
                         partition_number,
@@ -718,7 +718,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         match entry {
             Entry::Vacant(e) => {
                 // Notify upper layer
-                on_store_access(StoreAccess::UpdateSubstateInTrack {
+                on_store_access(StoreAccess::SubstateUpdatedInTrack {
                     canonical_substate_key: CanonicalSubstateKey {
                         node_id,
                         partition_number,
@@ -740,7 +740,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                 let tracked = e.get_mut();
 
                 // Notify upper layer
-                on_store_access(StoreAccess::UpdateSubstateInTrack {
+                on_store_access(StoreAccess::SubstateUpdatedInTrack {
                     canonical_substate_key: CanonicalSubstateKey {
                         node_id,
                         partition_number,
@@ -814,7 +814,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         )?;
 
         // Notify upper layer
-        on_store_access(StoreAccess::UpdateSubstateInTrack {
+        on_store_access(StoreAccess::SubstateUpdatedInTrack {
             canonical_substate_key: CanonicalSubstateKey {
                 node_id: *node_id,
                 partition_number,
@@ -930,7 +930,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                 }
 
                 // Notify upper layer
-                on_store_access(StoreAccess::UpdateSubstateInTrack {
+                on_store_access(StoreAccess::SubstateUpdatedInTrack {
                     canonical_substate_key: CanonicalSubstateKey {
                         node_id: *node_id,
                         partition_number,
@@ -1014,7 +1014,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
 
             for (db_sort_key, tracked_substate) in new_updates {
                 // Notify upper layer
-                on_store_access(StoreAccess::UpdateSubstateInTrack {
+                on_store_access(StoreAccess::SubstateUpdatedInTrack {
                     canonical_substate_key: CanonicalSubstateKey {
                         node_id: *node_id,
                         partition_number,

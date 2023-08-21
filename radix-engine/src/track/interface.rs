@@ -230,7 +230,7 @@ pub enum StoreAccess {
     ReadFromDbNotFound(CanonicalSubstateKey),
 
     /// A substate in track has been updated
-    UpdateSubstateInTrack {
+    SubstateUpdatedInTrack {
         /// The canonical substate key
         canonical_substate_key: CanonicalSubstateKey,
         /// Previous size of the substate, or `None` if it's a new entry.
@@ -241,7 +241,7 @@ pub enum StoreAccess {
     },
 
     /// A substate in track has been updated
-    UpdateSubstateInHeap {
+    SubstateUpdatedInHeap {
         /// The canonical substate key
         canonical_substate_key: CanonicalSubstateKey,
         /// Previous size of the substate, or `None` if it's a new entry.
@@ -257,11 +257,11 @@ impl StoreAccess {
         match self {
             StoreAccess::ReadFromDb(key, _)
             | StoreAccess::ReadFromDbNotFound(key)
-            | StoreAccess::UpdateSubstateInTrack {
+            | StoreAccess::SubstateUpdatedInTrack {
                 canonical_substate_key: key,
                 ..
             }
-            | StoreAccess::UpdateSubstateInHeap {
+            | StoreAccess::SubstateUpdatedInHeap {
                 canonical_substate_key: key,
                 ..
             } => key.node_id,
