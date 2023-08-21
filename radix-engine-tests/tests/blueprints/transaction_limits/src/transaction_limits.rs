@@ -52,7 +52,9 @@ mod transaction_limits {
                 message: "a".repeat(n),
             })
             .unwrap();
-            unsafe { wasm_api::emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len()) }
+            unsafe {
+                wasm_api::emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len(), true)
+            }
         }
 
         pub fn emit_log_of_size(n: usize) {
