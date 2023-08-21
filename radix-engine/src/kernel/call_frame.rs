@@ -760,13 +760,13 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        let mut handler = CallFrameToIOStoreAccessAdapter {
+        let mut adapter = CallFrameToIOStoreAccessAdapter {
             call_frame: self,
             handler,
             phantom: PhantomData::default(),
         };
 
-        substate_io.create_node(&mut handler, destination_device, node_id, node_substates)?;
+        substate_io.create_node(destination_device, node_id, node_substates, &mut adapter)?;
 
         Ok(())
     }
@@ -781,13 +781,13 @@ impl<C, L: Clone> CallFrame<C, L> {
         self.take_node_internal(node_id)
             .map_err(|e| CallbackError::Error(DropNodeError::TakeNodeError(e)))?;
 
-        let mut handler = CallFrameToIOStoreAccessAdapter {
+        let mut adapter = CallFrameToIOStoreAccessAdapter {
             call_frame: self,
             handler,
             phantom: PhantomData::default(),
         };
         let node_substates = substate_io
-            .drop_node(SubstateDevice::Heap, node_id, &mut handler)
+            .drop_node(SubstateDevice::Heap, node_id, &mut adapter)
             .map_err(|e| match e {
                 CallbackError::Error(e) => CallbackError::Error(e),
                 CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
@@ -797,7 +797,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 let diff = SubstateDiff::from_drop_substate(&substate_value);
                 self.process_substate_diff(
                     substate_io,
-                    handler.handler,
+                    adapter.handler,
                     SubstateDevice::Heap,
                     &diff,
                 )
@@ -832,21 +832,19 @@ impl<C, L: Clone> CallFrame<C, L> {
             CallbackError::Error(MovePartitionError::NodeNotAvailable(dest_node_id.clone()))
         })?;
 
-        let mut handler = CallFrameToIOStoreAccessAdapter {
+        let mut adapter = CallFrameToIOStoreAccessAdapter {
             call_frame: self,
             handler,
             phantom: PhantomData::default(),
         };
-
-        // Move
         substate_io.move_partition(
-            &mut handler,
             src_device,
             src_node_id,
             src_partition_number,
             dest_device,
             dest_node_id,
             dest_partition_number,
+            &mut adapter,
         )?;
 
         Ok(())
@@ -898,21 +896,16 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
-    pub fn open_substate<
-        S: CommitableSubstateStore,
-        E,
-        H: CallFrameStoreAccessHandler<C, L, E>,
-        F: FnOnce() -> IndexedScryptoValue,
-    >(
+    pub fn open_substate<S: CommitableSubstateStore, E, F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        handler: &mut H,
         default: Option<F>,
         data: L,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
     ) -> Result<(SubstateHandle, usize), CallbackError<OpenSubstateError, E>> {
         let (ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(OpenSubstateError::NodeNotVisible(node_id.clone()))
@@ -921,14 +914,20 @@ impl<C, L: Clone> CallFrame<C, L> {
         self.process_input_substate_key(substate_key)
             .map_err(|e| CallbackError::Error(OpenSubstateError::ProcessSubstateKeyError(e)))?;
 
+        let mut adapter = CallFrameToIOStoreAccessAdapter {
+            call_frame: self,
+            handler,
+            phantom: PhantomData::default(),
+        };
+
         let (global_substate_handle, substate_value) = substate_io.open_substate(
             device,
             node_id,
             partition_num,
             substate_key,
             flags,
-            &mut |heap, store_access| handler.on_store_access(self, heap, store_access),
             default,
+            &mut adapter,
         )?;
 
         let value_len = substate_value.len();
@@ -983,14 +982,14 @@ impl<C, L: Clone> CallFrame<C, L> {
                 lock_handle,
             )))?;
 
-        let mut handler = CallFrameToIOSubstateReadAdapter {
+        let mut adapter = CallFrameToIOSubstateReadAdapter {
             call_frame: self,
             handler,
             handle: *global_substate_handle,
         };
 
         let substate = substate_io
-            .read_substate(*global_substate_handle, &mut handler)
+            .read_substate(*global_substate_handle, &mut adapter)
             .map_err(|e| CallbackError::CallbackError(e))?;
 
         Ok(substate)
@@ -1031,10 +1030,16 @@ impl<C, L: Clone> CallFrame<C, L> {
             &diff,
         );
 
+        let mut adapter = CallFrameToIOStoreAccessAdapter {
+            call_frame: self,
+            handler,
+            phantom: PhantomData::default(),
+        };
+
         substate_io.write_substate(
             opened_substate.global_substate_handle,
             substate,
-            &mut |heap, store_access| handler.on_store_access(self, heap, store_access),
+            &mut adapter,
         )?;
 
         self.open_substates.insert(lock_handle, opened_substate);
@@ -1088,19 +1093,14 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
-    pub fn set_substate<
-        'f,
-        S: CommitableSubstateStore,
-        E,
-        F: FnMut(StoreAccess) -> Result<(), E>,
-    >(
+    pub fn set_substate<'f, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: SubstateKey,
         value: IndexedScryptoValue,
-        on_store_access: &mut F,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
     ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
         let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameSetSubstateError::NodeNotVisible(node_id.clone()))
@@ -1113,23 +1113,24 @@ impl<C, L: Clone> CallFrame<C, L> {
         // TODO: Should process value here (For example, not allow owned objects or references) but
         // this isn't a problem for now since only native objects are allowed to use set_substate
 
-        substate_io.set_substate(device, node_id, partition_num, key, value, on_store_access)?;
+        let mut adapter = CallFrameToIOStoreAccessAdapter {
+            call_frame: self,
+            handler,
+            phantom: PhantomData::default(),
+        };
+
+        substate_io.set_substate(device, node_id, partition_num, key, value, &mut adapter)?;
 
         Ok(())
     }
 
-    pub fn remove_substate<
-        'f,
-        S: CommitableSubstateStore,
-        E,
-        F: FnMut(StoreAccess) -> Result<(), E>,
-    >(
+    pub fn remove_substate<'f, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: &SubstateKey,
-        on_store_access: &mut F,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
         let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameRemoveSubstateError::NodeNotVisible(
@@ -1141,38 +1142,39 @@ impl<C, L: Clone> CallFrame<C, L> {
             CallbackError::Error(CallFrameRemoveSubstateError::ProcessSubstateKeyError(e))
         })?;
 
+        let mut adapter = CallFrameToIOStoreAccessAdapter {
+            call_frame: self,
+            handler,
+            phantom: PhantomData::default(),
+        };
+
         let removed =
-            substate_io.remove_substate(device, node_id, partition_num, key, on_store_access)?;
+            substate_io.remove_substate(device, node_id, partition_num, key, &mut adapter)?;
 
         Ok(removed)
     }
 
-    pub fn scan_keys<
-        'f,
-        K: SubstateKeyContent + 'static,
-        S: CommitableSubstateStore,
-        E,
-        F: FnMut(StoreAccess) -> Result<(), E>,
-    >(
+    pub fn scan_keys<'f, K: SubstateKeyContent + 'static, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
-        on_store_access: &mut F,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
     ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
         // Check node visibility
         let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameScanKeysError::NodeNotVisible(node_id.clone()))
         })?;
 
-        let keys = substate_io.scan_keys::<K, E, F>(
-            device,
-            node_id,
-            partition_num,
-            limit,
-            on_store_access,
-        )?;
+        let mut adapter = CallFrameToIOStoreAccessAdapter {
+            call_frame: self,
+            handler,
+            phantom: PhantomData::default(),
+        };
+
+        let keys =
+            substate_io.scan_keys::<K, E>(device, node_id, partition_num, limit, &mut adapter)?;
 
         for key in &keys {
             self.process_output_substate_key(key).map_err(|e| {
@@ -1183,19 +1185,13 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(keys)
     }
 
-    pub fn drain_substates<
-        'f,
-        K: SubstateKeyContent + 'static,
-        S: CommitableSubstateStore,
-        E,
-        F: FnMut(StoreAccess) -> Result<(), E>,
-    >(
+    pub fn drain_substates<'f, K: SubstateKeyContent + 'static, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
-        on_store_access: &mut F,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
     ) -> Result<
         Vec<(SubstateKey, IndexedScryptoValue)>,
         CallbackError<CallFrameDrainSubstatesError, E>,
@@ -1207,12 +1203,18 @@ impl<C, L: Clone> CallFrame<C, L> {
             ))
         })?;
 
-        let substates = substate_io.drain_substates::<K, E, F>(
+        let mut adapter = CallFrameToIOStoreAccessAdapter {
+            call_frame: self,
+            handler,
+            phantom: PhantomData::default(),
+        };
+
+        let substates = substate_io.drain_substates::<K, E>(
             device,
             node_id,
             partition_num,
             limit,
-            on_store_access,
+            &mut adapter,
         )?;
 
         for (key, substate) in &substates {
@@ -1237,18 +1239,13 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
-    pub fn scan_sorted<
-        'f,
-        S: CommitableSubstateStore,
-        E,
-        F: FnMut(StoreAccess) -> Result<(), E>,
-    >(
+    pub fn scan_sorted<'f, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: &mut F,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
     ) -> Result<
         Vec<(SortedKey, IndexedScryptoValue)>,
         CallbackError<CallFrameScanSortedSubstatesError, E>,
@@ -1260,8 +1257,14 @@ impl<C, L: Clone> CallFrame<C, L> {
             ))
         })?;
 
+        let mut adapter = CallFrameToIOStoreAccessAdapter {
+            call_frame: self,
+            handler,
+            phantom: PhantomData::default(),
+        };
+
         let substates =
-            substate_io.scan_sorted(device, node_id, partition_num, count, on_store_access)?;
+            substate_io.scan_sorted(device, node_id, partition_num, count, &mut adapter)?;
 
         for (key, substate) in &substates {
             self.process_output_substate_key(&SubstateKey::Sorted(key.clone()))
@@ -1399,7 +1402,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 }
             }
             SubstateDevice::Store => {
-                let mut handler = CallFrameToIOStoreAccessAdapter {
+                let mut adapter = CallFrameToIOStoreAccessAdapter {
                     call_frame: self,
                     handler,
                     phantom: PhantomData::default(),
@@ -1407,7 +1410,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
                 for added_own in &diff.added_owns {
                     substate_io
-                        .move_node_from_heap_to_store(&mut handler, added_own)
+                        .move_node_from_heap_to_store(added_own, &mut adapter)
                         .map_err(|e| e.map(ProcessSubstateError::PersistNodeError))?;
                 }
 
