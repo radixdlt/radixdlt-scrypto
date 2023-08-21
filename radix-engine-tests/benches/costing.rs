@@ -12,7 +12,7 @@ use radix_engine::{
         wasm_runtime::NoOpWasmRuntime,
     },
 };
-use radix_engine_queries::typed_substate_layout::PackageDefinition;
+use radix_engine_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use sbor::rust::iter;
 use scrypto_unit::TestRunnerBuilder;
 use transaction::{
@@ -94,7 +94,8 @@ fn bench_spin_loop(c: &mut Criterion) {
                 fee_reserve,
                 &mut wasm_execution_units_consumed,
             ));
-            let mut instance = wasm_engine.instantiate(Hash([0u8; 32]), &instrumented_code);
+            let mut instance =
+                wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &instrumented_code);
             instance
                 .invoke_export("Test_f", vec![Buffer(0)], &mut runtime)
                 .unwrap();
@@ -125,7 +126,7 @@ macro_rules! bench_instantiate {
             c.bench_function(concat!("costing::instantiate_", $what), |b| {
                 b.iter(|| {
                     let wasm_engine = DefaultWasmEngine::default();
-                    wasm_engine.instantiate(Hash([0u8; 32]), &instrumented_code);
+                    wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &instrumented_code);
                 })
             });
 

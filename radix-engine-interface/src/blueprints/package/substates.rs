@@ -1,13 +1,5 @@
-use crate::api::CollectionIndex;
 use crate::blueprints::package::BlueprintType;
-use crate::schema::*;
-use crate::types::*;
-use crate::*;
-use radix_engine_common::crypto::Hash;
-use radix_engine_interface::blueprints::resource::Vault;
-use sbor::rust::fmt;
-use sbor::rust::fmt::{Debug, Formatter};
-use sbor::rust::prelude::*;
+use crate::internal_prelude::*;
 
 pub const PACKAGE_CODE_ID: u64 = 0u64;
 pub const RESOURCE_CODE_ID: u64 = 1u64;
@@ -23,30 +15,19 @@ pub const POOL_CODE_ID: u64 = 13u64;
 pub const TRANSACTION_TRACKER_CODE_ID: u64 = 14u64;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
-
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
-pub const PACKAGE_BLUEPRINTS_COLLECTION_INDEX: CollectionIndex = 0u8;
-
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
-pub const PACKAGE_BLUEPRINT_DEPENDENCIES_COLLECTION_INDEX: CollectionIndex = 1u8;
-
-// There is no offset for the package schema collection as it is directly mapped to SCHEMAS_PARTITION
-pub const PACKAGE_SCHEMAS_COLLECTION_INDEX: CollectionIndex = 2u8;
-
+// There is no partition offset for the package schema collection as it is directly mapped to SCHEMAS_PARTITION
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
-pub const PACKAGE_ROYALTY_COLLECTION_INDEX: CollectionIndex = 3u8;
-
 pub const PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
-pub const PACKAGE_AUTH_TEMPLATE_COLLECTION_INDEX: CollectionIndex = 4u8;
-
 pub const PACKAGE_VM_TYPE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
-pub const PACKAGE_VM_TYPE_COLLECTION_INDEX: CollectionIndex = 5u8;
-
 pub const PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
-pub const PACKAGE_ORIGINAL_CODE_COLLECTION_INDEX: CollectionIndex = 6u8;
-
 pub const PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(7u8);
-pub const PACKAGE_INSTRUMENTED_CODE_COLLECTION_INDEX: CollectionIndex = 7u8;
+
+define_wrapped_hash!(
+    /// Represents a particular instance of code under a package
+    CodeHash
+);
 
 #[derive(Copy, Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmType {
@@ -54,56 +35,22 @@ pub enum VmType {
     ScryptoV1,
 }
 
-#[derive(Debug, Clone, Sbor, PartialEq, Eq)]
-pub struct PackageVmTypeSubstate {
-    pub vm_type: VmType,
-}
-
-#[derive(Clone, Sbor, PartialEq, Eq)]
-pub struct PackageOriginalCodeSubstate {
-    pub code: Vec<u8>,
-}
-
-#[derive(Clone, Sbor, PartialEq, Eq)]
-pub struct PackageInstrumentedCodeSubstate {
-    pub code: Vec<u8>,
-}
-
-impl Debug for PackageOriginalCodeSubstate {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PackageOriginalCodeSubstate")
-            .field("len", &self.code.len())
-            .finish()
-    }
-}
-
-impl Debug for PackageInstrumentedCodeSubstate {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PackageInstrumentedCodeSubstate")
-            .field("len", &self.code.len())
-            .finish()
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
-pub struct PackageRoyaltyAccumulatorSubstate {
-    /// The vault for collecting package royalties.
-    pub royalty_vault: Vault,
-}
-
-impl Clone for PackageRoyaltyAccumulatorSubstate {
-    fn clone(&self) -> Self {
-        Self {
-            royalty_vault: Vault(self.royalty_vault.0.clone()),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum BlueprintPayloadDef {
     Static(TypeIdentifier), // Fully Resolved type is defined in package
     Generic(u8), // Fully Resolved type is mapped directly to a generic defined by instance
                  // TODO: How to represent a structure containing a generic?
+}
+
+impl BlueprintPayloadDef {
+    pub fn from_type_ref(type_ref: TypeRef<LocalTypeIndex>, schema_hash: SchemaHash) -> Self {
+        match type_ref {
+            TypeRef::Static(type_index) => {
+                BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
+            }
+            TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -160,7 +107,7 @@ pub struct BlueprintDependencies {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageExport {
-    pub code_hash: Hash,
+    pub code_hash: CodeHash,
     pub export_name: String,
 }
 
@@ -339,7 +286,7 @@ pub struct IndexedStateSchema {
 
 impl IndexedStateSchema {
     pub fn from_schema(
-        schema_hash: Hash,
+        schema_hash: SchemaHash,
         schema: BlueprintStateSchemaInit,
         system_mappings: BTreeMap<usize, PartitionNumber>,
     ) -> Self {
@@ -350,20 +297,10 @@ impl IndexedStateSchema {
             let schema_fields = schema
                 .fields
                 .into_iter()
-                .map(|field_schema| {
-                    let pointer = match field_schema.field {
-                        TypeRef::Static(type_index) => {
-                            BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
-                        }
-                        TypeRef::Generic(instance_index) => {
-                            BlueprintPayloadDef::Generic(instance_index)
-                        }
-                    };
-                    FieldSchema {
-                        field: pointer,
-                        condition: field_schema.condition,
-                        transience: field_schema.transience,
-                    }
+                .map(|field_schema| FieldSchema {
+                    field: BlueprintPayloadDef::from_type_ref(field_schema.field, schema_hash),
+                    condition: field_schema.condition,
+                    transience: field_schema.transience,
                 })
                 .collect();
             fields = Some((
@@ -375,12 +312,8 @@ impl IndexedStateSchema {
 
         let mut collections = Vec::new();
         for (collection_index, collection_schema) in schema.collections.into_iter().enumerate() {
-            let schema = collection_schema.map(|type_ref| match type_ref {
-                TypeRef::Static(type_index) => {
-                    BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
-                }
-                TypeRef::Generic(generic_index) => BlueprintPayloadDef::Generic(generic_index),
-            });
+            let schema = collection_schema
+                .map(|type_ref| BlueprintPayloadDef::from_type_ref(type_ref, schema_hash));
 
             if let Some(partition_num) = system_mappings.get(&collection_index) {
                 collections.push((PartitionDescription::Physical(*partition_num), schema));
@@ -495,6 +428,13 @@ impl IndexedStateSchema {
         let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
         match schema {
             BlueprintCollectionSchema::SortedIndex(index) => Some(index.value.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn fields_partition(&self) -> Option<PartitionDescription> {
+        match &self.fields {
+            Some((partition, ..)) => Some(partition.clone()),
             _ => None,
         }
     }

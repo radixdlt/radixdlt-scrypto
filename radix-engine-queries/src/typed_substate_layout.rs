@@ -70,7 +70,7 @@ use transaction::prelude::IntentHash;
 
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
-    TypeInfoModule(TypedTypeInfoModuleSubstateKey),
+    TypeInfo(TypedTypeInfoSubstateKey),
     Schema(TypedSchemaSubstateKey),
     RoleAssignmentModule(TypedRoleAssignmentSubstateKey),
     RoyaltyModule(TypedRoyaltyModuleSubstateKey),
@@ -96,13 +96,13 @@ impl TypedSubstateKey {
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedTypeInfoModuleSubstateKey {
+pub enum TypedTypeInfoSubstateKey {
     TypeInfoField(TypeInfoField),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedSchemaSubstateKey {
-    SchemaKey(Hash),
+    SchemaKey(SchemaHash),
 }
 
 #[derive(Debug, Clone)]
@@ -127,14 +127,7 @@ pub enum TypedMetadataModuleSubstateKey {
 #[derive(Debug, Clone)]
 pub enum TypedMainModuleSubstateKey {
     // Objects
-    PackageField(PackageField),
-    PackageBlueprintKey(BlueprintVersionKey),
-    PackageBlueprintDependenciesKey(BlueprintVersionKey),
-    PackageRoyaltyKey(BlueprintVersionKey),
-    PackageAuthTemplateKey(BlueprintVersionKey),
-    PackageVmTypeKey(Hash),
-    PackageOriginalCodeKey(Hash),
-    PackageInstrumentedCodeKey(Hash),
+    Package(PackageTypedSubstateKey),
     FungibleResourceField(FungibleResourceManagerField),
     NonFungibleResourceField(NonFungibleResourceManagerField),
     NonFungibleResourceData(NonFungibleLocalId),
@@ -189,7 +182,7 @@ pub fn to_typed_substate_key(
 ) -> Result<TypedSubstateKey, String> {
     let substate_type = match partition_num {
         TYPE_INFO_FIELD_PARTITION => {
-            TypedSubstateKey::TypeInfoModule(TypedTypeInfoModuleSubstateKey::TypeInfoField(
+            TypedSubstateKey::TypeInfo(TypedTypeInfoSubstateKey::TypeInfoField(
                 TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
             ))
         }
@@ -258,8 +251,8 @@ pub fn to_typed_object_module_substate_key(
     return to_typed_object_substate_key_internal(entity_type, partition_offset, substate_key)
         .map_err(|_| {
             format!(
-                "Could not convert {:?} {:?} key to TypedObjectSubstateKey",
-                entity_type, substate_key
+                "Could not convert {:?} (partition offset {}) {:?} key to TypedObjectSubstateKey",
+                entity_type, partition_offset, substate_key
             )
         });
 }
@@ -276,54 +269,10 @@ fn to_typed_object_substate_key_internal(
             )?)
         }
         EntityType::GlobalPackage => {
-            let partition_offset = PackagePartitionOffset::try_from(partition_offset)?;
-            match partition_offset {
-                PackagePartitionOffset::Fields => {
-                    TypedMainModuleSubstateKey::PackageField(PackageField::try_from(substate_key)?)
-                }
-                PackagePartitionOffset::Blueprints => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageBlueprintKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                PackagePartitionOffset::BlueprintDependencies => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                PackagePartitionOffset::RoyaltyConfig => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageRoyaltyKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                PackagePartitionOffset::AuthConfig => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageAuthTemplateKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                PackagePartitionOffset::VmType => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageVmTypeKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                PackagePartitionOffset::OriginalCode => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageOriginalCodeKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                PackagePartitionOffset::InstrumentedCode => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::PackageInstrumentedCodeKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-            }
+            TypedMainModuleSubstateKey::Package(PackageTypedSubstateKey::for_key_in_partition(
+                &PackagePartitionOffset::try_from(PartitionOffset(partition_offset))?,
+                substate_key,
+            )?)
         }
         EntityType::GlobalFungibleResourceManager => {
             TypedMainModuleSubstateKey::FungibleResourceField(
@@ -491,14 +440,7 @@ pub enum TypedMetadataModuleSubstateValue {
 #[derive(Debug)]
 pub enum TypedMainModuleSubstateValue {
     // Objects
-    Package(TypedPackageFieldValue),
-    PackageBlueprint(KeyValueEntrySubstate<BlueprintDefinition>),
-    PackageBlueprintDependencies(KeyValueEntrySubstate<BlueprintDependencies>),
-    PackageAuthTemplate(KeyValueEntrySubstate<AuthConfig>),
-    PackageRoyalty(KeyValueEntrySubstate<PackageRoyaltyConfig>),
-    PackageVmType(KeyValueEntrySubstate<PackageVmTypeSubstate>),
-    PackageOriginalCode(KeyValueEntrySubstate<PackageOriginalCodeSubstate>),
-    PackageInstrumentedCode(KeyValueEntrySubstate<PackageInstrumentedCodeSubstate>),
+    Package(PackageTypedSubstateValue),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
     NonFungibleResourceData(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
@@ -521,11 +463,6 @@ pub enum TypedMainModuleSubstateValue {
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStoreEntry(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
-}
-
-#[derive(Debug)]
-pub enum TypedPackageFieldValue {
-    Royalty(FieldSubstate<PackageRoyaltyAccumulatorSubstate>),
 }
 
 #[derive(Debug)]
@@ -622,14 +559,14 @@ fn to_typed_substate_value_internal(
     data: &[u8],
 ) -> Result<TypedSubstateValue, DecodeError> {
     let substate_value = match substate_key {
-        TypedSubstateKey::TypeInfoModule(type_info_key) => {
+        TypedSubstateKey::TypeInfo(type_info_key) => {
             TypedSubstateValue::TypeInfoModule(match type_info_key {
-                TypedTypeInfoModuleSubstateKey::TypeInfoField(TypeInfoField::TypeInfo) => {
+                TypedTypeInfoSubstateKey::TypeInfoField(TypeInfoField::TypeInfo) => {
                     TypedTypeInfoModuleSubstateValue::TypeInfo(scrypto_decode(data)?)
                 }
             })
         }
-        TypedSubstateKey::Schema(..) => TypedSubstateValue::Schema(scrypto_decode(data)?),
+        TypedSubstateKey::Schema(_) => TypedSubstateValue::Schema(scrypto_decode(data)?),
         TypedSubstateKey::RoleAssignmentModule(role_assignment_key) => match role_assignment_key {
             TypedRoleAssignmentSubstateKey::RoleAssignmentField(role_assignment_field_offset) => {
                 match role_assignment_field_offset {
@@ -671,32 +608,9 @@ fn to_typed_object_substate_value(
     data: &[u8],
 ) -> Result<TypedMainModuleSubstateValue, DecodeError> {
     let substate_value = match substate_key {
-        TypedMainModuleSubstateKey::PackageField(offset) => {
-            TypedMainModuleSubstateValue::Package(match offset {
-                PackageField::Royalty => TypedPackageFieldValue::Royalty(scrypto_decode(data)?),
-            })
-        }
-        TypedMainModuleSubstateKey::PackageBlueprintKey(_key) => {
-            TypedMainModuleSubstateValue::PackageBlueprint(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::PackageBlueprintDependenciesKey(..) => {
-            TypedMainModuleSubstateValue::PackageBlueprintDependencies(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::PackageRoyaltyKey(_fn_key) => {
-            TypedMainModuleSubstateValue::PackageRoyalty(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::PackageAuthTemplateKey(_fn_key) => {
-            TypedMainModuleSubstateValue::PackageAuthTemplate(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::PackageVmTypeKey(..) => {
-            TypedMainModuleSubstateValue::PackageVmType(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::PackageOriginalCodeKey(..) => {
-            TypedMainModuleSubstateValue::PackageOriginalCode(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::PackageInstrumentedCodeKey(..) => {
-            TypedMainModuleSubstateValue::PackageInstrumentedCode(scrypto_decode(data)?)
-        }
+        TypedMainModuleSubstateKey::Package(key) => TypedMainModuleSubstateValue::Package(
+            PackageTypedSubstateValue::from_key_and_data(key, data)?,
+        ),
         TypedMainModuleSubstateKey::FungibleResourceField(offset) => {
             TypedMainModuleSubstateValue::FungibleResource(match offset {
                 FungibleResourceManagerField::Divisibility => {

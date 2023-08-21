@@ -248,6 +248,7 @@ pub enum SystemError {
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
+    InvalidNativeSubstatesForFeature(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
