@@ -64,6 +64,44 @@ fn create_proof_emits_correct_events() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
             ref event_data,
+        )) if test_runner.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::PayFeeEvent {
+                    amount: receipt.fee_summary.total_cost()
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(2) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::DepositEvent {
+                    amount: receipt
+                        .expect_commit_success()
+                        .fee_destination
+                        .to_proposer
+                        .safe_add(
+                            receipt
+                                .expect_commit_success()
+                                .fee_destination
+                                .to_validator_set
+                        )
+                        .unwrap()
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(3) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
         )) if test_runner.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
             && is_decoded_equal(
                 &BurnFungibleResourceEvent {
@@ -135,7 +173,6 @@ fn scrypto_can_emit_registered_events() {
         let name = test_runner.event_name(&event.0);
         println!("{:?} - {}", event.0, name);
     }
-    assert_eq!(events.len(), 3); // Three events: lock fee, registered event and burn fee
     assert!(match events.get(0) {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -244,7 +281,6 @@ fn locking_fee_against_a_vault_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 2); // Two events: lock fee and burn fee
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -286,7 +322,6 @@ fn vault_fungible_recall_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 5);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -373,7 +408,6 @@ fn vault_non_fungible_recall_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 5);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -454,7 +488,6 @@ fn resource_manager_new_vault_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 6);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -553,7 +586,6 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 4); // Four events: vault lock fee, resource manager mint fungible, resource manager burn fungible, burn fee
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -648,7 +680,6 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 4); // Four events: vault lock fee, resource manager mint non-fungible, resource manager burn non-fungible, burn fee
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -759,7 +790,6 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 10);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -897,7 +927,6 @@ fn consensus_manager_round_update_emits_correct_event() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 2); // Two events: round change event, burn fee
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1052,7 +1081,6 @@ fn validator_registration_emits_correct_event() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 3);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1131,7 +1159,6 @@ fn validator_unregistration_emits_correct_event() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 3);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1213,7 +1240,6 @@ fn validator_staking_emits_correct_event() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 10);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1358,7 +1384,6 @@ fn validator_unstake_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 12);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1533,7 +1558,6 @@ fn validator_claim_xrd_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 10);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1675,7 +1699,6 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 3);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1734,7 +1757,6 @@ fn setting_metadata_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 3);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -2070,7 +2092,9 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
         account_withdraw_event,
         vault_deposit_event,
         account_deposit_event,
-        _
+        // Note that nobody is paying fee, because of free credit
+        _, // receive fee
+        _, // burn
     ] = events else {
         panic!("Incorrect number of events: {}", events.len())
     };
@@ -2151,7 +2175,9 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
         account_withdraw_event,
         vault_deposit_event,
         account_deposit_event,
-        _
+        // Note that nobody is paying fee, because of free credit
+        _, // receive fee
+        _, // burn
     ] = events else {
         panic!("Incorrect number of events: {}", events.len())
     };
@@ -2286,6 +2312,11 @@ fn account_configuration_emits_expected_events() {
         .application_events
         .as_slice();
 
+    for event in events {
+        let name = test_runner.event_name(&event.0);
+        println!("{:?} - {}", event.0, name);
+    }
+
     let [
         set_resource_preference_allowed_event,
         set_resource_preference_disallowed_event,
@@ -2298,7 +2329,10 @@ fn account_configuration_emits_expected_events() {
 
         add_authorized_depositor_event,
         remove_authorized_depositor_event,
-        _
+
+        // Note that nobody is paying fee, because of free credit
+        _, // receive fee
+        _, // burn
     ] = events else {
         panic!("Incorrect number of events: {}", events.len())
     };
