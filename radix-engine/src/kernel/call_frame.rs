@@ -316,6 +316,7 @@ impl NodeVisibility {
     }
 }
 
+/// Callback for store access, from call frame
 pub trait CallFrameStoreAccessHandler<C, L, E> {
     fn on_store_access(
         &mut self,
@@ -325,6 +326,7 @@ pub trait CallFrameStoreAccessHandler<C, L, E> {
     ) -> Result<(), E>;
 }
 
+/// Callback for substate read, from call frame
 pub trait CallFrameSubstateReadHandler<C, L> {
     type Error;
 
@@ -998,9 +1000,9 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn write_substate<'f, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
-        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
         lock_handle: SubstateHandle,
         substate: IndexedScryptoValue,
+        handler: &mut impl CallFrameStoreAccessHandler<C, L, E>,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
         let mut opened_substate =
             self.open_substates

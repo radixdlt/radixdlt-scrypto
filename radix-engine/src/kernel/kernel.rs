@@ -706,9 +706,9 @@ where
             partition_num,
             substate_key,
             flags,
-            &mut handler,
             default,
             data,
+            &mut handler,
         );
 
         let (lock_handle, value_size): (u32, usize) = match &maybe_lock_handle {
@@ -734,9 +734,9 @@ where
                             partition_num,
                             &substate_key,
                             flags,
-                            &mut handler,
                             None::<fn() -> IndexedScryptoValue>,
                             M::LockData::default(),
+                            &mut handler,
                         )
                         .map_err(|e| match e {
                             CallbackError::Error(e) => RuntimeError::KernelError(
@@ -799,9 +799,8 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |_, _| {
-                // TODO: Clean this up
-                panic!("Should not call this");
+            on_store_access: |api, store_access| {
+                M::on_read_substate(api, ReadSubstateEvent::StoreAccess(&store_access))
             },
         };
 
@@ -842,7 +841,7 @@ where
         };
 
         self.current_frame
-            .write_substate(&mut self.substate_io, &mut handler, lock_handle, value)
+            .write_substate(&mut self.substate_io, lock_handle, value, &mut handler)
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
                     CallFrameError::WriteSubstateError(e),
@@ -884,6 +883,15 @@ where
             &value,
         ))?;
 
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                api.callback
+                    .on_set_substate(SetSubstateEvent::StoreAccess(&store_access))
+            },
+        };
+
         self.current_frame
             .set_substate(
                 &mut self.substate_io,
@@ -891,10 +899,7 @@ where
                 partition_num,
                 substate_key,
                 value,
-                &mut |store_access| {
-                    self.callback
-                        .on_set_substate(SetSubstateEvent::StoreAccess(&store_access))
-                },
+                &mut handler,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -920,6 +925,15 @@ where
                 substate_key,
             ))?;
 
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                api.callback
+                    .on_remove_substate(RemoveSubstateEvent::StoreAccess(&store_access))
+            },
+        };
+
         let substate = self
             .current_frame
             .remove_substate(
@@ -927,10 +941,7 @@ where
                 node_id,
                 partition_num,
                 &substate_key,
-                &mut |store_access| {
-                    self.callback
-                        .on_remove_substate(RemoveSubstateEvent::StoreAccess(&store_access))
-                },
+                &mut handler,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -951,17 +962,23 @@ where
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
         self.callback.on_scan_keys(ScanKeysEvent::Start)?;
 
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                api.callback
+                    .on_scan_keys(ScanKeysEvent::StoreAccess(&store_access))
+            },
+        };
+
         let keys = self
             .current_frame
-            .scan_keys::<K, _, _, _>(
+            .scan_keys::<K, _, _>(
                 &mut self.substate_io,
                 node_id,
                 partition_num,
                 limit,
-                &mut |store_access| {
-                    self.callback
-                        .on_scan_keys(ScanKeysEvent::StoreAccess(&store_access))
-                },
+                &mut handler,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -983,17 +1000,23 @@ where
         self.callback
             .on_drain_substates(DrainSubstatesEvent::Start(limit))?;
 
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                api.callback
+                    .on_drain_substates(DrainSubstatesEvent::StoreAccess(&store_access))
+            },
+        };
+
         let substates = self
             .current_frame
-            .drain_substates::<K, _, _, _>(
+            .drain_substates::<K, _, _>(
                 &mut self.substate_io,
                 node_id,
                 partition_num,
                 limit,
-                &mut |store_access| {
-                    self.callback
-                        .on_drain_substates(DrainSubstatesEvent::StoreAccess(&store_access))
-                },
+                &mut handler,
             )
             .map_err(|e| match e {
                 CallbackError::CallbackError(e) => e,
@@ -1015,25 +1038,30 @@ where
         self.callback
             .on_scan_sorted_substates(ScanSortedSubstatesEvent::Start)?;
 
-        let substates =
-            self.current_frame
-                .scan_sorted(
-                    &mut self.substate_io,
-                    node_id,
-                    partition_num,
-                    limit,
-                    &mut |store_access| {
-                        self.callback.on_scan_sorted_substates(
-                            ScanSortedSubstatesEvent::StoreAccess(&store_access),
-                        )
-                    },
-                )
-                .map_err(|e| match e {
-                    CallbackError::Error(e) => RuntimeError::KernelError(
-                        KernelError::CallFrameError(CallFrameError::ScanSortedSubstatesError(e)),
-                    ),
-                    CallbackError::CallbackError(e) => e,
-                })?;
+        let mut handler = KernelHandler {
+            callback: self.callback,
+            prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                api.callback
+                    .on_scan_sorted_substates(ScanSortedSubstatesEvent::StoreAccess(&store_access))
+            },
+        };
+
+        let substates = self
+            .current_frame
+            .scan_sorted(
+                &mut self.substate_io,
+                node_id,
+                partition_num,
+                limit,
+                &mut handler,
+            )
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::ScanSortedSubstatesError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
 
         Ok(substates)
     }

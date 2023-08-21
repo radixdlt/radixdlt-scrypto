@@ -58,6 +58,7 @@ pub enum ReadSubstateEvent<'a> {
         value: &'a IndexedScryptoValue,
         device: SubstateDevice,
     },
+    StoreAccess(&'a StoreAccess),
 }
 
 #[derive(Debug)]

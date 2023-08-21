@@ -222,6 +222,7 @@ impl FeeTable {
     pub fn drop_node_cost(&self, event: &DropNodeEvent) -> u32 {
         match event {
             DropNodeEvent::Start(..) => 0,
+            DropNodeEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
             DropNodeEvent::End(_node_id, node_substates) => {
                 let total_substate_size = node_substates
                     .values()
@@ -274,6 +275,7 @@ impl FeeTable {
                     Self::data_processing_cost(value.len()),
                 )
             }
+            ReadSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
     }
 
