@@ -141,6 +141,7 @@ fn test_bootstrap_receipts_should_have_complete_system_structure() {
     assert_complete_system_structure(wrap_up_receipt.expect_commit_success());
 }
 
+// TODO(after RCnet-V3): this assertion could be re-used for other tests of non-standard receipts.
 fn assert_complete_system_structure(result: &CommitResult) {
     let SystemStructure {
         substate_system_structures,
