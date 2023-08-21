@@ -256,7 +256,6 @@ define_structure! {
         FungibleVault => [
             FungibleVaultLockFeeEvent,
             FungibleVaultPayFeeEvent,
-            FungibleVaultReceiveRoyaltyEvent,
             FungibleVaultWithdrawEvent,
             FungibleVaultDepositEvent,
             FungibleVaultRecallEvent
@@ -321,7 +320,6 @@ type MultiResourcePoolDepositEvent = multi_resource_pool::DepositEvent;
 
 type FungibleVaultLockFeeEvent = fungible_vault::LockFeeEvent;
 type FungibleVaultPayFeeEvent = fungible_vault::PayFeeEvent;
-type FungibleVaultReceiveRoyaltyEvent = fungible_vault::ReceiveRoyaltyEvent;
 type FungibleVaultWithdrawEvent = fungible_vault::WithdrawEvent;
 type FungibleVaultDepositEvent = fungible_vault::DepositEvent;
 type FungibleVaultRecallEvent = fungible_vault::RecallEvent;

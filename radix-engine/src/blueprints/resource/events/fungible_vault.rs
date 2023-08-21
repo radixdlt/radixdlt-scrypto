@@ -19,7 +19,6 @@ macro_rules! define_events {
 define_events! {
     LockFeeEvent,
     PayFeeEvent,
-    ReceiveRoyaltyEvent,
     WithdrawEvent,
     DepositEvent,
     RecallEvent
