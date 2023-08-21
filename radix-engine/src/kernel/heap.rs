@@ -32,7 +32,7 @@ impl Heap {
         self.nodes.is_empty()
     }
 
-    pub fn remove_module<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
+    pub fn remove_module<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
@@ -69,7 +69,7 @@ impl Heap {
     }
 
     /// Inserts or overwrites a substate
-    pub fn set_substate<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
+    pub fn set_substate<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
         &mut self,
         node_id: NodeId,
         partition_num: PartitionNumber,
@@ -87,7 +87,7 @@ impl Heap {
         Ok(())
     }
 
-    pub fn remove_substate<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
+    pub fn remove_substate<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -130,7 +130,7 @@ impl Heap {
 
     /// Drains the substates from a node's partition. On an non-existing node/partition, this
     /// will return an empty vector
-    pub fn drain_substates<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
+    pub fn drain_substates<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -162,7 +162,7 @@ impl Heap {
     }
 
     /// Inserts a new node to heap.
-    pub fn create_node<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
+    pub fn create_node<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
         &mut self,
         node_id: NodeId,
         substates: NodeSubstates,
@@ -173,7 +173,7 @@ impl Heap {
     }
 
     /// Removes node.
-    pub fn remove_node<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
+    pub fn remove_node<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
         &mut self,
         node_id: &NodeId,
         on_store_access: &'x mut F,
