@@ -72,7 +72,6 @@ use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintPayloadDef, BlueprintVersionKey,
-    PACKAGE_BLUEPRINTS_COLLECTION_INDEX, PACKAGE_SCHEMAS_COLLECTION_INDEX,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
