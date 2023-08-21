@@ -321,12 +321,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         )
     }
 
-    #[trace_resources(log={
-        match event {
-            ReadSubstateEvent::OnRead { device: SubstateDevice::Heap, .. } => true,
-            ReadSubstateEvent::OnRead { device: SubstateDevice::Store, .. } => false,
-        }
-    })]
+    #[trace_resources(log=event.is_about_heap())]
     fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         event: &ReadSubstateEvent,

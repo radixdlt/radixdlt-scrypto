@@ -61,6 +61,20 @@ pub enum ReadSubstateEvent<'a> {
     StoreAccess(&'a StoreAccess),
 }
 
+impl<'a> ReadSubstateEvent<'a> {
+    pub fn is_about_heap(&self) -> bool {
+        match self {
+            ReadSubstateEvent::OnRead { device, .. } => matches!(device, SubstateDevice::Heap),
+            ReadSubstateEvent::StoreAccess(access) => match access {
+                StoreAccess::ReadFromDb(_, _) => false,
+                StoreAccess::ReadFromDbNotFound(_) => false,
+                StoreAccess::UpdateSubstateInTrack { .. } => false,
+                StoreAccess::UpdateSubstateInHeap { .. } => true,
+            },
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum WriteSubstateEvent<'a> {
     Start {
