@@ -8,7 +8,7 @@ use radix_engine::system::bootstrap::{
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_db_checker::SystemDatabaseChecker;
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::transaction::BalanceChange;
+use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
@@ -99,6 +99,86 @@ fn test_bootstrap_receipt_should_match_constants() {
         .check_db(&substate_db)
         .expect("Database should be consistent");
     println!("{:?}", results);
+}
+
+#[test]
+fn test_bootstrap_receipts_should_have_complete_system_structure() {
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
+    let mut substate_db = InMemorySubstateDatabase::standard();
+    let validator_key = Secp256k1PublicKey([0; 33]);
+    let staker_address = ComponentAddress::virtual_account_from_public_key(
+        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+    );
+    let genesis_epoch = Epoch::of(1);
+    let stake = GenesisStakeAllocation {
+        account_index: 0,
+        xrd_amount: Decimal::one(),
+    };
+    let genesis_data_chunks = vec![
+        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Stakes {
+            accounts: vec![staker_address],
+            allocations: vec![(validator_key, vec![stake])],
+        },
+    ];
+
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, true);
+
+    let GenesisReceipts {
+        system_bootstrap_receipt,
+        data_ingestion_receipts,
+        wrap_up_receipt,
+    } = bootstrapper
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            genesis_epoch,
+            CustomGenesis::default_consensus_manager_config(),
+            1,
+            Some(0),
+            Decimal::zero(),
+        )
+        .unwrap();
+
+    assert_complete_system_structure(system_bootstrap_receipt.expect_commit_success());
+    for data_ingestion_receipt in data_ingestion_receipts {
+        assert_complete_system_structure(data_ingestion_receipt.expect_commit_success());
+    }
+    assert_complete_system_structure(wrap_up_receipt.expect_commit_success());
+}
+
+// TODO(after RCnet-V3): this assertion could be re-used for other tests of non-standard receipts.
+fn assert_complete_system_structure(result: &CommitResult) {
+    let SystemStructure {
+        substate_system_structures,
+        event_system_structures,
+    } = &result.system_structure;
+
+    for ((node_id, partition_num), by_substate_key) in &result.state_updates.system_updates {
+        for substate_key in by_substate_key.keys() {
+            let structure = substate_system_structures
+                .get(node_id)
+                .and_then(|partition_structures| partition_structures.get(partition_num))
+                .and_then(|substate_structures| substate_structures.get(substate_key));
+            assert!(
+                structure.is_some(),
+                "missing system structure for {:?}:{:?}:{:?}",
+                node_id,
+                partition_num,
+                substate_key
+            );
+        }
+    }
+
+    for (event_type_id, _data) in &result.application_events {
+        let structure = event_system_structures.get(event_type_id);
+        assert!(
+            structure.is_some(),
+            "missing system structure for {:?}",
+            event_type_id
+        );
+    }
 }
 
 fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
