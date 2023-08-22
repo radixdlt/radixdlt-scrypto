@@ -28,7 +28,7 @@ fn call_method_with_owned_actor_should_fail() {
         {
             match export_name {
                 "new" => {
-                    let node_id = api.new_simple_object(BLUEPRINT_NAME, vec![])?;
+                    let node_id = api.new_simple_object(BLUEPRINT_NAME, btreemap!())?;
                     let args = scrypto_encode(&Own(node_id)).unwrap();
 
                     let _ = api.call_method(&node_id, "test", args)?;

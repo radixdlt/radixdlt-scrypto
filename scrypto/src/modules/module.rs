@@ -1,11 +1,10 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::prelude::ScryptoEncode;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientActorApi;
-use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::ACTOR_REF_SELF;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
@@ -69,27 +68,21 @@ pub trait Attachable: Sized {
     fn call_raw(&self, method: &str, args: Vec<u8>) -> Vec<u8> {
         match self.handle() {
             ModuleHandle::Own(own) => {
-                let output = ScryptoEnv
-                    .call_method(own.as_node_id(), method, args)
-                    .unwrap();
+                let output = ScryptoVmV1Api::object_call(own.as_node_id(), method, args);
                 output
             }
             ModuleHandle::Attached(address, module_id) => {
-                let output = ScryptoEnv
-                    .call_method_advanced(
-                        address.as_node_id(),
-                        module_id.clone(),
-                        false,
-                        method,
-                        args,
-                    )
-                    .unwrap();
+                let output = ScryptoVmV1Api::object_call_module(
+                    address.as_node_id(),
+                    module_id.clone(),
+                    method,
+                    args,
+                );
                 output
             }
             ModuleHandle::SELF(module_id) => {
-                let output = ScryptoEnv
-                    .actor_call_module(*module_id, method, args)
-                    .unwrap();
+                let id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_SELF);
+                let output = ScryptoVmV1Api::object_call_module(&id, *module_id, method, args);
                 output
             }
         }
@@ -99,25 +92,19 @@ pub trait Attachable: Sized {
         let args = scrypto_encode(args).unwrap();
         match self.handle() {
             ModuleHandle::Own(own) => {
-                ScryptoEnv
-                    .call_method(own.as_node_id(), method, args)
-                    .unwrap();
+                ScryptoVmV1Api::object_call(own.as_node_id(), method, args);
             }
             ModuleHandle::Attached(address, module_id) => {
-                ScryptoEnv
-                    .call_method_advanced(
-                        address.as_node_id(),
-                        module_id.clone(),
-                        false,
-                        method,
-                        args,
-                    )
-                    .unwrap();
+                ScryptoVmV1Api::object_call_module(
+                    address.as_node_id(),
+                    module_id.clone(),
+                    method,
+                    args,
+                );
             }
             ModuleHandle::SELF(module_id) => {
-                ScryptoEnv
-                    .actor_call_module(*module_id, method, args)
-                    .unwrap();
+                let id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_SELF);
+                ScryptoVmV1Api::object_call_module(&id, *module_id, method, args);
             }
         }
     }

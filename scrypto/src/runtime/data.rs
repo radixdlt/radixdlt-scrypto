@@ -1,6 +1,5 @@
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::ClientFieldApi;
-use radix_engine_interface::api::{ClientActorApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::ACTOR_STATE_SELF;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };
@@ -9,7 +8,7 @@ use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::rust::prelude::*;
-use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 pub struct DataRef<V: ScryptoEncode> {
     lock_handle: SubstateHandle,
@@ -41,8 +40,7 @@ impl<V: ScryptoEncode> Deref for DataRef<V> {
 
 impl<V: ScryptoEncode> Drop for DataRef<V> {
     fn drop(&mut self) {
-        let mut env = ScryptoEnv;
-        env.field_close(self.lock_handle).unwrap();
+        ScryptoVmV1Api::field_entry_close(self.lock_handle);
     }
 }
 
@@ -79,13 +77,12 @@ impl<V: ScryptoEncode> DataRefMut<V> {
 
 impl<V: ScryptoEncode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
-        let mut env = ScryptoEnv;
         let substate = match &self.original_data {
             OriginalData::KeyValueStoreEntry(_) => scrypto_encode(&Some(&self.value)).unwrap(),
             OriginalData::ComponentAppState(_) => scrypto_encode(&self.value).unwrap(),
         };
-        env.field_write(self.lock_handle, substate).unwrap();
-        env.field_close(self.lock_handle).unwrap();
+        ScryptoVmV1Api::field_entry_write(self.lock_handle, substate);
+        ScryptoVmV1Api::field_entry_close(self.lock_handle);
     }
 }
 
@@ -115,29 +112,23 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
     }
 
     pub fn get(&self) -> DataRef<V> {
-        let mut env = ScryptoEnv;
-        let lock_handle = env
-            .actor_open_field(
-                OBJECT_HANDLE_SELF,
-                ComponentField::State0 as u8,
-                LockFlags::read_only(),
-            )
-            .unwrap();
-        let raw_substate = env.field_read(lock_handle).unwrap();
+        let lock_handle = ScryptoVmV1Api::actor_open_field(
+            ACTOR_STATE_SELF,
+            ComponentField::State0 as u8,
+            LockFlags::read_only(),
+        );
+        let raw_substate = ScryptoVmV1Api::field_entry_read(lock_handle);
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRef { lock_handle, value }
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
-        let mut env = ScryptoEnv;
-        let lock_handle = env
-            .actor_open_field(
-                OBJECT_HANDLE_SELF,
-                ComponentField::State0 as u8,
-                LockFlags::MUTABLE,
-            )
-            .unwrap();
-        let raw_substate = env.field_read(lock_handle).unwrap();
+        let lock_handle = ScryptoVmV1Api::actor_open_field(
+            ACTOR_STATE_SELF,
+            ComponentField::State0 as u8,
+            LockFlags::MUTABLE,
+        );
+        let raw_substate = ScryptoVmV1Api::field_entry_read(lock_handle);
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRefMut {
             lock_handle,

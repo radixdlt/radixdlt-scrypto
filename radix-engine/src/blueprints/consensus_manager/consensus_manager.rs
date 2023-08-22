@@ -16,7 +16,7 @@ use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{metadata_init, mint_roles, rule};
@@ -289,15 +289,15 @@ impl ConsensusManagerBlueprint {
 
             api.new_simple_object(
                 CONSENSUS_MANAGER_BLUEPRINT,
-                vec![
-                    FieldValue::immutable(&config),
-                    FieldValue::new(&consensus_manager),
-                    FieldValue::new(&validator_rewards),
-                    FieldValue::new(&current_validator_set),
-                    FieldValue::new(&current_proposal_statistic),
-                    FieldValue::new(&minute_timestamp),
-                    FieldValue::new(&milli_timestamp),
-                ],
+                btreemap! {
+                    0u8 => FieldValue::immutable(&config),
+                    1u8 => FieldValue::new(&consensus_manager),
+                    2u8 => FieldValue::new(&validator_rewards),
+                    3u8 => FieldValue::new(&current_validator_set),
+                    4u8 => FieldValue::new(&current_proposal_statistic),
+                    5u8 => FieldValue::new(&minute_timestamp),
+                    6u8 => FieldValue::new(&milli_timestamp),
+                },
             )?
         };
 
@@ -334,7 +334,7 @@ impl ConsensusManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
         )?;
@@ -350,7 +350,7 @@ impl ConsensusManagerBlueprint {
     {
         let config_substate = {
             let config_handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 ConsensusManagerField::Config.into(),
                 LockFlags::read_only(),
             )?;
@@ -361,7 +361,7 @@ impl ConsensusManagerBlueprint {
         };
 
         let manager_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::MUTABLE,
         )?;
@@ -396,7 +396,7 @@ impl ConsensusManagerBlueprint {
         match precision {
             TimePrecision::Minute => {
                 let handle = api.actor_open_field(
-                    OBJECT_HANDLE_SELF,
+                    ACTOR_STATE_SELF,
                     ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
@@ -427,7 +427,7 @@ impl ConsensusManagerBlueprint {
                 );
 
                 let handle = api.actor_open_field(
-                    OBJECT_HANDLE_SELF,
+                    ACTOR_STATE_SELF,
                     ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
@@ -465,7 +465,7 @@ impl ConsensusManagerBlueprint {
         Self::check_non_decreasing_and_update_timestamps(proposer_timestamp_milli, api)?;
 
         let config_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ConsensusManagerField::Config.into(),
             LockFlags::read_only(),
         )?;
@@ -474,7 +474,7 @@ impl ConsensusManagerBlueprint {
         api.field_close(config_handle)?;
 
         let manager_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::MUTABLE,
         )?;
@@ -529,7 +529,7 @@ impl ConsensusManagerBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let manager_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
         )?;
@@ -537,7 +537,7 @@ impl ConsensusManagerBlueprint {
 
         let validator_creation_xrd_cost = if manager_substate.started {
             let config_handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 ConsensusManagerField::Config.into(),
                 LockFlags::read_only(),
             )?;
@@ -595,7 +595,7 @@ impl ConsensusManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ConsensusManagerField::CurrentTime.into(),
             LockFlags::MUTABLE,
         )?;
@@ -619,7 +619,7 @@ impl ConsensusManagerBlueprint {
 
         let new_rounded_value = Self::milli_to_minute(current_time_ms);
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
@@ -655,7 +655,7 @@ impl ConsensusManagerBlueprint {
         }
 
         let statistic_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ConsensusManagerField::CurrentProposalStatistic.into(),
             LockFlags::MUTABLE,
         )?;
@@ -688,7 +688,7 @@ impl ConsensusManagerBlueprint {
     {
         // Read previous validator set
         let validator_set_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ConsensusManagerField::CurrentValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
@@ -698,7 +698,7 @@ impl ConsensusManagerBlueprint {
 
         // Read previous validator statistics
         let statistic_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ConsensusManagerField::CurrentProposalStatistic.into(),
             LockFlags::MUTABLE,
         )?;
@@ -708,7 +708,7 @@ impl ConsensusManagerBlueprint {
 
         // Read & write validator rewards
         let rewards_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ConsensusManagerField::ValidatorRewards.into(),
             LockFlags::MUTABLE,
         )?;
@@ -738,7 +738,7 @@ impl ConsensusManagerBlueprint {
 
         let mut top_registered_validators: Vec<(ComponentAddress, Validator)> = api
             .actor_sorted_index_scan_typed(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                 num_validators_to_read_from_store,
             )?;

@@ -3,7 +3,7 @@
 //=============
 
 pub use crate::component::*;
-pub use crate::engine::scrypto_env::ScryptoEnv;
+pub use crate::engine::scrypto_env::ScryptoVmV1Api;
 pub use crate::engine::*;
 pub use crate::modules::*;
 pub use crate::resource::*;

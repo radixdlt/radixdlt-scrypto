@@ -114,7 +114,9 @@ impl MultiResourcePoolBlueprint {
             };
             api.new_simple_object(
                 MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![FieldValue::immutable(&substate)],
+                btreemap! {
+                    0u8 => FieldValue::immutable(&substate),
+                },
             )?
         };
 
@@ -588,7 +590,7 @@ impl MultiResourcePoolBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = MultiResourcePoolField::MultiResourcePool.into();
-        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
+        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
         let multi_resource_pool = api.field_read_typed(handle)?;
 
         Ok((multi_resource_pool, handle))

@@ -1,6 +1,4 @@
 use sbor::*;
-use scrypto::api::key_value_entry_api::*;
-use scrypto::api::key_value_store_api::*;
 use scrypto::api::LockFlags;
 use scrypto::prelude::*;
 
@@ -126,17 +124,13 @@ mod vec_of_u8_underflow {
             // Insert into store
             let key_payload = scrypto_encode(&1u32).unwrap();
             let value_payload = vec;
-            let handle = ScryptoEnv
-                .key_value_store_open_entry(
-                    kv_store.id.as_node_id(),
-                    &key_payload,
-                    LockFlags::MUTABLE,
-                )
-                .unwrap();
-            ScryptoEnv
-                .key_value_entry_set(handle, value_payload)
-                .unwrap();
-            ScryptoEnv.key_value_entry_close(handle).unwrap();
+            let handle = ScryptoVmV1Api::kv_store_open_entry(
+                kv_store.id.as_node_id(),
+                &key_payload,
+                LockFlags::MUTABLE,
+            );
+            ScryptoVmV1Api::kv_entry_write(handle, value_payload);
+            ScryptoVmV1Api::kv_entry_close(handle);
 
             // Put the kv store into a component
             VecOfU8Underflow { kv_store }

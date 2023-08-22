@@ -2,7 +2,7 @@ use crate::errors::InvokeError;
 use crate::system::system_modules::costing::*;
 use crate::types::*;
 use crate::vm::wasm::*;
-use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
+use radix_engine_interface::api::actor_api::EventFlags;
 use sbor::rust::vec::Vec;
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
@@ -34,26 +34,25 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn consume_buffer(
+    fn buffer_consume(
         &mut self,
         buffer_id: BufferId,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn actor_call_module_method(
-        &mut self,
-        module_id: u32,
-        ident: Vec<u8>,
-        args: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn call_method(
+    fn object_call(
         &mut self,
         receiver: Vec<u8>,
-        direct_access: u32,
+        ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn object_call_module(
+        &mut self,
+        receiver: Vec<u8>,
         module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
@@ -61,17 +60,25 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn call_function(
+    fn object_call_direct(
         &mut self,
-        package_address: Vec<u8>,
-        blueprint_ident: Vec<u8>,
+        receiver: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn new_object(
+    fn blueprint_call(
+        &mut self,
+        blueprint_id: Vec<u8>,
+        ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn object_new(
         &mut self,
         blueprint_ident: Vec<u8>,
         object_states: Vec<u8>,
@@ -79,14 +86,14 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn allocate_global_address(
+    fn address_allocate(
         &mut self,
         blueprint_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn get_reservation_address(
+    fn address_get_reservation_address(
         &mut self,
         node_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -98,10 +105,6 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         modules: Vec<u8>,
         address: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
@@ -136,6 +139,13 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
+    fn key_value_entry_remove(
+        &mut self,
+        handle: u32,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
     fn key_value_entry_release(
         &mut self,
         handle: u32,
@@ -160,11 +170,11 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn field_lock_read(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn field_entry_read(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn field_lock_write(
+    fn field_entry_write(
         &mut self,
         handle: u32,
         data: Vec<u8>,
@@ -172,23 +182,15 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn field_lock_release(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn field_entry_close(&mut self, _handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn actor_get_node_id(&mut self, _handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn actor_get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
@@ -219,7 +221,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn emit_event(
+    fn actor_emit_event(
         &mut self,
         event_name: Vec<u8>,
         event: Vec<u8>,
@@ -228,7 +230,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn emit_log(
+    fn sys_log(
         &mut self,
         level: Vec<u8>,
         message: Vec<u8>,
@@ -236,46 +238,58 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn sys_panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn bech32_encode_address(
+    fn sys_get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn sys_bech32_encode_address(
         &mut self,
         address: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn sys_generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn costing_get_execution_cost_unit_limit(
+        &mut self,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn execution_cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    fn costing_get_execution_cost_unit_price(
+        &mut self,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn execution_cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn costing_get_finalization_cost_unit_limit(
+        &mut self,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn finalization_cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    fn costing_get_finalization_cost_unit_price(
+        &mut self,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn finalization_cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn costing_get_usd_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    fn costing_get_tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn costing_get_fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 }

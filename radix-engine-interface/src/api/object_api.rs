@@ -1,5 +1,6 @@
 use crate::api::node_modules::auth::ROLE_ASSIGNMENT_BLUEPRINT;
 use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
+use crate::api::CollectionIndex;
 use crate::constants::{
     METADATA_MODULE_PACKAGE, ROLE_ASSIGNMENT_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
 };
@@ -10,6 +11,7 @@ use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode, ScryptoSchema}
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::api::FieldIndex;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
@@ -115,7 +117,7 @@ pub trait ClientObjectApi<E> {
     fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
-        fields: Vec<FieldValue>,
+        fields: BTreeMap<FieldIndex, FieldValue>,
     ) -> Result<NodeId, E> {
         self.new_object(
             blueprint_ident,
@@ -132,8 +134,8 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         features: Vec<&str>,
         generic_args: GenericArgs,
-        fields: Vec<FieldValue>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+        fields: BTreeMap<FieldIndex, FieldValue>,
+        kv_entries: BTreeMap<CollectionIndex, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;
 
     /// Drops an owned object, returns the fields of the object
@@ -172,7 +174,7 @@ pub trait ClientObjectApi<E> {
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
-        inner_object_fields: Vec<FieldValue>,
+        inner_object_fields: BTreeMap<u8, FieldValue>,
         event_name: String,
         event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), E>;

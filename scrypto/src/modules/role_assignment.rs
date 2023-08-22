@@ -1,4 +1,4 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 
 use crate::modules::ModuleHandle;
 use crate::prelude::Attachable;
@@ -36,18 +36,16 @@ impl RoleAssignment {
         owner_role: R,
         roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>,
     ) -> Self {
-        let rtn = ScryptoEnv
-            .call_function(
-                ROLE_ASSIGNMENT_MODULE_PACKAGE,
-                ROLE_ASSIGNMENT_BLUEPRINT,
-                ROLE_ASSIGNMENT_CREATE_IDENT,
-                scrypto_encode(&RoleAssignmentCreateInput {
-                    owner_role: owner_role.into(),
-                    roles,
-                })
-                .unwrap(),
-            )
-            .unwrap();
+        let rtn = ScryptoVmV1Api::blueprint_call(
+            ROLE_ASSIGNMENT_MODULE_PACKAGE,
+            ROLE_ASSIGNMENT_BLUEPRINT,
+            ROLE_ASSIGNMENT_CREATE_IDENT,
+            scrypto_encode(&RoleAssignmentCreateInput {
+                owner_role: owner_role.into(),
+                roles,
+            })
+            .unwrap(),
+        );
         let role_assignment: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(role_assignment))
     }

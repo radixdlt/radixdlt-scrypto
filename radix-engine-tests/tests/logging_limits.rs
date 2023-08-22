@@ -10,7 +10,7 @@ fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
     wat2wasm(
         r##"
 (module
-   (import "env" "emit_log" (func $emit_log (param i32 i32 i32 i32)))
+   (import "env" "sys_log" (func $sys_log (param i32 i32 i32 i32)))
    (data (i32.const 0) "\5C\22\01\00TEXT_CONTENT")
    (func $test (param $0 i64) (result i64)
         ;; create a local variable and initialize it to 0
@@ -24,8 +24,8 @@ fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
             i32.add
             local.set $i
 
-            ;; emit log
-            (call $emit_log
+            ;; sys log
+            (call $sys_log
                 (i32.const 0)
                 (i32.const 4)
                 (i32.const 4)
