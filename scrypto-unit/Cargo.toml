@@ -4,7 +4,7 @@ version = "0.12.0"
 edition = "2021"
 
 [dependencies]
-radix-engine = { path = "../radix-engine", default-features = false }
+radix-engine = { path = "../radix-engine", features = ["db_checker"], default-features = false }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
 radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
@@ -18,7 +18,7 @@ serde_json = { version = "1.0.81" }
 wabt = { version = "0.10.0" }
 
 [features]
-default = ["std", "moka"]
+default = ["std", "moka" ]
 std = ["scrypto/std", "scrypto/serde", "sbor/std", "radix-engine-interface/std", "radix-engine-stores/std", "radix-engine-store-interface/std", "radix-engine-queries/std", "radix-engine/std", "transaction/std", "utils/std"]
 alloc = ["scrypto/alloc", "scrypto/serde", "sbor/alloc", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine-store-interface/alloc", "radix-engine-queries/alloc", "radix-engine/alloc", "transaction/alloc", "utils/alloc"]
 resource_tracker = []
@@ -27,6 +27,7 @@ moka = ["radix-engine/moka", "radix-engine-queries/moka"]
 lru = ["radix-engine/lru", "radix-engine-queries/lru"]
 
 rocksdb = ["radix-engine-stores/rocksdb"]
+post_run_db_check = []
 
 [lib]
 bench = false
