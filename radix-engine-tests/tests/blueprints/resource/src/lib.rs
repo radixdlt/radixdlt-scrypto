@@ -51,7 +51,7 @@ mod resource_test {
                 burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
-            (badge, resource_manager)
+            (badge.into(), resource_manager)
         }
 
         pub fn create_fungible_and_mint(
@@ -82,7 +82,7 @@ mod resource_test {
             let tokens = badge
                 .as_fungible()
                 .authorize_with_amount(dec!(1), || resource_manager.mint(amount));
-            (badge, tokens, resource_manager)
+            (badge.into(), tokens.into(), resource_manager)
         }
 
         pub fn create_fungible_wrong_resource_flags_should_fail() -> Bucket {
@@ -94,7 +94,7 @@ mod resource_test {
                     }
                 })
                 .mint_initial_supply(1u32);
-            bucket
+            bucket.into()
         }
 
         pub fn create_fungible_wrong_mutable_flags_should_fail() -> Bucket {
@@ -106,7 +106,7 @@ mod resource_test {
                     }
                 })
                 .mint_initial_supply(1u32);
-            bucket
+            bucket.into()
         }
 
         pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceManager)
@@ -132,7 +132,7 @@ mod resource_test {
                 burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
-            (badge, resource_manager)
+            (badge.into(), resource_manager)
         }
 
         pub fn query() -> (Bucket, Decimal, ResourceType) {
@@ -154,14 +154,16 @@ mod resource_test {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge = ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
-                .mint_initial_supply(vec![(
-                    0u64.into(),
-                    TestNFData {
-                        name: "name".to_string(),
-                        available: false,
-                    },
-                )]);
+            let badge: Bucket =
+                ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                    .mint_initial_supply(vec![(
+                        0u64.into(),
+                        TestNFData {
+                            name: "name".to_string(),
+                            available: false,
+                        },
+                    )])
+                    .into();
             let manager_badge =
                 NonFungibleGlobalId::new(badge.resource_address(), NonFungibleLocalId::integer(0));
 
@@ -239,18 +241,20 @@ mod rounding {
                 ),
                 dec!("1.52")
             );
-            bucket
+            bucket.into()
         }
 
         pub fn non_fungible_resource_amount_for_withdrawal() -> Bucket {
-            let bucket = ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
-                .mint_initial_supply(vec![(
-                    0u64.into(),
-                    TestNFData {
-                        name: "name".to_string(),
-                        available: false,
-                    },
-                )]);
+            let bucket: Bucket =
+                ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                    .mint_initial_supply(vec![(
+                        0u64.into(),
+                        TestNFData {
+                            name: "name".to_string(),
+                            available: false,
+                        },
+                    )])
+                    .into();
             let manager = bucket.resource_manager();
             assert_eq!(
                 manager.amount_for_withdrawal(dec!("1.515"), WithdrawStrategy::Exact),

@@ -1,3 +1,4 @@
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::mem::transmute;
 use sbor::rust::mem::MaybeUninit;
@@ -510,6 +511,7 @@ fn emit_event(
     event_name_len: u32,
     event_data_ptr: u32,
     event_data_len: u32,
+    flags: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
@@ -525,8 +527,11 @@ fn emit_event(
         event_data_ptr,
         event_data_len,
     )?;
+    let event_flags = EventFlags::from_bits(flags).ok_or(InvokeError::SelfError(
+        WasmRuntimeError::InvalidEventFlags(flags),
+    ))?;
 
-    runtime.emit_event(event_name, event_data)
+    runtime.emit_event(event_name, event_data, event_flags)
 }
 
 fn get_transaction_hash(
@@ -556,6 +561,20 @@ fn emit_log(
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
 
     runtime.emit_log(level, message)
+}
+
+fn bech32_encode_address(
+    mut caller: Caller<'_, HostState>,
+    address_ptr: u32,
+    address_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let address = read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?;
+
+    runtime
+        .bech32_encode_address(address)
+        .map(|buffer| buffer.0)
 }
 
 fn panic(
@@ -961,7 +980,8 @@ impl WasmiModule {
              event_name_ptr: u32,
              event_name_len: u32,
              event_data_ptr: u32,
-             event_data_len: u32|
+             event_data_len: u32,
+             flags: u32|
              -> Result<(), Trap> {
                 emit_event(
                     caller,
@@ -969,6 +989,7 @@ impl WasmiModule {
                     event_name_len,
                     event_data_ptr,
                     event_data_len,
+                    flags,
                 )
                 .map_err(|e| e.into())
             },
@@ -994,6 +1015,16 @@ impl WasmiModule {
              message_len: u32|
              -> Result<(), Trap> {
                 panic(caller, message_ptr, message_len).map_err(|e| e.into())
+            },
+        );
+
+        let host_bech32_encode_address = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             address_ptr: u32,
+             address_len: u32|
+             -> Result<u64, Trap> {
+                bech32_encode_address(caller, address_ptr, address_len).map_err(|e| e.into())
             },
         );
 
@@ -1123,6 +1154,11 @@ impl WasmiModule {
         linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
         linker_define!(linker, EMIT_LOG_FUNCTION_NAME, host_emit_log);
         linker_define!(linker, PANIC_FUNCTION_NAME, host_panic);
+        linker_define!(
+            linker,
+            BECH32_ENCODE_ADDRESS_FUNCTION_NAME,
+            host_bech32_encode_address
+        );
         linker_define!(
             linker,
             GET_TRANSACTION_HASH_FUNCTION_NAME,

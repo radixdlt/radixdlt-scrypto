@@ -55,7 +55,7 @@ mod basic_flash_loan {
 
             let global_component = Self {
                 loan_vault: Vault::with_bucket(initial_liquidity),
-                auth_vault: Vault::with_bucket(auth_token),
+                auth_vault: Vault::with_bucket(auth_token.into()),
                 transient_resource_manager,
             }
             .instantiate()

@@ -2,6 +2,7 @@ use crate::errors::InvokeError;
 use crate::system::system_modules::costing::*;
 use crate::types::*;
 use crate::vm::wasm::*;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use sbor::rust::vec::Vec;
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
@@ -222,6 +223,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         &mut self,
         event_name: Vec<u8>,
         event: Vec<u8>,
+        event_flags: EventFlags,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
@@ -235,6 +237,13 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
     }
 
     fn panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn bech32_encode_address(
+        &mut self,
+        address: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

@@ -108,6 +108,8 @@ pub enum WasmRuntimeError {
     /// Buffer not found
     BufferNotFound(BufferId),
 
+    InvalidAddress(DecodeError),
+
     /// Invalid package address
     InvalidPackageAddress(DecodeError),
 
@@ -148,6 +150,8 @@ pub enum WasmRuntimeError {
 
     /// Costing error (no-op runtime only!)
     FeeReserveError(FeeReserveError),
+
+    InvalidEventFlags(u32),
 }
 
 impl SelfError for WasmRuntimeError {

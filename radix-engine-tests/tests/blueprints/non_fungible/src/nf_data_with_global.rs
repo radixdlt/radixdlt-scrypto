@@ -19,12 +19,13 @@ mod nf_data_with_global {
                 .globalize();
 
             // Create a mint badge
-            let mint_badge = ResourceBuilder::new_fungible(OwnerRole::None)
+            let mint_badge: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
-                .mint_initial_supply(1);
+                .mint_initial_supply(1)
+                .into();
 
             // Create resource with initial supply
-            let bucket1 =
+            let bucket1: Bucket =
                 ResourceBuilder::new_integer_non_fungible::<NFDataWithGlobal>(OwnerRole::None)
                     .metadata(metadata! {
                         init {
@@ -43,14 +44,19 @@ mod nf_data_with_global {
                         non_fungible_data_updater => rule!(require(mint_badge.resource_address()));
                         non_fungible_data_updater_updater => rule!(deny_all);
                     })
-                    .mint_initial_supply([(1u64.into(), NFDataWithGlobal { global })]);
+                    .mint_initial_supply([(1u64.into(), NFDataWithGlobal { global })])
+                    .into();
 
             // Mint a non-fungible
-            let bucket2 = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
-                bucket1
-                    .resource_manager()
-                    .mint_non_fungible(&NonFungibleLocalId::integer(2), NFDataWithGlobal { global })
-            });
+            let bucket2: Bucket = mint_badge
+                .as_fungible()
+                .authorize_with_amount(dec!(1), || {
+                    bucket1.resource_manager().mint_non_fungible(
+                        &NonFungibleLocalId::integer(2),
+                        NFDataWithGlobal { global },
+                    )
+                })
+                .into();
 
             (mint_badge, bucket1, bucket2)
         }

@@ -10,6 +10,7 @@ use radix_engine_interface::api::key_value_store_api::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::api::{
     ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldValue, GenericArgs,
     ObjectHandle,
@@ -434,10 +435,20 @@ impl ClientAuthApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
+    fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, ClientApiError> {
+        let global_address = scrypto_encode(&address).unwrap();
+        let encoded = copy_buffer(unsafe {
+            bech32_encode_address(global_address.as_ptr(), global_address.len())
+        });
+
+        scrypto_decode(&encoded).map_err(ClientApiError::DecodeError)
+    }
+
     fn emit_event(
         &mut self,
         event_name: String,
         event_data: Vec<u8>,
+        event_flags: EventFlags,
     ) -> Result<(), ClientApiError> {
         unsafe {
             emit_event(
@@ -445,6 +456,7 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
                 event_name.len(),
                 event_data.as_ptr(),
                 event_data.len(),
+                event_flags.bits(),
             )
         };
         Ok(())

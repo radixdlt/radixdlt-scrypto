@@ -3,6 +3,7 @@ use crate::types::*;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
@@ -624,13 +625,17 @@ impl WasmerModule {
             event_name_len: u32,
             event_data_ptr: u32,
             event_data_len: u32,
+            flags: u32,
         ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
             let event_name = read_memory(&instance, event_name_ptr, event_name_len)?;
             let event_data = read_memory(&instance, event_data_ptr, event_data_len)?;
+            let event_flags = EventFlags::from_bits(flags).ok_or(InvokeError::SelfError(
+                WasmRuntimeError::InvalidEventFlags(flags),
+            ))?;
 
-            runtime.emit_event(event_name, event_data)
+            runtime.emit_event(event_name, event_data, event_flags)
         }
 
         fn emit_log(
@@ -646,6 +651,22 @@ impl WasmerModule {
             let message = read_memory(&instance, message_ptr, message_len)?;
 
             runtime.emit_log(level, message)
+        }
+
+        fn bech32_encode_address(
+            env: &WasmerInstanceEnv,
+            address_ptr: u32,
+            address_len: u32,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let address = read_memory(&instance, address_ptr, address_len)?;
+
+            let buffer = runtime
+                .bech32_encode_address(address)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
         }
 
         fn panic(
@@ -725,6 +746,7 @@ impl WasmerModule {
                 CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_wasm_execution_units),
                 EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
                 EMIT_LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_log),
+                BECH32_ENCODE_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bech32_encode_address),
                 PANIC_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), panic),
                 GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_transaction_hash),
                 GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), generate_ruid),
