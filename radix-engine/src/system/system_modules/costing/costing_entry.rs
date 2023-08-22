@@ -200,7 +200,7 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::OpenSubstate { event, .. } => {
                 let node_id = match event {
                     OpenSubstateEvent::Start { node_id, .. } => **node_id,
-                    OpenSubstateEvent::StoreAccess(access) => access.node_id(),
+                    OpenSubstateEvent::IOAccess(access) => access.node_id(),
                     OpenSubstateEvent::End { node_id, .. } => **node_id,
                 };
 
