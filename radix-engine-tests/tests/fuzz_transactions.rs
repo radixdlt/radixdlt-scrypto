@@ -76,9 +76,9 @@ impl TransactionFuzzer {
         for _ in 0..instruction_count {
             let next = self.rng.gen_range(0u32..4u32);
             builder = match next {
-                0 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll)),
-                1 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll)),
-                2 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll)),
+                0 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None),
+                1 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None),
+                2 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None),
                 3 => builder.lock_fee(FAUCET, 100),
                 _ => panic!("Unexpected"),
             }

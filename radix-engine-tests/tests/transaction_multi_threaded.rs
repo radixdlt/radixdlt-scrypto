@@ -46,7 +46,7 @@ mod multi_threaded_test {
                     .lock_fee_from_faucet()
                     .new_account_advanced(OwnerRole::Fixed(rule!(require(
                         NonFungibleGlobalId::from_public_key(&public_key)
-                    ))))
+                    ))), None)
                     .build();
                 let account = execute_and_commit_transaction(
                     &mut substate_db,

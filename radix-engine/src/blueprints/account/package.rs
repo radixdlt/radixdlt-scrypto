@@ -517,7 +517,7 @@ impl AccountNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::create_advanced(input.owner_role, api)?;
+                let rtn = AccountBlueprint::create_advanced(input.owner_role, input.address_reservation, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

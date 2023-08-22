@@ -146,7 +146,7 @@ fn transfer_test(c: &mut Criterion) {
                 .lock_fee_from_faucet()
                 .new_account_advanced(rule!(require(NonFungibleGlobalId::from_public_key(
                     &public_key
-                ))))
+                ))), None)
                 .build();
             let account = execute_and_commit_transaction(
                 &mut substate_db,

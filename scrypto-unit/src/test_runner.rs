@@ -815,7 +815,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
     pub fn new_account_advanced(&mut self, owner_role: OwnerRole) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .new_account_advanced(owner_role)
+            .new_account_advanced(owner_role, None)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();

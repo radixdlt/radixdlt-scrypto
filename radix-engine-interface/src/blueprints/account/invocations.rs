@@ -3,7 +3,7 @@ use crate::data::scrypto::model::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::prelude::ManifestBucket;
+use radix_engine_common::prelude::{ManifestAddressReservation, ManifestBucket};
 use radix_engine_common::types::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
@@ -41,9 +41,17 @@ pub const ACCOUNT_BLUEPRINT: &str = "Account";
 pub const ACCOUNT_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccountCreateAdvancedInput {
     pub owner_role: OwnerRole,
+    pub address_reservation: Option<GlobalAddressReservation>,
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct AccountCreateAdvancedManifestInput {
+    pub owner_role: OwnerRole,
+    pub address_reservation: Option<ManifestAddressReservation>,
 }
 
 pub type AccountCreateAdvancedOutput = ComponentAddress;

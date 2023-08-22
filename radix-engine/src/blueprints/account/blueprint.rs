@@ -181,6 +181,7 @@ impl AccountBlueprint {
 
     pub fn create_advanced<Y>(
         owner_role: OwnerRole,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
@@ -198,7 +199,7 @@ impl AccountBlueprint {
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(modules, None)?;
+        let address = api.globalize(modules, address_reservation)?;
 
         Ok(address)
     }
