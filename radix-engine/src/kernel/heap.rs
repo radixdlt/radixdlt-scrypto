@@ -1,6 +1,6 @@
-use crate::blueprints::resource::*;
-use crate::track::interface::NodeSubstates;
+use crate::track::interface::{CallbackError, CanonicalSubstateKey, NodeSubstates};
 use crate::types::*;
+use crate::{blueprints::resource::*, track::interface::IOAccess};
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
     LockedNonFungibleResource,
@@ -32,23 +32,43 @@ impl Heap {
         self.nodes.is_empty()
     }
 
-    /// Checks if the given node is in this heap.
-    pub fn contains_node(&self, node_id: &NodeId) -> bool {
-        self.nodes.contains_key(node_id)
-    }
-
-    pub fn remove_module(
+    pub fn remove_module<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
-    ) -> Result<BTreeMap<SubstateKey, IndexedScryptoValue>, HeapRemovePartitionError> {
+        on_io_access: &mut F,
+    ) -> Result<
+        BTreeMap<SubstateKey, IndexedScryptoValue>,
+        CallbackError<HeapRemovePartitionError, E>,
+    > {
         if let Some(modules) = self.nodes.get_mut(node_id) {
             let module = modules
                 .remove(&partition_number)
-                .ok_or(HeapRemovePartitionError::ModuleNotFound(partition_number))?;
+                .ok_or(CallbackError::Error(
+                    HeapRemovePartitionError::ModuleNotFound(partition_number),
+                ))?;
+
+            for (substate_key, substate_value) in &module {
+                on_io_access(
+                    self,
+                    IOAccess::HeapSubstateUpdated {
+                        canonical_substate_key: CanonicalSubstateKey {
+                            node_id: *node_id,
+                            partition_number,
+                            substate_key: substate_key.clone(),
+                        },
+                        old_size: Some(substate_value.len()),
+                        new_size: None,
+                    },
+                )
+                .map_err(CallbackError::CallbackError)?;
+            }
+
             Ok(module)
         } else {
-            Err(HeapRemovePartitionError::NodeNotFound(node_id.clone()))
+            Err(CallbackError::Error(
+                HeapRemovePartitionError::NodeNotFound(node_id.clone()),
+            ))
         }
     }
 
@@ -66,53 +86,99 @@ impl Heap {
     }
 
     /// Inserts or overwrites a substate
-    pub fn set_substate(
+    pub fn set_substate<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
-        partition_num: PartitionNumber,
+        partition_number: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-    ) {
-        self.nodes
+        on_io_access: &mut F,
+    ) -> Result<(), E> {
+        let entry = self
+            .nodes
             .entry(node_id)
             .or_insert_with(|| NodeSubstates::default())
-            .entry(partition_num)
+            .entry(partition_number)
             .or_default()
-            .insert(substate_key, substate_value);
+            .entry(substate_key.clone());
+
+        let old_size;
+        let new_size = Some(substate_value.len());
+        match entry {
+            btree_map::Entry::Vacant(e) => {
+                old_size = None;
+                e.insert(substate_value);
+            }
+            btree_map::Entry::Occupied(mut e) => {
+                old_size = Some(e.get().len());
+                e.insert(substate_value);
+            }
+        }
+
+        on_io_access(
+            self,
+            IOAccess::HeapSubstateUpdated {
+                canonical_substate_key: CanonicalSubstateKey {
+                    node_id,
+                    partition_number,
+                    substate_key,
+                },
+                old_size,
+                new_size,
+            },
+        )?;
+
+        Ok(())
     }
 
-    pub fn remove_substate(
+    pub fn remove_substate<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
-        partition_num: PartitionNumber,
+        partition_number: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Option<IndexedScryptoValue> {
-        self.nodes
+        on_io_access: &mut F,
+    ) -> Result<Option<IndexedScryptoValue>, E> {
+        let substate_value = self
+            .nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&partition_num))
-            .and_then(|s| s.remove(substate_key))
+            .and_then(|n| n.get_mut(&partition_number))
+            .and_then(|s| s.remove(substate_key));
+
+        if let Some(value) = &substate_value {
+            on_io_access(
+                self,
+                IOAccess::HeapSubstateUpdated {
+                    canonical_substate_key: CanonicalSubstateKey {
+                        node_id: *node_id,
+                        partition_number,
+                        substate_key: substate_key.clone(),
+                    },
+                    old_size: Some(value.len()),
+                    new_size: None,
+                },
+            )?;
+        }
+
+        Ok(substate_value)
     }
 
     /// Scans the keys of a node's partition. On an non-existing node/partition, this
     /// will return an empty vector
     pub fn scan_keys(
-        &mut self,
+        &self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
     ) -> Vec<SubstateKey> {
-        let node_substates = self
-            .nodes
-            .get_mut(node_id)
-            .and_then(|n| n.get_mut(&partition_num));
+        let node_substates = self.nodes.get(node_id).and_then(|n| n.get(&partition_num));
         if let Some(substates) = node_substates {
-            let substates: Vec<SubstateKey> = substates
+            let substate_keys: Vec<SubstateKey> = substates
                 .iter()
                 .map(|(key, _value)| key.clone())
                 .take(count.try_into().unwrap())
                 .collect();
 
-            substates
+            substate_keys
         } else {
             vec![]
         }
@@ -120,16 +186,17 @@ impl Heap {
 
     /// Drains the substates from a node's partition. On an non-existing node/partition, this
     /// will return an empty vector
-    pub fn drain_substates(
+    pub fn drain_substates<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
-        partition_num: PartitionNumber,
+        partition_number: PartitionNumber,
         count: u32,
-    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+        on_io_access: &mut F,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&partition_num));
+            .and_then(|n| n.get_mut(&partition_number));
         if let Some(substates) = node_substates {
             let keys: Vec<SubstateKey> = substates
                 .iter()
@@ -144,23 +211,100 @@ impl Heap {
                 items.push((key, value));
             }
 
-            items
+            for (key, value) in &items {
+                on_io_access(
+                    self,
+                    IOAccess::HeapSubstateUpdated {
+                        canonical_substate_key: CanonicalSubstateKey {
+                            node_id: *node_id,
+                            partition_number,
+                            substate_key: key.clone(),
+                        },
+                        old_size: Some(value.len()),
+                        new_size: None,
+                    },
+                )?;
+            }
+
+            Ok(items)
         } else {
-            vec![]
+            Ok(vec![])
         }
     }
 
     /// Inserts a new node to heap.
-    pub fn create_node(&mut self, node_id: NodeId, substates: NodeSubstates) {
+    pub fn create_node<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: NodeId,
+        substates: NodeSubstates,
+        on_io_access: &mut F,
+    ) -> Result<(), E> {
+        assert!(!self.nodes.contains_key(&node_id));
+
+        let sizes: IndexMap<PartitionNumber, IndexMap<SubstateKey, usize>> = substates
+            .iter()
+            .map(|(k, v)| {
+                (
+                    k.clone(),
+                    v.iter().map(|(k, v)| (k.clone(), v.len())).collect(),
+                )
+            })
+            .collect();
+
         self.nodes.insert(node_id, substates);
+
+        for (partition_number, partition) in sizes {
+            for (substate_key, substate_size) in partition {
+                on_io_access(
+                    self,
+                    IOAccess::HeapSubstateUpdated {
+                        canonical_substate_key: CanonicalSubstateKey {
+                            node_id,
+                            partition_number,
+                            substate_key: substate_key.clone(),
+                        },
+                        old_size: None,
+                        new_size: Some(substate_size),
+                    },
+                )?;
+            }
+        }
+
+        Ok(())
     }
 
     /// Removes node.
-    pub fn remove_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, HeapRemoveNodeError> {
-        match self.nodes.remove(node_id) {
-            Some(node_substates) => Ok(node_substates),
-            None => Err(HeapRemoveNodeError::NodeNotFound(node_id.clone())),
+    pub fn remove_node<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: &NodeId,
+        on_io_access: &mut F,
+    ) -> Result<NodeSubstates, CallbackError<HeapRemoveNodeError, E>> {
+        let node_substates = match self.nodes.remove(node_id) {
+            Some(node_substates) => node_substates,
+            None => Err(CallbackError::Error(HeapRemoveNodeError::NodeNotFound(
+                node_id.clone(),
+            )))?,
+        };
+
+        for (partition_number, partition) in &node_substates {
+            for (substate_key, substate_value) in partition {
+                on_io_access(
+                    self,
+                    IOAccess::HeapSubstateUpdated {
+                        canonical_substate_key: CanonicalSubstateKey {
+                            node_id: *node_id,
+                            partition_number: *partition_number,
+                            substate_key: substate_key.clone(),
+                        },
+                        old_size: Some(substate_value.len()),
+                        new_size: None,
+                    },
+                )
+                .map_err(CallbackError::CallbackError)?;
+            }
         }
+
+        Ok(node_substates)
     }
 }
 
@@ -233,5 +377,76 @@ impl Into<DroppedNonFungibleProof> for Vec<Vec<u8>> {
             moveable,
             non_fungible_proof,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_heap_size_accounting() {
+        let mut heap = Heap::new();
+        let mut total_size = 0;
+
+        let mut on_io_access = |_: &_, io_access| {
+            match io_access {
+                IOAccess::HeapSubstateUpdated {
+                    canonical_substate_key,
+                    old_size,
+                    new_size,
+                } => {
+                    if old_size.is_none() {
+                        total_size += canonical_substate_key.logical_size();
+                    }
+                    if new_size.is_none() {
+                        total_size -= canonical_substate_key.logical_size();
+                    }
+
+                    total_size += new_size.unwrap_or_default();
+                    total_size -= old_size.unwrap_or_default();
+                }
+                _ => {}
+            }
+
+            Result::<(), ()>::Ok(())
+        };
+
+        let node_id = NodeId([0u8; NodeId::LENGTH]);
+        let partition_number1 = PartitionNumber(5);
+        let partition_number2 = PartitionNumber(6);
+        let key1 = SubstateKey::Map(scrypto_encode(&"1").unwrap());
+        let key2 = SubstateKey::Map(scrypto_encode(&"2").unwrap());
+        heap.create_node(
+            NodeId([0u8; NodeId::LENGTH]),
+            btreemap!(
+                partition_number1 => btreemap!(
+                    key1.clone() => IndexedScryptoValue::from_typed("A"),
+                    key2.clone() => IndexedScryptoValue::from_typed("B"),
+                ),
+                partition_number2 => btreemap!(
+                    key1.clone() => IndexedScryptoValue::from_typed("C"),
+                    key2.clone() => IndexedScryptoValue::from_typed("D"),
+                )
+            ),
+            &mut on_io_access,
+        )
+        .unwrap();
+        heap.set_substate(
+            node_id,
+            partition_number1,
+            key1,
+            IndexedScryptoValue::from_typed("E"),
+            &mut on_io_access,
+        )
+        .unwrap();
+        heap.drain_substates(&node_id, partition_number1, 1, &mut on_io_access)
+            .unwrap();
+        heap.remove_substate(&node_id, partition_number2, &key2, &mut on_io_access)
+            .unwrap();
+        heap.remove_module(&node_id, partition_number2, &mut on_io_access)
+            .unwrap();
+        heap.remove_node(&node_id, &mut on_io_access).unwrap();
+        assert_eq!(total_size, 0);
     }
 }
