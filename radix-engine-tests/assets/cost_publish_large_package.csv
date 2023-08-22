@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,   504.106563821278092717,    100.0%
-- Execution Cost (XRD)                                                     ,               4.34442035,      0.9%
+Total Cost (XRD)                                                           ,   504.106597021278092717,    100.0%
+- Execution Cost (XRD)                                                     ,               4.34445355,      0.9%
 - Finalization Cost (XRD)                                                  ,               0.07669705,      0.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,   499.685446421278092717,     99.1%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 86888407,    100.0%
+Execution Cost Breakdown                                                   ,                 86889071,    100.0%
 - AllocateNodeId                                                           ,                     1560,      0.0%
 - BeforeInvoke                                                             ,                  2096350,      2.4%
 - CloseSubstate                                                            ,                    13230,      0.0%
@@ -14,7 +14,7 @@ Execution Cost Breakdown                                                   ,    
 - EmitEvent                                                                ,                     1128,      0.0%
 - LockFee                                                                  ,                      500,      0.0%
 - MarkSubstateAsTransient                                                  ,                      100,      0.0%
-- MoveModule                                                               ,                      664,      0.0%
+- MoveModule                                                               ,                     1328,      0.0%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   125255,      0.1%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43212,      0.0%
 - OpenSubstate::GlobalPackage                                              ,                  2830237,      3.3%
