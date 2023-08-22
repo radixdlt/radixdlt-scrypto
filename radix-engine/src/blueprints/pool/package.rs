@@ -695,7 +695,7 @@ impl PoolNativePackage {
                     resource_addresses,
                     owner_role,
                     pool_manager_rule,
-                    address_reservation
+                    address_reservation,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;

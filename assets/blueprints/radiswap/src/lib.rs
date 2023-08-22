@@ -24,7 +24,7 @@ mod radiswap {
                 owner_role.clone(),
                 rule!(require(global_component_caller_badge)),
                 (resource_address1, resource_address2),
-                None
+                None,
             );
 
             Self { pool_component }
