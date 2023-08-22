@@ -7,7 +7,6 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 use bitflags::bitflags;
 use radix_engine_common::prelude::*;
-use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreGenericSubstitutions {
@@ -144,11 +143,25 @@ impl<T> BlueprintCollectionSchema<T> {
     }
 }
 
+pub trait BlueprintFeature {
+    fn feature_name(&self) -> &'static str;
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum Condition {
     Always,
     IfFeature(String),
     IfOuterFeature(String),
+}
+
+impl Condition {
+    pub fn if_feature(feature: impl BlueprintFeature) -> Self {
+        Self::IfFeature(feature.feature_name().into())
+    }
+
+    pub fn if_outer_feature(feature: impl BlueprintFeature) -> Self {
+        Self::IfOuterFeature(feature.feature_name().into())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

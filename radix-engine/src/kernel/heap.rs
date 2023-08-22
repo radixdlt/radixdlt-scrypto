@@ -430,8 +430,8 @@ mod tests {
                 )
             ),
             &mut on_store_access,
-        );
-
+        )
+        .unwrap();
         heap.set_substate(
             node_id,
             partition_number1,

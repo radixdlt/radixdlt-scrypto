@@ -60,3 +60,7 @@ pub mod prelude {
         non_fungible_data_update_roles, recall_roles, role_entry, roles2, rule, withdraw_roles,
     };
 }
+
+pub(crate) mod internal_prelude {
+    pub use crate::prelude::*;
+}
