@@ -124,6 +124,48 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
 }
 
 #[test]
+fn test_write_entries_to_heap_kv_store_exceeding_limit() {
+    let (code, definition) = Compile::compile("tests/blueprints/transaction_limits");
+
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "TransactionLimitTest",
+            "write_entries_to_heap_kv_store",
+            manifest_args!(64 * 1024 as u32),
+        )
+        .build();
+
+    let transactions = TestTransaction::new_from_nonce(manifest, 10);
+    let prepared = transactions.prepare().unwrap();
+    let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
+    let mut execution_config = ExecutionConfig::for_test_transaction();
+    execution_config.max_heap_substate_total_bytes = 1024 * 1024;
+    let receipt = test_runner.execute_transaction(
+        prepared.get_executable(btreeset!()),
+        fee_config,
+        execution_config,
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::HeapSubstateSizeExceeded { .. }
+            ))
+        )
+    });
+}
+
+#[test]
 fn test_default_substate_size_limit() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

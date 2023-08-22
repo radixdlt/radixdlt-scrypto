@@ -4,7 +4,6 @@ use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
 use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
