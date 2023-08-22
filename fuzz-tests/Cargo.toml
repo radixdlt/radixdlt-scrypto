@@ -47,7 +47,13 @@ members = ["."]
 
 [[bin]]
 name = "transaction"
-path = "src/transaction.rs"
+path = "src/bin/transaction.rs"
+#test = false
+doc = false
+
+[[bin]]
+name = "wasm_instrument"
+path = "src/bin/wasm_instrument.rs"
 #test = false
 doc = false
 
