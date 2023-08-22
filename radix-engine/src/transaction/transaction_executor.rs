@@ -499,7 +499,7 @@ where
         let substate = track.read_substate(
             TRANSACTION_TRACKER.as_node_id(),
             PartitionNumber(partition_number),
-            &SubstateKey::Map(intent_hash.to_vec()),
+            &SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
         );
 
         match substate {
@@ -942,7 +942,7 @@ where
                     .set_substate(
                         TRANSACTION_TRACKER.into_node_id(),
                         PartitionNumber(partition_number),
-                        SubstateKey::Map(intent_hash.to_vec()),
+                        SubstateKey::Map(scrypto_encode(intent_hash).unwrap()),
                         IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
                             value: Some(if is_success {
                                 TransactionStatus::CommittedSuccess

@@ -19,7 +19,7 @@ use crate::internal_prelude::*;
 ///
 /// The content of each of the above can take a number of forms. This is configured via specifying the type as one of the following.
 /// Only Static is supported for keys at present. By default, you should choose StaticSingleVersioned for fields and collection values.
-/// ```
+/// ```ignore
 ///     {
 ///         kind: StaticSingleVersioned,
 ///     }
