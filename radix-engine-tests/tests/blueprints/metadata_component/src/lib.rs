@@ -22,7 +22,7 @@ mod metadata_component {
                 })
                 .globalize();
 
-            let value0: String = global.get_metadata(key).unwrap();
+            let value0: String = global.get_metadata(key).unwrap().unwrap();
             assert_eq!(value0, value);
         }
 
@@ -33,7 +33,7 @@ mod metadata_component {
                 .globalize();
 
             global.set_metadata(key.clone(), value.clone());
-            let value0: String = global.get_metadata(key).unwrap();
+            let value0: String = global.get_metadata(key).unwrap().unwrap();
 
             assert_eq!(value0, value);
         }
