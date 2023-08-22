@@ -36,6 +36,17 @@ mod transaction_limits {
             }
         }
 
+        pub fn write_entries_to_heap_kv_store(n: u32) {
+            let kv_store = KeyValueStore::new();
+            for i in 0..n {
+                kv_store.insert(i, i);
+            }
+            TransactionLimitTest { kv_store }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
+        }
+
         pub fn recursive_with_memory(n: u32, m: usize) {
             if n > 1 {
                 let _v: Vec<u8> = Vec::with_capacity(m);
