@@ -14,6 +14,7 @@ pub struct Event {
 
 #[derive(Debug, Clone)]
 pub struct TransactionRuntimeModule {
+    pub network_definition: NetworkDefinition,
     pub tx_hash: Hash,
     pub next_id: u32,
     pub logs: Vec<(Level, String)>,
@@ -104,6 +105,7 @@ mod tests {
     #[test]
     fn test_ruid_gen() {
         let mut id = TransactionRuntimeModule {
+            network_definition: NetworkDefinition::simulator(),
             tx_hash: Hash::from_str(
                 "71f26aab5eec6679f67c71211aba9a3486cc8d24194d339385ee91ee5ca7b30d",
             )
@@ -119,6 +121,7 @@ mod tests {
         );
 
         let mut id = TransactionRuntimeModule {
+            network_definition: NetworkDefinition::simulator(),
             tx_hash: Hash([0u8; 32]),
             next_id: 5,
             logs: Vec::new(),
@@ -131,6 +134,7 @@ mod tests {
         );
 
         let mut id = TransactionRuntimeModule {
+            network_definition: NetworkDefinition::simulator(),
             tx_hash: Hash([255u8; 32]),
             next_id: 5,
             logs: Vec::new(),

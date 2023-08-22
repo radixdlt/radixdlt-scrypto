@@ -248,7 +248,7 @@ mod genesis_helper {
                 resource_mgr.set_metadata("tags", vec!["badge".to_string()]);
 
                 let _: () = Account(owner)
-                    .deposit(owner_badge, &mut ScryptoEnv)
+                    .deposit(owner_badge.into(), &mut ScryptoEnv)
                     .unwrap();
 
                 Some(owner_badge_address)

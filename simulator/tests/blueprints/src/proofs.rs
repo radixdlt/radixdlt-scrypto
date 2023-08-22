@@ -35,7 +35,8 @@ mod proofs {
                     withdrawer => organizational_access_rule.clone();
                     withdrawer_updater => rule!(deny_all);
                 })
-                .mint_initial_supply(100);
+                .mint_initial_supply(100)
+                .into();
 
             let component = Self {}
                 .instantiate()
@@ -59,6 +60,7 @@ mod proofs {
                     }
                 })
                 .mint_initial_supply(1)
+                .into()
         }
 
         pub fn organizational_authenticated_method(&self) {

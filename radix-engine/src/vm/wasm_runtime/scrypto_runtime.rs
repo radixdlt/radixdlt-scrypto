@@ -441,6 +441,16 @@ where
         Ok(())
     }
 
+    fn bech32_encode_address(
+        &mut self,
+        address: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let address =
+            scrypto_decode::<GlobalAddress>(&address).map_err(WasmRuntimeError::InvalidAddress)?;
+        let encoded = self.api.bech32_encode_address(address)?;
+        self.allocate_buffer(scrypto_encode(&encoded).expect("Failed to encoded address"))
+    }
+
     fn panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api
             .panic(String::from_utf8(message).map_err(|_| WasmRuntimeError::InvalidString)?)?;

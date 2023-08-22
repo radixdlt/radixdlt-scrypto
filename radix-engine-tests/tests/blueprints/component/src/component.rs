@@ -17,6 +17,7 @@ mod component_test {
                     }
                 })
                 .mint_initial_supply(amount)
+                .into()
         }
 
         pub fn create_component() -> Global<ComponentTest> {

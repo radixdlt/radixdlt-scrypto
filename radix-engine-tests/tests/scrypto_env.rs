@@ -64,3 +64,26 @@ fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
         _ => false,
     });
 }
+
+#[test]
+fn should_be_able_to_bech32_encode_address() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ScryptoEnvTest",
+            "bech32_encode_address",
+            manifest_args!(FAUCET),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let _bech32_encoded: String = result.output(1);
+}
