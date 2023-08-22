@@ -24,7 +24,7 @@ jobs:
     name: Check code format
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -41,7 +41,7 @@ jobs:
     name: Run SBOR unit tests
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -65,7 +65,7 @@ jobs:
     name: Run SBOR integration tests
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -89,7 +89,7 @@ jobs:
     name: Run Scrypto unit tests
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -116,7 +116,7 @@ jobs:
     name: Run Scrypto integration tests
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -137,7 +137,7 @@ jobs:
     name: Run Scrypto examples
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -171,7 +171,7 @@ jobs:
     name: Run Radix Engine build (RocksDB)
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -194,7 +194,7 @@ jobs:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -229,7 +229,7 @@ jobs:
     name: Run Radix Engine tests (release)
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -260,7 +260,7 @@ jobs:
     name: Run Radix Engine tests (no_std)
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -285,7 +285,7 @@ jobs:
     name: Run Radix Engine tests (wasmer)
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -310,7 +310,7 @@ jobs:
     name: Run Radix Engine benchmarks
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -330,7 +330,7 @@ jobs:
     name: Run Radix Engine common benchmarks
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -350,7 +350,7 @@ jobs:
     name: Run transaction tests
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -368,7 +368,7 @@ jobs:
     name: Run transaction scenarios
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -384,7 +384,7 @@ jobs:
     name: Run CLI tests (resim & rtmc & rtmd)
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner, windows-latest-16-cores]
@@ -422,7 +422,7 @@ jobs:
     name: Run CLI tests (scrypto)
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner, windows-latest-16-cores]
@@ -454,7 +454,7 @@ jobs:
     name: Build fuzzer
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_LOG: trace
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
