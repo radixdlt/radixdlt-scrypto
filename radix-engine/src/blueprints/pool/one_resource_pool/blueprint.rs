@@ -105,7 +105,9 @@ impl OneResourcePoolBlueprint {
             };
             api.new_simple_object(
                 ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![FieldValue::immutable(&substate)],
+                btreemap! {
+                    0u8 => FieldValue::immutable(&substate),
+                },
             )?
         };
 
@@ -398,7 +400,7 @@ impl OneResourcePoolBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = OneResourcePoolField::OneResourcePool.into();
-        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
+        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
         let substate = api.field_read_typed::<OneResourcePoolSubstate>(handle)?;
 
         Ok((substate, handle))

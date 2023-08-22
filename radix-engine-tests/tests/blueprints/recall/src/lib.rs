@@ -42,47 +42,29 @@ mod recall {
         }
 
         pub fn recall_on_internal_vault(&self) -> Bucket {
-            scrypto_decode(
-                &ScryptoEnv
-                    .call_method_advanced(
-                        self.vault.0.as_node_id(),
-                        ObjectModuleId::Main,
-                        true,
-                        VAULT_RECALL_IDENT,
-                        scrypto_args!(Decimal::ONE),
-                    )
-                    .unwrap(),
-            )
+            scrypto_decode(&ScryptoVmV1Api::object_call_direct(
+                self.vault.0.as_node_id(),
+                VAULT_RECALL_IDENT,
+                scrypto_args!(Decimal::ONE),
+            ))
             .unwrap()
         }
 
         pub fn recall_on_direct_access_ref(reference: InternalAddress) -> Bucket {
-            scrypto_decode(
-                &ScryptoEnv
-                    .call_method_advanced(
-                        reference.as_node_id(),
-                        ObjectModuleId::Main,
-                        true,
-                        VAULT_RECALL_IDENT,
-                        scrypto_args!(Decimal::ONE),
-                    )
-                    .unwrap(),
-            )
+            scrypto_decode(&ScryptoVmV1Api::object_call_direct(
+                reference.as_node_id(),
+                VAULT_RECALL_IDENT,
+                scrypto_args!(Decimal::ONE),
+            ))
             .unwrap()
         }
 
         pub fn recall_on_direct_access_ref_method(&self, reference: InternalAddress) -> Bucket {
-            scrypto_decode(
-                &ScryptoEnv
-                    .call_method_advanced(
-                        reference.as_node_id(),
-                        ObjectModuleId::Main,
-                        true,
-                        VAULT_RECALL_IDENT,
-                        scrypto_args!(Decimal::ONE),
-                    )
-                    .unwrap(),
-            )
+            scrypto_decode(&ScryptoVmV1Api::object_call_direct(
+                reference.as_node_id(),
+                VAULT_RECALL_IDENT,
+                scrypto_args!(Decimal::ONE),
+            ))
             .unwrap()
         }
     }

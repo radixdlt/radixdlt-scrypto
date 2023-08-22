@@ -14,7 +14,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, GenericArgs, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, GenericArgs, ACTOR_STATE_SELF};
 use radix_engine_interface::api::{CollectionIndex, FieldValue};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
@@ -245,9 +245,11 @@ impl AccountBlueprint {
             ACCOUNT_BLUEPRINT,
             vec![],
             GenericArgs::default(),
-            vec![FieldValue::new(&AccountSubstate {
-                default_deposit_rule: DefaultDepositRule::Accept,
-            })],
+            btreemap! {
+                0u8 => FieldValue::new(&AccountSubstate {
+                    default_deposit_rule: DefaultDepositRule::Accept,
+                })
+            },
             btreemap!(),
         )?;
 
@@ -462,7 +464,7 @@ impl AccountBlueprint {
         let encoded_key =
             scrypto_encode(badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::read_only(),
@@ -659,7 +661,7 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = AccountField::Account.into();
-        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
+        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::MUTABLE)?;
         let mut account = api.field_read_typed::<AccountSubstate>(handle)?;
 
         account.default_deposit_rule = default;
@@ -687,7 +689,7 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::MUTABLE,
@@ -715,7 +717,7 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
         api.actor_remove_key_value_entry(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX,
             &encoded_key,
         )?;
@@ -735,7 +737,7 @@ impl AccountBlueprint {
         let encoded_key =
             scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::MUTABLE,
@@ -763,7 +765,7 @@ impl AccountBlueprint {
         let encoded_key =
             scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         api.actor_remove_key_value_entry(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX,
             &encoded_key,
         )?;
@@ -784,7 +786,7 @@ impl AccountBlueprint {
     {
         let substate_key = AccountField::Account.into();
         let handle =
-            api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+            api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::read_only())?;
         let account = api.field_read_typed::<AccountSubstate>(handle)?;
         let default = account.default_deposit_rule;
         api.field_close(handle)?;
@@ -805,7 +807,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let mut kv_store_entry_lock_handle = api.actor_open_key_value_entry(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ACCOUNT_VAULT_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::read_only(),
@@ -824,7 +826,7 @@ impl AccountBlueprint {
                     if create {
                         api.key_value_entry_close(kv_store_entry_lock_handle)?;
                         kv_store_entry_lock_handle = api.actor_open_key_value_entry(
-                            OBJECT_HANDLE_SELF,
+                            ACTOR_STATE_SELF,
                             ACCOUNT_VAULT_COLLECTION_INDEX,
                             &encoded_key,
                             LockFlags::MUTABLE,
@@ -888,7 +890,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(resource_address).expect("Impossible Case!");
 
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ACCOUNT_VAULT_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::read_only(),
@@ -920,7 +922,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX,
             &encoded_key,
             LockFlags::read_only(),

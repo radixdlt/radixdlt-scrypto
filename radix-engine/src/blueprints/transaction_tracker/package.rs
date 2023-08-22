@@ -213,13 +213,15 @@ impl TransactionTrackerBlueprint {
         let current_epoch = Runtime::current_epoch(api)?;
         let intent_store = api.new_simple_object(
             TRANSACTION_TRACKER_BLUEPRINT,
-            vec![FieldValue::new(&TransactionTrackerSubstate {
-                start_epoch: current_epoch.number(),
-                start_partition: PARTITION_RANGE_START,
-                partition_range_start_inclusive: PARTITION_RANGE_START,
-                partition_range_end_inclusive: PARTITION_RANGE_END,
-                epochs_per_partition: EPOCHS_PER_PARTITION,
-            })],
+            btreemap!(
+                0u8 => FieldValue::new(&TransactionTrackerSubstate {
+                    start_epoch: current_epoch.number(),
+                    start_partition: PARTITION_RANGE_START,
+                    partition_range_start_inclusive: PARTITION_RANGE_START,
+                    partition_range_end_inclusive: PARTITION_RANGE_END,
+                    epochs_per_partition: EPOCHS_PER_PARTITION,
+                })
+            ),
         )?;
         let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;

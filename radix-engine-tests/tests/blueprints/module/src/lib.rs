@@ -13,54 +13,46 @@ mod component_module {
         pub fn globalize_with_mixed_up_modules() -> ComponentAddress {
             let component = ComponentModule {}.instantiate();
 
-            let rtn = ScryptoEnv
-                .call_function(
-                    METADATA_MODULE_PACKAGE,
-                    METADATA_BLUEPRINT,
-                    METADATA_CREATE_IDENT,
-                    scrypto_encode(&MetadataCreateInput {}).unwrap(),
-                )
-                .unwrap();
+            let rtn = ScryptoVmV1Api::blueprint_call(
+                METADATA_MODULE_PACKAGE,
+                METADATA_BLUEPRINT,
+                METADATA_CREATE_IDENT,
+                scrypto_encode(&MetadataCreateInput {}).unwrap(),
+            );
             let metadata: Own = scrypto_decode(&rtn).unwrap();
 
-            let rtn = ScryptoEnv
-                .call_function(
-                    ROYALTY_MODULE_PACKAGE,
-                    COMPONENT_ROYALTY_BLUEPRINT,
-                    COMPONENT_ROYALTY_CREATE_IDENT,
-                    scrypto_encode(&ComponentRoyaltyCreateInput {
-                        royalty_config: ComponentRoyaltyConfig::default(),
-                    })
-                    .unwrap(),
-                )
-                .unwrap();
+            let rtn = ScryptoVmV1Api::blueprint_call(
+                ROYALTY_MODULE_PACKAGE,
+                COMPONENT_ROYALTY_BLUEPRINT,
+                COMPONENT_ROYALTY_CREATE_IDENT,
+                scrypto_encode(&ComponentRoyaltyCreateInput {
+                    royalty_config: ComponentRoyaltyConfig::default(),
+                })
+                .unwrap(),
+            );
             let royalty: Own = scrypto_decode(&rtn).unwrap();
 
-            let rtn = ScryptoEnv
-                .call_function(
-                    ROLE_ASSIGNMENT_MODULE_PACKAGE,
-                    ROLE_ASSIGNMENT_BLUEPRINT,
-                    ROLE_ASSIGNMENT_CREATE_IDENT,
-                    scrypto_encode(&RoleAssignmentCreateInput {
-                        owner_role: OwnerRole::None.into(),
-                        roles: BTreeMap::new(),
-                    })
-                    .unwrap(),
-                )
-                .unwrap();
+            let rtn = ScryptoVmV1Api::blueprint_call(
+                ROLE_ASSIGNMENT_MODULE_PACKAGE,
+                ROLE_ASSIGNMENT_BLUEPRINT,
+                ROLE_ASSIGNMENT_CREATE_IDENT,
+                scrypto_encode(&RoleAssignmentCreateInput {
+                    owner_role: OwnerRole::None.into(),
+                    roles: BTreeMap::new(),
+                })
+                .unwrap(),
+            );
             let role_assignment: Own = scrypto_decode(&rtn).unwrap();
 
-            let address = ScryptoEnv
-                .globalize(
-                    btreemap!(
-                        ObjectModuleId::Main => *component.0.handle().as_node_id(),
-                        ObjectModuleId::RoleAssignment => metadata.0,
-                        ObjectModuleId::Metadata => royalty.0,
-                        ObjectModuleId::Royalty => role_assignment.0,
-                    ),
-                    None,
-                )
-                .unwrap();
+            let address = ScryptoVmV1Api::object_globalize(
+                btreemap!(
+                    ObjectModuleId::Main => *component.0.handle().as_node_id(),
+                    ObjectModuleId::RoleAssignment => metadata.0,
+                    ObjectModuleId::Metadata => royalty.0,
+                    ObjectModuleId::Royalty => role_assignment.0,
+                ),
+                None,
+            );
 
             ComponentAddress::new_or_panic(address.into())
         }

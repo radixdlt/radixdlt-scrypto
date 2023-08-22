@@ -700,13 +700,7 @@ where
         PACKAGE_BLUEPRINT,
         vec![PackageFeature::PackageRoyalty.feature_name()],
         GenericArgs::default(),
-        fields
-            .into_iter()
-            .map(|f| match f {
-                Some(f) => f,
-                None => FieldValue::new(()),
-            })
-            .collect(),
+        fields,
         kv_entries,
     )?;
 
@@ -907,18 +901,17 @@ impl PackageNativePackage {
         royalty_vault: Option<Vault>,
         package_structure: PackageStructure,
     ) -> (
-        Vec<Option<FieldValue>>,
+        BTreeMap<u8, FieldValue>,
         BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) {
-        let field = if let Some(vault) = royalty_vault {
+        let mut fields = BTreeMap::new();
+        if let Some(vault) = royalty_vault {
             let royalty = PackageRoyaltyAccumulator {
                 royalty_vault: vault,
             }
             .into_payload();
-            Some(FieldValue::immutable(&royalty))
-        } else {
-            None
-        };
+            fields.insert(0u8, FieldValue::immutable(&royalty));
+        }
 
         let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>> = BTreeMap::new();
         {
@@ -1045,7 +1038,7 @@ impl PackageNativePackage {
             );
         }
 
-        (vec![field], kv_entries)
+        (fields, kv_entries)
     }
 
     pub fn validate_and_build_package_structure(
@@ -1418,7 +1411,7 @@ impl PackageRoyaltyNativeBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             PackageFeature::PackageRoyalty.feature_name(),
         )? {
             return Err(RuntimeError::ApplicationError(
@@ -1427,7 +1420,7 @@ impl PackageRoyaltyNativeBlueprint {
         }
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             PackageField::RoyaltyAccumulator.into(),
             LockFlags::read_only(),
         )?;

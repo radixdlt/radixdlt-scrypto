@@ -224,7 +224,7 @@ extern_blueprint_internal! {
     },
     {
         fn compare_current_time(&self, instant: Instant, precision: TimePrecision, operator: TimeComparisonOperator) -> bool;
-        fn create_validator(&mut self, key: Secp256k1PublicKey, fee_factor: Decimal) -> (Global<Validator>, Bucket);
+        fn create_validator(&mut self, key: Secp256k1PublicKey, fee_factor: Decimal, xrd_payment: Bucket) -> (Global<Validator>, Bucket, Bucket);
         fn get_current_epoch(&self) -> Epoch;
         fn get_current_time(&self, precision: TimePrecision) -> Instant;
         fn next_round(&mut self, round: Round, proposer_timestamp_ms: i64, leader_proposal_history: LeaderProposalHistory);

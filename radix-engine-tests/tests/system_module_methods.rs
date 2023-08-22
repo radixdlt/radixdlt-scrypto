@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     ComponentRoyaltySetInput, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
+    ClientApi, FieldValue, LockFlags, ObjectModuleId, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
@@ -119,7 +119,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
         {
             match export_name {
                 "test" => {
-                    let node_id = api.new_simple_object(BLUEPRINT_NAME, vec![])?;
+                    let node_id = api.new_simple_object(BLUEPRINT_NAME, btreemap![])?;
                     let _ = api.call_method_advanced(
                         &node_id,
                         ObjectModuleId::Metadata,
@@ -192,11 +192,15 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                 "test" => {
                     let child = api.new_simple_object(
                         BLUEPRINT_NAME,
-                        vec![FieldValue::new(&Option::<Own>::None)],
+                        btreemap! {
+                            0u8 => FieldValue::new(&Option::<Own>::None),
+                        },
                     )?;
                     let parent = api.new_simple_object(
                         BLUEPRINT_NAME,
-                        vec![FieldValue::new(&Option::<Own>::Some(Own(child)))],
+                        btreemap! {
+                            0u8 => FieldValue::new(&Option::<Own>::Some(Own(child))),
+                        },
                     )?;
 
                     let parent_node_id = if self.globalized_parent {
@@ -226,7 +230,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                 }
                 "call_metadata_on_child" => {
                     let handle =
-                        api.actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::read_only())?;
+                        api.actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::read_only())?;
                     let child: Option<Own> = api.field_read_typed(handle)?;
 
                     let _ = api.call_method_advanced(

@@ -1,8 +1,7 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::prelude::{scrypto_encode, ScryptoEncode, ScryptoSbor};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::data::scrypto::{scrypto_decode, ScryptoDecode};
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
@@ -30,36 +29,28 @@ pub trait ObjectStub: Copy {
     fn handle(&self) -> &ObjectStubHandle;
 
     fn call<A: ScryptoEncode, T: ScryptoDecode>(&self, method: &str, args: &A) -> T {
-        let output = ScryptoEnv
-            .call_method(
-                self.handle().as_node_id(),
-                method,
-                scrypto_encode(args).unwrap(),
-            )
-            .unwrap();
+        let output = ScryptoVmV1Api::object_call(
+            self.handle().as_node_id(),
+            method,
+            scrypto_encode(args).unwrap(),
+        );
         scrypto_decode(&output).unwrap()
     }
 
     fn call_ignore_rtn<A: ScryptoEncode>(&self, method: &str, args: &A) {
-        ScryptoEnv
-            .call_method(
-                self.handle().as_node_id(),
-                method,
-                scrypto_encode(args).unwrap(),
-            )
-            .unwrap();
+        ScryptoVmV1Api::object_call(
+            self.handle().as_node_id(),
+            method,
+            scrypto_encode(args).unwrap(),
+        );
     }
 
     fn call_raw<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv
-            .call_method(self.handle().as_node_id(), method, args)
-            .unwrap();
+        let output = ScryptoVmV1Api::object_call(self.handle().as_node_id(), method, args);
         scrypto_decode(&output).unwrap()
     }
 
     fn blueprint(&self) -> BlueprintId {
-        ScryptoEnv
-            .get_blueprint_id(self.handle().as_node_id())
-            .unwrap()
+        ScryptoVmV1Api::object_get_blueprint_id(self.handle().as_node_id())
     }
 }

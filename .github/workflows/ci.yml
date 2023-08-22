@@ -212,7 +212,7 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --features serde \
+          --features post_run_db_check serde \
           -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \
@@ -248,7 +248,7 @@ jobs:
       run: |
         cargo nextest run \
           --release \
-          --features serde \
+          --features post_run_db_check serde \
           -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \
@@ -303,7 +303,7 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --features wasmer \
+          --features post_run_db_check wasmer \
           -p radix-engine \
           -p radix-engine-tests
   radix-engine-bench:

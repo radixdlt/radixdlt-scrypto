@@ -5,7 +5,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_store_interface::interface::DatabaseUpdate;
 use scrypto_unit::*;
@@ -31,7 +31,7 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
             match export_name {
                 "test" => {
                     let _handle = api.actor_open_key_value_entry(
-                        OBJECT_HANDLE_SELF,
+                        ACTOR_STATE_SELF,
                         0u8,
                         &scrypto_encode(&()).unwrap(),
                         LockFlags::read_only(),
@@ -40,7 +40,7 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
                 "new" => {
                     let metadata = Metadata::create(api)?;
                     let access_rules = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
-                    let node_id = api.new_simple_object(BLUEPRINT_NAME, vec![])?;
+                    let node_id = api.new_simple_object(BLUEPRINT_NAME, btreemap![])?;
                     api.globalize(
                         btreemap!(
                             ObjectModuleId::Main => node_id,

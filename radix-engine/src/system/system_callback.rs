@@ -21,7 +21,7 @@ use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
-use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreValidationTarget};
+use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -54,7 +54,7 @@ impl Default for SystemLockData {
 pub enum KeyValueEntryLockData {
     Read,
     Write {
-        kv_store_validation_target: KVStoreValidationTarget,
+        kv_store_validation_target: KVStoreTypeTarget,
     },
     BlueprintWrite {
         target: BlueprintTypeTarget,
