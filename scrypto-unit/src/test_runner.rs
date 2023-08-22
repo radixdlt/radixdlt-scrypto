@@ -740,6 +740,80 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         accounter.close().balances
     }
 
+    pub fn component_state<T: ScryptoDecode>(&self, component_address: ComponentAddress) -> T {
+        let node_id: &NodeId = component_address.as_node_id();
+        let component_state = self
+            .substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<T>>(
+                node_id,
+                MAIN_BASE_PARTITION,
+                &ComponentField::State0.into(),
+            );
+        component_state.unwrap().value.0
+    }
+
+    pub fn get_non_fungible_data<T: NonFungibleData>(
+        &self,
+        resource: ResourceAddress,
+        non_fungible_id: NonFungibleLocalId,
+    ) -> T {
+        let node_id: &NodeId = resource.as_node_id();
+        let partition_number = MAIN_BASE_PARTITION
+            .at_offset(PartitionOffset(
+                1 + NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
+            ))
+            .unwrap();
+        let substate = self
+            .substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<T>>(
+                node_id,
+                partition_number,
+                &SubstateKey::Map(non_fungible_id.to_key()),
+            );
+        substate.unwrap().value.unwrap()
+    }
+
+    pub fn get_kv_store_entry<K: ScryptoEncode, V: ScryptoEncode + ScryptoDecode>(
+        &self,
+        kv_store_id: Own,
+        key: &K,
+    ) -> Option<V> {
+        let node_id = kv_store_id.as_node_id();
+        let substate = self
+            .substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>>(
+                node_id,
+                MAIN_BASE_PARTITION,
+                &SubstateKey::Map(scrypto_encode(&key).unwrap()),
+            );
+        substate.unwrap().value
+    }
+
+    pub fn get_all_kv_store_entries<
+        K: ScryptoEncode + ScryptoDecode + Eq + std::hash::Hash,
+        V: ScryptoEncode + ScryptoDecode,
+    >(
+        &self,
+        kv_store_id: Own,
+    ) -> hash_map::ext_HashMap<K, V> {
+        let partition_number = MAIN_BASE_PARTITION;
+        let node_id = kv_store_id.as_node_id();
+        let map = self
+            .substate_db()
+            .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>, MapKey>(
+                node_id,
+                partition_number,
+            )
+            .fold(hash_map::ext_HashMap::<K, V>::new(), |mut all, (k, v)| {
+                all.insert(
+                    scrypto_decode::<K>(k.for_map().unwrap()).unwrap(),
+                    v.value.unwrap(),
+                );
+                all
+            });
+        map
+    }
+
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()

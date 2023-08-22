@@ -55,11 +55,11 @@ pub trait CommitableSubstateStore {
     ///
     /// # Panics
     /// - If the partition is invalid
-    fn create_node<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn create_node<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<(), E>;
 
     fn get_tracked_substate_info(
@@ -84,25 +84,25 @@ pub trait CommitableSubstateStore {
         .unwrap()
     }
 
-    fn get_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn get_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Option<&IndexedScryptoValue>, E>;
 
     /// Inserts a substate into the substate store.
     ///
     /// Clients must ensure the `node_id`/`partition_num` is a node which has been created; otherwise, the behavior
     /// is undefined.
-    fn set_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn set_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<(), E>;
 
     fn force_write(
@@ -119,12 +119,12 @@ pub trait CommitableSubstateStore {
     /// Otherwise, the behavior is undefined.
     ///
     /// Returns tuple of substate and boolean which is true for the first database access.
-    fn remove_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn remove_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Option<IndexedScryptoValue>, E>;
 
     /// Returns Substate Keys of maximum count for a given partition.
@@ -135,12 +135,12 @@ pub trait CommitableSubstateStore {
     /// Otherwise, behavior is undefined.
     ///
     /// Returns list of substate keys and database access info
-    fn scan_keys<K: SubstateKeyContent + 'static, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn scan_keys<K: SubstateKeyContent + 'static, E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Vec<SubstateKey>, E>;
 
     /// Removes substates of maximum count for a given partition.
@@ -151,21 +151,21 @@ pub trait CommitableSubstateStore {
     /// Otherwise, behavior is undefined.
     ///
     /// Returns list of removed substates with their associated keys and values, as well as database access info
-    fn drain_substates<K: SubstateKeyContent + 'static, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn drain_substates<K: SubstateKeyContent + 'static, E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E>;
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
-    fn scan_sorted_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn scan_sorted_substates<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, E>;
 
     /// Note: unstable interface, for intent transaction tracker only
@@ -223,14 +223,14 @@ impl CanonicalSubstateKey {
 }
 
 #[derive(Debug, Clone)]
-pub enum StoreAccess {
+pub enum IOAccess {
     /// Some substate was read from database.
     ReadFromDb(CanonicalSubstateKey, usize),
     /// Non-existent substate was read from database.
     ReadFromDbNotFound(CanonicalSubstateKey),
 
     /// A substate in track has been updated
-    UpdateSubstateInTrack {
+    TrackSubstateUpdated {
         /// The canonical substate key
         canonical_substate_key: CanonicalSubstateKey,
         /// Previous size of the substate, or `None` if it's a new entry.
@@ -241,7 +241,7 @@ pub enum StoreAccess {
     },
 
     /// A substate in track has been updated
-    UpdateSubstateInHeap {
+    HeapSubstateUpdated {
         /// The canonical substate key
         canonical_substate_key: CanonicalSubstateKey,
         /// Previous size of the substate, or `None` if it's a new entry.
@@ -252,16 +252,16 @@ pub enum StoreAccess {
     },
 }
 
-impl StoreAccess {
+impl IOAccess {
     pub fn node_id(&self) -> NodeId {
         match self {
-            StoreAccess::ReadFromDb(key, _)
-            | StoreAccess::ReadFromDbNotFound(key)
-            | StoreAccess::UpdateSubstateInTrack {
+            IOAccess::ReadFromDb(key, _)
+            | IOAccess::ReadFromDbNotFound(key)
+            | IOAccess::TrackSubstateUpdated {
                 canonical_substate_key: key,
                 ..
             }
-            | StoreAccess::UpdateSubstateInHeap {
+            | IOAccess::HeapSubstateUpdated {
                 canonical_substate_key: key,
                 ..
             } => key.node_id,

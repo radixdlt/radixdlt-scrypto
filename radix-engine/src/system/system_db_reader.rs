@@ -75,6 +75,19 @@ impl<'a, K: ScryptoEncode> ObjectCollectionKey<'a, K> {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum SystemReaderError {
+    FieldDoesNotExist,
+    NodeIdDoesNotExist,
+    PayloadDoesNotExist,
+    BlueprintDoesNotExist,
+    ModuleDoesNotExist,
+    NotAKeyValueStore,
+    NotAnObject,
+    SchemaDoesNotExist,
+    TargetNotSupported,
+}
+
 /// A System Layer (Layer 2) abstraction over an underlying substate database
 pub struct SystemDatabaseReader<'a, S: SubstateDatabase> {
     substate_db: &'a S,
@@ -99,12 +112,13 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         }
     }
 
-    pub fn get_type_info(&self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
+    pub fn get_type_info(&self, node_id: &NodeId) -> Result<TypeInfoSubstate, SystemReaderError> {
         self.fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
             node_id,
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
         )
+        .ok_or_else(|| SystemReaderError::NodeIdDoesNotExist)
     }
 
     pub fn get_package_definition(
@@ -140,10 +154,15 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         node_id: &NodeId,
         module_id: ObjectModuleId,
         field_index: u8,
-    ) -> Option<V> {
+    ) -> Result<V, SystemReaderError> {
         let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
         let definition = self.get_blueprint_definition(&blueprint_id)?;
-        let partition_description = &definition.interface.state.fields?.0;
+        let partition_description = &definition
+            .interface
+            .state
+            .fields
+            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
+            .0;
         let partition_number = match partition_description {
             PartitionDescription::Logical(offset) => {
                 let base_partition = match module_id {
@@ -157,13 +176,16 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             PartitionDescription::Physical(partition_number) => *partition_number,
         };
 
-        let substate: FieldSubstate<V> = self.substate_db.get_mapped::<SpreadPrefixKeyMapper, _>(
-            node_id,
-            partition_number,
-            &SubstateKey::Field(field_index),
-        )?;
+        let substate: FieldSubstate<V> = self
+            .substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, _>(
+                node_id,
+                partition_number,
+                &SubstateKey::Field(field_index),
+            )
+            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?;
 
-        Some(substate.value.0)
+        Ok(substate.value.0)
     }
 
     pub fn read_object_collection_entry<K: ScryptoEncode, V: ScryptoDecode>(
@@ -171,7 +193,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         node_id: &NodeId,
         module_id: ObjectModuleId,
         collection_key: ObjectCollectionKey<K>,
-    ) -> Option<V> {
+    ) -> Result<Option<V>, SystemReaderError> {
         let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
         let definition = self.get_blueprint_definition(&blueprint_id)?;
 
@@ -179,7 +201,8 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             .interface
             .state
             .collections
-            .get(collection_key.collection_index() as usize)?;
+            .get(collection_key.collection_index() as usize)
+            .expect("Missing generic");
 
         let partition_number = match partition_description {
             PartitionDescription::Logical(offset) => {
@@ -194,48 +217,50 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             PartitionDescription::Physical(partition_number) => *partition_number,
         };
 
-        match collection_key {
-            ObjectCollectionKey::KeyValue(_, key) => {
-                let value: KeyValueEntrySubstate<V> =
-                    self.substate_db.get_mapped::<SpreadPrefixKeyMapper, _>(
-                        node_id,
-                        partition_number,
-                        &SubstateKey::Map(scrypto_encode(key).unwrap()),
-                    )?;
-                value.value
-            }
-            ObjectCollectionKey::Index(_, key) => {
-                let value: V = self.substate_db.get_mapped::<SpreadPrefixKeyMapper, _>(
+        let entry = match collection_key {
+            ObjectCollectionKey::KeyValue(_, key) => self
+                .substate_db
+                .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>>(
                     node_id,
                     partition_number,
                     &SubstateKey::Map(scrypto_encode(key).unwrap()),
-                )?;
-                Some(value)
+                )
+                .map(|value| value.value)
+                .unwrap_or(None),
+            ObjectCollectionKey::Index(_, key) => {
+                self.substate_db.get_mapped::<SpreadPrefixKeyMapper, V>(
+                    node_id,
+                    partition_number,
+                    &SubstateKey::Map(scrypto_encode(key).unwrap()),
+                )
             }
             ObjectCollectionKey::SortedIndex(_, sort, key) => {
-                let value: V = self.substate_db.get_mapped::<SpreadPrefixKeyMapper, _>(
+                self.substate_db.get_mapped::<SpreadPrefixKeyMapper, V>(
                     node_id,
                     partition_number,
                     &SubstateKey::Sorted((sort.to_be_bytes(), scrypto_encode(key).unwrap())),
-                )?;
-                Some(value)
+                )
             }
-        }
+        };
+
+        Ok(entry)
     }
 
-    pub fn get_object_info<A: Into<GlobalAddress>>(&self, address: A) -> Option<ObjectInfo> {
-        let type_info = self.fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-            address.into().as_node_id(),
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        )?;
+    pub fn get_object_info<A: Into<GlobalAddress>>(
+        &self,
+        address: A,
+    ) -> Result<ObjectInfo, SystemReaderError> {
+        let type_info = self
+            .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                address.into().as_node_id(),
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+            )
+            .ok_or_else(|| SystemReaderError::NodeIdDoesNotExist)?;
 
         match type_info {
-            TypeInfoSubstate::Object(object_info) => Some(object_info),
-            i @ _ => panic!(
-                "Inconsistent Substate Database, found invalid type_info: {:?}",
-                i
-            ),
+            TypeInfoSubstate::Object(object_info) => Ok(object_info),
+            _ => Err(SystemReaderError::NotAnObject),
         }
     }
 
@@ -243,12 +268,14 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         &self,
         node_id: &NodeId,
         module_id: ObjectModuleId,
-    ) -> Option<BlueprintId> {
-        let type_info = self.fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-            node_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        )?;
+    ) -> Result<BlueprintId, SystemReaderError> {
+        let type_info = self
+            .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                node_id,
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+            )
+            .ok_or_else(|| SystemReaderError::NodeIdDoesNotExist)?;
 
         let object_info = match type_info {
             TypeInfoSubstate::Object(object_info) => object_info,
@@ -260,18 +287,18 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
         if let Some(_version) = object_info.module_versions.get(&module_id) {
             match module_id {
-                ObjectModuleId::Main => Some(object_info.blueprint_info.blueprint_id),
-                _ => Some(module_id.static_blueprint().unwrap()),
+                ObjectModuleId::Main => Ok(object_info.blueprint_info.blueprint_id),
+                _ => Ok(module_id.static_blueprint().unwrap()),
             }
         } else {
-            None
+            Err(SystemReaderError::ModuleDoesNotExist)
         }
     }
 
     pub fn get_blueprint_definition(
         &self,
         blueprint_id: &BlueprintId,
-    ) -> Option<BlueprintDefinition> {
+    ) -> Result<BlueprintDefinition, SystemReaderError> {
         let bp_version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name.clone());
         let definition = self
             .fetch_substate::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate>(
@@ -280,24 +307,29 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
-            )?;
+            ).ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?;
 
-        definition.value.map(|v| v.into_latest())
+        Ok(definition.value.unwrap().into_latest())
     }
 
-    pub fn get_kv_store_type_target(&self, node_id: &NodeId) -> Option<KVStoreTypeTarget> {
-        let type_info = self.fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-            node_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        )?;
+    pub fn get_kv_store_type_target(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<KVStoreTypeTarget, SystemReaderError> {
+        let type_info = self
+            .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                node_id,
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+            )
+            .ok_or_else(|| SystemReaderError::NodeIdDoesNotExist)?;
 
         let kv_store_info = match type_info {
             TypeInfoSubstate::KeyValueStore(kv_store_info) => kv_store_info,
-            _ => return None,
+            _ => return Err(SystemReaderError::NotAKeyValueStore),
         };
 
-        Some(KVStoreTypeTarget {
+        Ok(KVStoreTypeTarget {
             kv_store_type: kv_store_info.generic_substitutions,
             meta: *node_id,
         })
@@ -307,19 +339,21 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         &self,
         node_id: &NodeId,
         module_id: ObjectModuleId,
-    ) -> Option<BlueprintTypeTarget> {
-        let type_info = self.fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-            node_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        )?;
+    ) -> Result<BlueprintTypeTarget, SystemReaderError> {
+        let type_info = self
+            .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                node_id,
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+            )
+            .ok_or_else(|| SystemReaderError::NodeIdDoesNotExist)?;
 
         let object_info = match type_info {
             TypeInfoSubstate::Object(object_info) => object_info,
-            _ => return None,
+            _ => return Err(SystemReaderError::NotAnObject),
         };
 
-        if let Some(_version) = object_info.module_versions.get(&module_id) {
+        let target = if let Some(_version) = object_info.module_versions.get(&module_id) {
             match module_id {
                 ObjectModuleId::Main => {
                     let target = BlueprintTypeTarget {
@@ -328,7 +362,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                             additional_schemas: *node_id,
                         },
                     };
-                    Some(target)
+                    target
                 }
                 _ => {
                     let blueprint_id = module_id.static_blueprint().unwrap();
@@ -343,19 +377,21 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                             additional_schemas: *node_id,
                         },
                     };
-                    Some(target)
+                    target
                 }
             }
         } else {
-            None
-        }
+            return Err(SystemReaderError::ModuleDoesNotExist);
+        };
+
+        Ok(target)
     }
 
     pub fn get_kv_store_payload_schema(
         &self,
         target: &KVStoreTypeTarget,
         key_or_value: KeyOrValue,
-    ) -> Option<ResolvedPayloadSchema> {
+    ) -> Result<ResolvedPayloadSchema, SystemReaderError> {
         let (substs, allow_ownership, allow_non_global_refs) = match key_or_value {
             KeyOrValue::Key => (
                 &target.kv_store_type.key_generic_substitutions,
@@ -373,7 +409,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             GenericSubstitution::Local(type_identifier) => {
                 let schema = self.get_schema(&target.meta, &type_identifier.0)?;
 
-                Some(ResolvedPayloadSchema {
+                Ok(ResolvedPayloadSchema {
                     schema,
                     type_index: type_identifier.1,
                     allow_ownership,
@@ -388,12 +424,14 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         &self,
         target: &BlueprintTypeTarget,
         payload_identifier: &BlueprintPayloadIdentifier,
-    ) -> Option<ObjectSubstateTypeReference> {
+    ) -> Result<ObjectSubstateTypeReference, SystemReaderError> {
         let blueprint_interface = self
             .get_blueprint_definition(&target.blueprint_info.blueprint_id)?
             .interface;
 
-        let (payload_def, ..) = blueprint_interface.get_payload_def(payload_identifier)?;
+        let (payload_def, ..) = blueprint_interface
+            .get_payload_def(payload_identifier)
+            .ok_or_else(|| SystemReaderError::PayloadDoesNotExist)?;
 
         let obj_type_reference = match payload_def {
             BlueprintPayloadDef::Static(type_identifier) => {
@@ -407,11 +445,12 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 let generic_substitution = target
                     .blueprint_info
                     .generic_substitutions
-                    .get(instance_index as usize)?;
+                    .get(instance_index as usize)
+                    .expect("Missing generic");
 
                 let entity_address = match target.meta {
                     SchemaValidationMeta::Blueprint | SchemaValidationMeta::NewObject { .. } => {
-                        return None
+                        return Err(SystemReaderError::TargetNotSupported)
                     }
                     SchemaValidationMeta::ExistingObject { additional_schemas } => {
                         additional_schemas
@@ -431,7 +470,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             }
         };
 
-        Some(obj_type_reference)
+        Ok(obj_type_reference)
     }
 
     // TODO: The logic here is currently copied from system_type_checker.rs get_payload_schema().
@@ -441,13 +480,14 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         &self,
         target: &BlueprintTypeTarget,
         payload_identifier: &BlueprintPayloadIdentifier,
-    ) -> Option<ResolvedPayloadSchema> {
+    ) -> Result<ResolvedPayloadSchema, SystemReaderError> {
         let blueprint_interface = self
             .get_blueprint_definition(&target.blueprint_info.blueprint_id)?
             .interface;
 
-        let (payload_def, allow_ownership, allow_non_global_refs) =
-            blueprint_interface.get_payload_def(payload_identifier)?;
+        let (payload_def, allow_ownership, allow_non_global_refs) = blueprint_interface
+            .get_payload_def(payload_identifier)
+            .ok_or_else(|| SystemReaderError::PayloadDoesNotExist)?;
 
         // Given the payload definition, retrieve the info to be able to do schema validation on a payload
         let (schema, index, schema_origin) = match payload_def {
@@ -470,7 +510,8 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 let generic_substitution = target
                     .blueprint_info
                     .generic_substitutions
-                    .get(instance_index as usize)?;
+                    .get(instance_index as usize)
+                    .expect("Missing generic substitution");
 
                 match generic_substitution {
                     GenericSubstitution::Local(type_id) => {
@@ -478,11 +519,9 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                             SchemaValidationMeta::ExistingObject { additional_schemas } => {
                                 self.get_schema(additional_schemas, &type_id.0)?
                             }
-                            SchemaValidationMeta::NewObject { additional_schemas } => {
-                                additional_schemas.get(&type_id.0)?.clone()
-                            }
-                            SchemaValidationMeta::Blueprint => {
-                                return None;
+                            SchemaValidationMeta::NewObject { .. }
+                            | SchemaValidationMeta::Blueprint => {
+                                return Err(SystemReaderError::TargetNotSupported);
                             }
                         };
 
@@ -492,7 +531,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             }
         };
 
-        Some(ResolvedPayloadSchema {
+        Ok(ResolvedPayloadSchema {
             schema,
             type_index: index,
             allow_ownership,
@@ -501,25 +540,28 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         })
     }
 
-    pub fn get_schema(&self, node_id: &NodeId, schema_hash: &SchemaHash) -> Option<ScryptoSchema> {
+    pub fn get_schema(
+        &self,
+        node_id: &NodeId,
+        schema_hash: &SchemaHash,
+    ) -> Result<ScryptoSchema, SystemReaderError> {
         let schema = self
             .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
                 node_id,
                 SCHEMAS_PARTITION,
                 &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
-            )?;
+            )
+            .ok_or_else(|| SystemReaderError::SchemaDoesNotExist)?;
 
-        Some(
-            schema
-                .value
-                .expect("Schema should exist if substate exists"),
-        )
+        Ok(schema
+            .value
+            .expect("Schema should exist if substate exists"))
     }
 
     pub fn get_blueprint_payload_def(
         &self,
         blueprint_id: &BlueprintId,
-    ) -> Option<BlueprintDefinition> {
+    ) -> Result<BlueprintDefinition, SystemReaderError> {
         let bp_version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name.clone());
         let definition = self
             .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<BlueprintDefinition>>(
@@ -528,9 +570,10 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
-            )?;
+            )
+            .ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?;
 
-        definition.value
+        Ok(definition.value.unwrap())
     }
 
     pub fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(
@@ -586,7 +629,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         &self,
         node_id: &NodeId,
         partition_num: &PartitionNumber,
-    ) -> Vec<SystemPartitionDescriptor> {
+    ) -> Result<Vec<SystemPartitionDescriptor>, SystemReaderError> {
         let mut descriptors = Vec::new();
 
         if partition_num.eq(&TYPE_INFO_FIELD_PARTITION) {
@@ -597,10 +640,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             descriptors.push(SystemPartitionDescriptor::Schema);
         }
 
-        let type_info = match self.get_type_info(node_id) {
-            Some(type_info) => type_info,
-            _ => return vec![],
-        };
+        let type_info = self.get_type_info(node_id)?;
 
         match type_info {
             TypeInfoSubstate::Object(object_info) => {
@@ -649,10 +689,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                     _ => module_id.static_blueprint().unwrap(),
                 };
 
-                let definition = match self.get_blueprint_definition(&blueprint_id) {
-                    Some(definition) => definition,
-                    _ => return vec![],
-                };
+                let definition = self.get_blueprint_definition(&blueprint_id).unwrap();
 
                 let state_schema = definition.interface.state;
 
@@ -715,7 +752,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             _ => {}
         }
 
-        descriptors
+        Ok(descriptors)
     }
 
     pub fn substates_iter<K: SubstateKeyContent + 'static>(

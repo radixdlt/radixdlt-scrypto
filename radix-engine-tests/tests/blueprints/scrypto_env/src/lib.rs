@@ -35,5 +35,9 @@ mod scrypto_env_test {
                 .actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::MUTABLE)
                 .unwrap();
         }
+
+        pub fn bech32_encode_address(address: ComponentAddress) -> String {
+            Runtime::bech32_encode_address(address)
+        }
     }
 }

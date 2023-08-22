@@ -32,6 +32,7 @@ use radix_engine_interface::api::key_value_store_api::{
     ClientKeyValueStoreApi, KeyValueStoreGenericArgs,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -547,6 +548,7 @@ where
         actor: EmitterActor,
         event_name: String,
         event_data: Vec<u8>,
+        event_flags: EventFlags,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_get_system().modules.apply_execution_cost(
             ExecutionCostingEntry::EmitEvent {
@@ -602,7 +604,7 @@ where
         let event = Event {
             type_identifier: event_type_identifier,
             payload: event_data,
-            discard_on_failure: true,
+            flags: event_flags,
         };
 
         // Adding the event to the event store
@@ -1300,6 +1302,7 @@ where
             EmitterActor::AsObject(global_address.as_node_id().clone(), ObjectModuleId::Main),
             event_name,
             event_data,
+            EventFlags::empty(),
         )?;
 
         Ok((global_address, inner_object))
@@ -2446,8 +2449,44 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        self.emit_event_internal(EmitterActor::CurrentActor, event_name, event_data)
+    fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, RuntimeError> {
+        let network_definition = &self
+            .api
+            .kernel_get_system()
+            .modules
+            .transaction_runtime
+            .network_definition;
+
+        AddressBech32Encoder::new(&network_definition)
+            .encode(&address.into_node_id().0)
+            .map_err(|_| RuntimeError::SystemError(SystemError::AddressBech32EncodeError))
+    }
+
+    #[trace_resources]
+    fn emit_event(
+        &mut self,
+        event_name: String,
+        event_data: Vec<u8>,
+        event_flags: EventFlags,
+    ) -> Result<(), RuntimeError> {
+        if event_flags.contains(EventFlags::FORCE_WRITE) {
+            let blueprint_id = self.actor_get_blueprint_id()?;
+
+            if !blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                || !blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+            {
+                return Err(RuntimeError::SystemError(
+                    SystemError::ForceWriteEventFlagsNotAllowed,
+                ));
+            }
+        }
+
+        self.emit_event_internal(
+            EmitterActor::CurrentActor,
+            event_name,
+            event_data,
+            event_flags,
+        )
     }
 
     #[trace_resources]

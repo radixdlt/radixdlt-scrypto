@@ -7,7 +7,6 @@ use std::{time::Instant, u128};
 use clap::{arg, value_parser, Command};
 use log::{debug, info, trace, Level, LevelFilter, Log, Metadata, Record};
 
-use crate::TxStatus;
 use std::fs;
 
 const MIN_LEN: usize = 0;
@@ -177,9 +176,10 @@ It allows to:
     fuzzer
 }
 
-pub fn fuzz<F>(mut closure: F)
+pub fn fuzz<F, S>(mut closure: F)
 where
-    F: FnMut(&[u8]) -> TxStatus,
+    S: std::fmt::Debug,
+    F: FnMut(&[u8]) -> S,
 {
     let mut fuzzer = fuzz_init();
 

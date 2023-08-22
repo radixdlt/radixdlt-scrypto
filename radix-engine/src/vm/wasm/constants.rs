@@ -66,6 +66,7 @@ pub const EMIT_LOG_FUNCTION_NAME: &str = "emit_log";
 pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
 pub const GENERATE_RUID_FUNCTION_NAME: &str = "generate_ruid";
 pub const PANIC_FUNCTION_NAME: &str = "panic";
+pub const BECH32_ENCODE_ADDRESS_FUNCTION_NAME: &str = "bech32_encode_address";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";

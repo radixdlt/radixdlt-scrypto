@@ -18,7 +18,7 @@ mod vault_test {
                     }
                 })
                 .mint_initial_supply([(1u64.into(), Data {})]);
-            Vault::with_bucket(bucket)
+            Vault::with_bucket(bucket.into())
         }
 
         fn create_non_fungible_vault() -> Vault {
@@ -29,7 +29,7 @@ mod vault_test {
                     }
                 })
                 .mint_initial_supply([(1u64.into(), Data {}), (2u64.into(), Data {})]);
-            Vault::with_bucket(bucket)
+            Vault::with_bucket(bucket.into())
         }
 
         pub fn new_non_fungible_vault() -> Global<NonFungibleVault> {

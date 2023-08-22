@@ -3,6 +3,7 @@ use crate::prelude::{AnyComponent, Global};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
@@ -83,8 +84,16 @@ impl Runtime {
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
         ScryptoEnv
-            .emit_event(T::event_name().to_owned(), scrypto_encode(&event).unwrap())
+            .emit_event(
+                T::event_name().to_owned(),
+                scrypto_encode(&event).unwrap(),
+                EventFlags::empty(),
+            )
             .unwrap();
+    }
+
+    pub fn bech32_encode_address<A: Into<GlobalAddress>>(address: A) -> String {
+        ScryptoEnv.bech32_encode_address(address.into()).unwrap()
     }
 
     pub fn assert_access_rule(rule: AccessRule) {

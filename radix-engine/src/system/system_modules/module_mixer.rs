@@ -88,7 +88,7 @@ pub struct SystemModuleMixer {
     pub(super) limits: LimitsModule,
     pub(super) costing: CostingModule,
     pub(crate) auth: AuthModule,
-    pub(super) transaction_runtime: TransactionRuntimeModule,
+    pub(crate) transaction_runtime: TransactionRuntimeModule,
     pub(super) execution_trace: ExecutionTraceModule,
 }
 
@@ -124,6 +124,7 @@ macro_rules! internal_call_dispatch {
 impl SystemModuleMixer {
     pub fn new(
         enabled_modules: EnabledModules,
+        network_definition: NetworkDefinition,
         tx_hash: Hash,
         auth_zone_params: AuthZoneParams,
         fee_reserve: SystemLoanFeeReserve,
@@ -163,6 +164,7 @@ impl SystemModuleMixer {
             }),
             execution_trace: ExecutionTraceModule::new(execution_config.max_execution_trace_depth),
             transaction_runtime: TransactionRuntimeModule {
+                network_definition,
                 tx_hash,
                 next_id: 0,
                 logs: Vec::new(),
@@ -321,12 +323,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         )
     }
 
-    #[trace_resources(log={
-        match event {
-            ReadSubstateEvent::OnRead { device: SubstateDevice::Heap, .. } => true,
-            ReadSubstateEvent::OnRead { device: SubstateDevice::Store, .. } => false,
-        }
-    })]
+    #[trace_resources(log=event.is_about_heap())]
     fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         event: &ReadSubstateEvent,
