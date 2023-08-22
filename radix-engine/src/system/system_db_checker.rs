@@ -137,7 +137,13 @@ pub enum SystemDatabaseCheckError {
 
 pub trait ApplicationChecker: Default {
     type ApplicationCheckerResults: Debug + Default;
-    fn on_field(&mut self, _info: BlueprintInfo, _node_id: NodeId, _field_index: FieldIndex, _value: &Vec<u8>) {
+    fn on_field(
+        &mut self,
+        _info: BlueprintInfo,
+        _node_id: NodeId,
+        _field_index: FieldIndex,
+        _value: &Vec<u8>,
+    ) {
     }
 
     fn on_finish(&self) -> Self::ApplicationCheckerResults {
@@ -153,10 +159,10 @@ pub struct SystemDatabaseChecker<A: ApplicationChecker> {
     application_checker: A,
 }
 
-impl <A: ApplicationChecker> SystemDatabaseChecker<A> {
+impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
     pub fn new() -> SystemDatabaseChecker<A> {
         SystemDatabaseChecker {
-            application_checker: A::default()
+            application_checker: A::default(),
         }
     }
 }
@@ -165,7 +171,10 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
     pub fn check_db<S: SubstateDatabase + ListableSubstateDatabase>(
         &mut self,
         substate_db: &S,
-    ) -> Result<(SystemDatabaseCheckerResults, A::ApplicationCheckerResults), SystemDatabaseCheckError> {
+    ) -> Result<
+        (SystemDatabaseCheckerResults, A::ApplicationCheckerResults),
+        SystemDatabaseCheckError,
+    > {
         let mut node_counts = NodeCounts::default();
         let mut partition_count = 0usize;
         let mut substate_count = 0usize;
@@ -506,7 +515,8 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     SystemNodeType::Object {
                                         expected_fields,
                                         excluded_fields,
-                                        object_info, ..
+                                        object_info,
+                                        ..
                                     } => {
                                         expected_fields.remove(&(module_id, field_index));
 
@@ -539,7 +549,12 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     ObjectModuleId::Main => {
                                         let (scrypto_value,) = field.value;
                                         let value = scrypto_encode(&scrypto_value).unwrap();
-                                        self.application_checker.on_field(blueprint_info, node_checker_state.node_id, field_index, &value)
+                                        self.application_checker.on_field(
+                                            blueprint_info,
+                                            node_checker_state.node_id,
+                                            field_index,
+                                            &value,
+                                        )
                                     }
                                     _ => {}
                                 }
