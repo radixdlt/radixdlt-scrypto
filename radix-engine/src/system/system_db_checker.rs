@@ -136,7 +136,7 @@ pub enum SystemDatabaseCheckError {
 }
 
 pub trait ApplicationChecker {
-    fn on_field(&mut self, _info: BlueprintInfo, _field_index: FieldIndex, _value: &Vec<u8>) {
+    fn on_field(&mut self, _info: BlueprintInfo, _node_id: NodeId, _field_index: FieldIndex, _value: &Vec<u8>) {
     }
 }
 
@@ -527,7 +527,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
 
                                 match module_id {
                                     ObjectModuleId::Main => {
-                                        self.application_checker.on_field(blueprint_info, field_index, &value)
+                                        self.application_checker.on_field(blueprint_info, node_checker_state.node_id, field_index, &value)
                                     }
                                     _ => {}
                                 }
