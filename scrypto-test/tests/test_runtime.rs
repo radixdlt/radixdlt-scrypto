@@ -56,3 +56,15 @@ fn simple_typed_method_call_test() {
     let amount = bucket.amount(&mut test_runtime).unwrap();
     assert_eq!(amount, dec!("10000"))
 }
+
+#[test]
+fn packages_can_be_compiled_from_source() {
+    // Arrange
+    let mut test_runtime = TestRuntime::new();
+
+    // Act
+    let rtn = Package::compile_and_publish("../assets/blueprints/radiswap", &mut test_runtime);
+
+    // Assert
+    assert!(rtn.is_ok())
+}
