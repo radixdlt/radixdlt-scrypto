@@ -195,7 +195,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
                     }
                 }
             }
-            CreateNodeEvent::StoreAccess(io_access) => {
+            CreateNodeEvent::IOAccess(io_access) => {
                 limits.process_io_access(io_access)?;
             }
             CreateNodeEvent::End(..) => {}
@@ -211,7 +211,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         let limits = &mut api.kernel_get_system().modules.limits;
 
         match event {
-            DropNodeEvent::StoreAccess(io_access) => {
+            DropNodeEvent::IOAccess(io_access) => {
                 limits.process_io_access(io_access)?;
             }
             DropNodeEvent::Start(..) | DropNodeEvent::End(..) => {}
@@ -225,7 +225,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         event: &MoveModuleEvent,
     ) -> Result<(), RuntimeError> {
         match event {
-            MoveModuleEvent::StoreAccess(io_access) => {
+            MoveModuleEvent::IOAccess(io_access) => {
                 api.kernel_get_system()
                     .modules
                     .limits
@@ -247,7 +247,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
                     .limits
                     .process_substate_key(substate_key)?;
             }
-            OpenSubstateEvent::StoreAccess(io_access) => {
+            OpenSubstateEvent::IOAccess(io_access) => {
                 api.kernel_get_system()
                     .modules
                     .limits
@@ -264,7 +264,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
-            ReadSubstateEvent::StoreAccess(io_access) => {
+            ReadSubstateEvent::IOAccess(io_access) => {
                 api.kernel_get_system()
                     .modules
                     .limits
@@ -283,7 +283,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         let limits = &mut api.kernel_get_system().modules.limits.config;
 
         match event {
-            WriteSubstateEvent::StoreAccess(io_access) => {
+            WriteSubstateEvent::IOAccess(io_access) => {
                 api.kernel_get_system()
                     .modules
                     .limits
@@ -311,7 +311,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             SetSubstateEvent::Start(_node_id, _partition_num, substate_key, ..) => {
                 system.modules.limits.process_substate_key(substate_key)?;
             }
-            SetSubstateEvent::StoreAccess(io_access) => {
+            SetSubstateEvent::IOAccess(io_access) => {
                 system.modules.limits.process_io_access(io_access)?;
             }
         }
@@ -327,7 +327,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             RemoveSubstateEvent::Start(_node_id, _partition_num, substate_key) => {
                 system.modules.limits.process_substate_key(substate_key)?;
             }
-            RemoveSubstateEvent::StoreAccess(io_access) => {
+            RemoveSubstateEvent::IOAccess(io_access) => {
                 system.modules.limits.process_io_access(io_access)?;
             }
         }
@@ -340,7 +340,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         event: &ScanKeysEvent,
     ) -> Result<(), RuntimeError> {
         match event {
-            ScanKeysEvent::StoreAccess(io_access) => {
+            ScanKeysEvent::IOAccess(io_access) => {
                 system.modules.limits.process_io_access(io_access)?;
             }
             ScanKeysEvent::Start => {}
@@ -354,7 +354,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         match event {
-            DrainSubstatesEvent::StoreAccess(io_access) => {
+            DrainSubstatesEvent::IOAccess(io_access) => {
                 system.modules.limits.process_io_access(io_access)?;
             }
             DrainSubstatesEvent::Start(_) => {}
@@ -368,7 +368,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         match event {
-            ScanSortedSubstatesEvent::StoreAccess(io_access) => {
+            ScanSortedSubstatesEvent::IOAccess(io_access) => {
                 system.modules.limits.process_io_access(io_access)?;
             }
             ScanSortedSubstatesEvent::Start => {}

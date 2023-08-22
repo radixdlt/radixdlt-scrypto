@@ -206,7 +206,7 @@ impl FeeTable {
                     Self::data_processing_cost(total_substate_size),
                 )
             }
-            CreateNodeEvent::StoreAccess(io_access) => self.io_access_cost(io_access),
+            CreateNodeEvent::IOAccess(io_access) => self.io_access_cost(io_access),
             CreateNodeEvent::End(..) => 0,
         }
     }
@@ -221,7 +221,7 @@ impl FeeTable {
     pub fn drop_node_cost(&self, event: &DropNodeEvent) -> u32 {
         match event {
             DropNodeEvent::Start(..) => 0,
-            DropNodeEvent::StoreAccess(io_access) => self.io_access_cost(io_access),
+            DropNodeEvent::IOAccess(io_access) => self.io_access_cost(io_access),
             DropNodeEvent::End(_node_id, node_substates) => {
                 let total_substate_size = node_substates
                     .values()
@@ -238,7 +238,7 @@ impl FeeTable {
     #[inline]
     pub fn move_module_cost(&self, event: &MoveModuleEvent) -> u32 {
         match event {
-            MoveModuleEvent::StoreAccess(io_access) => add(
+            MoveModuleEvent::IOAccess(io_access) => add(
                 2853u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                 self.io_access_cost(io_access),
             ),
@@ -249,7 +249,7 @@ impl FeeTable {
     pub fn open_substate_cost(&self, event: &OpenSubstateEvent) -> u32 {
         match event {
             OpenSubstateEvent::Start { .. } => 0,
-            OpenSubstateEvent::StoreAccess(io_access) => self.io_access_cost(io_access),
+            OpenSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
             OpenSubstateEvent::End { size, .. } => {
                 let base_cost: u32 = 8000;
                 add(
@@ -274,14 +274,14 @@ impl FeeTable {
                     Self::data_processing_cost(value.len()),
                 )
             }
-            ReadSubstateEvent::StoreAccess(io_access) => self.io_access_cost(io_access),
+            ReadSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }
     }
 
     #[inline]
     pub fn write_substate_cost(&self, event: &WriteSubstateEvent) -> u32 {
         match event {
-            WriteSubstateEvent::StoreAccess(io_access) => self.io_access_cost(io_access),
+            WriteSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
             WriteSubstateEvent::Start { value, .. } => add(
                 2003u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                 Self::data_processing_cost(value.len()),
@@ -303,7 +303,7 @@ impl FeeTable {
                 8026u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                 Self::data_processing_cost(value.len()),
             ),
-            SetSubstateEvent::StoreAccess(io_access) => self.io_access_cost(io_access),
+            SetSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }
     }
 
@@ -311,7 +311,7 @@ impl FeeTable {
     pub fn remove_substate_cost(&self, event: &RemoveSubstateEvent) -> u32 {
         match event {
             RemoveSubstateEvent::Start(..) => 16440u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            RemoveSubstateEvent::StoreAccess(io_access) => self.io_access_cost(io_access),
+            RemoveSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }
     }
 
@@ -330,7 +330,7 @@ impl FeeTable {
     pub fn scan_keys_cost(&self, event: &ScanKeysEvent) -> u32 {
         match event {
             ScanKeysEvent::Start => 14285u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            ScanKeysEvent::StoreAccess(io_access) => self.io_access_cost(io_access),
+            ScanKeysEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }
     }
 
@@ -341,7 +341,7 @@ impl FeeTable {
                 let cpu_instructions = add(3140u32, mul(14227u32, *count));
                 cpu_instructions / CPU_INSTRUCTIONS_TO_COST_UNIT
             }
-            DrainSubstatesEvent::StoreAccess(io_access) => self.io_access_cost(io_access),
+            DrainSubstatesEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }
     }
 
@@ -349,7 +349,7 @@ impl FeeTable {
     pub fn scan_sorted_substates_cost(&self, event: &ScanSortedSubstatesEvent) -> u32 {
         match event {
             ScanSortedSubstatesEvent::Start => 6388u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            ScanSortedSubstatesEvent::StoreAccess(io_access) => self.io_access_cost(io_access),
+            ScanSortedSubstatesEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }
     }
 

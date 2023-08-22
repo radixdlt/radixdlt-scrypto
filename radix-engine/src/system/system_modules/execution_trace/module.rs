@@ -297,7 +297,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
                     .execution_trace
                     .handle_before_create_node();
             }
-            CreateNodeEvent::StoreAccess(..) => {}
+            CreateNodeEvent::IOAccess(..) => {}
             CreateNodeEvent::End(node_id) => {
                 let current_depth = api.kernel_get_current_depth();
                 let resource_summary = ResourceSummary::from_node_id(api, node_id);
@@ -339,7 +339,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
                     .execution_trace
                     .handle_after_drop_node(system_state.current_call_frame, current_depth);
             }
-            DropNodeEvent::StoreAccess(_) => {}
+            DropNodeEvent::IOAccess(_) => {}
         }
 
         Ok(())

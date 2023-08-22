@@ -19,20 +19,20 @@ pub trait CallFrameReferences {
 #[derive(Debug)]
 pub enum CreateNodeEvent<'a> {
     Start(&'a NodeId, &'a NodeSubstates),
-    StoreAccess(&'a IOAccess),
+    IOAccess(&'a IOAccess),
     End(&'a NodeId),
 }
 
 #[derive(Debug)]
 pub enum DropNodeEvent<'a> {
     Start(&'a NodeId),
-    StoreAccess(&'a IOAccess),
+    IOAccess(&'a IOAccess),
     End(&'a NodeId, &'a NodeSubstates),
 }
 
 #[derive(Debug)]
 pub enum MoveModuleEvent<'a> {
-    StoreAccess(&'a IOAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
@@ -43,7 +43,7 @@ pub enum OpenSubstateEvent<'a> {
         substate_key: &'a SubstateKey,
         flags: &'a LockFlags,
     },
-    StoreAccess(&'a IOAccess),
+    IOAccess(&'a IOAccess),
     End {
         handle: SubstateHandle,
         node_id: &'a NodeId,
@@ -58,14 +58,14 @@ pub enum ReadSubstateEvent<'a> {
         value: &'a IndexedScryptoValue,
         device: SubstateDevice,
     },
-    StoreAccess(&'a IOAccess),
+    IOAccess(&'a IOAccess),
 }
 
 impl<'a> ReadSubstateEvent<'a> {
     pub fn is_about_heap(&self) -> bool {
         match self {
             ReadSubstateEvent::OnRead { device, .. } => matches!(device, SubstateDevice::Heap),
-            ReadSubstateEvent::StoreAccess(access) => match access {
+            ReadSubstateEvent::IOAccess(access) => match access {
                 IOAccess::ReadFromDb(_, _) => false,
                 IOAccess::ReadFromDbNotFound(_) => false,
                 IOAccess::TrackSubstateUpdated { .. } => false,
@@ -81,7 +81,7 @@ pub enum WriteSubstateEvent<'a> {
         handle: SubstateHandle,
         value: &'a IndexedScryptoValue,
     },
-    StoreAccess(&'a IOAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
@@ -97,31 +97,31 @@ pub enum SetSubstateEvent<'a> {
         &'a SubstateKey,
         &'a IndexedScryptoValue,
     ),
-    StoreAccess(&'a IOAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
 pub enum RemoveSubstateEvent<'a> {
     Start(&'a NodeId, &'a PartitionNumber, &'a SubstateKey),
-    StoreAccess(&'a IOAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
 pub enum ScanKeysEvent<'a> {
     Start,
-    StoreAccess(&'a IOAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
 pub enum DrainSubstatesEvent<'a> {
     Start(u32),
-    StoreAccess(&'a IOAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
 pub enum ScanSortedSubstatesEvent<'a> {
     Start,
-    StoreAccess(&'a IOAccess),
+    IOAccess(&'a IOAccess),
 }
 
 pub trait KernelCallbackObject: Sized {

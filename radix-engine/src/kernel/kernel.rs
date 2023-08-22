@@ -10,7 +10,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorRunInputEffici
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::{
-    CallFrameMessage, CallFrameStoreAccessHandler, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
+    CallFrameIOAccessHandler, CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
     TransientSubstates,
 };
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
@@ -232,7 +232,7 @@ struct KernelHandler<
 impl<
         M: KernelCallbackObject,
         F: FnMut(&mut KernelReadOnly<M>, IOAccess) -> Result<(), RuntimeError>,
-    > CallFrameStoreAccessHandler<M::CallFrameData, M::LockData, RuntimeError>
+    > CallFrameIOAccessHandler<M::CallFrameData, M::LockData, RuntimeError>
     for KernelHandler<'_, M, F>
 {
     fn on_io_access(
@@ -355,7 +355,7 @@ where
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                M::on_create_node(api, CreateNodeEvent::StoreAccess(&io_access))
+                M::on_create_node(api, CreateNodeEvent::IOAccess(&io_access))
             },
         };
 
@@ -385,7 +385,7 @@ where
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                M::on_drop_node(api, DropNodeEvent::StoreAccess(&io_access))
+                M::on_drop_node(api, DropNodeEvent::IOAccess(&io_access))
             },
         };
         let node_substates = self
@@ -416,7 +416,7 @@ where
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                M::on_move_module(api, MoveModuleEvent::StoreAccess(&io_access))
+                M::on_move_module(api, MoveModuleEvent::IOAccess(&io_access))
             },
         };
 
@@ -696,7 +696,7 @@ where
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                M::on_open_substate(api, OpenSubstateEvent::StoreAccess(&io_access))
+                M::on_open_substate(api, OpenSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -723,7 +723,7 @@ where
                         callback: self.callback,
                         prev_frame: self.prev_frame_stack.last(),
                         on_io_access: |api, io_access| {
-                            M::on_open_substate(api, OpenSubstateEvent::StoreAccess(&io_access))
+                            M::on_open_substate(api, OpenSubstateEvent::IOAccess(&io_access))
                         },
                     };
 
@@ -800,7 +800,7 @@ where
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                M::on_read_substate(api, ReadSubstateEvent::StoreAccess(&io_access))
+                M::on_read_substate(api, ReadSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -836,7 +836,7 @@ where
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                M::on_write_substate(api, WriteSubstateEvent::StoreAccess(&io_access))
+                M::on_write_substate(api, WriteSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -888,7 +888,7 @@ where
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
-                    .on_set_substate(SetSubstateEvent::StoreAccess(&io_access))
+                    .on_set_substate(SetSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -930,7 +930,7 @@ where
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
-                    .on_remove_substate(RemoveSubstateEvent::StoreAccess(&io_access))
+                    .on_remove_substate(RemoveSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -967,7 +967,7 @@ where
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
-                    .on_scan_keys(ScanKeysEvent::StoreAccess(&io_access))
+                    .on_scan_keys(ScanKeysEvent::IOAccess(&io_access))
             },
         };
 
@@ -1005,7 +1005,7 @@ where
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
-                    .on_drain_substates(DrainSubstatesEvent::StoreAccess(&io_access))
+                    .on_drain_substates(DrainSubstatesEvent::IOAccess(&io_access))
             },
         };
 
@@ -1043,7 +1043,7 @@ where
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
-                    .on_scan_sorted_substates(ScanSortedSubstatesEvent::StoreAccess(&io_access))
+                    .on_scan_sorted_substates(ScanSortedSubstatesEvent::IOAccess(&io_access))
             },
         };
 

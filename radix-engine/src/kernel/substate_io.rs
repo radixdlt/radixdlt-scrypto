@@ -33,12 +33,12 @@ pub struct LockData {
 }
 
 /// Callback for store access, from SubstateIO
-pub trait IOStoreAccessHandler<E> {
+pub trait IOAccessHandler<E> {
     fn on_io_access(&mut self, heap: &Heap, io_access: IOAccess) -> Result<(), E>;
 }
 
 /// Callback for substate read, from SubstateIO
-pub trait IOSubstateReadHandler {
+pub trait SubstateReadHandler {
     type Error;
 
     fn on_read_substate(
@@ -84,7 +84,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         device: SubstateDevice,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
         match device {
             SubstateDevice::Heap => {
@@ -109,7 +109,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
         if self.substate_locks.node_is_locked(node_id) {
             return Err(CallbackError::Error(DropNodeError::SubstateBorrowed(
@@ -146,7 +146,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
     pub fn move_node_from_heap_to_store<E>(
         &mut self,
         node_id: &NodeId,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<PersistNodeError, E>> {
         // TODO: Add locked substate checks, though this is not required since
         // the system layer currently maintains the invariant that a call frame cannot
@@ -225,7 +225,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         dest_device: SubstateDevice,
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<MovePartitionError, E>> {
         // TODO: Use more granular partition lock checks?
         if self.substate_locks.node_is_locked(src_node_id) {
@@ -312,7 +312,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<D>,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(u32, &IndexedScryptoValue), CallbackError<OpenSubstateError, E>> {
         match device {
             SubstateDevice::Heap => {
@@ -415,7 +415,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         Ok((global_lock_handle, substate_value))
     }
 
-    pub fn read_substate<H: IOSubstateReadHandler>(
+    pub fn read_substate<H: SubstateReadHandler>(
         &mut self,
         global_lock_handle: u32,
         handler: &mut H,
@@ -450,7 +450,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         &mut self,
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get_mut(global_lock_handle);
@@ -508,7 +508,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
         if self
             .substate_locks
@@ -550,7 +550,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: &SubstateKey,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
         if self.substate_locks.is_locked(node_id, partition_num, key) {
             return Err(CallbackError::Error(
@@ -587,7 +587,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
         let keys = match device {
             SubstateDevice::Heap => self.heap.scan_keys(node_id, partition_num, count),
@@ -608,7 +608,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<
         Vec<(SubstateKey, IndexedScryptoValue)>,
         CallbackError<CallFrameDrainSubstatesError, E>,
@@ -642,7 +642,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<
         Vec<(SortedKey, IndexedScryptoValue)>,
         CallbackError<CallFrameScanSortedSubstatesError, E>,
@@ -673,7 +673,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        handler: &mut impl IOStoreAccessHandler<E>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<Option<&'a IndexedScryptoValue>, CallbackError<OpenSubstateError, E>> {
         let value = match location {
             SubstateDevice::Heap => heap.get_substate(node_id, partition_num, substate_key),
