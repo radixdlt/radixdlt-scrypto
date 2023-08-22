@@ -649,7 +649,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("05bd6d83e5dff174ae74cb01c41efa932fdd49c0b884ca626aaecad76a95a588")
+    Blob("2288653eff8127020d099a366e201aec70a81efd4e57f972b5e3eb37c03af090")
     Map<String, Tuple>(
         "description" => Tuple(
             Enum<1u8>(

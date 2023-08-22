@@ -1,6 +1,8 @@
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::errors::*;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
+use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::boxed::Box;
 use sbor::rust::vec::Vec;
 
@@ -151,7 +153,8 @@ pub trait WasmRuntime {
     fn emit_event(
         &mut self,
         event_name: Vec<u8>,
-        event: Vec<u8>,
+        event_payload: Vec<u8>,
+        event_flags: EventFlags,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn emit_log(
@@ -161,6 +164,11 @@ pub trait WasmRuntime {
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn bech32_encode_address(
+        &mut self,
+        address: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
@@ -194,5 +202,5 @@ pub trait WasmEngine {
     /// Instantiate a Scrypto module.
     ///
     /// The code must have been validated and instrumented!
-    fn instantiate(&self, code_hash: Hash, instrumented_code: &[u8]) -> Self::WasmInstance;
+    fn instantiate(&self, code_hash: CodeHash, instrumented_code: &[u8]) -> Self::WasmInstance;
 }

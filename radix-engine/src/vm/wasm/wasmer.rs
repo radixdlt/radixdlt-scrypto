@@ -3,6 +3,8 @@ use crate::types::*;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
+use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
@@ -76,9 +78,9 @@ pub struct WasmerEngine {
     store: Store,
     // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
     #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
-    modules_cache: RefCell<lru::LruCache<Hash, Arc<WasmerModule>>>,
+    modules_cache: RefCell<lru::LruCache<CodeHash, Arc<WasmerModule>>>,
     #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
-    modules_cache: moka::sync::Cache<Hash, Arc<WasmerModule>>,
+    modules_cache: moka::sync::Cache<CodeHash, Arc<WasmerModule>>,
     #[cfg(feature = "radix_engine_fuzzing")]
     modules_cache: usize,
 }
@@ -623,13 +625,17 @@ impl WasmerModule {
             event_name_len: u32,
             event_data_ptr: u32,
             event_data_len: u32,
+            flags: u32,
         ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
             let event_name = read_memory(&instance, event_name_ptr, event_name_len)?;
             let event_data = read_memory(&instance, event_data_ptr, event_data_len)?;
+            let event_flags = EventFlags::from_bits(flags).ok_or(InvokeError::SelfError(
+                WasmRuntimeError::InvalidEventFlags(flags),
+            ))?;
 
-            runtime.emit_event(event_name, event_data)
+            runtime.emit_event(event_name, event_data, event_flags)
         }
 
         fn emit_log(
@@ -823,7 +829,7 @@ impl WasmerEngine {
         #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
             .weigher(
-                |_metered_code_key: &Hash, _value: &Arc<WasmerModule>| -> u32 {
+                |_metered_code_key: &CodeHash, _value: &Arc<WasmerModule>| -> u32 {
                     // No sophisticated weighing mechanism, just keep a fixed size cache
                     1u32
                 },
@@ -843,7 +849,7 @@ impl WasmerEngine {
 impl WasmEngine for WasmerEngine {
     type WasmInstance = WasmerInstance;
 
-    fn instantiate(&self, code_hash: Hash, instrumented_code: &[u8]) -> WasmerInstance {
+    fn instantiate(&self, code_hash: CodeHash, instrumented_code: &[u8]) -> WasmerInstance {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]

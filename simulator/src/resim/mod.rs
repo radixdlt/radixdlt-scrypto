@@ -77,6 +77,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::{
     db_key_mapper::{
         MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
@@ -355,7 +356,7 @@ pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectI
         .ok_or_else(|| Error::ComponentNotFound(component_address))
 }
 
-pub fn export_schema(node_id: &NodeId, schema_hash: Hash) -> Result<ScryptoSchema, Error> {
+pub fn export_schema(node_id: &NodeId, schema_hash: SchemaHash) -> Result<ScryptoSchema, Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
@@ -445,7 +446,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     };
 
     let bp_definition = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<BlueprintDefinition>>(
+        .get_mapped::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate>(
             blueprint_id.package_address.as_node_id(),
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
@@ -458,13 +459,13 @@ pub fn get_event_schema<S: SubstateDatabase>(
             ),
         )
         .unwrap();
-    let bp_interface = bp_definition.value.unwrap().interface;
+    let bp_interface = bp_definition.value.unwrap().into_latest().interface;
 
     let event_def = bp_interface.events.get(event_name)?;
     match event_def {
         BlueprintPayloadDef::Static(type_id) => {
             let schema = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+                .get_mapped::<SpreadPrefixKeyMapper, PackageSchemaEntrySubstate>(
                     blueprint_id.package_address.as_node_id(),
                     SCHEMAS_PARTITION,
                     &SubstateKey::Map(scrypto_encode(&type_id.0).unwrap()),
@@ -477,7 +478,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                 .value
                 .unwrap();
 
-            Some((type_id.1, schema))
+            Some((type_id.1, schema.content))
         }
         BlueprintPayloadDef::Generic(..) => {
             panic!("Not expecting any events to use generics")

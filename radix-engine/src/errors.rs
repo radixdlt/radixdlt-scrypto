@@ -221,6 +221,7 @@ pub enum SystemError {
     NotAFieldHandle,
     NotAFieldWriteHandle,
     RootHasNoType,
+    AddressBech32EncodeError,
     TypeCheckError(TypeCheckError),
     FieldDoesNotExist(BlueprintId, u8),
     CollectionIndexDoesNotExist(BlueprintId, u8),
@@ -246,6 +247,8 @@ pub enum SystemError {
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
+    InvalidNativeSubstatesForFeature(String),
+    ForceWriteEventFlagsNotAllowed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
