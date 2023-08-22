@@ -73,7 +73,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     let (package_address, blueprint_name, resources) = {
         let object_info = reader
             .get_object_info(component_address)
-            .ok_or_else(|| EntityDumpError::ComponentNotFound)?;
+            .map_err(|_| EntityDumpError::ComponentNotFound)?;
         let blueprint_id = object_info.blueprint_info.blueprint_id;
 
         let mut accounter = ResourceAccounter::new(substate_db);
@@ -178,7 +178,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     let reader = SystemDatabaseReader::new(substate_db);
     let info = reader
         .get_object_info(resource_address)
-        .ok_or_else(|| EntityDumpError::ResourceManagerNotFound)?;
+        .map_err(|_| EntityDumpError::ResourceManagerNotFound)?;
 
     if info
         .blueprint_info
@@ -192,9 +192,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
                 ObjectModuleId::Main,
                 NonFungibleResourceManagerField::IdType.into(),
             )
-            .ok_or(EntityDumpError::InvalidStore(
-                "Missing NonFungible IdType".to_string(),
-            ))?;
+            .map_err(|_| EntityDumpError::InvalidStore("Missing NonFungible IdType".to_string()))?;
 
         writeln!(
             output,
@@ -211,9 +209,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
                     ObjectModuleId::Main,
                     NonFungibleResourceManagerField::TotalSupply.into(),
                 )
-                .ok_or(EntityDumpError::InvalidStore(
-                    "Missing Total Supply".to_string(),
-                ))?;
+                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?;
 
             writeln!(
                 output,
@@ -229,9 +225,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
                 ObjectModuleId::Main,
                 FungibleResourceManagerField::Divisibility.into(),
             )
-            .ok_or(EntityDumpError::InvalidStore(
-                "Missing Divisibility".to_string(),
-            ))?;
+            .map_err(|_| EntityDumpError::InvalidStore("Missing Divisibility".to_string()))?;
 
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
         writeln!(
@@ -248,9 +242,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
                     ObjectModuleId::Main,
                     FungibleResourceManagerField::TotalSupply.into(),
                 )
-                .ok_or(EntityDumpError::InvalidStore(
-                    "Missing Total Supply".to_string(),
-                ))?;
+                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?;
 
             writeln!(
                 output,

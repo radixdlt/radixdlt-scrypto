@@ -351,7 +351,7 @@ pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectI
     let system_reader = SystemDatabaseReader::new(&substate_db);
     system_reader
         .get_object_info(component_address)
-        .ok_or_else(|| Error::ComponentNotFound(component_address))
+        .map_err(|_| Error::ComponentNotFound(component_address))
 }
 
 pub fn export_schema(node_id: &NodeId, schema_hash: SchemaHash) -> Result<ScryptoSchema, Error> {
@@ -364,7 +364,7 @@ pub fn export_schema(node_id: &NodeId, schema_hash: SchemaHash) -> Result<Scrypt
     let system_reader = SystemDatabaseReader::new(&substate_db);
     let schema = system_reader
         .get_schema(node_id, &schema_hash)
-        .ok_or(Error::SchemaNotFound(*node_id, schema_hash))?;
+        .map_err(|_| Error::SchemaNotFound(*node_id, schema_hash))?;
 
     Ok(schema)
 }
@@ -406,7 +406,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
 
     let (blueprint_id, event_name) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
-            let blueprint_id = system_reader.get_blueprint_id(node_id, *node_module)?;
+            let blueprint_id = system_reader.get_blueprint_id(node_id, *node_module).ok()?;
             (blueprint_id, event_name)
         }
         EventTypeIdentifier(Emitter::Function(blueprint_id), event_name) => {
@@ -423,7 +423,8 @@ pub fn get_event_schema<S: SubstateDatabase>(
                 PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
                 &version_key,
             ),
-        )?;
+        )
+        .unwrap()?;
 
     let bp_interface = match bp_definition {
         VersionedPackageBlueprintVersionDefinition::V1(blueprint) => blueprint.interface,
@@ -432,14 +433,16 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let event_def = bp_interface.events.get(event_name)?;
     match event_def {
         BlueprintPayloadDef::Static(type_id) => {
-            let schema: ScryptoSchema = system_reader.read_object_collection_entry(
-                blueprint_id.package_address.as_node_id(),
-                ObjectModuleId::Main,
-                ObjectCollectionKey::KeyValue(
-                    PackageCollection::SchemaKeyValue.collection_index(),
-                    &type_id.0,
-                ),
-            )?;
+            let schema: ScryptoSchema = system_reader
+                .read_object_collection_entry(
+                    blueprint_id.package_address.as_node_id(),
+                    ObjectModuleId::Main,
+                    ObjectCollectionKey::KeyValue(
+                        PackageCollection::SchemaKeyValue.collection_index(),
+                        &type_id.0,
+                    ),
+                )
+                .unwrap()?;
 
             Some((type_id.1, schema))
         }
