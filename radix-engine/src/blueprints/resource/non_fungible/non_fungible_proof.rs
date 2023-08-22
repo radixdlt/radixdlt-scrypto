@@ -2,7 +2,7 @@ use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -80,7 +80,7 @@ impl NonFungibleProofBlueprint {
     {
         let moveable = {
             let handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 NonFungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
@@ -90,7 +90,7 @@ impl NonFungibleProofBlueprint {
             moveable
         };
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -114,7 +114,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -131,7 +131,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -145,7 +145,8 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address = ResourceAddress::new_or_panic(api.actor_get_outer_object().unwrap().into());
+        let address =
+            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER).unwrap().into());
         Ok(address)
     }
 
@@ -163,7 +164,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::MUTABLE,
         )?;
@@ -194,7 +195,7 @@ impl NonFungibleProofBlueprint {
             )));
             if !is_to_self && (is_to_barrier || is_to_auth_zone) {
                 let handle = api.actor_open_field(
-                    OBJECT_HANDLE_SELF,
+                    ACTOR_STATE_SELF,
                     FungibleProofField::Moveable.into(),
                     LockFlags::MUTABLE,
                 )?;

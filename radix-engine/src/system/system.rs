@@ -23,6 +23,7 @@ use crate::system::system_type_checker::{
 };
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
+use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
 use radix_engine_interface::api::field_api::{FieldHandle, LockFlags};
 use radix_engine_interface::api::key_value_entry_api::{
@@ -32,7 +33,6 @@ use radix_engine_interface::api::key_value_store_api::{
     ClientKeyValueStoreApi, KeyValueStoreGenericArgs,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -137,18 +137,42 @@ pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObj
     pub phantom: PhantomData<V>,
 }
 
-enum ActorObjectType {
+enum ActorStateRef {
     SELF,
     OuterObject,
 }
 
-impl TryFrom<ObjectHandle> for ActorObjectType {
+impl TryFrom<ActorStateHandle> for ActorStateRef {
     type Error = RuntimeError;
-    fn try_from(value: ObjectHandle) -> Result<Self, Self::Error> {
+    fn try_from(value: ActorStateHandle) -> Result<Self, Self::Error> {
         match value {
-            OBJECT_HANDLE_SELF => Ok(ActorObjectType::SELF),
-            OBJECT_HANDLE_OUTER_OBJECT => Ok(ActorObjectType::OuterObject),
-            _ => Err(RuntimeError::SystemError(SystemError::InvalidObjectHandle)),
+            ACTOR_STATE_SELF => Ok(ActorStateRef::SELF),
+            ACTOR_STATE_OUTER_OBJECT => Ok(ActorStateRef::OuterObject),
+            _ => Err(RuntimeError::SystemError(
+                SystemError::InvalidActorStateHandle,
+            )),
+        }
+    }
+}
+
+enum ActorObjectRef {
+    SELF,
+    Outer,
+    Global,
+    AuthZone,
+}
+
+impl TryFrom<ActorRefHandle> for ActorObjectRef {
+    type Error = RuntimeError;
+    fn try_from(value: ActorStateHandle) -> Result<Self, Self::Error> {
+        match value {
+            ACTOR_REF_SELF => Ok(ActorObjectRef::SELF),
+            ACTOR_REF_OUTER => Ok(ActorObjectRef::Outer),
+            ACTOR_REF_GLOBAL => Ok(ActorObjectRef::Global),
+            ACTOR_REF_AUTH_ZONE => Ok(ActorObjectRef::AuthZone),
+            _ => Err(RuntimeError::SystemError(
+                SystemError::InvalidActorRefHandle,
+            )),
         }
     }
 }
@@ -689,7 +713,7 @@ where
 
     fn get_actor_object_id(
         &mut self,
-        actor_object_type: ActorObjectType,
+        actor_object_type: ActorStateRef,
     ) -> Result<(NodeId, ObjectModuleId), RuntimeError> {
         let actor = self.current_actor();
         let object_id = actor
@@ -697,7 +721,7 @@ where
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAnObject))?;
 
         let object_id = match actor_object_type {
-            ActorObjectType::OuterObject => {
+            ActorStateRef::OuterObject => {
                 let module_id = object_id.1;
 
                 match module_id {
@@ -714,7 +738,7 @@ where
                     }
                 }
             }
-            ActorObjectType::SELF => object_id,
+            ActorStateRef::SELF => object_id,
         };
 
         Ok(object_id)
@@ -722,7 +746,7 @@ where
 
     fn get_actor_collection_partition_info(
         &mut self,
-        actor_object_type: ActorObjectType,
+        actor_object_type: ActorStateRef,
         collection_index: u8,
         expected_type: &BlueprintPartitionType,
     ) -> Result<(NodeId, BlueprintInfo, PartitionNumber), RuntimeError> {
@@ -766,7 +790,7 @@ where
 
     fn get_actor_info(
         &mut self,
-        actor_object_type: ActorObjectType,
+        actor_object_type: ActorStateRef,
     ) -> Result<(NodeId, ObjectModuleId, BlueprintInterface, BlueprintInfo), RuntimeError> {
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
         let blueprint_info = self.get_blueprint_info(&node_id, module_id)?;
@@ -778,7 +802,7 @@ where
 
     fn get_actor_field_info(
         &mut self,
-        actor_object_type: ActorObjectType,
+        actor_object_type: ActorStateRef,
         field_index: u8,
     ) -> Result<(NodeId, BlueprintInfo, PartitionNumber, FieldTransience), RuntimeError> {
         let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
@@ -1697,12 +1721,12 @@ where
     // Costing through kernel
     fn actor_index_insert(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1739,11 +1763,11 @@ where
     // Costing through kernel
     fn actor_index_remove(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1762,11 +1786,11 @@ where
     // Costing through kernel
     fn actor_index_scan_keys(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1787,11 +1811,11 @@ where
     // Costing through kernel
     fn actor_index_drain(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1819,12 +1843,12 @@ where
     #[trace_resources]
     fn actor_sorted_index_insert(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1866,11 +1890,11 @@ where
     #[trace_resources]
     fn actor_sorted_index_remove(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -1894,11 +1918,11 @@ where
     #[trace_resources]
     fn actor_sorted_index_scan(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<(SortedKey, Vec<u8>)>, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -2143,15 +2167,101 @@ where
             .ok_or(RuntimeError::SystemError(SystemError::NoBlueprintId))
     }
 
+    #[trace_resources]
+    fn actor_get_node_id(&mut self, ref_handle: ActorRefHandle) -> Result<NodeId, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
+
+        let actor_ref: ActorObjectRef = ref_handle.try_into()?;
+
+        let node_id = match actor_ref {
+            ActorObjectRef::SELF => {
+                self.current_actor()
+                    .node_id()
+                    .ok_or(RuntimeError::SystemError(
+                        SystemError::ActorNodeIdDoesNotExist,
+                    ))?
+            }
+            ActorObjectRef::Outer => {
+                let (node_id, module_id) = self.get_actor_object_id(ActorStateRef::SELF)?;
+                match module_id {
+                    ObjectModuleId::Main => {
+                        let info = self.get_object_info(&node_id)?;
+                        match info.blueprint_info.outer_obj_info {
+                            OuterObjectInfo::Some { outer_object } => {
+                                Ok(outer_object.into_node_id())
+                            }
+                            OuterObjectInfo::None => Err(RuntimeError::SystemError(
+                                SystemError::OuterObjectDoesNotExist,
+                            )),
+                        }
+                    }
+                    _ => Err(RuntimeError::SystemError(
+                        SystemError::ModulesDontHaveOuterObjects,
+                    )),
+                }?
+            }
+            ActorObjectRef::Global => {
+                let actor = self.current_actor();
+                if actor.is_direct_access() {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::GlobalAddressDoesNotExist,
+                    ));
+                }
+
+                if let Some(node_id) = actor.node_id() {
+                    let visibility = self.kernel_get_node_visibility(&node_id);
+                    if let ReferenceOrigin::Global(address) =
+                        visibility.reference_origin(node_id).unwrap()
+                    {
+                        address.into_node_id()
+                    } else {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::GlobalAddressDoesNotExist,
+                        ));
+                    }
+                } else {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::GlobalAddressDoesNotExist,
+                    ));
+                }
+            }
+            ActorObjectRef::AuthZone => self
+                .current_actor()
+                .self_auth_zone()
+                .ok_or_else(|| RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))?,
+        };
+
+        Ok(node_id)
+    }
+
+    #[trace_resources]
+    fn actor_is_feature_enabled(
+        &mut self,
+        object_handle: ActorStateHandle,
+        feature: &str,
+    ) -> Result<bool, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
+
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
+        let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
+        self.is_feature_enabled(&node_id, module_id, feature)
+    }
+
     // Costing through kernel
     #[trace_resources]
     fn actor_open_field(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         field_index: u8,
         flags: LockFlags,
     ) -> Result<SubstateHandle, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, blueprint_info, partition_num, transient) =
             self.get_actor_field_info(actor_object_type, field_index)?;
@@ -2227,96 +2337,30 @@ where
     }
 
     #[trace_resources]
-    fn actor_get_node_id(&mut self) -> Result<NodeId, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
+    fn actor_emit_event(
+        &mut self,
+        event_name: String,
+        event_data: Vec<u8>,
+        event_flags: EventFlags,
+    ) -> Result<(), RuntimeError> {
+        if event_flags.contains(EventFlags::FORCE_WRITE) {
+            let blueprint_id = self.actor_get_blueprint_id()?;
 
-        let node_id = self
-            .current_actor()
-            .node_id()
-            .ok_or(RuntimeError::SystemError(
-                SystemError::ActorNodeIdDoesNotExist,
-            ))?;
-
-        Ok(node_id)
-    }
-
-    #[trace_resources]
-    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
-
-        let actor = self.current_actor();
-        if !actor.is_direct_access() {
-            if let Some(node_id) = actor.node_id() {
-                let visibility = self.kernel_get_node_visibility(&node_id);
-                if let ReferenceOrigin::Global(address) =
-                    visibility.reference_origin(node_id).unwrap()
-                {
-                    return Ok(address);
-                }
+            if !blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                || !blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+            {
+                return Err(RuntimeError::SystemError(
+                    SystemError::ForceWriteEventFlagsNotAllowed,
+                ));
             }
         }
 
-        Err(RuntimeError::SystemError(
-            SystemError::GlobalAddressDoesNotExist,
-        ))
-    }
-
-    #[trace_resources]
-    fn actor_get_outer_object(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
-
-        let (node_id, module_id) = self.get_actor_object_id(ActorObjectType::SELF)?;
-        match module_id {
-            ObjectModuleId::Main => {
-                let info = self.get_object_info(&node_id)?;
-                match info.blueprint_info.outer_obj_info {
-                    OuterObjectInfo::Some { outer_object } => Ok(outer_object),
-                    OuterObjectInfo::None => Err(RuntimeError::SystemError(
-                        SystemError::OuterObjectDoesNotExist,
-                    )),
-                }
-            }
-            _ => Err(RuntimeError::SystemError(
-                SystemError::ModulesDontHaveOuterObjects,
-            )),
-        }
-    }
-
-    // Costing through kernel
-    #[trace_resources]
-    fn actor_call_module(
-        &mut self,
-        module_id: ObjectModuleId,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let node_id = self.actor_get_node_id()?;
-        self.call_method_advanced(&node_id, module_id, false, method_name, args)
-    }
-
-    #[trace_resources]
-    fn actor_is_feature_enabled(
-        &mut self,
-        object_handle: ObjectHandle,
-        feature: &str,
-    ) -> Result<bool, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
-
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
-        let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
-        self.is_feature_enabled(&node_id, module_id, feature)
+        self.emit_event_internal(
+            EmitterActor::CurrentActor,
+            event_name,
+            event_data,
+            event_flags,
+        )
     }
 }
 
@@ -2329,12 +2373,12 @@ where
     #[trace_resources]
     fn actor_open_key_value_entry(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
             actor_object_type,
@@ -2393,7 +2437,7 @@ where
     // Costing through kernel
     fn actor_remove_key_value_entry(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -2404,26 +2448,6 @@ where
             LockFlags::MUTABLE,
         )?;
         self.key_value_entry_remove_and_close_substate(handle)
-    }
-}
-
-impl<'a, Y, V> ClientAuthApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
-    #[trace_resources]
-    fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryAuthZone)?;
-
-        if let Some(auth_zone_id) = self.current_actor().self_auth_zone() {
-            Ok(auth_zone_id.into())
-        } else {
-            Err(RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))
-        }
     }
 }
 
@@ -2449,6 +2473,38 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
+    fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::QueryTransactionHash)?;
+
+        if let Some(hash) = self.api.kernel_get_system().modules.transaction_hash() {
+            Ok(hash)
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::TransactionRuntimeModuleNotEnabled,
+            ))
+        }
+    }
+
+    #[trace_resources]
+    fn generate_ruid(&mut self) -> Result<[u8; 32], RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::GenerateRuid)?;
+
+        if let Some(ruid) = self.api.kernel_get_system().modules.generate_ruid() {
+            Ok(ruid)
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::TransactionRuntimeModuleNotEnabled,
+            ))
+        }
+    }
+
+    #[trace_resources]
     fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, RuntimeError> {
         let network_definition = &self
             .api
@@ -2460,33 +2516,6 @@ where
         AddressBech32Encoder::new(&network_definition)
             .encode(&address.into_node_id().0)
             .map_err(|_| RuntimeError::SystemError(SystemError::AddressBech32EncodeError))
-    }
-
-    #[trace_resources]
-    fn emit_event(
-        &mut self,
-        event_name: String,
-        event_data: Vec<u8>,
-        event_flags: EventFlags,
-    ) -> Result<(), RuntimeError> {
-        if event_flags.contains(EventFlags::FORCE_WRITE) {
-            let blueprint_id = self.actor_get_blueprint_id()?;
-
-            if !blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
-                || !blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-            {
-                return Err(RuntimeError::SystemError(
-                    SystemError::ForceWriteEventFlagsNotAllowed,
-                ));
-            }
-        }
-
-        self.emit_event_internal(
-            EmitterActor::CurrentActor,
-            event_name,
-            event_data,
-            event_flags,
-        )
     }
 
     #[trace_resources]
@@ -2520,38 +2549,6 @@ where
         Err(RuntimeError::ApplicationError(ApplicationError::Panic(
             message,
         )))
-    }
-
-    #[trace_resources]
-    fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryTransactionHash)?;
-
-        if let Some(hash) = self.api.kernel_get_system().modules.transaction_hash() {
-            Ok(hash)
-        } else {
-            Err(RuntimeError::SystemError(
-                SystemError::TransactionRuntimeModuleNotEnabled,
-            ))
-        }
-    }
-
-    #[trace_resources]
-    fn generate_ruid(&mut self) -> Result<[u8; 32], RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::GenerateRuid)?;
-
-        if let Some(ruid) = self.api.kernel_get_system().modules.generate_ruid() {
-            Ok(ruid)
-        } else {
-            Err(RuntimeError::SystemError(
-                SystemError::TransactionRuntimeModuleNotEnabled,
-            ))
-        }
     }
 }
 

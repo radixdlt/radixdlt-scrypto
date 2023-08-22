@@ -1418,7 +1418,7 @@ impl PackageRoyaltyNativeBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             PackageFeature::PackageRoyalty.feature_name(),
         )? {
             return Err(RuntimeError::ApplicationError(
@@ -1427,7 +1427,7 @@ impl PackageRoyaltyNativeBlueprint {
         }
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             PackageField::RoyaltyAccumulator.into(),
             LockFlags::read_only(),
         )?;

@@ -1,22 +1,12 @@
 use crate::engine::wasm_api::*;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
-use radix_engine_interface::api::field_api::FieldHandle;
-use radix_engine_interface::api::key_value_entry_api::{
-    ClientKeyValueEntryApi, KeyValueEntryHandle,
-};
-use radix_engine_interface::api::key_value_store_api::{
-    ClientKeyValueStoreApi, KeyValueStoreGenericArgs,
-};
+use radix_engine_interface::api::actor_api::EventFlags;
+use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
+use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
-use radix_engine_interface::api::{
-    ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldValue, GenericArgs,
-    ObjectHandle,
-};
-use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
-use radix_engine_interface::api::{KVEntry, LockFlags};
+use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::api::{ActorRefHandle, FieldValue};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::PackageAddress;
@@ -24,263 +14,137 @@ use radix_engine_interface::types::{BlueprintId, GlobalAddress};
 use radix_engine_interface::types::{Level, NodeId, SubstateHandle};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
-use sbor::*;
 
-#[derive(Debug, Sbor)]
-pub enum ClientApiError {
-    DecodeError(DecodeError),
-}
+pub struct ScryptoVmV1Api;
 
-pub struct ScryptoEnv;
+impl ScryptoVmV1Api {
+    pub fn blueprint_call(
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: Vec<u8>,
+    ) -> Vec<u8> {
+        let blueprint_id = BlueprintId::new(&package_address, blueprint_name);
+        let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
 
-impl ClientCostingApi<ClientApiError> for ScryptoEnv {
-    fn consume_cost_units(
-        &mut self,
-        _costing_entry: types::ClientCostingEntry,
-    ) -> Result<(), ClientApiError> {
-        unimplemented!("Not exposed to scrypto")
+        copy_buffer(unsafe {
+            blueprint::blueprint_call(
+                blueprint_id.as_ptr(),
+                blueprint_id.len(),
+                function_name.as_ptr(),
+                function_name.len(),
+                args.as_ptr(),
+                args.len(),
+            )
+        })
     }
 
-    fn credit_cost_units(
-        &mut self,
-        _vault_id: NodeId,
-        _locked_fee: blueprints::resource::LiquidFungibleResource,
-        _contingent: bool,
-    ) -> Result<blueprints::resource::LiquidFungibleResource, ClientApiError> {
-        unimplemented!("Not exposed to scrypto")
-    }
-
-    fn execution_cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
-        Ok(unsafe { execution_cost_unit_limit() })
-    }
-
-    fn execution_cost_unit_price(&mut self) -> Result<math::Decimal, ClientApiError> {
-        let bytes = copy_buffer(unsafe { execution_cost_unit_price() });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn finalization_cost_unit_limit(&mut self) -> Result<u32, ClientApiError> {
-        Ok(unsafe { finalization_cost_unit_limit() })
-    }
-
-    fn finalization_cost_unit_price(&mut self) -> Result<math::Decimal, ClientApiError> {
-        let bytes = copy_buffer(unsafe { finalization_cost_unit_price() });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn usd_price(&mut self) -> Result<Decimal, ClientApiError> {
-        unimplemented!("Not exposed to scrypto")
-    }
-
-    fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, ClientApiError> {
-        unimplemented!("Not exposed to scrypto")
-    }
-
-    fn tip_percentage(&mut self) -> Result<u32, ClientApiError> {
-        Ok(unsafe { tip_percentage() })
-    }
-
-    fn fee_balance(&mut self) -> Result<math::Decimal, ClientApiError> {
-        let bytes = copy_buffer(unsafe { fee_balance() });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-}
-
-impl ClientObjectApi<ClientApiError> for ScryptoEnv {
-    fn new_simple_object(
-        &mut self,
-        blueprint_ident: &str,
-        object_states: Vec<FieldValue>,
-    ) -> Result<NodeId, ClientApiError> {
+    pub fn object_new(blueprint_ident: &str, object_states: Vec<FieldValue>) -> NodeId {
         let object_states = scrypto_encode(&object_states).unwrap();
 
         let bytes = copy_buffer(unsafe {
-            new_object(
+            object::object_new(
                 blueprint_ident.as_ptr(),
                 blueprint_ident.len(),
                 object_states.as_ptr(),
                 object_states.len(),
             )
         });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&bytes).unwrap()
     }
 
-    fn new_object(
-        &mut self,
-        _blueprint_ident: &str,
-        _features: Vec<&str>,
-        _generic_args: GenericArgs,
-        _fields: Vec<FieldValue>,
-        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
-    ) -> Result<NodeId, ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
-
-    fn allocate_global_address(
-        &mut self,
-        blueprint_id: BlueprintId,
-    ) -> Result<(GlobalAddressReservation, GlobalAddress), ClientApiError> {
-        let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
-        let bytes = copy_buffer(unsafe {
-            allocate_global_address(blueprint_id.as_ptr(), blueprint_id.len())
-        });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn globalize(
-        &mut self,
+    pub fn object_globalize(
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
-    ) -> Result<GlobalAddress, ClientApiError> {
+    ) -> GlobalAddress {
         let modules = scrypto_encode(&modules).unwrap();
         let address_reservation = scrypto_encode(&address_reservation).unwrap();
 
         let bytes = copy_buffer(unsafe {
-            globalize(
+            object::object_globalize(
                 modules.as_ptr(),
                 modules.len(),
                 address_reservation.as_ptr(),
                 address_reservation.len(),
             )
         });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&bytes).unwrap()
     }
 
-    fn globalize_with_address_and_create_inner_object_and_emit_event(
-        &mut self,
-        _modules: BTreeMap<ObjectModuleId, NodeId>,
-        _address_reservation: GlobalAddressReservation,
-        _inner_object_blueprint: &str,
-        _inner_object_fields: Vec<FieldValue>,
-        _event_name: String,
-        _event_data: Vec<u8>,
-    ) -> Result<(GlobalAddress, NodeId), ClientApiError> {
-        unimplemented!("Not available for Scrypto")
+    pub fn object_get_blueprint_id(node_id: &NodeId) -> BlueprintId {
+        let bytes = copy_buffer(unsafe {
+            object::object_get_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
+
+        scrypto_decode(&bytes).unwrap()
     }
 
-    fn call_method_advanced(
-        &mut self,
-        receiver: &NodeId,
-        module_id: ObjectModuleId,
-        direct_access: bool,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, ClientApiError> {
-        let return_data = copy_buffer(unsafe {
-            call_method(
+    pub fn object_get_outer_object(node_id: &NodeId) -> GlobalAddress {
+        let bytes = copy_buffer(unsafe {
+            object::object_get_outer_object(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
+
+        scrypto_decode(&bytes).unwrap()
+    }
+
+    pub fn object_call(receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
+        copy_buffer(unsafe {
+            object::object_call(
                 receiver.as_ref().as_ptr(),
                 receiver.as_ref().len(),
-                if direct_access { 1 } else { 0 },
+                method_name.as_ptr(),
+                method_name.len(),
+                args.as_ptr(),
+                args.len(),
+            )
+        })
+    }
+
+    pub fn object_call_module(
+        receiver: &NodeId,
+        module_id: ObjectModuleId,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Vec<u8> {
+        copy_buffer(unsafe {
+            object::object_call_module(
+                receiver.as_ref().as_ptr(),
+                receiver.as_ref().len(),
                 module_id as u8 as u32,
                 method_name.as_ptr(),
                 method_name.len(),
                 args.as_ptr(),
                 args.len(),
             )
-        });
-
-        Ok(return_data)
+        })
     }
 
-    fn get_blueprint_id(&mut self, node_id: &NodeId) -> Result<BlueprintId, ClientApiError> {
-        let bytes = copy_buffer(unsafe {
-            get_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
-        });
-
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    pub fn object_call_direct(receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
+        copy_buffer(unsafe {
+            object::object_call_direct(
+                receiver.as_ref().as_ptr(),
+                receiver.as_ref().len(),
+                method_name.as_ptr(),
+                method_name.len(),
+                args.as_ptr(),
+                args.len(),
+            )
+        })
     }
 
-    fn get_outer_object(&mut self, node_id: &NodeId) -> Result<GlobalAddress, ClientApiError> {
-        let bytes = copy_buffer(unsafe {
-            get_outer_object(node_id.as_ref().as_ptr(), node_id.as_ref().len())
-        });
-
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn get_reservation_address(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<GlobalAddress, ClientApiError> {
-        let bytes = copy_buffer(unsafe {
-            get_reservation_address(node_id.as_ref().as_ptr(), node_id.as_ref().len())
-        });
-
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, ClientApiError> {
-        unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
-
-        // TODO: remove return
-        Ok(Vec::new())
-    }
-
-    fn allocate_virtual_global_address(
-        &mut self,
-        _blueprint_id: BlueprintId,
-        _global_address: GlobalAddress,
-    ) -> Result<GlobalAddressReservation, ClientApiError> {
-        unimplemented!()
-    }
-}
-
-impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
-    fn key_value_entry_get(
-        &mut self,
-        handle: KeyValueEntryHandle,
-    ) -> Result<Vec<u8>, ClientApiError> {
-        let entry = copy_buffer(unsafe { kv_entry_get(handle) });
-
-        Ok(entry)
-    }
-
-    fn key_value_entry_set(
-        &mut self,
-        handle: KeyValueEntryHandle,
-        buffer: Vec<u8>,
-    ) -> Result<(), ClientApiError> {
-        unsafe { kv_entry_set(handle, buffer.as_ptr(), buffer.len()) };
-
-        Ok(())
-    }
-
-    fn key_value_entry_remove(
-        &mut self,
-        _handle: KeyValueEntryHandle,
-    ) -> Result<Vec<u8>, ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
-
-    fn key_value_entry_lock(&mut self, _handle: KeyValueEntryHandle) -> Result<(), ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
-
-    fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) -> Result<(), ClientApiError> {
-        unsafe { kv_entry_release(handle) };
-
-        Ok(())
-    }
-}
-
-impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
-    fn key_value_store_new(
-        &mut self,
-        schema: KeyValueStoreGenericArgs,
-    ) -> Result<NodeId, ClientApiError> {
+    pub fn kv_store_new(schema: KeyValueStoreGenericArgs) -> NodeId {
         let schema = scrypto_encode(&schema).unwrap();
-        let bytes = copy_buffer(unsafe { kv_store_new(schema.as_ptr(), schema.len()) });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+        let bytes = copy_buffer(unsafe { kv_store::kv_store_new(schema.as_ptr(), schema.len()) });
+        scrypto_decode(&bytes).unwrap()
     }
 
-    fn key_value_store_open_entry(
-        &mut self,
+    pub fn kv_store_open_entry(
         node_id: &NodeId,
         key: &Vec<u8>,
         flags: LockFlags,
-    ) -> Result<KeyValueEntryHandle, ClientApiError> {
+    ) -> KeyValueEntryHandle {
         let handle = unsafe {
-            kv_store_open_entry(
+            kv_store::kv_store_open_entry(
                 node_id.as_ref().as_ptr(),
                 node_id.as_ref().len(),
                 key.as_ptr(),
@@ -289,213 +153,140 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
             )
         };
 
-        Ok(handle)
+        handle
     }
 
-    fn key_value_store_remove_entry(
-        &mut self,
-        node_id: &NodeId,
-        key: &Vec<u8>,
-    ) -> Result<Vec<u8>, ClientApiError> {
+    pub fn kv_store_remove_entry(node_id: &NodeId, key: &Vec<u8>) -> Vec<u8> {
         let removed = copy_buffer(unsafe {
-            kv_store_remove_entry(
+            kv_store::kv_store_remove_entry(
                 node_id.as_ref().as_ptr(),
                 node_id.as_ref().len(),
                 key.as_ptr(),
                 key.len(),
             )
         });
-        Ok(removed)
-    }
-}
-
-impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
-    fn call_function(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, ClientApiError> {
-        let package_address = scrypto_encode(&package_address).unwrap();
-
-        let return_data = copy_buffer(unsafe {
-            call_function(
-                package_address.as_ptr(),
-                package_address.len(),
-                blueprint_name.as_ptr(),
-                blueprint_name.len(),
-                function_name.as_ptr(),
-                function_name.len(),
-                args.as_ptr(),
-                args.len(),
-            )
-        });
-
-        Ok(return_data)
-    }
-}
-
-impl ClientFieldApi<ClientApiError> for ScryptoEnv {
-    fn field_read(&mut self, lock_handle: SubstateHandle) -> Result<Vec<u8>, ClientApiError> {
-        let substate = copy_buffer(unsafe { field_lock_read(lock_handle) });
-
-        Ok(substate)
+        removed
     }
 
-    fn field_write(
-        &mut self,
-        lock_handle: SubstateHandle,
-        buffer: Vec<u8>,
-    ) -> Result<(), ClientApiError> {
-        unsafe { field_lock_write(lock_handle, buffer.as_ptr(), buffer.len()) };
-
-        Ok(())
+    pub fn actor_open_field(object_handle: u32, field: u8, flags: LockFlags) -> SubstateHandle {
+        let handle =
+            unsafe { actor::actor_open_field(object_handle, u32::from(field), flags.bits()) };
+        handle
     }
 
-    fn field_lock(&mut self, _handle: FieldHandle) -> Result<(), ClientApiError> {
-        unimplemented!("Not available for Scrypto")
+    pub fn actor_get_object_id(actor_ref_handle: ActorRefHandle) -> NodeId {
+        let node_id = copy_buffer(unsafe { actor::actor_get_object_id(actor_ref_handle) });
+
+        scrypto_decode(&node_id).unwrap()
     }
 
-    fn field_close(&mut self, lock_handle: SubstateHandle) -> Result<(), ClientApiError> {
-        unsafe { field_lock_release(lock_handle) };
+    pub fn actor_get_blueprint_id() -> BlueprintId {
+        let blueprint_id = copy_buffer(unsafe { actor::actor_get_blueprint_id() });
 
-        Ok(())
-    }
-}
-
-impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn actor_open_field(
-        &mut self,
-        object_handle: u32,
-        field: u8,
-        flags: LockFlags,
-    ) -> Result<SubstateHandle, ClientApiError> {
-        let handle = unsafe { actor_open_field(object_handle, u32::from(field), flags.bits()) };
-
-        Ok(handle)
+        scrypto_decode(&blueprint_id).unwrap()
     }
 
-    fn actor_is_feature_enabled(
-        &mut self,
-        _: ObjectHandle,
-        _feature: &str,
-    ) -> Result<bool, ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
-
-    fn actor_get_node_id(&mut self) -> Result<NodeId, ClientApiError> {
-        let node_id = copy_buffer(unsafe { get_node_id() });
-
-        scrypto_decode(&node_id).map_err(ClientApiError::DecodeError)
-    }
-
-    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
-        let global_address = copy_buffer(unsafe { get_global_address() });
-
-        scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
-    }
-
-    fn actor_get_outer_object(&mut self) -> Result<GlobalAddress, ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
-
-    fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, ClientApiError> {
-        let actor = copy_buffer(unsafe { get_blueprint() });
-
-        scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
-    }
-
-    fn actor_call_module(
-        &mut self,
-        module_id: ObjectModuleId,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, ClientApiError> {
-        let return_data = copy_buffer(unsafe {
-            actor_call_module_method(
-                module_id as u8 as u32,
-                method_name.as_ptr(),
-                method_name.len(),
-                args.as_ptr(),
-                args.len(),
-            )
-        });
-
-        Ok(return_data)
-    }
-}
-
-impl ClientAuthApi<ClientApiError> for ScryptoEnv {
-    fn get_auth_zone(&mut self) -> Result<NodeId, ClientApiError> {
-        let auth_zone = copy_buffer(unsafe { get_auth_zone() });
-
-        scrypto_decode(&auth_zone).map_err(ClientApiError::DecodeError)
-    }
-}
-
-impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
-    fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, ClientApiError> {
-        let global_address = scrypto_encode(&address).unwrap();
-        let encoded = copy_buffer(unsafe {
-            bech32_encode_address(global_address.as_ptr(), global_address.len())
-        });
-
-        scrypto_decode(&encoded).map_err(ClientApiError::DecodeError)
-    }
-
-    fn emit_event(
-        &mut self,
-        event_name: String,
-        event_data: Vec<u8>,
-        event_flags: EventFlags,
-    ) -> Result<(), ClientApiError> {
+    pub fn actor_emit_event(event_name: String, event_data: Vec<u8>, flags: EventFlags) {
         unsafe {
-            emit_event(
+            actor::actor_emit_event(
                 event_name.as_ptr(),
                 event_name.len(),
                 event_data.as_ptr(),
                 event_data.len(),
-                event_flags.bits(),
+                flags.bits(),
             )
         };
-        Ok(())
     }
 
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
+    pub fn field_entry_read(lock_handle: SubstateHandle) -> Vec<u8> {
+        copy_buffer(unsafe { field_entry::field_entry_read(lock_handle) })
+    }
+
+    pub fn field_entry_write(lock_handle: SubstateHandle, buffer: Vec<u8>) {
+        unsafe { field_entry::field_entry_write(lock_handle, buffer.as_ptr(), buffer.len()) };
+    }
+
+    pub fn field_entry_close(lock_handle: SubstateHandle) {
+        unsafe { field_entry::field_entry_close(lock_handle) };
+    }
+
+    pub fn kv_entry_read(handle: KeyValueEntryHandle) -> Vec<u8> {
+        copy_buffer(unsafe { kv_entry::kv_entry_read(handle) })
+    }
+
+    pub fn kv_entry_write(handle: KeyValueEntryHandle, buffer: Vec<u8>) {
+        unsafe { kv_entry::kv_entry_write(handle, buffer.as_ptr(), buffer.len()) };
+    }
+
+    pub fn kv_entry_remove(handle: KeyValueEntryHandle) -> Vec<u8> {
+        copy_buffer(unsafe { kv_entry::kv_entry_remove(handle) })
+    }
+
+    pub fn kv_entry_close(handle: KeyValueEntryHandle) {
+        unsafe { kv_entry::kv_entry_close(handle) };
+    }
+
+    pub fn costing_get_execution_cost_unit_limit() -> u32 {
+        unsafe { costing::costing_get_execution_cost_unit_limit() }
+    }
+
+    pub fn costing_get_execution_cost_unit_price() -> Decimal {
+        let bytes = copy_buffer(unsafe { costing::costing_get_execution_cost_unit_price() });
+        scrypto_decode(&bytes).unwrap()
+    }
+
+    pub fn costing_get_finalization_cost_unit_limit() -> u32 {
+        unsafe { costing::costing_get_finalization_cost_unit_limit() }
+    }
+
+    pub fn costing_get_finalization_cost_unit_price() -> Decimal {
+        let bytes = copy_buffer(unsafe { costing::costing_get_finalization_cost_unit_price() });
+        scrypto_decode(&bytes).unwrap()
+    }
+
+    pub fn costing_get_usd_price() -> Decimal {
+        let bytes = copy_buffer(unsafe { costing::costing_get_usd_price() });
+        scrypto_decode(&bytes).unwrap()
+    }
+
+    pub fn costing_get_tip_percentage() -> u32 {
+        unsafe { costing::costing_get_tip_percentage() }
+    }
+
+    pub fn costing_get_fee_balance() -> Decimal {
+        let bytes = copy_buffer(unsafe { costing::costing_get_fee_balance() });
+        scrypto_decode(&bytes).unwrap()
+    }
+
+    pub fn sys_bech32_encode_address(address: GlobalAddress) -> String {
+        let global_address = scrypto_encode(&address).unwrap();
+        let encoded = copy_buffer(unsafe {
+            system::sys_bech32_encode_address(global_address.as_ptr(), global_address.len())
+        });
+
+        scrypto_decode(&encoded).unwrap()
+    }
+
+    pub fn sys_log(level: Level, message: String) {
         let level = scrypto_encode(&level).unwrap();
-        unsafe { emit_log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
-        Ok(())
+        unsafe { system::sys_log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
     }
 
-    fn get_transaction_hash(&mut self) -> Result<Hash, ClientApiError> {
-        let actor = copy_buffer(unsafe { get_transaction_hash() });
+    pub fn sys_get_transaction_hash() -> Hash {
+        let actor = copy_buffer(unsafe { system::sys_get_transaction_hash() });
 
-        scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&actor).unwrap()
     }
 
-    fn generate_ruid(&mut self) -> Result<[u8; 32], ClientApiError> {
-        let actor = copy_buffer(unsafe { generate_ruid() });
+    pub fn sys_generate_ruid() -> [u8; 32] {
+        let actor = copy_buffer(unsafe { system::sys_generate_ruid() });
 
-        scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&actor).unwrap()
     }
 
-    fn panic(&mut self, message: String) -> Result<(), ClientApiError> {
+    pub fn sys_panic(message: String) {
         unsafe {
-            panic(message.as_ptr(), message.len());
+            system::sys_panic(message.as_ptr(), message.len());
         };
-        Ok(())
     }
-}
-
-#[macro_export]
-macro_rules! scrypto_env_native_fn {
-    ($($vis:vis $fn:ident $fn_name:ident ($($args:tt)*) -> $rtn:ty { $arg:expr })*) => {
-        $(
-            $vis $fn $fn_name ($($args)*) -> $rtn {
-                let mut env = crate::engine::scrypto_env::ScryptoEnv;
-                env.call_native($arg).unwrap()
-            }
-        )+
-    };
 }

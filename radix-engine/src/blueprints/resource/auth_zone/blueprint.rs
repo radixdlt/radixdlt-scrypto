@@ -7,7 +7,9 @@ use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{Authorization, AuthorizationCheckResult};
 use crate::types::*;
 use native_sdk::resource::NativeProof;
-use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{
+    ClientApi, LockFlags, ObjectModuleId, ACTOR_REF_SELF, ACTOR_STATE_SELF,
+};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 
@@ -27,7 +29,7 @@ impl AuthZoneBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -47,7 +49,7 @@ impl AuthZoneBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -70,7 +72,7 @@ impl AuthZoneBlueprint {
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::read_only(),
         )?;
@@ -146,7 +148,7 @@ impl AuthZoneBlueprint {
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -193,7 +195,7 @@ impl AuthZoneBlueprint {
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -250,7 +252,7 @@ impl AuthZoneBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -267,7 +269,7 @@ impl AuthZoneBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -288,7 +290,7 @@ impl AuthZoneBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
@@ -307,7 +309,7 @@ impl AuthZoneBlueprint {
     where
         Y: KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
-        let node_id = api.actor_get_node_id()?;
+        let node_id = api.actor_get_node_id(ACTOR_REF_SELF)?;
         let auth_result =
             Authorization::check_authorization_against_access_rule(api, &node_id, &access_rule)?;
 

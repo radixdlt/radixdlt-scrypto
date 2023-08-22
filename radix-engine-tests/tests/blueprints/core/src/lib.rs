@@ -1,7 +1,5 @@
 use scrypto::api::key_value_store_api::KeyValueStoreGenericArgs;
 use scrypto::api::object_api::ObjectModuleId;
-use scrypto::api::ClientBlueprintApi;
-use scrypto::api::ClientObjectApi;
 use scrypto::api::LockFlags;
 use scrypto::prelude::wasm_api::*;
 use scrypto::prelude::*;
@@ -20,20 +18,18 @@ mod globalize_test {
                 ObjectModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
             );
 
-            let _ = ScryptoEnv.globalize(modules, None).unwrap();
+            ScryptoVmV1Api::object_globalize(modules, None);
         }
 
         pub fn globalize_in_package(package_address: PackageAddress) {
             let x = GlobalizeTest { own: None }.instantiate();
 
-            ScryptoEnv
-                .call_function(
-                    package_address,
-                    "GlobalizeTest",
-                    "globalize",
-                    scrypto_args!(x),
-                )
-                .unwrap();
+            ScryptoVmV1Api::blueprint_call(
+                package_address,
+                "GlobalizeTest",
+                "globalize",
+                scrypto_args!(x),
+            );
         }
 
         pub fn globalize_bucket() {
@@ -133,13 +129,7 @@ mod drop_test {
         pub fn drop_in_package(package_address: PackageAddress) {
             let x = DropTest {}.instantiate();
 
-            ScryptoEnv
-                .call_function(package_address, "DropTest", "drop", scrypto_args!(x))
-                .unwrap();
-        }
-
-        pub fn drop(x: Own) {
-            let _ = ScryptoEnv.drop_object(&x.0);
+            ScryptoVmV1Api::blueprint_call(package_address, "DropTest", "drop", scrypto_args!(x));
         }
     }
 }
@@ -207,7 +197,8 @@ mod recursive_test {
             let mut value_payload = scrypto_encode(&Own(NodeId([0u8; NodeId::LENGTH]))).unwrap();
 
             fn create_kv_store(schema: &[u8]) -> NodeId {
-                let bytes = copy_buffer(unsafe { kv_store_new(schema.as_ptr(), schema.len()) });
+                let bytes =
+                    copy_buffer(unsafe { kv_store::kv_store_new(schema.as_ptr(), schema.len()) });
                 NodeId(bytes[bytes.len() - NodeId::LENGTH..].try_into().unwrap())
             }
 
@@ -218,7 +209,7 @@ mod recursive_test {
                 value_payload: &mut [u8],
             ) {
                 unsafe {
-                    let handle = kv_store_open_entry(
+                    let handle = kv_store::kv_store_open_entry(
                         to.as_ref().as_ptr(),
                         to.as_ref().len(),
                         key_payload.as_ptr(),
@@ -229,8 +220,8 @@ mod recursive_test {
                     let len = value_payload.len();
                     value_payload[len - NodeId::LENGTH..].copy_from_slice(store.as_bytes());
 
-                    kv_entry_set(handle, value_payload.as_ptr(), value_payload.len());
-                    kv_entry_release(handle);
+                    kv_entry::kv_entry_write(handle, value_payload.as_ptr(), value_payload.len());
+                    kv_entry::kv_entry_close(handle);
                 }
             }
 

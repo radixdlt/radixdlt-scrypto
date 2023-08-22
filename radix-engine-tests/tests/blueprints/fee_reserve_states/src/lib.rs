@@ -7,12 +7,12 @@ mod fee_reserve {
     impl FeeReserveChecker {
         pub fn check() -> (u32, Decimal, u32, Decimal, u32, Decimal) {
             (
-                Runtime::execution_cost_unit_limit(),
-                Runtime::execution_cost_unit_price(),
-                Runtime::finalization_cost_unit_limit(),
-                Runtime::finalization_cost_unit_price(),
-                Runtime::tip_percentage(),
-                Runtime::fee_balance(),
+                Runtime::get_execution_cost_unit_limit(),
+                Runtime::get_execution_cost_unit_price(),
+                Runtime::get_finalization_cost_unit_limit(),
+                Runtime::get_finalization_cost_unit_price(),
+                Runtime::get_tip_percentage(),
+                Runtime::get_fee_balance(),
             )
         }
     }

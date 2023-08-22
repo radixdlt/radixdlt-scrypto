@@ -4,7 +4,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ACTOR_REF_GLOBAL};
 use radix_engine_interface::blueprints::package::{PackageDefinition, RESOURCE_CODE_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -35,7 +35,7 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
                     Ok(IndexedScryptoValue::from_typed(&()))
                 }
                 "get_global_address" => {
-                    let _ = api.actor_get_global_address()?;
+                    let _ = api.actor_get_node_id(ACTOR_REF_GLOBAL)?;
                     Ok(IndexedScryptoValue::from_typed(&()))
                 }
                 _ => Ok(IndexedScryptoValue::from_typed(&())),
@@ -104,7 +104,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         {
             if self.0.contains(export_name) {
-                api.actor_get_global_address()
+                api.actor_get_node_id(ACTOR_REF_GLOBAL)
                     .expect_err("Direct method calls should never have global address");
             }
             ResourceNativePackage::invoke_export(export_name, input, api)

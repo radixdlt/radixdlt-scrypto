@@ -1164,7 +1164,7 @@ impl AccessControllerNativePackage {
         let resource_address = {
             let substate_key = AccessControllerField::AccessController.into();
             let handle =
-                api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+                api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::read_only())?;
 
             let access_controller = {
                 let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;
@@ -1226,7 +1226,7 @@ where
     AccessControllerSubstate: Transition<I>,
 {
     let substate_key = AccessControllerField::AccessController.into();
-    let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+    let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::read_only())?;
 
     let access_controller = {
         let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;
@@ -1249,7 +1249,7 @@ where
     AccessControllerSubstate: TransitionMut<I>,
 {
     let substate_key = AccessControllerField::AccessController.into();
-    let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
+    let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::MUTABLE)?;
 
     let mut access_controller = {
         let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;

@@ -7,12 +7,10 @@ mod scrypto_env_test {
 
     impl ScryptoEnvTest {
         pub fn create_node_with_invalid_blueprint() {
-            ScryptoEnv
-                .new_simple_object(
-                    "invalid_blueprint",
-                    vec![FieldValue::new(&ScryptoEnvTest {})],
-                )
-                .unwrap();
+            ScryptoVmV1Api::object_new(
+                "invalid_blueprint",
+                vec![FieldValue::new(&ScryptoEnvTest {})],
+            );
         }
 
         pub fn create_and_open_mut_substate_twice(heap: bool) {
@@ -27,13 +25,9 @@ mod scrypto_env_test {
         }
 
         pub fn open_mut_substate_twice(&mut self) {
-            ScryptoEnv
-                .actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::MUTABLE)
-                .unwrap();
+            ScryptoVmV1Api::actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE);
 
-            ScryptoEnv
-                .actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::MUTABLE)
-                .unwrap();
+            ScryptoVmV1Api::actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE);
         }
 
         pub fn bech32_encode_address(address: ComponentAddress) -> String {
