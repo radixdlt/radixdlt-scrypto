@@ -1,5 +1,5 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
-use radix_engine::system::node_modules::metadata::MetadataPanicError;
+use radix_engine::system::node_modules::metadata::MetadataError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use scrypto_unit::*;
@@ -90,7 +90,7 @@ fn cannot_initialize_metadata_if_key_too_long() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataPanicError::KeyStringExceedsMaxLength { .. }
+                MetadataError::KeyStringExceedsMaxLength { .. }
             ))
         )
     });
@@ -124,7 +124,7 @@ fn cannot_set_metadata_if_key_too_long() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataPanicError::KeyStringExceedsMaxLength { .. }
+                MetadataError::KeyStringExceedsMaxLength { .. }
             ))
         )
     });
@@ -154,7 +154,7 @@ fn cannot_initialize_metadata_if_value_too_long() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataPanicError::ValueSborExceedsMaxLength { .. }
+                MetadataError::ValueSborExceedsMaxLength { .. }
             ))
         )
     });
@@ -188,7 +188,7 @@ fn cannot_set_metadata_if_value_too_long() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataPanicError::ValueSborExceedsMaxLength { .. }
+                MetadataError::ValueSborExceedsMaxLength { .. }
             ))
         )
     });

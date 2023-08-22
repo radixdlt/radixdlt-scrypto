@@ -18,7 +18,7 @@ use crate::kernel::call_frame::{
     MovePartitionError, OpenSubstateError, PassMessageError, PinNodeError, ReadSubstateError,
     WriteSubstateError,
 };
-use crate::system::node_modules::metadata::MetadataPanicError;
+use crate::system::node_modules::metadata::MetadataError;
 use crate::system::node_modules::role_assignment::RoleAssignmentError;
 use crate::system::node_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
@@ -410,7 +410,7 @@ pub enum ApplicationError {
     //===================
     RoleAssignmentError(RoleAssignmentError),
 
-    MetadataError(MetadataPanicError),
+    MetadataError(MetadataError),
 
     ComponentRoyaltyError(ComponentRoyaltyError),
 
