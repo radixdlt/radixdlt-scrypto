@@ -178,6 +178,7 @@ extern "C" {
         event_name_len: usize,
         event_data_ptr: *const u8,
         event_data_len: usize,
+        event_flags: u32,
     );
 
     pub fn emit_log(
@@ -410,6 +411,7 @@ pub unsafe fn emit_event(
     _event_name_len: usize,
     _event_data_ptr: *const u8,
     _event_data_len: usize,
+    _event_flags: u32,
 ) {
     unreachable!()
 }

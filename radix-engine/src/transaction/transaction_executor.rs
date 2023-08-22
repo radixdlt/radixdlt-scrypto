@@ -1,5 +1,5 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
-use crate::blueprints::resource::BurnFungibleResourceEvent;
+use crate::blueprints::resource::{BurnFungibleResourceEvent, DepositEvent, PayFeeEvent};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
@@ -307,12 +307,13 @@ where
                         }
 
                         // Distribute fees
-                        let (fee_reserve_finalization, paying_vaults) = Self::finalize_fees(
-                            &mut track,
-                            costing_module.fee_reserve,
-                            is_success,
-                            executable.costing_parameters().free_credit_in_xrd,
-                        );
+                        let (fee_reserve_finalization, paying_vaults, finalization_events) =
+                            Self::finalize_fees(
+                                &mut track,
+                                costing_module.fee_reserve,
+                                is_success,
+                                executable.costing_parameters().free_credit_in_xrd,
+                            );
                         let fee_destination = FeeDestination {
                             to_proposer: fee_reserve_finalization.to_proposer_amount(),
                             to_validator_set: fee_reserve_finalization.to_validator_set_amount(),
@@ -335,23 +336,7 @@ where
                         // Finalize events and logs
                         let (mut application_events, application_logs) =
                             runtime_module.finalize(is_success);
-                        /*
-                            Emit XRD burn event, ignoring costing and limits.
-                            Otherwise, we won't be able to commit failed transactions.
-                            May also cache the information for better performance.
-                        */
-                        if fee_destination.to_burn.is_positive() {
-                            application_events.push((
-                                EventTypeIdentifier(
-                                    Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
-                                    "BurnFungibleResourceEvent".to_string(),
-                                ),
-                                scrypto_encode(&BurnFungibleResourceEvent {
-                                    amount: fee_destination.to_burn,
-                                })
-                                .unwrap(),
-                            ));
-                        }
+                        application_events.extend(finalization_events);
 
                         // Finalize execution trace
                         let execution_trace =
@@ -703,7 +688,13 @@ where
         fee_reserve: SystemLoanFeeReserve,
         is_success: bool,
         free_credit: Decimal,
-    ) -> (FeeReserveFinalizationSummary, IndexMap<NodeId, Decimal>) {
+    ) -> (
+        FeeReserveFinalizationSummary,
+        IndexMap<NodeId, Decimal>,
+        Vec<(EventTypeIdentifier, Vec<u8>)>,
+    ) {
+        let mut events = Vec::<(EventTypeIdentifier, Vec<u8>)>::new();
+
         // Distribute royalty
         for (recipient, amount) in fee_reserve.royalty_cost_breakdown() {
             let node_id = recipient.vault_id();
@@ -723,6 +714,13 @@ where
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
+            events.push((
+                EventTypeIdentifier(
+                    Emitter::Method(node_id, ObjectModuleId::Main),
+                    DepositEvent::event_name().to_string(),
+                ),
+                scrypto_encode(&DepositEvent { amount }).unwrap(),
+            ));
         }
 
         // Take fee payments
@@ -771,6 +769,14 @@ where
             // Record final payments
             let entry = fee_payments.entry(vault_id).or_default();
             *entry = entry.safe_add(amount).unwrap();
+
+            events.push((
+                EventTypeIdentifier(
+                    Emitter::Method(vault_id, ObjectModuleId::Main),
+                    PayFeeEvent::event_name().to_string(),
+                ),
+                scrypto_encode(&PayFeeEvent { amount }).unwrap(),
+            ));
         }
         // Free credit is locked first and thus used last
         if free_credit.is_positive() {
@@ -855,6 +861,7 @@ where
                 .unwrap();
 
             // Put validator rewards into the vault
+            let total_amount = to_proposer.safe_add(to_validator_set).unwrap();
             let mut substate: FieldSubstate<LiquidFungibleResource> = track
                 .read_substate(
                     &vault_node_id,
@@ -864,11 +871,10 @@ where
                 .unwrap()
                 .as_typed()
                 .unwrap();
-            substate.value.0.put(
-                collected_fees
-                    .take_by_amount(to_proposer.safe_add(to_validator_set).unwrap())
-                    .unwrap(),
-            );
+            substate
+                .value
+                .0
+                .put(collected_fees.take_by_amount(total_amount).unwrap());
             track
                 .set_substate(
                     vault_node_id,
@@ -878,9 +884,30 @@ where
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
+
+            events.push((
+                EventTypeIdentifier(
+                    Emitter::Method(vault_node_id, ObjectModuleId::Main),
+                    DepositEvent::event_name().to_string(),
+                ),
+                scrypto_encode(&DepositEvent {
+                    amount: total_amount,
+                })
+                .unwrap(),
+            ));
         }
 
-        (fee_reserve_finalization, fee_payments)
+        if to_burn.is_positive() {
+            events.push((
+                EventTypeIdentifier(
+                    Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
+                    "BurnFungibleResourceEvent".to_string(),
+                ),
+                scrypto_encode(&BurnFungibleResourceEvent { amount: to_burn }).unwrap(),
+            ));
+        }
+
+        (fee_reserve_finalization, fee_payments, events)
     }
 
     fn update_transaction_tracker(

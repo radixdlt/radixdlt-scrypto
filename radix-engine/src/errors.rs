@@ -248,6 +248,7 @@ pub enum SystemError {
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
     InvalidNativeSubstatesForFeature(String),
+    ForceWriteEventFlagsNotAllowed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

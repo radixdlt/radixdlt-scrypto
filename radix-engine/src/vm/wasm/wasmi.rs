@@ -1,3 +1,4 @@
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::mem::transmute;
 use sbor::rust::mem::MaybeUninit;
@@ -510,6 +511,7 @@ fn emit_event(
     event_name_len: u32,
     event_data_ptr: u32,
     event_data_len: u32,
+    flags: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
@@ -525,8 +527,11 @@ fn emit_event(
         event_data_ptr,
         event_data_len,
     )?;
+    let event_flags = EventFlags::from_bits(flags).ok_or(InvokeError::SelfError(
+        WasmRuntimeError::InvalidEventFlags(flags),
+    ))?;
 
-    runtime.emit_event(event_name, event_data)
+    runtime.emit_event(event_name, event_data, event_flags)
 }
 
 fn get_transaction_hash(
@@ -975,7 +980,8 @@ impl WasmiModule {
              event_name_ptr: u32,
              event_name_len: u32,
              event_data_ptr: u32,
-             event_data_len: u32|
+             event_data_len: u32,
+             flags: u32|
              -> Result<(), Trap> {
                 emit_event(
                     caller,
@@ -983,6 +989,7 @@ impl WasmiModule {
                     event_name_len,
                     event_data_ptr,
                     event_data_len,
+                    flags,
                 )
                 .map_err(|e| e.into())
             },

@@ -5,6 +5,7 @@ use crate::vm::wasm::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::api::{ClientApi, FieldValue};
 use radix_engine_interface::types::ClientCostingEntry;
 use radix_engine_interface::types::Level;
@@ -417,11 +418,13 @@ where
     fn emit_event(
         &mut self,
         event_name: Vec<u8>,
-        event: Vec<u8>,
+        event_payload: Vec<u8>,
+        event_flags: EventFlags,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.emit_event(
             String::from_utf8(event_name).map_err(|_| WasmRuntimeError::InvalidString)?,
-            event,
+            event_payload,
+            event_flags,
         )?;
         Ok(())
     }

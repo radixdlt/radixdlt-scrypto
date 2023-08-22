@@ -11,12 +11,9 @@ use afl::fuzz;
 use std::panic::AssertUnwindSafe;
 
 #[cfg(feature = "simple-fuzzer")]
-mod simple_fuzzer;
+use fuzz_tests::utils::simple_fuzzer;
 
-mod fuzz_tx;
-use fuzz_tx::*;
-
-mod common;
+use fuzz_tests::transaction::fuzz_tx::*;
 
 // Fuzzer entry points
 #[cfg(feature = "libfuzzer-sys")]
