@@ -686,6 +686,23 @@ impl WasmModule {
                             ));
                         }
                     }
+                    BECH32_ENCODE_ADDRESS_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    BECH32_ENCODE_ADDRESS_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
                     PANIC_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(

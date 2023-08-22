@@ -2449,6 +2449,20 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
+    fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, RuntimeError> {
+        let network_definition = &self
+            .api
+            .kernel_get_system()
+            .modules
+            .transaction_runtime
+            .network_definition;
+
+        AddressBech32Encoder::new(&network_definition)
+            .encode(&address.into_node_id().0)
+            .map_err(|_| RuntimeError::SystemError(SystemError::AddressBech32EncodeError))
+    }
+
+    #[trace_resources]
     fn emit_event(
         &mut self,
         event_name: String,

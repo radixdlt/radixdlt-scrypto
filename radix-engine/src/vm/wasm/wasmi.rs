@@ -563,6 +563,20 @@ fn emit_log(
     runtime.emit_log(level, message)
 }
 
+fn bech32_encode_address(
+    mut caller: Caller<'_, HostState>,
+    address_ptr: u32,
+    address_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let address = read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?;
+
+    runtime
+        .bech32_encode_address(address)
+        .map(|buffer| buffer.0)
+}
+
 fn panic(
     mut caller: Caller<'_, HostState>,
     message_ptr: u32,
@@ -1004,6 +1018,16 @@ impl WasmiModule {
             },
         );
 
+        let host_bech32_encode_address = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             address_ptr: u32,
+             address_len: u32|
+             -> Result<u64, Trap> {
+                bech32_encode_address(caller, address_ptr, address_len).map_err(|e| e.into())
+            },
+        );
+
         let host_get_transaction_hash = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
@@ -1130,6 +1154,11 @@ impl WasmiModule {
         linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
         linker_define!(linker, EMIT_LOG_FUNCTION_NAME, host_emit_log);
         linker_define!(linker, PANIC_FUNCTION_NAME, host_panic);
+        linker_define!(
+            linker,
+            BECH32_ENCODE_ADDRESS_FUNCTION_NAME,
+            host_bech32_encode_address
+        );
         linker_define!(
             linker,
             GET_TRANSACTION_HASH_FUNCTION_NAME,
