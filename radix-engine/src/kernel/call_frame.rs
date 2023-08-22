@@ -782,25 +782,28 @@ impl<C, L: Clone> CallFrame<C, L> {
         self.take_node_internal(node_id)
             .map_err(|e| CallbackError::Error(DropNodeError::TakeNodeError(e)))?;
 
-        let (frame, handler, node_substates) = {
-            let mut adapter = CallFrameToIOStoreAccessAdapter {
-                call_frame: self,
-                handler,
-                phantom: PhantomData::default(),
-            };
-            let node_substates = substate_io
-                .drop_node(SubstateDevice::Heap, node_id, &mut adapter)
-                .map_err(|e| match e {
-                    CallbackError::Error(e) => CallbackError::Error(e),
-                    CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
-                })?;
-            (adapter.call_frame, adapter.handler, node_substates)
+        let mut adapter = CallFrameToIOStoreAccessAdapter {
+            call_frame: self,
+            handler,
+            phantom: PhantomData::default(),
         };
+        let node_substates = substate_io
+            .drop_node(SubstateDevice::Heap, node_id, &mut adapter)
+            .map_err(|e| match e {
+                CallbackError::Error(e) => CallbackError::Error(e),
+                CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
+            })?;
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
                 let diff = SubstateDiff::from_drop_substate(&substate_value);
-                frame
-                    .process_substate_diff(substate_io, handler, SubstateDevice::Heap, &diff)
+                adapter
+                    .call_frame
+                    .process_substate_diff(
+                        substate_io,
+                        adapter.handler,
+                        SubstateDevice::Heap,
+                        &diff,
+                    )
                     .map_err(|e| match e {
                         CallbackError::Error(e) => {
                             CallbackError::Error(DropNodeError::ProcessSubstateError(e))
