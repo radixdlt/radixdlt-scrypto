@@ -546,13 +546,17 @@ impl WasmerModule {
             event_name_len: u32,
             event_data_ptr: u32,
             event_data_len: u32,
+            flags: u32,
         ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
             let event_name = read_memory(&instance, event_name_ptr, event_name_len)?;
             let event_data = read_memory(&instance, event_data_ptr, event_data_len)?;
+            let event_flags = EventFlags::from_bits(flags).ok_or(InvokeError::SelfError(
+                WasmRuntimeError::InvalidEventFlags(flags),
+            ))?;
 
-            runtime.actor_emit_event(event_name, event_data)
+            runtime.actor_emit_event(event_name, event_data, event_flags)
         }
 
         pub fn costing_get_execution_cost_unit_limit(
@@ -637,25 +641,6 @@ impl WasmerModule {
             runtime
                 .consume_wasm_execution_units(n as u32)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
-        }
-
-        fn emit_event(
-            env: &WasmerInstanceEnv,
-            event_name_ptr: u32,
-            event_name_len: u32,
-            event_data_ptr: u32,
-            event_data_len: u32,
-            flags: u32,
-        ) -> Result<(), InvokeError<WasmRuntimeError>> {
-            let (instance, runtime) = grab_runtime!(env);
-
-            let event_name = read_memory(&instance, event_name_ptr, event_name_len)?;
-            let event_data = read_memory(&instance, event_data_ptr, event_data_len)?;
-            let event_flags = EventFlags::from_bits(flags).ok_or(InvokeError::SelfError(
-                WasmRuntimeError::InvalidEventFlags(flags),
-            ))?;
-
-            runtime.emit_event(event_name, event_data, event_flags)
         }
 
         fn sys_log(
