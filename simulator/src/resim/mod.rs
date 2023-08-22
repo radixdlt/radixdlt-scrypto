@@ -56,9 +56,8 @@ use clap::{Parser, Subcommand};
 use radix_engine::blueprints::consensus_manager::{
     ConsensusManagerSubstate, ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
 };
-use radix_engine::blueprints::models::KeyValueEntryContentSource;
 use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system::FieldSubstate;
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionOutcome;
@@ -442,7 +441,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                 ),
             )?;
 
-            Some((type_id.1, schema.content))
+            Some((type_id.1, schema))
         }
         BlueprintPayloadDef::Generic(..) => {
             panic!("Not expecting any events to use generics")
