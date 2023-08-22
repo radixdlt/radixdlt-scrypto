@@ -17,7 +17,7 @@ use sbor::{validate_payload_against_schema, LocatedValidationError};
 
 use crate::system::system_db_reader::{
     ObjectPartitionDescriptor, ResolvedPayloadSchema, SystemDatabaseReader,
-    SystemPartitionDescriptor,
+    SystemPartitionDescriptor, SystemReaderError,
 };
 use crate::types::Condition;
 
@@ -78,30 +78,30 @@ pub struct SystemPartitionCheckResults {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SystemPartitionCheckError {
-    NoPartitionDescription,
-    MissingKeyValueStoreTarget,
-    MissingKeyValueStoreKeySchema,
-    MissingKeyValueStoreValueSchema,
+    NoPartitionDescription(SystemReaderError),
+    MissingKeyValueStoreTarget(SystemReaderError),
+    MissingKeyValueStoreKeySchema(SystemReaderError),
+    MissingKeyValueStoreValueSchema(SystemReaderError),
     InvalidKeyValueStoreKey,
     InvalidKeyValueStoreValue,
     InvalidFieldKey,
     ContainsFieldWhichShouldNotExist,
     InvalidFieldValue,
-    MissingFieldSchema,
-    MissingKeyValueCollectionKeySchema,
-    MissingKeyValueCollectionValueSchema,
+    MissingFieldSchema(SystemReaderError),
+    MissingKeyValueCollectionKeySchema(SystemReaderError),
+    MissingKeyValueCollectionValueSchema(SystemReaderError),
     InvalidKeyValueCollectionKey,
     FailedBlueprintSchemaCheck(BlueprintPayloadIdentifier),
     InvalidKeyValueCollectionValue,
-    MissingIndexCollectionKeySchema,
-    MissingIndexCollectionValueSchema,
+    MissingIndexCollectionKeySchema(SystemReaderError),
+    MissingIndexCollectionValueSchema(SystemReaderError),
     InvalidIndexCollectionKey,
     InvalidIndexCollectionValue,
-    MissingSortedIndexCollectionKeySchema,
-    MissingSortedIndexCollectionValueSchema,
+    MissingSortedIndexCollectionKeySchema(SystemReaderError),
+    MissingSortedIndexCollectionValueSchema(SystemReaderError),
     InvalidSortedIndexCollectionKey,
     InvalidSortedIndexCollectionValue,
-    MissingObjectTypeTarget,
+    MissingObjectTypeTarget(SystemReaderError),
     InvalidTypeInfoKey,
     InvalidTypeInfoValue,
     InvalidSchemaKey,
@@ -110,12 +110,12 @@ pub enum SystemPartitionCheckError {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SystemNodeCheckError {
-    NoTypeInfo,
+    NoTypeInfo(SystemReaderError),
     NoMappedEntityType,
-    MissingOuterObject,
+    MissingOuterObject(SystemReaderError),
     MissingExpectedFields,
     InvalidCondition,
-    MissingBlueprint,
+    MissingBlueprint(SystemReaderError),
     InvalidOuterObject,
     TransientObjectFound,
     FoundModuleWithConditionalFields,
@@ -219,7 +219,7 @@ impl SystemDatabaseChecker {
     ) -> Result<SystemNodeCheckerState, SystemNodeCheckError> {
         let type_info = reader
             .get_type_info(node_id)
-            .ok_or_else(|| SystemNodeCheckError::NoTypeInfo)?;
+            .map_err(SystemNodeCheckError::NoTypeInfo)?;
         let _entity_type = node_id
             .entity_type()
             .ok_or_else(|| SystemNodeCheckError::NoMappedEntityType)?;
@@ -227,7 +227,7 @@ impl SystemDatabaseChecker {
             TypeInfoSubstate::Object(object_info) => {
                 let bp_definition = reader
                     .get_blueprint_definition(&object_info.blueprint_info.blueprint_id)
-                    .ok_or_else(|| SystemNodeCheckError::MissingBlueprint)?;
+                    .map_err(SystemNodeCheckError::MissingBlueprint)?;
 
                 let outer_object = match (
                     &object_info.blueprint_info.outer_obj_info,
@@ -244,7 +244,7 @@ impl SystemDatabaseChecker {
                         );
                         let outer_object_info = reader
                             .get_object_info(*outer_object)
-                            .ok_or_else(|| SystemNodeCheckError::MissingOuterObject)?;
+                            .map_err(SystemNodeCheckError::MissingOuterObject)?;
 
                         if !outer_object_info
                             .blueprint_info
@@ -311,7 +311,7 @@ impl SystemDatabaseChecker {
                             let blueprint_id = module_id.static_blueprint().unwrap();
                             let module_def = reader
                                 .get_blueprint_definition(&blueprint_id)
-                                .ok_or_else(|| SystemNodeCheckError::MissingBlueprint)?;
+                                .map_err(SystemNodeCheckError::MissingBlueprint)?;
                             if let Some((_, fields)) = &module_def.interface.state.fields {
                                 for (field_index, field_schema) in fields.iter().enumerate() {
                                     match &field_schema.condition {
@@ -377,11 +377,9 @@ impl SystemDatabaseChecker {
         node_checker_state: &mut SystemNodeCheckerState,
         partition_number: PartitionNumber,
     ) -> Result<SystemPartitionCheckResults, SystemPartitionCheckError> {
-        let partition_descriptors =
-            reader.get_partition_descriptors(&node_checker_state.node_id, &partition_number);
-        if partition_descriptors.is_empty() {
-            return Err(SystemPartitionCheckError::NoPartitionDescription);
-        }
+        let partition_descriptors = reader
+            .get_partition_descriptors(&node_checker_state.node_id, &partition_number)
+            .map_err(SystemPartitionCheckError::NoPartitionDescription)?;
 
         let mut substate_count = 0;
 
@@ -422,15 +420,13 @@ impl SystemDatabaseChecker {
                 SystemPartitionDescriptor::KeyValueStore => {
                     let type_target = reader
                         .get_kv_store_type_target(&node_checker_state.node_id)
-                        .ok_or_else(|| SystemPartitionCheckError::MissingKeyValueStoreTarget)?;
+                        .map_err(SystemPartitionCheckError::MissingKeyValueStoreTarget)?;
                     let key_schema = reader
                         .get_kv_store_payload_schema(&type_target, KeyOrValue::Key)
-                        .ok_or_else(|| SystemPartitionCheckError::MissingKeyValueStoreKeySchema)?;
+                        .map_err(SystemPartitionCheckError::MissingKeyValueStoreKeySchema)?;
                     let value_schema = reader
                         .get_kv_store_payload_schema(&type_target, KeyOrValue::Value)
-                        .ok_or_else(|| {
-                            SystemPartitionCheckError::MissingKeyValueStoreValueSchema
-                        })?;
+                        .map_err(SystemPartitionCheckError::MissingKeyValueStoreValueSchema)?;
 
                     for (key, value) in reader
                         .substates_iter::<MapKey>(&node_checker_state.node_id, partition_number)
@@ -470,7 +466,7 @@ impl SystemDatabaseChecker {
                 SystemPartitionDescriptor::Object(module_id, object_partition_descriptor) => {
                     let type_target = reader
                         .get_blueprint_type_target(&node_checker_state.node_id, module_id)
-                        .ok_or_else(|| SystemPartitionCheckError::MissingObjectTypeTarget)?;
+                        .map_err(SystemPartitionCheckError::MissingObjectTypeTarget)?;
 
                     match object_partition_descriptor {
                         ObjectPartitionDescriptor::Field => {
@@ -508,7 +504,7 @@ impl SystemDatabaseChecker {
                                     BlueprintPayloadIdentifier::Field(field_index);
                                 let field_schema = reader
                                     .get_blueprint_payload_schema(&type_target, &field_identifier)
-                                    .ok_or_else(|| SystemPartitionCheckError::MissingFieldSchema)?;
+                                    .map_err(SystemPartitionCheckError::MissingFieldSchema)?;
 
                                 self.validate_payload(reader, &field_payload, &field_schema)
                                     .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
@@ -524,9 +520,9 @@ impl SystemDatabaseChecker {
                                 );
                                 reader
                                     .get_blueprint_payload_schema(&type_target, &key_identifier)
-                                    .ok_or_else(|| {
-                                        SystemPartitionCheckError::MissingIndexCollectionKeySchema
-                                    })?
+                                    .map_err(
+                                        SystemPartitionCheckError::MissingIndexCollectionKeySchema,
+                                    )?
                             };
 
                             let value_schema = {
@@ -536,9 +532,7 @@ impl SystemDatabaseChecker {
                                 );
                                 reader
                                     .get_blueprint_payload_schema(&type_target, &value_identifier)
-                                    .ok_or_else(|| {
-                                        SystemPartitionCheckError::MissingIndexCollectionValueSchema
-                                    })?
+                                    .map_err(SystemPartitionCheckError::MissingIndexCollectionValueSchema)?
                             };
 
                             for (key, value) in reader.substates_iter::<MapKey>(
@@ -575,9 +569,9 @@ impl SystemDatabaseChecker {
 
                             let key_schema = reader
                                 .get_blueprint_payload_schema(&type_target, &key_identifier)
-                                .ok_or_else(|| {
-                                    SystemPartitionCheckError::MissingKeyValueCollectionKeySchema
-                                })?;
+                                .map_err(
+                                    SystemPartitionCheckError::MissingKeyValueCollectionKeySchema,
+                                )?;
 
                             let value_schema = {
                                 let value_identifier = BlueprintPayloadIdentifier::KeyValueEntry(
@@ -586,7 +580,7 @@ impl SystemDatabaseChecker {
                                 );
                                 reader
                                     .get_blueprint_payload_schema(&type_target, &value_identifier)
-                                    .ok_or_else(|| SystemPartitionCheckError::MissingKeyValueCollectionValueSchema)?
+                                    .map_err(SystemPartitionCheckError::MissingKeyValueCollectionValueSchema)?
                             };
 
                             for (key, value) in reader.substates_iter::<MapKey>(
@@ -632,7 +626,7 @@ impl SystemDatabaseChecker {
                                 );
                                 reader
                                     .get_blueprint_payload_schema(&type_target, &key_identifier)
-                                    .ok_or_else(|| SystemPartitionCheckError::MissingSortedIndexCollectionKeySchema)?
+                                    .map_err(SystemPartitionCheckError::MissingSortedIndexCollectionKeySchema)?
                             };
 
                             let value_schema = {
@@ -642,7 +636,7 @@ impl SystemDatabaseChecker {
                                 );
                                 reader
                                     .get_blueprint_payload_schema(&type_target, &value_identifier)
-                                    .ok_or_else(|| SystemPartitionCheckError::MissingSortedIndexCollectionValueSchema)?
+                                    .map_err(SystemPartitionCheckError::MissingSortedIndexCollectionValueSchema)?
                             };
 
                             for (key, value) in reader.substates_iter::<SortedKey>(
@@ -714,7 +708,7 @@ impl<'a, S: SubstateDatabase> ValidationContext for ValidationPayloadCheckerCont
         let type_info = self
             .reader
             .get_type_info(node_id)
-            .ok_or_else(|| "Type Info missing".to_string())?;
+            .map_err(|_| "Type Info missing".to_string())?;
         let type_info_for_validation = match type_info {
             TypeInfoSubstate::Object(object_info) => TypeInfoForValidation::Object {
                 package: object_info.blueprint_info.blueprint_id.package_address,

@@ -153,7 +153,8 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
     ) {
         let partition_descriptors = self
             .system_reader
-            .get_partition_descriptors(node_id, partition_num);
+            .get_partition_descriptors(node_id, partition_num)
+            .unwrap();
         let substate_structure =
             self.resolve_substate_structure(node_id, partition_descriptors, key);
         self.substate_structures
