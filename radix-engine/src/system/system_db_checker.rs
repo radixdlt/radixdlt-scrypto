@@ -537,6 +537,8 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
 
                                 match module_id {
                                     ObjectModuleId::Main => {
+                                        let (scrypto_value,) = field.value;
+                                        let value = scrypto_encode(&scrypto_value).unwrap();
                                         self.application_checker.on_field(blueprint_info, node_checker_state.node_id, field_index, &value)
                                     }
                                     _ => {}
