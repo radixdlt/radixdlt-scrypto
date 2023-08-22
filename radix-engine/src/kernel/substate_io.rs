@@ -7,7 +7,7 @@ use crate::kernel::call_frame::{
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::{
-    CallbackError, CommitableSubstateStore, NodeSubstates, StoreAccess, TrackedSubstateInfo,
+    CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates, TrackedSubstateInfo,
 };
 use radix_engine_common::prelude::{NodeId, PartitionNumber};
 use radix_engine_common::types::{SortedKey, SubstateKey};
@@ -32,10 +32,12 @@ pub struct LockData {
     virtualized: Option<IndexedScryptoValue>,
 }
 
-pub trait SubstateIOHandler<E> {
-    fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E>;
+/// Callback for store access, from SubstateIO
+pub trait IOAccessHandler<E> {
+    fn on_io_access(&mut self, heap: &Heap, io_access: IOAccess) -> Result<(), E>;
 }
 
+/// Callback for substate read, from SubstateIO
 pub trait SubstateReadHandler {
     type Error;
 
@@ -79,47 +81,60 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
     /// are not moved and must be done manually using other interfaces)
     pub fn create_node<E>(
         &mut self,
-        handler: &mut impl SubstateIOHandler<E>,
         device: SubstateDevice,
         node_id: NodeId,
         node_substates: NodeSubstates,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
         match device {
             SubstateDevice::Heap => {
-                self.heap.create_node(node_id, node_substates);
+                self.heap
+                    .create_node(node_id, node_substates, &mut |heap, io_access| {
+                        handler.on_io_access(heap, io_access)
+                    })
             }
             SubstateDevice::Store => {
                 self.store
-                    .create_node(node_id, node_substates, &mut |store_access| {
-                        handler.on_store_access(&self.heap, store_access)
+                    .create_node(node_id, node_substates, &mut |io_access| {
+                        handler.on_io_access(&self.heap, io_access)
                     })
-                    .map_err(CallbackError::CallbackError)?;
             }
         }
+        .map_err(CallbackError::CallbackError)?;
 
         Ok(())
     }
 
-    pub fn drop_node(
+    pub fn drop_node<E>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
-    ) -> Result<NodeSubstates, DropNodeError> {
+        handler: &mut impl IOAccessHandler<E>,
+    ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
         if self.substate_locks.node_is_locked(node_id) {
-            return Err(DropNodeError::SubstateBorrowed(*node_id));
+            return Err(CallbackError::Error(DropNodeError::SubstateBorrowed(
+                *node_id,
+            )));
         }
 
         if self.non_global_node_refs.node_is_referenced(node_id) {
-            return Err(DropNodeError::NodeBorrowed(*node_id));
+            return Err(CallbackError::Error(DropNodeError::NodeBorrowed(*node_id)));
         }
 
         let node_substates = match device {
-            SubstateDevice::Heap => match self.heap.remove_node(node_id) {
-                Ok(substates) => substates,
-                Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
-                    panic!("Frame owned node {:?} not found in heap", node_id)
+            SubstateDevice::Heap => {
+                match self.heap.remove_node(node_id, &mut |heap, io_access| {
+                    handler.on_io_access(heap, io_access)
+                }) {
+                    Ok(substates) => substates,
+                    Err(CallbackError::Error(HeapRemoveNodeError::NodeNotFound(node_id))) => {
+                        panic!("Frame owned node {:?} not found in heap", node_id)
+                    }
+                    Err(CallbackError::CallbackError(e)) => {
+                        return Err(CallbackError::CallbackError(e));
+                    }
                 }
-            },
+            }
             SubstateDevice::Store => {
                 panic!("Node drops not supported for store")
             }
@@ -130,8 +145,8 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
 
     pub fn move_node_from_heap_to_store<E>(
         &mut self,
-        handler: &mut impl SubstateIOHandler<E>,
         node_id: &NodeId,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<PersistNodeError, E>> {
         // TODO: Add locked substate checks, though this is not required since
         // the system layer currently maintains the invariant that a call frame cannot
@@ -153,10 +168,15 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                 ));
             }
 
-            let node_substates = match self.heap.remove_node(&node_id) {
+            let node_substates = match self.heap.remove_node(&node_id, &mut |heap, io_access| {
+                handler.on_io_access(heap, io_access)
+            }) {
                 Ok(substates) => substates,
-                Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
+                Err(CallbackError::Error(HeapRemoveNodeError::NodeNotFound(node_id))) => {
                     panic!("Frame owned node {:?} not found in heap", node_id)
+                }
+                Err(CallbackError::CallbackError(e)) => {
+                    return Err(CallbackError::CallbackError(e));
                 }
             };
 
@@ -188,8 +208,8 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
             }
 
             self.store
-                .create_node(node_id.clone(), node_substates, &mut |store_access| {
-                    handler.on_store_access(&self.heap, store_access)
+                .create_node(node_id.clone(), node_substates, &mut |io_access| {
+                    handler.on_io_access(&self.heap, io_access)
                 })
                 .map_err(CallbackError::CallbackError)?;
         }
@@ -199,13 +219,13 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
 
     pub fn move_partition<'f, E>(
         &mut self,
-        handler: &mut impl SubstateIOHandler<E>,
         src_device: SubstateDevice,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
         dest_device: SubstateDevice,
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<MovePartitionError, E>> {
         // TODO: Use more granular partition lock checks?
         if self.substate_locks.node_is_locked(src_node_id) {
@@ -218,9 +238,14 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         let partition_substates = match src_device {
             SubstateDevice::Heap => self
                 .heap
-                .remove_module(src_node_id, src_partition_number)
-                .map_err(|e| {
-                    CallbackError::Error(MovePartitionError::HeapRemovePartitionError(e))
+                .remove_module(src_node_id, src_partition_number, &mut |heap, io_access| {
+                    handler.on_io_access(heap, io_access)
+                })
+                .map_err(|e| match e {
+                    CallbackError::Error(e) => {
+                        CallbackError::Error(MovePartitionError::HeapRemovePartitionError(e))
+                    }
+                    CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
                 })?,
             SubstateDevice::Store => {
                 panic!("Partition moves from store not supported.");
@@ -230,12 +255,15 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         for (substate_key, substate_value) in partition_substates {
             match dest_device {
                 SubstateDevice::Heap => {
-                    self.heap.set_substate(
-                        *dest_node_id,
-                        dest_partition_number,
-                        substate_key,
-                        substate_value,
-                    );
+                    self.heap
+                        .set_substate(
+                            *dest_node_id,
+                            dest_partition_number,
+                            substate_key,
+                            substate_value,
+                            &mut |heap, io_access| handler.on_io_access(heap, io_access),
+                        )
+                        .map_err(CallbackError::CallbackError)?;
                 }
                 SubstateDevice::Store => {
                     if self.heap_transient_substates.is_transient(
@@ -248,7 +276,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
 
                     // Recursively move nodes to store
                     for own in substate_value.owned_nodes() {
-                        self.move_node_from_heap_to_store(handler, own)
+                        self.move_node_from_heap_to_store(own, handler)
                             .map_err(|e| e.map(|e| MovePartitionError::PersistNodeError(e)))?;
                     }
 
@@ -266,7 +294,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                             dest_partition_number,
                             substate_key,
                             substate_value,
-                            &mut |store_access| handler.on_store_access(&self.heap, store_access),
+                            &mut |io_access| handler.on_io_access(&self.heap, io_access),
                         )
                         .map_err(CallbackError::CallbackError)?
                 }
@@ -276,19 +304,15 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         Ok(())
     }
 
-    pub fn open_substate<
-        E,
-        F: FnMut(&Heap, StoreAccess) -> Result<(), E>,
-        D: FnOnce() -> IndexedScryptoValue,
-    >(
+    pub fn open_substate<E, D: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        on_store_access: &mut F,
         default: Option<D>,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(u32, &IndexedScryptoValue), CallbackError<OpenSubstateError, E>> {
         match device {
             SubstateDevice::Heap => {
@@ -338,7 +362,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
             node_id,
             partition_num,
             substate_key,
-            on_store_access,
+            handler,
         )?;
 
         let (lock_data, substate_value) = if let Some(substate_value) = substate_value {
@@ -422,11 +446,11 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         Ok(substate)
     }
 
-    pub fn write_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
+    pub fn write_substate<E>(
         &mut self,
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
-        on_store_access: &mut F,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get_mut(global_lock_handle);
@@ -442,21 +466,22 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         let substate_key = substate_key.clone();
 
         match lock_data.device {
-            SubstateDevice::Heap => {
-                self.heap
-                    .set_substate(node_id, partition_num, substate_key, substate);
-            }
-            SubstateDevice::Store => self
-                .store
-                .set_substate(
-                    node_id,
-                    partition_num,
-                    substate_key,
-                    substate,
-                    &mut |store_access| on_store_access(&self.heap, store_access),
-                )
-                .map_err(|e| CallbackError::CallbackError(e))?,
+            SubstateDevice::Heap => self.heap.set_substate(
+                node_id,
+                partition_num,
+                substate_key,
+                substate,
+                &mut |heap, io_access| handler.on_io_access(heap, io_access),
+            ),
+            SubstateDevice::Store => self.store.set_substate(
+                node_id,
+                partition_num,
+                substate_key,
+                substate,
+                &mut |io_access| handler.on_io_access(&self.heap, io_access),
+            ),
         }
+        .map_err(|e| CallbackError::CallbackError(e))?;
 
         Ok(())
     }
@@ -476,14 +501,14 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         Ok((node_id, partition_num, substate_key, lock_data.flags))
     }
 
-    pub fn set_substate<'f, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn set_substate<'f, E>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
-        on_store_access: &mut F,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
         if self
             .substate_locks
@@ -499,32 +524,33 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         }
 
         match device {
-            SubstateDevice::Heap => {
-                self.heap
-                    .set_substate(*node_id, partition_num, substate_key, value);
-            }
-            SubstateDevice::Store => self
-                .store
-                .set_substate(
-                    *node_id,
-                    partition_num,
-                    substate_key,
-                    value,
-                    on_store_access,
-                )
-                .map_err(CallbackError::CallbackError)?,
+            SubstateDevice::Heap => self.heap.set_substate(
+                *node_id,
+                partition_num,
+                substate_key,
+                value,
+                &mut |heap, io_access| handler.on_io_access(heap, io_access),
+            ),
+            SubstateDevice::Store => self.store.set_substate(
+                *node_id,
+                partition_num,
+                substate_key,
+                value,
+                &mut |io_access| handler.on_io_access(&self.heap, io_access),
+            ),
         }
+        .map_err(CallbackError::CallbackError)?;
 
         Ok(())
     }
 
-    pub fn remove_substate<'f, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn remove_substate<'f, E>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: &SubstateKey,
-        on_store_access: &mut F,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
         if self.substate_locks.is_locked(node_id, partition_num, key) {
             return Err(CallbackError::Error(
@@ -537,63 +563,71 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         }
 
         let removed = match device {
-            SubstateDevice::Heap => self.heap.remove_substate(node_id, partition_num, key),
-            SubstateDevice::Store => self
-                .store
-                .remove_substate(node_id, partition_num, key, on_store_access)
-                .map_err(CallbackError::CallbackError)?,
-        };
+            SubstateDevice::Heap => {
+                self.heap
+                    .remove_substate(node_id, partition_num, key, &mut |heap, io_access| {
+                        handler.on_io_access(heap, io_access)
+                    })
+            }
+            SubstateDevice::Store => {
+                self.store
+                    .remove_substate(node_id, partition_num, key, &mut |io_access| {
+                        handler.on_io_access(&self.heap, io_access)
+                    })
+            }
+        }
+        .map_err(CallbackError::CallbackError)?;
 
         Ok(removed)
     }
 
-    pub fn scan_keys<
-        'f,
-        K: SubstateKeyContent + 'static,
-        E,
-        F: FnMut(StoreAccess) -> Result<(), E>,
-    >(
+    pub fn scan_keys<K: SubstateKeyContent + 'static, E>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: &mut F,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
         let keys = match device {
             SubstateDevice::Heap => self.heap.scan_keys(node_id, partition_num, count),
             SubstateDevice::Store => self
                 .store
-                .scan_keys::<K, E, F>(node_id, partition_num, count, on_store_access)
+                .scan_keys::<K, E, _>(node_id, partition_num, count, &mut |io_access| {
+                    handler.on_io_access(&self.heap, io_access)
+                })
                 .map_err(|e| CallbackError::CallbackError(e))?,
         };
 
         Ok(keys)
     }
 
-    pub fn drain_substates<
-        'f,
-        K: SubstateKeyContent + 'static,
-        E,
-        F: FnMut(StoreAccess) -> Result<(), E>,
-    >(
+    pub fn drain_substates<K: SubstateKeyContent + 'static, E>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: &mut F,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<
         Vec<(SubstateKey, IndexedScryptoValue)>,
         CallbackError<CallFrameDrainSubstatesError, E>,
     > {
         let substates = match device {
-            SubstateDevice::Heap => self.heap.drain_substates(node_id, partition_num, count),
-            SubstateDevice::Store => self
-                .store
-                .drain_substates::<K, E, F>(node_id, partition_num, count, on_store_access)
-                .map_err(|e| CallbackError::CallbackError(e))?,
-        };
+            SubstateDevice::Heap => {
+                self.heap
+                    .drain_substates(node_id, partition_num, count, &mut |heap, io_access| {
+                        handler.on_io_access(heap, io_access)
+                    })
+            }
+            SubstateDevice::Store => self.store.drain_substates::<K, E, _>(
+                node_id,
+                partition_num,
+                count,
+                &mut |io_access| handler.on_io_access(&self.heap, io_access),
+            ),
+        }
+        .map_err(|e| CallbackError::CallbackError(e))?;
 
         // TODO: Should check if any substate is locked
 
@@ -602,13 +636,13 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
-    pub fn scan_sorted<'f, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn scan_sorted<'f, E>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: &mut F,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<
         Vec<(SortedKey, IndexedScryptoValue)>,
         CallbackError<CallFrameScanSortedSubstatesError, E>,
@@ -621,7 +655,9 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
             }
             SubstateDevice::Store => self
                 .store
-                .scan_sorted_substates(node_id, partition_num, count, on_store_access)
+                .scan_sorted_substates(node_id, partition_num, count, &mut |io_access| {
+                    handler.on_io_access(&self.heap, io_access)
+                })
                 .map_err(|e| CallbackError::CallbackError(e))?,
         };
 
@@ -630,20 +666,20 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         Ok(substates)
     }
 
-    fn get_substate_internal<'a, E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
+    fn get_substate_internal<'a, E>(
         heap: &'a mut Heap,
         store: &'a mut S,
         location: SubstateDevice,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: &mut F,
+        handler: &mut impl IOAccessHandler<E>,
     ) -> Result<Option<&'a IndexedScryptoValue>, CallbackError<OpenSubstateError, E>> {
         let value = match location {
             SubstateDevice::Heap => heap.get_substate(node_id, partition_num, substate_key),
             SubstateDevice::Store => store
-                .get_substate(node_id, partition_num, substate_key, &mut |store_access| {
-                    on_store_access(heap, store_access)
+                .get_substate(node_id, partition_num, substate_key, &mut |io_access| {
+                    handler.on_io_access(heap, io_access)
                 })
                 .map_err(|e| CallbackError::CallbackError(e))?,
         };
