@@ -278,7 +278,7 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --no-default-features --features post_run_db_check alloc \
+          --no-default-features --features alloc \
           -p radix-engine \
           -p radix-engine-tests
   radix-engine-wasmer:
