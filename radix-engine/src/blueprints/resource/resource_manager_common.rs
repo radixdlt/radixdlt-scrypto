@@ -72,10 +72,10 @@ where
         modules,
         resource_address_reservation,
         FUNGIBLE_BUCKET_BLUEPRINT,
-        vec![
-            FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
-            FieldValue::new(&LockedFungibleResource::default()),
-        ],
+        btreemap! {
+            0u8 => FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
+            1u8 => FieldValue::new(&LockedFungibleResource::default()),
+        },
         MintFungibleResourceEvent::event_name().to_string(),
         scrypto_encode(&MintFungibleResourceEvent {
             amount: initial_supply,
@@ -117,10 +117,10 @@ where
         ),
         resource_address_reservation,
         NON_FUNGIBLE_BUCKET_BLUEPRINT,
-        vec![
-            FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
-            FieldValue::new(&LockedNonFungibleResource::default()),
-        ],
+        btreemap! {
+            0u8 => FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
+            1u8 => FieldValue::new(&LockedNonFungibleResource::default()),
+        },
         MintNonFungibleResourceEvent::event_name().to_string(),
         scrypto_encode(&MintNonFungibleResourceEvent { ids }).unwrap(),
     )?;
