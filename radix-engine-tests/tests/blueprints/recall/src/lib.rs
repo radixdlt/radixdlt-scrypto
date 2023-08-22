@@ -32,7 +32,7 @@ mod recall {
             let address = bucket.resource_address();
 
             let global = Self {
-                vault: Vault::with_bucket(bucket),
+                vault: Vault::with_bucket(bucket.into()),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

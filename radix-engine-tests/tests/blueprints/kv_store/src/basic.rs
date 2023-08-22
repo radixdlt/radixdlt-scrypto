@@ -82,6 +82,7 @@ mod kv_vault {
                     }
                 })
                 .mint_initial_supply(1)
+                .into()
         }
 
         pub fn new() -> Global<KVVault> {
