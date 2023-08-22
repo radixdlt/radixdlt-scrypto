@@ -554,10 +554,10 @@ impl InProgressResourceBuilder<FungibleResourceType> {
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
-    /// let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+    /// let bucket: FungibleBucket = ResourceBuilder::new_fungible(OwnerRole::None)
     ///     .mint_initial_supply(5);
     /// ```
-    pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> Bucket {
+    pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> FungibleBucket {
         let metadata = self
             .metadata_config
             .take()
@@ -579,7 +579,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
             .unwrap(),
         );
 
-        scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+        scrypto_decode::<(ResourceAddress, FungibleBucket)>(&bytes)
             .unwrap()
             .1
     }
@@ -601,13 +601,13 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_string_non_fungible::<NFData>(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_string_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         ("One".try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         ("Two".try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
     where
         T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
     {
@@ -635,7 +635,7 @@ impl<D: NonFungibleData>
             })
             .unwrap(),
         );
-        scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
             .unwrap()
             .1
     }
@@ -657,13 +657,13 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (1u64.into(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         (2u64.into(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
     where
         T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
     {
@@ -691,7 +691,7 @@ impl<D: NonFungibleData>
             })
             .unwrap(),
         );
-        scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
             .unwrap()
             .1
     }
@@ -713,13 +713,13 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_bytes_non_fungible::<NFData>(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_bytes_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (vec![1u8].try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         (vec![2u8].try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
     where
         T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
     {
@@ -747,7 +747,7 @@ impl<D: NonFungibleData>
             })
             .unwrap(),
         );
-        scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
             .unwrap()
             .1
     }
@@ -772,13 +772,13 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (NFData { name: "NF One".to_owned(), flag: true }),
     ///         (NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
     where
         T: IntoIterator<Item = D>,
     {
@@ -814,7 +814,7 @@ impl<D: NonFungibleData>
             )
             .unwrap(),
         );
-        scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
             .unwrap()
             .1
     }

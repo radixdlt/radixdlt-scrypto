@@ -1,9 +1,17 @@
 name: Fuzzing
-run-name: Fuzzing input=${{ github.event.inputs.fuzz_input_mode }} duration=${{ github.event.inputs.duration_hours }}h branch=${{ github.ref_name }}
+run-name: Fuzzing target=${{ github.event.inputs.fuzz_target }} input=${{ github.event.inputs.fuzz_input_mode }} duration=${{ github.event.inputs.duration_hours }}h branch=${{ github.ref_name }}
 
 on:
   workflow_dispatch:
     inputs:
+      fuzz_target:
+        type: choice
+        description: 'Fuzz target'
+        required: true
+        options:
+          - transaction
+          - wasm_instrument
+
       duration_hours:
         description: 'Fuzzing duration [h]'
         required: true
@@ -29,8 +37,8 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  transaction:
-    name: Fuzz transaction (AFL)
+  fuzz_afl:
+    name: Fuzz ${{ github.event.inputs.fuzz_target }} (AFL)
     runs-on: fuzzing
     # set timeout to 7days
     timeout-minutes: 10080
@@ -63,12 +71,12 @@ jobs:
     - name: Build AFL
       working-directory: fuzz-tests
       run: |
-        ./fuzz.sh afl build
+        ./fuzz.sh afl build ${{ github.event.inputs.fuzz_target }}
 
     - name: Generate input for AFL
       working-directory: fuzz-tests
       run: |
-        ./fuzz.sh generate-input ${{ github.event.inputs.fuzz_input_mode }} ${{ github.event.inputs.timeout }}
+        ./fuzz.sh generate-input ${{ github.event.inputs.fuzz_target }} ${{ github.event.inputs.fuzz_input_mode }} ${{ github.event.inputs.timeout }}
 
     - name: Start AFL
       working-directory: fuzz-tests
@@ -77,25 +85,25 @@ jobs:
         # dividing by 1 because 'scale' works only for division ;)
         # Using floating arithmetics to allow providing fractions of hours (for test purposes)
         SECONDS=$(echo "scale=0; ${{ github.event.inputs.duration_hours }} * 60 * 60 / 1" | bc)
-        ./afl.sh run $SECONDS all ${{ github.event.inputs.timeout }}
+        ./afl.sh run ${{ github.event.inputs.fuzz_target }} $SECONDS all ${{ github.event.inputs.timeout }}
 
     - name: Watch AFL
       working-directory: fuzz-tests
       run: |
-        ./afl.sh watch ${{ github.event.inputs.watch_interval }}
+        ./afl.sh watch ${{ github.event.inputs.fuzz_target }} ${{ github.event.inputs.watch_interval }}
 
     - name: Quit AFL
       if: failure() || cancelled()
       working-directory: fuzz-tests
       run: |
-        ./afl.sh quit
+        ./afl.sh quit ${{ github.event.inputs.fuzz_target }}
 
     - name: Process AFL results (if success)
       if: success()
       working-directory: fuzz-tests
       run: |
         # it is expected to generate afl/crash_summary.txt
-        ./process_fuzz_results.sh afl/transaction
+        ./process_fuzz_results.sh afl/${{ github.event.inputs.fuzz_target }}
 
     - name: Process AFL results (if not success)
       if: failure() || cancelled()
@@ -105,7 +113,7 @@ jobs:
         # Specify crash inspection timeout to workaround following issue:
         #   "Runner fuzzing-runner did not respond to a cancelation request with 00:05:00"
         # Setting timeout to 270s, remaining 30s is a safety margin
-        ./process_fuzz_results.sh afl/transaction 270
+        ./process_fuzz_results.sh afl/${{ github.event.inputs.fuzz_target }} 270
 
     - name: Generate summary
       if: success() || failure() || cancelled()
@@ -119,7 +127,7 @@ jobs:
         revision: [${{ github.repository }} - $COMMIT](${{ github.server_url }}/${{ github.repository }}/commit/$COMMIT)\n \
         ## Summary:\n \
         \n\`\`\`\n\
-        $(cargo afl whatsup -s -d afl/transaction | awk '/Fuzzers alive/ {seen=1} seen {print}') \
+        $(cargo afl whatsup -s -d afl/${{ github.event.inputs.fuzz_target }} | awk '/Fuzzers alive/ {seen=1} seen {print}') \
         \n\`\`\`\n \
         ## Status:\n \
         \n\`\`\`\n\
@@ -129,7 +137,7 @@ jobs:
         <details>\n
           <summary>More details</summary>\n
         \n\`\`\`\n\
-        $(cargo afl whatsup -d afl/transaction) \
+        $(cargo afl whatsup -d afl/${{ github.event.inputs.fuzz_target }}) \
         \n\`\`\`\n
         </details>\n" > afl/summary
         cat afl/summary >> $GITHUB_STEP_SUMMARY
@@ -190,6 +198,6 @@ jobs:
       if: success() || failure() || cancelled()
       uses: actions/upload-artifact@v3
       with:
-        name: fuzz_transaction.tgz
+        name: fuzz_${{ github.event.inputs.fuzz_target }}.tgz
         path: |
-          fuzz-tests/fuzz_transaction.tgz
+          fuzz-tests/fuzz_${{ github.event.inputs.fuzz_target }}.tgz

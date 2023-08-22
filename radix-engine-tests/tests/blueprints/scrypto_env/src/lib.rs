@@ -29,5 +29,9 @@ mod scrypto_env_test {
 
             ScryptoVmV1Api::actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE);
         }
+
+        pub fn bech32_encode_address(address: ComponentAddress) -> String {
+            Runtime::bech32_encode_address(address)
+        }
     }
 }

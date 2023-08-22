@@ -1,3 +1,4 @@
+use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::mem::transmute;
 use sbor::rust::mem::MaybeUninit;
@@ -153,7 +154,7 @@ fn call_module_method(
     mut caller: Caller<'_, HostState>,
     receiver_ptr: u32,
     receiver_len: u32,
-    direct_access: u32,
+    module_id: u32,
     ident_ptr: u32,
     ident_len: u32,
     args_ptr: u32,
@@ -166,7 +167,7 @@ fn call_module_method(
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .object_call_module(receiver, direct_access, ident, args)
+        .object_call_module(receiver, module_id, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -523,6 +524,7 @@ fn emit_event(
     event_name_len: u32,
     event_data_ptr: u32,
     event_data_len: u32,
+    flags: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
@@ -538,8 +540,11 @@ fn emit_event(
         event_data_ptr,
         event_data_len,
     )?;
+    let event_flags = EventFlags::from_bits(flags).ok_or(InvokeError::SelfError(
+        WasmRuntimeError::InvalidEventFlags(flags),
+    ))?;
 
-    runtime.actor_emit_event(event_name, event_data)
+    runtime.actor_emit_event(event_name, event_data, event_flags)
 }
 
 fn get_transaction_hash(
@@ -569,6 +574,20 @@ fn emit_log(
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
 
     runtime.sys_log(level, message)
+}
+
+fn bech32_encode_address(
+    mut caller: Caller<'_, HostState>,
+    address_ptr: u32,
+    address_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let address = read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?;
+
+    runtime
+        .sys_bech32_encode_address(address)
+        .map(|buffer| buffer.0)
 }
 
 fn panic(
@@ -661,7 +680,7 @@ impl WasmiModule {
             |caller: Caller<'_, HostState>,
              receiver_ptr: u32,
              receiver_len: u32,
-             direct_access: u32,
+             module_id: u32,
              ident_ptr: u32,
              ident_len: u32,
              args_ptr: u32,
@@ -671,7 +690,7 @@ impl WasmiModule {
                     caller,
                     receiver_ptr,
                     receiver_len,
-                    direct_access,
+                    module_id,
                     ident_ptr,
                     ident_len,
                     args_ptr,
@@ -998,7 +1017,8 @@ impl WasmiModule {
              event_name_ptr: u32,
              event_name_len: u32,
              event_data_ptr: u32,
-             event_data_len: u32|
+             event_data_len: u32,
+             flags: u32|
              -> Result<(), Trap> {
                 emit_event(
                     caller,
@@ -1006,6 +1026,7 @@ impl WasmiModule {
                     event_name_len,
                     event_data_ptr,
                     event_data_len,
+                    flags,
                 )
                 .map_err(|e| e.into())
             },
@@ -1031,6 +1052,16 @@ impl WasmiModule {
              message_len: u32|
              -> Result<(), Trap> {
                 panic(caller, message_ptr, message_len).map_err(|e| e.into())
+            },
+        );
+
+        let host_bech32_encode_address = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             address_ptr: u32,
+             address_len: u32|
+             -> Result<u64, Trap> {
+                bech32_encode_address(caller, address_ptr, address_len).map_err(|e| e.into())
             },
         );
 
@@ -1193,6 +1224,12 @@ impl WasmiModule {
             SYS_GET_TRANSACTION_HASH_FUNCTION_NAME,
             host_get_transaction_hash
         );
+        linker_define!(
+            linker,
+            SYS_BECH32_ENCODE_ADDRESS_FUNCTION_NAME,
+            host_bech32_encode_address
+        );
+
         linker_define!(linker, SYS_GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
 
         let global_value = Global::new(store.as_context_mut(), Value::I32(-1), Mutability::Var);

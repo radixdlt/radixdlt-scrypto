@@ -1,6 +1,7 @@
 use crate::engine::wasm_api::*;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
+use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::{ActorRefHandle, FieldValue};
@@ -187,13 +188,14 @@ impl ScryptoVmV1Api {
         scrypto_decode(&blueprint_id).unwrap()
     }
 
-    pub fn actor_emit_event(event_name: String, event_data: Vec<u8>) {
+    pub fn actor_emit_event(event_name: String, event_data: Vec<u8>, flags: EventFlags) {
         unsafe {
             actor::actor_emit_event(
                 event_name.as_ptr(),
                 event_name.len(),
                 event_data.as_ptr(),
                 event_data.len(),
+                flags.bits(),
             )
         };
     }
@@ -256,6 +258,15 @@ impl ScryptoVmV1Api {
     pub fn costing_get_fee_balance() -> Decimal {
         let bytes = copy_buffer(unsafe { costing::costing_get_fee_balance() });
         scrypto_decode(&bytes).unwrap()
+    }
+
+    pub fn sys_bech32_encode_address(address: GlobalAddress) -> String {
+        let global_address = scrypto_encode(&address).unwrap();
+        let encoded = copy_buffer(unsafe {
+            system::sys_bech32_encode_address(global_address.as_ptr(), global_address.len())
+        });
+
+        scrypto_decode(&encoded).unwrap()
     }
 
     pub fn sys_log(level: Level, message: String) {

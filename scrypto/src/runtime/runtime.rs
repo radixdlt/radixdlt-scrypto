@@ -3,7 +3,8 @@ use crate::engine::wasm_api::{addr, copy_buffer};
 use crate::prelude::{AnyComponent, Global};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
-use radix_engine_interface::api::{ACTOR_REF_AUTH_ZONE, ACTOR_REF_GLOBAL};
+use radix_engine_interface::api::actor_api::EventFlags;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
@@ -72,6 +73,7 @@ impl Runtime {
         ScryptoVmV1Api::actor_emit_event(
             T::event_name().to_owned(),
             scrypto_encode(&event).unwrap(),
+            EventFlags::empty(),
         );
     }
 
@@ -92,6 +94,10 @@ impl Runtime {
     /// Returns the transaction hash.
     pub fn generate_ruid() -> [u8; 32] {
         ScryptoVmV1Api::sys_generate_ruid()
+    }
+
+    pub fn bech32_encode_address<A: Into<GlobalAddress>>(address: A) -> String {
+        ScryptoVmV1Api::sys_bech32_encode_address(address.into())
     }
 
     pub fn panic(message: String) -> ! {

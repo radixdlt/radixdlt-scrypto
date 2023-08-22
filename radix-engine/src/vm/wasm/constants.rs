@@ -70,6 +70,7 @@ pub const COSTING_GET_FEE_BALANCE_FUNCTION_NAME: &str = "costing_get_fee_balance
 // System
 //=================
 pub const SYS_LOG_FUNCTION_NAME: &str = "sys_log";
+pub const SYS_BECH32_ENCODE_ADDRESS_FUNCTION_NAME: &str = "sys_bech32_encode_address";
 pub const SYS_GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "sys_get_transaction_hash";
 pub const SYS_GENERATE_RUID_FUNCTION_NAME: &str = "sys_generate_ruid";
 pub const SYS_PANIC_FUNCTION_NAME: &str = "sys_panic";

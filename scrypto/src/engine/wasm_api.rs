@@ -148,6 +148,7 @@ pub mod actor {
             event_name_len: usize,
             event_data_ptr: *const u8,
             event_data_len: usize,
+            event_flags: u32,
         );
     }
 }
@@ -245,6 +246,9 @@ pub mod system {
             message_ptr: *const u8,
             message_len: usize,
         );
+
+        /// Encode an address to bech32 encoding
+        pub fn sys_bech32_encode_address(address_ptr: *const u8, address_len: usize) -> Buffer;
 
         /// Retrieves the current transaction hash
         pub fn sys_get_transaction_hash() -> Buffer;
