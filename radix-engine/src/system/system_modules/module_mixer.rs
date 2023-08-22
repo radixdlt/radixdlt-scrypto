@@ -1,4 +1,4 @@
-use super::costing::{ExecutionCostingEntry, FinalizationCostingEntry};
+use super::costing::{ExecutionCostingEntry, FinalizationCostingEntry, StorageType};
 use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
@@ -12,7 +12,7 @@ use crate::kernel::kernel_callback_api::{
 };
 #[cfg(feature = "resource_tracker")]
 use crate::kernel::substate_io::SubstateDevice;
-use crate::system::module::KernelModule;
+use crate::system::module::SystemModule;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -24,7 +24,6 @@ use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::transaction_runtime::{Event, TransactionRuntimeModule};
-use crate::track::interface::StoreCommit;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
@@ -89,7 +88,7 @@ pub struct SystemModuleMixer {
     pub(super) limits: LimitsModule,
     pub(super) costing: CostingModule,
     pub(crate) auth: AuthModule,
-    pub(super) transaction_runtime: TransactionRuntimeModule,
+    pub(crate) transaction_runtime: TransactionRuntimeModule,
     pub(super) execution_trace: ExecutionTraceModule,
 }
 
@@ -125,6 +124,7 @@ macro_rules! internal_call_dispatch {
 impl SystemModuleMixer {
     pub fn new(
         enabled_modules: EnabledModules,
+        network_definition: NetworkDefinition,
         tx_hash: Hash,
         auth_zone_params: AuthZoneParams,
         fee_reserve: SystemLoanFeeReserve,
@@ -151,8 +151,8 @@ impl SystemModuleMixer {
                 params: auth_zone_params.clone(),
             },
             limits: LimitsModule::new(TransactionLimitsConfig {
-                max_number_of_substates_in_track: execution_config.max_number_of_substates_in_track,
-                max_number_of_substates_in_heap: execution_config.max_number_of_substates_in_heap,
+                max_heap_substate_total_bytes: execution_config.max_heap_substate_total_bytes,
+                max_track_substate_total_bytes: execution_config.max_track_substate_total_bytes,
                 max_substate_key_size: execution_config.max_substate_key_size,
                 max_substate_value_size: execution_config.max_substate_value_size,
                 max_invoke_payload_size: execution_config.max_invoke_input_size,
@@ -164,6 +164,7 @@ impl SystemModuleMixer {
             }),
             execution_trace: ExecutionTraceModule::new(execution_config.max_execution_trace_depth),
             transaction_runtime: TransactionRuntimeModule {
+                network_definition,
                 tx_hash,
                 next_id: 0,
                 logs: Vec::new(),
@@ -189,7 +190,7 @@ impl SystemModuleMixer {
 // This has an impact if there is module dependency.
 //====================================================================
 
-impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for SystemModuleMixer {
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixer {
     #[trace_resources]
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
@@ -281,6 +282,11 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
+    fn on_pin_node(system: &mut SystemConfig<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(system, on_pin_node(system, node_id))
+    }
+
+    #[trace_resources]
     fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         event: &DropNodeEvent,
@@ -302,6 +308,19 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for SystemModuleMixe
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api.kernel_get_system(), on_open_substate(api, event))
+    }
+
+    #[trace_resources]
+    fn on_mark_substate_as_transient(
+        system: &mut SystemConfig<V>,
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            system,
+            on_mark_substate_as_transient(system, node_id, partition_number, substate_key)
+        )
     }
 
     #[trace_resources(log={
@@ -616,9 +635,13 @@ impl SystemModuleMixer {
         }
     }
 
-    pub fn apply_storage_cost(&mut self, store_commit: &StoreCommit) -> Result<(), RuntimeError> {
+    pub fn apply_storage_cost(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
-            self.costing.apply_storage_cost(store_commit)
+            self.costing.apply_storage_cost(storage_type, size_increase)
         } else {
             Ok(())
         }

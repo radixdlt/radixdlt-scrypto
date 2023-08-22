@@ -751,8 +751,9 @@ impl ResourceNativePackage {
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>(),
             ));
-            fields.push(FieldSchema::static_field(
+            fields.push(FieldSchema::transient_field(
                 aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
+                LockedFungibleResource::default(),
             ));
             fields.push(FieldSchema::if_outer_feature(
                 aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),
@@ -929,6 +930,7 @@ impl ResourceNativePackage {
                 aggregator,
                 [
                     fungible_vault::LockFeeEvent,
+                    fungible_vault::PayFeeEvent,
                     fungible_vault::WithdrawEvent,
                     fungible_vault::DepositEvent,
                     fungible_vault::RecallEvent
@@ -989,8 +991,9 @@ impl ResourceNativePackage {
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>(),
             ));
-            fields.push(FieldSchema::static_field(
+            fields.push(FieldSchema::transient_field(
                 aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
+                LockedNonFungibleResource::default(),
             ));
             fields.push(FieldSchema::if_outer_feature(
                 aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),

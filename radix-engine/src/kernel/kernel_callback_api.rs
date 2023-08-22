@@ -1,6 +1,5 @@
 use super::call_frame::CallFrameMessage;
 use crate::errors::*;
-use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;
@@ -121,6 +120,8 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
+    fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;
+
     fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
@@ -196,6 +197,13 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
+    fn on_mark_substate_as_transient(
+        &mut self,
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Result<(), RuntimeError>;
+
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
         partition_num: PartitionNumber,
@@ -219,6 +227,4 @@ pub trait KernelCallbackObject: Sized {
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
-
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError>;
 }

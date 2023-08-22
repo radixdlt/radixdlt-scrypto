@@ -99,8 +99,9 @@ impl FeeTable {
                 // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
                 160_000
             }
-            StoreAccess::NewEntryInTrack(_, _) => {
-                // The max number of entries is limited by limits module.
+            StoreAccess::UpdateSubstateInHeap { .. }
+            | StoreAccess::UpdateSubstateInTrack { .. } => {
+                // Heap/track substate total size is limited by limits module.
                 0
             }
         }
@@ -212,6 +213,12 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn pin_node_cost(&self, _node_id: &NodeId) -> u32 {
+        // TODO: Add correct cost
+        100u32
+    }
+
+    #[inline]
     pub fn drop_node_cost(&self, event: &DropNodeEvent) -> u32 {
         match event {
             DropNodeEvent::Start(..) => 0,
@@ -305,6 +312,17 @@ impl FeeTable {
             RemoveSubstateEvent::Start(..) => 16440u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
             RemoveSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
+    }
+
+    #[inline]
+    pub fn mark_substate_as_transient_cost(
+        &self,
+        _node_id: &NodeId,
+        _partition_number: &PartitionNumber,
+        _substate_key: &SubstateKey,
+    ) -> u32 {
+        // TODO: Add correct costing
+        100u32
     }
 
     #[inline]

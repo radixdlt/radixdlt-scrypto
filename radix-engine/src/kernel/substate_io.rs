@@ -1,13 +1,13 @@
 use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
     CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
-    CreateNodeError, DropNodeError, MoveModuleError, NonGlobalNodeRefs, OpenSubstateError,
-    PersistNodeError, WriteSubstateError,
+    CreateNodeError, DropNodeError, MovePartitionError, NonGlobalNodeRefs, OpenSubstateError,
+    PersistNodeError, TransientSubstates, WriteSubstateError,
 };
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::{
-    CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo,
+    CallbackError, CommitableSubstateStore, NodeSubstates, StoreAccess, TrackedSubstateInfo,
 };
 use radix_engine_common::prelude::{NodeId, PartitionNumber};
 use radix_engine_common::types::{SortedKey, SubstateKey};
@@ -16,6 +16,7 @@ use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Vec;
+use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::LinkedList;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -32,8 +33,6 @@ pub struct LockData {
 }
 
 pub trait SubstateIOHandler<E> {
-    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
-
     fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E>;
 }
 
@@ -54,20 +53,24 @@ pub enum ProcessSubstateIOWriteError {
     PersistNodeError(PersistNodeError),
 }
 
-pub struct SubstateIO<'g, S: SubstateStore> {
+pub struct SubstateIO<'g, S: CommitableSubstateStore> {
     pub heap: Heap,
     pub store: &'g mut S,
     pub non_global_node_refs: NonGlobalNodeRefs,
     pub substate_locks: SubstateLocks<LockData>,
+    pub heap_transient_substates: TransientSubstates,
+    pub pinned_nodes: BTreeSet<NodeId>,
 }
 
-impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
+impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
     pub fn new(store: &'g mut S) -> Self {
         Self {
             heap: Heap::new(),
             store,
             non_global_node_refs: NonGlobalNodeRefs::new(),
             substate_locks: SubstateLocks::new(),
+            heap_transient_substates: TransientSubstates::new(),
+            pinned_nodes: BTreeSet::new(),
         }
     }
 
@@ -138,14 +141,16 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         queue.push_back(node_id.clone());
 
         while let Some(node_id) = queue.pop_front() {
-            handler
-                .on_persist_node(&self.heap, &node_id)
-                .map_err(CallbackError::CallbackError)?;
-
             if self.non_global_node_refs.node_is_referenced(&node_id) {
                 return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(
                     node_id,
                 )));
+            }
+
+            if self.pinned_nodes.contains(&node_id) {
+                return Err(CallbackError::Error(
+                    PersistNodeError::CannotPersistPinnedNode(node_id),
+                ));
             }
 
             let node_substates = match self.heap.remove_node(&node_id) {
@@ -154,7 +159,8 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     panic!("Frame owned node {:?} not found in heap", node_id)
                 }
             };
-            for (_partition_number, module_substates) in &node_substates {
+
+            for (_partition_num, module_substates) in &node_substates {
                 for (_substate_key, substate_value) in module_substates {
                     for reference in substate_value.references() {
                         if !reference.is_global() {
@@ -167,6 +173,17 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     for node_id in substate_value.owned_nodes() {
                         queue.push_back(*node_id);
                     }
+                }
+            }
+
+            if let Some(transient_substates) = self
+                .heap_transient_substates
+                .transient_substates
+                .remove(&node_id)
+            {
+                for (partition_num, substate_key) in transient_substates {
+                    self.store
+                        .mark_as_transient(node_id, partition_num, substate_key);
                 }
             }
 
@@ -189,26 +206,28 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         dest_device: SubstateDevice,
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
-    ) -> Result<(), CallbackError<MoveModuleError, E>> {
+    ) -> Result<(), CallbackError<MovePartitionError, E>> {
         // TODO: Use more granular partition lock checks?
         if self.substate_locks.node_is_locked(src_node_id) {
-            return Err(CallbackError::Error(MoveModuleError::SubstateBorrowed(
+            return Err(CallbackError::Error(MovePartitionError::SubstateBorrowed(
                 *src_node_id,
             )));
         }
 
         // Move
-        let module = match src_device {
+        let partition_substates = match src_device {
             SubstateDevice::Heap => self
                 .heap
                 .remove_module(src_node_id, src_partition_number)
-                .map_err(|e| CallbackError::Error(MoveModuleError::HeapRemoveModuleErr(e)))?,
+                .map_err(|e| {
+                    CallbackError::Error(MovePartitionError::HeapRemovePartitionError(e))
+                })?,
             SubstateDevice::Store => {
                 panic!("Partition moves from store not supported.");
             }
         };
 
-        for (substate_key, substate_value) in module {
+        for (substate_key, substate_value) in partition_substates {
             match dest_device {
                 SubstateDevice::Heap => {
                     self.heap.set_substate(
@@ -219,16 +238,24 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     );
                 }
                 SubstateDevice::Store => {
+                    if self.heap_transient_substates.is_transient(
+                        src_node_id,
+                        src_partition_number,
+                        &substate_key,
+                    ) {
+                        continue;
+                    }
+
                     // Recursively move nodes to store
                     for own in substate_value.owned_nodes() {
                         self.move_node_from_heap_to_store(handler, own)
-                            .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
+                            .map_err(|e| e.map(|e| MovePartitionError::PersistNodeError(e)))?;
                     }
 
                     for reference in substate_value.references() {
                         if !reference.is_global() {
                             return Err(CallbackError::Error(
-                                MoveModuleError::NonGlobalRefNotAllowed(reference.clone()),
+                                MovePartitionError::NonGlobalRefNotAllowed(reference.clone()),
                             ));
                         }
                     }
@@ -249,7 +276,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(())
     }
 
-    pub fn open_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
+    pub fn open_substate<
+        E,
+        F: FnMut(&Heap, StoreAccess) -> Result<(), E>,
+        D: FnOnce() -> IndexedScryptoValue,
+    >(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
@@ -257,7 +288,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         substate_key: &SubstateKey,
         flags: LockFlags,
         on_store_access: &mut F,
-        default: Option<fn() -> IndexedScryptoValue>,
+        default: Option<D>,
     ) -> Result<(u32, &IndexedScryptoValue), CallbackError<OpenSubstateError, E>> {
         match device {
             SubstateDevice::Heap => {
@@ -391,10 +422,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(substate)
     }
 
-    pub fn write_substate<E>(
+    pub fn write_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
+        on_store_access: &mut F,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get_mut(global_lock_handle);
@@ -414,15 +446,16 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 self.heap
                     .set_substate(node_id, partition_num, substate_key, substate);
             }
-            SubstateDevice::Store => {
-                self.store
-                    .set_substate(node_id, partition_num, substate_key, substate, &mut |_| {
-                        Err(())
-                    })
-                    .expect(
-                        "Setting substate on handled substate should not incur a store access.",
-                    );
-            }
+            SubstateDevice::Store => self
+                .store
+                .set_substate(
+                    node_id,
+                    partition_num,
+                    substate_key,
+                    substate,
+                    &mut |store_access| on_store_access(&self.heap, store_access),
+                )
+                .map_err(|e| CallbackError::CallbackError(e))?,
         }
 
         Ok(())

@@ -43,6 +43,16 @@ impl TransactionBuilder {
         self
     }
 
+    pub fn multi_sign<S: Signer>(mut self, signers: &[&S]) -> Self {
+        let intent = self.transaction_intent();
+        let prepared = intent.prepare().expect("Intent could be prepared");
+        for signer in signers {
+            self.intent_signatures
+                .push(signer.sign_with_public_key(&prepared.intent_hash()));
+        }
+        self
+    }
+
     pub fn signer_signatures(mut self, sigs: Vec<SignatureWithPublicKeyV1>) -> Self {
         self.intent_signatures.extend(sigs);
         self

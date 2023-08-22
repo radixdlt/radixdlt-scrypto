@@ -19,6 +19,17 @@ use super::substate_io::*;
 
 /// API for managing nodes
 pub trait KernelNodeApi {
+    /// Pin a node to it's current device.
+    fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError>;
+
+    /// Marks a substate as transient, or a substate which was never and will never be persisted
+    fn kernel_mark_substate_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        key: SubstateKey,
+    ) -> Result<(), RuntimeError>;
+
     /// Allocates a new node id useable for create_node
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError>;
 
@@ -52,13 +63,13 @@ pub trait KernelNodeApi {
 /// API for managing substates within nodes
 pub trait KernelSubstateApi<L> {
     /// Locks a substate to make available for reading and/or writing
-    fn kernel_open_substate_with_default(
+    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        default: Option<fn() -> IndexedScryptoValue>,
+        default: Option<F>,
         lock_data: L,
     ) -> Result<SubstateHandle, RuntimeError>;
 
@@ -75,7 +86,7 @@ pub trait KernelSubstateApi<L> {
             partition_num,
             substate_key,
             flags,
-            None,
+            None::<fn() -> IndexedScryptoValue>,
             lock_data,
         )
     }

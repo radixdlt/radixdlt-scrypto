@@ -4,7 +4,7 @@ use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent, KernelCallbackObject};
-use crate::system::module::KernelModule;
+use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
@@ -284,7 +284,7 @@ impl ResourceSummary {
     }
 }
 
-impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for ExecutionTraceModule {
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceModule {
     fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         event: &CreateNodeEvent,

@@ -21,27 +21,22 @@ use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
 use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
     ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, BlueprintPayloadDef, PackageDefinition,
-    PackagePublishNativeManifestInput, PackagePublishWasmAdvancedManifestInput,
-    PackageRoyaltyAccumulatorSubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
-    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-};
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
-use radix_engine_queries::typed_substate_layout::{
-    BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-};
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::db_key_mapper::{
     MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
@@ -533,17 +528,17 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let output = self
             .database
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<PackageRoyaltyAccumulatorSubstate>>(
+            .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltyAccumulatorFieldSubstate>(
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION,
-                &PackageField::Royalty.into(),
+                &PackageField::RoyaltyAccumulator.into(),
             )?
             .value
             .0;
 
         self.database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
-                output.royalty_vault.0.as_node_id(),
+                output.into_latest().royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &FungibleVaultField::LiquidFungible.into(),
             )
@@ -592,7 +587,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn get_package_scrypto_schemas(
         &self,
         package_address: &PackageAddress,
-    ) -> IndexMap<Hash, ScryptoSchema> {
+    ) -> IndexMap<SchemaHash, ScryptoSchema> {
         let mut schemas = index_map_new();
         for entry in self
             .substate_db()
@@ -601,12 +596,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 SCHEMAS_PARTITION,
             ))
         {
-            let hash: Hash =
+            let hash: SchemaHash =
                 scrypto_decode(&SpreadPrefixKeyMapper::map_from_db_sort_key(&entry.0)).unwrap();
-            let value: KeyValueEntrySubstate<ScryptoSchema> = scrypto_decode(&entry.1).unwrap();
+            let value: PackageSchemaEntrySubstate = scrypto_decode(&entry.1).unwrap();
             match value.value {
                 Some(schema) => {
-                    schemas.insert(hash, schema);
+                    schemas.insert(hash, schema.content);
                 }
                 None => {}
             }
@@ -631,11 +626,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         {
             let key: BlueprintVersionKey =
                 scrypto_decode(&SpreadPrefixKeyMapper::map_from_db_sort_key(&entry.0)).unwrap();
-            let value: KeyValueEntrySubstate<BlueprintDefinition> =
+            let value: PackageBlueprintVersionDefinitionEntrySubstate =
                 scrypto_decode(&entry.1).unwrap();
             match value.value {
                 Some(definition) => {
-                    definitions.insert(key, definition);
+                    definitions.insert(key, definition.into_latest());
                 }
                 None => {}
             }
@@ -732,6 +727,80 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         accounter.close().balances
     }
 
+    pub fn component_state<T: ScryptoDecode>(&self, component_address: ComponentAddress) -> T {
+        let node_id: &NodeId = component_address.as_node_id();
+        let component_state = self
+            .substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<T>>(
+                node_id,
+                MAIN_BASE_PARTITION,
+                &ComponentField::State0.into(),
+            );
+        component_state.unwrap().value.0
+    }
+
+    pub fn get_non_fungible_data<T: NonFungibleData>(
+        &self,
+        resource: ResourceAddress,
+        non_fungible_id: NonFungibleLocalId,
+    ) -> T {
+        let node_id: &NodeId = resource.as_node_id();
+        let partition_number = MAIN_BASE_PARTITION
+            .at_offset(PartitionOffset(
+                1 + NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
+            ))
+            .unwrap();
+        let substate = self
+            .substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<T>>(
+                node_id,
+                partition_number,
+                &SubstateKey::Map(non_fungible_id.to_key()),
+            );
+        substate.unwrap().value.unwrap()
+    }
+
+    pub fn get_kv_store_entry<K: ScryptoEncode, V: ScryptoEncode + ScryptoDecode>(
+        &self,
+        kv_store_id: Own,
+        key: &K,
+    ) -> Option<V> {
+        let node_id = kv_store_id.as_node_id();
+        let substate = self
+            .substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>>(
+                node_id,
+                MAIN_BASE_PARTITION,
+                &SubstateKey::Map(scrypto_encode(&key).unwrap()),
+            );
+        substate.unwrap().value
+    }
+
+    pub fn get_all_kv_store_entries<
+        K: ScryptoEncode + ScryptoDecode + Eq + std::hash::Hash,
+        V: ScryptoEncode + ScryptoDecode,
+    >(
+        &self,
+        kv_store_id: Own,
+    ) -> hash_map::ext_HashMap<K, V> {
+        let partition_number = MAIN_BASE_PARTITION;
+        let node_id = kv_store_id.as_node_id();
+        let map = self
+            .substate_db()
+            .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>, MapKey>(
+                node_id,
+                partition_number,
+            )
+            .fold(hash_map::ext_HashMap::<K, V>::new(), |mut all, (k, v)| {
+                all.insert(
+                    scrypto_decode::<K>(k.for_map().unwrap()).unwrap(),
+                    v.value.unwrap(),
+                );
+                all
+            });
+        map
+    }
+
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -818,6 +887,78 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
         let account = self.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
         (key_pair.0, key_pair.1, account)
+    }
+
+    pub fn new_virtual_account_with_access_controller(
+        &mut self,
+    ) -> (
+        Secp256k1PublicKey,
+        Secp256k1PrivateKey,
+        Secp256k1PublicKey,
+        Secp256k1PrivateKey,
+        Secp256k1PublicKey,
+        Secp256k1PrivateKey,
+        Secp256k1PublicKey,
+        Secp256k1PrivateKey,
+        ComponentAddress,
+        ComponentAddress,
+    ) {
+        let (pk1, sk1, account) = self.new_virtual_account();
+        let (pk2, sk2) = self.new_key_pair();
+        let (pk3, sk3) = self.new_key_pair();
+        let (pk4, sk4) = self.new_key_pair();
+
+        let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(
+            1,
+            vec![
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk3)),
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk4)),
+            ],
+        )));
+
+        let access_controller = self
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .call_method(account, ACCOUNT_SECURIFY_IDENT, manifest_args!())
+                    .take_all_from_worktop(ACCOUNT_OWNER_BADGE, "owner_badge")
+                    .call_function_with_name_lookup(
+                        ACCESS_CONTROLLER_PACKAGE,
+                        ACCESS_CONTROLLER_BLUEPRINT,
+                        ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+                        |lookup| {
+                            (
+                                lookup.bucket("owner_badge"),
+                                RuleSet {
+                                    primary_role: access_rule.clone(),
+                                    recovery_role: access_rule.clone(),
+                                    confirmation_role: access_rule.clone(),
+                                },
+                                Some(1000u32),
+                            )
+                        },
+                    )
+                    .build(),
+                vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            )
+            .expect_commit_success()
+            .new_component_addresses()[0]
+            .clone();
+
+        (
+            pk1,
+            sk1,
+            pk2,
+            sk2,
+            pk3,
+            sk3,
+            pk4,
+            sk4,
+            account,
+            access_controller,
+        )
     }
 
     pub fn new_account(
@@ -1107,7 +1248,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn execute_transaction(
         &mut self,
         executable: Executable,
-        fee_reserve_config: CostingParameters,
+        costing_parameters: CostingParameters,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         // Override the kernel trace config
@@ -1121,7 +1262,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let transaction_receipt = execute_transaction(
             &mut self.database,
             vm,
-            &fee_reserve_config,
+            &costing_parameters,
             &execution_config,
             &executable,
         );
@@ -1506,18 +1647,29 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        self.create_non_fungible_resource_with_roles(NonFungibleResourceRoles::default(), account)
+        self.create_non_fungible_resource_advanced(NonFungibleResourceRoles::default(), account, 3)
     }
-
     pub fn create_non_fungible_resource_with_roles(
         &mut self,
         resource_roles: NonFungibleResourceRoles,
         account: ComponentAddress,
     ) -> ResourceAddress {
+        self.create_non_fungible_resource_advanced(resource_roles, account, 3)
+    }
+
+    pub fn create_non_fungible_resource_advanced(
+        &mut self,
+        resource_roles: NonFungibleResourceRoles,
+        account: ComponentAddress,
+        n: usize,
+    ) -> ResourceAddress {
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleLocalId::integer(1), EmptyNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(2), EmptyNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
+        for i in 1..n + 1 {
+            entries.insert(
+                NonFungibleLocalId::integer(i as u64),
+                EmptyNonFungibleData {},
+            );
+        }
 
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()

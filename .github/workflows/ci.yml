@@ -23,6 +23,8 @@ jobs:
   check-code-format:
     name: Check code format
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -31,11 +33,15 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Check format
       run: bash ./check.sh
   sbor-unit-tests:
     name: Run SBOR unit tests
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -44,6 +50,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Run tests
       run: cargo test
       working-directory: sbor
@@ -56,6 +64,8 @@ jobs:
   sbor-integration-tests:
     name: Run SBOR integration tests
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -64,6 +74,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Run tests
       run: cargo test
       working-directory: sbor-tests
@@ -76,6 +88,8 @@ jobs:
   scrypto-unit-tests:
     name: Run Scrypto unit tests
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -84,6 +98,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Run tests
       run: cargo test
       working-directory: scrypto
@@ -99,6 +115,8 @@ jobs:
   scrypto-integration-tests:
     name: Run Scrypto integration tests
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -107,6 +125,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Run tests
       run: cargo test
       working-directory: scrypto-tests
@@ -116,6 +136,8 @@ jobs:
   scrypto-examples:
     name: Run Scrypto examples
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -124,6 +146,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
@@ -146,6 +170,8 @@ jobs:
   radix-engine-build:
     name: Run Radix Engine build (RocksDB)
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -154,6 +180,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Install dependency
       run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
     - name: Build with resource tracking
@@ -165,6 +193,8 @@ jobs:
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -173,6 +203,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
@@ -196,6 +228,8 @@ jobs:
     # which are false for release variant
     name: Run Radix Engine tests (release)
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -204,6 +238,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
@@ -223,6 +259,8 @@ jobs:
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -231,6 +269,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
@@ -244,6 +284,8 @@ jobs:
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -252,6 +294,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
@@ -265,6 +309,8 @@ jobs:
   radix-engine-bench:
     name: Run Radix Engine benchmarks
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -273,6 +319,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
@@ -281,6 +329,8 @@ jobs:
   radix-engine-common-bench:
     name: Run Radix Engine common benchmarks
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -289,6 +339,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
@@ -297,6 +349,8 @@ jobs:
   transaction:
     name: Run transaction tests
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -305,12 +359,16 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Run tests
       run: cargo test
       working-directory: transaction
   transaction-scenarios:
     name: Run transaction scenarios
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -325,6 +383,8 @@ jobs:
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner, windows-latest-16-cores]
@@ -333,6 +393,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
         prefix-key: ""
@@ -359,6 +421,8 @@ jobs:
   cli-scrypto:
     name: Run CLI tests (scrypto)
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner, windows-latest-16-cores]
@@ -367,6 +431,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
         prefix-key: ""
@@ -387,6 +453,8 @@ jobs:
   fuzzer-check:
     name: Build fuzzer
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
     strategy:
       matrix:
         os: [k8s-linux-runner]
@@ -395,6 +463,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target

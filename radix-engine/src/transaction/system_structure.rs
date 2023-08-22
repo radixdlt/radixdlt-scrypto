@@ -8,7 +8,7 @@ use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_db_reader::{SystemDatabaseReader, SystemPartitionDescription};
-use crate::track::{ReadOnly, TrackedNode, TrackedSubstateValue};
+use crate::track::{ReadOnly, SystemUpdates, TrackedNode, TrackedSubstateValue};
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SubstateSystemStructure {
@@ -25,7 +25,7 @@ pub enum SubstateSystemStructure {
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct SystemFieldStructure {
-    field_kind: SystemFieldKind,
+    pub field_kind: SystemFieldKind,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -35,34 +35,34 @@ pub enum SystemFieldKind {
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct KeyValueStoreEntryStructure {
-    key_value_store_address: InternalAddress,
-    key_schema_hash: Hash,
-    key_local_type_index: LocalTypeIndex,
-    value_schema_hash: Hash,
-    value_local_type_index: LocalTypeIndex,
+    pub key_value_store_address: InternalAddress,
+    pub key_schema_hash: SchemaHash,
+    pub key_local_type_index: LocalTypeIndex,
+    pub value_schema_hash: SchemaHash,
+    pub value_local_type_index: LocalTypeIndex,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct FieldStructure {
-    value_schema: ObjectSubstateTypeReference,
+    pub value_schema: ObjectSubstateTypeReference,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct KeyValuePartitionEntryStructure {
-    key_schema: ObjectSubstateTypeReference,
-    value_schema: ObjectSubstateTypeReference,
+    pub key_schema: ObjectSubstateTypeReference,
+    pub value_schema: ObjectSubstateTypeReference,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct IndexPartitionEntryStructure {
-    key_schema: ObjectSubstateTypeReference,
-    value_schema: ObjectSubstateTypeReference,
+    pub key_schema: ObjectSubstateTypeReference,
+    pub value_schema: ObjectSubstateTypeReference,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct SortedIndexPartitionEntryStructure {
-    key_schema: ObjectSubstateTypeReference,
-    value_schema: ObjectSubstateTypeReference,
+    pub key_schema: ObjectSubstateTypeReference,
+    pub value_schema: ObjectSubstateTypeReference,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -73,36 +73,30 @@ pub enum ObjectSubstateTypeReference {
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct PackageTypeReference {
-    package_address: PackageAddress,
-    schema_hash: Hash,
-    local_type_index: LocalTypeIndex,
+    pub package_address: PackageAddress,
+    pub schema_hash: SchemaHash,
+    pub local_type_index: LocalTypeIndex,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct ObjectInstanceTypeReference {
-    entity_address: NodeId,
-    schema_hash: Hash,
-    instance_type_index: u8,
-    local_type_index: LocalTypeIndex,
-}
-
-#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
-pub struct KeyValueTypeReference {
-    key_value_store_address: InternalAddress,
-    schema_hash: Hash,
-    key_local_type_index: LocalTypeIndex,
-    value_local_type_index: LocalTypeIndex,
+    pub entity_address: NodeId,
+    pub schema_hash: SchemaHash,
+    pub instance_type_index: u8,
+    pub local_type_index: LocalTypeIndex,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct EventSystemStructure {
-    package_type_reference: PackageTypeReference,
+    pub package_type_reference: PackageTypeReference,
 }
+
+pub type SubstateSystemStructures =
+    IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, SubstateSystemStructure>>>;
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct SystemStructure {
-    pub substate_system_structures:
-        IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, SubstateSystemStructure>>>,
+    pub substate_system_structures: SubstateSystemStructures,
     pub event_system_structures: IndexMap<EventTypeIdentifier, EventSystemStructure>,
 }
 
@@ -112,7 +106,11 @@ impl SystemStructure {
         updates: &IndexMap<NodeId, TrackedNode>,
         application_events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
     ) -> Self {
-        let substate_system_structures = SubstateSchemaMapper::new(substate_db, &updates).run();
+        let mut substate_schema_mapper =
+            SubstateSchemaMapper::new(SystemDatabaseReader::new_with_overlay(substate_db, updates));
+        substate_schema_mapper.add_all_written_substate_structures(updates);
+        let substate_system_structures = substate_schema_mapper.done();
+
         let event_system_structures =
             EventSchemaMapper::new(substate_db, &updates, application_events).run();
 
@@ -123,28 +121,46 @@ impl SystemStructure {
     }
 }
 
+/// A builder of [`SubstateSystemStructures`].
 /// Note that the implementation below assumes that substate owned objects can not be
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
 pub struct SubstateSchemaMapper<'a, S: SubstateDatabase> {
+    /// The source of type information.
     system_reader: SystemDatabaseReader<'a, S>,
-    tracked: &'a IndexMap<NodeId, TrackedNode>,
+    /// The result of the build.
+    substate_structures: SubstateSystemStructures,
 }
 
 impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
-    pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
+    /// Creates an empty builder.
+    pub fn new(system_reader: SystemDatabaseReader<'a, S>) -> Self {
         Self {
-            system_reader: SystemDatabaseReader::new_with_overlay(substate_db, tracked),
-            tracked,
+            system_reader,
+            substate_structures: index_map_new(),
         }
     }
 
-    pub fn run(
-        &self,
-    ) -> IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, SubstateSystemStructure>>>
-    {
-        let mut substate_structures = index_map_new();
-        for (node_id, tracked_node) in self.tracked {
+    /// Resolves a [`SubstateSystemStructure`] of the given substate and adds it to the build.
+    pub fn add_substate_structure(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: &PartitionNumber,
+        key: &SubstateKey,
+    ) {
+        let substate_structure = self.resolve_substate_structure(node_id, partition_num, key);
+        self.substate_structures
+            .entry(node_id.clone())
+            .or_insert_with(|| index_map_new())
+            .entry(partition_num.clone())
+            .or_insert_with(|| index_map_new())
+            .insert(key.clone(), substate_structure);
+    }
+
+    /// A batch `add_substate_structure()` counterpart, tailored for processing all substates
+    /// *written* to the track (i.e. skipping reads).
+    pub fn add_all_written_substate_structures(&mut self, tracked: &IndexMap<NodeId, TrackedNode>) {
+        for (node_id, tracked_node) in tracked {
             for (partition_num, tracked_partition) in &tracked_node.tracked_partitions {
                 for (_, tracked_substate) in &tracked_partition.substates {
                     match &tracked_substate.substate_value {
@@ -169,38 +185,38 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                         }
                     }
 
-                    let partition_description =
-                        self.system_reader.partition_description(partition_num);
-
-                    let system_substate_structure = self.resolve_substate_structure(
+                    self.add_substate_structure(
                         node_id,
-                        partition_description,
+                        partition_num,
                         &tracked_substate.substate_key,
                     );
-
-                    substate_structures
-                        .entry(node_id.clone())
-                        .or_insert(index_map_new())
-                        .entry(partition_num.clone())
-                        .or_insert(index_map_new())
-                        .insert(
-                            tracked_substate.substate_key.clone(),
-                            system_substate_structure,
-                        );
                 }
             }
         }
-
-        substate_structures
     }
 
-    pub fn resolve_substate_structure(
+    /// A batch `add_substate_structure()` counterpart, tailored for processing all substates
+    /// captured in the given [`SystemUpdates`].
+    pub fn add_all_system_updates(&mut self, updates: &SystemUpdates) {
+        for ((node_id, partition_num), substate_updates) in updates {
+            for substate_key in substate_updates.keys() {
+                self.add_substate_structure(node_id, partition_num, substate_key);
+            }
+        }
+    }
+
+    /// Finalizes the build.
+    pub fn done(self) -> SubstateSystemStructures {
+        self.substate_structures
+    }
+
+    fn resolve_substate_structure(
         &self,
         node_id: &NodeId,
-        partition_description: SystemPartitionDescription,
+        partition_num: &PartitionNumber,
         key: &SubstateKey,
     ) -> SubstateSystemStructure {
-        match partition_description {
+        match self.system_reader.partition_description(partition_num) {
             SystemPartitionDescription::TypeInfo => {
                 SubstateSystemStructure::SystemField(SystemFieldStructure {
                     field_kind: SystemFieldKind::TypeInfo,
@@ -268,7 +284,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         }
     }
 
-    pub fn resolve_object_substate_structure(
+    fn resolve_object_substate_structure(
         &self,
         resolver: &ObjectSubstateTypeReferenceResolver,
         state_schema: &IndexedStateSchema,
@@ -407,7 +423,7 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
     pub fn run(&self) -> IndexMap<EventTypeIdentifier, EventSystemStructure> {
         let mut event_system_structures = index_map_new();
         for (event_type_identifier, _) in self.application_events {
-            if !event_system_structures.contains_key(event_type_identifier) {
+            if event_system_structures.contains_key(event_type_identifier) {
                 continue;
             }
             let blueprint_id = match &event_type_identifier.0 {
