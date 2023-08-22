@@ -19,3 +19,6 @@ ouroboros = { version = "0.17.2" }
 
 # A library used for more powerful declarative macros.
 paste = { version = "1.0.14" }
+
+[dev-dependencies]
+native-sdk = { path = "../native-sdk" }
