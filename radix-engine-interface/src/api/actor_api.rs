@@ -1,10 +1,20 @@
 use crate::api::field_api::FieldHandle;
 use crate::api::{ActorRefHandle, FieldIndex};
 use crate::types::*;
+use crate::Sbor;
+use bitflags::bitflags;
 use radix_engine_interface::api::{ActorStateHandle, LockFlags};
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+
+bitflags! {
+    #[derive(Sbor)]
+    pub struct EventFlags: u32 {
+        /// With this flag on, an event will not be reverted if the transaction fails.
+        const FORCE_WRITE = 0b00000001;
+    }
+}
 
 /// Api which exposes methods in the context of the actor
 pub trait ClientActorApi<E: Debug> {
@@ -30,5 +40,10 @@ pub trait ClientActorApi<E: Debug> {
     ) -> Result<FieldHandle, E>;
 
     /// Emits an event of the current actor
-    fn actor_emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), E>;
+    fn actor_emit_event(
+        &mut self,
+        event_name: String,
+        event_data: Vec<u8>,
+        event_flags: EventFlags,
+    ) -> Result<(), E>;
 }

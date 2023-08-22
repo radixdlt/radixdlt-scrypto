@@ -13,14 +13,15 @@ mod bucket_test {
 
     impl BucketTest {
         fn create_test_token(amount: u32) -> Bucket {
-            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(amount);
+                .mint_initial_supply(amount)
+                .into();
             let proof1 = bucket.create_proof_of_all();
             let proof2 = proof1.clone();
             proof1.drop();
@@ -68,10 +69,11 @@ mod bucket_test {
         }
 
         pub fn test_restricted_transfer() -> Vec<Bucket> {
-            let auth_bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+            let auth_bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
-                .mint_initial_supply(1);
-            let bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
+                .mint_initial_supply(1)
+                .into();
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
                 auth_bucket.resource_address()
             ))))
             .divisibility(DIVISIBILITY_MAXIMUM)
@@ -79,7 +81,8 @@ mod bucket_test {
                 withdrawer => OWNER;
                 withdrawer_updater => rule!(deny_all);
             })
-            .mint_initial_supply(5);
+            .mint_initial_supply(5)
+            .into();
             let mut vault = Vault::with_bucket(bucket);
 
             let token_bucket = auth_bucket
@@ -94,10 +97,11 @@ mod bucket_test {
         }
 
         pub fn test_burn() -> Vec<Bucket> {
-            let badge = ResourceBuilder::new_fungible(OwnerRole::None)
+            let badge: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
-                .mint_initial_supply(1);
-            let bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
+                .mint_initial_supply(1)
+                .into();
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
                 badge.resource_address()
             ))))
             .divisibility(DIVISIBILITY_MAXIMUM)
@@ -105,7 +109,8 @@ mod bucket_test {
                 burner => OWNER;
                 burner_updater => rule!(deny_all);
             })
-            .mint_initial_supply(5);
+            .mint_initial_supply(5)
+            .into();
             badge
                 .as_fungible()
                 .authorize_with_amount(dec!(1), || bucket.burn());
@@ -113,9 +118,10 @@ mod bucket_test {
         }
 
         pub fn test_burn_freely() -> Vec<Bucket> {
-            let badge = ResourceBuilder::new_fungible(OwnerRole::None)
+            let badge: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
-                .mint_initial_supply(1);
+                .mint_initial_supply(1)
+                .into();
             let mut bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .burn_roles(burn_roles! {
@@ -159,7 +165,7 @@ mod bucket_test {
             let _ = bucket.create_proof_of_all();
 
             Self {
-                vault: Vault::with_bucket(bucket),
+                vault: Vault::with_bucket(bucket.into()),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
@@ -172,7 +178,7 @@ mod bucket_test {
             let _ = bucket.create_proof_of_all();
 
             Self {
-                vault: Vault::with_bucket(bucket),
+                vault: Vault::with_bucket(bucket.into()),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

@@ -1,6 +1,7 @@
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::errors::*;
+use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::ActorRefHandle;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::boxed::Box;
@@ -170,7 +171,8 @@ pub trait WasmRuntime {
     fn actor_emit_event(
         &mut self,
         event_name: Vec<u8>,
-        event: Vec<u8>,
+        event_payload: Vec<u8>,
+        event_flags: EventFlags,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn sys_log(
@@ -179,11 +181,16 @@ pub trait WasmRuntime {
         message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn sys_panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn sys_bech32_encode_address(
+        &mut self,
+        address: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn sys_get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn sys_generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn sys_panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.

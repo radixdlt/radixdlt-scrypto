@@ -217,7 +217,7 @@ mod genesis_helper {
                 let resource_mgr = owner_badge.resource_manager();
                 resource_mgr.set_metadata("tags", vec!["badge".to_string()]);
 
-                owner.deposit(owner_badge);
+                owner.deposit(owner_badge.into());
 
                 Some(owner_badge_address)
             } else {

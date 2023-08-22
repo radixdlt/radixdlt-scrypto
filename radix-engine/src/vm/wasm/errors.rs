@@ -108,6 +108,8 @@ pub enum WasmRuntimeError {
     /// Buffer not found
     BufferNotFound(BufferId),
 
+    InvalidAddress(DecodeError),
+
     InvalidBlueprintId(DecodeError),
 
     /// Invalid method ident
@@ -145,6 +147,8 @@ pub enum WasmRuntimeError {
 
     /// Costing error (no-op runtime only!)
     FeeReserveError(FeeReserveError),
+
+    InvalidEventFlags(u32),
 }
 
 impl SelfError for WasmRuntimeError {
