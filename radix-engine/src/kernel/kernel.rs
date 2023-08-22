@@ -1127,7 +1127,7 @@ where
 impl<'g, M, S> KernelTestingApi<'g, M, S> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
-    S: SubstateStore,
+    S: CommitableSubstateStore,
 {
     fn kernel_create_kernel_for_testing(
         substate_io: SubstateIO<'g, S>,

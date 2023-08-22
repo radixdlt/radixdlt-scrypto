@@ -473,6 +473,7 @@ impl TestRuntimeInternal {
                     EnabledModules::LIMITS
                         | EnabledModules::AUTH
                         | EnabledModules::TRANSACTION_RUNTIME,
+                    NetworkDefinition::simulator(),
                     Self::DEFAULT_INTENT_HASH,
                     AuthZoneParams {
                         initial_proofs: Default::default(),
@@ -493,6 +494,10 @@ impl TestRuntimeInternal {
                         store: track,
                         non_global_node_refs: NonGlobalNodeRefs::new(),
                         substate_locks: SubstateLocks::new(),
+                        heap_transient_substates: TransientSubstates {
+                            transient_substates: Default::default(),
+                        },
+                        pinned_nodes: Default::default(),
                     },
                     id_allocator,
                     CallFrame::new_root(Actor::Root),
@@ -783,10 +788,16 @@ implement_client_api! {
         update_instruction_index: (&mut self, new_index: usize) -> Result<(), RuntimeError>,
     },
     ClientTransactionRuntimeApi: {
+        bech32_encode_address: (&mut self, address: GlobalAddress) -> Result<String, RuntimeError>,
         get_transaction_hash: (&mut self) -> Result<Hash, RuntimeError>,
         generate_ruid: (&mut self) -> Result<[u8; 32], RuntimeError>,
         emit_log: (&mut self, level: Level, message: String) -> Result<(), RuntimeError>,
-        emit_event: (&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError>,
+        emit_event: (
+            &mut self,
+            event_name: String,
+            event_data: Vec<u8>,
+            event_flags: EventFlags
+        ) -> Result<(), RuntimeError>,
         panic: (&mut self, message: String) -> Result<(), RuntimeError>,
     },
     ClientCostingApi: {

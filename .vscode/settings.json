@@ -11,6 +11,7 @@
         "btreemap",
         "btreeset",
         "callframe",
+        "Commitable",
         "consensusmanager",
         "debuggability",
         "Decompilation",

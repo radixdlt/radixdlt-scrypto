@@ -53,6 +53,7 @@ pub use radix_engine_interface::api::key_value_entry_api::*;
 pub use radix_engine_interface::api::key_value_store_api::*;
 pub use radix_engine_interface::api::node_modules::*;
 pub use radix_engine_interface::api::object_api::*;
+pub use radix_engine_interface::api::system_modules::transaction_runtime_api::*;
 pub use radix_engine_interface::api::system_modules::*;
 pub use radix_engine_interface::api::*;
 pub use radix_engine_interface::blueprints::access_controller::*;
