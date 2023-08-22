@@ -9,7 +9,7 @@ bench = false
 
 [dependencies]
 proc-macro2 = "1.0"
-syn = { version = "1.0", features = ["full"] }
+syn = { version = "1.0", features = ["full", "extra-traits"] }
 quote = "1.0"
 radix-engine-profiling = { path = "../../radix-engine-profiling" }
 
