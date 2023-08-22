@@ -159,7 +159,7 @@ impl FungibleVaultBlueprint {
         api.field_close(vault_handle)?;
 
         // Emitting an event once the fee has been locked
-        Runtime::emit_event(api, events::fungible_vault::LockFeeEvent { amount })?;
+        Runtime::emit_event_no_revert(api, events::fungible_vault::LockFeeEvent { amount })?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -276,7 +276,6 @@ impl FungibleVaultBlueprint {
     // Protected methods
     //===================
 
-    // protected method
     pub fn lock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
@@ -303,7 +302,6 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    // protected method
     pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,

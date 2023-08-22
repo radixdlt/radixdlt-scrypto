@@ -2,6 +2,7 @@ use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::types::*;
 use crate::vm::wasm::*;
+use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -407,11 +408,13 @@ where
     fn actor_emit_event(
         &mut self,
         event_name: Vec<u8>,
-        event: Vec<u8>,
+        event_payload: Vec<u8>,
+        event_flags: EventFlags,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.actor_emit_event(
             String::from_utf8(event_name).map_err(|_| WasmRuntimeError::InvalidString)?,
-            event,
+            event_payload,
+            event_flags,
         )?;
         Ok(())
     }
@@ -426,6 +429,16 @@ where
             String::from_utf8(message).map_err(|_| WasmRuntimeError::InvalidString)?,
         )?;
         Ok(())
+    }
+
+    fn sys_bech32_encode_address(
+        &mut self,
+        address: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let address =
+            scrypto_decode::<GlobalAddress>(&address).map_err(WasmRuntimeError::InvalidAddress)?;
+        let encoded = self.api.bech32_encode_address(address)?;
+        self.allocate_buffer(scrypto_encode(&encoded).expect("Failed to encoded address"))
     }
 
     fn sys_panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {

@@ -3,6 +3,8 @@ use crate::types::*;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
+use radix_engine_interface::api::actor_api::EventFlags;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
@@ -635,6 +637,25 @@ impl WasmerModule {
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
+        fn emit_event(
+            env: &WasmerInstanceEnv,
+            event_name_ptr: u32,
+            event_name_len: u32,
+            event_data_ptr: u32,
+            event_data_len: u32,
+            flags: u32,
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let event_name = read_memory(&instance, event_name_ptr, event_name_len)?;
+            let event_data = read_memory(&instance, event_data_ptr, event_data_len)?;
+            let event_flags = EventFlags::from_bits(flags).ok_or(InvokeError::SelfError(
+                WasmRuntimeError::InvalidEventFlags(flags),
+            ))?;
+
+            runtime.emit_event(event_name, event_data, event_flags)
+        }
+
         fn sys_log(
             env: &WasmerInstanceEnv,
             level_ptr: u32,
@@ -648,6 +669,22 @@ impl WasmerModule {
             let message = read_memory(&instance, message_ptr, message_len)?;
 
             runtime.sys_log(level, message)
+        }
+
+        fn sys_bech32_encode_address(
+            env: &WasmerInstanceEnv,
+            address_ptr: u32,
+            address_len: u32,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let address = read_memory(&instance, address_ptr, address_len)?;
+
+            let buffer = runtime
+                .sys_bech32_encode_address(address)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
         }
 
         fn sys_panic(
@@ -725,6 +762,7 @@ impl WasmerModule {
                 COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), costing_get_tip_percentage),
                 COSTING_GET_FEE_BALANCE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), costing_get_fee_balance),
                 SYS_LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_log),
+                SYS_BECH32_ENCODE_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_bech32_encode_address),
                 SYS_PANIC_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_panic),
                 SYS_GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_get_transaction_hash),
                 SYS_GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_generate_ruid),

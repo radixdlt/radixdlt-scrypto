@@ -23,7 +23,7 @@ use transaction::model::InstructionV1;
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
-use crate::common::*;
+use crate::transaction::common::*;
 
 #[allow(unused)]
 const INSTRUCTION_MAX_CNT: u8 = 10;

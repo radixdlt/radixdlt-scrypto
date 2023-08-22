@@ -1,6 +1,7 @@
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::types::*;
+use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 
@@ -8,11 +9,12 @@ use radix_engine_interface::crypto::Hash;
 pub struct Event {
     pub type_identifier: EventTypeIdentifier,
     pub payload: Vec<u8>,
-    pub discard_on_failure: bool,
+    pub flags: EventFlags,
 }
 
 #[derive(Debug, Clone)]
 pub struct TransactionRuntimeModule {
+    pub network_definition: NetworkDefinition,
     pub tx_hash: Hash,
     pub next_id: u32,
     pub logs: Vec<(Level, String)>,
@@ -65,11 +67,11 @@ impl TransactionRuntimeModule {
         for Event {
             mut type_identifier,
             payload,
-            discard_on_failure,
+            flags,
         } in self.events.into_iter()
         {
             // Revert if failure
-            if discard_on_failure && !is_success {
+            if !flags.contains(EventFlags::FORCE_WRITE) && !is_success {
                 continue;
             }
 
@@ -103,6 +105,7 @@ mod tests {
     #[test]
     fn test_ruid_gen() {
         let mut id = TransactionRuntimeModule {
+            network_definition: NetworkDefinition::simulator(),
             tx_hash: Hash::from_str(
                 "71f26aab5eec6679f67c71211aba9a3486cc8d24194d339385ee91ee5ca7b30d",
             )
@@ -118,6 +121,7 @@ mod tests {
         );
 
         let mut id = TransactionRuntimeModule {
+            network_definition: NetworkDefinition::simulator(),
             tx_hash: Hash([0u8; 32]),
             next_id: 5,
             logs: Vec::new(),
@@ -130,6 +134,7 @@ mod tests {
         );
 
         let mut id = TransactionRuntimeModule {
+            network_definition: NetworkDefinition::simulator(),
             tx_hash: Hash([255u8; 32]),
             next_id: 5,
             logs: Vec::new(),

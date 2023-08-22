@@ -14,6 +14,7 @@ mod badge_test {
                     }
                 })
                 .mint_initial_supply(amount)
+                .into()
         }
 
         pub fn combine() -> Bucket {
