@@ -1,8 +1,9 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
-    CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent,
-    ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+    CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent, OpenSubstateEvent,
+    ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent,
+    SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
@@ -197,7 +198,23 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             CreateNodeEvent::StoreAccess(store_access) => {
                 limits.process_store_access(store_access)?;
             }
-            _ => {}
+            CreateNodeEvent::End(..) => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &DropNodeEvent,
+    ) -> Result<(), RuntimeError> {
+        let limits = &mut api.kernel_get_system().modules.limits;
+
+        match event {
+            DropNodeEvent::StoreAccess(store_access) => {
+                limits.process_store_access(store_access)?;
+            }
+            DropNodeEvent::Start(..) | DropNodeEvent::End(..) => {}
         }
 
         Ok(())
@@ -236,7 +253,24 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
                     .limits
                     .process_store_access(store_access)?;
             }
-            _ => {}
+            OpenSubstateEvent::End { .. } => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &ReadSubstateEvent,
+    ) -> Result<(), RuntimeError> {
+        match event {
+            ReadSubstateEvent::StoreAccess(store_access) => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_store_access(store_access)?;
+            }
+            ReadSubstateEvent::OnRead { .. } => {}
         }
 
         Ok(())
@@ -277,7 +311,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             SetSubstateEvent::Start(_node_id, _partition_num, substate_key, ..) => {
                 system.modules.limits.process_substate_key(substate_key)?;
             }
-            _ => {}
+            SetSubstateEvent::StoreAccess(store_access) => {
+                system.modules.limits.process_store_access(store_access)?;
+            }
         }
 
         Ok(())
@@ -291,7 +327,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             RemoveSubstateEvent::Start(_node_id, _partition_num, substate_key) => {
                 system.modules.limits.process_substate_key(substate_key)?;
             }
-            _ => {}
+            RemoveSubstateEvent::StoreAccess(store_access) => {
+                system.modules.limits.process_store_access(store_access)?;
+            }
         }
 
         Ok(())
@@ -305,7 +343,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             ScanKeysEvent::StoreAccess(store_access) => {
                 system.modules.limits.process_store_access(store_access)?;
             }
-            _ => {}
+            ScanKeysEvent::Start => {}
         }
 
         Ok(())
@@ -319,7 +357,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             DrainSubstatesEvent::StoreAccess(store_access) => {
                 system.modules.limits.process_store_access(store_access)?;
             }
-            _ => {}
+            DrainSubstatesEvent::Start(_) => {}
         }
 
         Ok(())
@@ -333,7 +371,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             ScanSortedSubstatesEvent::StoreAccess(store_access) => {
                 system.modules.limits.process_store_access(store_access)?;
             }
-            _ => {}
+            ScanSortedSubstatesEvent::Start => {}
         }
 
         Ok(())
