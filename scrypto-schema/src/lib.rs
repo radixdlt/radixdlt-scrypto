@@ -144,7 +144,19 @@ impl<T> BlueprintCollectionSchema<T> {
 }
 
 pub trait BlueprintFeature {
-    fn feature_name(&self) -> &'static str;
+    fn feature_name(&self) -> &str;
+}
+
+impl BlueprintFeature for String {
+    fn feature_name(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl<'a> BlueprintFeature for &str {
+    fn feature_name(&self) -> &str {
+        self
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

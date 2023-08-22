@@ -2307,7 +2307,7 @@ where
     fn actor_is_feature_enabled(
         &mut self,
         object_handle: ObjectHandle,
-        feature: &str,
+        feature: impl BlueprintFeature,
     ) -> Result<bool, RuntimeError> {
         self.api
             .kernel_get_system()
@@ -2316,7 +2316,7 @@ where
 
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
-        self.is_feature_enabled(&node_id, module_id, feature)
+        self.is_feature_enabled(&node_id, module_id, feature.feature_name())
     }
 }
 

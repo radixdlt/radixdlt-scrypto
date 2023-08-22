@@ -25,6 +25,7 @@ use radix_engine_interface::types::{Level, NodeId, SubstateHandle};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
+use scrypto_schema::BlueprintFeature;
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -379,7 +380,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
     fn actor_is_feature_enabled(
         &mut self,
         _: ObjectHandle,
-        _feature: &str,
+        _feature: impl BlueprintFeature,
     ) -> Result<bool, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }

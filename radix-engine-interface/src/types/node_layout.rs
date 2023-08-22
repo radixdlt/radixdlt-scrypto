@@ -145,12 +145,7 @@ pub enum ComponentField {
     State0,
 }
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum FungibleResourceManagerField {
-    Divisibility,
-    TotalSupply,
-}
+// PACKAGE PACKAGE
 
 blueprint_partition_offset!(
     pub enum PackagePartitionOffset {
@@ -165,69 +160,33 @@ blueprint_partition_offset!(
     }
 );
 
+// RESOURCE PACKAGE
+
 blueprint_partition_offset!(
-    pub enum NonFungibleResourceManagerPartitionOffset {
-        ResourceManager,
-        NonFungibleData,
+    pub enum FungibleResourceManagerPartitionOffset {
+        Field,
     }
 );
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum NonFungibleResourceManagerField {
-    IdType,
-    MutableFields,
-    TotalSupply,
-}
+blueprint_partition_offset!(
+    pub enum NonFungibleResourceManagerPartitionOffset {
+        Field,
+        DataKeyValue,
+    }
+);
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum FungibleVaultField {
-    LiquidFungible,
-    LockedFungible,
-    VaultFrozenFlag,
-}
+blueprint_partition_offset!(
+    pub enum FungibleVaultPartitionOffset {
+        Field,
+    }
+);
 
 blueprint_partition_offset!(
     pub enum NonFungibleVaultPartitionOffset {
-        Balance,
-        NonFungibles,
+        Field,
+        NonFungiblesKeyValue,
     }
 );
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum NonFungibleVaultField {
-    LiquidNonFungible,
-    LockedNonFungible,
-    VaultFrozenFlag,
-}
-
-blueprint_partition_offset!(
-    pub enum ConsensusManagerPartitionOffset {
-        ConsensusManager,
-        RegisteredValidatorsByStakeIndex,
-    }
-);
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
-pub enum ConsensusManagerField {
-    Config,
-    ConsensusManager,
-    ValidatorRewards,
-    CurrentValidatorSet,
-    CurrentProposalStatistic,
-    CurrentTimeRoundedToMinutes,
-    CurrentTime,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
-pub enum ValidatorField {
-    Validator,
-    ProtocolUpdateReadinessSignal,
-}
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -265,15 +224,47 @@ pub enum WorktopField {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum AuthZoneField {
+    AuthZone,
+}
+
+// CONSENSUS MANAGER PACKAGE
+
+blueprint_partition_offset!(
+    pub enum ConsensusManagerPartitionOffset {
+        ConsensusManager,
+        RegisteredValidatorsByStakeIndex,
+    }
+);
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
+pub enum ConsensusManagerField {
+    Config,
+    ConsensusManager,
+    ValidatorRewards,
+    CurrentValidatorSet,
+    CurrentProposalStatistic,
+    CurrentTimeRoundedToMinutes,
+    CurrentTime,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
+pub enum ValidatorField {
+    Validator,
+    ProtocolUpdateReadinessSignal,
+}
+
+// ACCESS CONTROLLER PACKAGE
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum AccessControllerField {
     AccessController,
 }
 
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum AuthZoneField {
-    AuthZone,
-}
+// ACCOUNT PACKAGE
 
 blueprint_partition_offset!(
     pub enum AccountPartitionOffset {
@@ -292,6 +283,8 @@ pub enum AccountField {
     Account,
 }
 
+// POOL PACKAGE
+
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum OneResourcePoolField {
@@ -309,6 +302,8 @@ pub enum TwoResourcePoolField {
 pub enum MultiResourcePoolField {
     MultiResourcePool,
 }
+
+// TRANSACTION TRACKER PACKAGE
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -347,12 +342,8 @@ substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
 substate_key!(RoleAssignmentField);
 substate_key!(ComponentField);
-substate_key!(FungibleResourceManagerField);
-substate_key!(FungibleVaultField);
 substate_key!(FungibleBucketField);
 substate_key!(FungibleProofField);
-substate_key!(NonFungibleResourceManagerField);
-substate_key!(NonFungibleVaultField);
 substate_key!(NonFungibleBucketField);
 substate_key!(NonFungibleProofField);
 substate_key!(ConsensusManagerField);
