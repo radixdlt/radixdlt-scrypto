@@ -2,7 +2,7 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
-use radix_engine_common::types::ComponentAddress;
+use radix_engine_common::types::{ComponentAddress, GlobalAddressReservation};
 use sbor::rust::fmt::Debug;
 use utils::rust::prelude::IndexSet;
 
@@ -12,13 +12,14 @@ pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
 // Access Controller Create Global
 //=================================
 
-pub const ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT: &str = "create_global";
+pub const ACCESS_CONTROLLER_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerCreateGlobalInput {
     pub controlled_asset: Bucket,
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
+    pub address_reservation: Option<GlobalAddressReservation>,
 }
 
 impl Clone for AccessControllerCreateGlobalInput {
@@ -27,6 +28,7 @@ impl Clone for AccessControllerCreateGlobalInput {
             controlled_asset: Bucket(self.controlled_asset.0),
             rule_set: self.rule_set.clone(),
             timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes.clone(),
+            address_reservation: self.address_reservation.clone(),
         }
     }
 }
