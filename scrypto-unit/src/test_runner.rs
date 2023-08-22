@@ -8,9 +8,7 @@ use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
-use radix_engine::system::system_db_checker::{
-    SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults,
-};
+use radix_engine::system::system_db_checker::{SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults, ApplicationChecker};
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, CostingParameters, ExecutionConfig,
@@ -400,7 +398,7 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
 impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
     fn drop(&mut self) {
         let results = self
-            .check_db()
+            .check_db::<()>()
             .expect("Database should be consistent after running test");
         println!("{:?}", results);
     }
@@ -2160,8 +2158,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .collect::<Vec<_>>()
     }
 
-    pub fn check_db(&self) -> Result<SystemDatabaseCheckerResults, SystemDatabaseCheckError> {
-        let mut checker = SystemDatabaseChecker::<()>::new();
+    pub fn check_db<A: ApplicationChecker>(&self) -> Result<(SystemDatabaseCheckerResults, A::ApplicationCheckerResults), SystemDatabaseCheckError> {
+        let mut checker = SystemDatabaseChecker::<A>::new();
         checker.check_db(&self.database)
     }
 }

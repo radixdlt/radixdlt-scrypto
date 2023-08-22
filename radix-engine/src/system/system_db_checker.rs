@@ -135,19 +135,25 @@ pub enum SystemDatabaseCheckError {
     PartitionError(NodeInfo, SystemPartitionCheckError),
 }
 
-pub trait ApplicationChecker {
+pub trait ApplicationChecker: Default {
+    type ApplicationCheckerResults: Debug + Default;
     fn on_field(&mut self, _info: BlueprintInfo, _node_id: NodeId, _field_index: FieldIndex, _value: &Vec<u8>) {
+    }
+
+    fn on_finish(&self) -> Self::ApplicationCheckerResults {
+        Self::ApplicationCheckerResults::default()
     }
 }
 
 impl ApplicationChecker for () {
+    type ApplicationCheckerResults = ();
 }
 
 pub struct SystemDatabaseChecker<A: ApplicationChecker> {
     application_checker: A,
 }
 
-impl <A: ApplicationChecker + Default> SystemDatabaseChecker<A> {
+impl <A: ApplicationChecker> SystemDatabaseChecker<A> {
     pub fn new() -> SystemDatabaseChecker<A> {
         SystemDatabaseChecker {
             application_checker: A::default()
@@ -159,7 +165,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
     pub fn check_db<S: SubstateDatabase + ListableSubstateDatabase>(
         &mut self,
         substate_db: &S,
-    ) -> Result<SystemDatabaseCheckerResults, SystemDatabaseCheckError> {
+    ) -> Result<(SystemDatabaseCheckerResults, A::ApplicationCheckerResults), SystemDatabaseCheckError> {
         let mut node_counts = NodeCounts::default();
         let mut partition_count = 0usize;
         let mut substate_count = 0usize;
@@ -218,11 +224,15 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                 .map_err(SystemDatabaseCheckError::NodeError)?;
         }
 
-        Ok(SystemDatabaseCheckerResults {
+        let system_checker_results = SystemDatabaseCheckerResults {
             node_counts,
             partition_count,
             substate_count,
-        })
+        };
+
+        let application_checker_results = self.application_checker.on_finish();
+
+        Ok((system_checker_results, application_checker_results))
     }
 
     fn check_node<S: SubstateDatabase + ListableSubstateDatabase>(
