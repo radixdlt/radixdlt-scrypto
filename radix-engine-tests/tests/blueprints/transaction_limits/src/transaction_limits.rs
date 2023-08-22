@@ -27,15 +27,15 @@ mod transaction_limits {
             .globalize()
         }
 
-        pub fn write_kv_stores(&self, n: u32) {
+        pub fn read_non_existent_entries_from_kv_store(&self, n: u32) {
             for i in 0..n {
-                self.kv_store.insert(i, i);
+                self.kv_store.get(&i);
             }
         }
 
-        pub fn read_kv_stores(&self, n: u32) {
+        pub fn write_entries_to_kv_store(&self, n: u32) {
             for i in 0..n {
-                self.kv_store.get(&i);
+                self.kv_store.insert(i, i);
             }
         }
 
@@ -52,7 +52,7 @@ mod transaction_limits {
                 message: "a".repeat(n),
             })
             .unwrap();
-            unsafe { wasm_api::emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len()) }
+            unsafe { wasm_api::emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len(), 0) }
         }
 
         pub fn emit_log_of_size(n: usize) {

@@ -1,4 +1,5 @@
 use radix_engine_common::types::NodeId;
+use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::{
@@ -15,7 +16,6 @@ use sbor::rust::prelude::*;
 pub struct Runtime {}
 
 impl Runtime {
-    /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
         api: &mut Y,
         event: T,
@@ -24,7 +24,26 @@ impl Runtime {
         Y: ClientTransactionRuntimeApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
+        api.emit_event(
+            T::event_name().to_string(),
+            scrypto_encode(&event).unwrap(),
+            EventFlags::empty(),
+        )
+    }
+
+    pub fn emit_event_no_revert<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
+        api: &mut Y,
+        event: T,
+    ) -> Result<(), E>
+    where
+        Y: ClientTransactionRuntimeApi<E>,
+        E: Debug + ScryptoCategorize + ScryptoDecode,
+    {
+        api.emit_event(
+            T::event_name().to_string(),
+            scrypto_encode(&event).unwrap(),
+            EventFlags::FORCE_WRITE,
+        )
     }
 
     pub fn current_epoch<Y, E>(api: &mut Y) -> Result<Epoch, E>

@@ -1,9 +1,7 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_common::prelude::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-};
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_store_interface::{
@@ -11,9 +9,10 @@ use radix_engine_store_interface::{
     interface::SubstateDatabase,
 };
 use sbor::rust::prelude::*;
+use sbor::HasLatestVersion;
 
+use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::KeyValueEntrySubstate;
 use crate::track::TrackedNode;
 
 pub enum SystemPartitionDescription {
@@ -85,7 +84,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         package_address: PackageAddress,
     ) -> BTreeMap<BlueprintVersionKey, BlueprintDefinition> {
         let entries = self.substate_db
-            .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<BlueprintDefinition>, MapKey>(
+            .list_mapped::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate, MapKey>(
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
@@ -99,7 +98,10 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 _ => panic!("Unexpected"),
             };
 
-            blueprints.insert(bp_version_key, blueprint_definition.value.unwrap());
+            blueprints.insert(
+                bp_version_key,
+                blueprint_definition.value.unwrap().into_latest(),
+            );
         }
 
         blueprints
@@ -127,7 +129,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
     ) -> Option<BlueprintDefinition> {
         let bp_version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name.clone());
         let definition = self
-            .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<BlueprintDefinition>>(
+            .fetch_substate::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate>(
                 blueprint_id.package_address.as_node_id(),
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
@@ -135,7 +137,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             )?;
 
-        definition.value
+        definition.value.map(|v| v.into_latest())
     }
 
     pub fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(
@@ -162,13 +164,17 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         &self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        key: &SubstateKey,
+        substate_key: &SubstateKey,
     ) -> Option<D> {
         if let Some(tracked) = self.tracked {
             tracked
                 .get(node_id)
                 .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
-                .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
+                .and_then(|tracked_module| {
+                    tracked_module
+                        .substates
+                        .get(&M::to_db_sort_key(&substate_key))
+                })
                 .and_then(|tracked_key| {
                     tracked_key
                         .substate_value

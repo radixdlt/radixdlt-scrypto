@@ -5,4 +5,5 @@ pub mod utils;
 #[cfg(test)]
 mod test;
 
+pub use interface::*;
 pub use track::*;

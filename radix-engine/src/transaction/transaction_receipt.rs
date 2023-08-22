@@ -608,32 +608,42 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         )?;
 
         write!(
-                f,
-                "\n{} Network Execution: {} XRD, Network Finalization: {} XRD, Tip: {} XRD, Network Storage: {} XRD, Royalties: {} XRD",
-                "Transaction Cost:".bold().green(),
-                self.fee_summary.total_execution_cost_in_xrd,
-                self.fee_summary.total_finalization_cost_in_xrd,
-                self.fee_summary.total_tipping_cost_in_xrd,
-                self.fee_summary.total_storage_cost_in_xrd,
-                self.fee_summary.total_royalty_cost_in_xrd,
-            )?;
-
-        write!(
             f,
-            "\n{} {} limit, {} consumed, {} XRD per unit",
-            "Execution Cost Units:".bold().green(),
-            self.costing_parameters.execution_cost_unit_limit,
-            self.fee_summary.total_execution_cost_units_consumed,
-            self.costing_parameters.execution_cost_unit_price,
+            "\n{} {} XRD",
+            "Transaction Cost:".bold().green(),
+            self.fee_summary.total_cost(),
         )?;
-
         write!(
             f,
-            "\n{} {} limit, {} consumed, {} XRD per unit",
-            "Finalization Cost Units:".bold().green(),
-            self.costing_parameters.finalization_cost_unit_limit,
+            "\n├─ {} {} XRD, {} execution cost units",
+            "Network execution:".bold().green(),
+            self.fee_summary.total_execution_cost_in_xrd,
+            self.fee_summary.total_execution_cost_units_consumed,
+        )?;
+        write!(
+            f,
+            "\n├─ {} {} XRD, {} finalization cost units",
+            "Network finalization:".bold().green(),
+            self.fee_summary.total_finalization_cost_in_xrd,
             self.fee_summary.total_finalization_cost_units_consumed,
-            self.costing_parameters.finalization_cost_unit_price,
+        )?;
+        write!(
+            f,
+            "\n├─ {} {} XRD",
+            "Tip:".bold().green(),
+            self.fee_summary.total_tipping_cost_in_xrd
+        )?;
+        write!(
+            f,
+            "\n├─ {} {} XRD",
+            "Network Storage:".bold().green(),
+            self.fee_summary.total_storage_cost_in_xrd
+        )?;
+        write!(
+            f,
+            "\n└─ {} {} XRD",
+            "Royalties:".bold().green(),
+            self.fee_summary.total_royalty_cost_in_xrd
         )?;
 
         if let TransactionResult::Commit(c) = &result {
@@ -815,7 +825,7 @@ fn display_event_with_network_context<'a, F: fmt::Write>(
         IndexedScryptoValue::from_slice(&event_data).expect("Event must be decodable!");
     write!(
         f,
-        "\n{} Emitter: {}\n   Local Type Index: {:?}\n   Data: {}",
+        "\n{} Emitter: {}\n   Name: {:?}\n   Data: {}",
         prefix,
         event_type_identifier
             .0
