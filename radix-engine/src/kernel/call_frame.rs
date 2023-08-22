@@ -3,7 +3,7 @@ use crate::kernel::substate_io::{
     IOStoreAccessHandler, IOSubstateReadHandler, ProcessSubstateIOWriteError, SubstateDevice,
     SubstateIO,
 };
-use crate::track::interface::{CallbackError, CommitableSubstateStore, NodeSubstates, StoreAccess};
+use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
@@ -316,13 +316,13 @@ impl NodeVisibility {
     }
 }
 
-/// Callback for store access, from call frame
+/// Callback for IO access, from call frame
 pub trait CallFrameStoreAccessHandler<C, L, E> {
-    fn on_store_access(
+    fn on_io_access(
         &mut self,
         current_frame: &CallFrame<C, L>,
         heap: &Heap,
-        store_access: StoreAccess,
+        io_access: IOAccess,
     ) -> Result<(), E>;
 }
 
@@ -349,9 +349,8 @@ struct CallFrameToIOStoreAccessAdapter<'g, C, L, E, H: CallFrameStoreAccessHandl
 impl<'g, C, L, E, H: CallFrameStoreAccessHandler<C, L, E>> IOStoreAccessHandler<E>
     for CallFrameToIOStoreAccessAdapter<'g, C, L, E, H>
 {
-    fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E> {
-        self.handler
-            .on_store_access(self.call_frame, heap, store_access)
+    fn on_io_access(&mut self, heap: &Heap, io_access: IOAccess) -> Result<(), E> {
+        self.handler.on_io_access(self.call_frame, heap, io_access)
     }
 }
 
@@ -774,7 +773,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     }
 
     /// Removes node from call frame and owned nodes will be possessed by this call frame.
-    pub fn drop_node<'x, E: 'x, S: CommitableSubstateStore>(
+    pub fn drop_node<E, S: CommitableSubstateStore>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,

@@ -1,6 +1,6 @@
 use crate::track::interface::{CallbackError, CanonicalSubstateKey, NodeSubstates};
 use crate::types::*;
-use crate::{blueprints::resource::*, track::interface::StoreAccess};
+use crate::{blueprints::resource::*, track::interface::IOAccess};
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
     LockedNonFungibleResource,
@@ -32,11 +32,11 @@ impl Heap {
         self.nodes.is_empty()
     }
 
-    pub fn remove_module<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
+    pub fn remove_module<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<
         BTreeMap<SubstateKey, IndexedScryptoValue>,
         CallbackError<HeapRemovePartitionError, E>,
@@ -49,9 +49,9 @@ impl Heap {
                 ))?;
 
             for (substate_key, substate_value) in &module {
-                on_store_access(
+                on_io_access(
                     self,
-                    StoreAccess::HeapSubstateUpdated {
+                    IOAccess::HeapSubstateUpdated {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id: *node_id,
                             partition_number,
@@ -86,13 +86,13 @@ impl Heap {
     }
 
     /// Inserts or overwrites a substate
-    pub fn set_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
+    pub fn set_substate<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         partition_number: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<(), E> {
         let entry = self
             .nodes
@@ -115,9 +115,9 @@ impl Heap {
             }
         }
 
-        on_store_access(
+        on_io_access(
             self,
-            StoreAccess::HeapSubstateUpdated {
+            IOAccess::HeapSubstateUpdated {
                 canonical_substate_key: CanonicalSubstateKey {
                     node_id,
                     partition_number,
@@ -131,12 +131,12 @@ impl Heap {
         Ok(())
     }
 
-    pub fn remove_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
+    pub fn remove_substate<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Option<IndexedScryptoValue>, E> {
         let substate_value = self
             .nodes
@@ -145,9 +145,9 @@ impl Heap {
             .and_then(|s| s.remove(substate_key));
 
         if let Some(value) = &substate_value {
-            on_store_access(
+            on_io_access(
                 self,
-                StoreAccess::HeapSubstateUpdated {
+                IOAccess::HeapSubstateUpdated {
                     canonical_substate_key: CanonicalSubstateKey {
                         node_id: *node_id,
                         partition_number,
@@ -186,12 +186,12 @@ impl Heap {
 
     /// Drains the substates from a node's partition. On an non-existing node/partition, this
     /// will return an empty vector
-    pub fn drain_substates<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
+    pub fn drain_substates<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
         count: u32,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E> {
         let node_substates = self
             .nodes
@@ -212,9 +212,9 @@ impl Heap {
             }
 
             for (key, value) in &items {
-                on_store_access(
+                on_io_access(
                     self,
-                    StoreAccess::HeapSubstateUpdated {
+                    IOAccess::HeapSubstateUpdated {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id: *node_id,
                             partition_number,
@@ -233,11 +233,11 @@ impl Heap {
     }
 
     /// Inserts a new node to heap.
-    pub fn create_node<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
+    pub fn create_node<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         substates: NodeSubstates,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<(), E> {
         assert!(!self.nodes.contains_key(&node_id));
 
@@ -255,9 +255,9 @@ impl Heap {
 
         for (partition_number, partition) in sizes {
             for (substate_key, substate_size) in partition {
-                on_store_access(
+                on_io_access(
                     self,
-                    StoreAccess::HeapSubstateUpdated {
+                    IOAccess::HeapSubstateUpdated {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id,
                             partition_number,
@@ -274,10 +274,10 @@ impl Heap {
     }
 
     /// Removes node.
-    pub fn remove_node<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
+    pub fn remove_node<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<NodeSubstates, CallbackError<HeapRemoveNodeError, E>> {
         let node_substates = match self.nodes.remove(node_id) {
             Some(node_substates) => node_substates,
@@ -288,9 +288,9 @@ impl Heap {
 
         for (partition_number, partition) in &node_substates {
             for (substate_key, substate_value) in partition {
-                on_store_access(
+                on_io_access(
                     self,
-                    StoreAccess::HeapSubstateUpdated {
+                    IOAccess::HeapSubstateUpdated {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id: *node_id,
                             partition_number: *partition_number,
@@ -389,9 +389,9 @@ mod tests {
         let mut heap = Heap::new();
         let mut total_size = 0;
 
-        let mut on_store_access = |_: &_, store_access| {
-            match store_access {
-                StoreAccess::HeapSubstateUpdated {
+        let mut on_io_access = |_: &_, io_access| {
+            match io_access {
+                IOAccess::HeapSubstateUpdated {
                     canonical_substate_key,
                     old_size,
                     new_size,
@@ -429,7 +429,7 @@ mod tests {
                     key2.clone() => IndexedScryptoValue::from_typed("D"),
                 )
             ),
-            &mut on_store_access,
+            &mut on_io_access,
         )
         .unwrap();
         heap.set_substate(
@@ -437,16 +437,16 @@ mod tests {
             partition_number1,
             key1,
             IndexedScryptoValue::from_typed("E"),
-            &mut on_store_access,
+            &mut on_io_access,
         )
         .unwrap();
-        heap.drain_substates(&node_id, partition_number1, 1, &mut on_store_access)
+        heap.drain_substates(&node_id, partition_number1, 1, &mut on_io_access)
             .unwrap();
-        heap.remove_substate(&node_id, partition_number2, &key2, &mut on_store_access)
+        heap.remove_substate(&node_id, partition_number2, &key2, &mut on_io_access)
             .unwrap();
-        heap.remove_module(&node_id, partition_number2, &mut on_store_access)
+        heap.remove_module(&node_id, partition_number2, &mut on_io_access)
             .unwrap();
-        heap.remove_node(&node_id, &mut on_store_access).unwrap();
+        heap.remove_node(&node_id, &mut on_io_access).unwrap();
         assert_eq!(total_size, 0);
     }
 }
