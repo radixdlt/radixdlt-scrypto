@@ -8,6 +8,9 @@ use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system_db_checker::{
+    SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults,
+};
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, CostingParameters, ExecutionConfig,
@@ -391,6 +394,16 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
     collected_events: Option<Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>>,
+}
+
+#[cfg(feature = "post_run_db_check")]
+impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
+    fn drop(&mut self) {
+        let results = self
+            .check_db()
+            .expect("Database should be consistent after running test");
+        println!("{:?}", results);
+    }
 }
 
 #[derive(Clone)]
@@ -2145,6 +2158,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .filter(|(id, _data)| self.is_event_name_equal::<T>(id))
             .map(|(_id, data)| scrypto_decode::<T>(data).unwrap())
             .collect::<Vec<_>>()
+    }
+
+    pub fn check_db(&self) -> Result<SystemDatabaseCheckerResults, SystemDatabaseCheckError> {
+        let checker = SystemDatabaseChecker::new();
+        checker.check_db(&self.database)
     }
 }
 

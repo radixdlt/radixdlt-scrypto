@@ -19,7 +19,7 @@ use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapsh
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::system::system_type_checker::{
-    BlueprintTypeTarget, KVStoreValidationTarget, SchemaValidationMeta, SystemMapper,
+    BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta, SystemMapper,
 };
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -1635,7 +1635,7 @@ where
             _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
         };
 
-        let target = KVStoreValidationTarget {
+        let target = KVStoreTypeTarget {
             kv_store_type: info.generic_substitutions,
             meta: *node_id,
         };

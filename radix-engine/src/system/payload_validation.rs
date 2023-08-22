@@ -27,7 +27,9 @@ use super::system_callback_api::SystemCallbackObject;
 
 /// We use a trait here so it can be implemented either by the System API (mid-execution) or by off-ledger systems
 pub trait ValidationContext {
-    fn get_node_type_info(&self, node_id: &NodeId) -> Result<TypeInfoForValidation, RuntimeError>;
+    type Error;
+
+    fn get_node_type_info(&self, node_id: &NodeId) -> Result<TypeInfoForValidation, Self::Error>;
 
     fn schema_origin(&self) -> &SchemaOrigin;
 
@@ -80,6 +82,8 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>
 impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> ValidationContext
     for SystemServiceTypeInfoLookup<'s, 'a, Y, V>
 {
+    type Error = RuntimeError;
+
     fn get_node_type_info(&self, node_id: &NodeId) -> Result<TypeInfoForValidation, RuntimeError> {
         let type_info = self
             .system_service
@@ -159,14 +163,14 @@ impl TypeInfoForValidation {
 // VALIDATION
 //==================
 
-type Lookup<'a> = Box<dyn ValidationContext + 'a>;
+type Lookup<'a, E> = Box<dyn ValidationContext<Error = E> + 'a>;
 
-impl<'a> ValidatableCustomExtension<Lookup<'a>> for ScryptoCustomExtension {
+impl<'a, E: ToString> ValidatableCustomExtension<Lookup<'a, E>> for ScryptoCustomExtension {
     fn apply_validation_for_custom_value<'de>(
         schema: &Schema<Self::CustomSchema>,
         custom_value: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
         type_index: LocalTypeIndex,
-        context: &Lookup<'a>,
+        context: &Lookup<'a, E>,
     ) -> Result<(), PayloadValidationError<Self>> {
         match &custom_value.0 {
             ScryptoCustomValue::Own(..) => {
@@ -206,7 +210,7 @@ impl<'a> ValidatableCustomExtension<Lookup<'a>> for ScryptoCustomExtension {
         _: &Schema<Self::CustomSchema>,
         _: &<Self::CustomSchema as CustomSchema>::CustomTypeValidation,
         _: &TerminalValueRef<'de, Self::CustomTraversal>,
-        _: &Lookup<'a>,
+        _: &Lookup<'a, E>,
     ) -> Result<(), PayloadValidationError<Self>> {
         // Non-custom values must have non-custom type kinds...
         // But custom type validations aren't allowed to combine with non-custom type kinds
@@ -214,10 +218,10 @@ impl<'a> ValidatableCustomExtension<Lookup<'a>> for ScryptoCustomExtension {
     }
 }
 
-fn apply_custom_validation_to_custom_value(
+fn apply_custom_validation_to_custom_value<E: ToString>(
     custom_validation: &ScryptoCustomTypeValidation,
     custom_value: &ScryptoCustomValue,
-    lookup: &Lookup,
+    lookup: &Lookup<E>,
 ) -> Result<(), PayloadValidationError<ScryptoCustomExtension>> {
     match custom_validation {
         ScryptoCustomTypeValidation::Reference(reference_validation) => {
@@ -301,9 +305,9 @@ fn apply_custom_validation_to_custom_value(
     Ok(())
 }
 
-fn resolve_type_info(
+fn resolve_type_info<E: ToString>(
     node_id: &NodeId,
-    lookup: &Lookup,
+    lookup: &Lookup<E>,
 ) -> Result<TypeInfoForValidation, PayloadValidationError<ScryptoCustomExtension>> {
     lookup.get_node_type_info(node_id).map_err(|e| {
         PayloadValidationError::ValidationError(ValidationError::CustomError(e.to_string()))
