@@ -2462,6 +2462,7 @@ where
             .map_err(|_| RuntimeError::SystemError(SystemError::AddressBech32EncodeError))
     }
 
+    #[trace_resources]
     fn emit_event(
         &mut self,
         event_name: String,
