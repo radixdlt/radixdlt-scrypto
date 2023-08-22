@@ -230,54 +230,81 @@ macro_rules! declare_native_blueprint_state {
                 //--------------------------------------------------------
                 // System - Fields, Collections, Features and Generics
                 //--------------------------------------------------------
-                #[repr(u8)]
-                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-                pub enum [<$blueprint_ident Field>] {
-                    $($field_ident,)*
-                }
-
-                impl From<[<$blueprint_ident Field>]> for SubstateKey {
-                    fn from(value: [<$blueprint_ident Field>]) -> Self {
-                        SubstateKey::Field(value as u8)
-                    }
-                }
-
-                impl From<[<$blueprint_ident Field>]> for u8 {
-                    fn from(value: [<$blueprint_ident Field>]) -> Self {
-                        value as u8
-                    }
-                }
-
-                impl TryFrom<&SubstateKey> for [<$blueprint_ident Field>] {
-                    type Error = ();
-
-                    fn try_from(key: &SubstateKey) -> Result<Self, Self::Error> {
-                        match key {
-                            SubstateKey::Field(x) => Self::from_repr(*x).ok_or(()),
-                            _ => Err(()),
+                if_exists!(
+                    TEST: [[$($field_ident)*]],
+                    // Avoid https://doc.rust-lang.org/error_codes/E0084.html if no fields exist
+                    [[
+                        #[repr(u8)]
+                        #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+                        pub enum [<$blueprint_ident Field>] {
+                            $($field_ident,)*
                         }
-                    }
-                }
 
-                impl TryFrom<u8> for [<$blueprint_ident Field>] {
-                    type Error = ();
+                        impl From<[<$blueprint_ident Field>]> for SubstateKey {
+                            fn from(value: [<$blueprint_ident Field>]) -> Self {
+                                SubstateKey::Field(value as u8)
+                            }
+                        }
 
-                    fn try_from(offset: u8) -> Result<Self, Self::Error> {
-                        Self::from_repr(offset).ok_or(())
-                    }
-                }
+                        impl From<[<$blueprint_ident Field>]> for u8 {
+                            fn from(value: [<$blueprint_ident Field>]) -> Self {
+                                value as u8
+                            }
+                        }
 
-                #[repr(u8)]
-                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-                pub enum [<$blueprint_ident Collection>] {
-                    $([<$collection_ident $collection_type>],)*
-                }
+                        impl TryFrom<&SubstateKey> for [<$blueprint_ident Field>] {
+                            type Error = ();
 
-                impl [<$blueprint_ident Collection>] {
-                    pub const fn collection_index(&self) -> u8 {
-                        *self as u8
-                    }
-                }
+                            fn try_from(key: &SubstateKey) -> Result<Self, Self::Error> {
+                                match key {
+                                    SubstateKey::Field(x) => Self::from_repr(*x).ok_or(()),
+                                    _ => Err(()),
+                                }
+                            }
+                        }
+
+                        impl TryFrom<u8> for [<$blueprint_ident Field>] {
+                            type Error = ();
+
+                            fn try_from(offset: u8) -> Result<Self, Self::Error> {
+                                Self::from_repr(offset).ok_or(())
+                            }
+                        }
+                    ]],
+                    [[
+                        #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+                        pub enum [<$blueprint_ident Field>] {
+                            $($field_ident,)*
+                        }
+                    ]],
+                );
+
+                if_exists!(
+                    TEST: [[$($collection_ident)*]],
+                    [[
+                        #[repr(u8)]
+                        #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+                        pub enum [<$blueprint_ident Collection>] {
+                            $([<$collection_ident $collection_type>],)*
+                        }
+
+                        impl [<$blueprint_ident Collection>] {
+                            pub const fn collection_index(&self) -> u8 {
+                                *self as u8
+                            }
+                        }
+                    ]],
+                    [[
+                        #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+                        pub enum [<$blueprint_ident Collection>] {}
+
+                        impl [<$blueprint_ident Collection>] {
+                            pub const fn collection_index(&self) -> u8 {
+                                unreachable!()
+                            }
+                        }
+                    ]]
+                );
 
                 $(
                     #[repr(u8)]
@@ -308,7 +335,7 @@ macro_rules! declare_native_blueprint_state {
                     }
                 }
 
-                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, Default)]
                 pub struct [<$blueprint_ident FeatureSet>] {
                     $(pub [<$feature_property_name>]: bool,)*
                 }
@@ -811,6 +838,25 @@ mod helper_macros {
     }
     #[allow(unused)]
     pub(crate) use match_filter_out_ignored;
+
+    macro_rules! if_exists {
+        (
+            TEST: [[]],
+            [[ $($present:tt)* ]],
+            [[ $($not_present:tt)* ]]$(,)?
+        ) => {
+            $($not_present)*
+        };
+        (
+            TEST: [[ $($exists:tt)* ]],
+            [[ $($present:tt)* ]],
+            [[ $($not_present:tt)* ]]$(,)?
+        ) => {
+            $($present)*
+        };
+    }
+    #[allow(unused)]
+    pub(crate) use if_exists;
 }
 
 #[cfg(test)]
