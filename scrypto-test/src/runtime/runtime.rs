@@ -22,6 +22,157 @@ impl TestRuntime {
         Self::default()
     }
 
+    /* Invocations */
+
+    /// Invokes a function on the provided blueprint and package with the given arguments.
+    ///
+    /// This method is a typed version of the [`ClientBlueprintApi::call_function`] which Scrypto
+    /// encodes the arguments and Scrypto decodes the returns on behalf of the caller. This method
+    /// assumes that the caller is correct about the argument and return types and panics if the
+    /// encoding or decoding fails.
+    ///
+    /// # Arguments
+    ///
+    /// * `package_address`: [`PackageAddress`] - The address of the package that contains the
+    /// blueprint.
+    /// * `blueprint_name`: [`&str`] - The name of the blueprint.
+    /// * `function_name`: [`&str`] - The nae of the function.
+    /// * `args`: `&I` - The arguments to invoke the method with. This is a generic arguments that
+    /// is fulfilled by any type that implements [`ScryptoEncode`].
+    ///
+    /// # Returns
+    ///
+    /// * [`Result<O, RuntimeError>`] - The returns from the method invocation. If the invocation
+    /// was successful a [`Result::Ok`] is returned, otherwise a [`Result::Err`] is returned. The
+    /// [`Result::Ok`] variant is a generic that's fulfilled by any type that implements
+    /// [`ScryptoDecode`].
+    ///
+    /// # Panics
+    ///
+    /// This method panics in the following two cases:
+    ///
+    /// * Through an unwrap when calling [`scrypto_encode`] on the method arguments. Please consult
+    /// the SBOR documentation on more information on why SBOR encoding may fail.
+    /// * Through an unwrap when calling [`scrypto_decode`] on the returns. This panics if the type
+    /// could be decoded as the desired output type.
+    pub fn call_function_typed<I, O>(
+        &mut self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: &I,
+    ) -> Result<O, RuntimeError>
+    where
+        I: ScryptoEncode,
+        O: ScryptoDecode,
+    {
+        let args = scrypto_encode(args).expect("Scrypto encoding of args failed");
+        self.call_function(package_address, blueprint_name, function_name, args)
+            .map(|rtn| scrypto_decode(&rtn).expect("Scrypto decoding of returns failed"))
+    }
+
+    /// Invokes a method on the main module of a node with the provided typed arguments.
+    ///
+    /// This method is a typed version of the [`ClientObjectApi::call_method`] which Scrypto encodes
+    /// the arguments and Scrypto decodes the returns on behalf of the caller. This method assumes
+    /// that the caller is correct about the argument and return types and panics if the encoding or
+    /// decoding fails.
+    ///
+    /// # Arguments
+    ///
+    /// * `node_id`: `T` - The node to invoke the method on. This is a generic argument that's
+    /// fulfilled by any type that implements [`Into<NodeId>`], thus, any address type can be used.
+    /// * `method_name`: [`&str`] - The name of the method to invoke.
+    /// * `args`: `&I` - The arguments to invoke the method with. This is a generic arguments that
+    /// is fulfilled by any type that implements [`ScryptoEncode`].
+    ///
+    /// # Returns
+    ///
+    /// * [`Result<O, RuntimeError>`] - The returns from the method invocation. If the invocation
+    /// was successful a [`Result::Ok`] is returned, otherwise a [`Result::Err`] is returned. The
+    /// [`Result::Ok`] variant is a generic that's fulfilled by any type that implements
+    /// [`ScryptoDecode`].
+    ///
+    /// # Panics
+    ///
+    /// This method panics in the following two cases:
+    ///
+    /// * Through an unwrap when calling [`scrypto_encode`] on the method arguments. Please consult
+    /// the SBOR documentation on more information on why SBOR encoding may fail.
+    /// * Through an unwrap when calling [`scrypto_decode`] on the returns. This panics if the type
+    /// could be decoded as the desired output type.
+    ///
+    /// # Note
+    ///
+    /// * This method doesn't do direct-access calls and non-main module calls to provide a slightly
+    /// simpler API.
+    pub fn call_method_typed<N, I, O>(
+        &mut self,
+        node_id: N,
+        method_name: &str,
+        args: &I,
+    ) -> Result<O, RuntimeError>
+    where
+        N: Into<NodeId>,
+        I: ScryptoEncode,
+        O: ScryptoDecode,
+    {
+        let args = scrypto_encode(args).expect("Scrypto encoding of args failed");
+        self.call_method(&node_id.into(), method_name, args)
+            .map(|rtn| scrypto_decode(&rtn).expect("Scrypto decoding of returns failed"))
+    }
+
+    /// Invokes a method on a node with the provided typed arguments.
+    ///
+    /// This method is a typed version of the [`ClientObjectApi::call_method_advanced`] which
+    /// Scrypto encodes the arguments and Scrypto decodes the returns on behalf of the caller. This
+    /// method assumes that the caller is correct about the argument and return types and panics if
+    /// the encoding or decoding fails.
+    ///
+    /// # Arguments
+    ///
+    /// * `node_id`: `T` - The node to invoke the method on. This is a generic argument that's
+    /// fulfilled by any type that implements [`Into<NodeId>`], thus, any address type can be used.
+    /// * `module_id`: [`ObjectModuleId`] - The module id of the node to invoke the method on.
+    /// * `method_name`: [`&str`] - The name of the method to invoke.
+    /// * `args`: `&I` - The arguments to invoke the method with. This is a generic arguments that
+    /// is fulfilled by any type that implements [`ScryptoEncode`].
+    /// * `direct_access`: [`bool`] - A boolean that determines whether the call is a direct access
+    /// call or not.
+    ///
+    /// # Returns
+    ///
+    /// * [`Result<O, RuntimeError>`] - The returns from the method invocation. If the invocation
+    /// was successful a [`Result::Ok`] is returned, otherwise a [`Result::Err`] is returned. The
+    /// [`Result::Ok`] variant is a generic that's fulfilled by any type that implements
+    /// [`ScryptoDecode`].
+    ///
+    /// # Panics
+    ///
+    /// This method panics in the following two cases:
+    ///
+    /// * Through an unwrap when calling [`scrypto_encode`] on the method arguments. Please consult
+    /// the SBOR documentation on more information on why SBOR encoding may fail.
+    /// * Through an unwrap when calling [`scrypto_decode`] on the returns. This panics if the type
+    /// could be decoded as the desired output type.
+    pub fn call_method_advanced_typed<N, I, O>(
+        &mut self,
+        node_id: N,
+        module_id: ObjectModuleId,
+        method_name: &str,
+        args: &I,
+        direct_access: bool,
+    ) -> Result<O, RuntimeError>
+    where
+        N: Into<NodeId>,
+        I: ScryptoEncode,
+        O: ScryptoDecode,
+    {
+        let args = scrypto_encode(args).expect("Scrypto encoding of args failed");
+        self.call_method_advanced(&node_id.into(), module_id, direct_access, method_name, args)
+            .map(|rtn| scrypto_decode(&rtn).expect("Scrypto decoding of returns failed"))
+    }
+
     /* Manipulation of Kernel Modules */
 
     /// Enables the kernel trace kernel module of the Radix Engine.
@@ -319,7 +470,9 @@ impl TestRuntimeInternal {
                 schema_cache: NonIterMap::new(),
                 callback_obj: Vm::new(scrypto_vm, native_vm),
                 modules: SystemModuleMixer::new(
-                    EnabledModules::LIMITS | EnabledModules::AUTH,
+                    EnabledModules::LIMITS
+                        | EnabledModules::AUTH
+                        | EnabledModules::TRANSACTION_RUNTIME,
                     Self::DEFAULT_INTENT_HASH,
                     AuthZoneParams {
                         initial_proofs: Default::default(),
@@ -382,8 +535,11 @@ impl TestRuntimeInternal {
                     auth_zone: auth_zone,
                 });
 
-                let message =
+                let mut message =
                     CallFrameMessage::from_input(&IndexedScryptoValue::from_typed(&()), &actor);
+                for node_id in GLOBAL_VISIBLE_NODES {
+                    message.copy_global_references.push(node_id);
+                }
                 let current_frame = kernel.kernel_current_frame_mut();
                 let new_frame =
                     CallFrame::new_child_from_parent(current_frame, actor, message).unwrap();

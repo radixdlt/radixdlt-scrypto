@@ -41,3 +41,18 @@ fn with_module_disabled_resets_modules_when_callback_is_finished() {
         ))
     ))
 }
+
+#[test]
+fn simple_typed_method_call_test() {
+    // Arrange
+    let mut test_runtime = TestRuntime::new();
+
+    // Act
+    let bucket = test_runtime
+        .call_method_typed::<_, _, Bucket>(FAUCET, "free", &())
+        .unwrap();
+
+    // Assert
+    let amount = bucket.amount(&mut test_runtime).unwrap();
+    assert_eq!(amount, dec!("10000"))
+}
