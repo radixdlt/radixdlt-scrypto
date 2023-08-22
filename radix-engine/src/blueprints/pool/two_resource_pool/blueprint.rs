@@ -25,6 +25,7 @@ impl TwoResourcePoolBlueprint {
         (resource_address1, resource_address2): (ResourceAddress, ResourceAddress),
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<TwoResourcePoolInstantiateOutput, RuntimeError>
     where
@@ -49,10 +50,17 @@ impl TwoResourcePoolBlueprint {
 
         // Allocating the address of the pool - this is going to be needed for the metadata of the
         // pool unit resource.
-        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
-            package_address: POOL_PACKAGE,
-            blueprint_name: TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
-        })?;
+        let (address_reservation, address) = {
+            if let Some(address_reservation) = address_reservation {
+                let address = api.get_reservation_address(address_reservation.0.as_node_id())?;
+                (address_reservation, address)
+            } else {
+                api.allocate_global_address(BlueprintId {
+                    package_address: POOL_PACKAGE,
+                    blueprint_name: TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
+                })?
+            }
+        };
 
         // Creating the pool unit resource
         let pool_unit_resource_manager = {

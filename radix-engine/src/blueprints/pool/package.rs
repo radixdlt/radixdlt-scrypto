@@ -538,6 +538,7 @@ impl PoolNativePackage {
                     resource_address,
                     pool_manager_rule,
                     owner_role,
+                    address_reservation,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -545,6 +546,7 @@ impl PoolNativePackage {
                     resource_address,
                     owner_role,
                     pool_manager_rule,
+                    address_reservation,
                     api,
                 )?;
 
@@ -612,6 +614,7 @@ impl PoolNativePackage {
                     resource_addresses,
                     pool_manager_rule,
                     owner_role,
+                    address_reservation,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -619,6 +622,7 @@ impl PoolNativePackage {
                     resource_addresses,
                     owner_role,
                     pool_manager_rule,
+                    address_reservation,
                     api,
                 )?;
 
@@ -691,6 +695,7 @@ impl PoolNativePackage {
                     resource_addresses,
                     owner_role,
                     pool_manager_rule,
+                    address_reservation
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -698,6 +703,7 @@ impl PoolNativePackage {
                     resource_addresses,
                     owner_role,
                     pool_manager_rule,
+                    address_reservation,
                     api,
                 )?;
 
