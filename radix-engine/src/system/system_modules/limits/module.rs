@@ -96,13 +96,8 @@ impl LimitsModule {
                     self.heap_substate_total_bytes -= canonical_substate_key.logical_size();
                 }
 
-                let old_size = old_size.unwrap_or_default();
-                let new_size = new_size.unwrap_or_default();
-                if new_size > old_size {
-                    self.heap_substate_total_bytes += new_size - old_size;
-                } else {
-                    self.heap_substate_total_bytes -= old_size - new_size;
-                }
+                self.heap_substate_total_bytes += new_size.unwrap_or_default();
+                self.heap_substate_total_bytes -= old_size.unwrap_or_default();
             }
             StoreAccess::TrackSubstateUpdated {
                 canonical_substate_key,
@@ -116,13 +111,8 @@ impl LimitsModule {
                     self.track_substate_total_bytes -= canonical_substate_key.logical_size();
                 }
 
-                let old_size = old_size.unwrap_or_default();
-                let new_size = new_size.unwrap_or_default();
-                if new_size > old_size {
-                    self.track_substate_total_bytes += new_size - old_size;
-                } else {
-                    self.track_substate_total_bytes -= old_size - new_size;
-                }
+                self.track_substate_total_bytes += new_size.unwrap_or_default();
+                self.track_substate_total_bytes -= old_size.unwrap_or_default();
             }
         }
 

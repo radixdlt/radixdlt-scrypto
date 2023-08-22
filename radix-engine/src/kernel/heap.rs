@@ -32,11 +32,11 @@ impl Heap {
         self.nodes.is_empty()
     }
 
-    pub fn remove_module<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
+    pub fn remove_module<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
-        on_store_access: &'x mut F,
+        on_store_access: &mut F,
     ) -> Result<
         BTreeMap<SubstateKey, IndexedScryptoValue>,
         CallbackError<HeapRemovePartitionError, E>,
@@ -86,13 +86,13 @@ impl Heap {
     }
 
     /// Inserts or overwrites a substate
-    pub fn set_substate<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
+    pub fn set_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         partition_number: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-        on_store_access: &'x mut F,
+        on_store_access: &mut F,
     ) -> Result<(), E> {
         let entry = self
             .nodes
@@ -131,12 +131,12 @@ impl Heap {
         Ok(())
     }
 
-    pub fn remove_substate<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
+    pub fn remove_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: &'x mut F,
+        on_store_access: &mut F,
     ) -> Result<Option<IndexedScryptoValue>, E> {
         let substate_value = self
             .nodes
@@ -165,23 +165,20 @@ impl Heap {
     /// Scans the keys of a node's partition. On an non-existing node/partition, this
     /// will return an empty vector
     pub fn scan_keys(
-        &mut self,
+        &self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
     ) -> Vec<SubstateKey> {
-        let node_substates = self
-            .nodes
-            .get_mut(node_id)
-            .and_then(|n| n.get_mut(&partition_num));
+        let node_substates = self.nodes.get(node_id).and_then(|n| n.get(&partition_num));
         if let Some(substates) = node_substates {
-            let substates: Vec<SubstateKey> = substates
+            let substate_keys: Vec<SubstateKey> = substates
                 .iter()
                 .map(|(key, _value)| key.clone())
                 .take(count.try_into().unwrap())
                 .collect();
 
-            substates
+            substate_keys
         } else {
             vec![]
         }
@@ -189,12 +186,12 @@ impl Heap {
 
     /// Drains the substates from a node's partition. On an non-existing node/partition, this
     /// will return an empty vector
-    pub fn drain_substates<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
+    pub fn drain_substates<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
         count: u32,
-        on_store_access: &'x mut F,
+        on_store_access: &mut F,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E> {
         let node_substates = self
             .nodes
@@ -236,11 +233,11 @@ impl Heap {
     }
 
     /// Inserts a new node to heap.
-    pub fn create_node<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
+    pub fn create_node<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         substates: NodeSubstates,
-        on_store_access: &'x mut F,
+        on_store_access: &mut F,
     ) -> Result<(), E> {
         assert!(!self.nodes.contains_key(&node_id));
 
@@ -277,10 +274,10 @@ impl Heap {
     }
 
     /// Removes node.
-    pub fn remove_node<'x, E: 'x, F: FnMut(&Heap, StoreAccess) -> Result<(), E> + 'x>(
+    pub fn remove_node<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
-        on_store_access: &'x mut F,
+        on_store_access: &mut F,
     ) -> Result<NodeSubstates, CallbackError<HeapRemoveNodeError, E>> {
         let node_substates = match self.nodes.remove(node_id) {
             Some(node_substates) => node_substates,
@@ -380,5 +377,76 @@ impl Into<DroppedNonFungibleProof> for Vec<Vec<u8>> {
             moveable,
             non_fungible_proof,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_heap_size_accounting() {
+        let mut heap = Heap::new();
+        let mut total_size = 0;
+
+        let mut on_store_access = |_: &_, store_access| {
+            match store_access {
+                StoreAccess::HeapSubstateUpdated {
+                    canonical_substate_key,
+                    old_size,
+                    new_size,
+                } => {
+                    if old_size.is_none() {
+                        total_size += canonical_substate_key.logical_size();
+                    }
+                    if new_size.is_none() {
+                        total_size -= canonical_substate_key.logical_size();
+                    }
+
+                    total_size += new_size.unwrap_or_default();
+                    total_size -= old_size.unwrap_or_default();
+                }
+                _ => {}
+            }
+
+            Result::<(), ()>::Ok(())
+        };
+
+        let node_id = NodeId([0u8; NodeId::LENGTH]);
+        let partition_number1 = PartitionNumber(5);
+        let partition_number2 = PartitionNumber(6);
+        let key1 = SubstateKey::Map(scrypto_encode(&"1").unwrap());
+        let key2 = SubstateKey::Map(scrypto_encode(&"2").unwrap());
+        heap.create_node(
+            NodeId([0u8; NodeId::LENGTH]),
+            btreemap!(
+                partition_number1 => btreemap!(
+                    key1.clone() => IndexedScryptoValue::from_typed("A"),
+                    key2.clone() => IndexedScryptoValue::from_typed("B"),
+                ),
+                partition_number2 => btreemap!(
+                    key1.clone() => IndexedScryptoValue::from_typed("C"),
+                    key2.clone() => IndexedScryptoValue::from_typed("D"),
+                )
+            ),
+            &mut on_store_access,
+        );
+
+        heap.set_substate(
+            node_id,
+            partition_number1,
+            key1,
+            IndexedScryptoValue::from_typed("E"),
+            &mut on_store_access,
+        )
+        .unwrap();
+        heap.drain_substates(&node_id, partition_number1, 1, &mut on_store_access)
+            .unwrap();
+        heap.remove_substate(&node_id, partition_number2, &key2, &mut on_store_access)
+            .unwrap();
+        heap.remove_module(&node_id, partition_number2, &mut on_store_access)
+            .unwrap();
+        heap.remove_node(&node_id, &mut on_store_access).unwrap();
+        assert_eq!(total_size, 0);
     }
 }
