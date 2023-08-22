@@ -5,7 +5,7 @@ use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
 use radix_engine_interface::api::{ActorRefHandle, FieldValue};
-use radix_engine_interface::api::{LockFlags, ModuleId};
+use radix_engine_interface::api::{FieldIndex, LockFlags, ModuleId};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::PackageAddress;
@@ -38,7 +38,10 @@ impl ScryptoVmV1Api {
         })
     }
 
-    pub fn object_new(blueprint_ident: &str, object_states: Vec<FieldValue>) -> NodeId {
+    pub fn object_new(
+        blueprint_ident: &str,
+        object_states: BTreeMap<FieldIndex, FieldValue>,
+    ) -> NodeId {
         let object_states = scrypto_encode(&object_states).unwrap();
 
         let bytes = copy_buffer(unsafe {

@@ -155,7 +155,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
-        let object_states = scrypto_decode::<Vec<FieldValue>>(&object_states)
+        let object_states = scrypto_decode::<BTreeMap<u8, FieldValue>>(&object_states)
             .map_err(WasmRuntimeError::InvalidObjectStates)?;
 
         let component_id = self

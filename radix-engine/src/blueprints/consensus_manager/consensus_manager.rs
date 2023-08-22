@@ -291,15 +291,15 @@ impl ConsensusManagerBlueprint {
 
             api.new_simple_object(
                 CONSENSUS_MANAGER_BLUEPRINT,
-                vec![
-                    FieldValue::immutable(&config),
-                    FieldValue::new(&consensus_manager),
-                    FieldValue::new(&validator_rewards),
-                    FieldValue::new(&current_validator_set),
-                    FieldValue::new(&current_proposal_statistic),
-                    FieldValue::new(&minute_timestamp),
-                    FieldValue::new(&milli_timestamp),
-                ],
+                btreemap! {
+                    0u8 => FieldValue::immutable(&config),
+                    1u8 => FieldValue::new(&consensus_manager),
+                    2u8 => FieldValue::new(&validator_rewards),
+                    3u8 => FieldValue::new(&current_validator_set),
+                    4u8 => FieldValue::new(&current_proposal_statistic),
+                    5u8 => FieldValue::new(&minute_timestamp),
+                    6u8 => FieldValue::new(&milli_timestamp),
+                },
             )?
         };
 

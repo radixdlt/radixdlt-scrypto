@@ -29,7 +29,7 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
         {
             match export_name {
                 "test" => {
-                    let node_id = api.new_simple_object(BLUEPRINT_NAME, vec![])?;
+                    let node_id = api.new_simple_object(BLUEPRINT_NAME, btreemap!())?;
                     let _ = api.call_method(&node_id, "get_global_address", scrypto_args!())?;
                     let _ = api.drop_object(&node_id)?;
                     Ok(IndexedScryptoValue::from_typed(&()))

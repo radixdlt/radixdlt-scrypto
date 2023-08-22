@@ -114,7 +114,9 @@ impl TwoResourcePoolBlueprint {
             };
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![FieldValue::immutable(&substate)],
+                btreemap! {
+                    0u8 => FieldValue::immutable(&substate),
+                },
             )?
         };
 

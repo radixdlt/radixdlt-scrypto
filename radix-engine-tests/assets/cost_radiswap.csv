@@ -1,30 +1,30 @@
-Total Cost (XRD)                                                           ,     0.482291493294265252,    100.0%
-- Execution Cost (XRD)                                                     ,                0.3374209,     70.0%
+Total Cost (XRD)                                                           ,     0.484648143294265252,    100.0%
+- Execution Cost (XRD)                                                     ,               0.33977755,     70.1%
 - Finalization Cost (XRD)                                                  ,               0.04250955,      8.8%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
-- Storage Cost (XRD)                                                       ,     0.102361043294265252,     21.2%
+- Storage Cost (XRD)                                                       ,     0.102361043294265252,     21.1%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  6748418,    100.0%
+Execution Cost Breakdown                                                   ,                  6795551,    100.0%
 - AllocateNodeId                                                           ,                     3432,      0.1%
 - BeforeInvoke                                                             ,                     4362,      0.1%
-- CloseSubstate                                                            ,                    58170,      0.9%
+- CloseSubstate                                                            ,                    58275,      0.9%
 - CreateNode                                                               ,                    18849,      0.3%
 - DropNode                                                                 ,                    41984,      0.6%
 - EmitEvent                                                                ,                     5828,      0.1%
 - LockFee                                                                  ,                      500,      0.0%
 - MarkSubstateAsTransient                                                  ,                      300,      0.0%
-- OpenSubstate::GlobalAccount                                              ,                   695678,     10.3%
-- OpenSubstate::GlobalFungibleResourceManager                              ,                   420505,      6.2%
+- OpenSubstate::GlobalAccount                                              ,                   695678,     10.2%
+- OpenSubstate::GlobalFungibleResourceManager                              ,                   421048,      6.2%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43171,      0.6%
-- OpenSubstate::GlobalPackage                                              ,                  2726288,     40.4%
+- OpenSubstate::GlobalPackage                                              ,                  2741979,     40.3%
 - OpenSubstate::GlobalTwoResourcePool                                      ,                   174594,      2.6%
 - OpenSubstate::InternalFungibleVault                                      ,                   350709,      5.2%
 - OpenSubstate::InternalGenericComponent                                   ,                    99108,      1.5%
 - PinNode                                                                  ,                     3200,      0.0%
-- PrepareWasmCode                                                          ,                   566668,      8.4%
-- QueryActor                                                               ,                     4500,      0.1%
-- ReadSubstate                                                             ,                   794306,     11.8%
+- PrepareWasmCode                                                          ,                   581612,      8.6%
+- QueryActor                                                               ,                     5000,      0.1%
+- ReadSubstate                                                             ,                   809656,     11.9%
 - RunNativeCode::Worktop_drain                                             ,                    13505,      0.2%
 - RunNativeCode::Worktop_drop                                              ,                    15385,      0.2%
 - RunNativeCode::Worktop_put                                               ,                    36524,      0.5%

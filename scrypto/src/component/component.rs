@@ -82,8 +82,10 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
 
     fn instantiate(self) -> Owned<Self> {
-        let node_id =
-            ScryptoVmV1Api::object_new(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)]);
+        let node_id = ScryptoVmV1Api::object_new(
+            Self::BLUEPRINT_NAME,
+            btreemap![0u8 => FieldValue::new(&self)],
+        );
 
         let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
         Owned(stub)

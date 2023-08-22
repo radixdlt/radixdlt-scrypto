@@ -241,9 +241,11 @@ impl AccountBlueprint {
             ACCOUNT_BLUEPRINT,
             vec![],
             GenericArgs::default(),
-            vec![FieldValue::new(&AccountSubstate {
-                default_deposit_rule: DefaultDepositRule::Accept,
-            })],
+            btreemap! {
+                0u8 => FieldValue::new(&AccountSubstate {
+                    default_deposit_rule: DefaultDepositRule::Accept,
+                })
+            },
             btreemap!(),
         )?;
 

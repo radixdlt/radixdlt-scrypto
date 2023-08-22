@@ -337,7 +337,7 @@ impl IdentityBlueprint {
         let metadata = Metadata::create_with_data(metadata_init, api)?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
-        let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, vec![])?;
+        let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, btreemap!())?;
 
         let modules = btreemap!(
             ModuleId::RoleAssignment => role_assignment.0,

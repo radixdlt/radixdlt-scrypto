@@ -114,7 +114,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
         {
             match export_name {
                 "test" => {
-                    let node_id = api.new_simple_object(BLUEPRINT_NAME, vec![])?;
+                    let node_id = api.new_simple_object(BLUEPRINT_NAME, btreemap![])?;
                     let _ = api.call_module_method(
                         &node_id,
                         ModuleId::Metadata,
@@ -184,11 +184,15 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                 "test" => {
                     let child = api.new_simple_object(
                         BLUEPRINT_NAME,
-                        vec![FieldValue::new(&Option::<Own>::None)],
+                        btreemap! {
+                            0u8 => FieldValue::new(&Option::<Own>::None),
+                        },
                     )?;
                     let parent = api.new_simple_object(
                         BLUEPRINT_NAME,
-                        vec![FieldValue::new(&Option::<Own>::Some(Own(child)))],
+                        btreemap! {
+                            0u8 => FieldValue::new(&Option::<Own>::Some(Own(child))),
+                        },
                     )?;
 
                     let parent_node_id = if self.globalized_parent {

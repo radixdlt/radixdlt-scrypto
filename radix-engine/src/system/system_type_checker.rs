@@ -390,7 +390,7 @@ impl SystemMapper {
     pub fn system_struct_to_node_substates(
         schema: &IndexedStateSchema,
         system_struct: (
-            Vec<Option<FieldValue>>,
+            BTreeMap<u8, FieldValue>,
             BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
         ),
         base_partition_num: PartitionNumber,
@@ -408,23 +408,21 @@ impl SystemMapper {
 
             let mut field_partition = BTreeMap::new();
 
-            for (index, field) in system_struct.0.into_iter().enumerate() {
-                if let Some(field) = field {
-                    let value: ScryptoValue =
-                        scrypto_decode(&field.value).expect("Checked by payload-schema validation");
+            for (index, field) in system_struct.0.into_iter() {
+                let value: ScryptoValue =
+                    scrypto_decode(&field.value).expect("Checked by payload-schema validation");
 
-                    let substate = FieldSubstate {
-                        value: (value,),
-                        mutability: if field.locked {
-                            SubstateMutability::Immutable
-                        } else {
-                            SubstateMutability::Mutable
-                        },
-                    };
+                let substate = FieldSubstate {
+                    value: (value,),
+                    mutability: if field.locked {
+                        SubstateMutability::Immutable
+                    } else {
+                        SubstateMutability::Mutable
+                    },
+                };
 
-                    let value = IndexedScryptoValue::from_typed(&substate);
-                    field_partition.insert(SubstateKey::Field(index as u8), value);
-                }
+                let value = IndexedScryptoValue::from_typed(&substate);
+                field_partition.insert(SubstateKey::Field(index), value);
             }
 
             partitions.insert(partition_num, field_partition);

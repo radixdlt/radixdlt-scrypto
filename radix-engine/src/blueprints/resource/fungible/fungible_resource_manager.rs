@@ -96,23 +96,29 @@ impl FungibleResourceManagerBlueprint {
             }
         };
 
+        let mut fields = btreemap! {
+            0u8 => FieldValue::immutable(&divisibility),
+        };
+
         let (mut features, roles) = resource_roles.to_features_and_roles();
         if track_total_supply {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
 
-        let total_supply_field =
-            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
-                FieldValue::new(&Decimal::zero())
-            } else {
-                FieldValue::immutable(&Decimal::zero())
-            };
+            let total_supply_field =
+                if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+                    FieldValue::new(&Decimal::zero())
+                } else {
+                    FieldValue::immutable(&Decimal::zero())
+                };
+
+            fields.insert(1u8, total_supply_field);
+        }
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             GenericArgs::default(),
-            vec![FieldValue::immutable(&divisibility), total_supply_field],
+            fields,
             btreemap!(),
         )?;
 
@@ -154,23 +160,29 @@ impl FungibleResourceManagerBlueprint {
             }
         };
 
+        let mut fields = btreemap! {
+            0u8 => FieldValue::immutable(&divisibility),
+        };
+
         let (mut features, roles) = resource_roles.to_features_and_roles();
         if track_total_supply {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
 
-        let total_supply_field =
-            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
-                FieldValue::new(&initial_supply)
-            } else {
-                FieldValue::immutable(&initial_supply)
-            };
+            let total_supply_field =
+                if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+                    FieldValue::new(&initial_supply)
+                } else {
+                    FieldValue::immutable(&initial_supply)
+                };
+
+            fields.insert(1u8, total_supply_field);
+        }
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             GenericArgs::default(),
-            vec![FieldValue::immutable(&divisibility), total_supply_field],
+            fields,
             btreemap!(),
         )?;
 
@@ -308,10 +320,10 @@ impl FungibleResourceManagerBlueprint {
     {
         let bucket_id = api.new_simple_object(
             FUNGIBLE_BUCKET_BLUEPRINT,
-            vec![
-                FieldValue::new(&LiquidFungibleResource::new(amount)),
-                FieldValue::new(&LockedFungibleResource::default()),
-            ],
+            btreemap! {
+                0u8 => FieldValue::new(&LiquidFungibleResource::new(amount)),
+                1u8 => FieldValue::new(&LockedFungibleResource::default()),
+            },
         )?;
 
         Ok(Bucket(Own(bucket_id)))
@@ -321,14 +333,16 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let vault_id = api.new_simple_object(
-            FUNGIBLE_VAULT_BLUEPRINT,
-            vec![
-                FieldValue::new(&LiquidFungibleResource::default()),
-                FieldValue::new(&LockedFungibleResource::default()),
-                FieldValue::new(&VaultFrozenFlag::default()),
-            ],
-        )?;
+        let mut fields = btreemap! {
+            0u8 => FieldValue::new(&LiquidFungibleResource::default()),
+            1u8 => FieldValue::new(&LockedFungibleResource::default()),
+        };
+
+        if api.actor_is_feature_enabled(ACTOR_STATE_SELF, VAULT_FREEZE_FEATURE)? {
+            fields.insert(2u8, FieldValue::new(&VaultFrozenFlag::default()));
+        }
+
+        let vault_id = api.new_simple_object(FUNGIBLE_VAULT_BLUEPRINT, fields)?;
 
         Runtime::emit_event(api, VaultCreationEvent { vault_id })?;
 
