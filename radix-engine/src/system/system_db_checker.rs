@@ -135,15 +135,29 @@ pub enum SystemDatabaseCheckError {
     PartitionError(NodeInfo, SystemPartitionCheckError),
 }
 
-pub struct SystemDatabaseChecker;
-
-impl SystemDatabaseChecker {
-    pub fn new() -> Self {
-        SystemDatabaseChecker {}
+pub trait ApplicationChecker {
+    fn on_field(&mut self, _info: BlueprintInfo, _field_index: FieldIndex, _value: &Vec<u8>) {
     }
+}
 
+impl ApplicationChecker for () {
+}
+
+pub struct SystemDatabaseChecker<A: ApplicationChecker> {
+    application_checker: A,
+}
+
+impl <A: ApplicationChecker + Default> SystemDatabaseChecker<A> {
+    pub fn new() -> SystemDatabaseChecker<A> {
+        SystemDatabaseChecker {
+            application_checker: A::default()
+        }
+    }
+}
+
+impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
     pub fn check_db<S: SubstateDatabase + ListableSubstateDatabase>(
-        &self,
+        &mut self,
         substate_db: &S,
     ) -> Result<SystemDatabaseCheckerResults, SystemDatabaseCheckError> {
         let mut node_counts = NodeCounts::default();
@@ -372,7 +386,7 @@ impl SystemDatabaseChecker {
     }
 
     fn check_partition<S: SubstateDatabase + ListableSubstateDatabase>(
-        &self,
+        &mut self,
         reader: &SystemDatabaseReader<S>,
         node_checker_state: &mut SystemNodeCheckerState,
         partition_number: PartitionNumber,
@@ -473,7 +487,7 @@ impl SystemDatabaseChecker {
                         .ok_or_else(|| SystemPartitionCheckError::MissingObjectTypeTarget)?;
 
                     match object_partition_descriptor {
-                        ObjectPartitionDescriptor::Field => {
+                        ObjectPartitionDescriptor::Fields => {
                             for (key, value) in reader.substates_iter::<FieldKey>(
                                 &node_checker_state.node_id,
                                 partition_number,
@@ -482,11 +496,11 @@ impl SystemDatabaseChecker {
                                     SubstateKey::Field(field_index) => field_index,
                                     _ => return Err(SystemPartitionCheckError::InvalidFieldKey),
                                 };
-                                match &mut node_checker_state.node_type {
+                                let blueprint_info = match &mut node_checker_state.node_type {
                                     SystemNodeType::Object {
                                         expected_fields,
                                         excluded_fields,
-                                        ..
+                                        object_info, ..
                                     } => {
                                         expected_fields.remove(&(module_id, field_index));
 
@@ -495,9 +509,11 @@ impl SystemDatabaseChecker {
                                         {
                                             return Err(SystemPartitionCheckError::ContainsFieldWhichShouldNotExist);
                                         }
+
+                                        object_info.blueprint_info.clone()
                                     }
                                     _ => return Err(SystemPartitionCheckError::InvalidFieldKey),
-                                }
+                                };
 
                                 let field: FieldSubstate<ScryptoValue> = scrypto_decode(&value)
                                     .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
@@ -512,6 +528,13 @@ impl SystemDatabaseChecker {
 
                                 self.validate_payload(reader, &field_payload, &field_schema)
                                     .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
+
+                                match module_id {
+                                    ObjectModuleId::Main => {
+                                        self.application_checker.on_field(blueprint_info, field_index, &value)
+                                    }
+                                    _ => {}
+                                }
 
                                 substate_count += 1;
                             }

@@ -272,7 +272,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         key: &SubstateKey,
     ) -> SubstateSystemStructure {
         match object_partition_desciptor {
-            ObjectPartitionDescriptor::Field => {
+            ObjectPartitionDescriptor::Fields => {
                 let field_index = match key {
                     SubstateKey::Field(field_index) => field_index,
                     _ => panic!("Invalid field key"),
