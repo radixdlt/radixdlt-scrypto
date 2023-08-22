@@ -10,7 +10,6 @@ use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, ReferenceOrigin};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
-use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
@@ -21,6 +20,7 @@ use crate::system::system_modules::SystemModuleMixer;
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreValidationTarget, SchemaValidationMeta, SystemMapper,
 };
+use crate::system::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;

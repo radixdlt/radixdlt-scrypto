@@ -12,7 +12,7 @@ use sbor::rust::prelude::*;
 use sbor::HasLatestVersion;
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::type_info::TypeInfoSubstate;
 use crate::track::TrackedNode;
 
 pub enum SystemPartitionDescription {

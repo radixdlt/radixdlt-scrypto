@@ -6,8 +6,8 @@ use radix_engine_interface::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::prelude::*;
 
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_db_reader::{SystemDatabaseReader, SystemPartitionDescription};
+use crate::system::type_info::TypeInfoSubstate;
 use crate::track::{ReadOnly, SystemUpdates, TrackedNode, TrackedSubstateValue};
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]

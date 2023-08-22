@@ -15,9 +15,9 @@ use crate::blueprints::transaction_tracker::{
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
+use crate::system::type_info::TypeInfoSubstate;
 use crate::track::SystemUpdates;
 use crate::transaction::{
     execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,

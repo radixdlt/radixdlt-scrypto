@@ -8,10 +8,10 @@ use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, Ker
 use crate::system::module::SystemModule;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::{ClientBlueprintApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{

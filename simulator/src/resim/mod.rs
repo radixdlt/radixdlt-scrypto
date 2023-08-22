@@ -57,7 +57,7 @@ use radix_engine::blueprints::consensus_manager::{
     ConsensusManagerSubstate, ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
 };
 use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::transaction::ExecutionConfig;

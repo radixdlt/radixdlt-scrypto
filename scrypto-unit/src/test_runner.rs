@@ -6,9 +6,9 @@ use std::process::Command;
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
+use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, CostingParameters, ExecutionConfig,
     PreviewError, TransactionReceipt, TransactionResult,
