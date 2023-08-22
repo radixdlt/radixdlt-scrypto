@@ -154,7 +154,7 @@ fn call_module_method(
     mut caller: Caller<'_, HostState>,
     receiver_ptr: u32,
     receiver_len: u32,
-    direct_access: u32,
+    module_id: u32,
     ident_ptr: u32,
     ident_len: u32,
     args_ptr: u32,
@@ -167,7 +167,7 @@ fn call_module_method(
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .object_call_module(receiver, direct_access, ident, args)
+        .object_call_module(receiver, module_id, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -677,7 +677,7 @@ impl WasmiModule {
             |caller: Caller<'_, HostState>,
              receiver_ptr: u32,
              receiver_len: u32,
-             direct_access: u32,
+             module_id: u32,
              ident_ptr: u32,
              ident_len: u32,
              args_ptr: u32,
@@ -687,7 +687,7 @@ impl WasmiModule {
                     caller,
                     receiver_ptr,
                     receiver_len,
-                    direct_access,
+                    module_id,
                     ident_ptr,
                     ident_len,
                     args_ptr,
