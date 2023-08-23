@@ -32,6 +32,7 @@ pub use radix_engine::system::system_modules::execution_trace::*;
 pub use radix_engine::system::system_modules::*;
 pub use radix_engine::track::*;
 pub use radix_engine::transaction::*;
+pub use radix_engine::utils::*;
 pub use radix_engine::vm::wasm::*;
 pub use radix_engine::vm::*;
 
@@ -77,3 +78,4 @@ pub use transaction::prelude::*;
 
 /* This Crate */
 pub use crate::environment::*;
+pub use crate::sdk::*;
