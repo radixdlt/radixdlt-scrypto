@@ -187,7 +187,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         .eq(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
     {
         let id_type: NonFungibleIdType = reader
-            .read_object_field(
+            .read_typed_object_field(
                 resource_address.as_node_id(),
                 ObjectModuleId::Main,
                 NonFungibleResourceManagerField::IdType.into(),
@@ -204,7 +204,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
 
         if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
             let total_supply: Decimal = reader
-                .read_object_field(
+                .read_typed_object_field(
                     resource_address.as_node_id(),
                     ObjectModuleId::Main,
                     NonFungibleResourceManagerField::TotalSupply.into(),
@@ -220,7 +220,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         }
     } else {
         let divisibility: FungibleResourceManagerDivisibilitySubstate = reader
-            .read_object_field(
+            .read_typed_object_field(
                 resource_address.as_node_id(),
                 ObjectModuleId::Main,
                 FungibleResourceManagerField::Divisibility.into(),
@@ -237,7 +237,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
 
         if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
             let total_supply: FungibleResourceManagerTotalSupplySubstate = reader
-                .read_object_field(
+                .read_typed_object_field(
                     resource_address.as_node_id(),
                     ObjectModuleId::Main,
                     FungibleResourceManagerField::TotalSupply.into(),

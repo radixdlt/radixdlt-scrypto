@@ -2187,7 +2187,7 @@ impl<'d, D: SubstateDatabase> SubtreeVaults<'d, D> {
     pub fn get_all(&self, node_id: &NodeId) -> IndexMap<ResourceAddress, Vec<NodeId>> {
         let mut vault_finder = VaultFinder::new();
         let mut traverser = StateTreeTraverser::new(self.database, &mut vault_finder, 100);
-        traverser.traverse_subtree(None, *node_id);
+        traverser.traverse_subtree(*node_id);
         vault_finder.to_vaults()
     }
 

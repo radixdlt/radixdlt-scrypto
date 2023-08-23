@@ -1,6 +1,8 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::prelude::{scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoSchema};
-use radix_engine_interface::api::{ModuleId, ObjectModuleId};
+use radix_engine_common::prelude::{
+    scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoSchema, ScryptoValue,
+};
+use radix_engine_interface::api::{CollectionIndex, ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
@@ -78,6 +80,7 @@ impl<'a, K: ScryptoEncode> ObjectCollectionKey<'a, K> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SystemReaderError {
     FieldDoesNotExist,
+    CollectionDoesNotExist,
     NodeIdDoesNotExist,
     PayloadDoesNotExist,
     BlueprintDoesNotExist,
@@ -149,7 +152,46 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         blueprints
     }
 
-    pub fn read_object_field<V: ScryptoDecode>(
+    pub fn read_object_field(
+        &self,
+        node_id: &NodeId,
+        module_id: ObjectModuleId,
+        field_index: u8,
+    ) -> Result<IndexedScryptoValue, SystemReaderError> {
+        let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
+        let definition = self.get_blueprint_definition(&blueprint_id)?;
+        let partition_description = &definition
+            .interface
+            .state
+            .fields
+            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
+            .0;
+        let partition_number = match partition_description {
+            PartitionDescription::Logical(offset) => {
+                let base_partition = match module_id {
+                    ObjectModuleId::Main => MAIN_BASE_PARTITION,
+                    ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
+                    ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
+                    ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
+                };
+                base_partition.at_offset(*offset).unwrap()
+            }
+            PartitionDescription::Physical(partition_number) => *partition_number,
+        };
+
+        let substate: FieldSubstate<ScryptoValue> = self
+            .substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, _>(
+                node_id,
+                partition_number,
+                &SubstateKey::Field(field_index),
+            )
+            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?;
+
+        Ok(IndexedScryptoValue::from_scrypto_value(substate.value.0))
+    }
+
+    pub fn read_typed_object_field<V: ScryptoDecode>(
         &self,
         node_id: &NodeId,
         module_id: ObjectModuleId,
@@ -202,7 +244,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             .state
             .collections
             .get(collection_key.collection_index() as usize)
-            .expect("Missing generic");
+            .ok_or_else(|| SystemReaderError::CollectionDoesNotExist)?;
 
         let partition_number = match partition_description {
             PartitionDescription::Logical(offset) => {
@@ -246,6 +288,110 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Ok(entry)
     }
 
+    pub fn key_value_store_iter(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>, SystemReaderError> {
+        if self.tracked.is_some() {
+            panic!("substates_iter with overlay not supported.");
+        }
+
+        match self.get_type_info(node_id)? {
+            TypeInfoSubstate::KeyValueStore(..) => {}
+            _ => return Err(SystemReaderError::NotAKeyValueStore),
+        }
+
+        let partition_key =
+            SpreadPrefixKeyMapper::to_db_partition_key(node_id, MAIN_BASE_PARTITION);
+        let iter = self
+            .substate_db
+            .list_entries(&partition_key)
+            .filter_map(move |entry| {
+                let substate_key = SpreadPrefixKeyMapper::from_db_sort_key::<MapKey>(&entry.0);
+                let key = match substate_key {
+                    SubstateKey::Map(map_key) => map_key,
+                    _ => panic!("Unexpected SubstateKey"),
+                };
+                let value: KeyValueEntrySubstate<ScryptoValue> = scrypto_decode(&entry.1).unwrap();
+                let value = value.value?;
+                let value = scrypto_encode(&value).unwrap();
+
+                Some((key, value))
+            });
+
+        Ok(Box::new(iter))
+    }
+
+    pub fn collection_iter(
+        &self,
+        node_id: &NodeId,
+        module_id: ObjectModuleId,
+        collection_index: CollectionIndex,
+    ) -> Result<Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>, SystemReaderError> {
+        if self.tracked.is_some() {
+            panic!("substates_iter with overlay not supported.");
+        }
+
+        let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
+        let definition = self.get_blueprint_definition(&blueprint_id)?;
+
+        let (partition_description, schema) = definition
+            .interface
+            .state
+            .collections
+            .get(collection_index as usize)
+            .ok_or_else(|| SystemReaderError::CollectionDoesNotExist)?
+            .clone();
+
+        let partition_number = match partition_description {
+            PartitionDescription::Physical(partition_num) => partition_num,
+            PartitionDescription::Logical(offset) => {
+                module_id.base_partition_num().at_offset(offset).unwrap()
+            }
+        };
+
+        let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_number);
+        let iter = self
+            .substate_db
+            .list_entries(&partition_key)
+            .filter_map(move |entry| {
+                let key = match schema {
+                    BlueprintCollectionSchema::KeyValueStore(..)
+                    | BlueprintCollectionSchema::Index(..) => {
+                        let substate_key =
+                            SpreadPrefixKeyMapper::from_db_sort_key::<MapKey>(&entry.0);
+                        match substate_key {
+                            SubstateKey::Map(map_key) => map_key,
+                            _ => panic!("Unexpected SubstateKey"),
+                        }
+                    }
+                    BlueprintCollectionSchema::SortedIndex(..) => {
+                        let substate_key =
+                            SpreadPrefixKeyMapper::from_db_sort_key::<SortedKey>(&entry.0);
+                        match substate_key {
+                            SubstateKey::Sorted((_sort, map_key)) => map_key,
+                            _ => panic!("Unexpected SubstateKey"),
+                        }
+                    }
+                };
+
+                let value = match schema {
+                    BlueprintCollectionSchema::KeyValueStore(..) => {
+                        let value: KeyValueEntrySubstate<ScryptoValue> =
+                            scrypto_decode(&entry.1).unwrap();
+                        let value = value.value?;
+                        scrypto_encode(&value).unwrap()
+                    }
+                    BlueprintCollectionSchema::SortedIndex(..)
+                    | BlueprintCollectionSchema::Index(..) => entry.1,
+                };
+
+                Some((key, value))
+            });
+
+        Ok(Box::new(iter))
+    }
+
     pub fn get_object_info<A: Into<GlobalAddress>>(
         &self,
         address: A,
@@ -279,10 +425,9 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
         let object_info = match type_info {
             TypeInfoSubstate::Object(object_info) => object_info,
-            i @ _ => panic!(
-                "Inconsistent Substate Database, found invalid type_info: {:?}",
-                i
-            ),
+            _ => {
+                return Err(SystemReaderError::NotAnObject);
+            }
         };
 
         let module_id = module_id.into();
