@@ -68,3 +68,16 @@ cp \
   ../metadata.rpd
 
 echo "Done!"
+
+echo "Building the Test Environment..."
+(cd test_environment; $scrypto build)
+npx wasm-opt@1.3 \
+  -Os -g \
+  --strip-debug --strip-dwarf --strip-producers \
+  -o ../test_environment.wasm \
+  ./target/wasm32-unknown-unknown/release/test_environment.wasm
+cp \
+  ./target/wasm32-unknown-unknown/release/test_environment.rpd \
+  ../test_environment.rpd
+
+echo "Done!"

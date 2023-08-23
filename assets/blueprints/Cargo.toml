@@ -5,6 +5,7 @@ members = [
     "radiswap",
     "flash_loan",
     "genesis_helper",
+    "test_environment",
 ]
 
 [profile.release]

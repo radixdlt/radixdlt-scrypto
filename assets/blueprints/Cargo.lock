@@ -1234,6 +1234,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "test_environment"
+version = "0.1.0"
+dependencies = [
+ "radix-engine",
+ "sbor",
+ "scrypto",
+ "scrypto-unit",
+ "transaction",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
