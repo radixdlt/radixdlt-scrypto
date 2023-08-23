@@ -1,5 +1,5 @@
 use scrypto::api::node_modules::metadata::*;
-use scrypto::api::object_api::ObjectModuleId;
+use scrypto::api::object_api::ModuleId;
 use scrypto::prelude::*;
 
 // Important: the types defined here must match those in bootstrap.rs
@@ -134,7 +134,7 @@ mod genesis_helper {
             for (key, value) in validator.metadata {
                 ScryptoVmV1Api::object_call_module(
                     &validator_component.address().into_node_id(),
-                    ObjectModuleId::Metadata,
+                    ModuleId::Metadata,
                     METADATA_SET_IDENT,
                     scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
                 );

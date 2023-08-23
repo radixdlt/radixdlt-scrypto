@@ -1,6 +1,6 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_common::prelude::{scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoSchema};
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::{ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
@@ -285,13 +285,20 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             ),
         };
 
-        if let Some(_version) = object_info.module_versions.get(&module_id) {
-            match module_id {
-                ObjectModuleId::Main => Ok(object_info.blueprint_info.blueprint_id),
-                _ => Ok(module_id.static_blueprint().unwrap()),
+        let module_id = module_id.into();
+        if let Some(module_id) = module_id {
+            match object_info.object_type {
+                ObjectType::Global { modules } => {
+                    if !modules.contains_key(&module_id) {
+                        return Err(SystemReaderError::ModuleDoesNotExist);
+                    }
+                }
+                ObjectType::Owned => return Err(SystemReaderError::ModuleDoesNotExist),
             }
+
+            Ok(module_id.static_blueprint())
         } else {
-            Err(SystemReaderError::ModuleDoesNotExist)
+            Ok(object_info.blueprint_info.blueprint_id)
         }
     }
 
@@ -353,35 +360,38 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             _ => return Err(SystemReaderError::NotAnObject),
         };
 
-        let target = if let Some(_version) = object_info.module_versions.get(&module_id) {
-            match module_id {
-                ObjectModuleId::Main => {
-                    let target = BlueprintTypeTarget {
-                        blueprint_info: object_info.blueprint_info,
-                        meta: SchemaValidationMeta::ExistingObject {
-                            additional_schemas: *node_id,
-                        },
-                    };
-                    target
+        let module_id: Option<ModuleId> = module_id.into();
+        let target = if let Some(module_id) = module_id {
+            let blueprint_id = module_id.static_blueprint();
+            match object_info.object_type {
+                ObjectType::Global { modules } => {
+                    if !modules.contains_key(&module_id) {
+                        return Err(SystemReaderError::ModuleDoesNotExist);
+                    }
                 }
-                _ => {
-                    let blueprint_id = module_id.static_blueprint().unwrap();
-                    let target = BlueprintTypeTarget {
-                        blueprint_info: BlueprintInfo {
-                            blueprint_id,
-                            outer_obj_info: OuterObjectInfo::None,
-                            features: Default::default(),
-                            generic_substitutions: Default::default(),
-                        },
-                        meta: SchemaValidationMeta::ExistingObject {
-                            additional_schemas: *node_id,
-                        },
-                    };
-                    target
-                }
+                ObjectType::Owned => return Err(SystemReaderError::ModuleDoesNotExist),
             }
+
+            let target = BlueprintTypeTarget {
+                blueprint_info: BlueprintInfo {
+                    blueprint_id,
+                    blueprint_version: Default::default(),
+                    outer_obj_info: OuterObjectInfo::None,
+                    features: Default::default(),
+                    generic_substitutions: Default::default(),
+                },
+                meta: SchemaValidationMeta::ExistingObject {
+                    additional_schemas: *node_id,
+                },
+            };
+            target
         } else {
-            return Err(SystemReaderError::ModuleDoesNotExist);
+            BlueprintTypeTarget {
+                blueprint_info: object_info.blueprint_info,
+                meta: SchemaValidationMeta::ExistingObject {
+                    additional_schemas: *node_id,
+                },
+            }
         };
 
         Ok(target)
@@ -647,41 +657,41 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 let (module_id, partition_offset) = if partition_num.ge(&MAIN_BASE_PARTITION) {
                     let partition_offset = PartitionOffset(partition_num.0 - MAIN_BASE_PARTITION.0);
                     (ObjectModuleId::Main, Some(partition_offset))
-                } else if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
-                    if object_info
-                        .module_versions
-                        .contains_key(&ObjectModuleId::RoleAssignment)
-                    {
-                        let partition_offset =
-                            PartitionOffset(partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0);
-                        (ObjectModuleId::RoleAssignment, Some(partition_offset))
-                    } else {
-                        (ObjectModuleId::Main, None)
-                    }
-                } else if partition_num.ge(&ROYALTY_BASE_PARTITION) {
-                    if object_info
-                        .module_versions
-                        .contains_key(&ObjectModuleId::Royalty)
-                    {
-                        let partition_offset =
-                            PartitionOffset(partition_num.0 - ROYALTY_BASE_PARTITION.0);
-                        (ObjectModuleId::Royalty, Some(partition_offset))
-                    } else {
-                        (ObjectModuleId::Main, None)
-                    }
-                } else if partition_num.ge(&METADATA_BASE_PARTITION) {
-                    if object_info
-                        .module_versions
-                        .contains_key(&ObjectModuleId::Metadata)
-                    {
-                        let partition_offset =
-                            PartitionOffset(partition_num.0 - METADATA_BASE_PARTITION.0);
-                        (ObjectModuleId::Metadata, Some(partition_offset))
-                    } else {
-                        (ObjectModuleId::Main, None)
-                    }
                 } else {
-                    (ObjectModuleId::Main, None)
+                    match object_info.object_type {
+                        ObjectType::Global { modules } => {
+                            if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
+                                if modules.contains_key(&ModuleId::RoleAssignment) {
+                                    let partition_offset = PartitionOffset(
+                                        partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0,
+                                    );
+                                    (ObjectModuleId::RoleAssignment, Some(partition_offset))
+                                } else {
+                                    (ObjectModuleId::Main, None)
+                                }
+                            } else if partition_num.ge(&ROYALTY_BASE_PARTITION) {
+                                if modules.contains_key(&ModuleId::Royalty) {
+                                    let partition_offset =
+                                        PartitionOffset(partition_num.0 - ROYALTY_BASE_PARTITION.0);
+                                    (ObjectModuleId::Royalty, Some(partition_offset))
+                                } else {
+                                    (ObjectModuleId::Main, None)
+                                }
+                            } else if partition_num.ge(&METADATA_BASE_PARTITION) {
+                                if modules.contains_key(&ModuleId::Metadata) {
+                                    let partition_offset = PartitionOffset(
+                                        partition_num.0 - METADATA_BASE_PARTITION.0,
+                                    );
+                                    (ObjectModuleId::Metadata, Some(partition_offset))
+                                } else {
+                                    (ObjectModuleId::Main, None)
+                                }
+                            } else {
+                                (ObjectModuleId::Main, None)
+                            }
+                        }
+                        ObjectType::Owned => (ObjectModuleId::Main, None),
+                    }
                 };
 
                 let blueprint_id = match module_id {

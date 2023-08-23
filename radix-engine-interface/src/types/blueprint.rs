@@ -6,7 +6,7 @@ use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::PackageAddress;
 use radix_engine_common::types::{GenericSubstitution, GlobalAddress};
 use radix_engine_derive::ManifestSbor;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use sbor::rust::prelude::*;
 use scrypto_schema::KeyValueStoreGenericSubstitutions;
 use utils::ContextualDisplay;
@@ -27,22 +27,35 @@ impl Default for OuterObjectInfo {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintInfo {
     pub blueprint_id: BlueprintId,
+    pub blueprint_version: BlueprintVersion,
     pub outer_obj_info: OuterObjectInfo,
     pub features: BTreeSet<String>,
     pub generic_substitutions: Vec<GenericSubstitution>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ObjectInfo {
-    /// Whether this node is global or not, ie. true, if this node has no parent, false otherwise
-    pub global: bool,
-    pub module_versions: BTreeMap<ObjectModuleId, BlueprintVersion>,
+pub enum ObjectType {
+    Global {
+        modules: BTreeMap<ModuleId, BlueprintVersion>,
+    },
+    Owned,
+}
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct ObjectInfo {
     /// Blueprint Info of Object
     pub blueprint_info: BlueprintInfo,
+    pub object_type: ObjectType,
 }
 
 impl ObjectInfo {
+    pub fn is_global(&self) -> bool {
+        match self.object_type {
+            ObjectType::Global { .. } => true,
+            ObjectType::Owned => false,
+        }
+    }
+
     pub fn get_outer_object(&self) -> GlobalAddress {
         match &self.blueprint_info.outer_obj_info {
             OuterObjectInfo::Some { outer_object } => outer_object.clone(),

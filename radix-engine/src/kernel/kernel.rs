@@ -126,13 +126,14 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
                 )
                 .ok_or_else(|| KernelError::InvalidReference(*node_id))?;
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-            match type_substate {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_info: BlueprintInfo { blueprint_id, .. },
-                    global,
-                    ..
-                }) => {
-                    if global {
+            match &type_substate {
+                TypeInfoSubstate::Object(
+                    info @ ObjectInfo {
+                        blueprint_info: BlueprintInfo { blueprint_id, .. },
+                        ..
+                    },
+                ) => {
+                    if info.is_global() {
                         kernel
                             .current_frame
                             .add_global_reference(GlobalAddress::new_or_panic(

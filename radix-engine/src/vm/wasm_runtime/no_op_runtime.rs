@@ -102,6 +102,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
 
     fn globalize_object(
         &mut self,
+        node_id: Vec<u8>,
         modules: Vec<u8>,
         address: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {

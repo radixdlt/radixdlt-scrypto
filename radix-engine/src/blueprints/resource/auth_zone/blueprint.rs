@@ -7,9 +7,7 @@ use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{Authorization, AuthorizationCheckResult};
 use crate::types::*;
 use native_sdk::resource::NativeProof;
-use radix_engine_interface::api::{
-    ClientApi, LockFlags, ObjectModuleId, ACTOR_REF_SELF, ACTOR_STATE_SELF,
-};
+use radix_engine_interface::api::{ClientApi, LockFlags, ACTOR_REF_SELF, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 
@@ -91,20 +89,16 @@ impl AuthZoneBlueprint {
                     btreemap!(
                         MAIN_BASE_PARTITION => composed_proof.into(),
                         TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                            global: false,
-
-                            module_versions: btreemap!(
-                                ObjectModuleId::Main => BlueprintVersion::default(),
-                            ),
-
                             blueprint_info: BlueprintInfo {
                                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                                blueprint_version: BlueprintVersion::default(),
                                 outer_obj_info: OuterObjectInfo::Some {
                                     outer_object: resource_address.into(),
                                 },
                                 features: btreeset!(),
                                 generic_substitutions: vec![],
-                            }
+                            },
+                            object_type: ObjectType::Owned,
                         })),
                     ),
                 )?;
@@ -116,20 +110,16 @@ impl AuthZoneBlueprint {
                     btreemap!(
                     MAIN_BASE_PARTITION => composed_proof.into(),
                     TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                        global: false,
-
-                        module_versions: btreemap!(
-                            ObjectModuleId::Main => BlueprintVersion::default(),
-                        ),
-
                         blueprint_info: BlueprintInfo {
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                            blueprint_version: BlueprintVersion::default(),
                             outer_obj_info: OuterObjectInfo::Some {
                                 outer_object: resource_address.into(),
                             },
                             features: btreeset!(),
                             generic_substitutions: vec![],
-                        }
+                        },
+                        object_type: ObjectType::Owned,
                     }))),
                 )?;
                 api.kernel_pin_node(node_id)?;
@@ -165,20 +155,16 @@ impl AuthZoneBlueprint {
             btreemap!(
                 MAIN_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                    global: false,
-
-                    module_versions: btreemap!(
-                        ObjectModuleId::Main => BlueprintVersion::default(),
-                    ),
-
                     blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                        blueprint_version: BlueprintVersion::default(),
                         outer_obj_info: OuterObjectInfo::Some {
                             outer_object: resource_address.into(),
                         },
                         features: btreeset!(),
                         generic_substitutions: vec![],
-                    }
+                    },
+                    object_type: ObjectType::Owned,
                 }))
             ),
         )?;
@@ -216,20 +202,16 @@ impl AuthZoneBlueprint {
             btreemap!(
                 MAIN_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                    global: false,
-
-                    module_versions: btreemap!(
-                        ObjectModuleId::Main => BlueprintVersion::default(),
-                    ),
-
                     blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
+                        blueprint_version: BlueprintVersion::default(),
                         outer_obj_info: OuterObjectInfo::Some {
                             outer_object: resource_address.into(),
                         },
                         features: btreeset!(),
                         generic_substitutions: vec![],
                     },
+                    object_type: ObjectType::Owned,
                 }))
             ),
         )?;

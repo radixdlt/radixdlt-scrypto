@@ -266,49 +266,46 @@ impl SystemDatabaseChecker {
                 let mut expected_fields = BTreeSet::new();
                 let mut excluded_fields = BTreeSet::new();
 
-                for (module_id, _version) in &object_info.module_versions {
-                    match module_id {
-                        ObjectModuleId::Main => {
-                            if let Some((_, fields)) = &bp_definition.interface.state.fields {
-                                for (field_index, field_schema) in fields.iter().enumerate() {
-                                    match &field_schema.condition {
-                                        Condition::Always => {
-                                            expected_fields.insert((*module_id, field_index as u8));
-                                        }
-                                        Condition::IfFeature(feature) => {
-                                            if object_info
-                                                .blueprint_info
-                                                .features
-                                                .contains(feature.as_str())
-                                            {
-                                                expected_fields
-                                                    .insert((*module_id, field_index as u8));
-                                            } else {
-                                                excluded_fields.insert(field_index as u8);
-                                            }
-                                        }
-                                        Condition::IfOuterFeature(feature) => {
-                                            if outer_object
-                                                .as_ref()
-                                                .ok_or_else(|| {
-                                                    SystemNodeCheckError::InvalidCondition
-                                                })?
-                                                .blueprint_info
-                                                .features
-                                                .contains(feature.as_str())
-                                            {
-                                                expected_fields
-                                                    .insert((*module_id, field_index as u8));
-                                            } else {
-                                                excluded_fields.insert(field_index as u8);
-                                            }
-                                        }
-                                    }
+                if let Some((_, fields)) = &bp_definition.interface.state.fields {
+                    for (field_index, field_schema) in fields.iter().enumerate() {
+                        match &field_schema.condition {
+                            Condition::Always => {
+                                expected_fields.insert((ObjectModuleId::Main, field_index as u8));
+                            }
+                            Condition::IfFeature(feature) => {
+                                if object_info
+                                    .blueprint_info
+                                    .features
+                                    .contains(feature.as_str())
+                                {
+                                    expected_fields
+                                        .insert((ObjectModuleId::Main, field_index as u8));
+                                } else {
+                                    excluded_fields.insert(field_index as u8);
+                                }
+                            }
+                            Condition::IfOuterFeature(feature) => {
+                                if outer_object
+                                    .as_ref()
+                                    .ok_or_else(|| SystemNodeCheckError::InvalidCondition)?
+                                    .blueprint_info
+                                    .features
+                                    .contains(feature.as_str())
+                                {
+                                    expected_fields
+                                        .insert((ObjectModuleId::Main, field_index as u8));
+                                } else {
+                                    excluded_fields.insert(field_index as u8);
                                 }
                             }
                         }
-                        _ => {
-                            let blueprint_id = module_id.static_blueprint().unwrap();
+                    }
+                }
+
+                match &object_info.object_type {
+                    ObjectType::Global { modules } => {
+                        for (module_id, _version) in modules {
+                            let blueprint_id = module_id.static_blueprint();
                             let module_def = reader
                                 .get_blueprint_definition(&blueprint_id)
                                 .map_err(SystemNodeCheckError::MissingBlueprint)?;
@@ -316,7 +313,10 @@ impl SystemDatabaseChecker {
                                 for (field_index, field_schema) in fields.iter().enumerate() {
                                     match &field_schema.condition {
                                         Condition::Always => {
-                                            expected_fields.insert((*module_id, field_index as u8));
+                                            let object_module_id: ObjectModuleId =
+                                                (*module_id).into();
+                                            expected_fields
+                                                .insert((object_module_id, field_index as u8));
                                         }
                                         _ => {
                                             return Err(SystemNodeCheckError::FoundModuleWithConditionalFields);
@@ -325,7 +325,8 @@ impl SystemDatabaseChecker {
                                 }
                             }
                         }
-                    };
+                    }
+                    ObjectType::Owned => {}
                 }
 
                 SystemNodeCheckerState {
@@ -357,7 +358,7 @@ impl SystemDatabaseChecker {
         }
 
         if let SystemNodeType::Object { object_info, .. } = &node_checker_state.node_type {
-            if object_info.global {
+            if object_info.is_global() {
                 node_counts.global_node_count += 1;
             } else {
                 node_counts.interior_node_count += 1;
