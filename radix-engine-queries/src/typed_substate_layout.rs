@@ -140,7 +140,7 @@ pub enum TypedMainModuleSubstateKey {
     FungibleVault(FungibleVaultTypedSubstateKey),
     NonFungibleVault(NonFungibleVaultTypedSubstateKey),
     ConsensusManager(ConsensusManagerTypedSubstateKey),
-    ValidatorField(ValidatorField),
+    ValidatorField(ValidatorTypedSubstateKey),
     AccessController(AccessControllerTypedSubstateKey),
     Account(AccountTypedSubstateKey),
     OneResourcePool(OneResourcePoolTypedSubstateKey),
@@ -298,7 +298,9 @@ fn to_typed_object_substate_key_internal(
             )
         }
         EntityType::GlobalValidator => {
-            TypedMainModuleSubstateKey::ValidatorField(ValidatorField::try_from(substate_key)?)
+            TypedMainModuleSubstateKey::ValidatorField(
+                ValidatorTypedSubstateKey::for_key_at_partition_offset(partition_offset, substate_key)?
+            )
         }
         EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessController(
             AccessControllerTypedSubstateKey::for_key_in_partition(
@@ -414,7 +416,7 @@ pub enum TypedMainModuleSubstateValue {
     FungibleVault(FungibleVaultTypedSubstateValue),
     NonFungibleVault(NonFungibleVaultTypedSubstateValue),
     ConsensusManager(ConsensusManagerTypedSubstateValue),
-    Validator(TypedValidatorFieldValue),
+    Validator(ValidatorTypedSubstateValue),
     AccessController(AccessControllerTypedSubstateValue),
     Account(AccountTypedSubstateValue),
     OneResourcePool(OneResourcePoolTypedSubstateValue),
@@ -548,15 +550,10 @@ fn to_typed_object_substate_value(
                 ConsensusManagerTypedSubstateValue::from_key_and_data(key, data)?
             )
         }
-        TypedMainModuleSubstateKey::ValidatorField(offset) => {
-            TypedMainModuleSubstateValue::Validator(match offset {
-                ValidatorField::Validator => {
-                    TypedValidatorFieldValue::Validator(scrypto_decode(data)?)
-                }
-                ValidatorField::ProtocolUpdateReadinessSignal => {
-                    TypedValidatorFieldValue::ProtocolUpdateReadinessSignal(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::ValidatorField(key) => {
+            TypedMainModuleSubstateValue::Validator(
+                ValidatorTypedSubstateValue::from_key_and_data(key, data)?
+            )
         }
         TypedMainModuleSubstateKey::Account(key) => TypedMainModuleSubstateValue::Account(
             AccountTypedSubstateValue::from_key_and_data(key, data)?,

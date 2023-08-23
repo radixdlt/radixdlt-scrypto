@@ -858,15 +858,14 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn get_validator_info(&self, address: ComponentAddress) -> ValidatorSubstate {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ValidatorSubstate>>(
-                address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ValidatorField::Validator.into(),
-            )
-            .unwrap()
-            .value
-            .0
+        let reader = SystemDatabaseReader::new(&self.database);
+        let substate = reader.read_typed_object_field::<ValidatorStateFieldPayload>(
+            address.as_node_id(),
+            ObjectModuleId::Main,
+            ValidatorField::State.field_index()
+        ).unwrap().into_latest();
+
+        substate
     }
 
     pub fn get_active_validator_with_key(&self, key: &Secp256k1PublicKey) -> ComponentAddress {

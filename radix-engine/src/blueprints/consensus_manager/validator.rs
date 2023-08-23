@@ -19,8 +19,10 @@ use radix_engine_interface::api::{
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{burn_roles, metadata_init, mint_roles, rule};
+use radix_engine_interface::blueprints::package::{AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate};
 use sbor::rust::mem;
-use crate::internal_prelude::SortedIndexEntryPayload;
+use crate::{event_schema, roles_template};
+use crate::internal_prelude::*;
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
@@ -159,9 +161,370 @@ pub enum ValidatorError {
     InvalidProtocolVersionNameLength { expected: usize, actual: usize },
 }
 
+declare_native_blueprint_state! {
+    blueprint_ident: Validator,
+    blueprint_snake_case: validator,
+    features: {
+    },
+    fields: {
+        state: {
+            ident: State,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        },
+        protocol_update_readiness_signal: {
+            ident: ProtocolUpdateReadinessSignal,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        },
+    },
+    collections: {
+    }
+}
+
+pub type ValidatorStateV1 = ValidatorSubstate;
+pub type ValidatorProtocolUpdateReadinessSignalV1 = ValidatorProtocolUpdateReadinessSignalSubstate;
+
 pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
+    pub fn definition() -> BlueprintDefinitionInit {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let state = ValidatorStateSchemaInit::create_schema_init(&mut aggregator);
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            VALIDATOR_REGISTER_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorRegisterInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorRegisterOutput>(),
+                ),
+                export: VALIDATOR_REGISTER_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_UNREGISTER_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUnregisterInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUnregisterOutput>(),
+                ),
+                export: VALIDATOR_UNREGISTER_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_STAKE_AS_OWNER_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorStakeAsOwnerInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorStakeAsOwnerOutput>(),
+                ),
+                export: VALIDATOR_STAKE_AS_OWNER_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_STAKE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorStakeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorStakeOutput>(),
+                ),
+                export: VALIDATOR_STAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_UNSTAKE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUnstakeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUnstakeOutput>(),
+                ),
+                export: VALIDATOR_UNSTAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_CLAIM_XRD_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorClaimXrdInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorClaimXrdOutput>(),
+                ),
+                export: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_UPDATE_KEY_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyOutput>(),
+                ),
+                export: VALIDATOR_UPDATE_KEY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_UPDATE_FEE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeOutput>(),
+                ),
+                export: VALIDATOR_UPDATE_FEE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeOutput>()),
+                export: VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeInput>(
+                        ),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeOutput>(
+                        ),
+                ),
+                export: VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorTotalStakeXrdAmountInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorTotalStakeXrdAmountOutput>(),
+                ),
+                export: VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorTotalStakeUnitSupplyInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorTotalStakeUnitSupplyOutput>(
+                        ),
+                ),
+                export: VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_GET_REDEMPTION_VALUE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorGetRedemptionValueInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorGetRedemptionValueOutput>(),
+                ),
+                export: VALIDATOR_GET_REDEMPTION_VALUE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorSignalProtocolUpdateReadinessInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorSignalProtocolUpdateReadinessOutput>()),
+                export: VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorGetProtocolUpdateReadinessInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorGetProtocolUpdateReadinessOutput>()),
+                export: VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsOutput>(),
+                ),
+                export: VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsOutput>()),
+                export: VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsOutput>()),
+                export: VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
+                ),
+                export: VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_APPLY_REWARD_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorApplyRewardInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorApplyRewardOutput>(),
+                ),
+                export: VALIDATOR_APPLY_REWARD_IDENT.to_string(),
+            },
+        );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                RegisterValidatorEvent,
+                UnregisterValidatorEvent,
+                StakeEvent,
+                UnstakeEvent,
+                ClaimXrdEvent,
+                ProtocolUpdateReadinessSignalEvent,
+                UpdateAcceptingStakeDelegationStateEvent,
+                ValidatorEmissionAppliedEvent,
+                ValidatorRewardAppliedEvent
+            ]
+        };
+
+        let schema = generate_full_schema(aggregator);
+
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::Inner {
+                outer_blueprint: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
+            },
+            is_transient: false,
+            feature_set: btreeset!(),
+            dependencies: btreeset!(),
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema,
+                state,
+                events: event_schema,
+                functions: BlueprintFunctionsSchemaInit { functions },
+                hooks: BlueprintHooksInit::default(),
+            },
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AllowAll,
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
+                    methods {
+                        VALIDATOR_UNSTAKE_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_CLAIM_XRD_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_STAKE_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_STAKE_AS_OWNER_IDENT => [OWNER_ROLE];
+                        VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_KEY_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_FEE_IDENT => [OWNER_ROLE];
+                        VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
+                        VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS => [OWNER_ROLE];
+                        VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT => MethodAccessibility::OuterObjectOnly;
+                        VALIDATOR_APPLY_EMISSION_IDENT => MethodAccessibility::OuterObjectOnly;
+                        VALIDATOR_APPLY_REWARD_IDENT => MethodAccessibility::OuterObjectOnly;
+                    }
+                }),
+            },
+        }
+    }
+
     pub fn register<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -189,10 +552,10 @@ impl ValidatorBlueprint {
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.field_index(),
             LockFlags::read_only(),
         )?;
-        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
         api.field_close(handle)?;
         if !substate.accepts_delegated_stake {
             // TODO: Should this be an Option returned instead similar to Account?
@@ -214,11 +577,11 @@ impl ValidatorBlueprint {
 
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.field_index(),
             LockFlags::MUTABLE,
         )?;
 
-        let mut validator: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut validator = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
 
         // Stake
         let (stake_unit_bucket, new_stake_amount) = {
@@ -241,7 +604,7 @@ impl ValidatorBlueprint {
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
         validator.sorted_key = new_index_key;
-        api.field_write_typed(handle, &validator)?;
+        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(validator))?;
 
         Runtime::emit_event(
             api,
@@ -261,10 +624,10 @@ impl ValidatorBlueprint {
 
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.field_index(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator_substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut validator_substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
 
         // Unstake
         let (unstake_bucket, new_stake_amount) = {
@@ -325,7 +688,7 @@ impl ValidatorBlueprint {
         )?;
 
         validator_substate.sorted_key = new_index_key;
-        api.field_write_typed(handle, &validator_substate)?;
+        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(validator_substate))?;
 
         Runtime::emit_event(
             api,
@@ -360,10 +723,10 @@ impl ValidatorBlueprint {
             ValidatorField::ProtocolUpdateReadinessSignal.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut signal: ValidatorProtocolUpdateReadinessSignalSubstate =
-            api.field_read_typed(handle)?;
+        let mut signal =
+            api.field_read_typed::<ValidatorProtocolUpdateReadinessSignalFieldPayload>(handle)?.into_latest();
         signal.protocol_version_name = Some(protocol_version_name.clone());
-        api.field_write_typed(handle, &signal)?;
+        api.field_write_typed(handle, &ValidatorProtocolUpdateReadinessSignalFieldPayload::from_content_source(signal))?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -385,8 +748,8 @@ impl ValidatorBlueprint {
             ValidatorField::ProtocolUpdateReadinessSignal.into(),
             LockFlags::read_only(),
         )?;
-        let signal: ValidatorProtocolUpdateReadinessSignalSubstate =
-            api.field_read_typed(handle)?;
+        let signal =
+            api.field_read_typed::<ValidatorProtocolUpdateReadinessSignalFieldPayload>(handle)?.into_latest();
         api.field_close(handle)?;
 
         Ok(signal.protocol_version_name)
@@ -396,10 +759,13 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = ValidatorField::Validator.into();
-        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::MUTABLE)?;
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            ValidatorField::State.field_index(),
+            LockFlags::MUTABLE,
+        )?;
 
-        let mut validator: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut validator = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
         // No update
         if validator.is_registered == new_registered {
             return Ok(());
@@ -414,7 +780,7 @@ impl ValidatorBlueprint {
 
         validator.is_registered = new_registered;
         validator.sorted_key = index_key;
-        api.field_write_typed(handle, &validator)?;
+        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(validator))?;
 
         if new_registered {
             Runtime::emit_event(api, RegisterValidatorEvent)?;
@@ -476,10 +842,10 @@ impl ValidatorBlueprint {
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.field_index(),
             LockFlags::read_only(),
         )?;
-        let validator: ValidatorSubstate = api.field_read_typed(handle)?;
+        let validator = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
         let mut nft_resman = ResourceManager(validator.claim_nft);
         let resource_address = validator.claim_nft;
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
@@ -493,7 +859,7 @@ impl ValidatorBlueprint {
         let current_epoch = {
             let mgr_handle = api.actor_open_field(
                 ACTOR_STATE_OUTER_OBJECT,
-                ConsensusManagerField::State.into(),
+                ConsensusManagerField::State.field_index(),
                 LockFlags::read_only(),
             )?;
             let mgr_substate = api.field_read_typed::<ConsensusManagerStateFieldPayload>(mgr_handle)?.into_latest();
@@ -534,10 +900,10 @@ impl ValidatorBlueprint {
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut validator = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
 
         // Update Consensus Manager
         {
@@ -552,7 +918,7 @@ impl ValidatorBlueprint {
         }
 
         validator.key = key;
-        api.field_write_typed(handle, &validator)?;
+        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(validator))?;
 
         Ok(())
     }
@@ -588,10 +954,10 @@ impl ValidatorBlueprint {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
 
         // - promote any currently pending change if it became effective already
         if let Some(previous_request) = substate.validator_fee_change_request {
@@ -612,7 +978,7 @@ impl ValidatorBlueprint {
             epoch_effective,
             new_fee_factor,
         });
-        api.field_write_typed(handle, &substate)?;
+        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
         api.field_close(handle)?;
 
         Ok(())
@@ -624,11 +990,11 @@ impl ValidatorBlueprint {
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::read_only(),
         )?;
 
-        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
         api.field_close(handle)?;
 
         Ok(substate.accepts_delegated_stake)
@@ -640,11 +1006,11 @@ impl ValidatorBlueprint {
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::read_only(),
         )?;
 
-        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
         let stake_vault = Vault(substate.stake_xrd_vault_id);
         let stake_amount = stake_vault.amount(api)?;
         api.field_close(handle)?;
@@ -658,11 +1024,11 @@ impl ValidatorBlueprint {
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::read_only(),
         )?;
 
-        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
         let stake_resource = ResourceManager(substate.stake_unit_resource);
         let total_stake_unit_supply = stake_resource.total_supply(api)?.unwrap();
         api.field_close(handle)?;
@@ -679,11 +1045,11 @@ impl ValidatorBlueprint {
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::read_only(),
         )?;
 
-        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
         let redemption_value =
             Self::calculate_redemption_value(amount_of_stake_units, &substate, api)?;
         api.field_close(handle)?;
@@ -700,12 +1066,12 @@ impl ValidatorBlueprint {
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
         substate.accepts_delegated_stake = accept_delegated_stake;
-        api.field_write_typed(handle, &substate)?;
+        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -730,10 +1096,10 @@ impl ValidatorBlueprint {
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::read_only(),
         )?;
-        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
 
         Vault(substate.locked_owner_stake_unit_vault_id).put(stake_unit_bucket, api)?;
 
@@ -776,10 +1142,10 @@ impl ValidatorBlueprint {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
 
         // - move the already-available withdrawals to a dedicated field
         Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
@@ -799,7 +1165,7 @@ impl ValidatorBlueprint {
         let mut locked_owner_stake_unit_vault = Vault(substate.locked_owner_stake_unit_vault_id);
         let mut pending_owner_stake_unit_unlock_vault =
             Vault(substate.pending_owner_stake_unit_unlock_vault_id);
-        api.field_write_typed(handle, &substate)?;
+        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
 
         // move the requested stake units from the "locked vault" to the "pending withdrawal vault"
         let pending_unlock_stake_unit_bucket =
@@ -831,10 +1197,10 @@ impl ValidatorBlueprint {
         // drain the already-available withdrawals
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
 
         Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
         let total_already_available_amount = mem::replace(
@@ -844,7 +1210,7 @@ impl ValidatorBlueprint {
 
         let mut pending_owner_stake_unit_unlock_vault =
             Vault(substate.pending_owner_stake_unit_unlock_vault_id);
-        api.field_write_typed(handle, &substate)?;
+        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
 
         // return the already-available withdrawals
         let already_available_stake_unit_bucket =
@@ -897,10 +1263,10 @@ impl ValidatorBlueprint {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
 
         // - resolve the effective validator fee factor
         let effective_validator_fee_factor = match &substate.validator_fee_change_request {
@@ -947,7 +1313,7 @@ impl ValidatorBlueprint {
 
         // ...end the read+modify+write of the validator substate (event can be emitted afterwards)
         substate.sorted_key = new_index_key;
-        api.field_write_typed(handle, &substate)?;
+        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -977,10 +1343,10 @@ impl ValidatorBlueprint {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ValidatorField::Validator.into(),
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
 
         // Get the total reward amount
         let total_reward_xrd = xrd_bucket.amount(api)?;
@@ -1008,7 +1374,7 @@ impl ValidatorBlueprint {
 
         // Flush validator substate changes
         substate.sorted_key = new_index_key;
-        api.field_write_typed(handle, &substate)?;
+        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -1310,8 +1676,8 @@ impl ValidatorCreator {
         let validator_id = api.new_simple_object(
             VALIDATOR_BLUEPRINT,
             btreemap! {
-                0u8 => FieldValue::new(&substate),
-                1u8 => FieldValue::new(&protocol_update_readiness_signal),
+                ValidatorField::State.field_index() => FieldValue::new(&ValidatorStateFieldPayload::from_content_source(substate)),
+                ValidatorField::ProtocolUpdateReadinessSignal.field_index() => FieldValue::new(&ValidatorProtocolUpdateReadinessSignalFieldPayload::from_content_source(protocol_update_readiness_signal)),
             },
         )?;
 

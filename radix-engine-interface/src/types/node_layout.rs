@@ -249,12 +249,11 @@ blueprint_partition_offset!(
     }
 );
 
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
-pub enum ValidatorField {
-    Validator,
-    ProtocolUpdateReadinessSignal,
-}
+blueprint_partition_offset!(
+    pub enum ValidatorPartitionOffset {
+        Field,
+    }
+);
 
 blueprint_partition_offset!(
     pub enum AccessControllerPartitionOffset {
@@ -356,7 +355,6 @@ substate_key!(FungibleProofField);
 substate_key!(NonFungibleResourceManagerField);
 substate_key!(NonFungibleBucketField);
 substate_key!(NonFungibleProofField);
-substate_key!(ValidatorField);
 substate_key!(OneResourcePoolField);
 substate_key!(TwoResourcePoolField);
 substate_key!(MultiResourcePoolField);
