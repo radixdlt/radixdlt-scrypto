@@ -7,8 +7,17 @@ use radix_engine::blueprints::account::{AccountTypedSubstateKey, AccountTypedSub
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
 pub use radix_engine::blueprints::pool::multi_resource_pool;
+use radix_engine::blueprints::pool::multi_resource_pool::{
+    MultiResourcePoolTypedSubstateKey, MultiResourcePoolTypedSubstateValue,
+};
 pub use radix_engine::blueprints::pool::one_resource_pool;
+use radix_engine::blueprints::pool::one_resource_pool::{
+    OneResourcePoolTypedSubstateKey, OneResourcePoolTypedSubstateValue,
+};
 pub use radix_engine::blueprints::pool::two_resource_pool;
+use radix_engine::blueprints::pool::two_resource_pool::{
+    TwoResourcePoolTypedSubstateKey, TwoResourcePoolTypedSubstateValue,
+};
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::blueprints::transaction_tracker::*;
 pub use radix_engine::system::node_modules::metadata::*;
@@ -137,9 +146,9 @@ pub enum TypedMainModuleSubstateKey {
     ValidatorField(ValidatorField),
     AccessControllerField(AccessControllerField),
     Account(AccountTypedSubstateKey),
-    OneResourcePoolField(OneResourcePoolField),
-    TwoResourcePoolField(TwoResourcePoolField),
-    MultiResourcePoolField(MultiResourcePoolField),
+    OneResourcePool(OneResourcePoolTypedSubstateKey),
+    TwoResourcePool(TwoResourcePoolTypedSubstateKey),
+    MultiResourcePool(MultiResourcePoolTypedSubstateKey),
     TransactionTrackerField(TransactionTrackerField),
     TransactionTrackerCollectionEntry(IntentHash),
     // Generic Scrypto Components
@@ -345,14 +354,23 @@ fn to_typed_object_substate_key_internal(
                 }
             }
         }
-        EntityType::GlobalOneResourcePool => TypedMainModuleSubstateKey::OneResourcePoolField(
-            OneResourcePoolField::try_from(substate_key)?,
+        EntityType::GlobalOneResourcePool => TypedMainModuleSubstateKey::OneResourcePool(
+            OneResourcePoolTypedSubstateKey::for_key_in_partition(
+                &OneResourcePoolPartitionOffset::try_from(PartitionOffset(partition_offset))?,
+                substate_key,
+            )?,
         ),
-        EntityType::GlobalTwoResourcePool => TypedMainModuleSubstateKey::TwoResourcePoolField(
-            TwoResourcePoolField::try_from(substate_key)?,
+        EntityType::GlobalTwoResourcePool => TypedMainModuleSubstateKey::TwoResourcePool(
+            TwoResourcePoolTypedSubstateKey::for_key_in_partition(
+                &TwoResourcePoolPartitionOffset::try_from(PartitionOffset(partition_offset))?,
+                substate_key,
+            )?,
         ),
-        EntityType::GlobalMultiResourcePool => TypedMainModuleSubstateKey::MultiResourcePoolField(
-            MultiResourcePoolField::try_from(substate_key)?,
+        EntityType::GlobalMultiResourcePool => TypedMainModuleSubstateKey::MultiResourcePool(
+            MultiResourcePoolTypedSubstateKey::for_key_in_partition(
+                &MultiResourcePoolPartitionOffset::try_from(PartitionOffset(partition_offset))?,
+                substate_key,
+            )?,
         ),
         EntityType::GlobalTransactionTracker => {
             if partition_offset == 0 {
@@ -426,9 +444,9 @@ pub enum TypedMainModuleSubstateValue {
     Validator(TypedValidatorFieldValue),
     AccessController(TypedAccessControllerFieldValue),
     Account(AccountTypedSubstateValue),
-    OneResourcePool(TypedOneResourcePoolFieldValue),
-    TwoResourcePool(TypedTwoResourcePoolFieldValue),
-    MultiResourcePool(TypedMultiResourcePoolFieldValue),
+    OneResourcePool(OneResourcePoolTypedSubstateValue),
+    TwoResourcePool(TwoResourcePoolTypedSubstateValue),
+    MultiResourcePool(MultiResourcePoolTypedSubstateValue),
     TransactionTracker(TypedTransactionTrackerFieldValue),
     TransactionTrackerCollectionEntry(KeyValueEntrySubstate<TransactionStatusSubstateContents>),
     // Generic Scrypto Components and KV Stores
@@ -486,21 +504,6 @@ pub enum TypedAccessControllerFieldValue {
 #[derive(Debug)]
 pub enum GenericScryptoComponentFieldValue {
     State(FieldSubstate<ScryptoValue>),
-}
-
-#[derive(Debug)]
-pub enum TypedOneResourcePoolFieldValue {
-    OneResourcePool(FieldSubstate<one_resource_pool::OneResourcePoolSubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedTwoResourcePoolFieldValue {
-    TwoResourcePool(FieldSubstate<two_resource_pool::TwoResourcePoolSubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedMultiResourcePoolFieldValue {
-    MultiResourcePool(FieldSubstate<multi_resource_pool::MultiResourcePoolSubstate>),
 }
 
 #[derive(Debug)]
@@ -692,26 +695,20 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
             TypedMainModuleSubstateValue::GenericKeyValueStoreEntry(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::OneResourcePoolField(offset) => {
-            TypedMainModuleSubstateValue::OneResourcePool(match offset {
-                OneResourcePoolField::OneResourcePool => {
-                    TypedOneResourcePoolFieldValue::OneResourcePool(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::OneResourcePool(key) => {
+            TypedMainModuleSubstateValue::OneResourcePool(
+                OneResourcePoolTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
-        TypedMainModuleSubstateKey::TwoResourcePoolField(offset) => {
-            TypedMainModuleSubstateValue::TwoResourcePool(match offset {
-                TwoResourcePoolField::TwoResourcePool => {
-                    TypedTwoResourcePoolFieldValue::TwoResourcePool(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::TwoResourcePool(key) => {
+            TypedMainModuleSubstateValue::TwoResourcePool(
+                TwoResourcePoolTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
-        TypedMainModuleSubstateKey::MultiResourcePoolField(offset) => {
-            TypedMainModuleSubstateValue::MultiResourcePool(match offset {
-                MultiResourcePoolField::MultiResourcePool => {
-                    TypedMultiResourcePoolFieldValue::MultiResourcePool(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::MultiResourcePool(key) => {
+            TypedMainModuleSubstateValue::MultiResourcePool(
+                MultiResourcePoolTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
 
         TypedMainModuleSubstateKey::TransactionTrackerField(offset) => {

@@ -284,20 +284,17 @@ blueprint_partition_offset!(
     }
 );
 
-/*
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum AccountField {
-    Account,
-}
-
- */
-
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum OneResourcePoolField {
     OneResourcePool,
 }
+
+blueprint_partition_offset!(
+    pub enum OneResourcePoolPartitionOffset {
+        Field,
+    }
+);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -305,11 +302,23 @@ pub enum TwoResourcePoolField {
     TwoResourcePool,
 }
 
+blueprint_partition_offset!(
+    pub enum TwoResourcePoolPartitionOffset {
+        Field,
+    }
+);
+
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum MultiResourcePoolField {
     MultiResourcePool,
 }
+
+blueprint_partition_offset!(
+    pub enum MultiResourcePoolPartitionOffset {
+        Field,
+    }
+);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]

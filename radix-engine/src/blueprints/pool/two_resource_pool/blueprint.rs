@@ -1,7 +1,12 @@
 use crate::blueprints::pool::two_resource_pool::*;
 use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
+use crate::internal_prelude::declare_native_blueprint_state;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::*;
+use crate::prelude::BlueprintSchemaInit;
+use crate::types::{ReceiverInfo, TypeRef};
+use crate::{event_schema, roles_template};
 use native_sdk::modules::metadata::*;
 use native_sdk::modules::role_assignment::*;
 use native_sdk::modules::royalty::*;
@@ -12,15 +17,202 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::package::{
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+};
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::prelude::{
+    BlueprintFunctionsSchemaInit, BlueprintHooksInit, BlueprintStateSchemaInit, FunctionSchemaInit,
+};
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 
 pub const TWO_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "TwoResourcePool";
 
+declare_native_blueprint_state! {
+    blueprint_ident: TwoResourcePool,
+    blueprint_snake_case: two_resource_pool,
+    features: {
+    },
+    fields: {
+        state:  {
+            ident: State,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        }
+    },
+    collections: {
+    }
+}
+
+pub type TwoResourcePoolStateV1 = TwoResourcePoolSubstate;
+
 pub struct TwoResourcePoolBlueprint;
 impl TwoResourcePoolBlueprint {
+    pub fn definition() -> BlueprintDefinitionInit {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let state = TwoResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
+
+        let mut functions = BTreeMap::new();
+
+        functions.insert(
+            TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolInstantiateInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolInstantiateOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolContributeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolContributeOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_REDEEM_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolRedeemInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolRedeemOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueOutput>(
+                        ),
+                ),
+                export: TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
+            },
+        );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                ContributionEvent,
+                RedemptionEvent,
+                WithdrawEvent,
+                DepositEvent
+            ]
+        };
+
+        let schema = generate_full_schema(aggregator);
+
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::default(),
+            is_transient: false,
+            dependencies: btreeset!(),
+            feature_set: btreeset!(),
+
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema,
+                state,
+                events: event_schema,
+                functions: BlueprintFunctionsSchemaInit { functions },
+                hooks: BlueprintHooksInit::default(),
+            },
+
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AllowAll,
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
+                    roles {
+                        POOL_MANAGER_ROLE;
+                    },
+                    methods {
+                        // Main Module rules
+                        TWO_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
+                        TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
+                        TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodAccessibility::Public;
+                        TWO_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                        TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                    }
+                }),
+            },
+        }
+    }
+
     pub fn instantiate<Y>(
         (resource_address1, resource_address2): (ResourceAddress, ResourceAddress),
         owner_role: OwnerRole,
@@ -115,7 +307,7 @@ impl TwoResourcePoolBlueprint {
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
                 btreemap! {
-                    0u8 => FieldValue::immutable(&substate),
+                    0u8 => FieldValue::immutable(&VersionedTwoResourcePoolState::V1(substate)),
                 },
             )?
         };
@@ -541,7 +733,13 @@ impl TwoResourcePoolBlueprint {
     {
         let substate_key = TwoResourcePoolField::TwoResourcePool.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
-        let two_resource_pool_substate = api.field_read_typed::<TwoResourcePoolSubstate>(handle)?;
+        let two_resource_pool_substate =
+            api.field_read_typed::<VersionedTwoResourcePoolState>(handle)?;
+        let two_resource_pool_substate = match two_resource_pool_substate {
+            VersionedTwoResourcePoolState::V1(two_resource_pool_substate) => {
+                two_resource_pool_substate
+            }
+        };
 
         Ok((two_resource_pool_substate, handle))
     }
