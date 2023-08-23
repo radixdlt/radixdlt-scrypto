@@ -12,6 +12,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
 };
+use crate::internal_prelude::*;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -24,7 +25,6 @@ use crate::transaction::{
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
     TransactionResult,
 };
-use crate::types::*;
 use lazy_static::lazy_static;
 use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
@@ -513,7 +513,12 @@ pub fn create_system_bootstrap_flash(
                 native_code_id.to_be_bytes().to_vec(),
                 system_instructions,
             )
-            .expect("Invalid Package Package definition");
+            .unwrap_or_else(|err| {
+                panic!(
+                    "Invalid flashed Package definition with native_code_id {}: {:?}",
+                    native_code_id, err
+                )
+            });
 
             create_bootstrap_package_partitions(package_structure, metadata_init)
         };

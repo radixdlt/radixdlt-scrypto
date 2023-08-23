@@ -743,11 +743,12 @@ where
                 })?;
 
             if !partition_type.eq(expected_type) {
-                // TODO: Implement different error
                 return Err(RuntimeError::SystemError(
-                    SystemError::CollectionIndexDoesNotExist(
+                    SystemError::CollectionIndexIsOfWrongType(
                         blueprint_info.blueprint_id.clone(),
                         collection_index,
+                        expected_type.to_owned(),
+                        partition_type,
                     ),
                 ));
             }

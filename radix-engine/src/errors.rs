@@ -30,7 +30,7 @@ use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ObjectHandle;
-use radix_engine_interface::blueprints::package::CanonicalBlueprintId;
+use radix_engine_interface::blueprints::package::{BlueprintPartitionType, CanonicalBlueprintId};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -225,6 +225,12 @@ pub enum SystemError {
     TypeCheckError(TypeCheckError),
     FieldDoesNotExist(BlueprintId, u8),
     CollectionIndexDoesNotExist(BlueprintId, u8),
+    CollectionIndexIsOfWrongType(
+        BlueprintId,
+        u8,
+        BlueprintPartitionType,
+        BlueprintPartitionType,
+    ),
     MutatingImmutableSubstate,
     MutatingImmutableFieldSubstate(ObjectHandle, u8),
     ObjectModuleDoesNotExist(ObjectModuleId),

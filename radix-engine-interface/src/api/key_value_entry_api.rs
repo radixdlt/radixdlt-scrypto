@@ -5,10 +5,16 @@ use sbor::rust::prelude::*;
 
 pub type KeyValueEntryHandle = u32;
 
+pub trait KeyValueKeyPayloadMarker {}
+pub trait KeyValueEntryPayloadMarker {}
+
 pub trait ClientKeyValueEntryApi<E> {
     fn key_value_entry_get(&mut self, handle: KeyValueEntryHandle) -> Result<Vec<u8>, E>;
 
-    fn key_value_entry_get_typed<S: ScryptoDecode>(
+    fn key_value_entry_get_typed<
+        // TODO: add a KeyValueEntryPayloadMarker bound once all native blueprints have been updated
+        S: ScryptoDecode,
+    >(
         &mut self,
         handle: KeyValueEntryHandle,
     ) -> Result<Option<S>, E> {
@@ -23,7 +29,10 @@ pub trait ClientKeyValueEntryApi<E> {
         buffer: Vec<u8>,
     ) -> Result<(), E>;
 
-    fn key_value_entry_set_typed<S: ScryptoEncode>(
+    fn key_value_entry_set_typed<
+        // TODO: add a KeyValueEntryPayloadMarker bound once all native blueprints have been updated
+        S: ScryptoEncode,
+    >(
         &mut self,
         handle: KeyValueEntryHandle,
         value: S,

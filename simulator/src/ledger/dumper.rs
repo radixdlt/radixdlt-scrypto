@@ -3,7 +3,6 @@ use crate::utils::*;
 use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
@@ -217,7 +216,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         .eq(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
     {
         let id_type = substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<NonFungibleIdType>>(
+            .get_mapped::<SpreadPrefixKeyMapper, NonFungibleResourceManagerIdTypeFieldSubstate>(
                 resource_address.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &NonFungibleResourceManagerField::IdType.into(),
@@ -225,8 +224,8 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .ok_or(EntityDumpError::InvalidStore(
                 "Missing NonFungible IdType".to_string(),
             ))?
-            .value
-            .0;
+            .into_payload()
+            .into_latest();
 
         writeln!(
             output,
@@ -236,9 +235,12 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         );
         writeln!(output, "{}: {:?}", "ID Type".green().bold(), id_type);
 
-        if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
+        if info
+            .get_features()
+            .contains(NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name())
+        {
             let total_supply = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<Decimal>>(
+                .get_mapped::<SpreadPrefixKeyMapper, NonFungibleResourceManagerTotalSupplyFieldSubstate>(
                     resource_address.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &NonFungibleResourceManagerField::TotalSupply.into(),
@@ -246,8 +248,8 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
                 .ok_or(EntityDumpError::InvalidStore(
                     "Missing Total Supply".to_string(),
                 ))?
-                .value
-                .0;
+                .into_payload()
+                .into_latest();
             writeln!(
                 output,
                 "{}: {}",
@@ -257,14 +259,17 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         }
     } else {
         let divisibility = substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerDivisibilitySubstate>>(
+            .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerDivisibilityFieldSubstate>(
                 resource_address.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &FungibleResourceManagerField::Divisibility.into(),
             )
             .ok_or(EntityDumpError::InvalidStore(
                 "Missing Divisibility".to_string(),
-            ))?.value.0;
+            ))?
+            .value
+            .0
+            .into_latest();
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
         writeln!(
             output,
@@ -273,16 +278,19 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             divisibility
         );
 
-        if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
+        if info
+            .get_features()
+            .contains(FungibleResourceManagerFeature::TrackTotalSupply.feature_name())
+        {
             let total_supply = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerTotalSupplySubstate>>(
+                .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
                     resource_address.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &FungibleResourceManagerField::TotalSupply.into(),
                 )
                 .ok_or(EntityDumpError::InvalidStore(
                     "Missing Total Supply".to_string(),
-                ))?.value.0;
+                ))?.value.0.into_latest();
             writeln!(
                 output,
                 "{}: {}",

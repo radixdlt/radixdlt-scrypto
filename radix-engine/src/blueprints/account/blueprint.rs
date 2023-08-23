@@ -666,7 +666,7 @@ impl AccountBlueprint {
 
         account.default_deposit_rule = default;
 
-        api.field_write_typed(handle, account)?;
+        api.field_write_typed(handle, &account)?;
         api.field_close(handle)?;
 
         Runtime::emit_event(

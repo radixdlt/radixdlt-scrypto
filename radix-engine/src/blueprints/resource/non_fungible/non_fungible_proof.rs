@@ -212,7 +212,7 @@ impl NonFungibleProofBlueprint {
                     proof.change_to_restricted();
                 }
 
-                api.field_write_typed(handle, proof)?;
+                api.field_write_typed(handle, &proof)?;
                 api.field_close(handle)?;
                 Ok(())
             } else {

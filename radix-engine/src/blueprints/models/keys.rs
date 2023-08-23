@@ -5,11 +5,13 @@ macro_rules! declare_key_new_type {
     (
         content_trait: SortedIndexKeyContentSource,
         payload_trait: SortedIndexKeyPayload,
+        $(payload_marker_trait: $payload_marker_trait:ident,)?
         full_key_content: {
             full_content_type: $full_content_type:ty,
             sort_prefix_property_name: $sort_prefix_property_name:ident
             $(,)?
         },
+        ----
         $(#[$attributes:meta])*
         $vis:vis struct $payload_type_name:ident
             $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
@@ -56,6 +58,17 @@ macro_rules! declare_key_new_type {
             }
         }
 
+        if_exists!(
+            TEST: [[$($payload_marker_trait)?]],
+            [[
+                impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+                    $($payload_marker_trait)?
+                    for $payload_type_name $(< $( $lt ),+ >)?
+                {}
+            ]],
+            [[]]
+        );
+
         impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
             SortedIndexKeyPayload
             for $payload_type_name $(< $( $lt ),+ >)?
@@ -96,6 +109,8 @@ macro_rules! declare_key_new_type {
     (
         content_trait: SortedIndexKeyContentSource,
         payload_trait: SortedIndexKeyPayload,
+        $(payload_marker_trait: $payload_marker_trait:ident,)?
+        ----
         $(#[$attributes:meta])*
         $vis:vis struct $payload_type_name:ident
             $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
@@ -108,7 +123,9 @@ macro_rules! declare_key_new_type {
     (
         content_trait: $content_trait:ident,
         payload_trait: $payload_trait:ident,
+        $(payload_marker_trait: $payload_marker_trait:ident,)?
         full_key_content: $full_key_content:tt,
+        ----
         $(#[$attributes:meta])*
         $vis:vis struct $payload_type_name:ident
             $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
@@ -122,6 +139,8 @@ macro_rules! declare_key_new_type {
     (
         content_trait: $content_trait:ident,
         payload_trait: $payload_trait:ident,
+        $(payload_marker_trait: $payload_marker_trait:ident,)?
+        ----
         $(#[$attributes:meta])*
         $vis:vis struct $payload_type_name:ident
         $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
@@ -176,6 +195,17 @@ macro_rules! declare_key_new_type {
                 scrypto_decode::<Self>(&key).map_err(|_| ())
             }
         }
+
+        if_exists!(
+            TEST: [[$($payload_marker_trait)?]],
+            [[
+                impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+                    $($payload_marker_trait)?
+                    for $payload_type_name $(< $( $lt ),+ >)?
+                {}
+            ]],
+            [[]]
+        );
 
         impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
             $payload_trait

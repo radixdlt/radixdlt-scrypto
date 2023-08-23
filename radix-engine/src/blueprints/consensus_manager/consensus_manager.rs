@@ -380,7 +380,7 @@ impl ConsensusManagerBlueprint {
         manager_substate.epoch = post_genesis_epoch;
         manager_substate.round = Round::zero();
 
-        api.field_write_typed(manager_handle, manager_substate)?;
+        api.field_write_typed(manager_handle, &manager_substate)?;
         api.field_close(manager_handle)?;
 
         Ok(())
@@ -672,7 +672,7 @@ impl ConsensusManagerBlueprint {
         } else {
             current_round_statistic.made += 1;
         }
-        api.field_write_typed(statistic_handle, statistic)?;
+        api.field_write_typed(statistic_handle, &statistic)?;
         api.field_close(statistic_handle)?;
 
         Ok(())
@@ -800,19 +800,19 @@ impl ConsensusManagerBlueprint {
         )?;
 
         // Write updated validator rewards
-        api.field_write_typed(rewards_handle, rewards_substate)?;
+        api.field_write_typed(rewards_handle, &rewards_substate)?;
         api.field_close(rewards_handle)?;
 
         // Write zeroed statistics of next validators
         statistic_substate.validator_statistics = (0..next_active_validator_set.validator_count())
             .map(|_index| ProposalStatistic::default())
             .collect();
-        api.field_write_typed(statistic_handle, statistic_substate)?;
+        api.field_write_typed(statistic_handle, &statistic_substate)?;
         api.field_close(statistic_handle)?;
 
         // Write next validator set
         validator_set_substate.validator_set = next_active_validator_set;
-        api.field_write_typed(validator_set_handle, validator_set_substate)?;
+        api.field_write_typed(validator_set_handle, &validator_set_substate)?;
         api.field_close(validator_set_handle)?;
 
         Ok(())

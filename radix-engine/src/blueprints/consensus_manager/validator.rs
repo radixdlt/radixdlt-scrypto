@@ -363,7 +363,7 @@ impl ValidatorBlueprint {
         let mut signal: ValidatorProtocolUpdateReadinessSignalSubstate =
             api.field_read_typed(handle)?;
         signal.protocol_version_name = Some(protocol_version_name.clone());
-        api.field_write_typed(handle, signal)?;
+        api.field_write_typed(handle, &signal)?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -708,7 +708,7 @@ impl ValidatorBlueprint {
         )?;
         let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
         substate.accepts_delegated_stake = accept_delegated_stake;
-        api.field_write_typed(handle, substate)?;
+        api.field_write_typed(handle, &substate)?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -802,7 +802,7 @@ impl ValidatorBlueprint {
         let mut locked_owner_stake_unit_vault = Vault(substate.locked_owner_stake_unit_vault_id);
         let mut pending_owner_stake_unit_unlock_vault =
             Vault(substate.pending_owner_stake_unit_unlock_vault_id);
-        api.field_write_typed(handle, substate)?;
+        api.field_write_typed(handle, &substate)?;
 
         // move the requested stake units from the "locked vault" to the "pending withdrawal vault"
         let pending_unlock_stake_unit_bucket =
@@ -847,7 +847,7 @@ impl ValidatorBlueprint {
 
         let mut pending_owner_stake_unit_unlock_vault =
             Vault(substate.pending_owner_stake_unit_unlock_vault_id);
-        api.field_write_typed(handle, substate)?;
+        api.field_write_typed(handle, &substate)?;
 
         // return the already-available withdrawals
         let already_available_stake_unit_bucket =

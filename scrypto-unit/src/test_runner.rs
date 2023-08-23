@@ -514,14 +514,14 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .value
             .0;
         self.database
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
+            .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
                 accumulator.royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
-                &FungibleVaultField::LiquidFungible.into(),
+                &FungibleVaultField::Balance.into(),
             )
             .unwrap()
-            .value
-            .0
+            .into_payload()
+            .into_latest()
             .amount()
     }
 
@@ -537,12 +537,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .0;
 
         self.database
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
+            .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
                 output.into_latest().royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
-                &FungibleVaultField::LiquidFungible.into(),
+                &FungibleVaultField::Balance.into(),
             )
-            .map(|r| r.value.0.amount())
+            .map(|r| r.into_payload().into_latest().amount())
     }
 
     pub fn find_all_nodes(&self) -> IndexSet<NodeId> {
@@ -677,12 +677,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
         self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
+            .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
                 &vault_id,
                 MAIN_BASE_PARTITION,
-                &FungibleVaultField::LiquidFungible.into(),
+                &FungibleVaultField::Balance.into(),
             )
-            .map(|output| output.value.0.amount())
+            .map(|output| output.into_payload().into_latest().amount())
     }
 
     pub fn inspect_non_fungible_vault(
@@ -691,12 +691,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     ) -> Option<(Decimal, Box<dyn Iterator<Item = NonFungibleLocalId> + '_>)> {
         let amount = self
             .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidNonFungibleVault>>(
+            .get_mapped::<SpreadPrefixKeyMapper, NonFungibleVaultBalanceFieldSubstate>(
                 &vault_id,
                 MAIN_BASE_PARTITION,
-                &NonFungibleVaultField::LiquidNonFungible.into(),
+                &NonFungibleVaultField::Balance.into(),
             )
-            .map(|vault| vault.value.0.amount);
+            .map(|vault| vault.into_payload().into_latest().amount);
 
         let substate_iter = self
             .substate_db()
@@ -744,17 +744,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         resource: ResourceAddress,
         non_fungible_id: NonFungibleLocalId,
     ) -> T {
-        let node_id: &NodeId = resource.as_node_id();
-        let partition_number = MAIN_BASE_PARTITION
-            .at_offset(PartitionOffset(
-                1 + NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
-            ))
-            .unwrap();
         let substate = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<T>>(
-                node_id,
-                partition_number,
+                &resource.as_node_id(),
+                NonFungibleResourceManagerPartitionOffset::DataKeyValue.as_main_partition(),
                 &SubstateKey::Map(non_fungible_id.to_key()),
             );
         substate.unwrap().value.unwrap()

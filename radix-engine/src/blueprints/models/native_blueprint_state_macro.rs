@@ -73,15 +73,17 @@ macro_rules! declare_native_blueprint_state {
                 $(,)?
             },
         )?
-        features: {
-            $(
-                $feature_property_name:ident: {
-                    ident: $feature_ident:ident,
-                    description: $feature_description:expr,
-                }
-            ),*
-            $(,)?
-        },
+        $(
+            features: {
+                $(
+                    $feature_property_name:ident: {
+                        ident: $feature_ident:ident,
+                        description: $feature_description:expr,
+                    }
+                ),*
+                $(,)?
+            },
+        )?
         fields: {
             $(
                 $field_property_name:ident: {
@@ -138,6 +140,7 @@ macro_rules! declare_native_blueprint_state {
                     generate_content_type!(
                         content_trait: FieldContentSource,
                         payload_trait: FieldPayload,
+                        payload_marker_trait: FieldPayloadMarker,
                         ident_core: [<$blueprint_ident $field_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
                         struct [<$blueprint_ident $field_ident FieldPayload>] = $field_type
@@ -156,6 +159,7 @@ macro_rules! declare_native_blueprint_state {
                     generate_key_type!(
                         content_trait: [<$collection_type KeyContentSource>],
                         payload_trait: [<$collection_type KeyPayload>],
+                        payload_marker_trait: [<$collection_type KeyPayloadMarker>],
                         $(full_key_content: $full_key_content,)?
                         #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
                         struct [<$blueprint_ident $collection_ident KeyPayload>] = $collection_key_type
@@ -174,6 +178,7 @@ macro_rules! declare_native_blueprint_state {
                     generate_content_type!(
                         content_trait: [<$collection_type EntryContentSource>],
                         payload_trait: [<$collection_type EntryPayload>],
+                        payload_marker_trait: [<$collection_type EntryPayloadMarker>],
                         ident_core: [<$blueprint_ident $collection_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
                         struct [<$blueprint_ident $collection_ident EntryPayload>] = $collection_value_type
@@ -332,32 +337,40 @@ macro_rules! declare_native_blueprint_state {
 
                 #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
                 pub enum [<$blueprint_ident Feature>] {
-                    $($feature_ident,)*
+                    $($($feature_ident,)*)?
                 }
 
                 impl BlueprintFeature for [<$blueprint_ident Feature>] {
                     fn feature_name(&self) -> &'static str {
-                        match *self {
-                            $(
-                                Self::$feature_ident => stringify!($feature_property_name),
-                            )*
-                        }
+                        if_exists!(
+                            TEST: [[$($($feature_ident)*)?]],
+                            [[
+                                match *self {
+                                    $($(
+                                        Self::$feature_ident => stringify!($feature_property_name),
+                                    )*)?
+                                }
+                            ]],
+                            [[
+                                unreachable!("No features exist")
+                            ]]
+                        )
                     }
                 }
 
                 #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, Default)]
                 pub struct [<$blueprint_ident FeatureSet>] {
-                    $(pub [<$feature_property_name>]: bool,)*
+                    $($(pub [<$feature_property_name>]: bool,)*)?
                 }
 
                 impl [<$blueprint_ident FeatureSet>] {
                     pub fn all_features() -> BTreeSet<String> {
                         let mut features = BTreeSet::new();
-                        $(
+                        $($(
                             features.insert(
                                 [<$blueprint_ident Feature>]::$feature_ident.feature_name().to_string()
                             );
-                        )*
+                        )*)?
                         features
                     }
                 }
@@ -365,11 +378,11 @@ macro_rules! declare_native_blueprint_state {
                 impl HasFeatures for [<$blueprint_ident FeatureSet>] {
                     fn feature_names_str(&self) -> Vec<&'static str> {
                         let mut names = vec![];
-                        $(
+                        $($(
                             if self.[<$feature_property_name>] {
                                 names.push([<$blueprint_ident Feature>]::$feature_ident.feature_name());
                             }
-                        )*
+                        )*)?
                         names
                     }
                 }
@@ -397,6 +410,13 @@ macro_rules! declare_native_blueprint_state {
                 );
 
                 impl [<$blueprint_ident TypedSubstateKey>] {
+                    pub fn for_key_at_partition_offset(partition_offset: PartitionOffset, substate_key: &SubstateKey) -> Result<Self, ()> {
+                        Self::for_key_in_partition(
+                            &[<$blueprint_ident PartitionOffset>]::try_from(partition_offset)?,
+                            substate_key,
+                        )
+                    }
+
                     pub fn for_key_in_partition(partition: &[<$blueprint_ident PartitionOffset>], substate_key: &SubstateKey) -> Result<Self, ()> {
                         let key = match_filter_out_ignored!(match partition {
                             [[
@@ -492,6 +512,7 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
+            $(payload_marker_trait: $payload_marker_trait:ident,)?
             ident_core: $ident_core:ident,
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
@@ -507,6 +528,8 @@ mod helper_macros {
                 declare_payload_new_type!(
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
+                    $(payload_marker_trait: $payload_marker_trait,)?
+                    ----
                     $(#[$attributes])*
                     pub struct $payload_type_name([<Versioned $ident_core>]);
                 );
@@ -535,6 +558,7 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
+            $(payload_marker_trait: $payload_marker_trait:ident,)?
             ident_core: $ident_core:ident,
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
@@ -547,6 +571,8 @@ mod helper_macros {
                 declare_payload_new_type!(
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
+                    $(payload_marker_trait: $payload_marker_trait,)?
+                    ----
                     $(#[$attributes])*
                     pub struct $payload_type_name($static_type);
                 );
@@ -555,6 +581,7 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
+            $(payload_marker_trait: $payload_marker_trait:ident,)?
             ident_core: $ident_core:ident,
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
@@ -567,6 +594,8 @@ mod helper_macros {
                 declare_payload_new_type!(
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
+                    $(payload_marker_trait: $payload_marker_trait,)?
+                    ----
                     $(#[$attributes])*
                     pub struct $payload_type_name<$generic_ident: [<$ident_core ContentMarker>] = ScryptoValue>($generic_ident);
                 );
@@ -590,6 +619,7 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
+            $(payload_marker_trait: $payload_marker_trait:ident,)?
             $(full_key_content: $full_key_content:tt,)?
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
@@ -604,6 +634,7 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
+            $(payload_marker_trait: $payload_marker_trait:ident,)?
             $(full_key_content: $full_key_content:tt,)?
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
@@ -616,7 +647,9 @@ mod helper_macros {
                 declare_key_new_type!(
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
+                    $(payload_marker_trait: $payload_marker_trait,)?
                     $(full_key_content: $full_key_content,)?
+                    ----
                     $(#[$attributes])*
                     pub struct $payload_type_name($static_type);
                 );
@@ -625,6 +658,7 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
+            $(payload_marker_trait: $payload_marker_trait:ident,)?
             $(full_key_content: $full_key_content:tt,)?
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
@@ -894,6 +928,14 @@ mod tests {
         MyCoolKeyValueStoreKeyValue,
         MyCoolIndexIndex,
         MyCoolSortedIndexSortedIndex,
+    }
+
+    impl TryFrom<PartitionOffset> for TestBlueprintPartitionOffset {
+        type Error = ();
+
+        fn try_from(_value: PartitionOffset) -> Result<Self, Self::Error> {
+            Err(())
+        }
     }
 
     declare_native_blueprint_state! {

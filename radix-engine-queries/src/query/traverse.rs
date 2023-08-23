@@ -1,6 +1,9 @@
+use radix_engine::blueprints::resource::{
+    FungibleVaultBalanceFieldSubstate, FungibleVaultField, NonFungibleVaultBalanceFieldSubstate,
+    NonFungibleVaultField,
+};
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::FieldSubstate;
-use radix_engine::types::{FieldKey, MapKey, ScryptoValue, SubstateKey};
+use radix_engine::types::{FieldKey, LiquidFungibleResource, MapKey, ScryptoValue, SubstateKey};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
@@ -8,19 +11,12 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::constants::{ACCOUNT_PACKAGE, RESOURCE_PACKAGE};
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
-use radix_engine_interface::prelude::{scrypto_decode, CONSENSUS_MANAGER_PACKAGE};
-use radix_engine_interface::types::{
-    AccountPartitionOffset, ConsensusManagerPartitionOffset, FungibleVaultField,
-    IndexedScryptoValue, NonFungibleVaultField, PartitionNumber, PartitionOffset, ResourceAddress,
-    TypeInfoField, MAIN_BASE_PARTITION, METADATA_BASE_PARTITION, ROLE_ASSIGNMENT_BASE_PARTITION,
-    ROYALTY_BASE_PARTITION, TYPE_INFO_FIELD_PARTITION,
-};
-use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
+use radix_engine_interface::prelude::*;
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper, SubstateKeyContent},
     interface::SubstateDatabase,
 };
-use sbor::rust::prelude::*;
+use sbor::HasLatestVersion;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {
     substate_db: &'s S,
@@ -136,17 +132,17 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
+                        .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
                             &node_id,
                             MAIN_BASE_PARTITION,
-                            &FungibleVaultField::LiquidFungible.into(),
+                            &FungibleVaultField::Balance.into(),
                         )
                         .expect("Broken database");
 
                     self.visitor.visit_fungible_vault(
                         node_id,
                         &ResourceAddress::new_or_panic(info.get_outer_object().into()),
-                        &liquid.value.0,
+                        &liquid.into_payload().into_latest(),
                     );
                 } else if info
                     .blueprint_info
@@ -161,17 +157,17 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidNonFungibleVault>>(
+                        .get_mapped::<SpreadPrefixKeyMapper, NonFungibleVaultBalanceFieldSubstate>(
                             &node_id,
                             MAIN_BASE_PARTITION,
-                            &NonFungibleVaultField::LiquidNonFungible.into(),
+                            &NonFungibleVaultField::Balance.into(),
                         )
                         .expect("Broken database");
 
                     self.visitor.visit_non_fungible_vault(
                         node_id,
                         &ResourceAddress::new_or_panic(info.get_outer_object().into()),
-                        &liquid.value.0,
+                        &liquid.into_payload().into_latest(),
                     );
 
                     let entries = self

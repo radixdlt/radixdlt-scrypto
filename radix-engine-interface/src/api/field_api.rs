@@ -29,11 +29,21 @@ impl LockFlags {
 
 pub type FieldHandle = u32;
 
+pub trait FieldPayloadMarker {}
+
+impl<T: FieldPayloadMarker> FieldPayloadMarker for &T {}
+
 /// A high level api to read/write fields
 pub trait ClientFieldApi<E: Debug> {
     fn field_read(&mut self, handle: FieldHandle) -> Result<Vec<u8>, E>;
 
-    fn field_read_typed<S: ScryptoDecode>(&mut self, handle: FieldHandle) -> Result<S, E> {
+    fn field_read_typed<
+        // TODO: enable the FieldPayloadMarker bound once all native blueprints have been updated
+        S: ScryptoDecode,
+    >(
+        &mut self,
+        handle: FieldHandle,
+    ) -> Result<S, E> {
         let buf = self.field_read(handle)?;
         let typed_substate: S = scrypto_decode(&buf).map_err(|e| e).unwrap();
         Ok(typed_substate)
@@ -41,12 +51,15 @@ pub trait ClientFieldApi<E: Debug> {
 
     fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), E>;
 
-    fn field_write_typed<S: ScryptoEncode>(
+    fn field_write_typed<
+        // TODO: enable the FieldPayloadMarker bound once all native blueprints have been updated
+        S: ScryptoEncode,
+    >(
         &mut self,
         handle: FieldHandle,
-        substate: S,
+        substate: &S,
     ) -> Result<(), E> {
-        let buf = scrypto_encode(&substate).unwrap();
+        let buf = scrypto_encode(substate).unwrap();
         self.field_write(handle, buf)
     }
 

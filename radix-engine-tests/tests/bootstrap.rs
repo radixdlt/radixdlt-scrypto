@@ -1,10 +1,6 @@
 use radix_engine::blueprints::consensus_manager::ProposerMinuteTimestampSubstate;
-use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::bootstrap::{
-    Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
-    GenesisStakeAllocation, DEFAULT_TESTING_FAUCET_SUPPLY,
-};
+use radix_engine::system::bootstrap::*;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
@@ -12,9 +8,7 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
-use radix_engine_queries::typed_substate_layout::{
-    BurnFungibleResourceEvent, MintFungibleResourceEvent,
-};
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::{CustomGenesis, TestRunnerBuilder};
@@ -234,12 +228,15 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         .unwrap();
 
     let total_supply = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerTotalSupplySubstate>>(
+        .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
             &resource_address.as_node_id(),
             MAIN_BASE_PARTITION,
             &FungibleResourceManagerField::TotalSupply.into(),
         )
-        .unwrap().value.0;
+        .unwrap()
+        .value
+        .0
+        .into_latest();
     assert_eq!(total_supply, allocation_amount);
 
     let key = scrypto_encode("symbol").unwrap();

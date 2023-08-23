@@ -22,7 +22,11 @@ impl FungibleBucketBlueprint {
             FungibleResourceManagerField::Divisibility,
             LockFlags::read_only(),
         )?;
-        let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
+        let divisibility: u8 = api
+            .field_read_typed::<FungibleResourceManagerDivisibilityFieldPayload>(
+                divisibility_handle,
+            )?
+            .into_latest();
         api.field_close(divisibility_handle)?;
         Ok(divisibility)
     }

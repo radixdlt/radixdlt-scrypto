@@ -7,6 +7,9 @@ use radix_engine_interface::api::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
+pub trait SortedIndexKeyPayloadMarker {}
+pub trait SortedIndexEntryPayloadMarker {}
+
 // TODO: Add locked entry interface
 pub trait ClientActorSortedIndexApi<E> {
     /// Inserts an entry into a sorted index
@@ -19,7 +22,10 @@ pub trait ClientActorSortedIndexApi<E> {
     ) -> Result<(), E>;
 
     /// Inserts an entry into a sorted index
-    fn actor_sorted_index_insert_typed<V: ScryptoEncode>(
+    fn actor_sorted_index_insert_typed<
+        // TODO: enable the SortedIndexEntryPayloadMarker bound once all native blueprints have been updated
+        V: ScryptoEncode,
+    >(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: impl CollectionDescriptor,
@@ -43,7 +49,10 @@ pub trait ClientActorSortedIndexApi<E> {
     ) -> Result<Option<Vec<u8>>, E>;
 
     /// Removes an entry from a sorted index
-    fn actor_sorted_index_remove_typed<V: ScryptoDecode>(
+    fn actor_sorted_index_remove_typed<
+        // TODO: add a SortedIndexEntryPayloadMarker bound once all native blueprints have been updated
+        V: ScryptoDecode,
+    >(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: impl CollectionDescriptor,
@@ -64,7 +73,12 @@ pub trait ClientActorSortedIndexApi<E> {
     ) -> Result<Vec<(SortedKey, Vec<u8>)>, E>;
 
     /// Scans the first elements of count from a sorted index
-    fn actor_sorted_index_scan_typed<K: ScryptoDecode, V: ScryptoDecode>(
+    fn actor_sorted_index_scan_typed<
+        // TODO: add a SortedIndexEntryPayloadMarker bound once all native blueprints have been updated
+        K: ScryptoDecode,
+        // TODO: add a SortedIndexKeyPayloadMarker bound once all native blueprints have been updated
+        V: ScryptoDecode,
+    >(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: impl CollectionDescriptor,

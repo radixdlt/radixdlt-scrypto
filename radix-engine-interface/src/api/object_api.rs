@@ -3,6 +3,7 @@ use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
 use crate::constants::{
     METADATA_MODULE_PACKAGE, ROLE_ASSIGNMENT_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
 };
+use crate::internal_prelude::*;
 use crate::types::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
@@ -83,14 +84,24 @@ pub struct FieldValue {
 }
 
 impl FieldValue {
-    pub fn new<E: ScryptoEncode>(value: E) -> Self {
+    pub fn new<
+        // TODO: enable the FieldPayloadMarker bound once all native blueprints have been updated
+        E: ScryptoEncode,
+    >(
+        value: E,
+    ) -> Self {
         Self {
             value: scrypto_encode(&value).unwrap(),
             locked: false,
         }
     }
 
-    pub fn immutable<E: ScryptoEncode>(value: E) -> Self {
+    pub fn immutable<
+        // TODO: enable the FieldPayloadMarker bound once all native blueprints have been updated
+        E: ScryptoEncode,
+    >(
+        value: E,
+    ) -> Self {
         Self {
             value: scrypto_encode(&value).unwrap(),
             locked: true,

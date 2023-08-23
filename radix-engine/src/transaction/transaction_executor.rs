@@ -1,5 +1,9 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
-use crate::blueprints::resource::{BurnFungibleResourceEvent, DepositEvent, PayFeeEvent};
+use crate::blueprints::models::FieldPayload;
+use crate::blueprints::resource::{
+    BurnFungibleResourceEvent, DepositEvent, FungibleVaultBalanceFieldPayload,
+    FungibleVaultBalanceFieldSubstate, FungibleVaultField, PayFeeEvent,
+};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
@@ -698,19 +702,24 @@ where
         // Distribute royalty
         for (recipient, amount) in fee_reserve.royalty_cost_breakdown() {
             let node_id = recipient.vault_id();
-            let substate_key = FungibleVaultField::LiquidFungible.into();
-            let mut substate: FieldSubstate<LiquidFungibleResource> = track
+            let substate_key = FungibleVaultField::Balance.into();
+            let mut vault_balance = track
                 .read_substate(&node_id, MAIN_BASE_PARTITION, &substate_key)
                 .unwrap()
-                .as_typed()
-                .unwrap();
-            substate.value.0.put(LiquidFungibleResource::new(amount));
+                .as_typed::<FungibleVaultBalanceFieldSubstate>()
+                .unwrap()
+                .into_payload()
+                .into_latest();
+            vault_balance.put(LiquidFungibleResource::new(amount));
+            let updated_substate_content =
+                FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
+                    .into_mutable_substate();
             track
                 .set_substate(
                     node_id,
                     MAIN_BASE_PARTITION,
                     substate_key,
-                    IndexedScryptoValue::from_typed(&substate),
+                    IndexedScryptoValue::from_typed(&updated_substate_content),
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
@@ -746,22 +755,27 @@ where
             required = required.safe_sub(amount).unwrap();
 
             // Refund overpayment
-            let mut substate: FieldSubstate<LiquidFungibleResource> = track
+            let mut vault_balance = track
                 .read_substate(
                     &vault_id,
                     MAIN_BASE_PARTITION,
-                    &FungibleVaultField::LiquidFungible.into(),
+                    &FungibleVaultField::Balance.into(),
                 )
                 .unwrap()
-                .as_typed()
-                .unwrap();
-            substate.value.0.put(locked);
+                .as_typed::<FungibleVaultBalanceFieldSubstate>()
+                .unwrap()
+                .into_payload()
+                .into_latest();
+            vault_balance.put(locked);
+            let updated_substate_content =
+                FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
+                    .into_mutable_substate();
             track
                 .set_substate(
                     vault_id,
                     MAIN_BASE_PARTITION,
-                    FungibleVaultField::LiquidFungible.into(),
-                    IndexedScryptoValue::from_typed(&substate),
+                    FungibleVaultField::Balance.into(),
+                    IndexedScryptoValue::from_typed(&updated_substate_content),
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
@@ -862,25 +876,27 @@ where
 
             // Put validator rewards into the vault
             let total_amount = to_proposer.safe_add(to_validator_set).unwrap();
-            let mut substate: FieldSubstate<LiquidFungibleResource> = track
+            let mut vault_balance = track
                 .read_substate(
                     &vault_node_id,
                     MAIN_BASE_PARTITION,
-                    &FungibleVaultField::LiquidFungible.into(),
+                    &FungibleVaultField::Balance.into(),
                 )
                 .unwrap()
-                .as_typed()
-                .unwrap();
-            substate
-                .value
-                .0
-                .put(collected_fees.take_by_amount(total_amount).unwrap());
+                .as_typed::<FungibleVaultBalanceFieldSubstate>()
+                .unwrap()
+                .into_payload()
+                .into_latest();
+            vault_balance.put(collected_fees.take_by_amount(total_amount).unwrap());
+            let updated_substate_content =
+                FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
+                    .into_mutable_substate();
             track
                 .set_substate(
                     vault_node_id,
                     MAIN_BASE_PARTITION,
-                    FungibleVaultField::LiquidFungible.into(),
-                    IndexedScryptoValue::from_typed(&substate),
+                    FungibleVaultField::Balance.into(),
+                    IndexedScryptoValue::from_typed(&updated_substate_content),
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();

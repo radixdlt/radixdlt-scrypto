@@ -6,7 +6,6 @@ use crate::typed_substate_layout::*;
 use radix_engine::blueprints::account;
 use radix_engine::blueprints::native_schema::*;
 use radix_engine::types::*;
-use radix_engine_interface::api::*;
 
 /// Given an [`EventTypeIdentifier`] and the raw event data, this function attempts to convert the
 /// event data into a structured model provided that the event is registered to a native blueprint.
