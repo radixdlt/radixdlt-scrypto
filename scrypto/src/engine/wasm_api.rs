@@ -75,6 +75,8 @@ pub mod object {
 
         /// Globalizes an object with given modules
         pub fn object_globalize(
+            obj_id_ptr: *const u8,
+            obj_id_len: usize,
             modules_ptr: *const u8,
             modules_len: usize,
             address_id_ptr: *const u8,

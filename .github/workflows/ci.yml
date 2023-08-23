@@ -303,7 +303,7 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --features post_run_db_check wasmer \
+          --features wasmer \
           -p radix-engine \
           -p radix-engine-tests
   radix-engine-bench:

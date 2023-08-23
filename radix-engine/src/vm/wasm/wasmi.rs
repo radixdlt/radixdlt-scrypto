@@ -330,6 +330,8 @@ fn fee_balance(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRun
 
 fn globalize_object(
     mut caller: Caller<'_, HostState>,
+    obj_id_ptr: u32,
+    obj_id_len: u32,
     modules_ptr: u32,
     modules_len: u32,
     address_ptr: u32,
@@ -339,6 +341,7 @@ fn globalize_object(
 
     runtime
         .globalize_object(
+            read_memory(caller.as_context_mut(), memory, obj_id_ptr, obj_id_len)?,
             read_memory(caller.as_context_mut(), memory, modules_ptr, modules_len)?,
             read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?,
         )
@@ -845,13 +848,23 @@ impl WasmiModule {
         let host_globalize_object = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
+             obj_ptr: u32,
+             obj_len: u32,
              modules_ptr: u32,
              modules_len: u32,
              address_ptr: u32,
              address_len: u32|
              -> Result<u64, Trap> {
-                globalize_object(caller, modules_ptr, modules_len, address_ptr, address_len)
-                    .map_err(|e| e.into())
+                globalize_object(
+                    caller,
+                    obj_ptr,
+                    obj_len,
+                    modules_ptr,
+                    modules_len,
+                    address_ptr,
+                    address_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 

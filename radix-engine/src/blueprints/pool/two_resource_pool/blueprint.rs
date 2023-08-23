@@ -121,11 +121,11 @@ impl TwoResourcePoolBlueprint {
         };
 
         api.globalize(
+            object_id,
             btreemap!(
-                ObjectModuleId::Main => object_id,
-                ObjectModuleId::RoleAssignment => role_assignment.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
+                ModuleId::RoleAssignment => role_assignment.0,
+                ModuleId::Metadata => metadata.0,
+                ModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;

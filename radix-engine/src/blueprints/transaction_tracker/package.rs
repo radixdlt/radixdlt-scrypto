@@ -5,7 +5,7 @@ use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::{ClientApi, FieldValue, ObjectModuleId};
+use radix_engine_interface::api::{ClientApi, FieldValue, ModuleId};
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
@@ -228,11 +228,11 @@ impl TransactionTrackerBlueprint {
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
+            intent_store,
             btreemap!(
-                ObjectModuleId::Main => intent_store,
-                ObjectModuleId::RoleAssignment => role_assignment.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
+                ModuleId::RoleAssignment => role_assignment.0,
+                ModuleId::Metadata => metadata.0,
+                ModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;

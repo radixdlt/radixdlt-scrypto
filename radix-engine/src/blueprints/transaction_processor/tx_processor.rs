@@ -12,8 +12,7 @@ use native_sdk::resource::NativeFungibleBucket;
 use native_sdk::resource::NativeNonFungibleBucket;
 use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
 use native_sdk::runtime::LocalAuthZone;
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
@@ -64,7 +63,7 @@ pub enum TransactionProcessorError {
 pub struct TransactionProcessorBlueprint;
 
 macro_rules! handle_call_method {
-    ($module_id:expr, $node_id:expr, $direct_access:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
+    ($node_id:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
         let mut processor_with_api = TransactionProcessorWithApi {
             worktop: $worktop,
             processor: $processor,
@@ -73,10 +72,51 @@ macro_rules! handle_call_method {
         let scrypto_value = transform($args, &mut processor_with_api)?;
         $processor = processor_with_api.processor;
 
-        let rtn = $api.call_method_advanced(
+        let rtn = $api.call_method(
+            $node_id,
+            &$method_name,
+            scrypto_encode(&scrypto_value).unwrap(),
+        )?;
+        let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+        $processor.handle_call_return_data(&result, &$worktop, $api)?;
+        InstructionOutput::CallReturn(result.into())
+    }};
+}
+
+macro_rules! handle_call_direct_method {
+    ($node_id:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
+        let mut processor_with_api = TransactionProcessorWithApi {
+            worktop: $worktop,
+            processor: $processor,
+            api: $api,
+        };
+        let scrypto_value = transform($args, &mut processor_with_api)?;
+        $processor = processor_with_api.processor;
+
+        let rtn = $api.call_direct_access_method(
+            $node_id,
+            &$method_name,
+            scrypto_encode(&scrypto_value).unwrap(),
+        )?;
+        let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+        $processor.handle_call_return_data(&result, &$worktop, $api)?;
+        InstructionOutput::CallReturn(result.into())
+    }};
+}
+
+macro_rules! handle_call_module_method {
+    ($module_id:expr, $node_id:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
+        let mut processor_with_api = TransactionProcessorWithApi {
+            worktop: $worktop,
+            processor: $processor,
+            api: $api,
+        };
+        let scrypto_value = transform($args, &mut processor_with_api)?;
+        $processor = processor_with_api.processor;
+
+        let rtn = $api.call_module_method(
             $node_id,
             $module_id,
-            $direct_access,
             &$method_name,
             scrypto_encode(&scrypto_value).unwrap(),
         )?;
@@ -107,16 +147,14 @@ impl TransactionProcessorBlueprint {
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {
-                        global: false,
-                        module_versions: btreemap!(
-                            ObjectModuleId::Main => BlueprintVersion::default(),
-                        ),
                         blueprint_info: BlueprintInfo {
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
+                            blueprint_version: BlueprintVersion::default(),
                             generic_substitutions: Vec::new(),
                             outer_obj_info: OuterObjectInfo::default(),
                             features: btreeset!(),
-                        }
+                        },
+                        object_type: ObjectType::Owned,
                     })
                 )
             ),
@@ -308,9 +346,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_method!(
-                        ObjectModuleId::Main,
                         address.as_node_id(),
-                        false,
                         method_name,
                         args,
                         worktop,
@@ -324,10 +360,9 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_call_method!(
-                        ObjectModuleId::Royalty,
+                    handle_call_module_method!(
+                        ModuleId::Royalty,
                         address.as_node_id(),
-                        false,
                         method_name,
                         args,
                         worktop,
@@ -341,10 +376,9 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_call_method!(
-                        ObjectModuleId::Metadata,
+                    handle_call_module_method!(
+                        ModuleId::Metadata,
                         address.as_node_id(),
-                        false,
                         method_name,
                         args,
                         worktop,
@@ -358,10 +392,9 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_call_method!(
-                        ObjectModuleId::RoleAssignment,
+                    handle_call_module_method!(
+                        ModuleId::RoleAssignment,
                         address.as_node_id(),
-                        false,
                         method_name,
                         args,
                         worktop,
@@ -374,10 +407,8 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
-                    handle_call_method!(
-                        ObjectModuleId::Main,
+                    handle_call_direct_method!(
                         address.as_node_id(),
-                        true,
                         method_name,
                         args,
                         worktop,

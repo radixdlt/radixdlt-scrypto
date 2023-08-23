@@ -320,6 +320,8 @@ impl WasmerModule {
 
         pub fn object_globalize(
             env: &WasmerInstanceEnv,
+            obj_ptr: u32,
+            obj_len: u32,
             modules_ptr: u32,
             modules_len: u32,
             address_ptr: u32,
@@ -329,6 +331,7 @@ impl WasmerModule {
 
             let buffer = runtime
                 .globalize_object(
+                    read_memory(&instance, obj_ptr, obj_len)?,
                     read_memory(&instance, modules_ptr, modules_len)?,
                     read_memory(&instance, address_ptr, address_len)?,
                 )

@@ -16,7 +16,9 @@ use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{
+    ClientApi, CollectionIndex, FieldValue, ModuleId, ACTOR_STATE_SELF,
+};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{metadata_init, mint_roles, rule};
@@ -317,11 +319,11 @@ impl ConsensusManagerBlueprint {
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(
+            consensus_manager_id,
             btreemap!(
-                ObjectModuleId::Main => consensus_manager_id,
-                ObjectModuleId::RoleAssignment => role_assignment.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
+                ModuleId::RoleAssignment => role_assignment.0,
+                ModuleId::Metadata => metadata.0,
+                ModuleId::Royalty => royalty.0,
             ),
             Some(consensus_manager_address_reservation),
         )?;

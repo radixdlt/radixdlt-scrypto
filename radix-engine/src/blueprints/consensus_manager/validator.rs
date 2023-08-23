@@ -13,9 +13,8 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
+    ClientApi, FieldValue, ModuleId, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -1337,11 +1336,11 @@ impl ValidatorCreator {
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(
+            validator_id,
             btreemap!(
-                ObjectModuleId::Main => validator_id,
-                ObjectModuleId::RoleAssignment => role_assignment.0.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
+                ModuleId::RoleAssignment => role_assignment.0.0,
+                ModuleId::Metadata => metadata.0,
+                ModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;

@@ -45,11 +45,11 @@ mod component_module {
             let role_assignment: Own = scrypto_decode(&rtn).unwrap();
 
             let address = ScryptoVmV1Api::object_globalize(
+                *component.0.handle().as_node_id(),
                 btreemap!(
-                    ObjectModuleId::Main => *component.0.handle().as_node_id(),
-                    ObjectModuleId::RoleAssignment => metadata.0,
-                    ObjectModuleId::Metadata => royalty.0,
-                    ObjectModuleId::Royalty => role_assignment.0,
+                    ModuleId::RoleAssignment => metadata.0,
+                    ModuleId::Metadata => royalty.0,
+                    ModuleId::Royalty => role_assignment.0,
                 ),
                 None,
             );

@@ -9,9 +9,7 @@ use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentRoyaltySetInput, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
-use radix_engine_interface::api::{
-    ClientApi, FieldValue, LockFlags, ObjectModuleId, ACTOR_STATE_SELF,
-};
+use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, ModuleId, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -35,10 +33,9 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         {
             let node_id = input.references()[0];
-            let _ = api.call_method_advanced(
+            let _ = api.call_module_method(
                 &node_id,
-                ObjectModuleId::Royalty,
-                false,
+                ModuleId::Royalty,
                 COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
                 scrypto_encode(&ComponentRoyaltySetInput {
                     method: "some_method".to_string(),
@@ -82,9 +79,7 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(
-                ObjectModuleId::Royalty
-            ))
+            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(ModuleId::Royalty))
         )
     });
 }
@@ -120,10 +115,9 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
             match export_name {
                 "test" => {
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, btreemap![])?;
-                    let _ = api.call_method_advanced(
+                    let _ = api.call_module_method(
                         &node_id,
-                        ObjectModuleId::Metadata,
-                        false,
+                        ModuleId::Metadata,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: "key".to_string(),
@@ -162,9 +156,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(
-                ObjectModuleId::Metadata
-            ))
+            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(ModuleId::Metadata))
         )
     });
 }
@@ -211,11 +203,11 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                             ComponentRoyalty::create(ComponentRoyaltyConfig::Disabled, api)?;
 
                         let address = api.globalize(
+                            parent,
                             btreemap!(
-                                ObjectModuleId::Main => parent,
-                                ObjectModuleId::Metadata => metadata.0,
-                                ObjectModuleId::RoleAssignment => role_assignment.0.0,
-                                ObjectModuleId::Royalty => royalty.0,
+                                ModuleId::Metadata => metadata.0,
+                                ModuleId::RoleAssignment => role_assignment.0.0,
+                                ModuleId::Royalty => royalty.0,
                             ),
                             None,
                         )?;
@@ -233,10 +225,9 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                         api.actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::read_only())?;
                     let child: Option<Own> = api.field_read_typed(handle)?;
 
-                    let _ = api.call_method_advanced(
+                    let _ = api.call_module_method(
                         &child.unwrap().0,
-                        ObjectModuleId::Metadata,
-                        false,
+                        ModuleId::Metadata,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: "key".to_string(),
@@ -281,9 +272,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(
-                ObjectModuleId::Metadata
-            ))
+            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(ModuleId::Metadata))
         )
     });
 }
