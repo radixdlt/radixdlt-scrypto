@@ -1,6 +1,7 @@
 use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError};
+use crate::internal_prelude::*;
 use crate::types::*;
 use crate::{event_schema, roles_template};
 use native_sdk::modules::metadata::Metadata;
@@ -24,15 +25,12 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
-    FunctionSchemaInit, ReceiverInfo, TypeRef,
+    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use sbor::rust::prelude::*;
-use crate::internal_prelude::*;
-
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {
@@ -448,18 +446,14 @@ impl AccessControllerBlueprint {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
             feature_set: btreeset!(),
-            dependencies: btreeset!(
-                PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-            ),
+            dependencies: btreeset!(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),),
 
             schema: BlueprintSchemaInit {
                 generics: vec![],
                 schema,
                 state,
                 events,
-                functions: BlueprintFunctionsSchemaInit {
-                    functions,
-                },
+                functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit::default(),
             },
 
@@ -498,18 +492,16 @@ impl AccessControllerBlueprint {
                         ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => ["primary", "confirmation", "recovery"];
                     }
                 )),
-            }
+            },
         }
     }
-
-
 
     pub fn create_global<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerCreateInput = input
             .as_typed()
@@ -643,8 +635,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerCreateProofInput = input
             .as_typed()
@@ -659,8 +651,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerInitiateRecoveryAsPrimaryInput = input
             .as_typed()
@@ -692,8 +684,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerInitiateRecoveryAsRecoveryInput = input
             .as_typed()
@@ -725,8 +717,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         input
             .as_typed::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>()
@@ -751,8 +743,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         input
             .as_typed::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>()
@@ -778,8 +770,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput = input
             .as_typed()
@@ -814,8 +806,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput = input
             .as_typed()
@@ -850,8 +842,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         input
             .as_typed::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>()
@@ -879,8 +871,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         input
             .as_typed::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>()
@@ -908,8 +900,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerTimedConfirmRecoveryInput = input
             .as_typed()
@@ -944,8 +936,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerCancelPrimaryRoleRecoveryProposalInput = input
             .as_typed()
@@ -970,8 +962,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerCancelRecoveryRoleRecoveryProposalInput = input
             .as_typed()
@@ -996,8 +988,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         input
             .as_typed::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>()
@@ -1022,8 +1014,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         input
             .as_typed::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>()
@@ -1048,8 +1040,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerLockPrimaryRoleInput = input
             .as_typed()
@@ -1065,8 +1057,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AccessControllerUnlockPrimaryRoleInput = input
             .as_typed()
@@ -1082,8 +1074,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let input: AccessControllerStopTimedRecoveryInput = input
             .as_typed()
@@ -1107,8 +1099,8 @@ impl AccessControllerBlueprint {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let AccessControllerMintRecoveryBadgesInput {
             non_fungible_local_ids,
@@ -1117,11 +1109,15 @@ impl AccessControllerBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let resource_address = {
-            let handle =
-                api.actor_open_field(ACTOR_STATE_SELF, AccessControllerField::State.field_index(), LockFlags::read_only())?;
+            let handle = api.actor_open_field(
+                ACTOR_STATE_SELF,
+                AccessControllerField::State.field_index(),
+                LockFlags::read_only(),
+            )?;
 
             let access_controller = {
-                let access_controller: AccessControllerStateFieldPayload = api.field_read_typed(handle)?;
+                let access_controller: AccessControllerStateFieldPayload =
+                    api.field_read_typed(handle)?;
                 access_controller.into_latest()
             };
             access_controller.recovery_badge
@@ -1143,15 +1139,12 @@ impl AccessControllerBlueprint {
             scrypto_encode(&NonFungibleResourceManagerMintInput {
                 entries: non_fungibles,
             })
-                .unwrap(),
+            .unwrap(),
         )?;
 
         Ok(IndexedScryptoValue::from_slice(&rtn).unwrap())
     }
 }
-
-
-
 
 //=========
 // Helpers
@@ -1178,11 +1171,15 @@ fn transition<Y, I>(
     api: &mut Y,
     input: I,
 ) -> Result<<AccessControllerSubstate as Transition<I>>::Output, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-        AccessControllerSubstate: Transition<I>,
+where
+    Y: ClientApi<RuntimeError>,
+    AccessControllerSubstate: Transition<I>,
 {
-    let handle = api.actor_open_field(ACTOR_STATE_SELF, AccessControllerField::State.field_index(), LockFlags::read_only())?;
+    let handle = api.actor_open_field(
+        ACTOR_STATE_SELF,
+        AccessControllerField::State.field_index(),
+        LockFlags::read_only(),
+    )?;
 
     let access_controller = {
         let access_controller: AccessControllerStateFieldPayload = api.field_read_typed(handle)?;
@@ -1200,11 +1197,15 @@ fn transition_mut<Y, I>(
     api: &mut Y,
     input: I,
 ) -> Result<<AccessControllerSubstate as TransitionMut<I>>::Output, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-        AccessControllerSubstate: TransitionMut<I>,
+where
+    Y: ClientApi<RuntimeError>,
+    AccessControllerSubstate: TransitionMut<I>,
 {
-    let handle = api.actor_open_field(ACTOR_STATE_SELF, AccessControllerField::State.field_index(), LockFlags::MUTABLE)?;
+    let handle = api.actor_open_field(
+        ACTOR_STATE_SELF,
+        AccessControllerField::State.field_index(),
+        LockFlags::MUTABLE,
+    )?;
 
     let mut access_controller = {
         let access_controller: AccessControllerStateFieldPayload = api.field_read_typed(handle)?;
@@ -1214,7 +1215,10 @@ fn transition_mut<Y, I>(
     let rtn = access_controller.transition_mut(api, input)?;
 
     {
-        api.field_write_typed(handle, &AccessControllerStateFieldPayload::from_content_source(access_controller))?;
+        api.field_write_typed(
+            handle,
+            &AccessControllerStateFieldPayload::from_content_source(access_controller),
+        )?;
     }
 
     api.field_close(handle)?;
@@ -1227,8 +1231,8 @@ fn update_role_assignment<Y>(
     receiver: &NodeId,
     rule_set: RuleSet,
 ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+where
+    Y: ClientApi<RuntimeError>,
 {
     let attached = AttachedRoleAssignment(receiver.clone());
     attached.set_role(
@@ -1252,4 +1256,3 @@ fn update_role_assignment<Y>(
 
     Ok(())
 }
-

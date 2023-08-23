@@ -6,8 +6,12 @@ use radix_engine_interface::api::{CollectionIndex, ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_store_interface::db_key_mapper::{MappedCommittableSubstateDatabase, SubstateKeyContent};
-use radix_engine_store_interface::interface::{CommittableSubstateDatabase, ListableSubstateDatabase};
+use radix_engine_store_interface::db_key_mapper::{
+    MappedCommittableSubstateDatabase, SubstateKeyContent,
+};
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, ListableSubstateDatabase,
+};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -943,17 +947,13 @@ impl<'a, S: SubstateDatabase + ListableSubstateDatabase> SystemDatabaseReader<'a
     }
 }
 
-
-
 pub struct SystemDatabaseWriter<'a, S: SubstateDatabase + CommittableSubstateDatabase> {
     substate_db: &'a mut S,
 }
 
 impl<'a, S: SubstateDatabase + CommittableSubstateDatabase> SystemDatabaseWriter<'a, S> {
     pub fn new(substate_db: &'a mut S) -> Self {
-        Self {
-            substate_db,
-        }
+        Self { substate_db }
     }
 
     pub fn write_typed_object_field<V: ScryptoEncode>(
@@ -985,9 +985,12 @@ impl<'a, S: SubstateDatabase + CommittableSubstateDatabase> SystemDatabaseWriter
             PartitionDescription::Physical(partition_number) => *partition_number,
         };
 
-        self
-            .substate_db
-            .put_mapped::<SpreadPrefixKeyMapper, _>(node_id, partition_number, &SubstateKey::Field(field_index), &FieldSubstate::new_field(value));
+        self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+            node_id,
+            partition_number,
+            &SubstateKey::Field(field_index),
+            &FieldSubstate::new_field(value),
+        );
 
         Ok(())
     }

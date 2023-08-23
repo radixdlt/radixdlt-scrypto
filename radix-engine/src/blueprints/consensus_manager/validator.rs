@@ -2,7 +2,9 @@ use crate::blueprints::consensus_manager::*;
 use crate::blueprints::util::SecurifiedRoleAssignment;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::types::*;
+use crate::{event_schema, roles_template};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
@@ -16,12 +18,12 @@ use radix_engine_interface::api::{
     ClientApi, FieldValue, ModuleId, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::consensus_manager::*;
+use radix_engine_interface::blueprints::package::{
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{burn_roles, metadata_init, mint_roles, rule};
-use radix_engine_interface::blueprints::package::{AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate};
 use sbor::rust::mem;
-use crate::{event_schema, roles_template};
-use crate::internal_prelude::*;
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
@@ -318,13 +320,11 @@ impl ValidatorBlueprint {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: TypeRef::Static(
                     aggregator
-                        .add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeInput>(
-                        ),
+                        .add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeInput>(),
                 ),
                 output: TypeRef::Static(
                     aggregator
-                        .add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeOutput>(
-                        ),
+                        .add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeOutput>(),
                 ),
                 export: VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT.to_string(),
             },
@@ -354,8 +354,7 @@ impl ValidatorBlueprint {
                 ),
                 output: TypeRef::Static(
                     aggregator
-                        .add_child_type_and_descendents::<ValidatorTotalStakeUnitSupplyOutput>(
-                        ),
+                        .add_child_type_and_descendents::<ValidatorTotalStakeUnitSupplyOutput>(),
                 ),
                 export: VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT.to_string(),
             },
@@ -365,8 +364,7 @@ impl ValidatorBlueprint {
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<ValidatorGetRedemptionValueInput>(),
+                    aggregator.add_child_type_and_descendents::<ValidatorGetRedemptionValueInput>(),
                 ),
                 output: TypeRef::Static(
                     aggregator
@@ -554,7 +552,9 @@ impl ValidatorBlueprint {
             ValidatorField::State.field_index(),
             LockFlags::read_only(),
         )?;
-        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
         api.field_close(handle)?;
         if !substate.accepts_delegated_stake {
             // TODO: Should this be an Option returned instead similar to Account?
@@ -580,7 +580,9 @@ impl ValidatorBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut validator = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let mut validator = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // Stake
         let (stake_unit_bucket, new_stake_amount) = {
@@ -603,7 +605,10 @@ impl ValidatorBlueprint {
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
         validator.sorted_key = new_index_key;
-        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(validator))?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(validator),
+        )?;
 
         Runtime::emit_event(
             api,
@@ -626,7 +631,9 @@ impl ValidatorBlueprint {
             ValidatorField::State.field_index(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator_substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let mut validator_substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // Unstake
         let (unstake_bucket, new_stake_amount) = {
@@ -648,8 +655,9 @@ impl ValidatorBlueprint {
                 ConsensusManagerField::State.into(),
                 LockFlags::read_only(),
             )?;
-            let manager_substate =
-                api.field_read_typed::<ConsensusManagerStateFieldPayload>(manager_handle)?.into_latest();
+            let manager_substate = api
+                .field_read_typed::<ConsensusManagerStateFieldPayload>(manager_handle)?
+                .into_latest();
             let current_epoch = manager_substate.epoch;
             api.field_close(manager_handle)?;
 
@@ -658,8 +666,9 @@ impl ValidatorBlueprint {
                 ConsensusManagerField::Configuration.into(),
                 LockFlags::read_only(),
             )?;
-            let config_substate =
-                api.field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?.into_latest();
+            let config_substate = api
+                .field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?
+                .into_latest();
             api.field_close(config_handle)?;
 
             let claim_epoch = current_epoch.after(config_substate.config.num_unstake_epochs);
@@ -687,7 +696,10 @@ impl ValidatorBlueprint {
         )?;
 
         validator_substate.sorted_key = new_index_key;
-        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(validator_substate))?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(validator_substate),
+        )?;
 
         Runtime::emit_event(
             api,
@@ -722,10 +734,14 @@ impl ValidatorBlueprint {
             ValidatorField::ProtocolUpdateReadinessSignal.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut signal =
-            api.field_read_typed::<ValidatorProtocolUpdateReadinessSignalFieldPayload>(handle)?.into_latest();
+        let mut signal = api
+            .field_read_typed::<ValidatorProtocolUpdateReadinessSignalFieldPayload>(handle)?
+            .into_latest();
         signal.protocol_version_name = Some(protocol_version_name.clone());
-        api.field_write_typed(handle, &ValidatorProtocolUpdateReadinessSignalFieldPayload::from_content_source(signal))?;
+        api.field_write_typed(
+            handle,
+            &ValidatorProtocolUpdateReadinessSignalFieldPayload::from_content_source(signal),
+        )?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -747,8 +763,9 @@ impl ValidatorBlueprint {
             ValidatorField::ProtocolUpdateReadinessSignal.into(),
             LockFlags::read_only(),
         )?;
-        let signal =
-            api.field_read_typed::<ValidatorProtocolUpdateReadinessSignalFieldPayload>(handle)?.into_latest();
+        let signal = api
+            .field_read_typed::<ValidatorProtocolUpdateReadinessSignalFieldPayload>(handle)?
+            .into_latest();
         api.field_close(handle)?;
 
         Ok(signal.protocol_version_name)
@@ -764,7 +781,9 @@ impl ValidatorBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut validator = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let mut validator = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
         // No update
         if validator.is_registered == new_registered {
             return Ok(());
@@ -779,7 +798,10 @@ impl ValidatorBlueprint {
 
         validator.is_registered = new_registered;
         validator.sorted_key = index_key;
-        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(validator))?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(validator),
+        )?;
 
         if new_registered {
             Runtime::emit_event(api, RegisterValidatorEvent)?;
@@ -844,7 +866,9 @@ impl ValidatorBlueprint {
             ValidatorField::State.field_index(),
             LockFlags::read_only(),
         )?;
-        let validator = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let validator = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
         let mut nft_resman = ResourceManager(validator.claim_nft);
         let resource_address = validator.claim_nft;
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
@@ -861,7 +885,9 @@ impl ValidatorBlueprint {
                 ConsensusManagerField::State.field_index(),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate = api.field_read_typed::<ConsensusManagerStateFieldPayload>(mgr_handle)?.into_latest();
+            let mgr_substate = api
+                .field_read_typed::<ConsensusManagerStateFieldPayload>(mgr_handle)?
+                .into_latest();
             let epoch = mgr_substate.epoch;
             api.field_close(mgr_handle)?;
             epoch
@@ -902,7 +928,9 @@ impl ValidatorBlueprint {
             ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let mut validator = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // Update Consensus Manager
         {
@@ -917,7 +945,10 @@ impl ValidatorBlueprint {
         }
 
         validator.key = key;
-        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(validator))?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(validator),
+        )?;
 
         Ok(())
     }
@@ -935,8 +966,9 @@ impl ValidatorBlueprint {
             ConsensusManagerField::State.into(),
             LockFlags::read_only(),
         )?;
-        let consensus_manager =
-            api.field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?.into_latest();
+        let consensus_manager = api
+            .field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?
+            .into_latest();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
@@ -946,8 +978,9 @@ impl ValidatorBlueprint {
             ConsensusManagerField::Configuration.into(),
             LockFlags::read_only(),
         )?;
-        let config_substate =
-            api.field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?.into_latest();
+        let config_substate = api
+            .field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?
+            .into_latest();
         api.field_close(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
@@ -956,7 +989,9 @@ impl ValidatorBlueprint {
             ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // - promote any currently pending change if it became effective already
         if let Some(previous_request) = substate.validator_fee_change_request {
@@ -977,7 +1012,10 @@ impl ValidatorBlueprint {
             epoch_effective,
             new_fee_factor,
         });
-        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
         api.field_close(handle)?;
 
         Ok(())
@@ -993,7 +1031,9 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
         api.field_close(handle)?;
 
         Ok(substate.accepts_delegated_stake)
@@ -1009,7 +1049,9 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
         let stake_vault = Vault(substate.stake_xrd_vault_id);
         let stake_amount = stake_vault.amount(api)?;
         api.field_close(handle)?;
@@ -1027,7 +1069,9 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
         let stake_resource = ResourceManager(substate.stake_unit_resource);
         let total_stake_unit_supply = stake_resource.total_supply(api)?.unwrap();
         api.field_close(handle)?;
@@ -1048,7 +1092,9 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
         let redemption_value =
             Self::calculate_redemption_value(amount_of_stake_units, &substate, api)?;
         api.field_close(handle)?;
@@ -1068,9 +1114,14 @@ impl ValidatorBlueprint {
             ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
         substate.accepts_delegated_stake = accept_delegated_stake;
-        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -1098,7 +1149,9 @@ impl ValidatorBlueprint {
             ValidatorField::State.into(),
             LockFlags::read_only(),
         )?;
-        let substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         Vault(substate.locked_owner_stake_unit_vault_id).put(stake_unit_bucket, api)?;
 
@@ -1123,8 +1176,9 @@ impl ValidatorBlueprint {
             ConsensusManagerField::State.into(),
             LockFlags::read_only(),
         )?;
-        let consensus_manager =
-            api.field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?.into_latest();
+        let consensus_manager = api
+            .field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?
+            .into_latest();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
@@ -1134,8 +1188,9 @@ impl ValidatorBlueprint {
             ConsensusManagerField::Configuration.into(),
             LockFlags::read_only(),
         )?;
-        let config_substate =
-            api.field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?.into_latest();
+        let config_substate = api
+            .field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?
+            .into_latest();
         api.field_close(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
@@ -1144,7 +1199,9 @@ impl ValidatorBlueprint {
             ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // - move the already-available withdrawals to a dedicated field
         Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
@@ -1164,7 +1221,10 @@ impl ValidatorBlueprint {
         let mut locked_owner_stake_unit_vault = Vault(substate.locked_owner_stake_unit_vault_id);
         let mut pending_owner_stake_unit_unlock_vault =
             Vault(substate.pending_owner_stake_unit_unlock_vault_id);
-        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
 
         // move the requested stake units from the "locked vault" to the "pending withdrawal vault"
         let pending_unlock_stake_unit_bucket =
@@ -1188,8 +1248,9 @@ impl ValidatorBlueprint {
             ConsensusManagerField::State.into(),
             LockFlags::read_only(),
         )?;
-        let consensus_manager =
-            api.field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?.into_latest();
+        let consensus_manager = api
+            .field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?
+            .into_latest();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
@@ -1199,7 +1260,9 @@ impl ValidatorBlueprint {
             ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
         let total_already_available_amount = mem::replace(
@@ -1209,7 +1272,10 @@ impl ValidatorBlueprint {
 
         let mut pending_owner_stake_unit_unlock_vault =
             Vault(substate.pending_owner_stake_unit_unlock_vault_id);
-        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
 
         // return the already-available withdrawals
         let already_available_stake_unit_bucket =
@@ -1265,7 +1331,9 @@ impl ValidatorBlueprint {
             ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // - resolve the effective validator fee factor
         let effective_validator_fee_factor = match &substate.validator_fee_change_request {
@@ -1312,7 +1380,10 @@ impl ValidatorBlueprint {
 
         // ...end the read+modify+write of the validator substate (event can be emitted afterwards)
         substate.sorted_key = new_index_key;
-        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -1345,7 +1416,9 @@ impl ValidatorBlueprint {
             ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate = api.field_read_typed::<ValidatorStateFieldPayload>(handle)?.into_latest();
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // Get the total reward amount
         let total_reward_xrd = xrd_bucket.amount(api)?;
@@ -1373,7 +1446,10 @@ impl ValidatorBlueprint {
 
         // Flush validator substate changes
         substate.sorted_key = new_index_key;
-        api.field_write_typed(handle, &ValidatorStateFieldPayload::from_content_source(substate))?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -1417,10 +1493,11 @@ impl ValidatorBlueprint {
             } => {
                 api.actor_sorted_index_insert_typed(
                     ACTOR_STATE_OUTER_OBJECT,
-                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex
+                        .collection_index(),
                     index_key,
                     ConsensusManagerRegisteredValidatorByStakeEntryPayload::from_content_source(
-                        Validator { key, stake }
+                        Validator { key, stake },
                     ),
                 )?;
             }
@@ -1435,9 +1512,12 @@ impl ValidatorBlueprint {
                 validator.key = key;
                 api.actor_sorted_index_insert_typed(
                     ACTOR_STATE_OUTER_OBJECT,
-                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex
+                        .collection_index(),
                     index_key,
-                    ConsensusManagerRegisteredValidatorByStakeEntryPayload::from_content_source(validator),
+                    ConsensusManagerRegisteredValidatorByStakeEntryPayload::from_content_source(
+                        validator,
+                    ),
                 )?;
             }
             UpdateSecondaryIndex::UpdateStake {
@@ -1455,15 +1535,19 @@ impl ValidatorBlueprint {
                 validator.stake = new_stake_amount;
                 api.actor_sorted_index_insert_typed(
                     ACTOR_STATE_OUTER_OBJECT,
-                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex
+                        .collection_index(),
                     new_index_key,
-                    ConsensusManagerRegisteredValidatorByStakeEntryPayload::from_content_source(validator),
+                    ConsensusManagerRegisteredValidatorByStakeEntryPayload::from_content_source(
+                        validator,
+                    ),
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
                 api.actor_sorted_index_remove(
                     ACTOR_STATE_OUTER_OBJECT,
-                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex
+                        .collection_index(),
                     &index_key,
                 )?;
             }

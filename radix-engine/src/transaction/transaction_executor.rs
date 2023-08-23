@@ -1,4 +1,7 @@
-use crate::blueprints::consensus_manager::{ConsensusManagerField, ConsensusManagerStateFieldPayload, ConsensusManagerValidatorRewardsFieldPayload, VersionedConsensusManagerValidatorRewards};
+use crate::blueprints::consensus_manager::{
+    ConsensusManagerField, ConsensusManagerStateFieldPayload,
+    ConsensusManagerValidatorRewardsFieldPayload, VersionedConsensusManagerValidatorRewards,
+};
 use crate::blueprints::models::FieldPayload;
 use crate::blueprints::resource::{
     BurnFungibleResourceEvent, DepositEvent, FungibleVaultBalanceFieldPayload,
@@ -451,7 +454,8 @@ where
             &ConsensusManagerField::State.into(),
         ) {
             Some(x) => {
-                let substate: FieldSubstate<ConsensusManagerStateFieldPayload> = x.as_typed().unwrap();
+                let substate: FieldSubstate<ConsensusManagerStateFieldPayload> =
+                    x.as_typed().unwrap();
                 Some(substate.value.0.into_latest().epoch)
             }
             None => None,
@@ -855,10 +859,7 @@ where
             if let Some(current_leader) = current_leader {
                 match &mut substate.value.0.content {
                     VersionedConsensusManagerValidatorRewards::V1(rewards) => {
-                        let entry = rewards
-                            .proposer_rewards
-                            .entry(current_leader)
-                            .or_default();
+                        let entry = rewards.proposer_rewards.entry(current_leader).or_default();
                         *entry = entry.safe_add(to_proposer).unwrap()
                     }
                 }
@@ -867,7 +868,7 @@ where
             };
             let vault_node_id = match &substate.value.0.content {
                 VersionedConsensusManagerValidatorRewards::V1(rewards) => {
-                    rewards.rewards_vault.0.0
+                    rewards.rewards_vault.0 .0
                 }
             };
 

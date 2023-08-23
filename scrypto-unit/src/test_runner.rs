@@ -23,7 +23,6 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
@@ -42,9 +41,7 @@ use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::db_key_mapper::{
-    MappedSubstateDatabase, SpreadPrefixKeyMapper,
-};
+use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, ListableSubstateDatabase,
     SubstateDatabase,
@@ -517,46 +514,41 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
-        let accumulator = self
-            .database
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ComponentRoyaltySubstate>>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let accumulator = reader
+            .read_typed_object_field::<ComponentRoyaltyAccumulatorFieldPayload>(
                 component_address.as_node_id(),
-                ROYALTY_FIELDS_PARTITION,
-                &RoyaltyField::RoyaltyAccumulator.into(),
-            )
-            .unwrap()
-            .value
-            .0;
-        self.database
-            .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
+                ObjectModuleId::Royalty,
+                ComponentRoyaltyField::Accumulator.field_index(),
+            ).unwrap().into_latest();
+
+        let balance = reader
+            .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
                 accumulator.royalty_vault.0.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &FungibleVaultField::Balance.into(),
-            )
-            .unwrap()
-            .into_payload()
-            .into_latest()
-            .amount()
+                ObjectModuleId::Main,
+                FungibleVaultField::Balance.field_index(),
+            ).unwrap().into_latest();
+
+        balance.amount()
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        let output = self
-            .database
-            .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltyAccumulatorFieldSubstate>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let accumulator = reader
+            .read_typed_object_field::<PackageRoyaltyAccumulatorFieldPayload>(
                 package_address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &PackageField::RoyaltyAccumulator.into(),
-            )?
-            .value
-            .0;
+                ObjectModuleId::Main,
+                PackageField::RoyaltyAccumulator.field_index(),
+            ).ok()?.into_latest();
 
-        self.database
-            .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
-                output.into_latest().royalty_vault.0.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &FungibleVaultField::Balance.into(),
-            )
-            .map(|r| r.into_payload().into_latest().amount())
+        let balance = reader
+            .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
+                accumulator.royalty_vault.0.as_node_id(),
+                ObjectModuleId::Main,
+                FungibleVaultField::Balance.field_index(),
+            ).unwrap().into_latest();
+
+        Some(balance.amount())
     }
 
     pub fn find_all_nodes(&self) -> IndexSet<NodeId> {
@@ -867,22 +859,28 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
     pub fn get_validator_info(&self, address: ComponentAddress) -> ValidatorSubstate {
         let reader = SystemDatabaseReader::new(&self.database);
-        let substate = reader.read_typed_object_field::<ValidatorStateFieldPayload>(
-            address.as_node_id(),
-            ObjectModuleId::Main,
-            ValidatorField::State.field_index()
-        ).unwrap().into_latest();
+        let substate = reader
+            .read_typed_object_field::<ValidatorStateFieldPayload>(
+                address.as_node_id(),
+                ObjectModuleId::Main,
+                ValidatorField::State.field_index(),
+            )
+            .unwrap()
+            .into_latest();
 
         substate
     }
 
     pub fn get_active_validator_with_key(&self, key: &Secp256k1PublicKey) -> ComponentAddress {
         let reader = SystemDatabaseReader::new(&self.database);
-        let substate = reader.read_typed_object_field::<ConsensusManagerCurrentValidatorSetFieldPayload>(
-            CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
-            ConsensusManagerField::CurrentValidatorSet.field_index()
-        ).unwrap().into_latest();
+        let substate = reader
+            .read_typed_object_field::<ConsensusManagerCurrentValidatorSetFieldPayload>(
+                CONSENSUS_MANAGER.as_node_id(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::CurrentValidatorSet.field_index(),
+            )
+            .unwrap()
+            .into_latest();
         substate
             .validator_set
             .get_by_public_key(key)
@@ -1872,21 +1870,26 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
     pub fn set_current_epoch(&mut self, epoch: Epoch) {
         let reader = SystemDatabaseReader::new(&self.database);
-        let mut substate = reader.read_typed_object_field::<ConsensusManagerStateFieldPayload>(
-            CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
-            ConsensusManagerField::State.field_index()
-        ).unwrap().into_latest();
+        let mut substate = reader
+            .read_typed_object_field::<ConsensusManagerStateFieldPayload>(
+                CONSENSUS_MANAGER.as_node_id(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::State.field_index(),
+            )
+            .unwrap()
+            .into_latest();
 
         substate.epoch = epoch;
 
         let mut writer = SystemDatabaseWriter::new(&mut self.database);
-        writer.write_typed_object_field(
-            CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
-            ConsensusManagerField::State.field_index(),
+        writer
+            .write_typed_object_field(
+                CONSENSUS_MANAGER.as_node_id(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::State.field_index(),
                 ConsensusManagerStateFieldPayload::from_content_source(substate),
-        ).unwrap();
+            )
+            .unwrap();
     }
 
     pub fn get_current_epoch(&mut self) -> Epoch {

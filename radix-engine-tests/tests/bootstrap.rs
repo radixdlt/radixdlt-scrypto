@@ -1,6 +1,6 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::system::{KeyValueEntrySubstate};
+use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::system::system_db_checker::SystemDatabaseChecker;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::system::system_modules::auth::AuthError;
@@ -442,11 +442,14 @@ fn test_genesis_time() {
         .unwrap();
 
     let reader = SystemDatabaseReader::new(&mut substate_db);
-    let timestamp = reader.read_typed_object_field::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
-        CONSENSUS_MANAGER.as_node_id(),
-        ObjectModuleId::Main,
-        ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
-    ).unwrap().into_latest();
+    let timestamp = reader
+        .read_typed_object_field::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
+        )
+        .unwrap()
+        .into_latest();
 
     assert_eq!(timestamp.epoch_minute, 123);
 }
