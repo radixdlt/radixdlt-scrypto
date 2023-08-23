@@ -657,7 +657,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         commit: &CommitResult,
         node_id: &NodeId,
     ) -> IndexMap<ResourceAddress, BalanceChange> {
-        DescendantVaults::new(&self.database)
+        SubtreeVaults::new(&self.database)
             .sum_balance_changes(node_id, commit.vault_balance_changes())
     }
 
@@ -666,7 +666,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Vec<NodeId> {
-        DescendantVaults::new(&self.database)
+        SubtreeVaults::new(&self.database)
             .get_all(component_address.as_node_id())
             .remove(&resource_address)
             .unwrap_or_else(|| Vec::new())
@@ -2174,11 +2174,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 }
 
-pub struct DescendantVaults<'d, D> {
+pub struct SubtreeVaults<'d, D> {
     database: &'d D,
 }
 
-impl<'d, D: SubstateDatabase> DescendantVaults<'d, D> {
+impl<'d, D: SubstateDatabase> SubtreeVaults<'d, D> {
     pub fn new(database: &'d D) -> Self {
         Self { database }
     }
@@ -2186,7 +2186,7 @@ impl<'d, D: SubstateDatabase> DescendantVaults<'d, D> {
     pub fn get_all(&self, node_id: &NodeId) -> IndexMap<ResourceAddress, Vec<NodeId>> {
         let mut vault_finder = VaultFinder::new();
         let mut traverser = StateTreeTraverser::new(self.database, &mut vault_finder, 100);
-        traverser.traverse_all_descendents(None, *node_id);
+        traverser.traverse_subtree(None, *node_id);
         vault_finder.to_vaults()
     }
 

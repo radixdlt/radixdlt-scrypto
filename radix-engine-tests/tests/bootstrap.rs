@@ -18,7 +18,7 @@ use radix_engine_queries::typed_substate_layout::{
 };
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::{CustomGenesis, DescendantVaults, TestRunnerBuilder};
+use scrypto_unit::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
@@ -374,7 +374,7 @@ fn test_genesis_stake_allocation() {
     let allocate_stakes_receipt = data_ingestion_receipts.pop().unwrap();
 
     let commit = allocate_stakes_receipt.expect_commit_success();
-    let descendant_vaults = DescendantVaults::new(&substate_db);
+    let descendant_vaults = SubtreeVaults::new(&substate_db);
 
     // Staker 1 should have two liquidity balance entries
     {

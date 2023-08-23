@@ -71,7 +71,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
         }
     }
 
-    pub fn traverse_all_descendents(
+    pub fn traverse_subtree(
         &mut self,
         parent_node_id: Option<&(NodeId, PartitionNumber, SubstateKey)>,
         node_id: NodeId,
