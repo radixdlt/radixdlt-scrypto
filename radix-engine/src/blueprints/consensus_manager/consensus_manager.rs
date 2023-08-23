@@ -335,7 +335,7 @@ impl ConsensusManagerBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
+            ConsensusManagerField::ConsensusManager,
             LockFlags::read_only(),
         )?;
 
@@ -351,7 +351,7 @@ impl ConsensusManagerBlueprint {
         let config_substate = {
             let config_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                ConsensusManagerField::Config.into(),
+                ConsensusManagerField::Config,
                 LockFlags::read_only(),
             )?;
             let config_substate: ConsensusManagerConfigSubstate =
@@ -362,7 +362,7 @@ impl ConsensusManagerBlueprint {
 
         let manager_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
+            ConsensusManagerField::ConsensusManager,
             LockFlags::MUTABLE,
         )?;
         let mut manager_substate: ConsensusManagerSubstate =
@@ -397,7 +397,7 @@ impl ConsensusManagerBlueprint {
             TimePrecision::Minute => {
                 let handle = api.actor_open_field(
                     OBJECT_HANDLE_SELF,
-                    ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+                    ConsensusManagerField::CurrentTimeRoundedToMinutes,
                     LockFlags::read_only(),
                 )?;
                 let proposer_minute_timestamp: ProposerMinuteTimestampSubstate =
@@ -428,7 +428,7 @@ impl ConsensusManagerBlueprint {
 
                 let handle = api.actor_open_field(
                     OBJECT_HANDLE_SELF,
-                    ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+                    ConsensusManagerField::CurrentTimeRoundedToMinutes,
                     LockFlags::read_only(),
                 )?;
                 let proposer_minute_timestamp: ProposerMinuteTimestampSubstate =
@@ -466,7 +466,7 @@ impl ConsensusManagerBlueprint {
 
         let config_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            ConsensusManagerField::Config.into(),
+            ConsensusManagerField::Config,
             LockFlags::read_only(),
         )?;
         let config_substate: ConsensusManagerConfigSubstate =
@@ -475,7 +475,7 @@ impl ConsensusManagerBlueprint {
 
         let manager_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
+            ConsensusManagerField::ConsensusManager,
             LockFlags::MUTABLE,
         )?;
         let mut manager_substate: ConsensusManagerSubstate =
@@ -530,7 +530,7 @@ impl ConsensusManagerBlueprint {
     {
         let manager_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
+            ConsensusManagerField::ConsensusManager,
             LockFlags::read_only(),
         )?;
         let manager_substate: ConsensusManagerSubstate = api.field_read_typed(manager_handle)?;
@@ -538,7 +538,7 @@ impl ConsensusManagerBlueprint {
         let validator_creation_xrd_cost = if manager_substate.started {
             let config_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                ConsensusManagerField::Config.into(),
+                ConsensusManagerField::Config,
                 LockFlags::read_only(),
             )?;
             let manager_config: ConsensusManagerConfigSubstate =
@@ -596,7 +596,7 @@ impl ConsensusManagerBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            ConsensusManagerField::CurrentTime.into(),
+            ConsensusManagerField::CurrentTime,
             LockFlags::MUTABLE,
         )?;
         let mut exact_time_substate: ProposerMilliTimestampSubstate =
@@ -620,7 +620,7 @@ impl ConsensusManagerBlueprint {
         let new_rounded_value = Self::milli_to_minute(current_time_ms);
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+            ConsensusManagerField::CurrentTimeRoundedToMinutes,
             LockFlags::MUTABLE,
         )?;
         let mut rounded_timestamp_substate: ProposerMinuteTimestampSubstate =
@@ -656,7 +656,7 @@ impl ConsensusManagerBlueprint {
 
         let statistic_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            ConsensusManagerField::CurrentProposalStatistic.into(),
+            ConsensusManagerField::CurrentProposalStatistic,
             LockFlags::MUTABLE,
         )?;
         let mut statistic: CurrentProposalStatisticSubstate =
@@ -689,7 +689,7 @@ impl ConsensusManagerBlueprint {
         // Read previous validator set
         let validator_set_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            ConsensusManagerField::CurrentValidatorSet.into(),
+            ConsensusManagerField::CurrentValidatorSet,
             LockFlags::MUTABLE,
         )?;
         let mut validator_set_substate: CurrentValidatorSetSubstate =
@@ -699,7 +699,7 @@ impl ConsensusManagerBlueprint {
         // Read previous validator statistics
         let statistic_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            ConsensusManagerField::CurrentProposalStatistic.into(),
+            ConsensusManagerField::CurrentProposalStatistic,
             LockFlags::MUTABLE,
         )?;
         let mut statistic_substate: CurrentProposalStatisticSubstate =
@@ -709,7 +709,7 @@ impl ConsensusManagerBlueprint {
         // Read & write validator rewards
         let rewards_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            ConsensusManagerField::ValidatorRewards.into(),
+            ConsensusManagerField::ValidatorRewards,
             LockFlags::MUTABLE,
         )?;
         let mut rewards_substate: ValidatorRewardsSubstate =

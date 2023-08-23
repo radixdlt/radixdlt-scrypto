@@ -480,7 +480,7 @@ impl NonFungibleResourceManagerBlueprint {
         let id_type = {
             let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::IdType.into(),
+                NonFungibleResourceManagerField::IdType,
                 LockFlags::read_only(),
             )?;
             let id_type: NonFungibleIdType = api.field_read_typed(handle)?;
@@ -500,7 +500,7 @@ impl NonFungibleResourceManagerBlueprint {
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::TotalSupply.into(),
+                NonFungibleResourceManagerField::TotalSupply,
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
@@ -538,7 +538,7 @@ impl NonFungibleResourceManagerBlueprint {
         let id_type = {
             let id_type_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::IdType.into(),
+                NonFungibleResourceManagerField::IdType,
                 LockFlags::read_only(),
             )?;
             let id_type: NonFungibleIdType = api.field_read_typed(id_type_handle)?;
@@ -560,7 +560,7 @@ impl NonFungibleResourceManagerBlueprint {
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::TotalSupply.into(),
+                NonFungibleResourceManagerField::TotalSupply,
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
@@ -600,7 +600,7 @@ impl NonFungibleResourceManagerBlueprint {
         let id_type = {
             let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::IdType.into(),
+                NonFungibleResourceManagerField::IdType,
                 LockFlags::read_only(),
             )?;
             let id_type: NonFungibleIdType = api.field_read_typed(handle)?;
@@ -621,7 +621,7 @@ impl NonFungibleResourceManagerBlueprint {
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::TotalSupply.into(),
+                NonFungibleResourceManagerField::TotalSupply,
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
@@ -662,7 +662,7 @@ impl NonFungibleResourceManagerBlueprint {
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
         let data_schema_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerField::MutableFields.into(),
+            NonFungibleResourceManagerField::MutableFields,
             LockFlags::read_only(),
         )?;
         let mutable_fields: NonFungibleResourceManagerMutableFieldsSubstate =
@@ -824,7 +824,7 @@ impl NonFungibleResourceManagerBlueprint {
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::TotalSupply.into(),
+                NonFungibleResourceManagerField::TotalSupply,
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
@@ -897,7 +897,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerField::IdType.into(),
+            NonFungibleResourceManagerField::IdType,
             LockFlags::read_only(),
         )?;
 
@@ -914,7 +914,7 @@ impl NonFungibleResourceManagerBlueprint {
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::TotalSupply.into(),
+                NonFungibleResourceManagerField::TotalSupply,
                 LockFlags::read_only(),
             )?;
             let total_supply: Decimal = api.field_read_typed(total_supply_handle)?;

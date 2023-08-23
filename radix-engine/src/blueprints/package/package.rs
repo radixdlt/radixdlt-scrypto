@@ -1428,7 +1428,7 @@ impl PackageRoyaltyNativeBlueprint {
 
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            PackageField::RoyaltyAccumulator.into(),
+            PackageField::RoyaltyAccumulator,
             LockFlags::read_only(),
         )?;
 

@@ -19,7 +19,7 @@ impl FungibleBucketBlueprint {
     {
         let divisibility_handle = api.actor_open_field(
             OBJECT_HANDLE_OUTER_OBJECT,
-            FungibleResourceManagerField::Divisibility.into(),
+            FungibleResourceManagerField::Divisibility,
             LockFlags::read_only(),
         )?;
         let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
@@ -56,7 +56,7 @@ impl FungibleBucketBlueprint {
         // Take
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleBucketField::Liquid.into(),
+            FungibleBucketField::Liquid,
             LockFlags::MUTABLE,
         )?;
         let mut substate: LiquidFungibleResource = api.field_read_typed(handle)?;
@@ -85,7 +85,7 @@ impl FungibleBucketBlueprint {
         // Put
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleBucketField::Liquid.into(),
+            FungibleBucketField::Liquid,
             LockFlags::MUTABLE,
         )?;
         let mut substate: LiquidFungibleResource = api.field_read_typed(handle)?;
@@ -171,7 +171,7 @@ impl FungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleBucketField::Locked.into(),
+            FungibleBucketField::Locked,
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedFungibleResource = api.field_read_typed(handle)?;
@@ -198,7 +198,7 @@ impl FungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleBucketField::Locked.into(),
+            FungibleBucketField::Locked,
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedFungibleResource = api.field_read_typed(handle)?;
@@ -228,7 +228,7 @@ impl FungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleBucketField::Liquid.into(),
+            FungibleBucketField::Liquid,
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidFungibleResource = api.field_read_typed(handle)?;
@@ -243,7 +243,7 @@ impl FungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleBucketField::Locked.into(),
+            FungibleBucketField::Locked,
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedFungibleResource = api.field_read_typed(handle)?;
@@ -261,7 +261,7 @@ impl FungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleBucketField::Liquid.into(),
+            FungibleBucketField::Liquid,
             LockFlags::MUTABLE,
         )?;
         let mut substate: LiquidFungibleResource = api.field_read_typed(handle)?;
@@ -285,7 +285,7 @@ impl FungibleBucketBlueprint {
 
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleBucketField::Liquid.into(),
+            FungibleBucketField::Liquid,
             LockFlags::MUTABLE,
         )?;
         let mut substate: LiquidFungibleResource = api.field_read_typed(handle)?;

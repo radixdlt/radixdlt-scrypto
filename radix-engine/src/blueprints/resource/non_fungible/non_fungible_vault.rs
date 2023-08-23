@@ -191,7 +191,7 @@ impl NonFungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::VaultFrozenFlag.into(),
+            NonFungibleVaultField::VaultFrozenFlag,
             LockFlags::MUTABLE,
         )?;
 
@@ -210,7 +210,7 @@ impl NonFungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::VaultFrozenFlag.into(),
+            NonFungibleVaultField::VaultFrozenFlag,
             LockFlags::MUTABLE,
         )?;
         let mut frozen: VaultFrozenFlag = api.field_read_typed(frozen_flag_handle)?;
@@ -305,7 +305,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedNonFungible.into(),
+            NonFungibleVaultField::LockedNonFungible,
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
@@ -338,7 +338,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedNonFungible.into(),
+            NonFungibleVaultField::LockedNonFungible,
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
@@ -375,7 +375,7 @@ impl NonFungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::VaultFrozenFlag.into(),
+            NonFungibleVaultField::VaultFrozenFlag,
             LockFlags::read_only(),
         )?;
         let frozen: VaultFrozenFlag = api.field_read_typed(frozen_flag_handle)?;
@@ -422,7 +422,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LiquidNonFungible.into(),
+            NonFungibleVaultField::LiquidNonFungible,
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidNonFungibleVault = api.field_read_typed(handle)?;
@@ -437,7 +437,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedNonFungible.into(),
+            NonFungibleVaultField::LockedNonFungible,
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
@@ -471,7 +471,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedNonFungible.into(),
+            NonFungibleVaultField::LockedNonFungible,
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
@@ -491,7 +491,7 @@ impl NonFungibleVaultBlueprint {
         // deduct from liquidity pool
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LiquidNonFungible.into(),
+            NonFungibleVaultField::LiquidNonFungible,
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidNonFungibleVault = api.field_read_typed(handle)?;
@@ -529,7 +529,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LiquidNonFungible.into(),
+            NonFungibleVaultField::LiquidNonFungible,
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidNonFungibleVault = api.field_read_typed(handle)?;
@@ -572,7 +572,7 @@ impl NonFungibleVaultBlueprint {
 
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LiquidNonFungible.into(),
+            NonFungibleVaultField::LiquidNonFungible,
             LockFlags::MUTABLE,
         )?;
         let mut vault: LiquidNonFungibleVault = api.field_read_typed(handle)?;

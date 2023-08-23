@@ -23,7 +23,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_OUTER_OBJECT,
-            FungibleResourceManagerField::Divisibility.into(),
+            FungibleResourceManagerField::Divisibility,
             LockFlags::read_only(),
         )?;
         let divisibility: u8 = api.field_read_typed(handle)?;
@@ -133,7 +133,7 @@ impl FungibleVaultBlueprint {
         // Lock the substate (with special flags)
         let vault_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::LiquidFungible.into(),
+            FungibleVaultField::LiquidFungible,
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
 
@@ -193,7 +193,7 @@ impl FungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::VaultFrozenFlag.into(),
+            FungibleVaultField::VaultFrozenFlag,
             LockFlags::MUTABLE,
         )?;
 
@@ -212,7 +212,7 @@ impl FungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::VaultFrozenFlag.into(),
+            FungibleVaultField::VaultFrozenFlag,
             LockFlags::MUTABLE,
         )?;
         let mut frozen: VaultFrozenFlag = api.field_read_typed(frozen_flag_handle)?;
@@ -281,7 +281,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::LockedFungible.into(),
+            FungibleVaultField::LockedFungible,
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedFungibleResource = api.field_read_typed(handle)?;
@@ -307,7 +307,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::LockedFungible.into(),
+            FungibleVaultField::LockedFungible,
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedFungibleResource = api.field_read_typed(handle)?;
@@ -341,7 +341,7 @@ impl FungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::VaultFrozenFlag.into(),
+            FungibleVaultField::VaultFrozenFlag,
             LockFlags::read_only(),
         )?;
         let frozen: VaultFrozenFlag = api.field_read_typed(frozen_flag_handle)?;
@@ -388,7 +388,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::LiquidFungible.into(),
+            FungibleVaultField::LiquidFungible,
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidFungibleResource = api.field_read_typed(handle)?;
@@ -403,7 +403,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::LockedFungible.into(),
+            FungibleVaultField::LockedFungible,
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedFungibleResource = api.field_read_typed(handle)?;
@@ -421,7 +421,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::LiquidFungible.into(),
+            FungibleVaultField::LiquidFungible,
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidFungibleResource = api.field_read_typed(handle)?;
@@ -446,7 +446,7 @@ impl FungibleVaultBlueprint {
 
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::LiquidFungible.into(),
+            FungibleVaultField::LiquidFungible,
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidFungibleResource = api.field_read_typed(handle)?;

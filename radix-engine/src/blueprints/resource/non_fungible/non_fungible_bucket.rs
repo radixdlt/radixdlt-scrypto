@@ -174,7 +174,7 @@ impl NonFungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleBucketField::Locked.into(),
+            NonFungibleBucketField::Locked,
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
@@ -207,7 +207,7 @@ impl NonFungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleBucketField::Locked.into(),
+            NonFungibleBucketField::Locked,
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
@@ -240,7 +240,7 @@ impl NonFungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleBucketField::Liquid.into(),
+            NonFungibleBucketField::Liquid,
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidNonFungibleResource = api.field_read_typed(handle)?;
@@ -255,7 +255,7 @@ impl NonFungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleBucketField::Locked.into(),
+            NonFungibleBucketField::Locked,
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
@@ -272,7 +272,7 @@ impl NonFungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleBucketField::Liquid.into(),
+            NonFungibleBucketField::Liquid,
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidNonFungibleResource = api.field_read_typed(handle)?;
@@ -289,7 +289,7 @@ impl NonFungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleBucketField::Locked.into(),
+            NonFungibleBucketField::Locked,
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
@@ -307,7 +307,7 @@ impl NonFungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleBucketField::Liquid.into(),
+            NonFungibleBucketField::Liquid,
             LockFlags::MUTABLE,
         )?;
         let mut substate: LiquidNonFungibleResource = api.field_read_typed(handle)?;
@@ -329,7 +329,7 @@ impl NonFungibleBucketBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleBucketField::Liquid.into(),
+            NonFungibleBucketField::Liquid,
             LockFlags::MUTABLE,
         )?;
         let mut substate: LiquidNonFungibleResource = api.field_read_typed(handle)?;
@@ -352,7 +352,7 @@ impl NonFungibleBucketBlueprint {
 
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleBucketField::Liquid.into(),
+            NonFungibleBucketField::Liquid,
             LockFlags::MUTABLE,
         )?;
         let mut substate: LiquidNonFungibleResource = api.field_read_typed(handle)?;

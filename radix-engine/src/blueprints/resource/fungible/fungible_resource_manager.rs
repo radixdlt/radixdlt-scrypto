@@ -198,7 +198,7 @@ impl FungibleResourceManagerBlueprint {
         let divisibility = {
             let divisibility_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                FungibleResourceManagerField::Divisibility.into(),
+                FungibleResourceManagerField::Divisibility,
                 LockFlags::read_only(),
             )?;
             let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
@@ -217,7 +217,7 @@ impl FungibleResourceManagerBlueprint {
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                FungibleResourceManagerField::TotalSupply.into(),
+                FungibleResourceManagerField::TotalSupply,
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
@@ -266,7 +266,7 @@ impl FungibleResourceManagerBlueprint {
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                FungibleResourceManagerField::TotalSupply.into(),
+                FungibleResourceManagerField::TotalSupply,
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
@@ -358,7 +358,7 @@ impl FungibleResourceManagerBlueprint {
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                FungibleResourceManagerField::TotalSupply.into(),
+                FungibleResourceManagerField::TotalSupply,
                 LockFlags::read_only(),
             )?;
             let total_supply: Decimal = api.field_read_typed(total_supply_handle)?;

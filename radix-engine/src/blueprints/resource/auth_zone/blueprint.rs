@@ -28,7 +28,7 @@ impl AuthZoneBlueprint {
     {
         let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            AuthZoneField::AuthZone.into(),
+            AuthZoneField::AuthZone,
             LockFlags::MUTABLE,
         )?;
 
@@ -48,7 +48,7 @@ impl AuthZoneBlueprint {
     {
         let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            AuthZoneField::AuthZone.into(),
+            AuthZoneField::AuthZone,
             LockFlags::MUTABLE,
         )?;
 
@@ -71,7 +71,7 @@ impl AuthZoneBlueprint {
     {
         let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            AuthZoneField::AuthZone.into(),
+            AuthZoneField::AuthZone,
             LockFlags::read_only(),
         )?;
 
@@ -147,7 +147,7 @@ impl AuthZoneBlueprint {
     {
         let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            AuthZoneField::AuthZone.into(),
+            AuthZoneField::AuthZone,
             LockFlags::MUTABLE,
         )?;
 
@@ -194,7 +194,7 @@ impl AuthZoneBlueprint {
     {
         let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            AuthZoneField::AuthZone.into(),
+            AuthZoneField::AuthZone,
             LockFlags::MUTABLE,
         )?;
 
@@ -251,7 +251,7 @@ impl AuthZoneBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            AuthZoneField::AuthZone.into(),
+            AuthZoneField::AuthZone,
             LockFlags::MUTABLE,
         )?;
         let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
@@ -268,7 +268,7 @@ impl AuthZoneBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            AuthZoneField::AuthZone.into(),
+            AuthZoneField::AuthZone,
             LockFlags::MUTABLE,
         )?;
         let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
@@ -289,7 +289,7 @@ impl AuthZoneBlueprint {
     {
         let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            AuthZoneField::AuthZone.into(),
+            AuthZoneField::AuthZone,
             LockFlags::MUTABLE,
         )?;
 
