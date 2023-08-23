@@ -224,7 +224,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         }
     } else {
         let divisibility = reader
-            .read_typed_object_field::<NonFungibleVaultLockedResourceFieldPayload>(
+            .read_typed_object_field::<FungibleResourceManagerDivisibilityFieldPayload>(
                 resource_address.as_node_id(),
                 ObjectModuleId::Main,
                 FungibleResourceManagerField::Divisibility.into(),
