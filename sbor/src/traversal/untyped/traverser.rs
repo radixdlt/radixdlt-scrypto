@@ -721,12 +721,14 @@ mod tests {
         let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::ContainerStart(header),
-            location: Location {
-                start_offset,
-                end_offset,
-                ..
-            },
-        } = event else {
+            location:
+                Location {
+                    start_offset,
+                    end_offset,
+                    ..
+                },
+        } = event
+        else {
             panic!("Invalid event - expected ContainerStart, was {:?}", event);
         };
         assert_eq!(header, expected_header);
@@ -746,12 +748,14 @@ mod tests {
         let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::ContainerEnd(header),
-            location: Location {
-                start_offset,
-                end_offset,
-                ..
-            },
-        } = event else {
+            location:
+                Location {
+                    start_offset,
+                    end_offset,
+                    ..
+                },
+        } = event
+        else {
             panic!("Invalid event - expected ContainerEnd, was {:?}", event);
         };
         assert_eq!(header, expected_header);
@@ -771,12 +775,14 @@ mod tests {
         let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::TerminalValue(value),
-            location: Location {
-                start_offset,
-                end_offset,
-                ..
-            },
-        } = event else {
+            location:
+                Location {
+                    start_offset,
+                    end_offset,
+                    ..
+                },
+        } = event
+        else {
             panic!("Invalid event - expected TerminalValue, was {:?}", event);
         };
         assert_eq!(value, expected_value);
@@ -796,13 +802,18 @@ mod tests {
         let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::TerminalValueBatch(value_batch),
-            location: Location {
-                start_offset,
-                end_offset,
-                ..
-            },
-        } = event else {
-            panic!("Invalid event - expected TerminalValueBatch, was {:?}", event);
+            location:
+                Location {
+                    start_offset,
+                    end_offset,
+                    ..
+                },
+        } = event
+        else {
+            panic!(
+                "Invalid event - expected TerminalValueBatch, was {:?}",
+                event
+            );
         };
         assert_eq!(value_batch, expected_value_batch);
         assert_eq!(sbor_depth, expected_child_depth);
@@ -818,12 +829,14 @@ mod tests {
         let event = traverser.next_event();
         let LocatedTraversalEvent {
             event: TraversalEvent::End,
-            location: Location {
-                start_offset,
-                end_offset,
-                ..
-            },
-        } = event else {
+            location:
+                Location {
+                    start_offset,
+                    end_offset,
+                    ..
+                },
+        } = event
+        else {
             panic!("Invalid event - expected End, was {:?}", event);
         };
         assert_eq!(start_offset, expected_start_offset);

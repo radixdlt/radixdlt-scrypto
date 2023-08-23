@@ -18,7 +18,7 @@ use radix_engine_queries::typed_substate_layout::{
 };
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::{CustomGenesis, TestRunnerBuilder};
+use scrypto_unit::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
@@ -269,38 +269,33 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let resource_creation_receipt = data_ingestion_receipts.pop().unwrap();
 
     println!("{:?}", resource_creation_receipt);
+    let resource_creation_commit = resource_creation_receipt.expect_commit_success();
 
     if owned_resource {
-        let created_owner_badge = resource_creation_receipt
-            .expect_commit_success()
-            .new_resource_addresses()[1];
+        let created_owner_badge = resource_creation_commit.new_resource_addresses()[1];
+        let owner_badge_vault = resource_creation_commit.new_vault_addresses()[1];
 
         assert_eq!(
-            resource_creation_receipt
-                .expect_commit_success()
+            resource_creation_commit
                 .state_update_summary
-                .balance_changes
-                .get(&GlobalAddress::from(resource_owner))
-                .unwrap()
-                .get(&created_owner_badge)
+                .vault_balance_changes
+                .get(owner_badge_vault.as_node_id())
                 .unwrap(),
-            &BalanceChange::Fungible(1.into())
+            &(created_owner_badge, BalanceChange::Fungible(1.into()))
         );
     }
 
-    let created_resource = resource_creation_receipt
-        .expect_commit_success()
-        .new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
+    let created_resource = resource_creation_commit.new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
+    let allocation_commit = allocation_receipt.expect_commit_success();
+    let created_vault = allocation_commit.new_vault_addresses()[1];
+
     assert_eq!(
-        allocation_receipt
-            .expect_commit_success()
+        allocation_commit
             .state_update_summary
-            .balance_changes
-            .get(&GlobalAddress::from(token_holder))
-            .unwrap()
-            .get(&created_resource)
+            .vault_balance_changes
+            .get(created_vault.as_node_id())
             .unwrap(),
-        &BalanceChange::Fungible(allocation_amount)
+        &(created_resource, BalanceChange::Fungible(allocation_amount))
     );
 }
 
@@ -378,30 +373,14 @@ fn test_genesis_stake_allocation() {
 
     let allocate_stakes_receipt = data_ingestion_receipts.pop().unwrap();
 
-    // Staker 0 should have one liquidity balance entry
-    {
-        let address: GlobalAddress = staker_0.into();
-        let balances = allocate_stakes_receipt
-            .expect_commit_success()
-            .state_update_summary
-            .balance_changes
-            .get(&address)
-            .unwrap();
-        assert_eq!(balances.len(), 1);
-        assert!(balances
-            .values()
-            .any(|bal| *bal == BalanceChange::Fungible(dec!("10"))));
-    }
+    let commit = allocate_stakes_receipt.expect_commit_success();
+    let descendant_vaults = SubtreeVaults::new(&substate_db);
 
     // Staker 1 should have two liquidity balance entries
     {
         let address: GlobalAddress = staker_1.into();
-        let balances = allocate_stakes_receipt
-            .expect_commit_success()
-            .state_update_summary
-            .balance_changes
-            .get(&address)
-            .unwrap();
+        let balances = descendant_vaults
+            .sum_balance_changes(address.as_node_id(), commit.vault_balance_changes());
         assert_eq!(balances.len(), 2);
         assert!(balances
             .values()

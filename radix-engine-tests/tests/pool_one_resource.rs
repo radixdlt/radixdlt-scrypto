@@ -147,14 +147,17 @@ fn initial_contribution_to_pool_mints_expected_amount() {
 
     // Assert
     let commit_result = receipt.expect_commit_success();
-    let balance_change = commit_result
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap()
+    let balance_change = test_runner
+        .test_runner
+        .sum_descendant_balance_changes(
+            commit_result,
+            test_runner.account_component_address.as_node_id(),
+        )
         .get(&test_runner.pool_unit_resource_address)
-        .unwrap();
+        .unwrap()
+        .clone();
 
-    assert_eq!(balance_change.clone(), BalanceChange::Fungible(100.into()));
+    assert_eq!(balance_change, BalanceChange::Fungible(100.into()));
 }
 
 #[test]
@@ -181,14 +184,17 @@ fn contribution_to_pool_mints_expected_amount_1() {
 
     // Assert
     let commit_result = receipt.expect_commit_success();
-    let balance_change = commit_result
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap()
+    let balance_change = test_runner
+        .test_runner
+        .sum_descendant_balance_changes(
+            commit_result,
+            test_runner.account_component_address.as_node_id(),
+        )
         .get(&test_runner.pool_unit_resource_address)
-        .unwrap();
+        .unwrap()
+        .clone();
 
-    assert_eq!(balance_change.clone(), BalanceChange::Fungible(100.into()));
+    assert_eq!(balance_change, BalanceChange::Fungible(100.into()));
 }
 
 #[test]
@@ -202,14 +208,17 @@ fn contribution_to_pool_mints_expected_amount_2() {
 
     // Assert
     let commit_result = receipt.expect_commit_success();
-    let balance_change = commit_result
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap()
+    let balance_change = test_runner
+        .test_runner
+        .sum_descendant_balance_changes(
+            commit_result,
+            test_runner.account_component_address.as_node_id(),
+        )
         .get(&test_runner.pool_unit_resource_address)
-        .unwrap();
+        .unwrap()
+        .clone();
 
-    assert_eq!(balance_change.clone(), BalanceChange::Fungible(200.into()));
+    assert_eq!(balance_change, BalanceChange::Fungible(200.into()));
 }
 
 #[test]
@@ -223,14 +232,17 @@ fn contribution_to_pool_mints_expected_amount_3() {
 
     // Assert
     let commit_result = receipt.expect_commit_success();
-    let balance_change = commit_result
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap()
+    let balance_change = test_runner
+        .test_runner
+        .sum_descendant_balance_changes(
+            commit_result,
+            test_runner.account_component_address.as_node_id(),
+        )
         .get(&test_runner.pool_unit_resource_address)
-        .unwrap();
+        .unwrap()
+        .clone();
 
-    assert_eq!(balance_change.clone(), BalanceChange::Fungible(50.into()));
+    assert_eq!(balance_change, BalanceChange::Fungible(50.into()));
 }
 
 #[test]
@@ -252,14 +264,17 @@ fn contribution_to_pool_mints_expected_amount_after_all_pool_units_are_redeemed(
 
     // Assert
     let commit_result = receipt.expect_commit_success();
-    let balance_change = commit_result
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap()
+    let balance_change = test_runner
+        .test_runner
+        .sum_descendant_balance_changes(
+            commit_result,
+            test_runner.account_component_address.as_node_id(),
+        )
         .get(&test_runner.pool_unit_resource_address)
-        .unwrap();
+        .unwrap()
+        .clone();
 
-    assert_eq!(balance_change.clone(), BalanceChange::Fungible(50.into()));
+    assert_eq!(balance_change, BalanceChange::Fungible(50.into()));
 }
 
 #[test]
@@ -275,17 +290,17 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
 
     // Assert
     let commit_result = receipt.expect_commit_success();
-    let balance_change = commit_result
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap()
+    let balance_change = test_runner
+        .test_runner
+        .sum_descendant_balance_changes(
+            commit_result,
+            test_runner.account_component_address.as_node_id(),
+        )
         .get(&test_runner.resource_address)
-        .unwrap();
+        .unwrap()
+        .clone();
 
-    assert_eq!(
-        balance_change.clone(),
-        BalanceChange::Fungible(dec!("1.11"))
-    );
+    assert_eq!(balance_change, BalanceChange::Fungible(dec!("1.11")));
 }
 
 #[test]
@@ -301,15 +316,18 @@ fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming() {
 
     // Assert
     let commit_result = receipt.expect_commit_success();
-    let balance_change = commit_result
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap()
+    let balance_change = test_runner
+        .test_runner
+        .sum_descendant_balance_changes(
+            commit_result,
+            test_runner.account_component_address.as_node_id(),
+        )
         .get(&test_runner.resource_address)
-        .unwrap();
+        .unwrap()
+        .clone();
 
     assert_eq!(
-        balance_change.clone(),
+        balance_change,
         BalanceChange::Fungible(test_runner.get_redemption_value(dec!("1.111111111111"), false))
     );
 }
@@ -335,15 +353,18 @@ fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming_after_p
 
     // Assert
     let commit_result = receipt.expect_commit_success();
-    let balance_change = commit_result
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap()
+    let balance_change = test_runner
+        .test_runner
+        .sum_descendant_balance_changes(
+            commit_result,
+            test_runner.account_component_address.as_node_id(),
+        )
         .get(&test_runner.resource_address)
-        .unwrap();
+        .unwrap()
+        .clone();
 
     assert_eq!(
-        balance_change.clone(),
+        balance_change,
         BalanceChange::Fungible(test_runner.get_redemption_value(amount_to_redeem, false))
     );
 }
@@ -361,14 +382,17 @@ fn protected_withdraw_from_the_pool_lowers_how_much_resources_the_pool_units_are
 
     // Assert
     let commit_result = receipt.expect_commit_success();
-    let balance_change = commit_result
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap()
+    let balance_change = test_runner
+        .test_runner
+        .sum_descendant_balance_changes(
+            commit_result,
+            test_runner.account_component_address.as_node_id(),
+        )
         .get(&test_runner.resource_address)
-        .unwrap();
+        .unwrap()
+        .clone();
 
-    assert_eq!(balance_change.clone(), BalanceChange::Fungible(50.into()));
+    assert_eq!(balance_change, BalanceChange::Fungible(50.into()));
 }
 
 #[test]
@@ -385,14 +409,17 @@ fn protected_deposit_into_the_pool_increases_how_much_resources_the_pool_units_a
 
     // Assert
     let commit_result = receipt.expect_commit_success();
-    let balance_change = commit_result
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap()
+    let balance_change = test_runner
+        .test_runner
+        .sum_descendant_balance_changes(
+            commit_result,
+            test_runner.account_component_address.as_node_id(),
+        )
         .get(&test_runner.resource_address)
-        .unwrap();
+        .unwrap()
+        .clone();
 
-    assert_eq!(balance_change.clone(), BalanceChange::Fungible(150.into()));
+    assert_eq!(balance_change, BalanceChange::Fungible(150.into()));
 }
 
 #[test]

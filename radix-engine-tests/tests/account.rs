@@ -98,17 +98,12 @@ where
     let other_account_balance: Decimal = test_runner.get_component_balance(other_account, XRD);
     let transfer_amount = other_account_balance.safe_sub(10000).unwrap() /* initial balance */;
 
-    assert_eq!(
-        receipt
-            .expect_commit_success()
-            .state_update_summary
-            .balance_changes
-            .get(&GlobalAddress::from(other_account))
-            .unwrap()
-            .get(&XRD)
-            .unwrap(),
-        &BalanceChange::Fungible(transfer_amount)
-    );
+    let balance_change = test_runner
+        .sum_descendant_balance_changes(receipt.expect_commit_success(), other_account.as_node_id())
+        .get(&XRD)
+        .unwrap()
+        .clone();
+    assert_eq!(balance_change, BalanceChange::Fungible(transfer_amount));
 }
 
 fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
@@ -208,16 +203,14 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     );
 
     // Assert
+    let balance_change = test_runner
+        .sum_descendant_balance_changes(receipt.expect_commit_success(), account.as_node_id())
+        .get(&XRD)
+        .unwrap()
+        .clone();
     assert_eq!(
-        receipt
-            .expect_commit_success()
-            .state_update_summary
-            .balance_changes
-            .get(&GlobalAddress::from(account))
-            .unwrap()
-            .get(&XRD)
-            .unwrap(),
-        &BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap())
+        balance_change,
+        BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap())
     );
 }
 
@@ -282,10 +275,8 @@ fn securified_account_is_owned_by_correct_owner_badge() {
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
-    let balance_changes = receipt.expect_commit_success().balance_changes();
-    let balance_change = balance_changes
-        .get(&GlobalAddress::from(account))
-        .unwrap()
+    let balance_change = test_runner
+        .sum_descendant_balance_changes(receipt.expect_commit_success(), account.as_node_id())
         .get(&ACCOUNT_OWNER_BADGE)
         .unwrap()
         .clone();
