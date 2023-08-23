@@ -169,7 +169,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                             "name" => "Radiswap - dApp Owner Badge", updatable;
                                             "description" => "[EXAMPLE] The owner badge for the Radiswap dApp and associated entities", updatable;
                                             "tags" => ["badge", "dex", "pool", "radiswap"], updatable;
-                                            "info_url" => Url::of("https://radiswap.radixdlt.com/"), updatable;
+                                            "info_url" => Url::of_unchecked("https://radiswap.radixdlt.com/"), updatable;
                                         }
                                     },
                                     Some([
@@ -181,11 +181,11 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 .set_metadata(definition_account, "name", "Radiswap dApp Definition")
                                 .set_metadata(definition_account, "description", "[EXAMPLE] The Radiswap dApp definition account")
                                 .set_metadata(definition_account, "tags", ["dex", "pool", "radiswap"])
-                                .set_metadata(definition_account, "info_url", Url::of("https://radiswap.radixdlt.com/"))
+                                .set_metadata(definition_account, "info_url", Url::of_unchecked("https://radiswap.radixdlt.com/"))
                                 .set_metadata(
                                     definition_account,
                                     "claimed_websites",
-                                    [Origin::of("https://radiswap.radixdlt.com")]
+                                    [Origin::of_unchecked("https://radiswap.radixdlt.com")]
                                 )
                         },
                         vec![&config.radiswap_dapp_definition_account.key]
@@ -444,7 +444,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                             .set_metadata(address, "name", name)
                             .set_metadata(address, "description", description)
                             .set_metadata(address, "tags", ["badge", "dex", "pool", "radiswap"])
-                            .set_metadata(address, "info_url", Url::of("https://radiswap.radixdlt.com/"))
+                            .set_metadata(address, "info_url", Url::of_unchecked("https://radiswap.radixdlt.com/"))
                     }
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-set-two-way-linking",

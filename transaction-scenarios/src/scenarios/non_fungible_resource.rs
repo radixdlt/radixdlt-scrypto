@@ -382,46 +382,46 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                             "name" => "Radix - Defi Use-cases", locked;
                                             "description" => "[EXAMPLE] An example NF using the metadata standard", locked;
                                             "tags" => ["collection", "example-tag"], locked;
-                                            "icon_url" => Url::of("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61aded05f3208c78b028bf99_Scrypto-Icon-Round%20(1).png"), locked;
-                                            "info_url" => Url::of("https://developers.radixdlt.com/ecosystem"), locked;
+                                            "icon_url" => Url::of_unchecked("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61aded05f3208c78b028bf99_Scrypto-Icon-Round%20(1).png"), locked;
+                                            "info_url" => Url::of_unchecked("https://developers.radixdlt.com/ecosystem"), locked;
                                         }
                                     ),
                                     Some(btreemap!(
                                         NonFungibleLocalId::integer(1) => MetadataStandardNonFungibleData {
                                             name: "Decentralized Exchanges".into(),
                                             description: "Decentralized Exchanges, also known as DEXes, allow users to exchange two or more tokens in a single transaction, at a certain price, without the need for another party to facilitate the transaction.\n\nDEXes allow users to trade assets without the need for a trusted third party. They are the first ever examples of a censorship resistant, non-custodial, and permissionless way of exchanging assets electronically.".into(),
-                                            key_image_url: Url::of("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414d213fd7349b654b9_icon-DEX.svg"),
+                                            key_image_url: Url::of_unchecked("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414d213fd7349b654b9_icon-DEX.svg"),
                                             arbitrary_coolness_rating: 45,
                                         },
                                         NonFungibleLocalId::integer(2) => MetadataStandardNonFungibleData {
                                             name: "Stablecoins".into(),
                                             description: "A stablecoin is a class of cryptocurrencies that attempt to offer price stability and are backed by a reserve asset. Stablecoins have become popular as they provide the instant processing and security or privacy of cryptocurrencies' payments along with the volatility-free stable valuations of fiat currencies.\n\nStablecoins base their market value on an external reference. This could be a currency like the U.S. dollar or a commodity's price such as gold. Stablecoins achieve price stability via collateralization or algorithmic buying and selling of the reference asset or its derivatives.".into(),
-                                            key_image_url: Url::of("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f419f77f05b9086565e6_icon-stablecoin.svg"),
+                                            key_image_url: Url::of_unchecked("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f419f77f05b9086565e6_icon-stablecoin.svg"),
                                             arbitrary_coolness_rating: 5,
                                         },
                                         NonFungibleLocalId::integer(3) => MetadataStandardNonFungibleData {
                                             name: "Lending".into(),
                                             description: "In lending, borrowers pledge their crypto assets as collateral and avail loans in stablecoins or other crypto assets as a means of financing.\n\nHowever, unlike TradFi, DeFi lending uses algorithmic systems where lending and borrowing rates are determined automatically based on each asset's real-time supply and demand.\n\nThis automated approach means more flexibility and access for anyone looking for financing.".into(),
-                                            key_image_url: Url::of("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414979a8b045995bf75_ICON-LENDING.svg"),
+                                            key_image_url: Url::of_unchecked("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414979a8b045995bf75_ICON-LENDING.svg"),
                                             arbitrary_coolness_rating: 30,
                                         },
                                         NonFungibleLocalId::integer(4) => MetadataStandardNonFungibleData {
                                             name: "Insurance".into(),
                                             description: "Insurance protocols provide cover against smart contract failure & exchange hacks using a decentralized protocol, so people can share risk without needing an insurance company.".into(),
-                                            key_image_url: Url::of("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f4146c4528458c93da96_ICON-NFTS-1.svg"),
+                                            key_image_url: Url::of_unchecked("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f4146c4528458c93da96_ICON-NFTS-1.svg"),
                                             arbitrary_coolness_rating: 0,
                                         },
                                         NonFungibleLocalId::integer(5) => MetadataStandardNonFungibleData {
                                             name: "Futures, Options, & Derivatives".into(),
                                             description: "A futures contract is an arrangement between two users on an exchange to buy and sell an underlying crypto asset at an agreed-upon price on a certain date in the future.\n\nOptions give the holder the right to buy (call) or sell (put) an underlying crypto asset at a set date without being obligated.\n\nSynthetic assets, also known as synths, are an asset class formed by combining cryptocurrencies and traditional derivative assets, making them tokenized derivatives.".into(),
-                                            key_image_url: Url::of("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414e8f31b971debfabe_ICON-FUTURES.svg"),
+                                            key_image_url: Url::of_unchecked("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414e8f31b971debfabe_ICON-FUTURES.svg"),
                                             arbitrary_coolness_rating: 10,
                                         },
                                         // Skipping 6 and 7 because they don't need to be complete
                                         NonFungibleLocalId::integer(8) => MetadataStandardNonFungibleData {
                                             name: "Gaming".into(),
                                             description: "Since we have so many gamers who spend endless hours and money on gaming platforms, DeFi gaming platforms will enable them to monetize their time and progress. The play-to-earn games offer the best of both worlds - they provide an entertaining experience and make playing games lucrative.".into(),
-                                            key_image_url: Url::of("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f416931770a50ed4a702_ICON-GAMING.svg"),
+                                            key_image_url: Url::of_unchecked("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f416931770a50ed4a702_ICON-GAMING.svg"),
                                             arbitrary_coolness_rating: 71,
                                         },
                                     )),

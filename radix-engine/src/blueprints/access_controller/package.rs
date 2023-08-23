@@ -634,7 +634,7 @@ impl AccessControllerNativePackage {
                             },
                             init {
                                 "name" => "Recovery Badge".to_owned(), locked;
-                                "icon_url" => Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()), locked;
+                                "icon_url" => Url::of_unchecked("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()), locked;
                                 "access_controller" => address, locked;
                             }
                         },

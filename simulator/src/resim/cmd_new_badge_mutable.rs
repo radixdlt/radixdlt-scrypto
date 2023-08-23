@@ -64,10 +64,16 @@ impl NewBadgeMutable {
             );
         }
         if let Some(info_url) = self.info_url.clone() {
-            metadata.insert("info_url".to_string(), MetadataValue::Url(Url(info_url)));
+            metadata.insert(
+                "info_url".to_string(),
+                MetadataValue::Url(Url::of_unchecked(info_url)),
+            );
         }
         if let Some(icon_url) = self.icon_url.clone() {
-            metadata.insert("icon_url".to_string(), MetadataValue::Url(Url(icon_url)));
+            metadata.insert(
+                "icon_url".to_string(),
+                MetadataValue::Url(Url::of_unchecked(icon_url)),
+            );
         };
 
         let metadata = ModuleConfig {

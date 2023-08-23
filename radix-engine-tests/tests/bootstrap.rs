@@ -429,7 +429,7 @@ fn test_genesis_stake_allocation() {
             if let Some(MetadataValue::Url(url)) = validator_url_entry.value {
                 assert_eq!(
                     url,
-                    Url(format!("http://test.local?validator={:?}", validator_key))
+                    Url::of_unchecked(format!("http://test.local?validator={:?}", validator_key))
                 );
             } else {
                 panic!("Validator url was not a Url");

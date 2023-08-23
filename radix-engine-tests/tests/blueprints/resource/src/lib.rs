@@ -179,7 +179,10 @@ mod resource_test {
 
             badge.authorize_with_all(|| {
                 token_resource_manager.set_metadata("a".to_owned(), "b".to_owned());
-                let string: String = token_resource_manager.get_metadata("a".to_owned()).unwrap().unwrap();
+                let string: String = token_resource_manager
+                    .get_metadata("a".to_owned())
+                    .unwrap()
+                    .unwrap();
                 assert_eq!(string, "b".to_owned());
             });
 

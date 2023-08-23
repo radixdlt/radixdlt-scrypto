@@ -407,9 +407,13 @@ fn create_metadata() -> BTreeMap<String, MetadataValue> {
     add(
         &mut metadata,
         "url",
-        &[Url("https://www.radixdlt.com".to_owned())],
+        &[Url::of_unchecked("https://www.radixdlt.com".to_owned())],
     );
-    add(&mut metadata, "", &[Origin("www.radixdlt.com".to_owned())]);
+    add(
+        &mut metadata,
+        "",
+        &[Origin::of_unchecked("www.radixdlt.com".to_owned())],
+    );
     add(
         &mut metadata,
         "public_key_hash",

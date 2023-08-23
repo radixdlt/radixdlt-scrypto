@@ -5,8 +5,8 @@ mod metadata {
     struct MetadataTest {}
 
     impl MetadataTest {
-        pub fn validate(x: String) {
-            validate_url_regex(x.as_str()).unwrap();
+        pub fn test_url_validation(x: String) {
+            Url::of(x).unwrap();
         }
 
         pub fn new() -> Global<MetadataTest> {
