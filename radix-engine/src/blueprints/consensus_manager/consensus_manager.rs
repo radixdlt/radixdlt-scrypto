@@ -323,46 +323,8 @@ impl ConsensusManagerBlueprint {
     pub fn definition() -> BlueprintDefinitionInit {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
+        let feature_set = ConsensusManagerFeatureSet::all_features();
         let state = ConsensusManagerStateSchemaInit::create_schema_init(&mut aggregator);
-
-        /*
-        let mut fields = Vec::new();
-
-        fields.push(FieldSchema::static_field(
-            aggregator.add_child_type_and_descendents::<ConsensusManagerConfigSubstate>(),
-        ));
-        fields.push(FieldSchema::static_field(
-            aggregator.add_child_type_and_descendents::<ConsensusManagerSubstate>(),
-        ));
-        fields.push(FieldSchema::static_field(
-            aggregator.add_child_type_and_descendents::<ValidatorRewardsSubstate>(),
-        ));
-        fields.push(FieldSchema::static_field(
-            aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>(),
-        ));
-        fields.push(FieldSchema::static_field(
-            aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>(),
-        ));
-        fields.push(FieldSchema::static_field(
-            aggregator.add_child_type_and_descendents::<ProposerMinuteTimestampSubstate>(),
-        ));
-        fields.push(FieldSchema::static_field(
-            aggregator.add_child_type_and_descendents::<ProposerMilliTimestampSubstate>(),
-        ));
-
-        let mut collections = Vec::new();
-        collections.push(BlueprintCollectionSchema::SortedIndex(
-            BlueprintKeyValueSchema {
-                key: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<ComponentAddress>(),
-                ),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<Validator>(),
-                ),
-                allow_ownership: false,
-            },
-        ));
-         */
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -480,7 +442,7 @@ impl ConsensusManagerBlueprint {
         BlueprintDefinitionInit {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
-            feature_set: btreeset!(),
+            feature_set,
             dependencies: btreeset!(
                 XRD.into(),
                 PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),

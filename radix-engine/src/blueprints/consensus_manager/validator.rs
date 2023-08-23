@@ -196,6 +196,7 @@ impl ValidatorBlueprint {
     pub fn definition() -> BlueprintDefinitionInit {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
+        let feature_set = ValidatorFeatureSet::all_features();
         let state = ValidatorStateSchemaInit::create_schema_init(&mut aggregator);
 
         let mut functions = BTreeMap::new();
@@ -481,7 +482,7 @@ impl ValidatorBlueprint {
                 outer_blueprint: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
             },
             is_transient: false,
-            feature_set: btreeset!(),
+            feature_set,
             dependencies: btreeset!(),
             schema: BlueprintSchemaInit {
                 generics: vec![],

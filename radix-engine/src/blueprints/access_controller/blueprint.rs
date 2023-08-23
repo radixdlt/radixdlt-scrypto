@@ -187,6 +187,7 @@ impl AccessControllerBlueprint {
     pub fn definition() -> BlueprintDefinitionInit {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
+        let feature_set = AccessControllerFeatureSet::all_features();
         let state = AccessControllerStateSchemaInit::create_schema_init(&mut aggregator);
 
         let mut functions = BTreeMap::new();
@@ -445,7 +446,7 @@ impl AccessControllerBlueprint {
         BlueprintDefinitionInit {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
-            feature_set: btreeset!(),
+            feature_set,
             dependencies: btreeset!(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),),
 
             schema: BlueprintSchemaInit {

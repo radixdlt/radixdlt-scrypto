@@ -53,6 +53,7 @@ pub struct OneResourcePoolBlueprint;
 impl OneResourcePoolBlueprint {
     pub fn definition() -> BlueprintDefinitionInit {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let feature_set = OneResourcePoolFeatureSet::all_features();
         let state = OneResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
         let mut functions = BTreeMap::new();
 
@@ -179,7 +180,7 @@ impl OneResourcePoolBlueprint {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
             dependencies: btreeset!(),
-            feature_set: btreeset!(),
+            feature_set,
 
             schema: BlueprintSchemaInit {
                 generics: vec![],
@@ -296,7 +297,7 @@ impl OneResourcePoolBlueprint {
             api.new_simple_object(
                 ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
                 btreemap! {
-                    0u8 => FieldValue::immutable(&VersionedOneResourcePoolState::V1(substate)),
+                    OneResourcePoolField::State.field_index() => FieldValue::immutable(&OneResourcePoolStateFieldPayload::from_content_source(substate)),
                 },
             )?
         };

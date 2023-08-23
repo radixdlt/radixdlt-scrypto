@@ -53,6 +53,7 @@ impl MultiResourcePoolBlueprint {
     pub fn definition() -> BlueprintDefinitionInit {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
+        let feature_set = MultiResourcePoolFeatureSet::all_features();
         let state = MultiResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
 
         let mut functions = BTreeMap::new();
@@ -183,7 +184,7 @@ impl MultiResourcePoolBlueprint {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
             dependencies: btreeset!(),
-            feature_set: btreeset!(),
+            feature_set,
 
             schema: BlueprintSchemaInit {
                 generics: vec![],
