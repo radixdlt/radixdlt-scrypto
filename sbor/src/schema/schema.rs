@@ -105,7 +105,11 @@ impl<S: CustomSchema> SchemaV1<S> {
     }
 
     pub fn resolve_matching_map_metadata(&self, type_index: LocalTypeIndex) -> MapData<'_> {
-        let Some(TypeKind::Map { key_type, value_type }) = self.resolve_type_kind(type_index) else {
+        let Some(TypeKind::Map {
+            key_type,
+            value_type,
+        }) = self.resolve_type_kind(type_index)
+        else {
             return MapData::default();
         };
         MapData {

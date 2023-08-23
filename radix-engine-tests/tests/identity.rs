@@ -212,10 +212,8 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
-    let balance_changes = receipt.expect_commit_success().balance_changes();
-    let balance_change = balance_changes
-        .get(&GlobalAddress::from(account))
-        .unwrap()
+    let balance_change = test_runner
+        .sum_descendant_balance_changes(receipt.expect_commit_success(), account.as_node_id())
         .get(&IDENTITY_OWNER_BADGE)
         .unwrap()
         .clone();

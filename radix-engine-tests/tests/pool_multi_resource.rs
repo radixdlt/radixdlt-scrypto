@@ -162,11 +162,10 @@ fn contributing_provides_expected_amount_of_pool_units1() {
     let receipt = test_runner.contribute(contributions, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
     for (resource_address, amount) in expected_change.iter() {
         assert_eq!(
             account_balance_changes.get(resource_address).cloned(),
@@ -218,11 +217,10 @@ fn contributing_provides_expected_amount_of_pool_units2() {
     let receipt = test_runner.contribute(contributions, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
     for (resource_address, amount) in expected_change.iter() {
         assert_eq!(
             account_balance_changes.get(resource_address).cloned(),
@@ -274,11 +272,10 @@ fn contributing_provides_expected_amount_of_pool_units3() {
     let receipt = test_runner.contribute(contributions, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
     for (resource_address, amount) in expected_change.iter() {
         assert_eq!(
             account_balance_changes.get(resource_address).cloned(),
@@ -330,11 +327,10 @@ fn contributing_provides_expected_amount_of_pool_units4() {
     let receipt = test_runner.contribute(contributions, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
     for (resource_address, amount) in expected_change.iter() {
         assert_eq!(
             account_balance_changes.get(resource_address).cloned(),
@@ -465,11 +461,10 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
     let receipt = test_runner.redeem(dec!("1.11111111111111"), true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
     for (resource_address, amount) in expected_change.iter() {
         assert_eq!(
             account_balance_changes.get(resource_address).cloned(),
@@ -506,11 +501,10 @@ fn contribution_calculations_work_for_resources_with_divisibility_not_18() {
     let receipt = test_runner.contribute(contributions, true);
 
     // Assert
-    let pool_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.pool_component_address))
-        .unwrap();
+    let pool_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.pool_component_address.as_node_id(),
+    );
     assert_eq!(
         pool_balance_changes
             .get(&test_runner.pool_resources[0])

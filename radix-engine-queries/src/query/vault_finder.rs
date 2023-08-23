@@ -8,19 +8,17 @@ use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
 pub struct VaultFinder {
-    vaults: Vec<NodeId>,
-    resource_address: ResourceAddress,
+    vaults: IndexMap<ResourceAddress, Vec<NodeId>>,
 }
 
 impl VaultFinder {
-    pub fn new(resource_address: ResourceAddress) -> Self {
+    pub fn new() -> Self {
         VaultFinder {
-            vaults: Vec::new(),
-            resource_address,
+            vaults: index_map_new(),
         }
     }
 
-    pub fn to_vaults(self) -> Vec<NodeId> {
+    pub fn to_vaults(self) -> IndexMap<ResourceAddress, Vec<NodeId>> {
         self.vaults
     }
 }
@@ -32,9 +30,10 @@ impl StateTreeVisitor for VaultFinder {
         address: &ResourceAddress,
         _resource: &LiquidFungibleResource,
     ) {
-        if self.resource_address.eq(address) {
-            self.vaults.push(vault_id);
-        }
+        self.vaults
+            .entry(*address)
+            .or_insert_with(|| Vec::new())
+            .push(vault_id);
     }
 
     fn visit_non_fungible_vault(
@@ -43,8 +42,9 @@ impl StateTreeVisitor for VaultFinder {
         address: &ResourceAddress,
         _resource: &LiquidNonFungibleVault,
     ) {
-        if self.resource_address.eq(&address) {
-            self.vaults.push(vault_id);
-        }
+        self.vaults
+            .entry(*address)
+            .or_insert_with(|| Vec::new())
+            .push(vault_id);
     }
 }
