@@ -146,7 +146,7 @@ fn create_advanced_sample_schema_works_correctly() {
             Cow::Borrowed("k")
         ]))
     );
-    let TypeKind::Tuple { field_types } =  kind else {
+    let TypeKind::Tuple { field_types } = kind else {
         panic!("Type was not a Tuple");
     };
     assert!(matches!(
@@ -201,7 +201,7 @@ fn creating_schema_from_multiple_types_works_correctly() {
     let kind = schema
         .resolve_type_kind(advanced_sample_type_index)
         .unwrap();
-    let TypeKind::Tuple { field_types } =  kind else {
+    let TypeKind::Tuple { field_types } = kind else {
         panic!("Type was not a Tuple");
     };
     assert_eq!(field_types[6], unit_struct_type_index); // T = UnitStruct is the 7th field in AdvancedSample<UnitStruct, u128>

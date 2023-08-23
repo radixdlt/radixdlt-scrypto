@@ -425,7 +425,7 @@ jobs:
       CARGO_LOG: info
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-16-cores]
+        os: [k8s-linux-runner, windows-latest-16-cores, macos-latest]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1

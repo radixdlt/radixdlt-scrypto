@@ -22,7 +22,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
-    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
@@ -671,7 +671,7 @@ where
         ast::Instruction::CreateAccessController { args } => InstructionV1::CallFunction {
             package_address: ACCESS_CONTROLLER_PACKAGE.into(),
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
-            function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            function_name: ACCESS_CONTROLLER_CREATE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateIdentity { args } => InstructionV1::CallFunction {

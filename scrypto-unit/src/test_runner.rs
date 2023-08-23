@@ -14,8 +14,8 @@ use radix_engine::system::system_db_checker::{
 };
 use radix_engine::system::system_db_reader::{SystemDatabaseReader, SystemDatabaseWriter};
 use radix_engine::transaction::{
-    execute_preview, execute_transaction, CommitResult, CostingParameters, ExecutionConfig,
-    PreviewError, TransactionReceipt, TransactionResult,
+    execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
+    ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
@@ -653,16 +653,24 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         definitions
     }
 
+    pub fn sum_descendant_balance_changes(
+        &mut self,
+        commit: &CommitResult,
+        node_id: &NodeId,
+    ) -> IndexMap<ResourceAddress, BalanceChange> {
+        SubtreeVaults::new(&self.database)
+            .sum_balance_changes(node_id, commit.vault_balance_changes())
+    }
+
     pub fn get_component_vaults(
         &mut self,
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Vec<NodeId> {
-        let node_id = component_address.as_node_id();
-        let mut vault_finder = VaultFinder::new(resource_address);
-        let mut traverser = StateTreeTraverser::new(&self.database, &mut vault_finder, 100);
-        traverser.traverse_all_descendents(*node_id);
-        vault_finder.to_vaults()
+        SubtreeVaults::new(&self.database)
+            .get_all(component_address.as_node_id())
+            .remove(&resource_address)
+            .unwrap_or_else(|| Vec::new())
     }
 
     pub fn get_component_balance(
@@ -824,7 +832,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
     pub fn new_account_advanced(&mut self, owner_role: OwnerRole) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .new_account_advanced(owner_role)
+            .new_account_advanced(owner_role, None)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -930,7 +938,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     .call_function_with_name_lookup(
                         ACCESS_CONTROLLER_PACKAGE,
                         ACCESS_CONTROLLER_BLUEPRINT,
-                        ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+                        ACCESS_CONTROLLER_CREATE_IDENT,
                         |lookup| {
                             (
                                 lookup.bucket("owner_badge"),
@@ -940,6 +948,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                                     confirmation_role: access_rule.clone(),
                                 },
                                 Some(1000u32),
+                                None::<()>,
                             )
                         },
                     )
@@ -2156,6 +2165,44 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn check_db(&self) -> Result<SystemDatabaseCheckerResults, SystemDatabaseCheckError> {
         let checker = SystemDatabaseChecker::new();
         checker.check_db(&self.database)
+    }
+}
+
+pub struct SubtreeVaults<'d, D> {
+    database: &'d D,
+}
+
+impl<'d, D: SubstateDatabase> SubtreeVaults<'d, D> {
+    pub fn new(database: &'d D) -> Self {
+        Self { database }
+    }
+
+    pub fn get_all(&self, node_id: &NodeId) -> IndexMap<ResourceAddress, Vec<NodeId>> {
+        let mut vault_finder = VaultFinder::new();
+        let mut traverser = StateTreeTraverser::new(self.database, &mut vault_finder, 100);
+        traverser.traverse_subtree(*node_id);
+        vault_finder.to_vaults()
+    }
+
+    pub fn sum_balance_changes(
+        &self,
+        node_id: &NodeId,
+        vault_balance_changes: &IndexMap<NodeId, (ResourceAddress, BalanceChange)>,
+    ) -> IndexMap<ResourceAddress, BalanceChange> {
+        self.get_all(node_id)
+            .into_iter()
+            .filter_map(|(traversed_resource, vault_ids)| {
+                vault_ids
+                    .into_iter()
+                    .filter_map(|vault_id| vault_balance_changes.get(&vault_id).cloned())
+                    .map(|(reported_resource, change)| {
+                        assert_eq!(reported_resource, traversed_resource);
+                        change
+                    })
+                    .reduce(|left, right| left + right)
+                    .map(|change| (traversed_resource, change))
+            })
+            .collect()
     }
 }
 

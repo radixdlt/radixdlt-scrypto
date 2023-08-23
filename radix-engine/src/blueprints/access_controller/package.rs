@@ -31,7 +31,7 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => AccessControllerBlueprint::create_global(input, api),
+            ACCESS_CONTROLLER_CREATE_IDENT => AccessControllerBlueprint::create_global(input, api),
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => AccessControllerBlueprint::create_proof(input, api),
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => {
                 AccessControllerBlueprint::initiate_recovery_as_primary(input, api)

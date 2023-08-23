@@ -193,18 +193,17 @@ impl AccessControllerBlueprint {
 
         let mut functions = BTreeMap::new();
         functions.insert(
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            ACCESS_CONTROLLER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: None,
                 input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
+                    aggregator.add_child_type_and_descendents::<AccessControllerCreateInput>(),
                 ),
                 output: TypeRef::Static(
                     aggregator
                         .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
                 ),
-                export: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+                export: ACCESS_CONTROLLER_CREATE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -512,16 +511,23 @@ impl AccessControllerBlueprint {
         where
             Y: ClientApi<RuntimeError>,
     {
-        let input: AccessControllerCreateGlobalInput = input
+        let input: AccessControllerCreateInput = input
             .as_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Allocating the address of the access controller - this will be needed for the metadata
         // and access rules of the recovery badge
-        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
-            package_address: ACCESS_CONTROLLER_PACKAGE,
-            blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
-        })?;
+        let (address_reservation, address) = {
+            if let Some(address_reservation) = input.address_reservation {
+                let address = api.get_reservation_address(address_reservation.0.as_node_id())?;
+                (address_reservation, address)
+            } else {
+                api.allocate_global_address(BlueprintId {
+                    package_address: ACCESS_CONTROLLER_PACKAGE,
+                    blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+                })?
+            }
+        };
 
         // Creating a new vault and putting in it the controlled asset
         let vault = {

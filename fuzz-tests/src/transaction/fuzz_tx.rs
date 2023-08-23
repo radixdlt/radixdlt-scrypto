@@ -320,7 +320,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallFunction {
                         package_address: package_address.into(),
                         blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
-                        function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+                        function_name: ACCESS_CONTROLLER_CREATE_IDENT.to_string(),
                         args: manifest_args!(bucket_id, rule_set, timed_recovery_delay_in_minutes)
                             .into(),
                     })
@@ -345,7 +345,7 @@ impl TxFuzzer {
                 InstructionDiscriminants::CreateAccountAdvanced => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
-                    let input = AccountCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
+                    let input = AccountCreateAdvancedManifestInput::arbitrary(&mut unstructured).unwrap();
 
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallFunction {

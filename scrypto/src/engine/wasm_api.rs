@@ -30,7 +30,7 @@ pub fn forget_vec(vec: Vec<u8>) -> Slice {
 pub mod blueprint {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    extern "C" {
+    super::wasm_extern_c! {
         /// Invokes a blueprint function
         pub fn blueprint_call(
             blueprint_id_ptr: *const u8,
@@ -47,7 +47,7 @@ pub mod blueprint {
 pub mod addr {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    extern "C" {
+    super::wasm_extern_c! {
         /// Reserves a global address for a given blueprint
         pub fn address_allocate(blueprint_id_ptr: *const u8, blueprint_id_len: usize) -> Buffer;
 
@@ -63,7 +63,7 @@ pub mod addr {
 pub mod object {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    extern "C" {
+    super::wasm_extern_c! {
         /// Creates a new object of a given blueprint defined in the same
         /// package as the current actor
         pub fn object_new(
@@ -128,7 +128,7 @@ pub mod actor {
     use radix_engine_interface::api::{ActorRefHandle, ActorStateHandle};
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    extern "C" {
+    super::wasm_extern_c! {
         /// Get the blueprint id of the current actor
         pub fn actor_get_blueprint_id() -> Buffer;
 
@@ -156,7 +156,7 @@ pub mod actor {
 pub mod kv_store {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    extern "C" {
+    super::wasm_extern_c! {
         /// Creates a new key value store
         pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
@@ -183,7 +183,7 @@ pub mod kv_store {
 pub mod kv_entry {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    extern "C" {
+    super::wasm_extern_c! {
         /// Reads the value in a Key Value entry
         pub fn kv_entry_read(kv_entry_handle: u32) -> Buffer;
 
@@ -202,7 +202,7 @@ pub mod kv_entry {
 pub mod field_entry {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    extern "C" {
+    super::wasm_extern_c! {
         /// Reads the value in a field
         pub fn field_entry_read(handle: u32) -> Buffer;
 
@@ -217,7 +217,7 @@ pub mod field_entry {
 pub mod costing {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    extern "C" {
+    super::wasm_extern_c! {
         pub fn costing_get_execution_cost_unit_limit() -> u32;
 
         pub fn costing_get_execution_cost_unit_price() -> Buffer;
@@ -238,7 +238,7 @@ pub mod costing {
 pub mod system {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    extern "C" {
+    super::wasm_extern_c! {
         /// Logs a string message
         pub fn sys_log(
             level_ptr: *const u8,
@@ -264,8 +264,34 @@ pub mod system {
 pub mod buffer {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    extern "C" {
+    super::wasm_extern_c! {
         /// Consumes a buffer by copying the contents into the specified destination.
         pub fn buffer_consume(buffer_id: BufferId, destination_ptr: *mut u8);
     }
 }
+
+macro_rules! wasm_extern_c {
+    (
+        $(
+            $(#[$meta:meta])*
+            pub fn $fn_ident: ident ( $($arg_name: ident: $arg_type: ty),* $(,)? ) $(-> $rtn_type: ty)?;
+        )*
+    ) => {
+        #[cfg(target_arch = "wasm32")]
+        extern "C" {
+            $(
+                $(#[$meta])*
+                pub fn $fn_ident ( $($arg_name: $arg_type),* ) $(-> $rtn_type)?;
+            )*
+        }
+
+        $(
+            #[cfg(not(target_arch = "wasm32"))]
+            $(#[$meta])*
+            pub unsafe fn $fn_ident ( $(_: $arg_type),* ) $(-> $rtn_type)? {
+                unimplemented!("Not implemented for non-wasm targets")
+            }
+        )*
+    };
+}
+use wasm_extern_c;
