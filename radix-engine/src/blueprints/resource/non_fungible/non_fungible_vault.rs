@@ -878,11 +878,12 @@ impl NonFungibleVaultBlueprint {
         balance.amount = balance.amount.safe_sub(n).unwrap();
 
         let taken = {
-            let ids: Vec<(NonFungibleLocalId, ())> = api.actor_index_drain_typed(
-                OBJECT_HANDLE_SELF,
-                NonFungibleVaultCollection::NonFungibleIndex,
-                n,
-            )?;
+            let ids: Vec<(NonFungibleLocalId, NonFungibleVaultNonFungibleEntryPayload)> = api
+                .actor_index_drain_typed(
+                    OBJECT_HANDLE_SELF,
+                    NonFungibleVaultCollection::NonFungibleIndex,
+                    n,
+                )?;
             LiquidNonFungibleResource {
                 ids: ids.into_iter().map(|(key, _value)| key).collect(),
             }
