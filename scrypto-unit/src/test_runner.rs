@@ -660,7 +660,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let node_id = component_address.as_node_id();
         let mut vault_finder = VaultFinder::new(resource_address);
         let mut traverser = StateTreeTraverser::new(&self.database, &mut vault_finder, 100);
-        traverser.traverse_all_descendents(None, *node_id);
+        traverser.traverse_all_descendents(*node_id);
         vault_finder.to_vaults()
     }
 

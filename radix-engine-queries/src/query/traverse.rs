@@ -52,14 +52,6 @@ pub trait StateTreeVisitor {
         _id: &NonFungibleLocalId,
     ) {
     }
-
-    fn visit_node_id(
-        &mut self,
-        _parent_id: Option<&(NodeId, PartitionNumber, SubstateKey)>,
-        _node_id: &NodeId,
-        _depth: u32,
-    ) {
-    }
 }
 
 impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v, S, V> {
@@ -73,24 +65,19 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     pub fn traverse_all_descendents(
         &mut self,
-        parent_node_id: Option<&(NodeId, PartitionNumber, SubstateKey)>,
         node_id: NodeId,
     ) {
-        self.traverse_recursive(parent_node_id, node_id, 0)
+        self.traverse_recursive(node_id, 0)
     }
 
     fn traverse_recursive(
         &mut self,
-        parent: Option<&(NodeId, PartitionNumber, SubstateKey)>,
         node_id: NodeId,
         depth: u32,
     ) {
         if depth > self.max_depth {
             return;
         }
-
-        // Notify visitor
-        self.visitor.visit_node_id(parent, &node_id, depth);
 
         // Load type info
         let type_info = self
@@ -115,7 +102,6 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         IndexedScryptoValue::from_scrypto_value(value).unpack();
                     for child_node_id in owned_nodes {
                         self.traverse_recursive(
-                            Some(&(node_id, MAIN_BASE_PARTITION, substate_key.clone())),
                             child_node_id,
                             depth + 1,
                         );
@@ -291,7 +277,6 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 IndexedScryptoValue::from_scrypto_value(substate_value).unpack();
             for child_node_id in owned_nodes {
                 self.traverse_recursive(
-                    Some(&(node_id, partition_num, substate_key.clone())),
                     child_node_id,
                     depth + 1,
                 );
