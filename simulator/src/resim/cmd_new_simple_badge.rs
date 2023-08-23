@@ -1,7 +1,9 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataInit, MetadataValue, Url};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataInit, MetadataValue, UncheckedUrl,
+};
 use radix_engine_interface::api::node_modules::ModuleConfig;
 
 use crate::resim::*;
@@ -67,10 +69,10 @@ impl NewSimpleBadge {
             metadata.set_and_lock("description", MetadataValue::String(description));
         }
         if let Some(info_url) = self.info_url.clone() {
-            metadata.set_and_lock("info_url", MetadataValue::Url(Url::of(info_url)));
+            metadata.set_and_lock("info_url", MetadataValue::Url(UncheckedUrl::of(info_url)));
         }
         if let Some(icon_url) = self.icon_url.clone() {
-            metadata.set_and_lock("icon_url", MetadataValue::Url(Url::of(icon_url)));
+            metadata.set_and_lock("icon_url", MetadataValue::Url(UncheckedUrl::of(icon_url)));
         };
 
         let manifest = ManifestBuilder::new()
