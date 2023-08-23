@@ -180,8 +180,7 @@ impl AccessControllerNativePackage {
             FunctionSchemaInit {
                 receiver: None,
                 input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
+                    aggregator.add_child_type_and_descendents::<AccessControllerCreateInput>(),
                 ),
                 output: TypeRef::Static(
                     aggregator
@@ -565,7 +564,7 @@ impl AccessControllerNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: AccessControllerCreateGlobalInput = input
+        let input: AccessControllerCreateInput = input
             .as_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 

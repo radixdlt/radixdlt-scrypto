@@ -102,7 +102,7 @@ impl VmInvoke for TestInvoke {
                     ACCESS_CONTROLLER_PACKAGE,
                     ACCESS_CONTROLLER_BLUEPRINT,
                     ACCESS_CONTROLLER_CREATE_IDENT,
-                    scrypto_encode(&AccessControllerCreateGlobalInput {
+                    scrypto_encode(&AccessControllerCreateInput {
                         controlled_asset: bucket,
                         rule_set: RuleSet {
                             primary_role: AccessRule::AllowAll,

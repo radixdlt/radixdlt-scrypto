@@ -15,14 +15,14 @@ pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
 pub const ACCESS_CONTROLLER_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccessControllerCreateGlobalInput {
+pub struct AccessControllerCreateInput {
     pub controlled_asset: Bucket,
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-impl Clone for AccessControllerCreateGlobalInput {
+impl Clone for AccessControllerCreateInput {
     fn clone(&self) -> Self {
         Self {
             controlled_asset: Bucket(self.controlled_asset.0),
