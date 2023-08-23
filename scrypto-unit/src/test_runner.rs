@@ -43,7 +43,7 @@ use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFi
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::db_key_mapper::{
-    MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+    MappedSubstateDatabase, SpreadPrefixKeyMapper,
 };
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, ListableSubstateDatabase,
@@ -870,17 +870,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn get_active_validator_with_key(&self, key: &Secp256k1PublicKey) -> ComponentAddress {
-        let substate = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<CurrentValidatorSetSubstate>>(
-                CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::CurrentValidatorSet.into(),
-            )
-            .unwrap()
-            .value
-            .0;
-
+        let reader = SystemDatabaseReader::new(&self.database);
+        let substate = reader.read_typed_object_field::<ConsensusManagerCurrentValidatorSetFieldPayload>(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::CurrentValidatorSet.field_index()
+        ).unwrap().into_latest();
         substate
             .validator_set
             .get_by_public_key(key)

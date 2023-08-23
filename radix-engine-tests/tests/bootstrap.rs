@@ -1,7 +1,6 @@
-use radix_engine::blueprints::consensus_manager::ProposerMinuteTimestampSubstate;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system::{KeyValueEntrySubstate};
 use radix_engine::system::system_db_checker::SystemDatabaseChecker;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::system::system_modules::auth::AuthError;

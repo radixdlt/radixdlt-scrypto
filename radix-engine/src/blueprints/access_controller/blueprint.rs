@@ -1,7 +1,6 @@
 use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError};
-use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use crate::{event_schema, roles_template};
 use native_sdk::modules::metadata::Metadata;

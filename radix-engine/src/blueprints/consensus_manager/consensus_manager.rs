@@ -764,8 +764,8 @@ impl ConsensusManagerBlueprint {
             ConsensusManagerField::Configuration.into(),
             LockFlags::read_only(),
         )?;
-        let config_substate: ConsensusManagerConfigSubstate =
-            api.field_read_typed(config_handle)?;
+        let config_substate =
+            api.field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?.into_latest();
         api.field_close(config_handle)?;
 
         let manager_handle = api.actor_open_field(
@@ -828,7 +828,7 @@ impl ConsensusManagerBlueprint {
             ConsensusManagerField::State.field_index(),
             LockFlags::read_only(),
         )?;
-        let manager_substate: ConsensusManagerStateFieldPayload = api.field_read_typed(manager_handle)?;
+        let manager_substate= api.field_read_typed::<ConsensusManagerStateFieldPayload>(manager_handle)?;
         let manager_substate = manager_substate.into_latest();
 
         let validator_creation_xrd_cost = if manager_substate.started {
@@ -1038,7 +1038,7 @@ impl ConsensusManagerBlueprint {
         let num_validators_to_read_from_store =
             config.max_validators + (config.max_validators / 10) + 10;
 
-        let mut top_registered_validators: Vec<(ComponentAddress, Validator)> = api
+        let mut top_registered_validators: Vec<(ComponentAddress, ConsensusManagerRegisteredValidatorByStakeEntryPayload)> = api
             .actor_sorted_index_scan_typed(
                 ACTOR_STATE_SELF,
                 ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
@@ -1049,14 +1049,19 @@ impl ConsensusManagerBlueprint {
         // then let's be even more accurate here. This sort is stable, so if two validators tie, then the resultant order will be
         // decided on sort key DESC.
         top_registered_validators.sort_by(|(_, validator_1), (_, validator_2)| {
-            validator_1.stake.cmp(&validator_2.stake).reverse()
+            match (&validator_1.content, &validator_2.content) {
+                (VersionedConsensusManagerRegisteredValidatorByStake::V1(validator1),
+                VersionedConsensusManagerRegisteredValidatorByStake::V1(validator2)) => {
+                    validator1.stake.cmp(&validator2.stake).reverse()
+                }
+            }
         });
 
         let next_active_validator_set = ActiveValidatorSet {
             validators_by_stake_desc: top_registered_validators
                 .into_iter()
                 .take(config.max_validators as usize)
-                .map(|(component_address, validator)| (component_address, validator))
+                .map(|(component_address, validator)| (component_address, validator.into_latest()))
                 .collect(),
         };
 
