@@ -273,7 +273,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
 
     if owned_resource {
         let created_owner_badge = resource_creation_commit.new_resource_addresses()[1];
-        let owner_badge_vault = resource_creation_commit.new_vault_addresses()[1];
+        let owner_badge_vault = resource_creation_commit.new_vault_addresses()[0];
 
         assert_eq!(
             resource_creation_commit
@@ -287,7 +287,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
 
     let created_resource = resource_creation_commit.new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
     let allocation_commit = allocation_receipt.expect_commit_success();
-    let created_vault = allocation_commit.new_vault_addresses()[1];
+    let created_vault = allocation_commit.new_vault_addresses()[0];
 
     assert_eq!(
         allocation_commit
