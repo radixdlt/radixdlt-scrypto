@@ -263,7 +263,7 @@ fn can_set_instant_metadata_through_manifest() {
 #[test]
 fn can_set_url_metadata_through_manifest() {
     can_set_metadata_through_manifest(MetadataValue::Url(Url::of_unchecked(
-        "https://radixdlt.com/index.html".to_string()
+        "https://radixdlt.com/index.html".to_string(),
     )));
 }
 
