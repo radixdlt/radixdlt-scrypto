@@ -2,10 +2,8 @@ use radix_engine::types::*;
 
 // Import and re-export these types so they are available easily with a single import
 pub use radix_engine::blueprints::access_controller::*;
-pub use radix_engine::blueprints::account::{
-    AccountAuthorizedDepositorEntryContents, AccountBlueprint, AccountError, AccountNativePackage,
-    AccountResourcePreferenceEntryContents, AccountSubstate, AccountVaultEntryContents,
-};
+pub use radix_engine::blueprints::account::{AccountBlueprint, AccountError, AccountNativePackage};
+use radix_engine::blueprints::account::{AccountTypedSubstateKey, AccountTypedSubstateValue};
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
 pub use radix_engine::blueprints::pool::multi_resource_pool;
@@ -138,10 +136,7 @@ pub enum TypedMainModuleSubstateKey {
     ConsensusManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
     ValidatorField(ValidatorField),
     AccessControllerField(AccessControllerField),
-    AccountField(AccountField),
-    AccountVaultKey(ResourceAddress),
-    AccountResourcePreferenceKey(ResourceAddress),
-    AccountAuthorizedDepositorKey(ResourceOrNonFungible),
+    Account(AccountTypedSubstateKey),
     OneResourcePoolField(OneResourcePoolField),
     TwoResourcePoolField(TwoResourcePoolField),
     MultiResourcePoolField(MultiResourcePoolField),
@@ -322,31 +317,10 @@ fn to_typed_object_substate_key_internal(
         | EntityType::GlobalVirtualEd25519Account
         | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
-            let partition_offset = AccountPartitionOffset::try_from(partition_offset)?;
-
-            match partition_offset {
-                AccountPartitionOffset::AccountVaultsByResourceAddress => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountVaultKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                AccountPartitionOffset::AccountResourcePreferenceByAddress => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountResourcePreferenceKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                AccountPartitionOffset::AccountAuthorizedDepositorByResourceOrNonFungible => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                AccountPartitionOffset::Account => {
-                    TypedMainModuleSubstateKey::AccountField(AccountField::try_from(substate_key)?)
-                }
-            }
+            TypedMainModuleSubstateKey::Account(AccountTypedSubstateKey::for_key_in_partition(
+                &AccountPartitionOffset::try_from(PartitionOffset(partition_offset))?,
+                substate_key,
+            )?)
         }
         EntityType::GlobalVirtualSecp256k1Identity
         | EntityType::GlobalVirtualEd25519Identity
@@ -451,10 +425,7 @@ pub enum TypedMainModuleSubstateValue {
     ConsensusManagerRegisteredValidatorsByStakeIndexEntry(Validator),
     Validator(TypedValidatorFieldValue),
     AccessController(TypedAccessControllerFieldValue),
-    Account(TypedAccountFieldValue),
-    AccountVaultEntry(KeyValueEntrySubstate<AccountVaultEntryContents>),
-    AccountResourcePreferenceEntry(KeyValueEntrySubstate<AccountResourcePreferenceEntryContents>),
-    AccountAuthorizedDepositorEntry(KeyValueEntrySubstate<AccountAuthorizedDepositorEntryContents>),
+    Account(AccountTypedSubstateValue),
     OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
@@ -515,11 +486,6 @@ pub enum TypedAccessControllerFieldValue {
 #[derive(Debug)]
 pub enum GenericScryptoComponentFieldValue {
     State(FieldSubstate<ScryptoValue>),
-}
-
-#[derive(Debug)]
-pub enum TypedAccountFieldValue {
-    Account(FieldSubstate<AccountSubstate>),
 }
 
 #[derive(Debug)]
@@ -706,20 +672,9 @@ fn to_typed_object_substate_value(
                 }
             })
         }
-        TypedMainModuleSubstateKey::AccountField(offset) => {
-            TypedMainModuleSubstateValue::Account(match offset {
-                AccountField::Account => TypedAccountFieldValue::Account(scrypto_decode(data)?),
-            })
-        }
-        TypedMainModuleSubstateKey::AccountVaultKey(_) => {
-            TypedMainModuleSubstateValue::AccountVaultEntry(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::AccountResourcePreferenceKey(_) => {
-            TypedMainModuleSubstateValue::AccountResourcePreferenceEntry(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(_) => {
-            TypedMainModuleSubstateValue::AccountAuthorizedDepositorEntry(scrypto_decode(data)?)
-        }
+        TypedMainModuleSubstateKey::Account(key) => TypedMainModuleSubstateValue::Account(
+            AccountTypedSubstateValue::from_key_and_data(key, data)?,
+        ),
         TypedMainModuleSubstateKey::AccessControllerField(offset) => {
             TypedMainModuleSubstateValue::AccessController(match offset {
                 AccessControllerField::AccessController => {

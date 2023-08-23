@@ -2,6 +2,7 @@ use super::*;
 use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignment};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
@@ -13,8 +14,8 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::FieldValue;
 use radix_engine_interface::api::{ClientApi, GenericArgs, ModuleId, ACTOR_STATE_SELF};
-use radix_engine_interface::api::{CollectionIndex, FieldValue};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 use radix_engine_interface::hooks::OnVirtualizeInput;
@@ -61,18 +62,500 @@ impl SecurifiedRoleAssignment for SecurifiedAccount {
 
 impl PresecurifiedRoleAssignment for SecurifiedAccount {}
 
-pub const ACCOUNT_VAULT_COLLECTION_INDEX: CollectionIndex = 0u8;
-pub type AccountVaultEntryContents = Vault;
+declare_native_blueprint_state! {
+    blueprint_ident: Account,
+    blueprint_snake_case: account,
+    features: {
+    },
+    fields: {
+        account:  {
+            ident: Account,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        }
+    },
+    collections: {
+        resource_vaults: KeyValue {
+            entry_ident: ResourceVault,
+            key_type: {
+                kind: Static,
+                content_type: ResourceAddress,
+            },
+            value_type: {
+                kind: StaticSingleVersioned,
+            },
+            allow_ownership: true,
+        },
+        resource_preferences: KeyValue {
+            entry_ident: ResourcePreference,
+            key_type: {
+                kind: Static,
+                content_type: ResourceAddress,
+            },
+            value_type: {
+                kind: StaticSingleVersioned,
+            },
+            allow_ownership: false,
+        },
+        authorized_depositors: KeyValue {
+            entry_ident: AuthorizedDepositor,
+            key_type: {
+                kind: Static,
+                content_type: ResourceOrNonFungible,
+            },
+            value_type: {
+                kind: StaticSingleVersioned,
+            },
+            allow_ownership: false,
+        },
+    }
+}
 
-pub const ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX: CollectionIndex = 1u8;
-pub type AccountResourcePreferenceEntryContents = ResourcePreference;
-
-pub const ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX: CollectionIndex = 2u8;
-pub type AccountAuthorizedDepositorEntryContents = ();
+pub type AccountAccountV1 = AccountSubstate;
+pub type AccountResourceVaultV1 = Vault;
+pub type AccountResourcePreferenceV1 = ResourcePreference;
+pub type AccountAuthorizedDepositorV1 = ();
 
 pub struct AccountBlueprint;
 
 impl AccountBlueprint {
+    pub fn get_definition() -> BlueprintDefinitionInit {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let state = AccountStateSchemaInit::create_schema_init(&mut aggregator);
+
+        let mut functions = BTreeMap::new();
+
+        functions.insert(
+            ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountCreateAdvancedInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountCreateAdvancedOutput>(),
+                ),
+                export: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CREATE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountCreateInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountCreateOutput>(),
+                ),
+                export: ACCOUNT_CREATE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_SECURIFY_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountSecurifyInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountSecurifyOutput>(),
+                ),
+                export: ACCOUNT_SECURIFY_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_FEE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountLockFeeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountLockFeeOutput>(),
+                ),
+                export: ACCOUNT_LOCK_FEE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountLockContingentFeeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountLockContingentFeeOutput>(),
+                ),
+                export: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_DEPOSIT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountDepositInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountDepositOutput>(),
+                ),
+                export: ACCOUNT_DEPOSIT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountDepositBatchInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountDepositBatchOutput>(),
+                ),
+                export: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_WITHDRAW_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountWithdrawInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountWithdrawOutput>(),
+                ),
+                export: ACCOUNT_WITHDRAW_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountWithdrawNonFungiblesInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountWithdrawNonFungiblesOutput>(),
+                ),
+                export: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_BURN_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountBurnInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountBurnOutput>(),
+                ),
+                export: ACCOUNT_BURN_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_BURN_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountBurnNonFungiblesInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountBurnNonFungiblesOutput>(),
+                ),
+                export: ACCOUNT_BURN_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountLockFeeAndWithdrawInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountLockFeeAndWithdrawOutput>(),
+                ),
+                export: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccountLockFeeAndWithdrawNonFungiblesInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<AccountLockFeeAndWithdrawNonFungiblesOutput>(
+                    )),
+                export: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountCreateProofOfAmountInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountCreateProofOfAmountOutput>(),
+                ),
+                export: ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountCreateProofOfNonFungiblesInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountCreateProofOfNonFungiblesOutput>(),
+                ),
+                export: ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountSetDefaultDepositRuleInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountSetDefaultDepositRuleOutput>(),
+                ),
+                export: ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountSetResourcePreferenceInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountSetResourcePreferenceOutput>(),
+                ),
+                export: ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveResourcePreferenceInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveResourcePreferenceOutput>(),
+                ),
+                export: ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountTryDepositOrRefundInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountTryDepositOrRefundOutput>(),
+                ),
+                export: ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundOutput>(),
+                ),
+                export: ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountTryDepositOrAbortInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountTryDepositOrAbortOutput>(),
+                ),
+                export: ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryDepositBatchOrAbortInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryDepositBatchOrAbortOutput>(),
+                ),
+                export: ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountAddAuthorizedDepositorInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountAddAuthorizedDepositorOutput>(),
+                ),
+                export: ACCOUNT_ADD_AUTHORIZED_DEPOSITOR.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveAuthorizedDepositorInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveAuthorizedDepositorOutput>(),
+                ),
+                export: ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR.to_string(),
+            },
+        );
+
+        let events = event_schema! {
+            aggregator,
+            [
+                WithdrawEvent,
+                DepositEvent,
+                RejectedDepositEvent,
+                SetResourcePreferenceEvent,
+                RemoveResourcePreferenceEvent,
+                SetDefaultDepositRuleEvent,
+                AddAuthorizedDepositorEvent,
+                RemoveAuthorizedDepositorEvent,
+            ]
+        };
+
+        let schema = generate_full_schema(aggregator);
+
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::default(),
+            is_transient: false,
+            feature_set: btreeset!(),
+            dependencies: btreeset!(
+                SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+                ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                ACCOUNT_OWNER_BADGE.into(),
+                PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+            ),
+
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema,
+                state,
+                events,
+                functions: BlueprintFunctionsSchemaInit { functions },
+                hooks: BlueprintHooksInit {
+                    hooks: btreemap!(BlueprintHook::OnVirtualize => ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME.to_string()),
+                },
+            },
+
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AllowAll,
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template!(
+                    roles {
+                        SECURIFY_ROLE => updaters: [SELF_ROLE];
+                    },
+                    methods {
+                        ACCOUNT_SECURIFY_IDENT => [SECURIFY_ROLE];
+
+                        ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT => [OWNER_ROLE];
+                        ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT => [OWNER_ROLE];
+                        ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT => [OWNER_ROLE];
+                        ACCOUNT_WITHDRAW_IDENT => [OWNER_ROLE];
+                        ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                        ACCOUNT_LOCK_FEE_IDENT => [OWNER_ROLE];
+                        ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => [OWNER_ROLE];
+                        ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => [OWNER_ROLE];
+                        ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                        ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => [OWNER_ROLE];
+                        ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                        ACCOUNT_DEPOSIT_IDENT => [OWNER_ROLE];
+                        ACCOUNT_DEPOSIT_BATCH_IDENT => [OWNER_ROLE];
+                        ACCOUNT_BURN_IDENT => [OWNER_ROLE];
+                        ACCOUNT_BURN_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                        ACCOUNT_ADD_AUTHORIZED_DEPOSITOR => [OWNER_ROLE];
+                        ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR => [OWNER_ROLE];
+
+                        ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodAccessibility::Public;
+                        ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodAccessibility::Public;
+                        ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodAccessibility::Public;
+                        ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodAccessibility::Public;
+                    }
+                )),
+            },
+        }
+    }
+
     fn create_modules<Y>(
         role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
@@ -242,9 +725,9 @@ impl AccountBlueprint {
             vec![],
             GenericArgs::default(),
             btreemap! {
-                0u8 => FieldValue::new(&AccountSubstate {
+                AccountField::Account.field_index() => FieldValue::new(&VersionedAccountAccount::V1(AccountAccountV1 {
                     default_deposit_rule: DefaultDepositRule::Accept,
-                })
+                }))
             },
             btreemap!(),
         )?;
@@ -461,11 +944,11 @@ impl AccountBlueprint {
             scrypto_encode(badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
-            ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX,
+            AccountCollection::AuthorizedDepositorKeyValue.collection_index(),
             &encoded_key,
             LockFlags::read_only(),
         )?;
-        let entry = api.key_value_entry_get_typed::<AccountAuthorizedDepositorEntryContents>(
+        let entry = api.key_value_entry_get_typed::<VersionedAccountAuthorizedDepositor>(
             kv_store_entry_lock_handle,
         )?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
@@ -658,9 +1141,13 @@ impl AccountBlueprint {
     {
         let substate_key = AccountField::Account.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::MUTABLE)?;
-        let mut account = api.field_read_typed::<AccountSubstate>(handle)?;
+        let mut account = api.field_read_typed::<VersionedAccountAccount>(handle)?;
 
-        account.default_deposit_rule = default;
+        match &mut account {
+            VersionedAccountAccount::V1(account) => {
+                account.default_deposit_rule = default;
+            }
+        }
 
         api.field_write_typed(handle, account)?;
         api.field_close(handle)?;
@@ -686,11 +1173,14 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
-            ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX,
+            AccountCollection::ResourcePreferenceKeyValue.collection_index(),
             &encoded_key,
             LockFlags::MUTABLE,
         )?;
-        api.key_value_entry_set_typed(kv_store_entry_lock_handle, &resource_preference)?;
+        api.key_value_entry_set_typed(
+            kv_store_entry_lock_handle,
+            &VersionedAccountResourcePreference::V1(resource_preference),
+        )?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
 
         Runtime::emit_event(
@@ -714,7 +1204,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
         api.actor_remove_key_value_entry(
             ACTOR_STATE_SELF,
-            ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX,
+            AccountCollection::ResourcePreferenceKeyValue.collection_index(),
             &encoded_key,
         )?;
 
@@ -734,11 +1224,14 @@ impl AccountBlueprint {
             scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
-            ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX,
+            AccountCollection::AuthorizedDepositorKeyValue.collection_index(),
             &encoded_key,
             LockFlags::MUTABLE,
         )?;
-        api.key_value_entry_set_typed(kv_store_entry_lock_handle, &())?;
+        api.key_value_entry_set_typed(
+            kv_store_entry_lock_handle,
+            &VersionedAccountAuthorizedDepositor::V1(()),
+        )?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
 
         Runtime::emit_event(
@@ -762,7 +1255,7 @@ impl AccountBlueprint {
             scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         api.actor_remove_key_value_entry(
             ACTOR_STATE_SELF,
-            ACCOUNT_AUTHORIZED_DEPOSITORS_COLLECTION_INDEX,
+            AccountCollection::AuthorizedDepositorKeyValue.collection_index(),
             &encoded_key,
         )?;
 
@@ -783,8 +1276,10 @@ impl AccountBlueprint {
         let substate_key = AccountField::Account.into();
         let handle =
             api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::read_only())?;
-        let account = api.field_read_typed::<AccountSubstate>(handle)?;
-        let default = account.default_deposit_rule;
+        let account = api.field_read_typed::<VersionedAccountAccount>(handle)?;
+        let default = match account {
+            VersionedAccountAccount::V1(account) => account.default_deposit_rule,
+        };
         api.field_close(handle)?;
 
         Ok(default)
@@ -804,7 +1299,7 @@ impl AccountBlueprint {
 
         let mut kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
-            ACCOUNT_VAULT_COLLECTION_INDEX,
+            AccountCollection::ResourceVaultKeyValue.collection_index(),
             &encoded_key,
             LockFlags::read_only(),
         )?;
@@ -812,25 +1307,28 @@ impl AccountBlueprint {
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it if
         // instructed to.
         let vault = {
-            let entry = api.key_value_entry_get_typed::<AccountVaultEntryContents>(
+            let entry = api.key_value_entry_get_typed::<VersionedAccountResourceVault>(
                 kv_store_entry_lock_handle,
             )?;
 
             match entry {
-                Option::Some(vault) => Ok(vault),
-                Option::None => {
+                Some(VersionedAccountResourceVault::V1(vault)) => Ok(vault),
+                None => {
                     if create {
                         api.key_value_entry_close(kv_store_entry_lock_handle)?;
                         kv_store_entry_lock_handle = api.actor_open_key_value_entry(
                             ACTOR_STATE_SELF,
-                            ACCOUNT_VAULT_COLLECTION_INDEX,
+                            AccountCollection::ResourceVaultKeyValue.collection_index(),
                             &encoded_key,
                             LockFlags::MUTABLE,
                         )?;
                         let vault = Vault::create(resource_address, api)?;
-                        api.key_value_entry_set_typed(kv_store_entry_lock_handle, &vault.0)?;
-                        api.key_value_entry_lock(kv_store_entry_lock_handle)?;
-                        Ok(vault)
+                        let own = vault.0;
+                        api.key_value_entry_set_typed(
+                            kv_store_entry_lock_handle,
+                            &VersionedAccountResourceVault::V1(vault),
+                        )?;
+                        Ok(Vault(own))
                     } else {
                         Err(AccountError::VaultDoesNotExist { resource_address })
                     }
@@ -887,13 +1385,13 @@ impl AccountBlueprint {
 
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
-            ACCOUNT_VAULT_COLLECTION_INDEX,
+            AccountCollection::ResourceVaultKeyValue.collection_index(),
             &encoded_key,
             LockFlags::read_only(),
         )?;
 
         let does_vault_exist = {
-            let entry = api.key_value_entry_get_typed::<AccountVaultEntryContents>(
+            let entry = api.key_value_entry_get_typed::<VersionedAccountResourceVault>(
                 kv_store_entry_lock_handle,
             )?;
 
@@ -919,16 +1417,18 @@ impl AccountBlueprint {
 
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
-            ACCOUNT_RESOURCE_PREFERENCE_COLLECTION_INDEX,
+            AccountCollection::ResourcePreferenceKeyValue.collection_index(),
             &encoded_key,
             LockFlags::read_only(),
         )?;
 
-        let entry = api.key_value_entry_get_typed::<AccountResourcePreferenceEntryContents>(
+        let entry = api.key_value_entry_get_typed::<VersionedAccountResourcePreference>(
             kv_store_entry_lock_handle,
         )?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
-        Ok(entry)
+        Ok(entry.map(|versioned| match versioned {
+            VersionedAccountResourcePreference::V1(pref) => pref,
+        }))
     }
 }
 

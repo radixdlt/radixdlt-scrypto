@@ -277,20 +277,21 @@ pub enum AuthZoneField {
 
 blueprint_partition_offset!(
     pub enum AccountPartitionOffset {
-        Account,
-        AccountVaultsByResourceAddress,
-        AccountResourcePreferenceByAddress,
-        /// Map<ResourceOrNonFungible, ()> - A map of a [`ResourceOrNonFungible`] to Unit that stores
-        /// the badges of allowed depositors into accounts
-        AccountAuthorizedDepositorByResourceOrNonFungible,
+        Field,
+        ResourceVaultKeyValue,
+        ResourcePreferenceKeyValue,
+        AuthorizedDepositorKeyValue,
     }
 );
 
+/*
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum AccountField {
     Account,
 }
+
+ */
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -358,7 +359,7 @@ substate_key!(NonFungibleProofField);
 substate_key!(ConsensusManagerField);
 substate_key!(ValidatorField);
 substate_key!(AccessControllerField);
-substate_key!(AccountField);
+//substate_key!(AccountField);
 substate_key!(OneResourcePoolField);
 substate_key!(TwoResourcePoolField);
 substate_key!(MultiResourcePoolField);
