@@ -581,7 +581,7 @@ impl OneResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = OneResourcePoolField::OneResourcePool.into();
+        let substate_key = OneResourcePoolField::State.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
         let substate = api.field_read_typed::<VersionedOneResourcePoolState>(handle)?;
         let substate = match substate {

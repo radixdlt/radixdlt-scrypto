@@ -146,13 +146,6 @@ pub enum ComponentField {
     State0,
 }
 
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum FungibleResourceManagerField {
-    Divisibility,
-    TotalSupply,
-}
-
 blueprint_partition_offset!(
     pub enum FungibleResourceManagerPartitionOffset {
         Field,
@@ -178,14 +171,6 @@ blueprint_partition_offset!(
         DataKeyValue,
     }
 );
-
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum NonFungibleResourceManagerField {
-    IdType,
-    MutableFields,
-    TotalSupply,
-}
 
 blueprint_partition_offset!(
     pub enum FungibleVaultPartitionOffset {
@@ -270,35 +255,17 @@ blueprint_partition_offset!(
     }
 );
 
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum OneResourcePoolField {
-    OneResourcePool,
-}
-
 blueprint_partition_offset!(
     pub enum OneResourcePoolPartitionOffset {
         Field,
     }
 );
 
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum TwoResourcePoolField {
-    TwoResourcePool,
-}
-
 blueprint_partition_offset!(
     pub enum TwoResourcePoolPartitionOffset {
         Field,
     }
 );
-
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum MultiResourcePoolField {
-    MultiResourcePool,
-}
 
 blueprint_partition_offset!(
     pub enum MultiResourcePoolPartitionOffset {
@@ -349,15 +316,10 @@ substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
 substate_key!(RoleAssignmentField);
 substate_key!(ComponentField);
-substate_key!(FungibleResourceManagerField);
 substate_key!(FungibleBucketField);
 substate_key!(FungibleProofField);
-substate_key!(NonFungibleResourceManagerField);
 substate_key!(NonFungibleBucketField);
 substate_key!(NonFungibleProofField);
-substate_key!(OneResourcePoolField);
-substate_key!(TwoResourcePoolField);
-substate_key!(MultiResourcePoolField);
 substate_key!(TransactionTrackerField);
 
 // Transient
