@@ -6,7 +6,6 @@ use crate::internal_prelude::*;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeFungibleVault;
 use native_sdk::resource::NativeNonFungibleVault;
 use native_sdk::resource::NativeVault;
@@ -565,12 +564,10 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let metadata = Metadata::create_with_data(metadata_init, api)?;
-        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
             ModuleId::RoleAssignment => role_assignment.0,
             ModuleId::Metadata => metadata,
-            ModuleId::Royalty => royalty,
         );
 
         Ok(modules)

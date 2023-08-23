@@ -4,7 +4,6 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
@@ -1702,14 +1701,12 @@ impl ValidatorCreator {
             },
             api,
         )?;
-        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(
             validator_id,
             btreemap!(
                 ModuleId::RoleAssignment => role_assignment.0.0,
                 ModuleId::Metadata => metadata.0,
-                ModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;
