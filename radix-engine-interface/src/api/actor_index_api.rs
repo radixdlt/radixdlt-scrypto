@@ -1,4 +1,4 @@
-use crate::api::ObjectHandle;
+use crate::api::ActorStateHandle;
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
@@ -14,7 +14,7 @@ pub trait ClientActorIndexApi<E> {
     /// Inserts an entry into an index
     fn actor_index_insert(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: Vec<u8>,
         buffer: Vec<u8>,
@@ -28,7 +28,7 @@ pub trait ClientActorIndexApi<E> {
         V: ScryptoEncode,
     >(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: K,
         value: V,
@@ -44,7 +44,7 @@ pub trait ClientActorIndexApi<E> {
     /// Removes an entry from an index
     fn actor_index_remove(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, E>;
@@ -55,7 +55,7 @@ pub trait ClientActorIndexApi<E> {
         V: ScryptoDecode,
     >(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: Vec<u8>,
     ) -> Result<Option<V>, E> {
@@ -68,7 +68,7 @@ pub trait ClientActorIndexApi<E> {
     /// Scans arbitrary elements of count from an index
     fn actor_index_scan_keys(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<Vec<u8>>, E>;
@@ -79,7 +79,7 @@ pub trait ClientActorIndexApi<E> {
         K: ScryptoDecode,
     >(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<K>, E> {
@@ -98,7 +98,7 @@ pub trait ClientActorIndexApi<E> {
     /// Removes and returns arbitrary elements of count from an index
     fn actor_index_drain(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, E>;
@@ -111,7 +111,7 @@ pub trait ClientActorIndexApi<E> {
         V: ScryptoDecode,
     >(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<(K, V)>, E> {

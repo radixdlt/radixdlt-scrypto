@@ -1,4 +1,4 @@
-use crate::api::ObjectHandle;
+use crate::api::ActorStateHandle;
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
@@ -15,7 +15,7 @@ pub trait ClientActorSortedIndexApi<E> {
     /// Inserts an entry into a sorted index
     fn actor_sorted_index_insert(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: SortedKey,
         buffer: Vec<u8>,
@@ -27,7 +27,7 @@ pub trait ClientActorSortedIndexApi<E> {
         V: ScryptoEncode,
     >(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: SortedKey,
         value: V,
@@ -43,7 +43,7 @@ pub trait ClientActorSortedIndexApi<E> {
     /// Removes an entry from a sorted index
     fn actor_sorted_index_remove(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, E>;
@@ -54,7 +54,7 @@ pub trait ClientActorSortedIndexApi<E> {
         V: ScryptoDecode,
     >(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: &SortedKey,
     ) -> Result<Option<V>, E> {
@@ -67,7 +67,7 @@ pub trait ClientActorSortedIndexApi<E> {
     /// Scans the first elements of count from a sorted index
     fn actor_sorted_index_scan(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         count: u32,
     ) -> Result<Vec<(SortedKey, Vec<u8>)>, E>;
@@ -80,7 +80,7 @@ pub trait ClientActorSortedIndexApi<E> {
         V: ScryptoDecode,
     >(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         count: u32,
     ) -> Result<Vec<(K, V)>, E> {

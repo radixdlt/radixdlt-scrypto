@@ -30,30 +30,6 @@ fn test_create_and_return() {
 }
 
 #[test]
-fn test_create_and_drop() {
-    // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_function(
-            package,
-            "AllocatedAddressTest",
-            "create_and_drop",
-            manifest_args!(),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::SystemError(SystemError::NotAnObject))
-    });
-}
-
-#[test]
 fn test_create_and_pass_address() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

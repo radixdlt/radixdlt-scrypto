@@ -1,7 +1,10 @@
 use crate::blueprints::pool::one_resource_pool::*;
 use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::*;
+use crate::types::{ReceiverInfo, TypeRef};
+use crate::{event_schema, roles_template};
 use native_sdk::modules::metadata::*;
 use native_sdk::modules::role_assignment::*;
 use native_sdk::modules::royalty::*;
@@ -12,15 +15,202 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::package::{
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+};
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::prelude::{
+    BlueprintFunctionsSchemaInit, BlueprintHooksInit, BlueprintSchemaInit,
+    BlueprintStateSchemaInit, FunctionSchemaInit,
+};
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 
 pub const ONE_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "OneResourcePool";
 
+declare_native_blueprint_state! {
+    blueprint_ident: OneResourcePool,
+    blueprint_snake_case: one_resource_pool,
+    features: {
+    },
+    fields: {
+        state:  {
+            ident: State,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        }
+    },
+    collections: {
+    }
+}
+
+pub type OneResourcePoolStateV1 = OneResourcePoolSubstate;
+
 pub struct OneResourcePoolBlueprint;
 impl OneResourcePoolBlueprint {
+    pub fn definition() -> BlueprintDefinitionInit {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let state = OneResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
+        let mut functions = BTreeMap::new();
+
+        functions.insert(
+            ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<OneResourcePoolInstantiateInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<OneResourcePoolInstantiateOutput>(),
+                ),
+                export: ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            ONE_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<OneResourcePoolContributeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<OneResourcePoolContributeOutput>(),
+                ),
+                export: ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            ONE_RESOURCE_POOL_REDEEM_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<OneResourcePoolRedeemInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<OneResourcePoolRedeemOutput>(),
+                ),
+                export: ONE_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositOutput>(),
+                ),
+                export: ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawOutput>(),
+                ),
+                export: ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueOutput>(
+                        ),
+                ),
+                export: ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountOutput>(),
+                ),
+                export: ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME.to_string(),
+            },
+        );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                ContributionEvent,
+                RedemptionEvent,
+                WithdrawEvent,
+                DepositEvent
+            ]
+        };
+
+        let schema = generate_full_schema(aggregator);
+
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::default(),
+            is_transient: false,
+            dependencies: btreeset!(),
+            feature_set: btreeset!(),
+
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema,
+                state,
+                events: event_schema,
+                functions: BlueprintFunctionsSchemaInit { functions },
+                hooks: BlueprintHooksInit::default(),
+            },
+
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AllowAll,
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
+                    roles {
+                        POOL_MANAGER_ROLE;
+                    },
+                    methods {
+                        // Main Module rules
+                        ONE_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
+                        ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
+                        ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT => MethodAccessibility::Public;
+                        ONE_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                        ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                        ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                    }
+                }),
+            },
+        }
+    }
+
     pub fn instantiate<Y>(
         resource_address: ResourceAddress,
         owner_role: OwnerRole,
@@ -97,16 +287,18 @@ impl OneResourcePoolBlueprint {
             };
             api.new_simple_object(
                 ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![FieldValue::immutable(&substate)],
+                btreemap! {
+                    0u8 => FieldValue::immutable(&VersionedOneResourcePoolState::V1(substate)),
+                },
             )?
         };
 
         api.globalize(
+            object_id,
             btreemap!(
-                ObjectModuleId::Main => object_id,
-                ObjectModuleId::RoleAssignment => role_assignment.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
+                ModuleId::RoleAssignment => role_assignment.0,
+                ModuleId::Metadata => metadata.0,
+                ModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;
@@ -390,8 +582,11 @@ impl OneResourcePoolBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = OneResourcePoolField::OneResourcePool.into();
-        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
-        let substate = api.field_read_typed::<OneResourcePoolSubstate>(handle)?;
+        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
+        let substate = api.field_read_typed::<VersionedOneResourcePoolState>(handle)?;
+        let substate = match substate {
+            VersionedOneResourcePoolState::V1(state) => state,
+        };
 
         Ok((substate, handle))
     }

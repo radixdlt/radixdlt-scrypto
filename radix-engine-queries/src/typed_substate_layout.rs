@@ -2,15 +2,22 @@ use radix_engine::types::*;
 
 // Import and re-export these types so they are available easily with a single import
 pub use radix_engine::blueprints::access_controller::*;
-pub use radix_engine::blueprints::account::{
-    AccountAuthorizedDepositorEntryContents, AccountBlueprint, AccountError, AccountNativePackage,
-    AccountResourcePreferenceEntryContents, AccountSubstate, AccountVaultEntryContents,
-};
+pub use radix_engine::blueprints::account::{AccountBlueprint, AccountError, AccountNativePackage};
+use radix_engine::blueprints::account::{AccountTypedSubstateKey, AccountTypedSubstateValue};
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
 pub use radix_engine::blueprints::pool::multi_resource_pool;
+use radix_engine::blueprints::pool::multi_resource_pool::{
+    MultiResourcePoolTypedSubstateKey, MultiResourcePoolTypedSubstateValue,
+};
 pub use radix_engine::blueprints::pool::one_resource_pool;
+use radix_engine::blueprints::pool::one_resource_pool::{
+    OneResourcePoolTypedSubstateKey, OneResourcePoolTypedSubstateValue,
+};
 pub use radix_engine::blueprints::pool::two_resource_pool;
+use radix_engine::blueprints::pool::two_resource_pool::{
+    TwoResourcePoolTypedSubstateKey, TwoResourcePoolTypedSubstateValue,
+};
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::blueprints::transaction_tracker::*;
 pub use radix_engine::system::node_modules::metadata::*;
@@ -136,13 +143,10 @@ pub enum TypedMainModuleSubstateKey {
     ConsensusManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
     ValidatorField(ValidatorField),
     AccessControllerField(AccessControllerField),
-    AccountField(AccountField),
-    AccountVaultKey(ResourceAddress),
-    AccountResourcePreferenceKey(ResourceAddress),
-    AccountAuthorizedDepositorKey(ResourceOrNonFungible),
-    OneResourcePoolField(OneResourcePoolField),
-    TwoResourcePoolField(TwoResourcePoolField),
-    MultiResourcePoolField(MultiResourcePoolField),
+    Account(AccountTypedSubstateKey),
+    OneResourcePool(OneResourcePoolTypedSubstateKey),
+    TwoResourcePool(TwoResourcePoolTypedSubstateKey),
+    MultiResourcePool(MultiResourcePoolTypedSubstateKey),
     TransactionTrackerField(TransactionTrackerField),
     TransactionTrackerCollectionEntry(IntentHash),
     // Objects - Generic Scrypto Components
@@ -315,31 +319,10 @@ fn to_typed_object_substate_key_internal(
         | EntityType::GlobalVirtualEd25519Account
         | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
-            let partition_offset = AccountPartitionOffset::try_from(partition_offset)?;
-
-            match partition_offset {
-                AccountPartitionOffset::AccountVaultsByResourceAddress => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountVaultKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                AccountPartitionOffset::AccountResourcePreferenceByAddress => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountResourcePreferenceKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                AccountPartitionOffset::AccountAuthorizedDepositorByResourceOrNonFungible => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                AccountPartitionOffset::Account => {
-                    TypedMainModuleSubstateKey::AccountField(AccountField::try_from(substate_key)?)
-                }
-            }
+            TypedMainModuleSubstateKey::Account(AccountTypedSubstateKey::for_key_in_partition(
+                &AccountPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?)
         }
         EntityType::GlobalVirtualSecp256k1Identity
         | EntityType::GlobalVirtualEd25519Identity
@@ -356,14 +339,23 @@ fn to_typed_object_substate_key_internal(
                 substate_key,
             )?,
         ),
-        EntityType::GlobalOneResourcePool => TypedMainModuleSubstateKey::OneResourcePoolField(
-            OneResourcePoolField::try_from(substate_key)?,
+        EntityType::GlobalOneResourcePool => TypedMainModuleSubstateKey::OneResourcePool(
+            OneResourcePoolTypedSubstateKey::for_key_in_partition(
+                &OneResourcePoolPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?,
         ),
-        EntityType::GlobalTwoResourcePool => TypedMainModuleSubstateKey::TwoResourcePoolField(
-            TwoResourcePoolField::try_from(substate_key)?,
+        EntityType::GlobalTwoResourcePool => TypedMainModuleSubstateKey::TwoResourcePool(
+            TwoResourcePoolTypedSubstateKey::for_key_in_partition(
+                &TwoResourcePoolPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?,
         ),
-        EntityType::GlobalMultiResourcePool => TypedMainModuleSubstateKey::MultiResourcePoolField(
-            MultiResourcePoolField::try_from(substate_key)?,
+        EntityType::GlobalMultiResourcePool => TypedMainModuleSubstateKey::MultiResourcePool(
+            MultiResourcePoolTypedSubstateKey::for_key_in_partition(
+                &MultiResourcePoolPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?,
         ),
         EntityType::GlobalTransactionTracker => {
             if partition_offset == PartitionOffset(0) {
@@ -373,7 +365,7 @@ fn to_typed_object_substate_key_internal(
             } else {
                 if let Some(key) = substate_key.for_map() {
                     TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(
-                        IntentHash::from_hash(Hash(key.clone().try_into().map_err(|_| ())?)),
+                        IntentHash::from_hash(scrypto_decode(key).map_err(|_| ())?),
                     )
                 } else {
                     return Err(());
@@ -434,13 +426,10 @@ pub enum TypedMainModuleSubstateValue {
     ConsensusManagerRegisteredValidatorsByStakeIndexEntry(Validator),
     Validator(TypedValidatorFieldValue),
     AccessController(TypedAccessControllerFieldValue),
-    Account(TypedAccountFieldValue),
-    AccountVaultEntry(KeyValueEntrySubstate<AccountVaultEntryContents>),
-    AccountResourcePreferenceEntry(KeyValueEntrySubstate<AccountResourcePreferenceEntryContents>),
-    AccountAuthorizedDepositorEntry(KeyValueEntrySubstate<AccountAuthorizedDepositorEntryContents>),
-    OneResourcePool(TypedOneResourcePoolFieldValue),
-    TwoResourcePool(TypedTwoResourcePoolFieldValue),
-    MultiResourcePool(TypedMultiResourcePoolFieldValue),
+    Account(AccountTypedSubstateValue),
+    OneResourcePool(OneResourcePoolTypedSubstateValue),
+    TwoResourcePool(TwoResourcePoolTypedSubstateValue),
+    MultiResourcePool(MultiResourcePoolTypedSubstateValue),
     TransactionTracker(TypedTransactionTrackerFieldValue),
     TransactionTrackerCollectionEntry(KeyValueEntrySubstate<TransactionStatusSubstateContents>),
     // Generic Scrypto Components and KV Stores
@@ -473,26 +462,6 @@ pub enum TypedAccessControllerFieldValue {
 #[derive(Debug)]
 pub enum GenericScryptoComponentFieldValue {
     State(FieldSubstate<ScryptoValue>),
-}
-
-#[derive(Debug)]
-pub enum TypedAccountFieldValue {
-    Account(FieldSubstate<AccountSubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedOneResourcePoolFieldValue {
-    OneResourcePool(FieldSubstate<one_resource_pool::OneResourcePoolSubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedTwoResourcePoolFieldValue {
-    TwoResourcePool(FieldSubstate<two_resource_pool::TwoResourcePoolSubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedMultiResourcePoolFieldValue {
-    MultiResourcePool(FieldSubstate<multi_resource_pool::MultiResourcePoolSubstate>),
 }
 
 #[derive(Debug)]
@@ -631,20 +600,9 @@ fn to_typed_object_substate_value(
                 }
             })
         }
-        TypedMainModuleSubstateKey::AccountField(offset) => {
-            TypedMainModuleSubstateValue::Account(match offset {
-                AccountField::Account => TypedAccountFieldValue::Account(scrypto_decode(data)?),
-            })
-        }
-        TypedMainModuleSubstateKey::AccountVaultKey(_) => {
-            TypedMainModuleSubstateValue::AccountVaultEntry(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::AccountResourcePreferenceKey(_) => {
-            TypedMainModuleSubstateValue::AccountResourcePreferenceEntry(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(_) => {
-            TypedMainModuleSubstateValue::AccountAuthorizedDepositorEntry(scrypto_decode(data)?)
-        }
+        TypedMainModuleSubstateKey::Account(key) => TypedMainModuleSubstateValue::Account(
+            AccountTypedSubstateValue::from_key_and_data(key, data)?,
+        ),
         TypedMainModuleSubstateKey::AccessControllerField(offset) => {
             TypedMainModuleSubstateValue::AccessController(match offset {
                 AccessControllerField::AccessController => {
@@ -662,26 +620,20 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
             TypedMainModuleSubstateValue::GenericKeyValueStoreEntry(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::OneResourcePoolField(offset) => {
-            TypedMainModuleSubstateValue::OneResourcePool(match offset {
-                OneResourcePoolField::OneResourcePool => {
-                    TypedOneResourcePoolFieldValue::OneResourcePool(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::OneResourcePool(key) => {
+            TypedMainModuleSubstateValue::OneResourcePool(
+                OneResourcePoolTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
-        TypedMainModuleSubstateKey::TwoResourcePoolField(offset) => {
-            TypedMainModuleSubstateValue::TwoResourcePool(match offset {
-                TwoResourcePoolField::TwoResourcePool => {
-                    TypedTwoResourcePoolFieldValue::TwoResourcePool(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::TwoResourcePool(key) => {
+            TypedMainModuleSubstateValue::TwoResourcePool(
+                TwoResourcePoolTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
-        TypedMainModuleSubstateKey::MultiResourcePoolField(offset) => {
-            TypedMainModuleSubstateValue::MultiResourcePool(match offset {
-                MultiResourcePoolField::MultiResourcePool => {
-                    TypedMultiResourcePoolFieldValue::MultiResourcePool(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::MultiResourcePool(key) => {
+            TypedMainModuleSubstateValue::MultiResourcePool(
+                MultiResourcePoolTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
 
         TypedMainModuleSubstateKey::TransactionTrackerField(offset) => {

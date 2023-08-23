@@ -24,7 +24,7 @@ impl<'s, S: SubstateDatabase> ResourceAccounter<'s, S> {
     pub fn traverse(&mut self, node_id: NodeId) {
         let mut state_tree_visitor =
             StateTreeTraverser::new(self.substate_db, &mut self.accounting, 100);
-        state_tree_visitor.traverse_all_descendents(None, node_id)
+        state_tree_visitor.traverse_all_descendents(node_id)
     }
 
     pub fn close(self) -> Accounting {

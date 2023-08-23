@@ -1,4 +1,4 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::modules::{Attachable, HasMetadata, RoleAssignment, Royalty};
 use crate::prelude::{scrypto_encode, HasRoleAssignment, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
@@ -16,7 +16,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi, FieldValue};
+use radix_engine_interface::api::{FieldValue, ModuleId};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit,
 };
@@ -52,22 +52,19 @@ impl<C: HasTypeInfo> Blueprint<C> {
     pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: A) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
 
-        let output = ScryptoEnv
-            .call_function(
-                package_address,
-                C::BLUEPRINT_NAME,
-                function_name,
-                scrypto_encode(&args).unwrap(),
-            )
-            .unwrap();
+        let output = ScryptoVmV1Api::blueprint_call(
+            package_address,
+            C::BLUEPRINT_NAME,
+            function_name,
+            scrypto_encode(&args).unwrap(),
+        );
         scrypto_decode(&output).unwrap()
     }
 
     pub fn call_function_raw<T: ScryptoDecode>(function_name: &str, args: Vec<u8>) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
-        let output = ScryptoEnv
-            .call_function(package_address, C::BLUEPRINT_NAME, function_name, args)
-            .unwrap();
+        let output =
+            ScryptoVmV1Api::blueprint_call(package_address, C::BLUEPRINT_NAME, function_name, args);
         scrypto_decode(&output).unwrap()
     }
 }
@@ -85,9 +82,10 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
 
     fn instantiate(self) -> Owned<Self> {
-        let node_id = ScryptoEnv
-            .new_simple_object(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)])
-            .unwrap();
+        let node_id = ScryptoVmV1Api::object_new(
+            Self::BLUEPRINT_NAME,
+            btreemap![0u8 => FieldValue::new(&self)],
+        );
 
         let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
         Owned(stub)
@@ -297,10 +295,6 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
         // Main
         {
-            modules.insert(
-                ObjectModuleId::Main,
-                self.stub.handle().as_node_id().clone(),
-            );
             roles.insert(ObjectModuleId::Main, self.roles);
         }
 
@@ -312,10 +306,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
                 .unwrap_or_else(|| Default::default());
 
             let metadata = Metadata::new_with_data(metadata_config.init);
-            modules.insert(
-                ObjectModuleId::Metadata,
-                metadata.handle().as_node_id().clone(),
-            );
+            modules.insert(ModuleId::Metadata, metadata.handle().as_node_id().clone());
             roles.insert(ObjectModuleId::Metadata, metadata_config.roles);
         };
 
@@ -323,24 +314,23 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         if let Some(royalty_config) = self.royalty_config {
             roles.insert(ObjectModuleId::Royalty, royalty_config.roles);
             let royalty = Royalty::new(royalty_config.init);
-            modules.insert(
-                ObjectModuleId::Royalty,
-                royalty.handle().as_node_id().clone(),
-            );
+            modules.insert(ModuleId::Royalty, royalty.handle().as_node_id().clone());
         }
 
         // Role Assignment
         {
             let role_assignment = RoleAssignment::new(self.owner_role, roles);
             modules.insert(
-                ObjectModuleId::RoleAssignment,
+                ModuleId::RoleAssignment,
                 role_assignment.handle().as_node_id().clone(),
             );
         }
 
-        let address = ScryptoEnv
-            .globalize(modules, self.address_reservation)
-            .unwrap();
+        let address = ScryptoVmV1Api::object_globalize(
+            self.stub.handle().as_node_id().clone(),
+            modules,
+            self.address_reservation,
+        );
 
         Global(C::Stub::new(ObjectStubHandle::Global(address)))
     }
@@ -472,7 +462,7 @@ trait TypeCheckable {
 
 impl<O: HasTypeInfo> TypeCheckable for O {
     fn check(node_id: &NodeId) -> Result<(), ComponentCastError> {
-        let blueprint_id = ScryptoEnv.get_blueprint_id(node_id).unwrap();
+        let blueprint_id = ScryptoVmV1Api::object_get_blueprint_id(node_id);
         let to = O::blueprint_id();
         if !blueprint_id.eq(&to) {
             return Err(ComponentCastError::CannotCast {

@@ -1,22 +1,24 @@
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::types::{FieldKey, LiquidFungibleResource, MapKey, ScryptoValue, SubstateKey};
-use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
-use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_BLUEPRINT;
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
+use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
+use radix_engine_interface::api::{ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
-use radix_engine_interface::constants::{ACCOUNT_PACKAGE, RESOURCE_PACKAGE};
+use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
-use radix_engine_interface::prelude::*;
-use radix_engine_store_interface::{
-    db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper, SubstateKeyContent},
-    interface::SubstateDatabase,
-};
-use sbor::HasLatestVersion;
 
-pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {
-    substate_db: &'s S,
+use radix_engine_interface::prelude::scrypto_decode;
+use radix_engine_interface::types::{
+    BlueprintId, IndexedScryptoValue, ObjectType, ResourceAddress,
+};
+use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
+use radix_engine_store_interface::interface::SubstateDatabase;
+use sbor::rust::prelude::*;
+
+pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> {
+    system_db_reader: SystemDatabaseReader<'s, S>,
     visitor: &'v mut V,
     max_depth: u32,
 }
@@ -45,250 +47,192 @@ pub trait StateTreeVisitor {
         _id: &NonFungibleLocalId,
     ) {
     }
-
-    fn visit_node_id(
-        &mut self,
-        _parent_id: Option<&(NodeId, PartitionNumber, SubstateKey)>,
-        _node_id: &NodeId,
-        _depth: u32,
-    ) {
-    }
 }
 
-impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v, S, V> {
+impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'s, 'v, S, V> {
     pub fn new(substate_db: &'s S, visitor: &'v mut V, max_depth: u32) -> Self {
         StateTreeTraverser {
-            substate_db,
+            system_db_reader: SystemDatabaseReader::new(substate_db),
             visitor,
             max_depth,
         }
     }
 
-    pub fn traverse_all_descendents(
-        &mut self,
-        parent_node_id: Option<&(NodeId, PartitionNumber, SubstateKey)>,
-        node_id: NodeId,
-    ) {
-        self.traverse_recursive(parent_node_id, node_id, 0)
+    pub fn traverse_all_descendents(&mut self, node_id: NodeId) {
+        Self::traverse_recursive(
+            &self.system_db_reader,
+            &mut self.visitor,
+            node_id,
+            0,
+            self.max_depth,
+        )
     }
 
     fn traverse_recursive(
-        &mut self,
-        parent: Option<&(NodeId, PartitionNumber, SubstateKey)>,
+        system_db_reader: &SystemDatabaseReader<'s, S>,
+        visitor: &mut V,
         node_id: NodeId,
         depth: u32,
+        max_depth: u32,
     ) {
-        if depth > self.max_depth {
+        if depth > max_depth {
             return;
         }
 
-        // Notify visitor
-        self.visitor.visit_node_id(parent, &node_id, depth);
-
         // Load type info
-        let type_info = self
-            .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                &node_id,
-                TYPE_INFO_FIELD_PARTITION,
-                &TypeInfoField::TypeInfo.into(),
-            )
+        let type_info = system_db_reader
+            .get_type_info(&node_id)
             .expect("Missing TypeInfo substate");
 
         match type_info {
             TypeInfoSubstate::KeyValueStore(_) => {
-                for (substate_key, value) in self
-                    .substate_db
-                    .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, MapKey>(
-                        &node_id,
-                        MAIN_BASE_PARTITION,
-                    )
-                {
+                for (_key, value) in system_db_reader.key_value_store_iter(&node_id).unwrap() {
                     let (_, owned_nodes, _) =
-                        IndexedScryptoValue::from_scrypto_value(value).unpack();
+                        IndexedScryptoValue::from_slice(&value).unwrap().unpack();
                     for child_node_id in owned_nodes {
-                        self.traverse_recursive(
-                            Some(&(node_id, MAIN_BASE_PARTITION, substate_key.clone())),
+                        Self::traverse_recursive(
+                            system_db_reader,
+                            visitor,
                             child_node_id,
                             depth + 1,
+                            max_depth,
                         );
                     }
                 }
             }
             TypeInfoSubstate::Object(info) => {
-                if info
-                    .blueprint_info
-                    .blueprint_id
-                    .package_address
-                    .eq(&RESOURCE_PACKAGE)
-                    && info
-                        .blueprint_info
-                        .blueprint_id
-                        .blueprint_name
-                        .eq(FUNGIBLE_VAULT_BLUEPRINT)
-                {
-                    let liquid = self
-                        .substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
+                if info.blueprint_info.blueprint_id.eq(&BlueprintId::new(
+                    &RESOURCE_PACKAGE,
+                    FUNGIBLE_VAULT_BLUEPRINT,
+                )) {
+                    let liquid: VersionedFungibleVaultBalance = system_db_reader
+                        .read_typed_object_field(
                             &node_id,
-                            MAIN_BASE_PARTITION,
-                            &FungibleVaultField::Balance.into(),
+                            ObjectModuleId::Main,
+                            FungibleVaultField::Balance.into(),
                         )
                         .expect("Broken database");
 
-                    self.visitor.visit_fungible_vault(
+                    let liquid = match liquid {
+                        VersionedFungibleVaultBalance::V1(liquid) => liquid,
+                    };
+
+                    visitor.visit_fungible_vault(
                         node_id,
                         &ResourceAddress::new_or_panic(info.get_outer_object().into()),
-                        &liquid.into_payload().into_latest(),
+                        &liquid,
                     );
-                } else if info
-                    .blueprint_info
-                    .blueprint_id
-                    .package_address
-                    .eq(&RESOURCE_PACKAGE)
-                    && info
-                        .blueprint_info
-                        .blueprint_id
-                        .blueprint_name
-                        .eq(NON_FUNGIBLE_VAULT_BLUEPRINT)
-                {
-                    let liquid = self
-                        .substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, NonFungibleVaultBalanceFieldSubstate>(
+                } else if info.blueprint_info.blueprint_id.eq(&BlueprintId::new(
+                    &RESOURCE_PACKAGE,
+                    NON_FUNGIBLE_VAULT_BLUEPRINT,
+                )) {
+                    let liquid: VersionedNonFungibleVaultBalance = system_db_reader
+                        .read_typed_object_field(
                             &node_id,
-                            NonFungibleVaultPartitionOffset::Field.as_main_partition(),
-                            &NonFungibleVaultField::Balance.into(),
+                            ObjectModuleId::Main,
+                            NonFungibleVaultField::Balance.into(),
                         )
                         .expect("Broken database");
 
-                    self.visitor.visit_non_fungible_vault(
+                    let liquid = match liquid {
+                        VersionedNonFungibleVaultBalance::V1(liquid) => liquid,
+                    };
+
+                    visitor.visit_non_fungible_vault(
                         node_id,
                         &ResourceAddress::new_or_panic(info.get_outer_object().into()),
-                        &liquid.into_payload().into_latest(),
+                        &liquid,
                     );
 
-                    let entries = self
-                        .substate_db
-                        .list_mapped::<SpreadPrefixKeyMapper, NonFungibleVaultNonFungibleEntrySubstate, MapKey>(
+                    for (key, _value) in system_db_reader
+                        .collection_iter(
                             &node_id,
-                            NonFungibleVaultPartitionOffset::NonFungibleIndex.as_main_partition(),
-                        );
-                    for (key, _value) in entries {
+                            ObjectModuleId::Main,
+                            NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
+                        )
+                        .unwrap()
+                    {
                         let non_fungible_local_id: NonFungibleLocalId =
-                            scrypto_decode(key.for_map().unwrap()).unwrap();
-                        self.visitor.visit_non_fungible(
+                            scrypto_decode(&key).unwrap();
+                        visitor.visit_non_fungible(
                             node_id,
                             &ResourceAddress::new_or_panic(info.get_outer_object().into()),
                             &non_fungible_local_id,
                         );
                     }
                 } else {
-                    for partition_num in [
-                        TYPE_INFO_FIELD_PARTITION,
-                        ROYALTY_BASE_PARTITION,
-                        ROLE_ASSIGNMENT_BASE_PARTITION,
-                    ] {
-                        self.traverse_substates::<FieldKey>(node_id, partition_num, depth)
-                    }
-                    for partition_num in [METADATA_BASE_PARTITION] {
-                        self.traverse_substates::<MapKey>(node_id, partition_num, depth)
+                    match info.object_type {
+                        ObjectType::Global { modules } => {
+                            for (module_id, _) in modules {
+                                match &module_id {
+                                    ModuleId::Royalty => {
+                                        let royalty: ComponentRoyaltySubstate = system_db_reader
+                                            .read_typed_object_field(
+                                                &node_id,
+                                                module_id.into(),
+                                                0u8,
+                                            )
+                                            .expect("Broken database");
+                                        Self::traverse_recursive(
+                                            system_db_reader,
+                                            visitor,
+                                            royalty.royalty_vault.0 .0,
+                                            depth + 1,
+                                            max_depth,
+                                        );
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        ObjectType::Owned => {}
                     }
 
-                    if info
-                        .blueprint_info
-                        .blueprint_id
-                        .package_address
-                        .eq(&ACCOUNT_PACKAGE)
-                        && info
-                            .blueprint_info
-                            .blueprint_id
-                            .blueprint_name
-                            .eq(ACCOUNT_BLUEPRINT)
+                    let blueprint_def = system_db_reader
+                        .get_blueprint_definition(&info.blueprint_info.blueprint_id)
+                        .expect("Broken database");
+
+                    if let Some((_, fields)) = blueprint_def.interface.state.fields {
+                        for (index, _field) in fields.iter().enumerate() {
+                            let field_value = system_db_reader
+                                .read_object_field(&node_id, ObjectModuleId::Main, index as u8)
+                                .expect("Broken database");
+                            let (_, owned_nodes, _) = field_value.unpack();
+                            for child_node_id in owned_nodes {
+                                Self::traverse_recursive(
+                                    system_db_reader,
+                                    visitor,
+                                    child_node_id,
+                                    depth + 1,
+                                    max_depth,
+                                );
+                            }
+                        }
+                    }
+
+                    for (index, _collection) in
+                        blueprint_def.interface.state.collections.iter().enumerate()
                     {
-                        self.traverse_substates::<MapKey>(
-                            node_id,
-                            MAIN_BASE_PARTITION
-                                .at_offset(
-                                    AccountPartitionOffset::AccountVaultsByResourceAddress.into(),
-                                )
-                                .unwrap(),
-                            depth,
-                        );
-                        self.traverse_substates::<MapKey>(
-                            node_id,
-                            MAIN_BASE_PARTITION
-                                .at_offset(
-                                    AccountPartitionOffset::AccountResourcePreferenceByAddress
-                                        .into(),
-                                )
-                                .unwrap(),
-                            depth,
-                        );
-                        self.traverse_substates::<MapKey>(
-                            node_id,
-                            MAIN_BASE_PARTITION
-                                .at_offset(
-                                    AccountPartitionOffset::AccountAuthorizedDepositorByResourceOrNonFungible
-                                        .into(),
-                                )
-                                .unwrap(),
-                            depth,
-                        )
-                    } else if info
-                        .blueprint_info
-                        .blueprint_id
-                        .package_address
-                        .eq(&CONSENSUS_MANAGER_PACKAGE)
-                        && info
-                            .blueprint_info
-                            .blueprint_id
-                            .blueprint_name
-                            .eq(CONSENSUS_MANAGER_BLUEPRINT)
-                    {
-                        self.traverse_substates::<FieldKey>(
-                            node_id,
-                            MAIN_BASE_PARTITION
-                                .at_offset(ConsensusManagerPartitionOffset::ConsensusManager.into())
-                                .unwrap(),
-                            depth,
-                        );
-                        self.traverse_substates::<MapKey>(
-                            node_id,
-                            MAIN_BASE_PARTITION
-                                .at_offset(
-                                    ConsensusManagerPartitionOffset::RegisteredValidatorsByStakeIndex.into(),
-                                )
-                                .unwrap(),
-                            depth,
-                        )
-                    } else {
-                        self.traverse_substates::<FieldKey>(node_id, MAIN_BASE_PARTITION, depth)
+                        for (_key, value) in system_db_reader
+                            .collection_iter(&node_id, ObjectModuleId::Main, index as u8)
+                            .unwrap()
+                        {
+                            let (_, owned_nodes, _) =
+                                IndexedScryptoValue::from_slice(&value).unwrap().unpack();
+                            for child_node_id in owned_nodes {
+                                Self::traverse_recursive(
+                                    system_db_reader,
+                                    visitor,
+                                    child_node_id,
+                                    depth + 1,
+                                    max_depth,
+                                );
+                            }
+                        }
                     }
                 }
             }
             _ => {}
-        }
-    }
-
-    fn traverse_substates<K: SubstateKeyContent + 'static>(
-        &mut self,
-        node_id: NodeId,
-        partition_num: PartitionNumber,
-        depth: u32,
-    ) {
-        let entries = self
-            .substate_db
-            .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, K>(&node_id, partition_num);
-        for (substate_key, substate_value) in entries {
-            let (_, owned_nodes, _) =
-                IndexedScryptoValue::from_scrypto_value(substate_value).unpack();
-            for child_node_id in owned_nodes {
-                self.traverse_recursive(
-                    Some(&(node_id, partition_num, substate_key.clone())),
-                    child_node_id,
-                    depth + 1,
-                );
-            }
         }
     }
 }

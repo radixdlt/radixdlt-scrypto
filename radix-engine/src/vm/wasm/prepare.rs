@@ -68,7 +68,7 @@ impl WasmModule {
         {
             if entry.module == MODULE_ENV_NAME {
                 match entry.name {
-                    CONSUME_BUFFER_FUNCTION_NAME => {
+                    BUFFER_CONSUME_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -81,18 +81,42 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    CONSUME_BUFFER_FUNCTION_NAME.to_string(),
+                                    BUFFER_CONSUME_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    CALL_METHOD_FUNCTION_NAME => {
+                    OBJECT_CALL_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
                                 type_index,
                                 vec![
                                     ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                ],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    OBJECT_CALL_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
+                    OBJECT_CALL_MODULE_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![
                                     ValType::I32,
                                     ValType::I32,
                                     ValType::I32,
@@ -108,19 +132,17 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    CALL_METHOD_FUNCTION_NAME.to_string(),
+                                    OBJECT_CALL_MODULE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    CALL_FUNCTION_FUNCTION_NAME => {
+                    OBJECT_CALL_DIRECT_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
                                 type_index,
                                 vec![
-                                    ValType::I32,
-                                    ValType::I32,
                                     ValType::I32,
                                     ValType::I32,
                                     ValType::I32,
@@ -135,25 +157,32 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    CALL_METHOD_FUNCTION_NAME.to_string(),
+                                    OBJECT_CALL_DIRECT_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    DROP_OBJECT_FUNCTION_NAME => {
+                    BLUEPRINT_CALL_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
                                 type_index,
-                                vec![ValType::I32, ValType::I32],
-                                vec![],
+                                vec![
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                ],
+                                vec![ValType::I64],
                             ) {
                                 continue;
                             }
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    DROP_OBJECT_FUNCTION_NAME.to_string(),
+                                    OBJECT_CALL_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -182,7 +211,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    KEY_VALUE_ENTRY_GET_FUNCTION_NAME => {
+                    KEY_VALUE_ENTRY_READ_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -195,12 +224,12 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    KEY_VALUE_ENTRY_GET_FUNCTION_NAME.to_string(),
+                                    KEY_VALUE_ENTRY_READ_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    KEY_VALUE_ENTRY_SET_FUNCTION_NAME => {
+                    KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -213,12 +242,30 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    KEY_VALUE_ENTRY_SET_FUNCTION_NAME.to_string(),
+                                    KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME => {
+                    KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
+                    KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -231,7 +278,7 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME.to_string(),
+                                    KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -272,30 +319,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME => {
-                        if let TypeRef::Func(type_index) = entry.ty {
-                            if Self::function_type_matches(
-                                &self.module,
-                                type_index,
-                                vec![
-                                    ValType::I32,
-                                    ValType::I32,
-                                    ValType::I32,
-                                    ValType::I32,
-                                    ValType::I32,
-                                ],
-                                vec![ValType::I64],
-                            ) {
-                                continue;
-                            }
-                            return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME.to_string(),
-                                ),
-                            ));
-                        }
-                    }
-                    FIELD_LOCK_READ_FUNCTION_NAME => {
+                    FIELD_ENTRY_READ_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -308,12 +332,12 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    FIELD_LOCK_READ_FUNCTION_NAME.to_string(),
+                                    FIELD_ENTRY_READ_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    FIELD_LOCK_WRITE_FUNCTION_NAME => {
+                    FIELD_ENTRY_WRITE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -326,12 +350,12 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    FIELD_LOCK_WRITE_FUNCTION_NAME.to_string(),
+                                    FIELD_ENTRY_WRITE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    FIELD_LOCK_RELEASE_FUNCTION_NAME => {
+                    FIELD_ENTRY_CLOSE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -344,12 +368,30 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    FIELD_LOCK_RELEASE_FUNCTION_NAME.to_string(),
+                                    FIELD_ENTRY_CLOSE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    GET_NODE_ID_FUNCTION_NAME => {
+                    ACTOR_GET_OBJECT_ID_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    ACTOR_GET_OBJECT_ID_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
+                    ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -362,67 +404,13 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    GET_NODE_ID_FUNCTION_NAME.to_string(),
-                                ),
-                            ));
-                        }
-                    }
-                    GET_GLOBAL_ADDRESS_FUNCTION_NAME => {
-                        if let TypeRef::Func(type_index) = entry.ty {
-                            if Self::function_type_matches(
-                                &self.module,
-                                type_index,
-                                vec![],
-                                vec![ValType::I64],
-                            ) {
-                                continue;
-                            }
-
-                            return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    GET_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
-                                ),
-                            ));
-                        }
-                    }
-                    GET_BLUEPRINT_FUNCTION_NAME => {
-                        if let TypeRef::Func(type_index) = entry.ty {
-                            if Self::function_type_matches(
-                                &self.module,
-                                type_index,
-                                vec![],
-                                vec![ValType::I64],
-                            ) {
-                                continue;
-                            }
-
-                            return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    GET_BLUEPRINT_FUNCTION_NAME.to_string(),
-                                ),
-                            ));
-                        }
-                    }
-                    GET_AUTH_ZONE_FUNCTION_NAME => {
-                        if let TypeRef::Func(type_index) = entry.ty {
-                            if Self::function_type_matches(
-                                &self.module,
-                                type_index,
-                                vec![],
-                                vec![ValType::I64],
-                            ) {
-                                continue;
-                            }
-
-                            return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    GET_AUTH_ZONE_FUNCTION_NAME.to_string(),
+                                    ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
 
-                    NEW_OBJECT_FUNCTION_NAME => {
+                    OBJECT_NEW_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -435,13 +423,13 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    NEW_OBJECT_FUNCTION_NAME.to_string(),
+                                    OBJECT_NEW_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
 
-                    EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME => {
+                    COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -453,12 +441,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME => {
+                    COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -470,12 +458,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME => {
+                    COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -487,12 +475,13 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME
+                                        .to_string(),
                                 ),
                             ));
                         }
                     }
-                    FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME => {
+                    COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -504,12 +493,30 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME
+                                        .to_string(),
                                 ),
                             ));
                         }
                     }
-                    TIP_PERCENTAGE_FUNCTION_NAME => {
+                    COSTING_GET_USD_PRICE_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    COSTING_GET_USD_PRICE_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
+                    COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -521,12 +528,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    TIP_PERCENTAGE_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    FEE_BALANCE_FUNCTION_NAME => {
+                    COSTING_GET_FEE_BALANCE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -538,13 +545,13 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    FEE_BALANCE_FUNCTION_NAME.to_string(),
+                                    COSTING_GET_FEE_BALANCE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
 
-                    ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => {
+                    ADDRESS_ALLOCATE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -556,12 +563,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
+                                    ADDRESS_ALLOCATE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    GET_RESERVATION_ADDRESS_FUNCTION_NAME => {
+                    ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -573,24 +580,31 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    GET_RESERVATION_ADDRESS_FUNCTION_NAME.to_string(),
+                                    ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    GLOBALIZE_FUNCTION_NAME => {
+                    OBJECT_GLOBALIZE_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
                                 type_index,
-                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+                                vec![
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                ],
                                 vec![ValType::I64],
                             ) {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    GLOBALIZE_FUNCTION_NAME.to_string(),
+                                    OBJECT_GLOBALIZE_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -612,7 +626,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    GET_BLUEPRINT_ID_FUNCTION_NAME => {
+                    OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -624,12 +638,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    GET_BLUEPRINT_ID_FUNCTION_NAME.to_string(),
+                                    OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    GET_OUTER_OBJECT_FUNCTION_NAME => {
+                    OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -641,12 +655,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    GET_OUTER_OBJECT_FUNCTION_NAME.to_string(),
+                                    OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    EMIT_EVENT_FUNCTION_NAME => {
+                    ACTOR_EMIT_EVENT_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -664,12 +678,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    EMIT_EVENT_FUNCTION_NAME.to_string(),
+                                    ACTOR_EMIT_EVENT_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    EMIT_LOG_FUNCTION_NAME => {
+                    SYS_LOG_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -681,12 +695,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    EMIT_LOG_FUNCTION_NAME.to_string(),
+                                    SYS_LOG_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    BECH32_ENCODE_ADDRESS_FUNCTION_NAME => {
+                    SYS_BECH32_ENCODE_ADDRESS_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -698,12 +712,12 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    BECH32_ENCODE_ADDRESS_FUNCTION_NAME.to_string(),
+                                    SYS_BECH32_ENCODE_ADDRESS_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    PANIC_FUNCTION_NAME => {
+                    SYS_PANIC_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -714,28 +728,13 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(PANIC_FUNCTION_NAME.to_string()),
-                            ));
-                        }
-                    }
-                    GET_TRANSACTION_HASH_FUNCTION_NAME => {
-                        if let TypeRef::Func(type_index) = entry.ty {
-                            if Self::function_type_matches(
-                                &self.module,
-                                type_index,
-                                vec![],
-                                vec![ValType::I64],
-                            ) {
-                                continue;
-                            }
-                            return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    GET_TRANSACTION_HASH_FUNCTION_NAME.to_string(),
+                                    SYS_PANIC_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
                     }
-                    GENERATE_RUID_FUNCTION_NAME => {
+                    SYS_GET_TRANSACTION_HASH_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -747,7 +746,24 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    GENERATE_RUID_FUNCTION_NAME.to_string(),
+                                    SYS_GET_TRANSACTION_HASH_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
+                    SYS_GENERATE_RUID_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    SYS_GENERATE_RUID_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -756,7 +772,9 @@ impl WasmModule {
                 };
             }
 
-            return Err(PrepareError::InvalidImport(InvalidImport::ImportNotAllowed));
+            return Err(PrepareError::InvalidImport(
+                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+            ));
         }
 
         Ok(self)
@@ -994,7 +1012,7 @@ impl WasmModule {
     ) -> Result<Self, PrepareError> {
         let backend = gas_metering::host_function::Injector::new(
             MODULE_ENV_NAME,
-            CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
+            COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
         );
         gas_metering::inject(&mut self.module, backend, rules).map_err(|err| {
             PrepareError::RejectedByInstructionMetering {

@@ -19,7 +19,7 @@ use crate::internal_prelude::*;
 ///
 /// The content of each of the above can take a number of forms. This is configured via specifying the type as one of the following.
 /// Only Static is supported for keys at present. By default, you should choose StaticSingleVersioned for fields and collection values.
-/// ```
+/// ```ignore
 ///     {
 ///         kind: StaticSingleVersioned,
 ///     }
@@ -245,6 +245,12 @@ macro_rules! declare_native_blueprint_state {
                             $($field_ident,)*
                         }
 
+                        impl [<$blueprint_ident Field>] {
+                            pub const fn field_index(&self) -> u8 {
+                                *self as u8
+                            }
+                        }
+
                         impl From<[<$blueprint_ident Field>]> for SubstateKey {
                             fn from(value: [<$blueprint_ident Field>]) -> Self {
                                 SubstateKey::Field(value as u8)
@@ -280,6 +286,12 @@ macro_rules! declare_native_blueprint_state {
                         #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
                         pub enum [<$blueprint_ident Field>] {
                             $($field_ident,)*
+                        }
+
+                        impl [<$blueprint_ident Field>] {
+                            pub const fn field_index(&self) -> u8 {
+                                unreachable!()
+                            }
                         }
                     ]],
                 );

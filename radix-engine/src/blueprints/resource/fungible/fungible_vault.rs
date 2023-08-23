@@ -8,7 +8,7 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+    ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
@@ -285,7 +285,7 @@ impl FungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
@@ -381,7 +381,8 @@ impl FungibleVaultBlueprint {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         // Check resource address and amount
-        let resource_address = ResourceAddress::new_or_panic(api.actor_get_outer_object()?.into());
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());
         if resource_address != XRD {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
@@ -397,7 +398,7 @@ impl FungibleVaultBlueprint {
 
         // Lock the substate (with special flags)
         let vault_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleVaultField::Balance.into(),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
@@ -462,7 +463,7 @@ impl FungibleVaultBlueprint {
         Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleVaultField::FreezeStatus.into(),
             LockFlags::MUTABLE,
         )?;
@@ -486,7 +487,7 @@ impl FungibleVaultBlueprint {
         Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleVaultField::FreezeStatus.into(),
             LockFlags::MUTABLE,
         )?;
@@ -532,10 +533,10 @@ impl FungibleVaultBlueprint {
 
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&proof_info),
-                FieldValue::new(&proof_evidence),
-            ],
+            btreemap! {
+                0u8 => FieldValue::new(&proof_info),
+                1u8 => FieldValue::new(&proof_evidence),
+            },
         )?;
 
         Ok(Proof(Own(proof_id)))
@@ -560,7 +561,7 @@ impl FungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleVaultField::LockedBalance.into(),
             LockFlags::MUTABLE,
         )?;
@@ -591,7 +592,7 @@ impl FungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleVaultField::LockedBalance.into(),
             LockFlags::MUTABLE,
         )?;
@@ -627,14 +628,14 @@ impl FungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerFeature::VaultFreeze.feature_name(),
         )? {
             return Ok(());
         }
 
         let frozen_flag_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleVaultField::FreezeStatus.into(),
             LockFlags::read_only(),
         )?;
@@ -657,7 +658,7 @@ impl FungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerFeature::VaultFreeze.feature_name(),
         )? {
             return Err(RuntimeError::ApplicationError(
@@ -673,7 +674,7 @@ impl FungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerFeature::VaultRecall.feature_name(),
         )? {
             return Err(RuntimeError::ApplicationError(
@@ -689,7 +690,7 @@ impl FungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleVaultField::Balance.into(),
             LockFlags::read_only(),
         )?;
@@ -706,7 +707,7 @@ impl FungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleVaultField::LockedBalance.into(),
             LockFlags::read_only(),
         )?;
@@ -726,7 +727,7 @@ impl FungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleVaultField::Balance.into(),
             LockFlags::MUTABLE,
         )?;
@@ -756,7 +757,7 @@ impl FungibleVaultBlueprint {
         }
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleVaultField::Balance.into(),
             LockFlags::MUTABLE,
         )?;
