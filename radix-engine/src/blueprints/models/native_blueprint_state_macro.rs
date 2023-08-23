@@ -164,6 +164,7 @@ macro_rules! declare_native_blueprint_state {
                         #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
                         struct [<$blueprint_ident $collection_ident KeyPayload>] = $collection_key_type
                     );
+                    pub type [<$blueprint_ident $collection_ident KeyContent>] = <[<$blueprint_ident $collection_ident KeyPayload>] as [<$collection_type KeyPayload>]>::Content;
 
                     // Values
                     // > If relevant, set up Versioned types, which:
@@ -219,7 +220,7 @@ macro_rules! declare_native_blueprint_state {
                                 $blueprint_ident,
                                 type_aggregator,
                                 $collection_key_type,
-                                [<$blueprint_ident $collection_ident KeyPayload>],
+                                [<$blueprint_ident $collection_ident KeyContent>],
                                 $collection_value_type,
                                 [<$blueprint_ident $collection_ident EntryPayload>],
                                 $collection_allow_ownership
