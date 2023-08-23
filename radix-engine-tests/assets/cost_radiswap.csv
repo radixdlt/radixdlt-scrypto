@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,      0.50777551761067145,    100.0%
-- Execution Cost (XRD)                                                     ,                 0.361951,     71.3%
+Total Cost (XRD)                                                           ,      0.50778096761067145,    100.0%
+- Execution Cost (XRD)                                                     ,               0.36195645,     71.3%
 - Finalization Cost (XRD)                                                  ,                0.0425098,      8.4%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,      0.10331471761067145,     20.3%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  7239020,    100.0%
+Execution Cost Breakdown                                                   ,                  7239129,    100.0%
 - AllocateNodeId                                                           ,                     3432,      0.0%
 - BeforeInvoke                                                             ,                     4362,      0.1%
 - CloseSubstate                                                            ,                    58380,      0.8%
@@ -14,17 +14,17 @@ Execution Cost Breakdown                                                   ,    
 - EmitEvent                                                                ,                     5828,      0.1%
 - LockFee                                                                  ,                      500,      0.0%
 - MarkSubstateAsTransient                                                  ,                      300,      0.0%
-- OpenSubstate::GlobalAccount                                              ,                   653901,      9.0%
-- OpenSubstate::GlobalFungibleResourceManager                              ,                   421066,      5.8%
+- OpenSubstate::GlobalAccount                                              ,                   653913,      9.0%
+- OpenSubstate::GlobalFungibleResourceManager                              ,                   421096,      5.8%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43171,      0.6%
 - OpenSubstate::GlobalPackage                                              ,                  2744448,     37.9%
-- OpenSubstate::GlobalTwoResourcePool                                      ,                   655377,      9.1%
+- OpenSubstate::GlobalTwoResourcePool                                      ,                   655390,      9.1%
 - OpenSubstate::InternalFungibleVault                                      ,                   351230,      4.9%
 - OpenSubstate::InternalGenericComponent                                   ,                    99108,      1.4%
 - PinNode                                                                  ,                     3200,      0.0%
 - PrepareWasmCode                                                          ,                   581832,      8.0%
 - QueryActor                                                               ,                     5000,      0.1%
-- ReadSubstate                                                             ,                   810876,     11.2%
+- ReadSubstate                                                             ,                   810930,     11.2%
 - RunNativeCode::Worktop_drain                                             ,                    13505,      0.2%
 - RunNativeCode::Worktop_drop                                              ,                    15385,      0.2%
 - RunNativeCode::Worktop_put                                               ,                    36524,      0.5%

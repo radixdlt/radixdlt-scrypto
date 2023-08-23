@@ -390,8 +390,8 @@ pub enum TypedTypeInfoModuleSubstateValue {
 
 #[derive(Debug)]
 pub enum TypedRoleAssignmentModuleSubstateValue {
-    OwnerRole(FieldSubstate<OwnerRoleSubstate>),
-    Rule(KeyValueEntrySubstate<AccessRule>),
+    OwnerRole(FieldSubstate<RoleAssignmentOwnerFieldPayload>),
+    Rule(KeyValueEntrySubstate<RoleAssignmentAccessRuleEntryPayload>),
 }
 
 #[derive(Debug)]
@@ -483,7 +483,7 @@ fn to_typed_substate_value_internal(
         TypedSubstateKey::RoleAssignmentModule(role_assignment_key) => match role_assignment_key {
             TypedRoleAssignmentSubstateKey::RoleAssignmentField(role_assignment_field_offset) => {
                 match role_assignment_field_offset {
-                    RoleAssignmentField::OwnerRole => TypedSubstateValue::RoleAssignmentModule(
+                    RoleAssignmentField::Owner => TypedSubstateValue::RoleAssignmentModule(
                         TypedRoleAssignmentModuleSubstateValue::OwnerRole(scrypto_decode(data)?),
                     ),
                 }

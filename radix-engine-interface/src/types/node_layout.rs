@@ -43,20 +43,6 @@ pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION: PartitionNumber = PartitionNumber(
 pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 pub const ROLE_ASSIGNMENT_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum RoleAssignmentField {
-    OwnerRole,
-}
-
-impl TryFrom<u8> for RoleAssignmentField {
-    type Error = ();
-
-    fn try_from(offset: u8) -> Result<Self, Self::Error> {
-        Self::from_repr(offset).ok_or(())
-    }
-}
-
 //=============================
 // Blueprint partition - common
 //=============================
@@ -140,6 +126,14 @@ blueprint_partition_offset!(
     pub enum ComponentRoyaltyPartitionOffset {
         Field,
         MethodAmountKeyValue,
+    }
+);
+
+
+blueprint_partition_offset!(
+    pub enum RoleAssignmentPartitionOffset {
+        Field,
+        AccessRuleKeyValue,
     }
 );
 
@@ -321,14 +315,13 @@ macro_rules! substate_key {
 
 substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
-substate_key!(RoleAssignmentField);
 substate_key!(ComponentField);
+substate_key!(TransactionTrackerField);
+
+// Transient
 substate_key!(FungibleBucketField);
 substate_key!(FungibleProofField);
 substate_key!(NonFungibleBucketField);
 substate_key!(NonFungibleProofField);
-substate_key!(TransactionTrackerField);
-
-// Transient
 substate_key!(WorktopField);
 substate_key!(AuthZoneField);
