@@ -661,18 +661,18 @@ pub fn create_bootstrap_package_partitions(
         node_substates.insert(
             TYPE_INFO_FIELD_PARTITION,
             type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                global: true,
-                module_versions: btreemap!(
-                    ObjectModuleId::Main => BlueprintVersion::default(),
-                    ObjectModuleId::Metadata => BlueprintVersion::default(),
-                    ObjectModuleId::RoleAssignment => BlueprintVersion::default(),
-                ),
-
                 blueprint_info: BlueprintInfo {
                     blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+                    blueprint_version: BlueprintVersion::default(),
                     outer_obj_info: OuterObjectInfo::default(),
                     features: own_features.feature_names_string_set(),
                     generic_substitutions: vec![],
+                },
+                object_type: ObjectType::Global {
+                    modules: btreemap!(
+                        ModuleId::Metadata => BlueprintVersion::default(),
+                        ModuleId::RoleAssignment => BlueprintVersion::default(),
+                    ),
                 },
             })),
         );
@@ -700,21 +700,15 @@ where
         PACKAGE_BLUEPRINT,
         vec![PackageFeature::PackageRoyalty.feature_name()],
         GenericArgs::default(),
-        fields
-            .into_iter()
-            .map(|f| match f {
-                Some(f) => f,
-                None => FieldValue::new(()),
-            })
-            .collect(),
+        fields,
         kv_entries,
     )?;
 
     let address = api.globalize(
+        package_object,
         btreemap!(
-            ObjectModuleId::Main => package_object,
-            ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::RoleAssignment => role_assignment.0.0,
+            ModuleId::Metadata => metadata.0,
+            ModuleId::RoleAssignment => role_assignment.0.0,
         ),
         package_address_reservation,
     )?;
@@ -907,18 +901,17 @@ impl PackageNativePackage {
         royalty_vault: Option<Vault>,
         package_structure: PackageStructure,
     ) -> (
-        Vec<Option<FieldValue>>,
+        BTreeMap<u8, FieldValue>,
         BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) {
-        let field = if let Some(vault) = royalty_vault {
+        let mut fields = BTreeMap::new();
+        if let Some(vault) = royalty_vault {
             let royalty = PackageRoyaltyAccumulator {
                 royalty_vault: vault,
             }
             .into_payload();
-            Some(FieldValue::immutable(&royalty))
-        } else {
-            None
-        };
+            fields.insert(0u8, FieldValue::immutable(&royalty));
+        }
 
         let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>> = BTreeMap::new();
         {
@@ -1045,7 +1038,7 @@ impl PackageNativePackage {
             );
         }
 
-        (vec![field], kv_entries)
+        (fields, kv_entries)
     }
 
     pub fn validate_and_build_package_structure(
@@ -1352,7 +1345,7 @@ impl PackageRoyaltyNativeBlueprint {
             let mut service = SystemService::new(api);
             if !service.is_feature_enabled(
                 receiver,
-                ObjectModuleId::Main,
+                None,
                 PackageFeature::PackageRoyalty.feature_name(),
             )? {
                 return Ok(());
@@ -1418,7 +1411,7 @@ impl PackageRoyaltyNativeBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             PackageFeature::PackageRoyalty.feature_name(),
         )? {
             return Err(RuntimeError::ApplicationError(
@@ -1427,7 +1420,7 @@ impl PackageRoyaltyNativeBlueprint {
         }
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             PackageField::RoyaltyAccumulator.into(),
             LockFlags::read_only(),
         )?;

@@ -3,13 +3,13 @@ use sbor::rust::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct InMemorySubstateDatabase {
-    partitions: IndexMap<DbPartitionKey, BTreeMap<DbSortKey, DbSubstateValue>>,
+    partitions: BTreeMap<DbPartitionKey, BTreeMap<DbSortKey, DbSubstateValue>>,
 }
 
 impl InMemorySubstateDatabase {
     pub fn standard() -> Self {
         Self {
-            partitions: index_map_new(),
+            partitions: BTreeMap::new(),
         }
     }
 }

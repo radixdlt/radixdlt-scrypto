@@ -8,6 +8,9 @@ use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system_db_checker::{
+    SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults,
+};
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, CostingParameters, ExecutionConfig,
@@ -393,6 +396,16 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     collected_events: Option<Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>>,
 }
 
+#[cfg(feature = "post_run_db_check")]
+impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
+    fn drop(&mut self) {
+        let results = self
+            .check_db()
+            .expect("Database should be consistent after running test");
+        println!("{:?}", results);
+    }
+}
+
 #[derive(Clone)]
 pub struct TestRunnerSnapshot {
     database: InMemorySubstateDatabase,
@@ -647,7 +660,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let node_id = component_address.as_node_id();
         let mut vault_finder = VaultFinder::new(resource_address);
         let mut traverser = StateTreeTraverser::new(&self.database, &mut vault_finder, 100);
-        traverser.traverse_all_descendents(None, *node_id);
+        traverser.traverse_all_descendents(*node_id);
         vault_finder.to_vaults()
     }
 
@@ -2145,6 +2158,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .filter(|(id, _data)| self.is_event_name_equal::<T>(id))
             .map(|(_id, data)| scrypto_decode::<T>(data).unwrap())
             .collect::<Vec<_>>()
+    }
+
+    pub fn check_db(&self) -> Result<SystemDatabaseCheckerResults, SystemDatabaseCheckError> {
+        let checker = SystemDatabaseChecker::new();
+        checker.check_db(&self.database)
     }
 }
 

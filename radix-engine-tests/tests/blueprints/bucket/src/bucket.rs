@@ -29,20 +29,6 @@ mod bucket_test {
             bucket
         }
 
-        pub fn drop_bucket() {
-            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata! {
-                    init {
-                        "name" => "TestToken".to_owned(), locked;
-                    }
-                })
-                .mint_initial_supply(1u32)
-                .into();
-
-            ScryptoEnv.drop_object(bucket.0.as_node_id()).unwrap();
-        }
-
         pub fn drop_empty(amount: u32) {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)

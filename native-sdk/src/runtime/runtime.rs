@@ -1,5 +1,5 @@
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
+use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::{
@@ -21,10 +21,10 @@ impl Runtime {
         event: T,
     ) -> Result<(), E>
     where
-        Y: ClientTransactionRuntimeApi<E>,
+        Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.emit_event(
+        api.actor_emit_event(
             T::event_name().to_string(),
             scrypto_encode(&event).unwrap(),
             EventFlags::empty(),
@@ -36,10 +36,10 @@ impl Runtime {
         event: T,
     ) -> Result<(), E>
     where
-        Y: ClientTransactionRuntimeApi<E>,
+        Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.emit_event(
+        api.actor_emit_event(
             T::event_name().to_string(),
             scrypto_encode(&event).unwrap(),
             EventFlags::FORCE_WRITE,
@@ -111,7 +111,7 @@ impl Runtime {
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        let auth_zone = api.get_auth_zone()?;
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         let _rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
@@ -126,6 +126,6 @@ impl Runtime {
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.actor_get_node_id()
+        api.actor_get_node_id(ACTOR_REF_SELF)
     }
 }

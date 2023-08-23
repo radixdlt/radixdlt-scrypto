@@ -1,6 +1,6 @@
 use crate::kernel::call_frame::TransientSubstates;
 use crate::track::interface::{
-    CommitableSubstateStore, NodeSubstates, StoreAccess, TrackedSubstateInfo,
+    CommitableSubstateStore, IOAccess, NodeSubstates, TrackedSubstateInfo,
 };
 use crate::track::utils::OverlayingResultIterator;
 use crate::types::*;
@@ -76,7 +76,37 @@ pub enum TrackedSubstateValue {
     Garbage,
 }
 
+impl TrackedSubstate {
+    fn size(&self) -> usize {
+        // `substate_key` is accounted as part of the CanonicalSubstateKey
+        self.substate_value.size()
+    }
+}
+
 impl TrackedSubstateValue {
+    fn size(&self) -> usize {
+        match self {
+            TrackedSubstateValue::New(x) => x.value.len(),
+            TrackedSubstateValue::ReadOnly(r) => match r {
+                ReadOnly::NonExistent => 0,
+                ReadOnly::Existent(x) => x.value.len(),
+            },
+            TrackedSubstateValue::ReadExistAndWrite(e, w) => {
+                e.len()
+                    + match w {
+                        Write::Update(x) => x.value.len(),
+                        Write::Delete => 0,
+                    }
+            }
+            TrackedSubstateValue::ReadNonExistAndWrite(x) => x.value.len(),
+            TrackedSubstateValue::WriteOnly(w) => match w {
+                Write::Update(x) => x.value.len(),
+                Write::Delete => 0,
+            },
+            TrackedSubstateValue::Garbage => 0,
+        }
+    }
+
     fn get_runtime_substate_mut(&mut self) -> Option<&mut RuntimeSubstate> {
         match self {
             TrackedSubstateValue::New(substate)
@@ -354,20 +384,20 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     }
 
     // TODO cleanup interface to avoid redundant information
-    fn get_substate_from_db<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn get_substate_from_db<E, F: FnMut(IOAccess) -> Result<(), E>>(
         substate_db: &'s S,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
         canonical_substate_key: CanonicalSubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, E> {
         let result = substate_db
             .get_substate(partition_key, sort_key)
             .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
         if let Some(x) = &result {
-            on_store_access(StoreAccess::ReadFromDb(canonical_substate_key, x.len()))?;
+            on_io_access(IOAccess::ReadFromDb(canonical_substate_key, x.len()))?;
         } else {
-            on_store_access(StoreAccess::ReadFromDbNotFound(canonical_substate_key))?;
+            on_io_access(IOAccess::ReadFromDbNotFound(canonical_substate_key))?;
         }
         Ok(result)
     }
@@ -376,24 +406,24 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     fn list_entries_from_db<
         'x,
         E: 'x,
-        F: FnMut(StoreAccess) -> Result<(), E> + 'x,
+        F: FnMut(IOAccess) -> Result<(), E> + 'x,
         K: SubstateKeyContent + 'static,
     >(
         substate_db: &'x S,
         partition_key: &DbPartitionKey,
-        on_store_access: &'x mut F,
+        on_io_access: &'x mut F,
         canonical_partition: CanonicalPartition,
     ) -> Box<dyn Iterator<Item = Result<(DbSortKey, (SubstateKey, IndexedScryptoValue)), E>> + 'x>
     {
         struct TracedIterator<
             'a,
             E,
-            F: FnMut(StoreAccess) -> Result<(), E>,
+            F: FnMut(IOAccess) -> Result<(), E>,
             M: DatabaseKeyMapper + 'static,
             K: SubstateKeyContent + 'static,
         > {
             iterator: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
-            on_store_access: &'a mut F,
+            on_io_access: &'a mut F,
             canonical_partition: CanonicalPartition,
             errored_out: bool,
             phantom1: PhantomData<M>,
@@ -403,7 +433,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
         impl<
                 'a,
                 E,
-                F: FnMut(StoreAccess) -> Result<(), E>,
+                F: FnMut(IOAccess) -> Result<(), E>,
                 M: DatabaseKeyMapper + 'static,
                 K: SubstateKeyContent + 'static,
             > Iterator for TracedIterator<'a, E, F, M, K>
@@ -420,11 +450,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                     let substate_key = M::from_db_sort_key::<K>(&x.0);
                     let substate_value =
                         IndexedScryptoValue::from_vec(x.1).expect("Failed to decode substate");
-                    let store_access = StoreAccess::ReadFromDb(
+                    let io_access = IOAccess::ReadFromDb(
                         CanonicalSubstateKey::of(self.canonical_partition, substate_key.clone()),
                         substate_value.len(),
                     );
-                    let result = (self.on_store_access)(store_access);
+                    let result = (self.on_io_access)(io_access);
                     match result {
                         Ok(()) => Some(Ok((x.0, (substate_key, substate_value)))),
                         Err(e) => {
@@ -440,7 +470,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
 
         Box::new(TracedIterator {
             iterator: substate_db.list_entries(partition_key),
-            on_store_access,
+            on_io_access,
             canonical_partition,
             errored_out: false,
             phantom1: PhantomData::<M>,
@@ -504,12 +534,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
             .or_insert(TrackedPartition::new())
     }
 
-    fn get_tracked_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn get_tracked_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
         substate_key: SubstateKey,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<&mut TrackedSubstateValue, E> {
         let db_sort_key = M::to_db_sort_key(&substate_key);
         let partition = &mut self
@@ -528,27 +558,29 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                     .transient_substates
                     .is_transient(node_id, partition_number, &substate_key)
                 {
-                    on_store_access(StoreAccess::UpdateSubstateInTrack {
+                    let tracked = TrackedSubstate {
+                        substate_key: substate_key.clone(),
+                        substate_value: TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent),
+                    };
+                    let new_size = Some(tracked.size());
+                    e.insert(tracked);
+
+                    on_io_access(IOAccess::TrackSubstateUpdated {
                         canonical_substate_key: CanonicalSubstateKey {
                             node_id: *node_id,
                             partition_number,
-                            substate_key: substate_key.clone(),
+                            substate_key,
                         },
                         old_size: None,
-                        new_size: Some(0),
+                        new_size,
                     })?;
-                    let tracked = TrackedSubstate {
-                        substate_key,
-                        substate_value: TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent),
-                    };
-                    e.insert(tracked);
                 } else {
                     let db_partition_key = M::to_db_partition_key(node_id, partition_number);
                     let substate_value = Self::get_substate_from_db(
                         self.substate_db,
                         &db_partition_key,
                         &M::to_db_sort_key(&substate_key),
-                        on_store_access,
+                        on_io_access,
                         CanonicalSubstateKey {
                             node_id: *node_id,
                             partition_number,
@@ -556,34 +588,35 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                         },
                     )?;
 
-                    // Notify upper layer
-                    on_store_access(StoreAccess::UpdateSubstateInTrack {
-                        canonical_substate_key: CanonicalSubstateKey {
-                            node_id: *node_id,
-                            partition_number,
-                            substate_key: substate_key.clone(),
-                        },
-                        old_size: None,
-                        new_size: Some(
-                            substate_value.as_ref().map(|x| x.len()).unwrap_or_default(),
-                        ),
-                    })?;
-
+                    let new_size;
                     if let Some(value) = substate_value {
                         let tracked = TrackedSubstate {
-                            substate_key,
+                            substate_key: substate_key.clone(),
                             substate_value: TrackedSubstateValue::ReadOnly(ReadOnly::Existent(
                                 RuntimeSubstate::new(value),
                             )),
                         };
+                        new_size = Some(tracked.size());
                         e.insert(tracked);
                     } else {
                         let tracked = TrackedSubstate {
-                            substate_key,
+                            substate_key: substate_key.clone(),
                             substate_value: TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent),
                         };
+                        new_size = Some(tracked.size());
                         e.insert(tracked);
-                    }
+                    };
+
+                    // Notify upper layer
+                    on_io_access(IOAccess::TrackSubstateUpdated {
+                        canonical_substate_key: CanonicalSubstateKey {
+                            node_id: *node_id,
+                            partition_number,
+                            substate_key,
+                        },
+                        old_size: None,
+                        new_size,
+                    })?;
                 }
             }
             Entry::Occupied(..) => {}
@@ -606,11 +639,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
             .mark_as_transient(node_id, partition_num, substate_key);
     }
 
-    fn create_node<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn create_node<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<(), E> {
         let mut tracked_partitions = index_map_new();
 
@@ -619,22 +652,24 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
             for (substate_key, substate_value) in partition {
                 let db_sort_key = M::to_db_sort_key(&substate_key);
 
+                let tracked = TrackedSubstate {
+                    substate_key: substate_key.clone(),
+                    substate_value: TrackedSubstateValue::New(RuntimeSubstate::new(substate_value)),
+                };
+                let new_size = Some(tracked.size());
+                let old_tracked = partition_substates.insert(db_sort_key, tracked);
+                assert!(old_tracked.is_none());
+
                 // Notify upper layer
-                on_store_access(StoreAccess::UpdateSubstateInTrack {
+                on_io_access(IOAccess::TrackSubstateUpdated {
                     canonical_substate_key: CanonicalSubstateKey {
                         node_id,
                         partition_number,
-                        substate_key: substate_key.clone(),
+                        substate_key,
                     },
                     old_size: None,
-                    new_size: Some(substate_value.len()),
+                    new_size,
                 })?;
-
-                let tracked = TrackedSubstate {
-                    substate_key,
-                    substate_value: TrackedSubstateValue::New(RuntimeSubstate::new(substate_value)),
-                };
-                partition_substates.insert(db_sort_key, tracked);
             }
             let tracked_partition = TrackedPartition::new_with_substates(partition_substates);
             tracked_partitions.insert(partition_number, tracked_partition);
@@ -677,33 +712,29 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         info
     }
 
-    fn get_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn get_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Option<&IndexedScryptoValue>, E> {
         // Load the substate from state track
-        let tracked = self.get_tracked_substate(
-            node_id,
-            partition_num,
-            substate_key.clone(),
-            on_store_access,
-        )?;
+        let tracked =
+            self.get_tracked_substate(node_id, partition_num, substate_key.clone(), on_io_access)?;
 
         let value = tracked.get_runtime_substate_mut().map(|v| &v.value);
 
         Ok(value)
     }
 
-    fn set_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn set_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         partition_number: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<(), E> {
         let tracked_partition = self
             .tracked_nodes
@@ -717,46 +748,43 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
 
         match entry {
             Entry::Vacant(e) => {
-                // Notify upper layer
-                on_store_access(StoreAccess::UpdateSubstateInTrack {
-                    canonical_substate_key: CanonicalSubstateKey {
-                        node_id,
-                        partition_number,
-                        substate_key: substate_key.clone(),
-                    },
-                    old_size: None,
-                    new_size: Some(substate_value.len()),
-                })?;
-
                 let tracked = TrackedSubstate {
-                    substate_key,
+                    substate_key: substate_key.clone(),
                     substate_value: TrackedSubstateValue::WriteOnly(Write::Update(
                         RuntimeSubstate::new(substate_value),
                     )),
                 };
+                let new_size = Some(tracked.size());
                 e.insert(tracked);
+
+                // Notify upper layer
+                on_io_access(IOAccess::TrackSubstateUpdated {
+                    canonical_substate_key: CanonicalSubstateKey {
+                        node_id,
+                        partition_number,
+                        substate_key,
+                    },
+                    old_size: None,
+                    new_size,
+                })?;
             }
             Entry::Occupied(mut e) => {
                 let tracked = e.get_mut();
 
+                let old_size = Some(tracked.size());
+                tracked.substate_value.set(substate_value);
+                let new_size = Some(tracked.size());
+
                 // Notify upper layer
-                on_store_access(StoreAccess::UpdateSubstateInTrack {
+                on_io_access(IOAccess::TrackSubstateUpdated {
                     canonical_substate_key: CanonicalSubstateKey {
                         node_id,
                         partition_number,
-                        substate_key: substate_key.clone(),
+                        substate_key,
                     },
-                    old_size: Some(
-                        tracked
-                            .substate_value
-                            .get()
-                            .map(|x| x.len())
-                            .unwrap_or_default(),
-                    ),
-                    new_size: Some(substate_value.len()),
+                    old_size,
+                    new_size,
                 })?;
-
-                tracked.substate_value.set(substate_value);
             }
         }
 
@@ -799,40 +827,44 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
     }
 
     // Should not use on virtualized substates
-    fn remove_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn remove_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Option<IndexedScryptoValue>, E> {
         let tracked = self.get_tracked_substate(
             node_id,
             partition_number,
             substate_key.clone(),
-            on_store_access,
+            on_io_access,
         )?;
 
+        let old_size = Some(tracked.size());
+        let taken = tracked.take();
+        let new_size = Some(tracked.size());
+
         // Notify upper layer
-        on_store_access(StoreAccess::UpdateSubstateInTrack {
+        on_io_access(IOAccess::TrackSubstateUpdated {
             canonical_substate_key: CanonicalSubstateKey {
                 node_id: *node_id,
                 partition_number,
                 substate_key: substate_key.clone(),
             },
-            old_size: Some(tracked.get().map(|x| x.len()).unwrap_or_default()),
-            new_size: Some(0), // Tracked substates are never "removed"
+            old_size,
+            new_size,
         })?;
 
-        Ok(tracked.take())
+        Ok(taken)
     }
 
-    fn scan_keys<K: SubstateKeyContent + 'static, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn scan_keys<K: SubstateKeyContent + 'static, E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
         limit: u32,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Vec<SubstateKey>, E> {
         let limit: usize = limit.try_into().unwrap();
         let mut items = Vec::new();
@@ -866,7 +898,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         let mut tracked_iter = IterationCountedIter::new(Self::list_entries_from_db::<E, F, K>(
             self.substate_db,
             &db_partition_key,
-            on_store_access,
+            on_io_access,
             CanonicalPartition {
                 node_id: *node_id,
                 partition_number,
@@ -900,16 +932,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         Ok(items)
     }
 
-    fn drain_substates<
-        K: SubstateKeyContent + 'static,
-        E,
-        F: FnMut(StoreAccess) -> Result<(), E>,
-    >(
+    fn drain_substates<K: SubstateKeyContent + 'static, E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
         limit: u32,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E> {
         let limit: usize = limit.try_into().unwrap();
         let mut items = Vec::new();
@@ -929,27 +957,22 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                     return Ok(items);
                 }
 
+                let old_size = Some(tracked_substate.size());
+                if let Some(value) = tracked_substate.substate_value.take() {
+                    items.push((tracked_substate.substate_key.clone(), value));
+                }
+                let new_size = Some(tracked_substate.size());
+
                 // Notify upper layer
-                on_store_access(StoreAccess::UpdateSubstateInTrack {
+                on_io_access(IOAccess::TrackSubstateUpdated {
                     canonical_substate_key: CanonicalSubstateKey {
                         node_id: *node_id,
                         partition_number,
                         substate_key: tracked_substate.substate_key.clone(),
                     },
-                    old_size: Some(
-                        tracked_substate
-                            .substate_value
-                            .get()
-                            .map(|x| x.len())
-                            .unwrap_or_default(),
-                    ),
-                    new_size: Some(0), // Tracked substates are never "removed"
+                    old_size,
+                    new_size,
                 })?;
-
-                // TODO: Check that substate is not locked, before use outside of native blueprints
-                if let Some(value) = tracked_substate.substate_value.take() {
-                    items.push((tracked_substate.substate_key.clone(), value));
-                }
             }
         }
 
@@ -966,7 +989,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                 IterationCountedIter::new(Self::list_entries_from_db::<E, F, K>(
                     self.substate_db,
                     &db_partition_key,
-                    on_store_access,
+                    on_io_access,
                     CanonicalPartition {
                         node_id: *node_id,
                         partition_number,
@@ -1013,32 +1036,35 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
             tracked_partition.range_read = u32::max(tracked_partition.range_read, num_iterations);
 
             for (db_sort_key, tracked_substate) in new_updates {
+                let substate_key = tracked_substate.substate_key.clone();
+                let new_size = Some(tracked_substate.size());
+                let old_size = tracked_partition
+                    .substates
+                    .insert(db_sort_key, tracked_substate)
+                    .map(|x| x.size());
+
                 // Notify upper layer
-                on_store_access(StoreAccess::UpdateSubstateInTrack {
+                on_io_access(IOAccess::TrackSubstateUpdated {
                     canonical_substate_key: CanonicalSubstateKey {
                         node_id: *node_id,
                         partition_number,
-                        substate_key: tracked_substate.substate_key.clone(),
+                        substate_key,
                     },
-                    old_size: None,
-                    new_size: Some(0), // Tracked substates are never "removed"
+                    old_size,
+                    new_size,
                 })?;
-
-                tracked_partition
-                    .substates
-                    .insert(db_sort_key, tracked_substate);
             }
         }
 
         Ok(items)
     }
 
-    fn scan_sorted_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn scan_sorted_substates<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
         limit: u32,
-        on_store_access: &mut F,
+        on_io_access: &mut F,
     ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, E> {
         // TODO: ensure we abort if any substates are write locked.
         let limit: usize = limit.try_into().unwrap();
@@ -1064,7 +1090,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
             Box::new(Self::list_entries_from_db::<E, F, SortedKey>(
                 self.substate_db,
                 &partition_key,
-                on_store_access,
+                on_io_access,
                 CanonicalPartition {
                     node_id: *node_id,
                     partition_number,

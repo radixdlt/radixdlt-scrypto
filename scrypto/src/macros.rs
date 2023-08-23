@@ -306,7 +306,7 @@ macro_rules! extern_blueprint_internal {
             $($method_contents:tt)*
         }
     ) => {
-        #[derive(Copy, Clone)]
+        #[derive(Copy, Clone, Debug, Eq, PartialEq)]
         pub struct $blueprint {
             pub handle: ::scrypto::component::ObjectStubHandle,
         }

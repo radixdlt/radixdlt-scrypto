@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+    ClientApi, FieldValue, LockFlags, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 
@@ -18,7 +18,7 @@ impl FungibleBucketBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let divisibility_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
@@ -55,7 +55,7 @@ impl FungibleBucketBlueprint {
 
         // Take
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
@@ -84,7 +84,7 @@ impl FungibleBucketBlueprint {
 
         // Put
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
@@ -109,7 +109,8 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.actor_get_outer_object()?.into());
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());
 
         Ok(resource_address)
     }
@@ -145,10 +146,10 @@ impl FungibleBucketBlueprint {
         })?;
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&proof_info),
-                FieldValue::new(&proof_evidence),
-            ],
+            btreemap! {
+                0u8 => FieldValue::new(&proof_info),
+                1u8 => FieldValue::new(&proof_evidence),
+            },
         )?;
 
         Ok(Proof(Own(proof_id)))
@@ -170,7 +171,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
@@ -197,7 +198,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
@@ -227,7 +228,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::read_only(),
         )?;
@@ -242,7 +243,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::read_only(),
         )?;
@@ -260,7 +261,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
@@ -284,7 +285,7 @@ impl FungibleBucketBlueprint {
         }
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;

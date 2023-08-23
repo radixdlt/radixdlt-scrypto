@@ -1,4 +1,4 @@
-use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
+use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::mem::transmute;
 use sbor::rust::mem::MaybeUninit;
@@ -100,7 +100,7 @@ fn consume_buffer(
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let result = runtime.consume_buffer(buffer_id);
+    let result = runtime.buffer_consume(buffer_id);
     match result {
         Ok(slice) => {
             write_memory(caller, memory, destination_ptr, &slice)?;
@@ -110,9 +110,10 @@ fn consume_buffer(
     }
 }
 
-fn actor_call_module_method(
+fn call_method(
     mut caller: Caller<'_, HostState>,
-    module_id: u32,
+    receiver_ptr: u32,
+    receiver_len: u32,
     ident_ptr: u32,
     ident_len: u32,
     args_ptr: u32,
@@ -120,19 +121,39 @@ fn actor_call_module_method(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
+    let receiver = read_memory(caller.as_context_mut(), memory, receiver_ptr, receiver_len)?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .actor_call_module_method(module_id, ident, args)
+        .object_call(receiver, ident, args)
         .map(|buffer| buffer.0)
 }
 
-fn call_method(
+fn call_direct_method(
     mut caller: Caller<'_, HostState>,
     receiver_ptr: u32,
     receiver_len: u32,
-    direct_access: u32,
+    ident_ptr: u32,
+    ident_len: u32,
+    args_ptr: u32,
+    args_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let receiver = read_memory(caller.as_context_mut(), memory, receiver_ptr, receiver_len)?;
+    let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
+    let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
+
+    runtime
+        .object_call_direct(receiver, ident, args)
+        .map(|buffer| buffer.0)
+}
+
+fn call_module_method(
+    mut caller: Caller<'_, HostState>,
+    receiver_ptr: u32,
+    receiver_len: u32,
     module_id: u32,
     ident_ptr: u32,
     ident_len: u32,
@@ -146,16 +167,14 @@ fn call_method(
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .call_method(receiver, direct_access, module_id, ident, args)
+        .object_call_module(receiver, module_id, ident, args)
         .map(|buffer| buffer.0)
 }
 
 fn call_function(
     mut caller: Caller<'_, HostState>,
-    package_address_ptr: u32,
-    package_address_len: u32,
-    blueprint_ident_ptr: u32,
-    blueprint_ident_len: u32,
+    blueprint_id_ptr: u32,
+    blueprint_id_len: u32,
     ident_ptr: u32,
     ident_len: u32,
     args_ptr: u32,
@@ -163,23 +182,17 @@ fn call_function(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let package_address = read_memory(
+    let blueprint_id = read_memory(
         caller.as_context_mut(),
         memory,
-        package_address_ptr,
-        package_address_len,
-    )?;
-    let blueprint_ident = read_memory(
-        caller.as_context_mut(),
-        memory,
-        blueprint_ident_ptr,
-        blueprint_ident_len,
+        blueprint_id_ptr,
+        blueprint_id_len,
     )?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .call_function(package_address, blueprint_ident, ident, args)
+        .blueprint_call(blueprint_id, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -193,7 +206,7 @@ fn new_object(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .new_object(
+        .object_new(
             read_memory(
                 caller.as_context_mut(),
                 memory,
@@ -235,7 +248,7 @@ fn allocate_global_address(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .allocate_global_address(read_memory(
+        .address_allocate(read_memory(
             caller.as_context_mut(),
             memory,
             blueprint_id_ptr,
@@ -252,7 +265,7 @@ fn get_reservation_address(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .get_reservation_address(read_memory(
+        .address_get_reservation_address(read_memory(
             caller.as_context_mut(),
             memory,
             node_id_ptr,
@@ -266,7 +279,7 @@ fn execution_cost_unit_limit(
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.execution_cost_unit_limit()
+    runtime.costing_get_execution_cost_unit_limit()
 }
 
 fn execution_cost_unit_price(
@@ -274,7 +287,9 @@ fn execution_cost_unit_price(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.execution_cost_unit_price().map(|buffer| buffer.0)
+    runtime
+        .costing_get_execution_cost_unit_price()
+        .map(|buffer| buffer.0)
 }
 
 fn finalization_cost_unit_limit(
@@ -282,7 +297,7 @@ fn finalization_cost_unit_limit(
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.finalization_cost_unit_limit()
+    runtime.costing_get_finalization_cost_unit_limit()
 }
 
 fn finalization_cost_unit_price(
@@ -291,24 +306,32 @@ fn finalization_cost_unit_price(
     let (_memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .finalization_cost_unit_price()
+        .costing_get_finalization_cost_unit_price()
         .map(|buffer| buffer.0)
+}
+
+fn usd_price(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.costing_get_usd_price().map(|buffer| buffer.0)
 }
 
 fn tip_percentage(caller: Caller<'_, HostState>) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.tip_percentage()
+    runtime.costing_get_tip_percentage()
 }
 
 fn fee_balance(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.fee_balance().map(|buffer| buffer.0)
+    runtime.costing_get_fee_balance().map(|buffer| buffer.0)
 }
 
 fn globalize_object(
     mut caller: Caller<'_, HostState>,
+    obj_id_ptr: u32,
+    obj_id_len: u32,
     modules_ptr: u32,
     modules_len: u32,
     address_ptr: u32,
@@ -318,6 +341,7 @@ fn globalize_object(
 
     runtime
         .globalize_object(
+            read_memory(caller.as_context_mut(), memory, obj_id_ptr, obj_id_len)?,
             read_memory(caller.as_context_mut(), memory, modules_ptr, modules_len)?,
             read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?,
         )
@@ -358,18 +382,6 @@ fn get_outer_object(
         .map(|buffer| buffer.0)
 }
 
-fn drop_object(
-    mut caller: Caller<'_, HostState>,
-    node_id_ptr: u32,
-    node_id_len: u32,
-) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
-
-    let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
-
-    runtime.drop_object(node_id)
-}
-
 fn lock_key_value_store_entry(
     mut caller: Caller<'_, HostState>,
     node_id_ptr: u32,
@@ -405,6 +417,16 @@ fn key_value_entry_set(
     runtime.key_value_entry_set(handle, data)
 }
 
+fn key_value_entry_remove(
+    caller: Caller<'_, HostState>,
+    handle: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+    runtime
+        .key_value_entry_remove(handle)
+        .map(|buffer| buffer.0)
+}
+
 fn unlock_key_value_entry(
     caller: Caller<'_, HostState>,
     handle: u32,
@@ -413,7 +435,7 @@ fn unlock_key_value_entry(
     runtime.key_value_entry_release(handle)
 }
 
-fn key_value_entry_remove(
+fn key_value_store_remove(
     mut caller: Caller<'_, HostState>,
     node_id_ptr: u32,
     node_id_len: u32,
@@ -445,7 +467,7 @@ fn field_lock_read(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.field_lock_read(handle).map(|buffer| buffer.0)
+    runtime.field_entry_read(handle).map(|buffer| buffer.0)
 }
 
 fn field_lock_write(
@@ -458,7 +480,7 @@ fn field_lock_write(
 
     let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
 
-    runtime.field_lock_write(handle, data)
+    runtime.field_entry_write(handle, data)
 }
 
 fn field_lock_release(
@@ -467,31 +489,22 @@ fn field_lock_release(
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.field_lock_release(handle)
+    runtime.field_entry_close(handle)
 }
 
-fn get_node_id(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+fn actor_get_node_id(
+    caller: Caller<'_, HostState>,
+    handle: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.get_node_id().map(|buffer| buffer.0)
-}
-
-fn get_global_address(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
-
-    runtime.get_global_address().map(|buffer| buffer.0)
+    runtime.actor_get_node_id(handle).map(|buffer| buffer.0)
 }
 
 fn get_actor(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.get_blueprint().map(|buffer| buffer.0)
-}
-
-fn get_auth_zone(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
-
-    runtime.get_auth_zone().map(|buffer| buffer.0)
+    runtime.actor_get_blueprint().map(|buffer| buffer.0)
 }
 
 fn consume_wasm_execution_units(
@@ -531,7 +544,7 @@ fn emit_event(
         WasmRuntimeError::InvalidEventFlags(flags),
     ))?;
 
-    runtime.emit_event(event_name, event_data, event_flags)
+    runtime.actor_emit_event(event_name, event_data, event_flags)
 }
 
 fn get_transaction_hash(
@@ -539,13 +552,13 @@ fn get_transaction_hash(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_, runtime) = grab_runtime!(caller);
 
-    runtime.get_transaction_hash().map(|buffer| buffer.0)
+    runtime.sys_get_transaction_hash().map(|buffer| buffer.0)
 }
 
 fn generate_ruid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_, runtime) = grab_runtime!(caller);
 
-    runtime.generate_ruid().map(|buffer| buffer.0)
+    runtime.sys_generate_ruid().map(|buffer| buffer.0)
 }
 
 fn emit_log(
@@ -560,7 +573,7 @@ fn emit_log(
     let level = read_memory(caller.as_context_mut(), memory, level_ptr, level_len)?;
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
 
-    runtime.emit_log(level, message)
+    runtime.sys_log(level, message)
 }
 
 fn bech32_encode_address(
@@ -573,7 +586,7 @@ fn bech32_encode_address(
     let address = read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?;
 
     runtime
-        .bech32_encode_address(address)
+        .sys_bech32_encode_address(address)
         .map(|buffer| buffer.0)
 }
 
@@ -586,7 +599,7 @@ fn panic(
 
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
 
-    runtime.panic(message)
+    runtime.sys_panic(message)
 }
 // native functions ends
 
@@ -639,29 +652,11 @@ impl WasmiModule {
             },
         );
 
-        let host_actor_call_module_method = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             module_id: u32,
-             ident_ptr: u32,
-             ident_len: u32,
-             args_ptr: u32,
-             args_len: u32|
-             -> Result<u64, Trap> {
-                actor_call_module_method(
-                    caller, module_id, ident_ptr, ident_len, args_ptr, args_len,
-                )
-                .map_err(|e| e.into())
-            },
-        );
-
         let host_call_method = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              receiver_ptr: u32,
              receiver_len: u32,
-             direct_access: u32,
-             module_id: u32,
              ident_ptr: u32,
              ident_len: u32,
              args_ptr: u32,
@@ -671,7 +666,30 @@ impl WasmiModule {
                     caller,
                     receiver_ptr,
                     receiver_len,
-                    direct_access,
+                    ident_ptr,
+                    ident_len,
+                    args_ptr,
+                    args_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
+        let host_call_module_method = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             receiver_ptr: u32,
+             receiver_len: u32,
+             module_id: u32,
+             ident_ptr: u32,
+             ident_len: u32,
+             args_ptr: u32,
+             args_len: u32|
+             -> Result<u64, Trap> {
+                call_module_method(
+                    caller,
+                    receiver_ptr,
+                    receiver_len,
                     module_id,
                     ident_ptr,
                     ident_len,
@@ -682,13 +700,34 @@ impl WasmiModule {
             },
         );
 
-        let host_call_function = Func::wrap(
+        let host_call_direct_method = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             package_address_ptr: u32,
-             package_address_len: u32,
-             blueprint_ident_ptr: u32,
-             blueprint_ident_len: u32,
+             receiver_ptr: u32,
+             receiver_len: u32,
+             ident_ptr: u32,
+             ident_len: u32,
+             args_ptr: u32,
+             args_len: u32|
+             -> Result<u64, Trap> {
+                call_direct_method(
+                    caller,
+                    receiver_ptr,
+                    receiver_len,
+                    ident_ptr,
+                    ident_len,
+                    args_ptr,
+                    args_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
+        let host_blueprint_call = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             blueprint_id_ptr: u32,
+             blueprint_id_len: u32,
              ident_ptr: u32,
              ident_len: u32,
              args_ptr: u32,
@@ -696,10 +735,8 @@ impl WasmiModule {
              -> Result<u64, Trap> {
                 call_function(
                     caller,
-                    package_address_ptr,
-                    package_address_len,
-                    blueprint_ident_ptr,
-                    blueprint_ident_len,
+                    blueprint_id_ptr,
+                    blueprint_id_len,
                     ident_ptr,
                     ident_len,
                     args_ptr,
@@ -787,6 +824,13 @@ impl WasmiModule {
             },
         );
 
+        let host_usd_price = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                usd_price(caller).map_err(|e| e.into())
+            },
+        );
+
         let host_tip_percentage = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u32, Trap> {
@@ -804,13 +848,23 @@ impl WasmiModule {
         let host_globalize_object = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
+             obj_ptr: u32,
+             obj_len: u32,
              modules_ptr: u32,
              modules_len: u32,
              address_ptr: u32,
              address_len: u32|
              -> Result<u64, Trap> {
-                globalize_object(caller, modules_ptr, modules_len, address_ptr, address_len)
-                    .map_err(|e| e.into())
+                globalize_object(
+                    caller,
+                    obj_ptr,
+                    obj_len,
+                    modules_ptr,
+                    modules_len,
+                    address_ptr,
+                    address_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 
@@ -831,16 +885,6 @@ impl WasmiModule {
              object_id_len: u32|
              -> Result<u64, Trap> {
                 get_outer_object(caller, object_id_ptr, object_id_len).map_err(|e| e.into())
-            },
-        );
-
-        let host_drop_node = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             node_id_ptr: u32,
-             node_id_len: u32|
-             -> Result<(), Trap> {
-                drop_object(caller, node_id_ptr, node_id_len).map_err(|e| e.into())
             },
         );
 
@@ -883,6 +927,13 @@ impl WasmiModule {
             },
         );
 
+        let host_key_value_entry_remove = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Trap> {
+                key_value_entry_remove(caller, handle).map_err(|e| e.into())
+            },
+        );
+
         let host_unlock_key_value_entry = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Trap> {
@@ -890,7 +941,7 @@ impl WasmiModule {
             },
         );
 
-        let host_key_value_entry_remove = Func::wrap(
+        let host_key_value_store_remove = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              node_id_ptr: u32,
@@ -898,7 +949,7 @@ impl WasmiModule {
              key_ptr: u32,
              key_len: u32|
              -> Result<u64, Trap> {
-                key_value_entry_remove(caller, node_id_ptr, node_id_len, key_ptr, key_len)
+                key_value_store_remove(caller, node_id_ptr, node_id_len, key_ptr, key_len)
                     .map_err(|e| e.into())
             },
         );
@@ -939,17 +990,10 @@ impl WasmiModule {
             },
         );
 
-        let host_get_node_id = Func::wrap(
+        let host_actor_get_node_id = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                get_node_id(caller).map_err(|e| e.into())
-            },
-        );
-
-        let host_get_global_address = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                get_global_address(caller).map_err(|e| e.into())
+            |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Trap> {
+                actor_get_node_id(caller, handle).map_err(|e| e.into())
             },
         );
 
@@ -957,13 +1001,6 @@ impl WasmiModule {
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
                 get_actor(caller).map_err(|e| e.into())
-            },
-        );
-
-        let host_get_auth_zone = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                get_auth_zone(caller).map_err(|e| e.into())
             },
         );
 
@@ -1044,57 +1081,78 @@ impl WasmiModule {
 
         let mut linker = <Linker<HostState>>::new();
 
-        linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
-        linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
-        linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
-        linker_define!(linker, NEW_OBJECT_FUNCTION_NAME, host_new_component);
+        linker_define!(linker, BUFFER_CONSUME_FUNCTION_NAME, host_consume_buffer);
+        linker_define!(linker, OBJECT_CALL_FUNCTION_NAME, host_call_method);
+        linker_define!(
+            linker,
+            OBJECT_CALL_MODULE_FUNCTION_NAME,
+            host_call_module_method
+        );
+        linker_define!(
+            linker,
+            OBJECT_CALL_DIRECT_FUNCTION_NAME,
+            host_call_direct_method
+        );
+        linker_define!(linker, BLUEPRINT_CALL_FUNCTION_NAME, host_blueprint_call);
+        linker_define!(linker, OBJECT_NEW_FUNCTION_NAME, host_new_component);
 
         linker_define!(
             linker,
-            ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME,
+            ADDRESS_ALLOCATE_FUNCTION_NAME,
             host_allocate_global_address
         );
         linker_define!(
             linker,
-            GET_RESERVATION_ADDRESS_FUNCTION_NAME,
+            ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME,
             host_get_reservation_address
         );
         linker_define!(
             linker,
-            EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME,
+            COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME,
             host_execution_cost_unit_limit
         );
         linker_define!(
             linker,
-            EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME,
+            COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME,
             host_execution_cost_unit_price
         );
         linker_define!(
             linker,
-            FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME,
+            COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME,
             host_finalization_cost_unit_limit
         );
         linker_define!(
             linker,
-            FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME,
+            COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME,
             host_finalization_cost_unit_price
         );
-        linker_define!(linker, TIP_PERCENTAGE_FUNCTION_NAME, host_tip_percentage);
-        linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
-        linker_define!(linker, GLOBALIZE_FUNCTION_NAME, host_globalize_object);
-        linker_define!(linker, GET_BLUEPRINT_ID_FUNCTION_NAME, host_get_object_info);
+        linker_define!(linker, COSTING_GET_USD_PRICE_FUNCTION_NAME, host_usd_price);
         linker_define!(
             linker,
-            GET_OUTER_OBJECT_FUNCTION_NAME,
+            COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME,
+            host_tip_percentage
+        );
+        linker_define!(
+            linker,
+            COSTING_GET_FEE_BALANCE_FUNCTION_NAME,
+            host_fee_balance
+        );
+        linker_define!(
+            linker,
+            OBJECT_GLOBALIZE_FUNCTION_NAME,
+            host_globalize_object
+        );
+        linker_define!(
+            linker,
+            OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME,
+            host_get_object_info
+        );
+        linker_define!(
+            linker,
+            OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME,
             host_get_outer_object
         );
-        linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, ACTOR_OPEN_FIELD_FUNCTION_NAME, host_lock_field);
-        linker_define!(
-            linker,
-            ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME,
-            host_actor_call_module_method
-        );
 
         linker_define!(
             linker,
@@ -1108,63 +1166,71 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            KEY_VALUE_ENTRY_GET_FUNCTION_NAME,
+            KEY_VALUE_ENTRY_READ_FUNCTION_NAME,
             host_key_value_entry_get
         );
         linker_define!(
             linker,
-            KEY_VALUE_ENTRY_SET_FUNCTION_NAME,
+            KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME,
             host_key_value_entry_set
         );
         linker_define!(
             linker,
-            KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME,
+            KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME,
+            host_key_value_entry_remove
+        );
+        linker_define!(
+            linker,
+            KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME,
             host_unlock_key_value_entry
         );
         linker_define!(
             linker,
             KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME,
-            host_key_value_entry_remove
+            host_key_value_store_remove
         );
 
-        linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_field_lock_read);
+        linker_define!(linker, FIELD_ENTRY_READ_FUNCTION_NAME, host_field_lock_read);
         linker_define!(
             linker,
-            FIELD_LOCK_WRITE_FUNCTION_NAME,
+            FIELD_ENTRY_WRITE_FUNCTION_NAME,
             host_field_lock_write
         );
         linker_define!(
             linker,
-            FIELD_LOCK_RELEASE_FUNCTION_NAME,
+            FIELD_ENTRY_CLOSE_FUNCTION_NAME,
             host_field_lock_release
         );
-        linker_define!(linker, GET_NODE_ID_FUNCTION_NAME, host_get_node_id);
         linker_define!(
             linker,
-            GET_GLOBAL_ADDRESS_FUNCTION_NAME,
-            host_get_global_address
+            ACTOR_GET_OBJECT_ID_FUNCTION_NAME,
+            host_actor_get_node_id
         );
-        linker_define!(linker, GET_BLUEPRINT_FUNCTION_NAME, host_get_blueprint);
-        linker_define!(linker, GET_AUTH_ZONE_FUNCTION_NAME, host_get_auth_zone);
         linker_define!(
             linker,
-            CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
+            ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME,
+            host_get_blueprint
+        );
+        linker_define!(
+            linker,
+            COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
             host_consume_wasm_execution_units
         );
-        linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
-        linker_define!(linker, EMIT_LOG_FUNCTION_NAME, host_emit_log);
-        linker_define!(linker, PANIC_FUNCTION_NAME, host_panic);
+        linker_define!(linker, ACTOR_EMIT_EVENT_FUNCTION_NAME, host_emit_event);
+        linker_define!(linker, SYS_LOG_FUNCTION_NAME, host_emit_log);
+        linker_define!(linker, SYS_PANIC_FUNCTION_NAME, host_panic);
         linker_define!(
             linker,
-            BECH32_ENCODE_ADDRESS_FUNCTION_NAME,
-            host_bech32_encode_address
-        );
-        linker_define!(
-            linker,
-            GET_TRANSACTION_HASH_FUNCTION_NAME,
+            SYS_GET_TRANSACTION_HASH_FUNCTION_NAME,
             host_get_transaction_hash
         );
-        linker_define!(linker, GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
+        linker_define!(
+            linker,
+            SYS_BECH32_ENCODE_ADDRESS_FUNCTION_NAME,
+            host_bech32_encode_address
+        );
+
+        linker_define!(linker, SYS_GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
 
         let global_value = Global::new(store.as_context_mut(), Value::I32(-1), Mutability::Var);
         linker_define!(linker, "test_global_mutable_value", global_value);

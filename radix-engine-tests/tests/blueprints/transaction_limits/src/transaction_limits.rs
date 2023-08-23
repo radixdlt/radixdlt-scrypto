@@ -1,8 +1,5 @@
 use sbor::*;
-use scrypto::api::key_value_entry_api::ClientKeyValueEntryApi;
-use scrypto::api::key_value_store_api::ClientKeyValueStoreApi;
 use scrypto::api::*;
-use scrypto::prelude::wasm_api::kv_entry_set;
 use scrypto::prelude::*;
 
 #[derive(Sbor, ScryptoEvent)]
@@ -39,6 +36,17 @@ mod transaction_limits {
             }
         }
 
+        pub fn write_entries_to_heap_kv_store(n: u32) {
+            let kv_store = KeyValueStore::new();
+            for i in 0..n {
+                kv_store.insert(i, i);
+            }
+            TransactionLimitTest { kv_store }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
+        }
+
         pub fn recursive_with_memory(n: u32, m: usize) {
             if n > 1 {
                 let _v: Vec<u8> = Vec::with_capacity(m);
@@ -52,18 +60,28 @@ mod transaction_limits {
                 message: "a".repeat(n),
             })
             .unwrap();
-            unsafe { wasm_api::emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len(), 0) }
+            unsafe {
+                wasm_api::actor::actor_emit_event(
+                    name.as_ptr(),
+                    name.len(),
+                    buf.as_ptr(),
+                    buf.len(),
+                    0,
+                )
+            }
         }
 
         pub fn emit_log_of_size(n: usize) {
             let level = scrypto_encode(&Level::Debug).unwrap();
             let buf = "a".repeat(n);
-            unsafe { wasm_api::emit_log(level.as_ptr(), level.len(), buf.as_ptr(), buf.len()) }
+            unsafe {
+                wasm_api::system::sys_log(level.as_ptr(), level.len(), buf.as_ptr(), buf.len())
+            }
         }
 
         pub fn panic_of_size(n: usize) {
             let buf = "a".repeat(n);
-            unsafe { wasm_api::panic(buf.as_ptr(), buf.len()) }
+            unsafe { wasm_api::system::sys_panic(buf.as_ptr(), buf.len()) }
         }
     }
 }
@@ -94,15 +112,13 @@ mod transaction_limits_substate {
 
             // Insert into store
             let key_payload = scrypto_encode(&1u32).unwrap();
-            let handle = ScryptoEnv
-                .key_value_store_open_entry(
-                    kv_store.id.as_node_id(),
-                    &key_payload,
-                    LockFlags::MUTABLE,
-                )
-                .unwrap();
-            unsafe { kv_entry_set(handle, buf.as_ptr(), buf.len()) };
-            ScryptoEnv.key_value_entry_close(handle).unwrap();
+            let handle = ScryptoVmV1Api::kv_store_open_entry(
+                kv_store.id.as_node_id(),
+                &key_payload,
+                LockFlags::MUTABLE,
+            );
+            unsafe { wasm_api::kv_entry::kv_entry_write(handle, buf.as_ptr(), buf.len()) };
+            ScryptoVmV1Api::kv_entry_close(handle);
 
             // Put the kv store into a component
             TransactionLimitSubstateTest { kv_store }
@@ -134,14 +150,12 @@ mod invoke_limits {
             let new_len = buf.len() + raw_array_size;
             unsafe { buf.set_len(new_len) };
 
-            ScryptoEnv
-                .call_function(
-                    Runtime::package_address(),
-                    "InvokeLimitsTest",
-                    "callee",
-                    buf,
-                )
-                .unwrap();
+            ScryptoVmV1Api::blueprint_call(
+                Runtime::package_address(),
+                "InvokeLimitsTest",
+                "callee",
+                buf,
+            );
         }
 
         pub fn callee(_: Vec<u8>) {}

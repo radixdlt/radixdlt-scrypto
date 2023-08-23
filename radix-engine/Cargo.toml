@@ -74,6 +74,9 @@ lru = ["dep:lru"]
 
 resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker", "radix-engine-common/resource_tracker"]
 
+# System/Application Database Checker
+db_checker = []
+
 # This flag is set by fuzz-tests framework and it disables cache in wasm_instrumenter/wasmi/wasmer
 # to prevent non-determinism when fuzzing
 radix_engine_fuzzing = []
