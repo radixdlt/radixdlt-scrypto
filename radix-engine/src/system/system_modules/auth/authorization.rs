@@ -1,7 +1,9 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_modules::role_assignment::{RoleAssignmentAccessRuleEntryPayload, RoleAssignmentOwnerFieldPayload};
+use crate::system::node_modules::role_assignment::{
+    RoleAssignmentAccessRuleEntryPayload, RoleAssignmentOwnerFieldPayload,
+};
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
@@ -356,7 +358,12 @@ impl Authorization {
                     let owner_role_substate: FieldSubstate<RoleAssignmentOwnerFieldPayload> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
                     api.kernel_close_substate(handle)?;
-                    owner_role_substate.value.0.into_latest().owner_role_entry.rule
+                    owner_role_substate
+                        .value
+                        .0
+                        .into_latest()
+                        .owner_role_entry
+                        .rule
                 }
             }
         };

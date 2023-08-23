@@ -520,14 +520,18 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 component_address.as_node_id(),
                 ObjectModuleId::Royalty,
                 ComponentRoyaltyField::Accumulator.field_index(),
-            ).unwrap().into_latest();
+            )
+            .unwrap()
+            .into_latest();
 
         let balance = reader
             .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
                 accumulator.royalty_vault.0.as_node_id(),
                 ObjectModuleId::Main,
                 FungibleVaultField::Balance.field_index(),
-            ).unwrap().into_latest();
+            )
+            .unwrap()
+            .into_latest();
 
         balance.amount()
     }
@@ -539,14 +543,18 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 package_address.as_node_id(),
                 ObjectModuleId::Main,
                 PackageField::RoyaltyAccumulator.field_index(),
-            ).ok()?.into_latest();
+            )
+            .ok()?
+            .into_latest();
 
         let balance = reader
             .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
                 accumulator.royalty_vault.0.as_node_id(),
                 ObjectModuleId::Main,
                 FungibleVaultField::Balance.field_index(),
-            ).unwrap().into_latest();
+            )
+            .unwrap()
+            .into_latest();
 
         Some(balance.amount())
     }
@@ -740,18 +748,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let mut accounter = ResourceAccounter::new(&self.database);
         accounter.traverse(node_id.clone());
         accounter.close().balances
-    }
-
-    pub fn component_state<T: ScryptoDecode>(&self, component_address: ComponentAddress) -> T {
-        let node_id: &NodeId = component_address.as_node_id();
-        let component_state = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<T>>(
-                node_id,
-                MAIN_BASE_PARTITION,
-                &ComponentField::State0.into(),
-            );
-        component_state.unwrap().value.0
     }
 
     pub fn get_non_fungible_data<T: NonFungibleData>(

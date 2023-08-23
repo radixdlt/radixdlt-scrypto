@@ -129,7 +129,6 @@ blueprint_partition_offset!(
     }
 );
 
-
 blueprint_partition_offset!(
     pub enum RoleAssignmentPartitionOffset {
         Field,
