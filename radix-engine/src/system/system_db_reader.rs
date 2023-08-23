@@ -6,8 +6,8 @@ use radix_engine_interface::api::{CollectionIndex, ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_engine_store_interface::interface::ListableSubstateDatabase;
+use radix_engine_store_interface::db_key_mapper::{MappedCommittableSubstateDatabase, SubstateKeyContent};
+use radix_engine_store_interface::interface::{CommittableSubstateDatabase, ListableSubstateDatabase};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -940,5 +940,55 @@ impl<'a, S: SubstateDatabase + ListableSubstateDatabase> SystemDatabaseReader<'a
             canonical_partition
         });
         Box::new(iter)
+    }
+}
+
+
+
+pub struct SystemDatabaseWriter<'a, S: SubstateDatabase + CommittableSubstateDatabase> {
+    substate_db: &'a mut S,
+}
+
+impl<'a, S: SubstateDatabase + CommittableSubstateDatabase> SystemDatabaseWriter<'a, S> {
+    pub fn new(substate_db: &'a mut S) -> Self {
+        Self {
+            substate_db,
+        }
+    }
+
+    pub fn write_typed_object_field<V: ScryptoEncode>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ObjectModuleId,
+        field_index: u8,
+        value: V,
+    ) -> Result<(), SystemReaderError> {
+        let reader = SystemDatabaseReader::new(self.substate_db);
+        let blueprint_id = reader.get_blueprint_id(node_id, module_id)?;
+        let definition = reader.get_blueprint_definition(&blueprint_id)?;
+        let partition_description = &definition
+            .interface
+            .state
+            .fields
+            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
+            .0;
+        let partition_number = match partition_description {
+            PartitionDescription::Logical(offset) => {
+                let base_partition = match module_id {
+                    ObjectModuleId::Main => MAIN_BASE_PARTITION,
+                    ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
+                    ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
+                    ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
+                };
+                base_partition.at_offset(*offset).unwrap()
+            }
+            PartitionDescription::Physical(partition_number) => *partition_number,
+        };
+
+        self
+            .substate_db
+            .put_mapped::<SpreadPrefixKeyMapper, _>(node_id, partition_number, &SubstateKey::Field(field_index), &FieldSubstate::new_field(value));
+
+        Ok(())
     }
 }

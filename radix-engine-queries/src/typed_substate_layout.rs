@@ -139,8 +139,7 @@ pub enum TypedMainModuleSubstateKey {
     NonFungibleResourceManager(NonFungibleResourceManagerTypedSubstateKey),
     FungibleVault(FungibleVaultTypedSubstateKey),
     NonFungibleVault(NonFungibleVaultTypedSubstateKey),
-    ConsensusManagerField(ConsensusManagerField),
-    ConsensusManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
+    ConsensusManager(ConsensusManagerTypedSubstateKey),
     ValidatorField(ValidatorField),
     AccessController(AccessControllerTypedSubstateKey),
     Account(AccountTypedSubstateKey),
@@ -294,20 +293,9 @@ fn to_typed_object_substate_key_internal(
             )
         }
         EntityType::GlobalConsensusManager => {
-            let partition_offset = ConsensusManagerPartitionOffset::try_from(partition_offset)?;
-            match partition_offset {
-                ConsensusManagerPartitionOffset::ConsensusManager => {
-                    TypedMainModuleSubstateKey::ConsensusManagerField(
-                        ConsensusManagerField::try_from(substate_key)?,
-                    )
-                }
-                ConsensusManagerPartitionOffset::RegisteredValidatorsByStakeIndex => {
-                    let key = substate_key.for_sorted().ok_or(())?;
-                    TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(
-                        key.clone().try_into().map_err(|_| ())?,
-                    )
-                }
-            }
+            TypedMainModuleSubstateKey::ConsensusManager(
+                ConsensusManagerTypedSubstateKey::for_key_at_partition_offset(partition_offset, substate_key)?
+            )
         }
         EntityType::GlobalValidator => {
             TypedMainModuleSubstateKey::ValidatorField(ValidatorField::try_from(substate_key)?)
@@ -425,8 +413,7 @@ pub enum TypedMainModuleSubstateValue {
     NonFungibleResourceManager(NonFungibleResourceManagerTypedSubstateValue),
     FungibleVault(FungibleVaultTypedSubstateValue),
     NonFungibleVault(NonFungibleVaultTypedSubstateValue),
-    ConsensusManagerField(TypedConsensusManagerFieldValue),
-    ConsensusManagerRegisteredValidatorsByStakeIndexEntry(Validator),
+    ConsensusManager(ConsensusManagerTypedSubstateValue),
     Validator(TypedValidatorFieldValue),
     AccessController(AccessControllerTypedSubstateValue),
     Account(AccountTypedSubstateValue),
@@ -556,36 +543,9 @@ fn to_typed_object_substate_value(
                 NonFungibleVaultTypedSubstateValue::from_key_and_data(key, data)?,
             )
         }
-        TypedMainModuleSubstateKey::ConsensusManagerField(offset) => {
-            TypedMainModuleSubstateValue::ConsensusManagerField(match offset {
-                ConsensusManagerField::Config => {
-                    TypedConsensusManagerFieldValue::Config(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::ConsensusManager => {
-                    TypedConsensusManagerFieldValue::ConsensusManager(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::ValidatorRewards => {
-                    TypedConsensusManagerFieldValue::ValidatorRewards(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::CurrentValidatorSet => {
-                    TypedConsensusManagerFieldValue::CurrentValidatorSet(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::CurrentProposalStatistic => {
-                    TypedConsensusManagerFieldValue::CurrentProposalStatistic(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::CurrentTimeRoundedToMinutes => {
-                    TypedConsensusManagerFieldValue::CurrentTimeRoundedToMinutes(scrypto_decode(
-                        data,
-                    )?)
-                }
-                ConsensusManagerField::CurrentTime => {
-                    TypedConsensusManagerFieldValue::CurrentTime(scrypto_decode(data)?)
-                }
-            })
-        }
-        TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(_) => {
-            TypedMainModuleSubstateValue::ConsensusManagerRegisteredValidatorsByStakeIndexEntry(
-                scrypto_decode(data)?,
+        TypedMainModuleSubstateKey::ConsensusManager(key) => {
+            TypedMainModuleSubstateValue::ConsensusManager(
+                ConsensusManagerTypedSubstateValue::from_key_and_data(key, data)?
             )
         }
         TypedMainModuleSubstateKey::ValidatorField(offset) => {

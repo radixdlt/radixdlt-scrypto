@@ -1,4 +1,4 @@
-use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
+use crate::blueprints::consensus_manager::{ConsensusManagerField, ConsensusManagerStateFieldPayload, ConsensusManagerValidatorRewardsFieldPayload, VersionedConsensusManagerValidatorRewards};
 use crate::blueprints::models::FieldPayload;
 use crate::blueprints::resource::{
     BurnFungibleResourceEvent, DepositEvent, FungibleVaultBalanceFieldPayload,
@@ -448,11 +448,11 @@ where
         match track.read_substate(
             CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
-            &ConsensusManagerField::ConsensusManager.into(),
+            &ConsensusManagerField::State.into(),
         ) {
             Some(x) => {
-                let substate: FieldSubstate<ConsensusManagerSubstate> = x.as_typed().unwrap();
-                Some(substate.value.0.epoch)
+                let substate: FieldSubstate<ConsensusManagerStateFieldPayload> = x.as_typed().unwrap();
+                Some(substate.value.0.into_latest().epoch)
             }
             None => None,
         }
@@ -830,19 +830,19 @@ where
         if !to_proposer.is_zero() || !to_validator_set.is_zero() {
             // Fetch current leader
             // TODO: maybe we should move current leader into validator rewards?
-            let substate: FieldSubstate<ConsensusManagerSubstate> = track
+            let substate: FieldSubstate<ConsensusManagerStateFieldPayload> = track
                 .read_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
-                    &ConsensusManagerField::ConsensusManager.into(),
+                    &ConsensusManagerField::State.into(),
                 )
                 .unwrap()
                 .as_typed()
                 .unwrap();
-            let current_leader = substate.value.0.current_leader;
+            let current_leader = substate.value.0.into_latest().current_leader;
 
             // Update validator rewards
-            let mut substate: FieldSubstate<ValidatorRewardsSubstate> = track
+            let mut substate: FieldSubstate<ConsensusManagerValidatorRewardsFieldPayload> = track
                 .read_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
@@ -851,18 +851,25 @@ where
                 .unwrap()
                 .as_typed()
                 .unwrap();
+
             if let Some(current_leader) = current_leader {
-                let entry = substate
-                    .value
-                    .0
-                    .proposer_rewards
-                    .entry(current_leader)
-                    .or_default();
-                *entry = entry.safe_add(to_proposer).unwrap()
+                match &mut substate.value.0.content {
+                    VersionedConsensusManagerValidatorRewards::V1(rewards) => {
+                        let entry = rewards
+                            .proposer_rewards
+                            .entry(current_leader)
+                            .or_default();
+                        *entry = entry.safe_add(to_proposer).unwrap()
+                    }
+                }
             } else {
                 // If there is no current leader, the rewards go to the pool
             };
-            let vault_node_id = substate.value.0.rewards_vault.0 .0;
+            let vault_node_id = match &substate.value.0.content {
+                VersionedConsensusManagerValidatorRewards::V1(rewards) => {
+                    rewards.rewards_vault.0.0
+                }
+            };
 
             track
                 .set_substate(

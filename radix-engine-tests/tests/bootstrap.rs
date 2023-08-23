@@ -3,6 +3,7 @@ use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_db_checker::SystemDatabaseChecker;
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::types::*;
@@ -462,17 +463,14 @@ fn test_genesis_time() {
         )
         .unwrap();
 
-    let proposer_minute_timestamp = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ProposerMinuteTimestampSubstate>>(
-            CONSENSUS_MANAGER.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
-        )
-        .unwrap()
-        .value
-        .0;
+    let reader = SystemDatabaseReader::new(&mut substate_db);
+    let timestamp = reader.read_typed_object_field::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
+        CONSENSUS_MANAGER.as_node_id(),
+        ObjectModuleId::Main,
+        ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
+    ).unwrap().into_latest();
 
-    assert_eq!(proposer_minute_timestamp.epoch_minute, 123);
+    assert_eq!(timestamp.epoch_minute, 123);
 }
 
 #[test]

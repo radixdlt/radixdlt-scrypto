@@ -22,6 +22,8 @@ use radix_engine_interface::api::{
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{metadata_init, mint_roles, rule};
+use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
+use crate::internal_prelude::*;
 
 const MILLIS_IN_SECOND: i64 = 1000;
 const SECONDS_IN_MINUTE: i64 = 60;
@@ -212,11 +214,302 @@ pub enum ConsensusManagerError {
     NotXrd,
 }
 
+declare_native_blueprint_state! {
+    blueprint_ident: ConsensusManager,
+    blueprint_snake_case: consensus_manager,
+    features: {
+    },
+    fields: {
+        config: {
+            ident: Configuration,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        },
+        state: {
+            ident: State,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        },
+        validator_rewards: {
+            ident: ValidatorRewards,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        },
+        current_validator_set: {
+            ident: CurrentValidatorSet,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        },
+        current_proposal_statistic: {
+            ident: CurrentProposalStatistic,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        },
+        proposer_minute_timestamp: {
+            ident: ProposerMinuteTimestamp,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        },
+        proposer_milli_timestamp: {
+            ident: ProposerMilliTimestamp,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        },
+    },
+    collections: {
+        registered_validators_by_stake: SortedIndex {
+            entry_ident: RegisteredValidatorByStake,
+            key_type: {
+                kind: Static,
+                content_type: ComponentAddress,
+            },
+            full_key_content: {
+                full_content_type: SortedValidator,
+                sort_prefix_property_name: sort_prefix,
+            },
+            value_type: {
+                kind: StaticSingleVersioned,
+            },
+            allow_ownership: false,
+        },
+    }
+}
+
+pub struct SortedValidator(u16, ComponentAddress);
+
+impl SortedIndexKeyFullContent<ConsensusManagerRegisteredValidatorByStakeKeyPayload> for SortedValidator {
+    fn from_sort_key_and_content(sort_key: u16, address: ComponentAddress) -> Self {
+        SortedValidator(sort_key, address)
+    }
+}
+
+impl SortedIndexKeyContentSource<ConsensusManagerRegisteredValidatorByStakeKeyPayload>
+for SortedValidator
+{
+    fn into_sort_key_and_content(self) -> (u16, ComponentAddress) {
+        (self.0, self.1)
+    }
+}
+
+pub type ConsensusManagerConfigurationV1 = ConsensusManagerConfigSubstate;
+pub type ConsensusManagerStateV1 = ConsensusManagerSubstate;
+pub type ConsensusManagerValidatorRewardsV1 = ValidatorRewardsSubstate;
+pub type ConsensusManagerCurrentValidatorSetV1 = CurrentValidatorSetSubstate;
+pub type ConsensusManagerCurrentProposalStatisticV1 = CurrentProposalStatisticSubstate;
+pub type ConsensusManagerProposerMinuteTimestampV1 = ProposerMinuteTimestampSubstate;
+pub type ConsensusManagerProposerMilliTimestampV1 = ProposerMilliTimestampSubstate;
+pub type ConsensusManagerRegisteredValidatorByStakeV1 = Validator;
+
 pub const CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX: CollectionIndex = 0u8;
 
 pub struct ConsensusManagerBlueprint;
 
 impl ConsensusManagerBlueprint {
+    pub fn definition() -> BlueprintDefinitionInit {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let state = ConsensusManagerStateSchemaInit::create_schema_init(&mut aggregator);
+
+        /*
+        let mut fields = Vec::new();
+
+        fields.push(FieldSchema::static_field(
+            aggregator.add_child_type_and_descendents::<ConsensusManagerConfigSubstate>(),
+        ));
+        fields.push(FieldSchema::static_field(
+            aggregator.add_child_type_and_descendents::<ConsensusManagerSubstate>(),
+        ));
+        fields.push(FieldSchema::static_field(
+            aggregator.add_child_type_and_descendents::<ValidatorRewardsSubstate>(),
+        ));
+        fields.push(FieldSchema::static_field(
+            aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>(),
+        ));
+        fields.push(FieldSchema::static_field(
+            aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>(),
+        ));
+        fields.push(FieldSchema::static_field(
+            aggregator.add_child_type_and_descendents::<ProposerMinuteTimestampSubstate>(),
+        ));
+        fields.push(FieldSchema::static_field(
+            aggregator.add_child_type_and_descendents::<ProposerMilliTimestampSubstate>(),
+        ));
+
+        let mut collections = Vec::new();
+        collections.push(BlueprintCollectionSchema::SortedIndex(
+            BlueprintKeyValueSchema {
+                key: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ComponentAddress>(),
+                ),
+                value: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<Validator>(),
+                ),
+                allow_ownership: false,
+            },
+        ));
+         */
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ConsensusManagerCreateInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ConsensusManagerCreateOutput>(),
+                ),
+                export: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochOutput>()),
+                export: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            CONSENSUS_MANAGER_START_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ConsensusManagerStartInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ConsensusManagerStartOutput>(),
+                ),
+                export: CONSENSUS_MANAGER_START_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(
+                        ),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeOutput>(
+                        ),
+                ),
+                export: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInput>(
+                    )),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeOutput>(
+                    )),
+                export: CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerNextRoundInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ConsensusManagerNextRoundOutput>(),
+                ),
+                export: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ConsensusManagerCreateValidatorInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ConsensusManagerCreateValidatorOutput>()),
+                export: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            },
+        );
+
+        let event_schema = event_schema! {
+                aggregator,
+                [
+                    RoundChangeEvent,
+                    EpochChangeEvent
+                ]
+            };
+
+        let consensus_manager_schema = generate_full_schema(aggregator);
+
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::default(),
+            is_transient: false,
+            feature_set: btreeset!(),
+            dependencies: btreeset!(
+                    XRD.into(),
+                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                    SYSTEM_TRANSACTION_BADGE.into(),
+                    VALIDATOR_OWNER_BADGE.into(),
+                ),
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema: consensus_manager_schema,
+                state,
+                events: event_schema,
+                functions: BlueprintFunctionsSchemaInit { functions },
+                hooks: BlueprintHooksInit::default(),
+            },
+
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AccessRules(btreemap!(
+                        CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+                    )),
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template!(
+                        roles {
+                            VALIDATOR_ROLE;
+                        },
+                        methods {
+                            CONSENSUS_MANAGER_START_IDENT => []; // Genesis is able to call this by skipping auth
+                            CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
+
+                            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodAccessibility::Public;
+                            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => MethodAccessibility::Public;
+                            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodAccessibility::Public;
+                            CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodAccessibility::Public;
+                        }
+                    )),
+            },
+        }
+    }
+
     pub(crate) fn create<Y>(
         validator_token_address_reservation: GlobalAddressReservation,
         consensus_manager_address_reservation: GlobalAddressReservation,
@@ -292,13 +585,13 @@ impl ConsensusManagerBlueprint {
             api.new_simple_object(
                 CONSENSUS_MANAGER_BLUEPRINT,
                 btreemap! {
-                    0u8 => FieldValue::immutable(&config),
-                    1u8 => FieldValue::new(&consensus_manager),
-                    2u8 => FieldValue::new(&validator_rewards),
-                    3u8 => FieldValue::new(&current_validator_set),
-                    4u8 => FieldValue::new(&current_proposal_statistic),
-                    5u8 => FieldValue::new(&minute_timestamp),
-                    6u8 => FieldValue::new(&milli_timestamp),
+                    ConsensusManagerField::Configuration.field_index() => FieldValue::immutable(&ConsensusManagerConfigurationFieldPayload::from_content_source(config)),
+                    ConsensusManagerField::State.field_index() => FieldValue::new(&ConsensusManagerStateFieldPayload::from_content_source(consensus_manager)),
+                    ConsensusManagerField::ValidatorRewards.field_index() => FieldValue::new(&ConsensusManagerValidatorRewardsFieldPayload::from_content_source(validator_rewards)),
+                    ConsensusManagerField::CurrentValidatorSet.field_index() => FieldValue::new(&ConsensusManagerCurrentValidatorSetFieldPayload::from_content_source(current_validator_set)),
+                    ConsensusManagerField::CurrentProposalStatistic.field_index() => FieldValue::new(&ConsensusManagerCurrentProposalStatisticFieldPayload::from_content_source(current_proposal_statistic)),
+                    ConsensusManagerField::ProposerMinuteTimestamp.field_index() => FieldValue::new(&ConsensusManagerProposerMinuteTimestampFieldPayload::from_content_source(minute_timestamp)),
+                    ConsensusManagerField::ProposerMilliTimestamp.field_index() => FieldValue::new(&ConsensusManagerProposerMilliTimestampFieldPayload::from_content_source(milli_timestamp)),
                 },
             )?
         };
@@ -337,11 +630,11 @@ impl ConsensusManagerBlueprint {
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
+            ConsensusManagerField::State.into(),
             LockFlags::read_only(),
         )?;
 
-        let consensus_manager: ConsensusManagerSubstate = api.field_read_typed(handle)?;
+        let consensus_manager = api.field_read_typed::<ConsensusManagerStateFieldPayload>(handle)?.into_latest();
 
         Ok(consensus_manager.epoch)
     }
@@ -353,22 +646,22 @@ impl ConsensusManagerBlueprint {
         let config_substate = {
             let config_handle = api.actor_open_field(
                 ACTOR_STATE_SELF,
-                ConsensusManagerField::Config.into(),
+                ConsensusManagerField::Configuration.into(),
                 LockFlags::read_only(),
             )?;
-            let config_substate: ConsensusManagerConfigSubstate =
-                api.field_read_typed(config_handle)?;
+            let config_substate =
+                api.field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?.into_latest();
             api.field_close(config_handle)?;
             config_substate
         };
 
         let manager_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
+            ConsensusManagerField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut manager_substate: ConsensusManagerSubstate =
-            api.field_read_typed(manager_handle)?;
+        let mut manager_substate =
+            api.field_read_typed::<ConsensusManagerStateFieldPayload>(manager_handle)?.into_latest();
 
         if manager_substate.started {
             return Err(RuntimeError::ApplicationError(
@@ -382,7 +675,7 @@ impl ConsensusManagerBlueprint {
         manager_substate.epoch = post_genesis_epoch;
         manager_substate.round = Round::zero();
 
-        api.field_write_typed(manager_handle, &manager_substate)?;
+        api.field_write_typed(manager_handle, &ConsensusManagerStateFieldPayload::from_content_source(manager_substate))?;
         api.field_close(manager_handle)?;
 
         Ok(())
@@ -399,11 +692,11 @@ impl ConsensusManagerBlueprint {
             TimePrecision::Minute => {
                 let handle = api.actor_open_field(
                     ACTOR_STATE_SELF,
-                    ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+                    ConsensusManagerField::ProposerMinuteTimestamp.into(),
                     LockFlags::read_only(),
                 )?;
-                let proposer_minute_timestamp: ProposerMinuteTimestampSubstate =
-                    api.field_read_typed(handle)?;
+                let proposer_minute_timestamp =
+                    api.field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(handle)?.into_latest();
                 api.field_close(handle)?;
 
                 Ok(Self::epoch_minute_to_instant(
@@ -430,11 +723,11 @@ impl ConsensusManagerBlueprint {
 
                 let handle = api.actor_open_field(
                     ACTOR_STATE_SELF,
-                    ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+                    ConsensusManagerField::ProposerMinuteTimestamp.into(),
                     LockFlags::read_only(),
                 )?;
-                let proposer_minute_timestamp: ProposerMinuteTimestampSubstate =
-                    api.field_read_typed(handle)?;
+                let proposer_minute_timestamp =
+                    api.field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(handle)?.into_latest();
                 api.field_close(handle)?;
 
                 // convert back to Instant only for comparison operation
@@ -468,7 +761,7 @@ impl ConsensusManagerBlueprint {
 
         let config_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ConsensusManagerField::Config.into(),
+            ConsensusManagerField::Configuration.into(),
             LockFlags::read_only(),
         )?;
         let config_substate: ConsensusManagerConfigSubstate =
@@ -477,11 +770,11 @@ impl ConsensusManagerBlueprint {
 
         let manager_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
+            ConsensusManagerField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut manager_substate: ConsensusManagerSubstate =
-            api.field_read_typed(manager_handle)?;
+        let mut manager_substate =
+            api.field_read_typed::<ConsensusManagerStateFieldPayload>(manager_handle)?.into_latest();
 
         let progressed_rounds = Round::calculate_progress(manager_substate.round, round)
             .ok_or_else(|| {
@@ -520,7 +813,7 @@ impl ConsensusManagerBlueprint {
         }
         manager_substate.current_leader = Some(current_leader);
 
-        api.field_write_typed(manager_handle, &manager_substate)?;
+        api.field_write_typed(manager_handle, &ConsensusManagerStateFieldPayload::from_content_source(manager_substate))?;
         api.field_close(manager_handle)?;
 
         Ok(())
@@ -532,22 +825,24 @@ impl ConsensusManagerBlueprint {
     {
         let manager_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
+            ConsensusManagerField::State.field_index(),
             LockFlags::read_only(),
         )?;
-        let manager_substate: ConsensusManagerSubstate = api.field_read_typed(manager_handle)?;
+        let manager_substate: ConsensusManagerStateFieldPayload = api.field_read_typed(manager_handle)?;
+        let manager_substate = manager_substate.into_latest();
 
         let validator_creation_xrd_cost = if manager_substate.started {
             let config_handle = api.actor_open_field(
                 ACTOR_STATE_SELF,
-                ConsensusManagerField::Config.into(),
+                ConsensusManagerField::Configuration.into(),
                 LockFlags::read_only(),
             )?;
-            let manager_config: ConsensusManagerConfigSubstate =
+            let manager_config: ConsensusManagerConfigurationFieldPayload =
                 api.field_read_typed(config_handle)?;
             api.field_close(config_handle)?;
 
             let validator_creation_xrd_cost = manager_config
+                .into_latest()
                 .config
                 .validator_creation_usd_cost
                 .safe_mul(api.usd_price()?)
@@ -598,11 +893,12 @@ impl ConsensusManagerBlueprint {
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ConsensusManagerField::CurrentTime.into(),
+            ConsensusManagerField::ProposerMilliTimestamp.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut exact_time_substate: ProposerMilliTimestampSubstate =
+        let exact_time_substate: ConsensusManagerProposerMilliTimestampFieldPayload =
             api.field_read_typed(handle)?;
+        let mut exact_time_substate = exact_time_substate.into_latest();
         let previous_timestamp = exact_time_substate.epoch_milli;
         if current_time_ms < previous_timestamp {
             return Err(RuntimeError::ApplicationError(
@@ -615,22 +911,23 @@ impl ConsensusManagerBlueprint {
             ));
         } else if current_time_ms > previous_timestamp {
             exact_time_substate.epoch_milli = current_time_ms;
-            api.field_write_typed(handle, &exact_time_substate)?;
+            api.field_write_typed(handle, &ConsensusManagerProposerMilliTimestampFieldPayload::from_content_source(exact_time_substate))?;
         }
         api.field_close(handle)?;
 
         let new_rounded_value = Self::milli_to_minute(current_time_ms);
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
-            ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+            ConsensusManagerField::ProposerMinuteTimestamp.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut rounded_timestamp_substate: ProposerMinuteTimestampSubstate =
+        let rounded_timestamp_substate: ConsensusManagerProposerMinuteTimestampFieldPayload =
             api.field_read_typed(handle)?;
+        let mut rounded_timestamp_substate = rounded_timestamp_substate.into_latest();
         let previous_rounded_value = rounded_timestamp_substate.epoch_minute;
         if new_rounded_value > previous_rounded_value {
             rounded_timestamp_substate.epoch_minute = new_rounded_value;
-            api.field_write_typed(handle, &rounded_timestamp_substate)?;
+            api.field_write_typed(handle, &ConsensusManagerProposerMinuteTimestampFieldPayload::from_content_source(rounded_timestamp_substate))?;
         }
         api.field_close(handle)?;
 
@@ -661,8 +958,9 @@ impl ConsensusManagerBlueprint {
             ConsensusManagerField::CurrentProposalStatistic.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut statistic: CurrentProposalStatisticSubstate =
+        let statistic: ConsensusManagerCurrentProposalStatisticFieldPayload =
             api.field_read_typed(statistic_handle)?;
+        let mut statistic = statistic.into_latest();
         for gap_round_leader in proposal_history.gap_round_leaders {
             let gap_round_statistic = statistic.get_mut_proposal_statistic(gap_round_leader)?;
             gap_round_statistic.missed += 1;
@@ -674,7 +972,7 @@ impl ConsensusManagerBlueprint {
         } else {
             current_round_statistic.made += 1;
         }
-        api.field_write_typed(statistic_handle, &statistic)?;
+        api.field_write_typed(statistic_handle, &ConsensusManagerCurrentProposalStatisticFieldPayload::from_content_source(statistic))?;
         api.field_close(statistic_handle)?;
 
         Ok(())
@@ -694,8 +992,9 @@ impl ConsensusManagerBlueprint {
             ConsensusManagerField::CurrentValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator_set_substate: CurrentValidatorSetSubstate =
+        let validator_set_substate: ConsensusManagerCurrentValidatorSetFieldPayload =
             api.field_read_typed(validator_set_handle)?;
+        let mut validator_set_substate = validator_set_substate.into_latest();
         let previous_validator_set = validator_set_substate.validator_set;
 
         // Read previous validator statistics
@@ -704,8 +1003,9 @@ impl ConsensusManagerBlueprint {
             ConsensusManagerField::CurrentProposalStatistic.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut statistic_substate: CurrentProposalStatisticSubstate =
+        let statistic_substate: ConsensusManagerCurrentProposalStatisticFieldPayload =
             api.field_read_typed(statistic_handle)?;
+        let mut statistic_substate = statistic_substate.into_latest();
         let previous_statistics = statistic_substate.validator_statistics;
 
         // Read & write validator rewards
@@ -714,8 +1014,8 @@ impl ConsensusManagerBlueprint {
             ConsensusManagerField::ValidatorRewards.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut rewards_substate: ValidatorRewardsSubstate =
-            api.field_read_typed(rewards_handle)?;
+        let mut rewards_substate =
+            api.field_read_typed::<ConsensusManagerValidatorRewardsFieldPayload>(rewards_handle)?.into_latest();
 
         // Apply emissions
         Self::apply_validator_emissions_and_rewards(
@@ -741,7 +1041,7 @@ impl ConsensusManagerBlueprint {
         let mut top_registered_validators: Vec<(ComponentAddress, Validator)> = api
             .actor_sorted_index_scan_typed(
                 ACTOR_STATE_SELF,
-                CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
                 num_validators_to_read_from_store,
             )?;
 
@@ -802,19 +1102,19 @@ impl ConsensusManagerBlueprint {
         )?;
 
         // Write updated validator rewards
-        api.field_write_typed(rewards_handle, &rewards_substate)?;
+        api.field_write_typed(rewards_handle, &ConsensusManagerValidatorRewardsFieldPayload::from_content_source(rewards_substate))?;
         api.field_close(rewards_handle)?;
 
         // Write zeroed statistics of next validators
         statistic_substate.validator_statistics = (0..next_active_validator_set.validator_count())
             .map(|_index| ProposalStatistic::default())
             .collect();
-        api.field_write_typed(statistic_handle, &statistic_substate)?;
+        api.field_write_typed(statistic_handle, &ConsensusManagerCurrentProposalStatisticFieldPayload::from_content_source(statistic_substate))?;
         api.field_close(statistic_handle)?;
 
         // Write next validator set
         validator_set_substate.validator_set = next_active_validator_set;
-        api.field_write_typed(validator_set_handle, &validator_set_substate)?;
+        api.field_write_typed(validator_set_handle, &ConsensusManagerCurrentValidatorSetFieldPayload::from_content_source(validator_set_substate))?;
         api.field_close(validator_set_handle)?;
 
         Ok(())

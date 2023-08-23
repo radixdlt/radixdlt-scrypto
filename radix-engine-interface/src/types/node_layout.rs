@@ -244,22 +244,10 @@ pub enum AuthZoneField {
 
 blueprint_partition_offset!(
     pub enum ConsensusManagerPartitionOffset {
-        ConsensusManager,
-        RegisteredValidatorsByStakeIndex,
+        Field,
+        RegisteredValidatorByStakeSortedIndex,
     }
 );
-
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
-pub enum ConsensusManagerField {
-    Config,
-    ConsensusManager,
-    ValidatorRewards,
-    CurrentValidatorSet,
-    CurrentProposalStatistic,
-    CurrentTimeRoundedToMinutes,
-    CurrentTime,
-}
 
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
@@ -368,7 +356,6 @@ substate_key!(FungibleProofField);
 substate_key!(NonFungibleResourceManagerField);
 substate_key!(NonFungibleBucketField);
 substate_key!(NonFungibleProofField);
-substate_key!(ConsensusManagerField);
 substate_key!(ValidatorField);
 substate_key!(OneResourcePoolField);
 substate_key!(TwoResourcePoolField);

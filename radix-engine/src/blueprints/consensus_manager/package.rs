@@ -2,16 +2,14 @@ use crate::blueprints::consensus_manager::{ConsensusManagerBlueprint, ValidatorB
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::{event_schema, roles_template, types::*};
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };
-use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
+    BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 
@@ -23,196 +21,6 @@ pub struct ConsensusManagerNativePackage;
 
 impl ConsensusManagerNativePackage {
     pub fn definition() -> PackageDefinition {
-        let consensus_manager_blueprint = {
-            let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-
-            let mut fields = Vec::new();
-
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<ConsensusManagerConfigSubstate>(),
-            ));
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<ConsensusManagerSubstate>(),
-            ));
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<ValidatorRewardsSubstate>(),
-            ));
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>(),
-            ));
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>(),
-            ));
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<ProposerMinuteTimestampSubstate>(),
-            ));
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<ProposerMilliTimestampSubstate>(),
-            ));
-
-            let mut collections = Vec::new();
-            collections.push(BlueprintCollectionSchema::SortedIndex(
-                BlueprintKeyValueSchema {
-                    key: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<ComponentAddress>(),
-                    ),
-                    value: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<Validator>(),
-                    ),
-                    allow_ownership: false,
-                },
-            ));
-
-            let mut functions = BTreeMap::new();
-            functions.insert(
-                CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: None,
-                    input: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<ConsensusManagerCreateInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<ConsensusManagerCreateOutput>(),
-                    ),
-                    export: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-                },
-            );
-            functions.insert(
-                CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref()),
-                    input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochInput>()),
-                    output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochOutput>()),
-                    export: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-                },
-            );
-            functions.insert(
-                CONSENSUS_MANAGER_START_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<ConsensusManagerStartInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<ConsensusManagerStartOutput>(),
-                    ),
-                    export: CONSENSUS_MANAGER_START_IDENT.to_string(),
-                },
-            );
-            functions.insert(
-                CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref()),
-                    input: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(
-                            ),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeOutput>(
-                            ),
-                    ),
-                    export: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-                },
-            );
-            functions.insert(
-                CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref()),
-                    input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInput>(
-                        )),
-                    output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeOutput>(
-                        )),
-                    export: CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
-                },
-            );
-            functions.insert(
-                CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<ConsensusManagerNextRoundInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<ConsensusManagerNextRoundOutput>(),
-                    ),
-                    export: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                },
-            );
-            functions.insert(
-                CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerCreateValidatorInput>()),
-                    output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerCreateValidatorOutput>()),
-                    export: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                },
-            );
-
-            let event_schema = event_schema! {
-                aggregator,
-                [
-                    RoundChangeEvent,
-                    EpochChangeEvent
-                ]
-            };
-
-            let consensus_manager_schema = generate_full_schema(aggregator);
-
-            BlueprintDefinitionInit {
-                blueprint_type: BlueprintType::default(),
-                is_transient: false,
-                feature_set: btreeset!(),
-                dependencies: btreeset!(
-                    XRD.into(),
-                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                    SYSTEM_TRANSACTION_BADGE.into(),
-                    VALIDATOR_OWNER_BADGE.into(),
-                ),
-                schema: BlueprintSchemaInit {
-                    generics: vec![],
-                    schema: consensus_manager_schema,
-                    state: BlueprintStateSchemaInit {
-                        fields,
-                        collections,
-                    },
-                    events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit { functions },
-                    hooks: BlueprintHooksInit::default(),
-                },
-
-                royalty_config: PackageRoyaltyConfig::default(),
-                auth_config: AuthConfig {
-                    function_auth: FunctionAuth::AccessRules(btreemap!(
-                        CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
-                    )),
-                    method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template!(
-                        roles {
-                            VALIDATOR_ROLE;
-                        },
-                        methods {
-                            CONSENSUS_MANAGER_START_IDENT => []; // Genesis is able to call this by skipping auth
-                            CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
-
-                            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodAccessibility::Public;
-                            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => MethodAccessibility::Public;
-                            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodAccessibility::Public;
-                            CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodAccessibility::Public;
-                        }
-                    )),
-                },
-            }
-        };
-
         let validator_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
@@ -556,7 +364,7 @@ impl ConsensusManagerNativePackage {
         };
 
         let blueprints = btreemap!(
-            CONSENSUS_MANAGER_BLUEPRINT.to_string() => consensus_manager_blueprint,
+            CONSENSUS_MANAGER_BLUEPRINT.to_string() => ConsensusManagerBlueprint::definition(),
             VALIDATOR_BLUEPRINT.to_string() => validator_blueprint,
         );
 

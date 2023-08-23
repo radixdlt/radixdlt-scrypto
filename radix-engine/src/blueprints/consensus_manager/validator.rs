@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{burn_roles, metadata_init, mint_roles, rule};
 use sbor::rust::mem;
+use crate::internal_prelude::SortedIndexEntryPayload;
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
@@ -282,21 +283,21 @@ impl ValidatorBlueprint {
 
             let manager_handle = api.actor_open_field(
                 ACTOR_STATE_OUTER_OBJECT,
-                ConsensusManagerField::ConsensusManager.into(),
+                ConsensusManagerField::State.into(),
                 LockFlags::read_only(),
             )?;
-            let manager_substate: ConsensusManagerSubstate =
-                api.field_read_typed(manager_handle)?;
+            let manager_substate =
+                api.field_read_typed::<ConsensusManagerStateFieldPayload>(manager_handle)?.into_latest();
             let current_epoch = manager_substate.epoch;
             api.field_close(manager_handle)?;
 
             let config_handle = api.actor_open_field(
                 ACTOR_STATE_OUTER_OBJECT,
-                ConsensusManagerField::Config.into(),
+                ConsensusManagerField::Configuration.into(),
                 LockFlags::read_only(),
             )?;
-            let config_substate: ConsensusManagerConfigSubstate =
-                api.field_read_typed(config_handle)?;
+            let config_substate =
+                api.field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?.into_latest();
             api.field_close(config_handle)?;
 
             let claim_epoch = current_epoch.after(config_substate.config.num_unstake_epochs);
@@ -492,10 +493,10 @@ impl ValidatorBlueprint {
         let current_epoch = {
             let mgr_handle = api.actor_open_field(
                 ACTOR_STATE_OUTER_OBJECT,
-                ConsensusManagerField::ConsensusManager.into(),
+                ConsensusManagerField::State.into(),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate: ConsensusManagerSubstate = api.field_read_typed(mgr_handle)?;
+            let mgr_substate = api.field_read_typed::<ConsensusManagerStateFieldPayload>(mgr_handle)?.into_latest();
             let epoch = mgr_substate.epoch;
             api.field_close(mgr_handle)?;
             epoch
@@ -566,22 +567,22 @@ impl ValidatorBlueprint {
         // read the current epoch
         let consensus_manager_handle = api.actor_open_field(
             ACTOR_STATE_OUTER_OBJECT,
-            ConsensusManagerField::ConsensusManager.into(),
+            ConsensusManagerField::State.into(),
             LockFlags::read_only(),
         )?;
-        let consensus_manager: ConsensusManagerSubstate =
-            api.field_read_typed(consensus_manager_handle)?;
+        let consensus_manager =
+            api.field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?.into_latest();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
         // read the configured fee increase epochs delay
         let config_handle = api.actor_open_field(
             ACTOR_STATE_OUTER_OBJECT,
-            ConsensusManagerField::Config.into(),
+            ConsensusManagerField::Configuration.into(),
             LockFlags::read_only(),
         )?;
-        let config_substate: ConsensusManagerConfigSubstate =
-            api.field_read_typed(config_handle)?;
+        let config_substate =
+            api.field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?.into_latest();
         api.field_close(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
@@ -754,22 +755,22 @@ impl ValidatorBlueprint {
         // read the current epoch (needed for a drive-by "finish unlocking" of available withdrawals)
         let consensus_manager_handle = api.actor_open_field(
             ACTOR_STATE_OUTER_OBJECT,
-            ConsensusManagerField::ConsensusManager.into(),
+            ConsensusManagerField::State.into(),
             LockFlags::read_only(),
         )?;
-        let consensus_manager: ConsensusManagerSubstate =
-            api.field_read_typed(consensus_manager_handle)?;
+        let consensus_manager =
+            api.field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?.into_latest();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
         // read the configured unlock epochs delay
         let config_handle = api.actor_open_field(
             ACTOR_STATE_OUTER_OBJECT,
-            ConsensusManagerField::Config.into(),
+            ConsensusManagerField::Configuration.into(),
             LockFlags::read_only(),
         )?;
-        let config_substate: ConsensusManagerConfigSubstate =
-            api.field_read_typed(config_handle)?;
+        let config_substate =
+            api.field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?.into_latest();
         api.field_close(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
@@ -819,11 +820,11 @@ impl ValidatorBlueprint {
         // read the current epoch
         let consensus_manager_handle = api.actor_open_field(
             ACTOR_STATE_OUTER_OBJECT,
-            ConsensusManagerField::ConsensusManager.into(),
+            ConsensusManagerField::State.into(),
             LockFlags::read_only(),
         )?;
-        let consensus_manager: ConsensusManagerSubstate =
-            api.field_read_typed(consensus_manager_handle)?;
+        let consensus_manager =
+            api.field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?.into_latest();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
@@ -1051,25 +1052,27 @@ impl ValidatorBlueprint {
             } => {
                 api.actor_sorted_index_insert_typed(
                     ACTOR_STATE_OUTER_OBJECT,
-                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
                     index_key,
-                    Validator { key, stake },
+                    ConsensusManagerRegisteredValidatorByStakeEntryPayload::from_content_source(
+                        Validator { key, stake }
+                    ),
                 )?;
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
                 let mut validator = api
-                    .actor_sorted_index_remove_typed::<Validator>(
+                    .actor_sorted_index_remove_typed::<ConsensusManagerRegisteredValidatorByStakeEntryPayload>(
                         ACTOR_STATE_OUTER_OBJECT,
-                        CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                        ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
                         &index_key,
                     )?
-                    .unwrap();
+                    .unwrap().into_latest();
                 validator.key = key;
                 api.actor_sorted_index_insert_typed(
                     ACTOR_STATE_OUTER_OBJECT,
-                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
                     index_key,
-                    validator,
+                    ConsensusManagerRegisteredValidatorByStakeEntryPayload::from_content_source(validator),
                 )?;
             }
             UpdateSecondaryIndex::UpdateStake {
@@ -1078,24 +1081,24 @@ impl ValidatorBlueprint {
                 new_stake_amount,
             } => {
                 let mut validator = api
-                    .actor_sorted_index_remove_typed::<Validator>(
+                    .actor_sorted_index_remove_typed::<ConsensusManagerRegisteredValidatorByStakeEntryPayload>(
                         ACTOR_STATE_OUTER_OBJECT,
-                        CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                        ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
                         &index_key,
                     )?
-                    .unwrap();
+                    .unwrap().into_latest();
                 validator.stake = new_stake_amount;
                 api.actor_sorted_index_insert_typed(
                     ACTOR_STATE_OUTER_OBJECT,
-                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
                     new_index_key,
-                    validator,
+                    ConsensusManagerRegisteredValidatorByStakeEntryPayload::from_content_source(validator),
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
                 api.actor_sorted_index_remove(
                     ACTOR_STATE_OUTER_OBJECT,
-                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
                     &index_key,
                 )?;
             }

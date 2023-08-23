@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::blueprints::consensus_manager::*;
+use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
@@ -11,7 +12,7 @@ use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_db_checker::{
     SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults,
 };
-use radix_engine::system::system_db_reader::SystemDatabaseReader;
+use radix_engine::system::system_db_reader::{SystemDatabaseReader, SystemDatabaseWriter};
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, CostingParameters, ExecutionConfig,
     PreviewError, TransactionReceipt, TransactionResult,
@@ -1867,21 +1868,22 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn set_current_epoch(&mut self, epoch: Epoch) {
-        let mut substate = self
-            .database
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
-                &CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::ConsensusManager.into(),
-            )
-            .unwrap();
-        substate.value.0.epoch = epoch;
-        self.database.put_mapped::<SpreadPrefixKeyMapper, _>(
-            &CONSENSUS_MANAGER.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &ConsensusManagerField::ConsensusManager.into(),
-            &substate,
-        );
+        let reader = SystemDatabaseReader::new(&self.database);
+        let mut substate = reader.read_typed_object_field::<ConsensusManagerStateFieldPayload>(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::State.field_index()
+        ).unwrap().into_latest();
+
+        substate.epoch = epoch;
+
+        let mut writer = SystemDatabaseWriter::new(&mut self.database);
+        writer.write_typed_object_field(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::State.field_index(),
+                ConsensusManagerStateFieldPayload::from_content_source(substate),
+        ).unwrap();
     }
 
     pub fn get_current_epoch(&mut self) -> Epoch {
@@ -2017,27 +2019,29 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     /// most recent round change.
     pub fn get_current_proposer_timestamp_ms(&mut self) -> i64 {
         self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ProposerMilliTimestampSubstate>>(
+            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerProposerMilliTimestampFieldPayload>>(
                 CONSENSUS_MANAGER.as_node_id(),
                 MAIN_BASE_PARTITION,
-                &ConsensusManagerField::CurrentTime.into(),
+                &ConsensusManagerField::ProposerMilliTimestamp.into(),
             )
             .unwrap()
             .value
             .0
+            .into_latest()
             .epoch_milli
     }
 
     pub fn get_consensus_manager_state(&mut self) -> ConsensusManagerSubstate {
         self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
+            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerStateFieldPayload>>(
                 CONSENSUS_MANAGER.as_node_id(),
                 MAIN_BASE_PARTITION,
-                &ConsensusManagerField::ConsensusManager.into(),
+                &ConsensusManagerField::State.into(),
             )
             .unwrap()
             .value
             .0
+            .into_latest()
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
