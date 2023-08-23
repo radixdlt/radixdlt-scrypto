@@ -1,9 +1,5 @@
-use native_sdk::account::*;
-use native_sdk::consensus_manager::*;
-use native_sdk::resource::ResourceManager;
 use scrypto::api::node_modules::metadata::*;
-use scrypto::api::object_api::ObjectModuleId;
-use scrypto::api::ClientObjectApi;
+use scrypto::api::object_api::ModuleId;
 use scrypto::prelude::*;
 
 // Important: the types defined here must match those in bootstrap.rs
@@ -14,7 +10,7 @@ pub struct GenesisValidator {
     pub is_registered: bool,
     pub fee_factor: Decimal,
     pub metadata: Vec<(String, MetadataValue)>,
-    pub owner: ComponentAddress,
+    pub owner: Global<Account>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -27,7 +23,7 @@ pub struct GenesisStakeAllocation {
 pub struct GenesisResource {
     pub address_reservation: GlobalAddressReservation,
     pub metadata: Vec<(String, MetadataValue)>,
-    pub owner: Option<ComponentAddress>,
+    pub owner: Option<Global<Account>>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -40,15 +36,15 @@ pub struct GenesisResourceAllocation {
 pub enum GenesisDataChunk {
     Validators(Vec<GenesisValidator>),
     Stakes {
-        accounts: Vec<ComponentAddress>,
+        accounts: Vec<Global<Account>>,
         allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
     },
     Resources(Vec<GenesisResource>),
     ResourceBalances {
-        accounts: Vec<ComponentAddress>,
-        allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
+        accounts: Vec<Global<Account>>,
+        allocations: Vec<(ResourceManager, Vec<GenesisResourceAllocation>)>,
     },
-    XrdBalances(Vec<(ComponentAddress, Decimal)>),
+    XrdBalances(Vec<(Global<Account>, Decimal)>),
 }
 
 #[blueprint]
@@ -67,15 +63,17 @@ mod genesis_helper {
         }
     }
 
+    const XRD_MGR: ResourceManager = resource_manager!(XRD);
+
     struct GenesisHelper {
-        consensus_manager: ComponentAddress,
-        validators: KeyValueStore<Secp256k1PublicKey, ComponentAddress>,
+        consensus_manager: Global<ConsensusManager>,
+        validators: KeyValueStore<Secp256k1PublicKey, Global<Validator>>,
     }
 
     impl GenesisHelper {
         pub fn new(
             address_reservation: GlobalAddressReservation,
-            consensus_manager: ComponentAddress,
+            consensus_manager: Global<ConsensusManager>,
             system_role: NonFungibleGlobalId,
         ) -> Global<GenesisHelper> {
             Self {
@@ -116,55 +114,38 @@ mod genesis_helper {
             }
         }
 
-        fn create_validator(&mut self, validator: GenesisValidator) {
-            let xrd_payment = ResourceManager(XRD)
-                .new_empty_bucket(&mut ScryptoEnv)
-                .unwrap();
-            let (validator_address, owner_token_bucket, change) =
-                ConsensusManager(self.consensus_manager)
-                    .create_validator(
-                        validator.key,
-                        validator.fee_factor,
-                        xrd_payment,
-                        &mut ScryptoEnv,
-                    )
-                    .unwrap();
+        fn create_validator(&mut self, mut validator: GenesisValidator) {
+            let xrd_payment = XRD_MGR.create_empty_bucket();
+            let (mut validator_component, owner_token_bucket, change) = self
+                .consensus_manager
+                .create_validator(validator.key, validator.fee_factor, xrd_payment);
 
             change.drop_empty();
 
             // Deposit the badge to the owner account
-            Account(validator.owner)
-                .deposit(owner_token_bucket, &mut ScryptoEnv)
-                .unwrap();
+            validator.owner.deposit(owner_token_bucket);
 
             if validator.is_registered {
-                Validator(validator_address)
-                    .register(&mut ScryptoEnv)
-                    .unwrap();
+                validator_component.register();
             }
 
-            Validator(validator_address)
-                .update_accept_delegated_stake(validator.accept_delegated_stake, &mut ScryptoEnv)
-                .unwrap();
+            validator_component.update_accept_delegated_stake(validator.accept_delegated_stake);
 
             for (key, value) in validator.metadata {
-                ScryptoEnv
-                    .call_method_advanced(
-                        &validator_address.into_node_id(),
-                        ObjectModuleId::Metadata,
-                        false,
-                        METADATA_SET_IDENT,
-                        scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
-                    )
-                    .expect("Failed to set validator metadata");
+                ScryptoVmV1Api::object_call_module(
+                    &validator_component.address().into_node_id(),
+                    ModuleId::Metadata,
+                    METADATA_SET_IDENT,
+                    scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
+                );
             }
 
-            self.validators.insert(validator.key, validator_address);
+            self.validators.insert(validator.key, validator_component);
         }
 
         fn allocate_stakes(
             &mut self,
-            accounts: Vec<ComponentAddress>,
+            accounts: Vec<Global<Account>>,
             allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)>,
         ) {
             let xrd_needed: Decimal = {
@@ -176,21 +157,15 @@ mod genesis_helper {
                 }
                 sum
             };
-            let mut xrd_bucket = ResourceManager(XRD)
-                .mint_fungible(xrd_needed, &mut ScryptoEnv)
-                .expect("XRD mint for genesis stake allocation failed");
+            let mut xrd_bucket = XRD_MGR.mint(xrd_needed);
 
             for (validator_key, stake_allocations) in allocations.into_iter() {
-                let validator_address = self.validators.get(&validator_key).unwrap();
-                let validator = Validator(validator_address.clone());
+                let mut validator = self.validators.get_mut(&validator_key).unwrap();
 
                 // Enable staking temporarily for genesis delegators
-                let accepts_delegated_stake =
-                    validator.accepts_delegated_stake(&mut ScryptoEnv).unwrap();
+                let accepts_delegated_stake = validator.accepts_delegated_stake();
                 if !accepts_delegated_stake {
-                    validator
-                        .update_accept_delegated_stake(true, &mut ScryptoEnv)
-                        .unwrap();
+                    validator.update_accept_delegated_stake(true);
                 }
 
                 for GenesisStakeAllocation {
@@ -198,20 +173,15 @@ mod genesis_helper {
                     xrd_amount,
                 } in stake_allocations.into_iter()
                 {
-                    let staker_account_address = accounts[account_index as usize].clone();
+                    let mut staker_account = accounts[account_index as usize].clone();
                     let stake_xrd_bucket = xrd_bucket.take(xrd_amount);
-                    let stake_unit_bucket =
-                        validator.stake(stake_xrd_bucket, &mut ScryptoEnv).unwrap();
-                    let _: () = Account(staker_account_address)
-                        .deposit(stake_unit_bucket, &mut ScryptoEnv)
-                        .unwrap();
+                    let stake_unit_bucket = validator.stake(stake_xrd_bucket);
+                    staker_account.deposit(stake_unit_bucket);
                 }
 
                 // Restore original delegated stake flag
                 if !accepts_delegated_stake {
-                    validator
-                        .update_accept_delegated_stake(accepts_delegated_stake, &mut ScryptoEnv)
-                        .unwrap();
+                    validator.update_accept_delegated_stake(accepts_delegated_stake);
                 }
             }
 
@@ -227,7 +197,7 @@ mod genesis_helper {
         fn create_resource(resource: GenesisResource) -> () {
             let metadata: BTreeMap<String, MetadataValue> = resource.metadata.into_iter().collect();
 
-            let owner_badge_address = if let Some(owner) = resource.owner {
+            let owner_badge_address = if let Some(mut owner) = resource.owner {
                 // TODO: Should we use securify style non fungible resource for the owner badge?
                 let owner_badge = ResourceBuilder::new_fungible(OwnerRole::None)
                     .divisibility(DIVISIBILITY_NONE)
@@ -247,9 +217,7 @@ mod genesis_helper {
                 let resource_mgr = owner_badge.resource_manager();
                 resource_mgr.set_metadata("tags", vec!["badge".to_string()]);
 
-                let _: () = Account(owner)
-                    .deposit(owner_badge.into(), &mut ScryptoEnv)
-                    .unwrap();
+                owner.deposit(owner_badge.into());
 
                 Some(owner_badge_address)
             } else {
@@ -280,10 +248,10 @@ mod genesis_helper {
 
         fn allocate_resources(
             &mut self,
-            accounts: Vec<ComponentAddress>,
-            allocations: Vec<(ResourceAddress, Vec<GenesisResourceAllocation>)>,
+            accounts: Vec<Global<Account>>,
+            allocations: Vec<(ResourceManager, Vec<GenesisResourceAllocation>)>,
         ) {
-            for (resource_address, allocations) in allocations.into_iter() {
+            for (resource_manager, allocations) in allocations.into_iter() {
                 let amount_needed = {
                     let mut sum = Decimal::ZERO;
                     for v in allocations.iter().map(|alloc| alloc.amount.clone()) {
@@ -291,26 +259,22 @@ mod genesis_helper {
                     }
                     sum
                 };
-                let mut resource_bucket = ResourceManager(resource_address)
-                    .mint_fungible(amount_needed, &mut ScryptoEnv)
-                    .expect("Resource mint for genesis allocation failed");
+                let mut resource_bucket = resource_manager.mint(amount_needed);
 
                 for GenesisResourceAllocation {
                     account_index,
                     amount,
                 } in allocations.into_iter()
                 {
-                    let account_address = accounts[account_index as usize].clone();
+                    let mut account = accounts[account_index as usize].clone();
                     let allocation_bucket = resource_bucket.take(amount);
-                    let _: () = Account(account_address)
-                        .deposit(allocation_bucket, &mut ScryptoEnv)
-                        .unwrap();
+                    account.deposit(allocation_bucket);
                 }
                 resource_bucket.drop_empty();
             }
         }
 
-        fn allocate_xrd(&mut self, allocations: Vec<(ComponentAddress, Decimal)>) {
+        fn allocate_xrd(&mut self, allocations: Vec<(Global<Account>, Decimal)>) {
             let xrd_needed = {
                 let mut sum = Decimal::ZERO;
                 for v in allocations.iter().map(|(_, amount)| amount.clone()) {
@@ -318,24 +282,18 @@ mod genesis_helper {
                 }
                 sum
             };
-            let mut xrd_bucket = ResourceManager(XRD)
-                .mint_fungible(xrd_needed, &mut ScryptoEnv)
-                .expect("XRD mint for genesis allocation failed");
+            let mut xrd_bucket = XRD_MGR.mint(xrd_needed);
 
-            for (account_address, amount) in allocations.into_iter() {
+            for (mut account, amount) in allocations.into_iter() {
                 let bucket = xrd_bucket.take(amount);
-                let _: () = Account(account_address)
-                    .deposit(bucket, &mut ScryptoEnv)
-                    .unwrap();
+                account.deposit(bucket);
             }
 
             xrd_bucket.drop_empty();
         }
 
         pub fn wrap_up(&mut self) -> () {
-            ConsensusManager(self.consensus_manager)
-                .start(&mut ScryptoEnv)
-                .unwrap();
+            self.consensus_manager.start();
         }
     }
 }

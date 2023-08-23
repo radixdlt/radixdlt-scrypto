@@ -5,7 +5,7 @@ use native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, FieldValue};
+use radix_engine_interface::api::{ClientApi, FieldValue, ModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
@@ -32,10 +32,10 @@ where
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let address = api.globalize(
+        object_id,
         btreemap!(
-            ObjectModuleId::Main => object_id,
-            ObjectModuleId::RoleAssignment => role_assignment.0,
-            ObjectModuleId::Metadata => metadata.0,
+            ModuleId::RoleAssignment => role_assignment.0,
+            ModuleId::Metadata => metadata.0,
         ),
         Some(resource_address_reservation),
     )?;
@@ -63,19 +63,19 @@ where
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let modules = btreemap!(
-        ObjectModuleId::Main => object_id,
-        ObjectModuleId::RoleAssignment => role_assignment.0,
-        ObjectModuleId::Metadata => metadata.0,
+        ModuleId::RoleAssignment => role_assignment.0,
+        ModuleId::Metadata => metadata.0,
     );
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
+        object_id,
         modules,
         resource_address_reservation,
         FUNGIBLE_BUCKET_BLUEPRINT,
-        vec![
-            FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
-            FieldValue::new(&LockedFungibleResource::default()),
-        ],
+        btreemap! {
+            0u8 => FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
+            1u8 => FieldValue::new(&LockedFungibleResource::default()),
+        },
         MintFungibleResourceEvent::event_name().to_string(),
         scrypto_encode(&MintFungibleResourceEvent {
             amount: initial_supply,
@@ -110,17 +110,17 @@ where
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
+        object_id,
         btreemap!(
-            ObjectModuleId::Main => object_id,
-            ObjectModuleId::RoleAssignment => role_assignment.0,
-            ObjectModuleId::Metadata => metadata.0,
+            ModuleId::RoleAssignment => role_assignment.0,
+            ModuleId::Metadata => metadata.0,
         ),
         resource_address_reservation,
         NON_FUNGIBLE_BUCKET_BLUEPRINT,
-        vec![
-            FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
-            FieldValue::new(&LockedNonFungibleResource::default()),
-        ],
+        btreemap! {
+            0u8 => FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
+            1u8 => FieldValue::new(&LockedNonFungibleResource::default()),
+        },
         MintNonFungibleResourceEvent::event_name().to_string(),
         scrypto_encode(&MintNonFungibleResourceEvent { ids }).unwrap(),
     )?;

@@ -5,10 +5,6 @@ mod metadata {
     struct MetadataTest {}
 
     impl MetadataTest {
-        pub fn test_url_validation(x: String) {
-            Url::of(x).unwrap();
-        }
-
         pub fn new() -> Global<MetadataTest> {
             let (address_reservation, _) =
                 Runtime::allocate_component_address(MetadataTest::blueprint_id());

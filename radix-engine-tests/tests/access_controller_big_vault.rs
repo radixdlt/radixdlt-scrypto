@@ -16,6 +16,7 @@ pub fn should_be_able_to_withdraw_from_maximum_vault_size_access_controller() {
     // Arrange
     let (mut test_runner, access_controller) = arrange_access_controller_big_vault();
 
+    // Act
     let (key, _, account) = test_runner.new_account(false);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
@@ -35,6 +36,7 @@ pub fn should_be_able_to_withdraw_from_maximum_vault_size_access_controller() {
         vec![NonFungibleGlobalId::from_public_key(&key)],
     );
 
+    // Assert
     receipt.expect_commit_success();
 }
 
@@ -42,6 +44,8 @@ pub fn should_be_able_to_withdraw_from_maximum_vault_size_access_controller() {
 pub fn should_be_able_to_create_proof_from_maximum_vault_access_controller() {
     // Arrange
     let (mut test_runner, access_controller) = arrange_access_controller_big_vault();
+
+    // Act
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 500u32)
@@ -54,6 +58,7 @@ pub fn should_be_able_to_create_proof_from_maximum_vault_access_controller() {
         vec![],
     );
 
+    // Asert
     receipt.expect_commit_success();
 }
 

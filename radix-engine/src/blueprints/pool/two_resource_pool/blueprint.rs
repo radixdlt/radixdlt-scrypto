@@ -114,16 +114,18 @@ impl TwoResourcePoolBlueprint {
             };
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![FieldValue::immutable(&substate)],
+                btreemap! {
+                    0u8 => FieldValue::immutable(&substate),
+                },
             )?
         };
 
         api.globalize(
+            object_id,
             btreemap!(
-                ObjectModuleId::Main => object_id,
-                ObjectModuleId::RoleAssignment => role_assignment.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
+                ModuleId::RoleAssignment => role_assignment.0,
+                ModuleId::Metadata => metadata.0,
+                ModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;
@@ -538,7 +540,7 @@ impl TwoResourcePoolBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = TwoResourcePoolField::TwoResourcePool.into();
-        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
+        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
         let two_resource_pool_substate = api.field_read_typed::<TwoResourcePoolSubstate>(handle)?;
 
         Ok((two_resource_pool_substate, handle))

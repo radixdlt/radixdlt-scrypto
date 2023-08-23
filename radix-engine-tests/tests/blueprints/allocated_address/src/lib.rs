@@ -21,12 +21,6 @@ mod apa {
             (own, address)
         }
 
-        pub fn create_and_drop() {
-            let (own, _address) =
-                Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
-            ScryptoEnv.drop_object(own.0.as_node_id()).unwrap();
-        }
-
         pub fn create_and_pass_address() {
             let (own, address) =
                 Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
@@ -37,9 +31,7 @@ mod apa {
         pub fn create_and_call() {
             let (_own, address) =
                 Runtime::allocate_component_address(AllocatedAddressTest::blueprint_id());
-            ScryptoEnv
-                .call_method(address.as_node_id(), "hi", scrypto_args!())
-                .unwrap();
+            ScryptoVmV1Api::object_call(address.as_node_id(), "hi", scrypto_args!());
         }
 
         pub fn create_and_consume_within_frame() {

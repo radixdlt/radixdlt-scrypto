@@ -99,7 +99,6 @@ pub enum ExecutionCostingEntry<'a> {
     LockFee,
     QueryFeeReserve,
     QueryActor,
-    QueryAuthZone,
     QueryTransactionHash,
     GenerateRuid,
     EmitEvent {
@@ -168,7 +167,6 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::LockFee => ft.lock_fee_cost(),
             ExecutionCostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),
             ExecutionCostingEntry::QueryActor => ft.query_actor_cost(),
-            ExecutionCostingEntry::QueryAuthZone => ft.query_auth_zone_cost(),
             ExecutionCostingEntry::QueryTransactionHash => ft.query_transaction_hash_cost(),
             ExecutionCostingEntry::GenerateRuid => ft.generate_ruid_cost(),
             ExecutionCostingEntry::EmitEvent { size } => ft.emit_event_cost(*size),
@@ -202,7 +200,7 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::OpenSubstate { event, .. } => {
                 let node_id = match event {
                     OpenSubstateEvent::Start { node_id, .. } => **node_id,
-                    OpenSubstateEvent::StoreAccess(access) => access.node_id(),
+                    OpenSubstateEvent::IOAccess(access) => access.node_id(),
                     OpenSubstateEvent::End { node_id, .. } => **node_id,
                 };
 

@@ -485,24 +485,22 @@ mod non_fungible_test {
             );
 
             // creating non-fungible id with id type set to default (RUID)
-            let rtn = ScryptoEnv
-                .call_function(
-                    RESOURCE_PACKAGE,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                    scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                        owner_role: OwnerRole::None,
-                        id_type: NonFungibleIdType::RUID,
-                        track_total_supply: false,
-                        resource_roles: NonFungibleResourceRoles::default(),
-                        metadata: metadata! {},
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        entries,
-                        address_reservation: None,
-                    })
-                    .unwrap(),
-                )
-                .unwrap();
+            let rtn = ScryptoVmV1Api::blueprint_call(
+                RESOURCE_PACKAGE,
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                    owner_role: OwnerRole::None,
+                    id_type: NonFungibleIdType::RUID,
+                    track_total_supply: false,
+                    resource_roles: NonFungibleResourceRoles::default(),
+                    metadata: metadata! {},
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    entries,
+                    address_reservation: None,
+                })
+                .unwrap(),
+            );
             let (_resource_address, bucket): (ResourceAddress, Bucket) =
                 scrypto_decode(&rtn).unwrap();
 

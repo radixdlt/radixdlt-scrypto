@@ -20,13 +20,11 @@ mod bucket_lock_unlock_auth {
                 .mint_initial_supply(100)
                 .into();
 
-            ScryptoEnv
-                .call_method(
-                    bucket.0.as_node_id(),
-                    FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT,
-                    scrypto_args!(Decimal::from(1)),
-                )
-                .unwrap();
+            ScryptoVmV1Api::object_call(
+                bucket.0.as_node_id(),
+                FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT,
+                scrypto_args!(Decimal::from(1)),
+            );
         }
 
         pub fn call_unlock_fungible_amount_directly() {
@@ -36,13 +34,11 @@ mod bucket_lock_unlock_auth {
 
             let _proof = bucket.create_proof_of_all();
 
-            ScryptoEnv
-                .call_method(
-                    bucket.0.as_node_id(),
-                    FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT,
-                    scrypto_args!(Decimal::from(1)),
-                )
-                .unwrap();
+            ScryptoVmV1Api::object_call(
+                bucket.0.as_node_id(),
+                FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT,
+                scrypto_args!(Decimal::from(1)),
+            );
         }
 
         pub fn call_lock_non_fungibles_directly() {
@@ -56,13 +52,11 @@ mod bucket_lock_unlock_auth {
                 )])
                 .into();
 
-            ScryptoEnv
-                .call_method(
-                    bucket.0.as_node_id(),
-                    NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
-                    scrypto_args!([NonFungibleLocalId::integer(1)]),
-                )
-                .unwrap();
+            ScryptoVmV1Api::object_call(
+                bucket.0.as_node_id(),
+                NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+                scrypto_args!([NonFungibleLocalId::integer(1)]),
+            );
         }
 
         pub fn call_unlock_non_fungibles_directly() {
@@ -78,13 +72,11 @@ mod bucket_lock_unlock_auth {
 
             let _proof = bucket.create_proof_of_all();
 
-            ScryptoEnv
-                .call_method(
-                    bucket.0.as_node_id(),
-                    NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
-                    scrypto_args!([NonFungibleLocalId::integer(1)]),
-                )
-                .unwrap();
+            ScryptoVmV1Api::object_call(
+                bucket.0.as_node_id(),
+                NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
+                scrypto_args!([NonFungibleLocalId::integer(1)]),
+            );
         }
     }
 }

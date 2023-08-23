@@ -139,7 +139,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
                     flags
                 );
             }
-            OpenSubstateEvent::StoreAccess(..) => {}
+            OpenSubstateEvent::IOAccess(..) => {}
             OpenSubstateEvent::End {
                 handle,
                 node_id,
@@ -175,7 +175,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
                     device
                 );
             }
-            ReadSubstateEvent::StoreAccess(_) => {}
+            ReadSubstateEvent::IOAccess(_) => {}
         }
 
         Ok(())

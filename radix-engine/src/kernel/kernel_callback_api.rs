@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;
-use crate::track::interface::{NodeSubstates, StoreAccess};
+use crate::track::interface::{IOAccess, NodeSubstates};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 
@@ -19,20 +19,20 @@ pub trait CallFrameReferences {
 #[derive(Debug)]
 pub enum CreateNodeEvent<'a> {
     Start(&'a NodeId, &'a NodeSubstates),
-    StoreAccess(&'a StoreAccess),
+    IOAccess(&'a IOAccess),
     End(&'a NodeId),
 }
 
 #[derive(Debug)]
 pub enum DropNodeEvent<'a> {
     Start(&'a NodeId),
-    StoreAccess(&'a StoreAccess),
+    IOAccess(&'a IOAccess),
     End(&'a NodeId, &'a NodeSubstates),
 }
 
 #[derive(Debug)]
 pub enum MoveModuleEvent<'a> {
-    StoreAccess(&'a StoreAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
@@ -43,7 +43,7 @@ pub enum OpenSubstateEvent<'a> {
         substate_key: &'a SubstateKey,
         flags: &'a LockFlags,
     },
-    StoreAccess(&'a StoreAccess),
+    IOAccess(&'a IOAccess),
     End {
         handle: SubstateHandle,
         node_id: &'a NodeId,
@@ -58,18 +58,18 @@ pub enum ReadSubstateEvent<'a> {
         value: &'a IndexedScryptoValue,
         device: SubstateDevice,
     },
-    StoreAccess(&'a StoreAccess),
+    IOAccess(&'a IOAccess),
 }
 
 impl<'a> ReadSubstateEvent<'a> {
     pub fn is_about_heap(&self) -> bool {
         match self {
             ReadSubstateEvent::OnRead { device, .. } => matches!(device, SubstateDevice::Heap),
-            ReadSubstateEvent::StoreAccess(access) => match access {
-                StoreAccess::ReadFromDb(_, _) => false,
-                StoreAccess::ReadFromDbNotFound(_) => false,
-                StoreAccess::TrackSubstateUpdated { .. } => false,
-                StoreAccess::HeapSubstateUpdated { .. } => true,
+            ReadSubstateEvent::IOAccess(access) => match access {
+                IOAccess::ReadFromDb(_, _) => false,
+                IOAccess::ReadFromDbNotFound(_) => false,
+                IOAccess::TrackSubstateUpdated { .. } => false,
+                IOAccess::HeapSubstateUpdated { .. } => true,
             },
         }
     }
@@ -81,7 +81,7 @@ pub enum WriteSubstateEvent<'a> {
         handle: SubstateHandle,
         value: &'a IndexedScryptoValue,
     },
-    StoreAccess(&'a StoreAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
@@ -97,31 +97,31 @@ pub enum SetSubstateEvent<'a> {
         &'a SubstateKey,
         &'a IndexedScryptoValue,
     ),
-    StoreAccess(&'a StoreAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
 pub enum RemoveSubstateEvent<'a> {
     Start(&'a NodeId, &'a PartitionNumber, &'a SubstateKey),
-    StoreAccess(&'a StoreAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
 pub enum ScanKeysEvent<'a> {
     Start,
-    StoreAccess(&'a StoreAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
 pub enum DrainSubstatesEvent<'a> {
     Start(u32),
-    StoreAccess(&'a StoreAccess),
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
 pub enum ScanSortedSubstatesEvent<'a> {
     Start,
-    StoreAccess(&'a StoreAccess),
+    IOAccess(&'a IOAccess),
 }
 
 pub trait KernelCallbackObject: Sized {

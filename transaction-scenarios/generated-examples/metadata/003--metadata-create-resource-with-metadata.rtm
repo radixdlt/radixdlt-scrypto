@@ -43,7 +43,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "" => Tuple(
                 Enum<1u8>(
                     Enum<14u8>(
-                        "www.radixdlt.com"
+                        "https://www.radixdlt.com"
                     )
                 ),
                 false
@@ -52,7 +52,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 Enum<1u8>(
                     Enum<142u8>(
                         Array<String>(
-                            "www.radixdlt.com"
+                            "https://www.radixdlt.com"
                         )
                     )
                 ),

@@ -7,7 +7,7 @@ pub fn copy_buffer(buffer: Buffer) -> Vec<u8> {
     let len = buffer.len() as usize;
     let mut vec = Vec::<u8>::with_capacity(len);
     unsafe {
-        consume_buffer(buffer.id(), vec.as_mut_ptr());
+        buffer::buffer_consume(buffer.id(), vec.as_mut_ptr());
         vec.set_len(len);
     };
     vec
@@ -26,417 +26,246 @@ pub fn forget_vec(vec: Vec<u8>) -> Slice {
     Slice::new(ptr as u32, len as u32)
 }
 
-#[cfg(target_arch = "wasm32")]
-extern "C" {
-    //===============
-    // Buffer API
-    //===============
+/// Api make blueprint function calls
+pub mod blueprint {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-    /// Consumes a buffer by copying the contents into the specified destination.
-    pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
-
-    //===============
-    // Costing API
-    //===============
-
-    pub fn execution_cost_unit_limit() -> u32;
-
-    pub fn execution_cost_unit_price() -> Buffer;
-
-    pub fn finalization_cost_unit_limit() -> u32;
-
-    pub fn finalization_cost_unit_price() -> Buffer;
-
-    pub fn tip_percentage() -> u32;
-
-    pub fn fee_balance() -> Buffer;
-
-    //===============
-    // Object API
-    //===============
-
-    pub fn new_object(
-        blueprint_ident_ptr: *const u8,
-        blueprint_ident: usize,
-        object_states_ptr: *const u8,
-        object_states_len: usize,
-    ) -> Buffer;
-
-    pub fn allocate_global_address(blueprint_id_ptr: *const u8, blueprint_id_len: usize) -> Buffer;
-
-    pub fn globalize(
-        _modules_ptr: *const u8,
-        _modules_len: usize,
-        _address_ptr: *const u8,
-        _address_len: usize,
-    ) -> Buffer;
-
-    pub fn get_blueprint_id(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
-
-    pub fn get_outer_object(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
-
-    pub fn get_reservation_address(node_id_ptr: *const u8, node_id_len: usize) -> Buffer;
-
-    pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
-
-    pub fn kv_store_open_entry(
-        key_value_store_id_ptr: *const u8,
-        key_value_store_id_len: usize,
-        offset: *const u8,
-        offset_len: usize,
-        flags: u32,
-    ) -> u32;
-
-    pub fn kv_store_remove_entry(
-        _key_value_store_id_ptr: *const u8,
-        _key_value_store_id_len: usize,
-        _key: *const u8,
-        _key_len: usize,
-    ) -> Buffer;
-
-    pub fn kv_entry_get(_key_value_entry_lock_handle: u32) -> Buffer;
-
-    pub fn kv_entry_set(
-        _key_value_entry_lock_handle: u32,
-        _buffer_ptr: *const u8,
-        _buffer_len: usize,
-    );
-
-    pub fn kv_entry_release(_key_value_entry_lock_handle: u32);
-
-    /// Invokes a method on a component.
-    pub fn call_method(
-        receiver_ptr: *const u8,
-        receive_len: usize,
-        direct_access: u32,
-        module_id: u32,
-        ident_ptr: *const u8,
-        ident_len: usize,
-        args_ptr: *const u8,
-        args_len: usize,
-    ) -> Buffer;
-
-    /// Invokes a function on a blueprint.
-    pub fn call_function(
-        package_address_ptr: *const u8,
-        package_address_len: usize,
-        blueprint_ident_ptr: *const u8,
-        blueprint_ident_len: usize,
-        function_ident_ptr: *const u8,
-        function_ident_len: usize,
-        args_ptr: *const u8,
-        args_len: usize,
-    ) -> Buffer;
-
-    /// Destroys a node.
-    pub fn drop_object(node_id_ptr: *const u8, node_id_len: usize);
-
-    //===============
-    // Actor API
-    //===============
-
-    // Locks a field
-    pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
-
-    pub fn actor_call_module_method(
-        _module_id: u32,
-        _ident_ptr: *const u8,
-        _ident_len: usize,
-        _args_ptr: *const u8,
-        _args_len: usize,
-    ) -> Buffer;
-
-    //===============
-    // Field Lock API
-    //===============
-
-    // Reads a substate
-    pub fn field_lock_read(handle: u32) -> Buffer;
-
-    // Writes into a substate
-    pub fn field_lock_write(handle: u32, data_ptr: *const u8, data_len: usize);
-
-    // Releases a lock
-    pub fn field_lock_release(handle: u32);
-
-    //===============
-    // System API
-    //===============
-
-    pub fn get_node_id() -> Buffer;
-
-    pub fn get_global_address() -> Buffer;
-
-    pub fn get_blueprint() -> Buffer;
-
-    pub fn get_auth_zone() -> Buffer;
-
-    pub fn bech32_encode_address(address_ptr: *const u8, address_len: usize) -> Buffer;
-
-    pub fn emit_event(
-        event_name_ptr: *const u8,
-        event_name_len: usize,
-        event_data_ptr: *const u8,
-        event_data_len: usize,
-        event_flags: u32,
-    );
-
-    pub fn emit_log(
-        level_ptr: *const u8,
-        level_len: usize,
-        message_ptr: *const u8,
-        message_len: usize,
-    );
-
-    pub fn panic(message_ptr: *const u8, message_len: usize);
-
-    pub fn get_transaction_hash() -> Buffer;
-
-    pub fn generate_ruid() -> Buffer;
+    extern "C" {
+        /// Invokes a blueprint function
+        pub fn blueprint_call(
+            blueprint_id_ptr: *const u8,
+            blueprint_id_len: usize,
+            ident_ptr: *const u8,
+            ident_len: usize,
+            args_ptr: *const u8,
+            args_len: usize,
+        ) -> Buffer;
+    }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
-    unreachable!()
+/// API to allocate/reserve global address
+pub mod addr {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        /// Reserves a global address for a given blueprint
+        pub fn address_allocate(blueprint_id_ptr: *const u8, blueprint_id_len: usize) -> Buffer;
+
+        /// Get the address associated with an address reservation
+        pub fn address_get_reservation_address(
+            address_id_ptr: *const u8,
+            address_id_len: usize,
+        ) -> Buffer;
+    }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn execution_cost_unit_limit() -> u32 {
-    unreachable!()
+/// API to manipulate or get information about visible objects
+pub mod object {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        /// Creates a new object of a given blueprint defined in the same
+        /// package as the current actor
+        pub fn object_new(
+            blueprint_id_ptr: *const u8,
+            blueprint_id: usize,
+            obj_fields_ptr: *const u8,
+            obj_fields_len: usize,
+        ) -> Buffer;
+
+        /// Globalizes an object with given modules
+        pub fn object_globalize(
+            obj_id_ptr: *const u8,
+            obj_id_len: usize,
+            modules_ptr: *const u8,
+            modules_len: usize,
+            address_id_ptr: *const u8,
+            address_id_len: usize,
+        ) -> Buffer;
+
+        /// Get the Blueprint Identifier of a given object
+        pub fn object_get_blueprint_id(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
+
+        /// Get the address of the outer object of a given object
+        pub fn object_get_outer_object(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
+
+        /// Invokes a method on a visible object
+        pub fn object_call(
+            obj_id_ptr: *const u8,
+            obj_id_len: usize,
+            ident_ptr: *const u8,
+            ident_len: usize,
+            args_ptr: *const u8,
+            args_len: usize,
+        ) -> Buffer;
+
+        /// Invokes a direct method on a visible object
+        pub fn object_call_direct(
+            obj_id_ptr: *const u8,
+            obj_id_len: usize,
+            ident_ptr: *const u8,
+            ident_len: usize,
+            args_ptr: *const u8,
+            args_len: usize,
+        ) -> Buffer;
+
+        /// Invokes a module method on a visible object
+        pub fn object_call_module(
+            obj_id_ptr: *const u8,
+            obj_id_len: usize,
+            module_id: u32,
+            ident_ptr: *const u8,
+            ident_len: usize,
+            args_ptr: *const u8,
+            args_len: usize,
+        ) -> Buffer;
+    }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn execution_cost_unit_price() -> Buffer {
-    unreachable!()
+/// API to manipulate or get information about the current actor
+pub mod actor {
+    use radix_engine_interface::api::field_api::FieldHandle;
+    use radix_engine_interface::api::{ActorRefHandle, ActorStateHandle};
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        /// Get the blueprint id of the current actor
+        pub fn actor_get_blueprint_id() -> Buffer;
+
+        /// Get the object id of a reference of the current actor
+        pub fn actor_get_object_id(actor_ref_handle: ActorRefHandle) -> Buffer;
+
+        /// Open a field of the current actor
+        pub fn actor_open_field(
+            actor_state_handle: ActorStateHandle,
+            field_index: u32,
+            flags: u32,
+        ) -> FieldHandle;
+
+        /// Emit an event
+        pub fn actor_emit_event(
+            event_name_ptr: *const u8,
+            event_name_len: usize,
+            event_data_ptr: *const u8,
+            event_data_len: usize,
+            event_flags: u32,
+        );
+    }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn finalization_cost_unit_limit() -> u32 {
-    unreachable!()
+pub mod kv_store {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        /// Creates a new key value store
+        pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
+
+        /// Opens an entry for a given key in a key value store
+        pub fn kv_store_open_entry(
+            key_value_store_id_ptr: *const u8,
+            key_value_store_id_len: usize,
+            key_ptr: *const u8,
+            key_len: usize,
+            flags: u32,
+        ) -> u32;
+
+        /// Removes a value from a key value store
+        pub fn kv_store_remove_entry(
+            key_value_store_id_ptr: *const u8,
+            key_value_store_id_len: usize,
+            key: *const u8,
+            key_len: usize,
+        ) -> Buffer;
+    }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn finalization_cost_unit_price() -> Buffer {
-    unreachable!()
+/// API to manipulate or get information about an open Key Value Entry
+pub mod kv_entry {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        /// Reads the value in a Key Value entry
+        pub fn kv_entry_read(kv_entry_handle: u32) -> Buffer;
+
+        /// Writes a value to Key Value entry
+        pub fn kv_entry_write(kv_entry_handle: u32, buffer_ptr: *const u8, buffer_len: usize);
+
+        /// Removes the value in an underlying Key Value entry
+        pub fn kv_entry_remove(kv_entry_handle: u32) -> Buffer;
+
+        /// Close a Key Value entry
+        pub fn kv_entry_close(kv_entry_handle: u32);
+    }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn tip_percentage() -> u32 {
-    unreachable!()
+/// API to manipulate or get information about an open Field Entry
+pub mod field_entry {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        /// Reads the value in a field
+        pub fn field_entry_read(handle: u32) -> Buffer;
+
+        /// Writes a value to a field
+        pub fn field_entry_write(handle: u32, data_ptr: *const u8, data_len: usize);
+
+        /// Close a field entry
+        pub fn field_entry_close(handle: u32);
+    }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn fee_balance() -> Buffer {
-    unreachable!()
+pub mod costing {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        pub fn costing_get_execution_cost_unit_limit() -> u32;
+
+        pub fn costing_get_execution_cost_unit_price() -> Buffer;
+
+        pub fn costing_get_finalization_cost_unit_limit() -> u32;
+
+        pub fn costing_get_finalization_cost_unit_price() -> Buffer;
+
+        pub fn costing_get_usd_price() -> Buffer;
+
+        pub fn costing_get_tip_percentage() -> u32;
+
+        pub fn costing_get_fee_balance() -> Buffer;
+    }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn new_object(
-    _blueprint_ident_ptr: *const u8,
-    _blueprint_ident: usize,
-    _object_states_ptr: *const u8,
-    _object_states: usize,
-) -> Buffer {
-    unreachable!()
+/// Various environment-based API calls
+pub mod system {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+
+    extern "C" {
+        /// Logs a string message
+        pub fn sys_log(
+            level_ptr: *const u8,
+            level_len: usize,
+            message_ptr: *const u8,
+            message_len: usize,
+        );
+
+        /// Encode an address to bech32 encoding
+        pub fn sys_bech32_encode_address(address_ptr: *const u8, address_len: usize) -> Buffer;
+
+        /// Retrieves the current transaction hash
+        pub fn sys_get_transaction_hash() -> Buffer;
+
+        /// Generates a unique id
+        pub fn sys_generate_ruid() -> Buffer;
+
+        /// Panics and halts transaction execution
+        pub fn sys_panic(message_ptr: *const u8, message_len: usize);
+    }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn allocate_global_address(
-    _blueprint_id_ptr: *const u8,
-    _blueprint_id_len: usize,
-) -> Buffer {
-    unreachable!()
-}
+pub mod buffer {
+    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn globalize(
-    _modules_ptr: *const u8,
-    _modules_len: usize,
-    _address_ptr: *const u8,
-    _address_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_blueprint_id(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_outer_object(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_reservation_address(_node_id_ptr: *const u8, _node_id_len: usize) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_store_new(_schema_ptr: *const u8, _schema_len: usize) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_store_open_entry(
-    _key_value_store_id_ptr: *const u8,
-    _key_value_store_id_len: usize,
-    _offset: *const u8,
-    _offset_len: usize,
-    _flags: u32,
-) -> u32 {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_entry_get(_key_value_entry_lock_handle: u32) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_entry_set(
-    _key_value_entry_lock_handle: u32,
-    _buffer_ptr: *const u8,
-    _buffer_len: usize,
-) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_entry_release(_key_value_entry_lock_handle: u32) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_store_remove_entry(
-    _key_value_store_id_ptr: *const u8,
-    _key_value_store_id_len: usize,
-    _key: *const u8,
-    _key_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn call_method(
-    _receiver_ptr: *const u8,
-    _receive_len: usize,
-    _direct_access: u32,
-    _module_id: u32,
-    _ident_ptr: *const u8,
-    _ident_len: usize,
-    _args_ptr: *const u8,
-    _args_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn call_function(
-    _package_address_ptr: *const u8,
-    _package_address_len: usize,
-    _blueprint_ident_ptr: *const u8,
-    _blueprint_ident_len: usize,
-    _function_ident_ptr: *const u8,
-    _function_ident_len: usize,
-    _args_ptr: *const u8,
-    _args_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn drop_object(_node_id_ptr: *const u8, _node_id_len: usize) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn actor_open_field(_object_handle: u32, _field: u32, _flags: u32) -> u32 {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn field_lock_read(_handle: u32) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn field_lock_write(_handle: u32, _data_ptr: *const u8, _data_len: usize) {}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn field_lock_release(_handle: u32) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_global_address() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_node_id() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_blueprint() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn actor_call_module_method(
-    _module_id: u32,
-    _ident_ptr: *const u8,
-    _ident_len: usize,
-    _args_ptr: *const u8,
-    _args_len: usize,
-) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_auth_zone() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn bech32_encode_address(_address_ptr: *const u8, _address_len: usize) -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn emit_event(
-    _event_name_ptr: *const u8,
-    _event_name_len: usize,
-    _event_data_ptr: *const u8,
-    _event_data_len: usize,
-    _event_flags: u32,
-) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn emit_log(
-    _level_ptr: *const u8,
-    _level_len: usize,
-    _message_ptr: *const u8,
-    _message_len: usize,
-) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn panic(_message_ptr: *const u8, _message_len: usize) {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_transaction_hash() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn generate_ruid() -> Buffer {
-    unreachable!()
+    extern "C" {
+        /// Consumes a buffer by copying the contents into the specified destination.
+        pub fn buffer_consume(buffer_id: BufferId, destination_ptr: *mut u8);
+    }
 }

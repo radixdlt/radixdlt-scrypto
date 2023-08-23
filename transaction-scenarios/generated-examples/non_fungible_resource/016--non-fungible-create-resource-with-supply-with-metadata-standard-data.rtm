@@ -46,7 +46,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 ),
                 Tuple(
                     Enum<1u8>(
-                        "Url"
+                        "UncheckedUrl"
                     ),
                     Enum<0u8>()
                 )

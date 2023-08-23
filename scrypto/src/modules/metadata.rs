@@ -1,11 +1,10 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientBlueprintApi;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::rust::prelude::*;
@@ -27,7 +26,7 @@ pub trait HasMetadata {
 pub struct Metadata(pub ModuleHandle);
 
 impl Attachable for Metadata {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::Metadata;
+    const MODULE_ID: ModuleId = ModuleId::Metadata;
 
     fn new(handle: ModuleHandle) -> Self {
         Metadata(handle)
@@ -46,27 +45,23 @@ impl Default for Metadata {
 
 impl Metadata {
     pub fn new() -> Self {
-        let rtn = ScryptoEnv
-            .call_function(
-                METADATA_MODULE_PACKAGE,
-                METADATA_BLUEPRINT,
-                METADATA_CREATE_IDENT,
-                scrypto_encode(&MetadataCreateInput {}).unwrap(),
-            )
-            .unwrap();
+        let rtn = ScryptoVmV1Api::blueprint_call(
+            METADATA_MODULE_PACKAGE,
+            METADATA_BLUEPRINT,
+            METADATA_CREATE_IDENT,
+            scrypto_encode(&MetadataCreateInput {}).unwrap(),
+        );
         let metadata: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(metadata))
     }
 
     pub fn new_with_data(data: MetadataInit) -> Self {
-        let rtn = ScryptoEnv
-            .call_function(
-                METADATA_MODULE_PACKAGE,
-                METADATA_BLUEPRINT,
-                METADATA_CREATE_WITH_DATA_IDENT,
-                scrypto_encode(&MetadataCreateWithDataInput { data }).unwrap(),
-            )
-            .unwrap();
+        let rtn = ScryptoVmV1Api::blueprint_call(
+            METADATA_MODULE_PACKAGE,
+            METADATA_BLUEPRINT,
+            METADATA_CREATE_WITH_DATA_IDENT,
+            scrypto_encode(&MetadataCreateWithDataInput { data }).unwrap(),
+        );
         let metadata: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(metadata))
     }

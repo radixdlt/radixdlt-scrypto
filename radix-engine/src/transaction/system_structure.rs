@@ -1,3 +1,9 @@
+use crate::system::system_db_reader::{
+    ObjectPartitionDescriptor, SystemDatabaseReader, SystemPartitionDescriptor,
+};
+use crate::system::system_type_checker::BlueprintTypeTarget;
+use crate::system::type_info::TypeInfoSubstate;
+use crate::track::{ReadOnly, SystemUpdates, TrackedNode, TrackedSubstateValue};
 use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::*;
@@ -5,10 +11,6 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::prelude::*;
-
-use crate::system::system_db_reader::{SystemDatabaseReader, SystemPartitionDescription};
-use crate::system::type_info::TypeInfoSubstate;
-use crate::track::{ReadOnly, SystemUpdates, TrackedNode, TrackedSubstateValue};
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SubstateSystemStructure {
@@ -148,7 +150,12 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         partition_num: &PartitionNumber,
         key: &SubstateKey,
     ) {
-        let substate_structure = self.resolve_substate_structure(node_id, partition_num, key);
+        let partition_descriptors = self
+            .system_reader
+            .get_partition_descriptors(node_id, partition_num)
+            .unwrap();
+        let substate_structure =
+            self.resolve_substate_structure(node_id, partition_descriptors, key);
         self.substate_structures
             .entry(node_id.clone())
             .or_insert_with(|| index_map_new())
@@ -213,71 +220,45 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
     fn resolve_substate_structure(
         &self,
         node_id: &NodeId,
-        partition_num: &PartitionNumber,
+        partition_descriptors: Vec<SystemPartitionDescriptor>,
         key: &SubstateKey,
     ) -> SubstateSystemStructure {
-        match self.system_reader.partition_description(partition_num) {
-            SystemPartitionDescription::TypeInfo => {
+        match &partition_descriptors[0] {
+            SystemPartitionDescriptor::TypeInfo => {
                 SubstateSystemStructure::SystemField(SystemFieldStructure {
                     field_kind: SystemFieldKind::TypeInfo,
                 })
             }
-            SystemPartitionDescription::Schema => SubstateSystemStructure::SystemSchema,
-            SystemPartitionDescription::Module(module_id, partition_offset) => {
-                let (blueprint_id, generic_substitutions) = if let ObjectModuleId::Main = module_id
-                {
-                    let main_type_info =
-                        self.system_reader
-                            .get_type_info(node_id)
-                            .unwrap_or_else(|| {
-                                panic!("Could not read type info substate for node {node_id:?}")
-                            });
-                    match main_type_info {
-                        TypeInfoSubstate::Object(info) => (
-                            info.blueprint_info.blueprint_id,
-                            info.blueprint_info.generic_substitutions,
-                        ),
-                        TypeInfoSubstate::KeyValueStore(info) => {
-                            let key_type_id =
-                                match info.generic_substitutions.key_generic_substitutions {
-                                    GenericSubstitution::Local(type_id) => type_id,
-                                };
-                            let value_type_id =
-                                match info.generic_substitutions.value_generic_substitutions {
-                                    GenericSubstitution::Local(type_id) => type_id,
-                                };
-                            return SubstateSystemStructure::KeyValueStoreEntry(
-                                KeyValueStoreEntryStructure {
-                                    key_value_store_address: (*node_id).try_into().unwrap(),
-                                    key_schema_hash: key_type_id.0,
-                                    key_local_type_index: key_type_id.1,
-                                    value_schema_hash: value_type_id.0,
-                                    value_local_type_index: value_type_id.1,
-                                },
-                            );
-                        }
-                        TypeInfoSubstate::GlobalAddressPhantom(_)
-                        | TypeInfoSubstate::GlobalAddressReservation(_) => {
-                            panic!("Unexpected Type Info {:?}", main_type_info)
-                        }
-                    }
-                } else {
-                    (module_id.static_blueprint().unwrap(), vec![])
-                };
-
-                let blueprint_definition = self
+            SystemPartitionDescriptor::Schema => SubstateSystemStructure::SystemSchema,
+            SystemPartitionDescriptor::KeyValueStore => {
+                let info = self
                     .system_reader
-                    .get_blueprint_definition(&blueprint_id)
-                    .unwrap();
-                let resolver = ObjectSubstateTypeReferenceResolver::new(
-                    &node_id,
-                    &blueprint_id,
-                    &generic_substitutions,
-                );
+                    .get_kv_store_type_target(node_id)
+                    .expect(&format!("Could not get type info for node {node_id:?}"));
+
+                let key_type_id = match info.kv_store_type.key_generic_substitutions {
+                    GenericSubstitution::Local(type_id) => type_id,
+                };
+                let value_type_id = match info.kv_store_type.value_generic_substitutions {
+                    GenericSubstitution::Local(type_id) => type_id,
+                };
+                SubstateSystemStructure::KeyValueStoreEntry(KeyValueStoreEntryStructure {
+                    key_value_store_address: (*node_id).try_into().unwrap(),
+                    key_schema_hash: key_type_id.0,
+                    key_local_type_index: key_type_id.1,
+                    value_schema_hash: value_type_id.0,
+                    value_local_type_index: value_type_id.1,
+                })
+            }
+            SystemPartitionDescriptor::Object(module_id, object_partition_descriptor) => {
+                let bp_type_target = self
+                    .system_reader
+                    .get_blueprint_type_target(node_id, *module_id)
+                    .expect(&format!("Could not get type info for node {node_id:?}"));
+
                 self.resolve_object_substate_structure(
-                    &resolver,
-                    &blueprint_definition.interface.state,
-                    partition_offset,
+                    &bp_type_target,
+                    object_partition_descriptor,
                     key,
                 )
             }
@@ -286,115 +267,90 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
 
     fn resolve_object_substate_structure(
         &self,
-        resolver: &ObjectSubstateTypeReferenceResolver,
-        state_schema: &IndexedStateSchema,
-        partition_offset: PartitionOffset,
+        bp_type_target: &BlueprintTypeTarget,
+        object_partition_desciptor: &ObjectPartitionDescriptor,
         key: &SubstateKey,
     ) -> SubstateSystemStructure {
-        if partition_offset.0 >= state_schema.num_logical_partitions {
-            panic!("Partition offset larger than partition count");
-        }
+        match object_partition_desciptor {
+            ObjectPartitionDescriptor::Field => {
+                let field_index = match key {
+                    SubstateKey::Field(field_index) => field_index,
+                    _ => panic!("Invalid field key"),
+                };
 
-        if let Some((PartitionDescription::Logical(offset), fields)) = &state_schema.fields {
-            if offset.eq(&partition_offset) {
-                if let SubstateKey::Field(field_index) = key {
-                    let field = fields
-                        .get(*field_index as usize)
-                        .expect("Field index was not valid");
-                    return SubstateSystemStructure::ObjectField(FieldStructure {
-                        value_schema: resolver.resolve(field.field),
-                    });
-                } else {
-                    panic!("Expected a field substate key");
-                }
+                let payload_identifier = BlueprintPayloadIdentifier::Field(*field_index);
+                let type_reference = self
+                    .system_reader
+                    .get_blueprint_payload_schema_pointer(&bp_type_target, &payload_identifier)
+                    .expect("Could not resolve to type reference");
+                return SubstateSystemStructure::ObjectField(FieldStructure {
+                    value_schema: type_reference,
+                });
             }
-        }
 
-        for (partition_description, collection_schema) in &state_schema.collections {
-            match partition_description {
-                PartitionDescription::Logical(offset) => {
-                    if offset.eq(&partition_offset) {
-                        match collection_schema {
-                            BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
-                                return SubstateSystemStructure::ObjectKeyValuePartitionEntry(
-                                    KeyValuePartitionEntryStructure {
-                                        key_schema: resolver.resolve(kv_schema.key),
-                                        value_schema: resolver.resolve(kv_schema.value),
-                                    },
-                                )
-                            }
-                            BlueprintCollectionSchema::Index(kv_schema) => {
-                                return SubstateSystemStructure::ObjectIndexPartitionEntry(
-                                    IndexPartitionEntryStructure {
-                                        key_schema: resolver.resolve(kv_schema.key),
-                                        value_schema: resolver.resolve(kv_schema.value),
-                                    },
-                                )
-                            }
-                            BlueprintCollectionSchema::SortedIndex(kv_schema) => {
-                                return SubstateSystemStructure::ObjectSortedIndexPartitionEntry(
-                                    SortedIndexPartitionEntryStructure {
-                                        key_schema: resolver.resolve(kv_schema.key),
-                                        value_schema: resolver.resolve(kv_schema.value),
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
-                PartitionDescription::Physical(..) => {
-                    // Anything physically mapped should have been resolved earlier in the process
-                }
+            ObjectPartitionDescriptor::KeyValueCollection(collection_index) => {
+                let key_identifier =
+                    BlueprintPayloadIdentifier::KeyValueEntry(*collection_index, KeyOrValue::Key);
+                let value_identifier =
+                    BlueprintPayloadIdentifier::KeyValueEntry(*collection_index, KeyOrValue::Value);
+                let key_type_reference = self
+                    .system_reader
+                    .get_blueprint_payload_schema_pointer(&bp_type_target, &key_identifier)
+                    .expect("Could not resolve to type reference");
+                let value_type_reference = self
+                    .system_reader
+                    .get_blueprint_payload_schema_pointer(&bp_type_target, &value_identifier)
+                    .expect("Could not resolve to type reference");
+                SubstateSystemStructure::ObjectKeyValuePartitionEntry(
+                    KeyValuePartitionEntryStructure {
+                        key_schema: key_type_reference,
+                        value_schema: value_type_reference,
+                    },
+                )
             }
-        }
 
-        panic!("Partition offset did not match any partitions on the blueprint definition")
-    }
-}
-
-pub struct ObjectSubstateTypeReferenceResolver<'a> {
-    node_id: &'a NodeId,
-    blueprint_id: &'a BlueprintId,
-    generic_substitutions: &'a Vec<GenericSubstitution>,
-}
-
-impl<'a> ObjectSubstateTypeReferenceResolver<'a> {
-    pub fn new(
-        node_id: &'a NodeId,
-        blueprint_id: &'a BlueprintId,
-        generic_substitutions: &'a Vec<GenericSubstitution>,
-    ) -> Self {
-        Self {
-            node_id,
-            blueprint_id,
-            generic_substitutions,
-        }
-    }
-
-    pub fn resolve(&self, type_pointer: BlueprintPayloadDef) -> ObjectSubstateTypeReference {
-        match type_pointer {
-            BlueprintPayloadDef::Static(type_identifier) => {
-                ObjectSubstateTypeReference::Package(PackageTypeReference {
-                    package_address: self.blueprint_id.package_address,
-                    schema_hash: type_identifier.0,
-                    local_type_index: type_identifier.1,
+            ObjectPartitionDescriptor::IndexCollection(collection_index) => {
+                let key_identifier =
+                    BlueprintPayloadIdentifier::IndexEntry(*collection_index, KeyOrValue::Key);
+                let value_identifier =
+                    BlueprintPayloadIdentifier::IndexEntry(*collection_index, KeyOrValue::Value);
+                let key_type_reference = self
+                    .system_reader
+                    .get_blueprint_payload_schema_pointer(&bp_type_target, &key_identifier)
+                    .expect("Could not resolve to type reference");
+                let value_type_reference = self
+                    .system_reader
+                    .get_blueprint_payload_schema_pointer(&bp_type_target, &value_identifier)
+                    .expect("Could not resolve to type reference");
+                SubstateSystemStructure::ObjectIndexPartitionEntry(IndexPartitionEntryStructure {
+                    key_schema: key_type_reference,
+                    value_schema: value_type_reference,
                 })
             }
-            BlueprintPayloadDef::Generic(instance_type_index) => {
-                let type_substition_ref = *self
-                    .generic_substitutions
-                    .get(instance_type_index as usize)
-                    .expect("Instance type index not valid");
-                match type_substition_ref {
-                    GenericSubstitution::Local(type_id) => {
-                        ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {
-                            entity_address: (*self.node_id).try_into().unwrap(),
-                            instance_type_index,
-                            schema_hash: type_id.0,
-                            local_type_index: type_id.1,
-                        })
-                    }
-                }
+
+            ObjectPartitionDescriptor::SortedIndexCollection(collection_index) => {
+                let key_identifier = BlueprintPayloadIdentifier::SortedIndexEntry(
+                    *collection_index,
+                    KeyOrValue::Key,
+                );
+                let value_identifier = BlueprintPayloadIdentifier::SortedIndexEntry(
+                    *collection_index,
+                    KeyOrValue::Value,
+                );
+                let key_type_reference = self
+                    .system_reader
+                    .get_blueprint_payload_schema_pointer(&bp_type_target, &key_identifier)
+                    .expect("Could not resolve to type reference");
+                let value_type_reference = self
+                    .system_reader
+                    .get_blueprint_payload_schema_pointer(&bp_type_target, &value_identifier)
+                    .expect("Could not resolve to type reference");
+                SubstateSystemStructure::ObjectSortedIndexPartitionEntry(
+                    SortedIndexPartitionEntryStructure {
+                        key_schema: key_type_reference,
+                        value_schema: value_type_reference,
+                    },
+                )
             }
         }
     }

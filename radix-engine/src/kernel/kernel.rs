@@ -10,7 +10,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorRunInputEffici
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::{
-    CallFrameMessage, CallFrameStoreAccessHandler, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
+    CallFrameIOAccessHandler, CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
     TransientSubstates,
 };
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
@@ -26,7 +26,7 @@ use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::interface::{CallbackError, CommitableSubstateStore, NodeSubstates, StoreAccess};
+use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -126,13 +126,14 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
                 )
                 .ok_or_else(|| KernelError::InvalidReference(*node_id))?;
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-            match type_substate {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_info: BlueprintInfo { blueprint_id, .. },
-                    global,
-                    ..
-                }) => {
-                    if global {
+            match &type_substate {
+                TypeInfoSubstate::Object(
+                    info @ ObjectInfo {
+                        blueprint_info: BlueprintInfo { blueprint_id, .. },
+                        ..
+                    },
+                ) => {
+                    if info.is_global() {
                         kernel
                             .current_frame
                             .add_global_reference(GlobalAddress::new_or_panic(
@@ -222,24 +223,24 @@ pub struct Kernel<
 struct KernelHandler<
     'a,
     M: KernelCallbackObject,
-    F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+    F: FnMut(&mut KernelReadOnly<M>, IOAccess) -> Result<(), RuntimeError>,
 > {
     callback: &'a mut M,
     prev_frame: Option<&'a CallFrame<M::CallFrameData, M::LockData>>,
-    on_store_access: F,
+    on_io_access: F,
 }
 
 impl<
         M: KernelCallbackObject,
-        F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
-    > CallFrameStoreAccessHandler<M::CallFrameData, M::LockData, RuntimeError>
+        F: FnMut(&mut KernelReadOnly<M>, IOAccess) -> Result<(), RuntimeError>,
+    > CallFrameIOAccessHandler<M::CallFrameData, M::LockData, RuntimeError>
     for KernelHandler<'_, M, F>
 {
-    fn on_store_access(
+    fn on_io_access(
         &mut self,
         current_frame: &CallFrame<M::CallFrameData, M::LockData>,
         heap: &Heap,
-        store_access: StoreAccess,
+        io_access: IOAccess,
     ) -> Result<(), RuntimeError> {
         let mut read_only = KernelReadOnly {
             current_frame,
@@ -248,13 +249,13 @@ impl<
             callback: self.callback,
         };
 
-        (self.on_store_access)(&mut read_only, store_access)
+        (self.on_io_access)(&mut read_only, io_access)
     }
 }
 
 impl<
         M: KernelCallbackObject,
-        F: FnMut(&mut KernelReadOnly<M>, StoreAccess) -> Result<(), RuntimeError>,
+        F: FnMut(&mut KernelReadOnly<M>, IOAccess) -> Result<(), RuntimeError>,
     > CallFrameSubstateReadHandler<M::CallFrameData, M::LockData> for KernelHandler<'_, M, F>
 {
     type Error = RuntimeError;
@@ -354,8 +355,8 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
-                M::on_create_node(api, CreateNodeEvent::StoreAccess(&store_access))
+            on_io_access: |api, io_access| {
+                M::on_create_node(api, CreateNodeEvent::IOAccess(&io_access))
             },
         };
 
@@ -384,8 +385,8 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
-                M::on_drop_node(api, DropNodeEvent::StoreAccess(&store_access))
+            on_io_access: |api, io_access| {
+                M::on_drop_node(api, DropNodeEvent::IOAccess(&io_access))
             },
         };
         let node_substates = self
@@ -415,8 +416,8 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
-                M::on_move_module(api, MoveModuleEvent::StoreAccess(&store_access))
+            on_io_access: |api, io_access| {
+                M::on_move_module(api, MoveModuleEvent::IOAccess(&io_access))
             },
         };
 
@@ -695,8 +696,8 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
-                M::on_open_substate(api, OpenSubstateEvent::StoreAccess(&store_access))
+            on_io_access: |api, io_access| {
+                M::on_open_substate(api, OpenSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -722,8 +723,8 @@ where
                     let mut handler = KernelHandler {
                         callback: self.callback,
                         prev_frame: self.prev_frame_stack.last(),
-                        on_store_access: |api, store_access| {
-                            M::on_open_substate(api, OpenSubstateEvent::StoreAccess(&store_access))
+                        on_io_access: |api, io_access| {
+                            M::on_open_substate(api, OpenSubstateEvent::IOAccess(&io_access))
                         },
                     };
 
@@ -799,8 +800,8 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
-                M::on_read_substate(api, ReadSubstateEvent::StoreAccess(&store_access))
+            on_io_access: |api, io_access| {
+                M::on_read_substate(api, ReadSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -835,8 +836,8 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
-                M::on_write_substate(api, WriteSubstateEvent::StoreAccess(&store_access))
+            on_io_access: |api, io_access| {
+                M::on_write_substate(api, WriteSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -886,9 +887,9 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
+            on_io_access: |api, io_access| {
                 api.callback
-                    .on_set_substate(SetSubstateEvent::StoreAccess(&store_access))
+                    .on_set_substate(SetSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -928,9 +929,9 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
+            on_io_access: |api, io_access| {
                 api.callback
-                    .on_remove_substate(RemoveSubstateEvent::StoreAccess(&store_access))
+                    .on_remove_substate(RemoveSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -965,9 +966,9 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
+            on_io_access: |api, io_access| {
                 api.callback
-                    .on_scan_keys(ScanKeysEvent::StoreAccess(&store_access))
+                    .on_scan_keys(ScanKeysEvent::IOAccess(&io_access))
             },
         };
 
@@ -1003,9 +1004,9 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
+            on_io_access: |api, io_access| {
                 api.callback
-                    .on_drain_substates(DrainSubstatesEvent::StoreAccess(&store_access))
+                    .on_drain_substates(DrainSubstatesEvent::IOAccess(&io_access))
             },
         };
 
@@ -1041,9 +1042,9 @@ where
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
-            on_store_access: |api, store_access| {
+            on_io_access: |api, io_access| {
                 api.callback
-                    .on_scan_sorted_substates(ScanSortedSubstatesEvent::StoreAccess(&store_access))
+                    .on_scan_sorted_substates(ScanSortedSubstatesEvent::IOAccess(&io_access))
             },
         };
 

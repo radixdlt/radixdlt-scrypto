@@ -412,7 +412,7 @@ fn create_metadata() -> BTreeMap<String, MetadataValue> {
     add(
         &mut metadata,
         "",
-        &[UncheckedOrigin::of("www.radixdlt.com".to_owned())],
+        &[UncheckedOrigin::of("https://www.radixdlt.com".to_owned())],
     );
     add(
         &mut metadata,

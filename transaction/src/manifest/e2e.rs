@@ -1274,6 +1274,40 @@ CALL_METHOD
     }
 
     #[test]
+    fn test_simple_transfer_new_format() {
+        // Note - this test is intended for demonstration for the ledger
+        // app - but might be better moved to being a transaction scenario
+        let canonical_manifest = apply_address_replacements(
+            r##"
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee_and_withdraw"
+    Decimal("25")
+    Address("${xrd_resource_address}")
+    Decimal("123")
+;
+TAKE_FROM_WORKTOP
+    Address("${xrd_resource_address}")
+    Decimal("123")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${other_account_address}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+;
+        "##,
+        );
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_new_format",
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
+    #[test]
     fn test_simple_transfer_with_multiple_locked_fees() {
         // Note - this test is intended for demonstration for the ledger
         // app - but might be better moved to being a transaction scenario
@@ -1358,6 +1392,43 @@ CALL_METHOD
     }
 
     #[test]
+    fn test_simple_transfer_nft_new_format() {
+        // Note - this test is intended for demonstration for the ledger
+        // app - but might be better moved to being a transaction scenario
+        let canonical_manifest = apply_address_replacements(
+            r##"
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee_and_withdraw_non_fungibles"
+    Decimal("500")
+    Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#"),
+        NonFungibleLocalId("#2#")
+    )
+;
+TAKE_FROM_WORKTOP
+    Address("${non_fungible_resource_address}")
+    Decimal("2")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${other_account_address}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+;
+"##,
+        );
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_nft_new_format",
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
+    #[test]
     fn test_simple_transfer_nft_by_id() {
         // Note - this test is intended for demonstration for the ledger
         // app - but might be better moved to being a transaction scenario
@@ -1396,6 +1467,48 @@ CALL_METHOD
         );
         compile_and_decompile_with_inversion_test(
             "simple_transfer_nft_by_id",
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
+    #[test]
+    fn test_simple_transfer_nft_by_id_new_format() {
+        // Note - this test is intended for demonstration for the ledger
+        // app - but might be better moved to being a transaction scenario
+        let canonical_manifest = apply_address_replacements(
+            r##"
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee_and_withdraw_non_fungibles"
+    Decimal("500")
+    Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#"),
+        NonFungibleLocalId("#2#"),
+        NonFungibleLocalId("#3#")
+    )
+;
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#"),
+        NonFungibleLocalId("#2#"),
+        NonFungibleLocalId("#3#")
+    )
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${other_account_address}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+;
+"##,
+        );
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_nft_by_id_new_format",
             &canonical_manifest,
             &NetworkDefinition::simulator(),
             vec![],

@@ -57,9 +57,8 @@ use radix_engine::blueprints::consensus_manager::{
     ConsensusManagerSubstate, ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
 };
 use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
-use radix_engine::system::system_db_reader::SystemDatabaseReader;
-use radix_engine::system::type_info::TypeInfoSubstate;
+use radix_engine::system::system::FieldSubstate;
+use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -72,7 +71,6 @@ use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintPayloadDef, BlueprintVersionKey,
-    PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
@@ -353,7 +351,7 @@ pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectI
     let system_reader = SystemDatabaseReader::new(&substate_db);
     system_reader
         .get_object_info(component_address)
-        .ok_or_else(|| Error::ComponentNotFound(component_address))
+        .map_err(|_| Error::ComponentNotFound(component_address))
 }
 
 pub fn export_schema(node_id: &NodeId, schema_hash: SchemaHash) -> Result<ScryptoSchema, Error> {
@@ -363,15 +361,10 @@ pub fn export_schema(node_id: &NodeId, schema_hash: SchemaHash) -> Result<Scrypt
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
-    let schema = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
-            node_id,
-            SCHEMAS_PARTITION,
-            &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
-        )
-        .ok_or(Error::SchemaNotFound(*node_id, schema_hash))?
-        .value
-        .unwrap();
+    let system_reader = SystemDatabaseReader::new(&substate_db);
+    let schema = system_reader
+        .get_schema(node_id, &schema_hash)
+        .map_err(|_| Error::SchemaNotFound(*node_id, schema_hash))?;
 
     Ok(schema)
 }
@@ -398,87 +391,60 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
-    let type_info = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-            component_address.as_node_id(),
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        )
-        .ok_or(Error::ComponentNotFound(component_address))?;
-
-    match type_info {
-        TypeInfoSubstate::Object(ObjectInfo {
-            blueprint_info: BlueprintInfo { blueprint_id, .. },
-            ..
-        }) => Ok(blueprint_id.clone()),
-        _ => panic!("Unexpected"),
-    }
+    let system_reader = SystemDatabaseReader::new(&substate_db);
+    let object_info = system_reader
+        .get_object_info(component_address)
+        .expect("Unexpected");
+    Ok(object_info.blueprint_info.blueprint_id)
 }
 
 pub fn get_event_schema<S: SubstateDatabase>(
     substate_db: &S,
     event_type_identifier: &EventTypeIdentifier,
 ) -> Option<(LocalTypeIndex, ScryptoSchema)> {
+    let system_reader = SystemDatabaseReader::new(substate_db);
+
     let (blueprint_id, event_name) = match event_type_identifier {
-        EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => match node_module
-        {
-            ObjectModuleId::Main => {
-                let type_info = substate_db
-                    .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                        node_id,
-                        TYPE_INFO_FIELD_PARTITION,
-                        &TypeInfoField::TypeInfo.into(),
-                    )
-                    .unwrap();
-                match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint_info: BlueprintInfo { blueprint_id, .. },
-                        ..
-                    }) => (blueprint_id.clone(), event_name),
-                    _ => return None,
-                }
-            }
-            _ => (node_module.static_blueprint().unwrap(), event_name),
-        },
+        EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
+            let blueprint_id = system_reader.get_blueprint_id(node_id, *node_module).ok()?;
+            (blueprint_id, event_name)
+        }
         EventTypeIdentifier(Emitter::Function(blueprint_id), event_name) => {
             (blueprint_id.clone(), event_name)
         }
     };
 
-    let bp_definition = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate>(
+    let version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str());
+    let bp_definition: VersionedPackageBlueprintVersionDefinition = system_reader
+        .read_object_collection_entry(
             blueprint_id.package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                .unwrap(),
-            &SubstateKey::Map(
-                scrypto_encode(&BlueprintVersionKey::new_default(
-                    blueprint_id.blueprint_name.as_str(),
-                ))
-                .unwrap(),
+            ObjectModuleId::Main,
+            ObjectCollectionKey::KeyValue(
+                PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+                &version_key,
             ),
         )
-        .unwrap();
-    let bp_interface = bp_definition.value.unwrap().into_latest().interface;
+        .unwrap()?;
+
+    let bp_interface = match bp_definition {
+        VersionedPackageBlueprintVersionDefinition::V1(blueprint) => blueprint.interface,
+    };
 
     let event_def = bp_interface.events.get(event_name)?;
     match event_def {
         BlueprintPayloadDef::Static(type_id) => {
-            let schema = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, PackageSchemaEntrySubstate>(
+            let schema: ScryptoSchema = system_reader
+                .read_object_collection_entry(
                     blueprint_id.package_address.as_node_id(),
-                    SCHEMAS_PARTITION,
-                    &SubstateKey::Map(scrypto_encode(&type_id.0).unwrap()),
+                    ObjectModuleId::Main,
+                    ObjectCollectionKey::KeyValue(
+                        PackageCollection::SchemaKeyValue.collection_index(),
+                        &type_id.0,
+                    ),
                 )
-                .ok_or(Error::SchemaNotFound(
-                    blueprint_id.package_address.into_node_id(),
-                    type_id.0,
-                ))
-                .unwrap()
-                .value
-                .unwrap();
+                .unwrap()?;
 
-            Some((type_id.1, schema.content))
+            Some((type_id.1, schema))
         }
         BlueprintPayloadDef::Generic(..) => {
             panic!("Not expecting any events to use generics")

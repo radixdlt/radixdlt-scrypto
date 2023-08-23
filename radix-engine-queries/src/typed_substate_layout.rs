@@ -388,7 +388,7 @@ fn to_typed_object_substate_key_internal(
             } else {
                 if let Some(key) = substate_key.for_map() {
                     TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(
-                        IntentHash::from_hash(Hash(key.clone().try_into().map_err(|_| ())?)),
+                        IntentHash::from_hash(scrypto_decode(key).map_err(|_| ())?),
                     )
                 } else {
                     return Err(());
