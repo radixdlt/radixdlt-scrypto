@@ -9,13 +9,12 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 
-use radix_engine_interface::prelude::scrypto_decode;
+use radix_engine::prelude::*;
 use radix_engine_interface::types::{
     BlueprintId, IndexedScryptoValue, ObjectType, ResourceAddress,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::interface::SubstateDatabase;
-use sbor::rust::prelude::*;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> {
     system_db_reader: SystemDatabaseReader<'s, S>,

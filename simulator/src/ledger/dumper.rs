@@ -2,7 +2,6 @@
 use crate::utils::*;
 use colored::*;
 use radix_engine::blueprints::resource::*;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::types::*;
 use radix_engine_interface::api::ObjectModuleId;
@@ -207,13 +206,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .get_features()
             .contains(NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name())
         {
-            let total_supply: VersionedNonFungibleResourceManagerTotalSupply = reader
-                .read_typed_object_field(
+            let total_supply = reader
+                .read_typed_object_field::<NonFungibleResourceManagerTotalSupplyFieldPayload>(
                     resource_address.as_node_id(),
                     ObjectModuleId::Main,
                     NonFungibleResourceManagerField::TotalSupply.into(),
                 )
-                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?;
+                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
+                .into_latest();
 
             writeln!(
                 output,
@@ -223,13 +223,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             );
         }
     } else {
-        let divisibility: VersionedFungibleResourceManagerDivisibility = reader
-            .read_typed_object_field(
+        let divisibility = reader
+            .read_typed_object_field::<NonFungibleVaultLockedResourceFieldPayload>(
                 resource_address.as_node_id(),
                 ObjectModuleId::Main,
                 FungibleResourceManagerField::Divisibility.into(),
             )
-            .map_err(|_| EntityDumpError::InvalidStore("Missing Divisibility".to_string()))?;
+            .map_err(|_| EntityDumpError::InvalidStore("Missing Divisibility".to_string()))?
+            .into_latest();
 
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
         writeln!(
@@ -243,13 +244,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .get_features()
             .contains(FungibleResourceManagerFeature::TrackTotalSupply.feature_name())
         {
-            let total_supply: VersionedFungibleResourceManagerTotalSupply = reader
-                .read_typed_object_field(
+            let total_supply = reader
+                .read_typed_object_field::<FungibleResourceManagerTotalSupplyFieldPayload>(
                     resource_address.as_node_id(),
                     ObjectModuleId::Main,
                     FungibleResourceManagerField::TotalSupply.into(),
                 )
-                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?;
+                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
+                .into_latest();
 
             writeln!(
                 output,

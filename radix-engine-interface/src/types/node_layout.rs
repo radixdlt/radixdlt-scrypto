@@ -1,3 +1,4 @@
+use crate::api::*;
 use crate::types::*;
 use crate::*;
 use sbor::rust::prelude::*;
@@ -13,7 +14,7 @@ use sbor::rust::prelude::*;
 pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum TypeInfoField {
     TypeInfo,
 }
@@ -30,7 +31,7 @@ pub const ROYALTY_CONFIG_PARTITION: PartitionNumber = PartitionNumber(4u8);
 pub const ROYALTY_CONFIG_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum RoyaltyField {
     RoyaltyAccumulator,
 }
@@ -43,7 +44,7 @@ pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION_OFFSET: PartitionOffset = Partition
 pub const ROLE_ASSIGNMENT_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum RoleAssignmentField {
     OwnerRole,
 }
@@ -140,13 +141,13 @@ macro_rules! blueprint_partition_offset {
 //===========
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum ComponentField {
     State0,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum FungibleResourceManagerField {
     Divisibility,
     TotalSupply,
@@ -179,7 +180,7 @@ blueprint_partition_offset!(
 );
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum NonFungibleResourceManagerField {
     IdType,
     MutableFields,
@@ -200,41 +201,41 @@ blueprint_partition_offset!(
 );
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum FungibleBucketField {
     Liquid,
     Locked,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum NonFungibleBucketField {
     Liquid,
     Locked,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum FungibleProofField {
     Moveable,
     ProofRefs,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum NonFungibleProofField {
     Moveable,
     ProofRefs,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum WorktopField {
     Worktop,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum AuthZoneField {
     AuthZone,
 }
@@ -249,7 +250,7 @@ blueprint_partition_offset!(
 );
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
 pub enum ConsensusManagerField {
     Config,
     ConsensusManager,
@@ -261,14 +262,14 @@ pub enum ConsensusManagerField {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
 pub enum ValidatorField {
     Validator,
     ProtocolUpdateReadinessSignal,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum AccessControllerField {
     AccessController,
 }
@@ -283,7 +284,7 @@ blueprint_partition_offset!(
 );
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum OneResourcePoolField {
     OneResourcePool,
 }
@@ -295,7 +296,7 @@ blueprint_partition_offset!(
 );
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum TwoResourcePoolField {
     TwoResourcePool,
 }
@@ -307,7 +308,7 @@ blueprint_partition_offset!(
 );
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum MultiResourcePoolField {
     MultiResourcePool,
 }
@@ -319,7 +320,7 @@ blueprint_partition_offset!(
 );
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum TransactionTrackerField {
     TransactionTracker,
 }
@@ -346,6 +347,12 @@ macro_rules! substate_key {
                     SubstateKey::Field(x) => Self::from_repr(*x).ok_or(()),
                     _ => Err(()),
                 }
+            }
+        }
+
+        impl FieldDescriptor for $t {
+            fn field_index(&self) -> FieldIndex {
+                *self as u8
             }
         }
     };

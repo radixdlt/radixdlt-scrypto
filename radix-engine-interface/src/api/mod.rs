@@ -37,7 +37,27 @@ pub const ACTOR_REF_GLOBAL: ActorRefHandle = 2u32;
 pub const ACTOR_REF_AUTH_ZONE: ActorRefHandle = 8u32;
 
 pub type FieldIndex = u8;
+pub trait FieldDescriptor {
+    fn field_index(&self) -> FieldIndex;
+}
+
+impl FieldDescriptor for FieldIndex {
+    fn field_index(&self) -> FieldIndex {
+        *self
+    }
+}
+
 pub type CollectionIndex = u8;
+
+pub trait CollectionDescriptor {
+    fn collection_index(&self) -> CollectionIndex;
+}
+
+impl CollectionDescriptor for CollectionIndex {
+    fn collection_index(&self) -> CollectionIndex {
+        *self
+    }
+}
 
 /// Interface of the system, for blueprints and Node modules.
 ///
