@@ -836,7 +836,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
     pub fn new_account_advanced(&mut self, owner_role: OwnerRole) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .new_account_advanced(owner_role)
+            .new_account_advanced(owner_role, None)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -948,7 +948,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     .call_function_with_name_lookup(
                         ACCESS_CONTROLLER_PACKAGE,
                         ACCESS_CONTROLLER_BLUEPRINT,
-                        ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+                        ACCESS_CONTROLLER_CREATE_IDENT,
                         |lookup| {
                             (
                                 lookup.bucket("owner_badge"),
@@ -958,6 +958,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                                     confirmation_role: access_rule.clone(),
                                 },
                                 Some(1000u32),
+                                None::<()>,
                             )
                         },
                     )

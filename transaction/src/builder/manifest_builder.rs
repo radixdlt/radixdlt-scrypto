@@ -1482,12 +1482,27 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account_advanced(self, owner_role: OwnerRole) -> Self {
+    pub fn new_account_advanced(
+        self,
+        owner_role: OwnerRole,
+        address_reservation: Option<String>,
+    ) -> Self {
+        let address_reservation = if let Some(reservation_name) = address_reservation {
+            let reservation = self.name_lookup().address_reservation(reservation_name);
+            self.registrar.consume_address_reservation(reservation);
+            Some(reservation)
+        } else {
+            None
+        };
+
         self.add_instruction(InstructionV1::CallFunction {
             package_address: ACCOUNT_PACKAGE.into(),
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccountCreateAdvancedInput { owner_role }),
+            args: to_manifest_value_and_unwrap!(&AccountCreateAdvancedManifestInput {
+                owner_role,
+                address_reservation
+            }),
         })
     }
 
@@ -1816,7 +1831,7 @@ impl ManifestBuilder {
         self.call_function(
             ACCESS_CONTROLLER_PACKAGE,
             ACCESS_CONTROLLER_BLUEPRINT,
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+            ACCESS_CONTROLLER_CREATE_IDENT,
             (
                 controlled_asset,
                 RuleSet {
@@ -1825,6 +1840,7 @@ impl ManifestBuilder {
                     confirmation_role,
                 },
                 timed_recovery_delay_in_minutes,
+                Option::<()>::None,
             ),
         )
     }

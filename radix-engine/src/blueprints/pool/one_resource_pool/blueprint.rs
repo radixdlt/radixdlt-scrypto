@@ -25,6 +25,7 @@ impl OneResourcePoolBlueprint {
         resource_address: ResourceAddress,
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<OneResourcePoolInstantiateOutput, RuntimeError>
     where
@@ -39,10 +40,17 @@ impl OneResourcePoolBlueprint {
 
         // Allocating the component address of the pool - this will be used later for the component
         // caller badge.
-        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
-            package_address: POOL_PACKAGE,
-            blueprint_name: ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
-        })?;
+        let (address_reservation, address) = {
+            if let Some(address_reservation) = address_reservation {
+                let address = api.get_reservation_address(address_reservation.0.as_node_id())?;
+                (address_reservation, address)
+            } else {
+                api.allocate_global_address(BlueprintId {
+                    package_address: POOL_PACKAGE,
+                    blueprint_name: ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
+                })?
+            }
+        };
 
         let pool_unit_resource_manager = {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);

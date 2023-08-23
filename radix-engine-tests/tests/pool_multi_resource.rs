@@ -418,6 +418,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
                 resource_addresses: [non_fungible_resource].into(),
                 pool_manager_rule: rule!(allow_all),
                 owner_role: OwnerRole::None,
+                address_reservation: None,
             },
         )
         .build();
@@ -799,6 +800,7 @@ impl<const N: usize> TestEnvironment<N> {
                         resource_addresses: resource_addresses.clone().into(),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                         owner_role,
+                        address_reservation: None,
                     },
                 )
                 .build();
