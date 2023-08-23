@@ -287,6 +287,7 @@ macro_rules! wasm_extern_c {
 
         $(
             #[cfg(not(target_arch = "wasm32"))]
+            $(#[$meta])*
             pub unsafe fn $fn_ident ( $(_: $arg_type),* ) $(-> $rtn_type)? {
                 unimplemented!("Not implemented for non-wasm targets")
             }
