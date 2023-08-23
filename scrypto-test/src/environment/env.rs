@@ -7,8 +7,6 @@ use crate::prelude::*;
 ///
 /// Each test environment has it's own instance of a [`SelfContainedRadixEngine`] which is exposed
 /// through the [`ClientApi`] and which tests run against.
-///
-/// [`ClientApi`]: crate::prelude::ClientApi
 pub struct TestEnvironment(pub(super) SelfContainedRadixEngine);
 
 impl TestEnvironment {
@@ -535,6 +533,43 @@ impl TestEnvironment {
     pub fn disable_module(&mut self, module: EnabledModules) {
         self.0.with_kernel_mut(|kernel| {
             kernel.kernel_callback_mut().modules.enabled_modules &= !module
+        })
+    }
+
+    //=======
+    // State
+    //=======
+
+    pub fn read_component_state<S>(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<S, RuntimeError>
+    where
+        S: ScryptoDecode,
+    {
+        self.0.with_kernel_mut(|kernel| {
+            let handle = kernel.kernel_open_substate(
+                component_address.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &SubstateKey::Field(ComponentField::State0.into()),
+                LockFlags::read_only(),
+                SystemLockData::Field(FieldLockData::Read),
+            )?;
+            let state = kernel.kernel_read_substate(handle).map(|v| {
+                let wrapper: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+                scrypto_encode(&wrapper.value.0).unwrap()
+            })?;
+            kernel.kernel_close_substate(handle)?;
+
+            // Add all of the references in the state to the current call-frame
+            let current_frame = kernel.kernel_current_frame_mut();
+            let indexed_state = IndexedScryptoValue::from_slice(&state).unwrap();
+            for reference in indexed_state.references() {
+                current_frame.add_global_reference(GlobalAddress::new_or_panic(reference.0))
+            }
+
+            // Decode and return
+            Ok(indexed_state.as_typed::<S>().unwrap())
         })
     }
 }

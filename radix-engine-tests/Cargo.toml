@@ -17,6 +17,7 @@ transaction-scenarios = { path = "../transaction-scenarios", default-features = 
 utils = { path = "../utils", default-features = false }
 radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, features = ["resource_tracker"]}
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
+scrypto-test = { path = "../scrypto-test" }
 
 [dev-dependencies]
 transaction = { path = "../transaction", default-features = false }
