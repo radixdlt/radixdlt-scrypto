@@ -20,6 +20,7 @@ members = [
     "scrypto-schema",
     "scrypto-derive",
     "scrypto",
+    "scrypto-test",
     "scrypto-tests",
     "scrypto-unit",
     "transaction",
