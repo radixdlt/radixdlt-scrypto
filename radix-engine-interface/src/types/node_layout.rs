@@ -146,7 +146,12 @@ pub enum ComponentField {
     State0,
 }
 
-// PACKAGE PACKAGE
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum FungibleResourceManagerField {
+    Divisibility,
+    TotalSupply,
+}
 
 blueprint_partition_offset!(
     pub enum PackagePartitionOffset {
@@ -161,26 +166,43 @@ blueprint_partition_offset!(
     }
 );
 
-// RESOURCE PACKAGE
-
-blueprint_partition_offset!(
-    pub enum FungibleResourceManagerPartitionOffset {
-        Field,
-    }
-);
-
 blueprint_partition_offset!(
     pub enum NonFungibleResourceManagerPartitionOffset {
-        Field,
-        DataKeyValue,
+        ResourceManager,
+        NonFungibleData,
     }
 );
 
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum NonFungibleResourceManagerField {
+    IdType,
+    MutableFields,
+    TotalSupply,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum FungibleVaultField {
+    LiquidFungible,
+    LockedFungible,
+    VaultFrozenFlag,
+}
+
 blueprint_partition_offset!(
-    pub enum FungibleVaultPartitionOffset {
-        Field,
+    pub enum NonFungibleVaultPartitionOffset {
+        Balance,
+        NonFungibles,
     }
 );
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum NonFungibleVaultField {
+    LiquidNonFungible,
+    LockedNonFungible,
+    VaultFrozenFlag,
+}
 
 blueprint_partition_offset!(
     pub enum NonFungibleVaultPartitionOffset {
@@ -190,7 +212,7 @@ blueprint_partition_offset!(
 );
 
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum FungibleBucketField {
     Liquid,
     Locked,
@@ -257,15 +279,11 @@ pub enum ValidatorField {
     ProtocolUpdateReadinessSignal,
 }
 
-// ACCESS CONTROLLER PACKAGE
-
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum AccessControllerField {
     AccessController,
 }
-
-// ACCOUNT PACKAGE
 
 blueprint_partition_offset!(
     pub enum AccountPartitionOffset {
@@ -284,8 +302,6 @@ pub enum AccountField {
     Account,
 }
 
-// POOL PACKAGE
-
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum OneResourcePoolField {
@@ -303,8 +319,6 @@ pub enum TwoResourcePoolField {
 pub enum MultiResourcePoolField {
     MultiResourcePool,
 }
-
-// TRANSACTION TRACKER PACKAGE
 
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -349,8 +363,12 @@ substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
 substate_key!(RoleAssignmentField);
 substate_key!(ComponentField);
+substate_key!(FungibleResourceManagerField);
+substate_key!(FungibleVaultField);
 substate_key!(FungibleBucketField);
 substate_key!(FungibleProofField);
+substate_key!(NonFungibleResourceManagerField);
+substate_key!(NonFungibleVaultField);
 substate_key!(NonFungibleBucketField);
 substate_key!(NonFungibleProofField);
 substate_key!(ConsensusManagerField);

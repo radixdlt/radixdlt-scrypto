@@ -3,7 +3,6 @@ use crate::api::*;
 use crate::types::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
-use scrypto_schema::BlueprintFeature;
 
 /// Api which exposes methods in the context of the actor
 pub trait ClientActorApi<E: Debug> {
@@ -22,7 +21,7 @@ pub trait ClientActorApi<E: Debug> {
     fn actor_is_feature_enabled(
         &mut self,
         object_handle: ObjectHandle,
-        feature: impl BlueprintFeature,
+        feature: &str,
     ) -> Result<bool, E>;
 
     /// Retrieve the current method actor's node id
