@@ -1,8 +1,7 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::system::system_db_checker::SystemDatabaseChecker;
-use radix_engine::system::system_db_reader::SystemDatabaseReader;
+use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::types::*;
@@ -246,15 +245,12 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         .into_latest();
     assert_eq!(total_supply, allocation_amount);
 
-    let key = scrypto_encode("symbol").unwrap();
-    let entry = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
-            &resource_address.as_node_id(),
-            METADATA_BASE_PARTITION,
-            &SubstateKey::Map(key),
-        )
-        .unwrap()
-        .value;
+    let reader = SystemDatabaseReader::new(&substate_db);
+    let entry = reader.read_object_collection_entry::<_, MetadataEntryEntryPayload>(
+        resource_address.as_node_id(),
+        ObjectModuleId::Metadata,
+        ObjectCollectionKey::KeyValue(MetadataCollection::EntryKeyValue.collection_index(), &"symbol".to_string()),
+    ).unwrap().map(|v| v.into_latest());
 
     if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");
@@ -398,18 +394,18 @@ fn test_genesis_stake_allocation() {
             .cloned()
             .collect();
 
+        let reader = SystemDatabaseReader::new(&substate_db);
+
         for (index, validator_key) in vec![validator_0_key, validator_1_key]
             .into_iter()
             .enumerate()
         {
-            let validator_url_entry = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
-                    &new_validators[index].as_node_id(),
-                    METADATA_BASE_PARTITION,
-                    &SubstateKey::Map(scrypto_encode("url").unwrap()),
-                )
-                .unwrap();
-            if let Some(MetadataValue::Url(url)) = validator_url_entry.value {
+            let validator_url_entry = reader.read_object_collection_entry::<_, MetadataEntryEntryPayload>(
+                &new_validators[index].as_node_id(),
+                ObjectModuleId::Metadata,
+                ObjectCollectionKey::KeyValue(MetadataCollection::EntryKeyValue.collection_index(), &"url".to_string())
+            ).unwrap().map(|v| v.into_latest());
+            if let Some(MetadataValue::Url(url)) = validator_url_entry {
                 assert_eq!(
                     url,
                     Url(format!("http://test.local?validator={:?}", validator_key))

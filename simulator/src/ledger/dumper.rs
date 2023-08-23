@@ -275,21 +275,14 @@ fn get_entity_metadata<T: SubstateDatabase>(
     entity_node_id: &NodeId,
     substate_db: &T,
 ) -> IndexMap<String, MetadataValue> {
-    let mut metadata = indexmap!();
-    for (substate_key, substate_value) in substate_db
-        .list_mapped::<SpreadPrefixKeyMapper, MetadataEntrySubstate, MapKey>(
-            entity_node_id,
-            METADATA_BASE_PARTITION
-                .at_offset(METADATA_KV_STORE_PARTITION_OFFSET)
-                .unwrap(),
-        )
-    {
-        if let SubstateKey::Map(key) = substate_key {
-            if let Some(value) = substate_value.value {
-                let key = scrypto_decode::<String>(&key).unwrap();
-                metadata.insert(key, value);
-            }
-        }
-    }
-    metadata
+    let reader = SystemDatabaseReader::new(substate_db);
+    reader
+        .collection_iter(entity_node_id, ObjectModuleId::Metadata, MetadataCollection::EntryKeyValue.collection_index())
+        .unwrap()
+        .map(|(key, value)| {
+            let key = scrypto_decode::<String>(&key).unwrap();
+            let value = scrypto_decode::<MetadataEntryEntryPayload>(&value).unwrap();
+            (key, value.into_latest())
+        })
+        .collect()
 }

@@ -402,7 +402,7 @@ pub enum TypedRoyaltyModuleSubstateValue {
 
 #[derive(Debug)]
 pub enum TypedMetadataModuleSubstateValue {
-    MetadataEntry(MetadataEntrySubstate),
+    MetadataEntry(KeyValueEntrySubstate<MetadataEntryEntryPayload>),
 }
 
 /// Contains all the main module substate values, by each known partition layout

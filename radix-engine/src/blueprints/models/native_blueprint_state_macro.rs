@@ -398,23 +398,46 @@ macro_rules! declare_native_blueprint_state {
                 // Typed - Substate Keys and Values
                 //---------------------------------
 
-                enum_filter_out_ignored!(
-                    /// All the SubstateKeys for all logical partitions for the $blueprint_ident blueprint.
-                    /// Does not include mapped partitions, as these substates are mapped via their canonical partition.
-                    #[derive(Debug, Clone)]
-                    pub enum [<$blueprint_ident TypedSubstateKey>]
-                    {
-                        [[
-                            Field([<$blueprint_ident Field>])
-                        ]],
-                        $(
-                            $(|IGNORE_ENTRY| { $mapped_physical_partition })?
-                            [[
-                                [<$collection_ident $collection_type Entry>]([<$blueprint_ident $collection_ident KeyPayload>])
-                            ]],
-                        )*
-                    }
+                if_exists!(
+                    TEST: [[$($field_ident)*]],
+                    [[
+                         enum_filter_out_ignored!(
+                            /// All the SubstateKeys for all logical partitions for the $blueprint_ident blueprint.
+                            /// Does not include mapped partitions, as these substates are mapped via their canonical partition.
+                            #[derive(Debug, Clone)]
+                            pub enum [<$blueprint_ident TypedSubstateKey>]
+                            {
+                                [[
+                                    Field([<$blueprint_ident Field>])
+                                ]],
+                                $(
+                                    $(|IGNORE_ENTRY| { $mapped_physical_partition })?
+                                    [[
+                                        [<$collection_ident $collection_type Entry>]([<$blueprint_ident $collection_ident KeyPayload>])
+                                    ]],
+                                )*
+                            }
+                        );
+                    ]],
+                    [[
+                        enum_filter_out_ignored!(
+                            /// All the SubstateKeys for all logical partitions for the $blueprint_ident blueprint.
+                            /// Does not include mapped partitions, as these substates are mapped via their canonical partition.
+                            #[derive(Debug, Clone)]
+                            pub enum [<$blueprint_ident TypedSubstateKey>]
+                            {
+                                $(
+                                    $(|IGNORE_ENTRY| { $mapped_physical_partition })?
+                                    [[
+                                        [<$collection_ident $collection_type Entry>]([<$blueprint_ident $collection_ident KeyPayload>])
+                                    ]],
+                                )*
+                            }
+                        );
+                    ]]
                 );
+
+
 
                 impl [<$blueprint_ident TypedSubstateKey>] {
                     pub fn for_key_at_partition_offset(partition_offset: PartitionOffset, substate_key: &SubstateKey) -> Result<Self, ()> {
@@ -424,28 +447,50 @@ macro_rules! declare_native_blueprint_state {
                         )
                     }
 
-                    pub fn for_key_in_partition(partition: &[<$blueprint_ident PartitionOffset>], substate_key: &SubstateKey) -> Result<Self, ()> {
-                        let key = match_filter_out_ignored!(match partition {
-                            [[
-                                [<$blueprint_ident PartitionOffset>]::Field => {
-                                    [<$blueprint_ident TypedSubstateKey>]::Field(
-                                        [<$blueprint_ident Field>]::try_from(substate_key)?
-                                    )
-                                }
-                            ]],
-                            $(
-                                $(|IGNORE_ENTRY| { $mapped_physical_partition })?
-                                [[
-                                    [<$blueprint_ident PartitionOffset>]::[<$collection_ident $collection_type>] => {
-                                        [<$blueprint_ident TypedSubstateKey>]::[<$collection_ident $collection_type Entry>](
-                                            [<$blueprint_ident $collection_ident KeyPayload>]::try_from(substate_key)?,
-                                        )
-                                    }
-                                ]],
-                            )*
-                        });
-                        Ok(key)
-                    }
+                    if_exists!(
+                        TEST: [[$($field_ident)*]],
+                        [[
+                            pub fn for_key_in_partition(partition: &[<$blueprint_ident PartitionOffset>], substate_key: &SubstateKey) -> Result<Self, ()> {
+                                let key = match_filter_out_ignored!(match partition {
+                                    [[
+                                        [<$blueprint_ident PartitionOffset>]::Field => {
+                                            [<$blueprint_ident TypedSubstateKey>]::Field(
+                                                [<$blueprint_ident Field>]::try_from(substate_key)?
+                                            )
+                                        }
+                                    ]],
+                                    $(
+                                        $(|IGNORE_ENTRY| { $mapped_physical_partition })?
+                                        [[
+                                            [<$blueprint_ident PartitionOffset>]::[<$collection_ident $collection_type>] => {
+                                                [<$blueprint_ident TypedSubstateKey>]::[<$collection_ident $collection_type Entry>](
+                                                    [<$blueprint_ident $collection_ident KeyPayload>]::try_from(substate_key)?,
+                                                )
+                                            }
+                                        ]],
+                                    )*
+                                });
+                                Ok(key)
+                            }
+                        ]],
+                        [[
+                            pub fn for_key_in_partition(partition: &[<$blueprint_ident PartitionOffset>], substate_key: &SubstateKey) -> Result<Self, ()> {
+                                let key = match_filter_out_ignored!(match partition {
+                                    $(
+                                        $(|IGNORE_ENTRY| { $mapped_physical_partition })?
+                                        [[
+                                            [<$blueprint_ident PartitionOffset>]::[<$collection_ident $collection_type>] => {
+                                                [<$blueprint_ident TypedSubstateKey>]::[<$collection_ident $collection_type Entry>](
+                                                    [<$blueprint_ident $collection_ident KeyPayload>]::try_from(substate_key)?,
+                                                )
+                                            }
+                                        ]],
+                                    )*
+                                });
+                                Ok(key)
+                            }
+                        ]]
+                    );
                 }
 
                 #[derive(Debug)]

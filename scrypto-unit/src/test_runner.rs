@@ -12,7 +12,7 @@ use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_db_checker::{
     SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults,
 };
-use radix_engine::system::system_db_reader::{SystemDatabaseReader, SystemDatabaseWriter};
+use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter};
 use radix_engine::transaction::{
     execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
     ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
@@ -498,19 +498,15 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataValue> {
-        // TODO: Move this to system wrapper around substate_store
-        let key = scrypto_encode(key).unwrap();
-
-        let metadata_value = self
-            .database
-            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader
+            .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
                 address.as_node_id(),
-                METADATA_BASE_PARTITION,
-                &SubstateKey::Map(key),
-            )?
-            .value;
-
-        metadata_value
+                ObjectModuleId::Metadata,
+                ObjectCollectionKey::KeyValue(MetadataCollection::EntryKeyValue.collection_index(), &key.to_string()),
+            )
+            .unwrap()
+            .map(|v| v.into_latest())
     }
 
     pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
