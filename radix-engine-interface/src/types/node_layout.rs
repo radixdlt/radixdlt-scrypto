@@ -268,11 +268,11 @@ pub enum ValidatorField {
     ProtocolUpdateReadinessSignal,
 }
 
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum AccessControllerField {
-    AccessController,
-}
+blueprint_partition_offset!(
+    pub enum AccessControllerPartitionOffset {
+        Field,
+    }
+);
 
 blueprint_partition_offset!(
     pub enum AccountPartitionOffset {
@@ -370,7 +370,6 @@ substate_key!(NonFungibleBucketField);
 substate_key!(NonFungibleProofField);
 substate_key!(ConsensusManagerField);
 substate_key!(ValidatorField);
-substate_key!(AccessControllerField);
 substate_key!(OneResourcePoolField);
 substate_key!(TwoResourcePoolField);
 substate_key!(MultiResourcePoolField);

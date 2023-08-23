@@ -142,7 +142,7 @@ pub enum TypedMainModuleSubstateKey {
     ConsensusManagerField(ConsensusManagerField),
     ConsensusManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
     ValidatorField(ValidatorField),
-    AccessControllerField(AccessControllerField),
+    AccessController(AccessControllerTypedSubstateKey),
     Account(AccountTypedSubstateKey),
     OneResourcePool(OneResourcePoolTypedSubstateKey),
     TwoResourcePool(TwoResourcePoolTypedSubstateKey),
@@ -312,8 +312,11 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalValidator => {
             TypedMainModuleSubstateKey::ValidatorField(ValidatorField::try_from(substate_key)?)
         }
-        EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessControllerField(
-            AccessControllerField::try_from(substate_key)?,
+        EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessController(
+            AccessControllerTypedSubstateKey::for_key_in_partition(
+                &AccessControllerPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?
         ),
         EntityType::GlobalVirtualSecp256k1Account
         | EntityType::GlobalVirtualEd25519Account
@@ -425,7 +428,7 @@ pub enum TypedMainModuleSubstateValue {
     ConsensusManagerField(TypedConsensusManagerFieldValue),
     ConsensusManagerRegisteredValidatorsByStakeIndexEntry(Validator),
     Validator(TypedValidatorFieldValue),
-    AccessController(TypedAccessControllerFieldValue),
+    AccessController(AccessControllerTypedSubstateValue),
     Account(AccountTypedSubstateValue),
     OneResourcePool(OneResourcePoolTypedSubstateValue),
     TwoResourcePool(TwoResourcePoolTypedSubstateValue),
@@ -452,11 +455,6 @@ pub enum TypedConsensusManagerFieldValue {
 pub enum TypedValidatorFieldValue {
     Validator(FieldSubstate<ValidatorSubstate>),
     ProtocolUpdateReadinessSignal(FieldSubstate<ValidatorProtocolUpdateReadinessSignalSubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedAccessControllerFieldValue {
-    AccessController(FieldSubstate<AccessControllerSubstate>),
 }
 
 #[derive(Debug)]
@@ -603,12 +601,10 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::Account(key) => TypedMainModuleSubstateValue::Account(
             AccountTypedSubstateValue::from_key_and_data(key, data)?,
         ),
-        TypedMainModuleSubstateKey::AccessControllerField(offset) => {
-            TypedMainModuleSubstateValue::AccessController(match offset {
-                AccessControllerField::AccessController => {
-                    TypedAccessControllerFieldValue::AccessController(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::AccessController(key) => {
+            TypedMainModuleSubstateValue::AccessController(
+                AccessControllerTypedSubstateValue::from_key_and_data(key, data)?
+            )
         }
         TypedMainModuleSubstateKey::GenericScryptoComponentField(offset) => {
             TypedMainModuleSubstateValue::GenericScryptoComponent(match offset {
