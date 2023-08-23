@@ -2,9 +2,6 @@ use super::actor::Actor;
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
-use super::kernel_api::{
-    KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi,
-};
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
@@ -13,7 +10,7 @@ use crate::kernel::call_frame::{
     CallFrameIOAccessHandler, CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
     TransientSubstates,
 };
-use crate::kernel::kernel_api::{KernelInvocation, SystemState};
+use crate::kernel::kernel_api::*;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -1166,4 +1163,89 @@ where
     M: KernelCallbackObject,
     S: CommitableSubstateStore,
 {
+}
+
+#[cfg(feature = "radix_engine_tests")]
+impl<'g, M, S> KernelTestingApi<'g, M, S> for Kernel<'g, M, S>
+where
+    M: KernelCallbackObject,
+    S: CommitableSubstateStore,
+{
+    fn kernel_create_kernel_for_testing(
+        substate_io: SubstateIO<'g, S>,
+        id_allocator: &'g mut IdAllocator,
+        current_frame: CallFrame<M::CallFrameData, M::LockData>,
+        prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
+        callback: &'g mut M,
+    ) -> Kernel<'g, M, S> {
+        Self {
+            current_frame,
+            prev_frame_stack,
+            substate_io,
+            id_allocator,
+            callback,
+        }
+    }
+
+    fn kernel_current_frame(
+        &self,
+    ) -> &CallFrame<<M as KernelCallbackObject>::CallFrameData, <M as KernelCallbackObject>::LockData>
+    {
+        &self.current_frame
+    }
+
+    fn kernel_current_frame_mut(
+        &mut self,
+    ) -> &mut CallFrame<
+        <M as KernelCallbackObject>::CallFrameData,
+        <M as KernelCallbackObject>::LockData,
+    > {
+        &mut self.current_frame
+    }
+
+    fn kernel_prev_frame_stack(
+        &self,
+    ) -> &Vec<
+        CallFrame<
+            <M as KernelCallbackObject>::CallFrameData,
+            <M as KernelCallbackObject>::LockData,
+        >,
+    > {
+        &self.prev_frame_stack
+    }
+
+    fn kernel_prev_frame_stack_mut(
+        &mut self,
+    ) -> &mut Vec<
+        CallFrame<
+            <M as KernelCallbackObject>::CallFrameData,
+            <M as KernelCallbackObject>::LockData,
+        >,
+    > {
+        &mut self.prev_frame_stack
+    }
+
+    fn kernel_substate_io(&self) -> &SubstateIO<'g, S> {
+        &self.substate_io
+    }
+
+    fn kernel_substate_io_mut(&mut self) -> &mut SubstateIO<'g, S> {
+        &mut self.substate_io
+    }
+
+    fn kernel_id_allocator(&self) -> &IdAllocator {
+        &self.id_allocator
+    }
+
+    fn kernel_id_allocator_mut(&mut self) -> &mut &'g mut IdAllocator {
+        &mut self.id_allocator
+    }
+
+    fn kernel_callback(&self) -> &M {
+        &self.callback
+    }
+
+    fn kernel_callback_mut(&mut self) -> &mut M {
+        &mut self.callback
+    }
 }
