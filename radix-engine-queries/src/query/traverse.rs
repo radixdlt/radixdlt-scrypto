@@ -1,7 +1,4 @@
-use radix_engine::blueprints::resource::{
-    FungibleVaultBalanceFieldSubstate, FungibleVaultField, NonFungibleVaultBalanceFieldSubstate,
-    NonFungibleVaultField,
-};
+use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::{FieldKey, LiquidFungibleResource, MapKey, ScryptoValue, SubstateKey};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
@@ -159,7 +156,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, NonFungibleVaultBalanceFieldSubstate>(
                             &node_id,
-                            MAIN_BASE_PARTITION,
+                            NonFungibleVaultPartitionOffset::Field.as_main_partition(),
                             &NonFungibleVaultField::Balance.into(),
                         )
                         .expect("Broken database");
@@ -172,9 +169,9 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                     let entries = self
                         .substate_db
-                        .list_mapped::<SpreadPrefixKeyMapper, (), MapKey>(
+                        .list_mapped::<SpreadPrefixKeyMapper, NonFungibleVaultNonFungibleEntrySubstate, MapKey>(
                             &node_id,
-                            MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
+                            NonFungibleVaultPartitionOffset::NonFungibleIndex.as_main_partition(),
                         );
                     for (key, _value) in entries {
                         let non_fungible_local_id: NonFungibleLocalId =
