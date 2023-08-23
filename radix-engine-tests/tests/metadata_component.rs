@@ -1,7 +1,99 @@
-use radix_engine::errors::{RuntimeError, SystemError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::types::*;
+use radix_engine_queries::typed_substate_layout::{MetadataError, MetadataValidationError};
 use scrypto_unit::*;
 use transaction::prelude::*;
+
+#[test]
+fn cannot_create_metadata_with_invalid_value() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "MetadataComponent",
+            "create_metadata_with_invalid_url",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                MetadataError::MetadataValidationError(MetadataValidationError::InvalidURL(_))
+            ))
+        )
+    });
+}
+
+#[test]
+fn cannot_set_metadata_with_invalid_value() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "MetadataComponent",
+            "new2",
+            manifest_args!("key".to_string(), "value".to_string()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "MetadataComponent",
+            "set_metadata_with_invalid_url",
+            manifest_args!(component_address, "key".to_string()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                MetadataError::MetadataValidationError(MetadataValidationError::InvalidURL(_))
+            ))
+        )
+    });
+
+    // Act 2
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "MetadataComponent",
+            "set_metadata_with_invalid_origin",
+            manifest_args!(component_address, "key".to_string()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert 2
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                MetadataError::MetadataValidationError(MetadataValidationError::InvalidOrigin(_))
+            ))
+        )
+    });
+}
 
 #[test]
 fn can_globalize_with_component_metadata() {
