@@ -40,24 +40,6 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     )
     Tuple(
         Map<String, Tuple>(
-            "" => Tuple(
-                Enum<1u8>(
-                    Enum<14u8>(
-                        "https://www.radixdlt.com"
-                    )
-                ),
-                false
-            ),
-            "_array" => Tuple(
-                Enum<1u8>(
-                    Enum<142u8>(
-                        Array<String>(
-                            "https://www.radixdlt.com"
-                        )
-                    )
-                ),
-                false
-            ),
             "address" => Tuple(
                 Enum<1u8>(
                     Enum<8u8>(
@@ -204,6 +186,24 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                             NonFungibleLocalId("#42#"),
                             NonFungibleLocalId("[01]"),
                             NonFungibleLocalId("{0101010101010101-0101010101010101-0101010101010101-0101010101010101}")
+                        )
+                    )
+                ),
+                false
+            ),
+            "origin" => Tuple(
+                Enum<1u8>(
+                    Enum<14u8>(
+                        "https://www.radixdlt.com"
+                    )
+                ),
+                false
+            ),
+            "origin_array" => Tuple(
+                Enum<1u8>(
+                    Enum<142u8>(
+                        Array<String>(
+                            "https://www.radixdlt.com"
                         )
                     )
                 ),

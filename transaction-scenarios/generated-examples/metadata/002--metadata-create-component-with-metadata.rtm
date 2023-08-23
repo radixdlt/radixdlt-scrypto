@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 ALLOCATE_GLOBAL_ADDRESS
-    Address("package_sim1ph3ysg523mxuedhacm36nknmm2vst4rqvxafux8y5fe4rnnfljjwyf")
+    Address("package_sim1p4hu7av8pqcrdrlscrgleukvrjkawet0wmwntjt4g7f540gdmhm8w2")
     "MetadataTest"
     AddressReservation("metadata_component_address_reservation")
     NamedAddress("metadata_component_address")
@@ -14,26 +14,10 @@ CALL_METHOD
     "free"
 ;
 CALL_FUNCTION
-    Address("package_sim1ph3ysg523mxuedhacm36nknmm2vst4rqvxafux8y5fe4rnnfljjwyf")
+    Address("package_sim1p4hu7av8pqcrdrlscrgleukvrjkawet0wmwntjt4g7f540gdmhm8w2")
     "MetadataTest"
     "new_with_address"
     AddressReservation("metadata_component_address_reservation")
-;
-SET_METADATA
-    NamedAddress("metadata_component_address")
-    ""
-    Enum<14u8>(
-        "https://www.radixdlt.com"
-    )
-;
-SET_METADATA
-    NamedAddress("metadata_component_address")
-    "_array"
-    Enum<142u8>(
-        Array<String>(
-            "https://www.radixdlt.com"
-        )
-    )
 ;
 SET_METADATA
     NamedAddress("metadata_component_address")
@@ -167,6 +151,22 @@ SET_METADATA
             NonFungibleLocalId("#42#"),
             NonFungibleLocalId("[01]"),
             NonFungibleLocalId("{0101010101010101-0101010101010101-0101010101010101-0101010101010101}")
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "origin"
+    Enum<14u8>(
+        "https://www.radixdlt.com"
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "origin_array"
+    Enum<142u8>(
+        Array<String>(
+            "https://www.radixdlt.com"
         )
     )
 ;
