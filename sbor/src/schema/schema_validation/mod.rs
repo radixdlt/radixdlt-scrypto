@@ -106,4 +106,19 @@ mod tests {
             Err(SchemaValidationError::TypeMetadataContainedDuplicateEnumVariantNames)
         );
     }
+
+    #[test]
+    pub fn duplicate_field_names_not_allowed() {
+        let schema = create_schema(vec![TypeData::struct_with_named_fields(
+            "TestStruct",
+            vec![
+                ("a", LocalTypeIndex::from(WellKnownTypeIndex::of(1))),
+                ("a", LocalTypeIndex::from(WellKnownTypeIndex::of(1))),
+            ],
+        )]);
+        assert_eq!(
+            validate_schema(&schema),
+            Err(SchemaValidationError::TypeMetadataContainedDuplicateFieldNames)
+        );
+    }
 }
