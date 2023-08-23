@@ -1,11 +1,11 @@
 //! This module implements the test-environment that all tests run in.
 
-#![allow(unused_imports)]
-
+mod client_api;
 mod env;
 mod internal;
 mod types;
 
+use internal::*;
+
 pub use env::*;
-pub use internal::*;
 pub use types::*;
