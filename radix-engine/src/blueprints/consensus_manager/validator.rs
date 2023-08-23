@@ -12,7 +12,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine_interface::api::node_modules::metadata::Url;
+use radix_engine_interface::api::node_modules::metadata::UncheckedUrl;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{
     ClientApi, FieldValue, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
@@ -1211,7 +1211,7 @@ impl ValidatorCreator {
             metadata_init! {
                 "name" => "Liquid Stake Units".to_owned(), locked;
                 "description" => "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.".to_owned(), locked;
-                "icon_url" => Url::of_unchecked("https://assets.radixdlt.com/icons/icon-liquid_stake_units.png".to_owned()), locked;
+                "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-liquid_stake_units.png".to_owned()), locked;
                 "validator" => GlobalAddress::from(validator_address), locked;
                 "tags" => Vec::<String>::new(), locked;
             },
@@ -1247,7 +1247,7 @@ impl ValidatorCreator {
             metadata_init! {
                 "name" => "Stake Claims NFTs".to_owned(), locked;
                 "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;
-                "icon_url" => Url::of_unchecked("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png".to_owned()), locked;
+                "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png".to_owned()), locked;
                 "validator" => GlobalAddress::from(validator_address), locked;
                 "tags" => Vec::<String>::new(), locked;
             },

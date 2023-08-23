@@ -16,7 +16,7 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::MetadataRoles;
-use radix_engine_interface::api::node_modules::metadata::Url;
+use radix_engine_interface::api::node_modules::metadata::UncheckedUrl;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
@@ -634,7 +634,7 @@ impl AccessControllerNativePackage {
                             },
                             init {
                                 "name" => "Recovery Badge".to_owned(), locked;
-                                "icon_url" => Url::of_unchecked("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()), locked;
+                                "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()), locked;
                                 "access_controller" => address, locked;
                             }
                         },

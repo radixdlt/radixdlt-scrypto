@@ -67,13 +67,13 @@ impl NewBadgeFixed {
         if let Some(info_url) = self.info_url.clone() {
             metadata.insert(
                 "info_url".to_string(),
-                MetadataValue::Url(Url::of_unchecked(info_url)),
+                MetadataValue::Url(Url::of(info_url)),
             );
         }
         if let Some(icon_url) = self.icon_url.clone() {
             metadata.insert(
                 "icon_url".to_string(),
-                MetadataValue::Url(Url::of_unchecked(icon_url)),
+                MetadataValue::Url(Url::of(icon_url)),
             );
         };
 

@@ -262,14 +262,14 @@ fn can_set_instant_metadata_through_manifest() {
 
 #[test]
 fn can_set_url_metadata_through_manifest() {
-    can_set_metadata_through_manifest(MetadataValue::Url(Url::of_unchecked(
+    can_set_metadata_through_manifest(MetadataValue::Url(UncheckedUrl::of(
         "https://radixdlt.com/index.html".to_string(),
     )));
 }
 
 #[test]
 fn can_set_origin_metadata_through_manifest() {
-    can_set_metadata_through_manifest(MetadataValue::Origin(Origin::of_unchecked(
+    can_set_metadata_through_manifest(MetadataValue::Origin(UncheckedOrigin::of(
         "https://radixdlt.com".to_string(),
     )));
 }

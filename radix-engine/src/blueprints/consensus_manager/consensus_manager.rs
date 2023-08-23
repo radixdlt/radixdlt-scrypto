@@ -14,7 +14,7 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine_interface::api::node_modules::metadata::Url;
+use radix_engine_interface::api::node_modules::metadata::UncheckedUrl;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -249,7 +249,7 @@ impl ConsensusManagerBlueprint {
                     "name" => "Validator Owner Badges".to_owned(), locked;
                     "description" => "Badges created by the Radix system that provide individual control over the validator components created for validator node-runners.".to_owned(), locked;
                     "tags" => vec!["badge".to_owned(), "validator".to_owned()], locked;
-                    "icon_url" => Url::of_unchecked("https://assets.radixdlt.com/icons/icon-validator_owner_badge.png".to_owned()), locked;
+                    "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-validator_owner_badge.png".to_owned()), locked;
                 },
                 Some(validator_token_address_reservation),
                 api,
