@@ -2,15 +2,19 @@
 name = "${package_name}"
 version = "0.1.0"
 edition = "2021"
+resolver = "2"
 
 [dependencies]
 sbor = ${sbor}
 scrypto = ${scrypto}
+scrypto-test = ${optional-scrypto-test}
 
 [dev-dependencies]
 transaction = ${transaction}
 radix-engine = ${radix-engine}
 scrypto-unit = ${scrypto-unit}
+scrypto-test = ${scrypto-test}
+${package_name} = { path = ".", features = ["test"] }
 
 [profile.release]
 opt-level = 's'        # Optimize for size.
@@ -19,6 +23,10 @@ codegen-units = 1      # Reduce number of codegen units to increase optimization
 panic = 'abort'        # Abort on panic.
 strip = "debuginfo"    # Strip debug info.
 overflow-checks = true # Panic in the case of an overflow.
+
+[features]
+default = []
+test = ["dep:scrypto-test"]
 
 [lib]
 crate-type = ["cdylib", "lib"]

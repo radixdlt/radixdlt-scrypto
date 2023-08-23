@@ -27,7 +27,15 @@ impl NewPackage {
             .clone()
             .unwrap_or(PathBuf::from(&self.package_name));
         let simulator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let (sbor, scrypto, transaction, radix_engine, scrypto_unit) = if self.local {
+        let (
+            sbor,
+            scrypto,
+            transaction,
+            radix_engine,
+            scrypto_unit,
+            scrypto_test,
+            optional_scrypto_test,
+        ) = if self.local {
             let scrypto_dir = simulator_dir
                 .parent()
                 .unwrap()
@@ -39,13 +47,21 @@ impl NewPackage {
                 format!("{{ path = \"{}/transaction\" }}", scrypto_dir),
                 format!("{{ path = \"{}/radix-engine\" }}", scrypto_dir),
                 format!("{{ path = \"{}/scrypto-unit\" }}", scrypto_dir),
+                format!("{{ path = \"{}/scrypto-test\" }}", scrypto_dir),
+                format!(
+                    "{{ path = \"{}/scrypto-test\", optional = true }}",
+                    scrypto_dir
+                ),
             )
         } else {
             let s = format!(
                 "{{ git = \"https://github.com/radixdlt/radixdlt-scrypto\", tag = \"v{}\" }}",
                 env!("CARGO_PKG_VERSION")
             );
-            (s.clone(), s.clone(), s.clone(), s.clone(), s)
+            (s.clone(), s.clone(), s.clone(), s.clone(), s.clone(), s, format!(
+                "{{ git = \"https://github.com/radixdlt/radixdlt-scrypto\", tag = \"v{}\", optional = true }}",
+                env!("CARGO_PKG_VERSION")
+            ))
         };
 
         if path.exists() {
@@ -62,7 +78,9 @@ impl NewPackage {
                     .replace("${scrypto}", &scrypto)
                     .replace("${transaction}", &transaction)
                     .replace("${radix-engine}", &radix_engine)
-                    .replace("${scrypto-unit}", &scrypto_unit),
+                    .replace("${scrypto-unit}", &scrypto_unit)
+                    .replace("${scrypto-test}", &scrypto_test)
+                    .replace("${optional-scrypto-test}", &optional_scrypto_test),
             )
             .map_err(Error::IOError)?;
 
