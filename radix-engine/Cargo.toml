@@ -22,7 +22,6 @@ perfcnt = { version = "0.8.0", optional = true }
 radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, features = ["resource_tracker"] }
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
 paste = { version = "1.0.13" }
-url = { version = "=2.4.0" } # Make sure the diff is reviewed before changing the version!
 
 # WASM validation
 wasmparser = { version = "0.107.0", default-features = false }
