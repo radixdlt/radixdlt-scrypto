@@ -8,9 +8,8 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::CollectionDescriptor;
 use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, FieldValue, GenericArgs, KVEntry, OBJECT_HANDLE_SELF,
+    ClientApi, FieldValue, GenericArgs, KVEntry, OBJECT_HANDLE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -142,7 +141,7 @@ where
 
         let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerCollection::DataKeyValue,
+            NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
             &non_fungible_local_id.to_key(),
             LockFlags::MUTABLE,
         )?;
@@ -877,7 +876,7 @@ impl NonFungibleResourceManagerBlueprint {
         let id_type = {
             let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::IdType,
+                NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::read_only(),
             )?;
             let id_type = api
@@ -898,11 +897,11 @@ impl NonFungibleResourceManagerBlueprint {
         // TODO: Could be further cleaned up by using event
         if api.actor_is_feature_enabled(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerFeature::TrackTotalSupply,
+            NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
         )? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::TotalSupply,
+                NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api
@@ -949,7 +948,7 @@ impl NonFungibleResourceManagerBlueprint {
         let id_type = {
             let id_type_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::IdType,
+                NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::read_only(),
             )?;
             let id_type: NonFungibleIdType = api
@@ -972,11 +971,11 @@ impl NonFungibleResourceManagerBlueprint {
         // TODO: Could be further cleaned up by using event
         if api.actor_is_feature_enabled(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerFeature::TrackTotalSupply,
+            NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
         )? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::TotalSupply,
+                NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply = api
@@ -1025,7 +1024,7 @@ impl NonFungibleResourceManagerBlueprint {
         let id_type = {
             let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::IdType,
+                NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::read_only(),
             )?;
             let id_type = api
@@ -1047,11 +1046,11 @@ impl NonFungibleResourceManagerBlueprint {
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
         if api.actor_is_feature_enabled(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerFeature::TrackTotalSupply,
+            NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
         )? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::TotalSupply,
+                NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply = api
@@ -1101,7 +1100,7 @@ impl NonFungibleResourceManagerBlueprint {
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
         let data_schema_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerField::MutableFields,
+            NonFungibleResourceManagerField::MutableFields.into(),
             LockFlags::read_only(),
         )?;
         let mutable_fields = api
@@ -1122,7 +1121,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerCollection::DataKeyValue,
+            NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
             &id.to_key(),
             LockFlags::MUTABLE,
         )?;
@@ -1164,7 +1163,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerCollection::DataKeyValue,
+            NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
             &id.to_key(),
             LockFlags::read_only(),
         )?;
@@ -1189,7 +1188,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerCollection::DataKeyValue,
+            NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
             &id.to_key(),
             LockFlags::read_only(),
         )?;
@@ -1271,11 +1270,11 @@ impl NonFungibleResourceManagerBlueprint {
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
         if api.actor_is_feature_enabled(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerFeature::TrackTotalSupply,
+            NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
         )? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::TotalSupply,
+                NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply = api
@@ -1297,7 +1296,7 @@ impl NonFungibleResourceManagerBlueprint {
             for id in other_bucket.liquid.into_ids() {
                 let handle = api.actor_open_key_value_entry(
                     OBJECT_HANDLE_SELF,
-                    NonFungibleResourceManagerCollection::DataKeyValue,
+                    NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
                     &id.to_key(),
                     LockFlags::MUTABLE,
                 )?;
@@ -1367,7 +1366,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerField::IdType,
+            NonFungibleResourceManagerField::IdType.into(),
             LockFlags::read_only(),
         )?;
 
@@ -1385,11 +1384,11 @@ impl NonFungibleResourceManagerBlueprint {
     {
         if api.actor_is_feature_enabled(
             OBJECT_HANDLE_SELF,
-            NonFungibleResourceManagerFeature::TrackTotalSupply,
+            NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
         )? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleResourceManagerField::TotalSupply,
+                NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::read_only(),
             )?;
             let total_supply = api
@@ -1408,7 +1407,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if !api
-            .actor_is_feature_enabled(OBJECT_HANDLE_SELF, NonFungibleResourceManagerFeature::Mint)?
+            .actor_is_feature_enabled(OBJECT_HANDLE_SELF, NonFungibleResourceManagerFeature::Mint.feature_name())?
         {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
@@ -1425,7 +1424,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if !api
-            .actor_is_feature_enabled(OBJECT_HANDLE_SELF, NonFungibleResourceManagerFeature::Burn)?
+            .actor_is_feature_enabled(OBJECT_HANDLE_SELF, NonFungibleResourceManagerFeature::Burn.feature_name())?
         {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(

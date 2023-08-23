@@ -275,21 +275,11 @@ macro_rules! declare_native_blueprint_state {
                                 Self::from_repr(offset).ok_or(())
                             }
                         }
-
-                        impl FieldDescriptor for [<$blueprint_ident Field>] {
-                            fn field_index(&self) -> FieldIndex {
-                                *self as u8
-                            }
-                        }
                     ]],
                     [[
                         #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-                        pub enum [<$blueprint_ident Field>] {}
-
-                        impl FieldDescriptor for [<$blueprint_ident Field>] {
-                            fn field_index(&self) -> FieldIndex {
-                                unreachable!("No fields exist")
-                            }
+                        pub enum [<$blueprint_ident Field>] {
+                            $($field_ident,)*
                         }
                     ]],
                 );
@@ -303,8 +293,8 @@ macro_rules! declare_native_blueprint_state {
                             $([<$collection_ident $collection_type>],)*
                         }
 
-                        impl CollectionDescriptor for [<$blueprint_ident Collection>] {
-                            fn collection_index(&self) -> CollectionIndex {
+                        impl [<$blueprint_ident Collection>] {
+                            pub const fn collection_index(&self) -> u8 {
                                 *self as u8
                             }
                         }
@@ -313,9 +303,9 @@ macro_rules! declare_native_blueprint_state {
                         #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
                         pub enum [<$blueprint_ident Collection>] {}
 
-                        impl CollectionDescriptor for [<$blueprint_ident Collection>] {
-                            fn collection_index(&self) -> CollectionIndex {
-                                unreachable!("No collections exist")
+                        impl [<$blueprint_ident Collection>] {
+                            pub const fn collection_index(&self) -> u8 {
+                                unreachable!()
                             }
                         }
                     ]]

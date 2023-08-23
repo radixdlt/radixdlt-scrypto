@@ -1,6 +1,7 @@
-use crate::api::field_api::*;
-use crate::api::*;
+use crate::api::field_api::FieldHandle;
+use crate::api::{FieldIndex, ObjectModuleId};
 use crate::types::*;
+use radix_engine_interface::api::{LockFlags, ObjectHandle};
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
@@ -13,7 +14,7 @@ pub trait ClientActorApi<E: Debug> {
     fn actor_open_field(
         &mut self,
         object_handle: ObjectHandle,
-        field: impl FieldDescriptor,
+        field: FieldIndex,
         flags: LockFlags,
     ) -> Result<FieldHandle, E>;
 

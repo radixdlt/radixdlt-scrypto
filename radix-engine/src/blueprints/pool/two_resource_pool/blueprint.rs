@@ -537,7 +537,7 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = TwoResourcePoolField::TwoResourcePool;
+        let substate_key = TwoResourcePoolField::TwoResourcePool.into();
         let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
         let two_resource_pool_substate = api.field_read_typed::<TwoResourcePoolSubstate>(handle)?;
 

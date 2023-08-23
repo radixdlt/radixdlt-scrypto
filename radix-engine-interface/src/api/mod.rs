@@ -31,28 +31,7 @@ pub const OBJECT_HANDLE_SELF: ObjectHandle = 0u32;
 pub const OBJECT_HANDLE_OUTER_OBJECT: ObjectHandle = 1u32;
 
 pub type FieldIndex = u8;
-
-pub trait FieldDescriptor {
-    fn field_index(&self) -> FieldIndex;
-}
-
-impl FieldDescriptor for FieldIndex {
-    fn field_index(&self) -> FieldIndex {
-        *self
-    }
-}
-
 pub type CollectionIndex = u8;
-
-pub trait CollectionDescriptor {
-    fn collection_index(&self) -> CollectionIndex;
-}
-
-impl CollectionDescriptor for CollectionIndex {
-    fn collection_index(&self) -> CollectionIndex {
-        *self
-    }
-}
 
 /// Interface of the system, for blueprints and Node modules.
 ///

@@ -3,7 +3,7 @@ use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_common::types::SortedKey;
-use radix_engine_interface::api::*;
+use radix_engine_interface::api::CollectionIndex;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
@@ -16,7 +16,7 @@ pub trait ClientActorSortedIndexApi<E> {
     fn actor_sorted_index_insert(
         &mut self,
         object_handle: ObjectHandle,
-        collection_index: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), E>;
@@ -28,7 +28,7 @@ pub trait ClientActorSortedIndexApi<E> {
     >(
         &mut self,
         object_handle: ObjectHandle,
-        collection_index: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         sorted_key: SortedKey,
         value: V,
     ) -> Result<(), E> {
@@ -44,7 +44,7 @@ pub trait ClientActorSortedIndexApi<E> {
     fn actor_sorted_index_remove(
         &mut self,
         object_handle: ObjectHandle,
-        collection_index: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, E>;
 
@@ -55,7 +55,7 @@ pub trait ClientActorSortedIndexApi<E> {
     >(
         &mut self,
         object_handle: ObjectHandle,
-        collection_index: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         sorted_key: &SortedKey,
     ) -> Result<Option<V>, E> {
         let rtn = self
@@ -68,7 +68,7 @@ pub trait ClientActorSortedIndexApi<E> {
     fn actor_sorted_index_scan(
         &mut self,
         object_handle: ObjectHandle,
-        collection_index: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         count: u32,
     ) -> Result<Vec<(SortedKey, Vec<u8>)>, E>;
 
@@ -81,7 +81,7 @@ pub trait ClientActorSortedIndexApi<E> {
     >(
         &mut self,
         object_handle: ObjectHandle,
-        collection_index: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         count: u32,
     ) -> Result<Vec<(K, V)>, E> {
         let entries = self

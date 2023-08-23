@@ -541,7 +541,7 @@ impl FungibleResourceManagerBlueprint {
         let divisibility = {
             let divisibility_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                FungibleResourceManagerField::Divisibility,
+                FungibleResourceManagerField::Divisibility.into(),
                 LockFlags::read_only(),
             )?;
             let divisibility: FungibleResourceManagerDivisibilityFieldPayload =
@@ -560,11 +560,11 @@ impl FungibleResourceManagerBlueprint {
         // TODO: Could be further cleaned up by using event
         if api.actor_is_feature_enabled(
             OBJECT_HANDLE_SELF,
-            FungibleResourceManagerFeature::TrackTotalSupply,
+            FungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
         )? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                FungibleResourceManagerField::TotalSupply,
+                FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply = api
@@ -619,11 +619,11 @@ impl FungibleResourceManagerBlueprint {
         // TODO: Could be further cleaned up by using event
         if api.actor_is_feature_enabled(
             OBJECT_HANDLE_SELF,
-            FungibleResourceManagerFeature::TrackTotalSupply,
+            FungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
         )? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                FungibleResourceManagerField::TotalSupply,
+                FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply = api
@@ -713,7 +713,7 @@ impl FungibleResourceManagerBlueprint {
     {
         let divisibility_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleResourceManagerField::Divisibility,
+            FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
 
@@ -733,11 +733,11 @@ impl FungibleResourceManagerBlueprint {
     {
         if api.actor_is_feature_enabled(
             OBJECT_HANDLE_SELF,
-            FungibleResourceManagerFeature::TrackTotalSupply,
+            FungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
         )? {
             let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                FungibleResourceManagerField::TotalSupply,
+                FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::read_only(),
             )?;
             let total_supply = api
@@ -761,7 +761,7 @@ impl FungibleResourceManagerBlueprint {
     {
         let divisibility_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleResourceManagerField::Divisibility,
+            FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
 
@@ -779,7 +779,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if !api
-            .actor_is_feature_enabled(OBJECT_HANDLE_SELF, FungibleResourceManagerFeature::Mint)?
+            .actor_is_feature_enabled(OBJECT_HANDLE_SELF, FungibleResourceManagerFeature::Mint.feature_name())?
         {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::FungibleResourceManagerError(
@@ -796,7 +796,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if !api
-            .actor_is_feature_enabled(OBJECT_HANDLE_SELF, FungibleResourceManagerFeature::Burn)?
+            .actor_is_feature_enabled(OBJECT_HANDLE_SELF, FungibleResourceManagerFeature::Burn.feature_name())?
         {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::FungibleResourceManagerError(

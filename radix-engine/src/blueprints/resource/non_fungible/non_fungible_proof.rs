@@ -81,7 +81,7 @@ impl NonFungibleProofBlueprint {
         let moveable = {
             let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                NonFungibleProofField::Moveable,
+                NonFungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
             let substate_ref: ProofMoveableSubstate = api.field_read_typed(handle)?;
@@ -91,7 +91,7 @@ impl NonFungibleProofBlueprint {
         };
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleProofField::ProofRefs,
+            NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
@@ -115,7 +115,7 @@ impl NonFungibleProofBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleProofField::ProofRefs,
+            NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
@@ -132,7 +132,7 @@ impl NonFungibleProofBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleProofField::ProofRefs,
+            NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
@@ -164,7 +164,7 @@ impl NonFungibleProofBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleProofField::ProofRefs,
+            NonFungibleProofField::ProofRefs.into(),
             LockFlags::MUTABLE,
         )?;
         let proof_substate: NonFungibleProofSubstate = api.field_read_typed(handle)?;
@@ -195,7 +195,7 @@ impl NonFungibleProofBlueprint {
             if !is_to_self && (is_to_barrier || is_to_auth_zone) {
                 let handle = api.actor_open_field(
                     OBJECT_HANDLE_SELF,
-                    FungibleProofField::Moveable,
+                    FungibleProofField::Moveable.into(),
                     LockFlags::MUTABLE,
                 )?;
                 let mut proof: ProofMoveableSubstate = api.field_read_typed(handle)?;

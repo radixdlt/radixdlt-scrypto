@@ -1,4 +1,4 @@
-use crate::blueprints::resource::FungibleVaultBalanceFieldSubstate;
+use crate::blueprints::resource::{FungibleVaultBalanceFieldSubstate, FungibleVaultField};
 use crate::internal_prelude::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
@@ -9,7 +9,6 @@ use radix_engine_store_interface::{
 };
 use sbor::rust::prelude::*;
 
-use crate::blueprints::resource::FungibleVaultField;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::track::TrackedSubstateValue;

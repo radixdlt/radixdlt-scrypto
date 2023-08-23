@@ -1699,11 +1699,10 @@ where
     fn actor_index_insert(
         &mut self,
         object_handle: ObjectHandle,
-        collection: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let collection_index = collection.collection_index();
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
@@ -1742,10 +1741,9 @@ where
     fn actor_index_remove(
         &mut self,
         object_handle: ObjectHandle,
-        collection: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let collection_index = collection.collection_index();
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
@@ -1766,10 +1764,9 @@ where
     fn actor_index_scan_keys(
         &mut self,
         object_handle: ObjectHandle,
-        collection: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let collection_index = collection.collection_index();
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
@@ -1792,10 +1789,9 @@ where
     fn actor_index_drain(
         &mut self,
         object_handle: ObjectHandle,
-        collection: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
-        let collection_index = collection.collection_index();
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
@@ -1825,11 +1821,10 @@ where
     fn actor_sorted_index_insert(
         &mut self,
         object_handle: ObjectHandle,
-        collection: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let collection_index = collection.collection_index();
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
@@ -1873,10 +1868,9 @@ where
     fn actor_sorted_index_remove(
         &mut self,
         object_handle: ObjectHandle,
-        collection: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let collection_index = collection.collection_index();
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
@@ -1902,10 +1896,9 @@ where
     fn actor_sorted_index_scan(
         &mut self,
         object_handle: ObjectHandle,
-        collection: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         limit: u32,
     ) -> Result<Vec<(SortedKey, Vec<u8>)>, RuntimeError> {
-        let collection_index = collection.collection_index();
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
@@ -2156,10 +2149,9 @@ where
     fn actor_open_field(
         &mut self,
         object_handle: ObjectHandle,
-        field: impl FieldDescriptor,
+        field_index: u8,
         flags: LockFlags,
     ) -> Result<SubstateHandle, RuntimeError> {
-        let field_index = field.field_index();
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, blueprint_info, partition_num, transient) =
@@ -2339,11 +2331,10 @@ where
     fn actor_open_key_value_entry(
         &mut self,
         object_handle: ObjectHandle,
-        collection: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
-        let collection_index = collection.collection_index();
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, info, partition_num) = self.get_actor_collection_partition_info(
@@ -2404,11 +2395,15 @@ where
     fn actor_remove_key_value_entry(
         &mut self,
         object_handle: ObjectHandle,
-        collection: impl CollectionDescriptor,
+        collection_index: CollectionIndex,
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let handle =
-            self.actor_open_key_value_entry(object_handle, collection, key, LockFlags::MUTABLE)?;
+        let handle = self.actor_open_key_value_entry(
+            object_handle,
+            collection_index,
+            key,
+            LockFlags::MUTABLE,
+        )?;
         self.key_value_entry_remove_and_close_substate(handle)
     }
 }

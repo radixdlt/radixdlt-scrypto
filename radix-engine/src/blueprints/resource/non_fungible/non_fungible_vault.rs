@@ -7,7 +7,7 @@ use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, FieldValue, LockFlags, OBJECT_HANDLE_OUTER_OBJECT,
+    ClientApi, FieldValue, LockFlags, OBJECT_HANDLE_OUTER_OBJECT,
     OBJECT_HANDLE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
@@ -464,14 +464,14 @@ impl NonFungibleVaultBlueprint {
         let key = scrypto_encode(&id).unwrap();
         let removed = api.actor_index_remove(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultCollection::NonFungibleIndex,
+            NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
             key.clone(),
         )?;
         let exists = removed.is_some();
         if let Some(removed) = removed {
             api.actor_index_insert(
                 OBJECT_HANDLE_SELF,
-                NonFungibleVaultCollection::NonFungibleIndex,
+                NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
                 key,
                 removed,
             )?;
@@ -526,7 +526,7 @@ impl NonFungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::FreezeStatus,
+            NonFungibleVaultField::FreezeStatus.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -550,7 +550,7 @@ impl NonFungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::FreezeStatus,
+            NonFungibleVaultField::FreezeStatus.into(),
             LockFlags::MUTABLE,
         )?;
         let mut frozen = api
@@ -650,7 +650,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedResource,
+            NonFungibleVaultField::LockedResource.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked = api
@@ -688,7 +688,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedResource,
+            NonFungibleVaultField::LockedResource.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked = api
@@ -726,14 +726,14 @@ impl NonFungibleVaultBlueprint {
     {
         if !api.actor_is_feature_enabled(
             OBJECT_HANDLE_OUTER_OBJECT,
-            NonFungibleResourceManagerFeature::VaultFreeze,
+            NonFungibleResourceManagerFeature::VaultFreeze.feature_name(),
         )? {
             return Ok(());
         }
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::FreezeStatus,
+            NonFungibleVaultField::FreezeStatus.into(),
             LockFlags::read_only(),
         )?;
         let frozen = api
@@ -756,7 +756,7 @@ impl NonFungibleVaultBlueprint {
     {
         if !api.actor_is_feature_enabled(
             OBJECT_HANDLE_OUTER_OBJECT,
-            NonFungibleResourceManagerFeature::VaultFreeze,
+            NonFungibleResourceManagerFeature::VaultFreeze.feature_name(),
         )? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotFreezable),
@@ -772,7 +772,7 @@ impl NonFungibleVaultBlueprint {
     {
         if !api.actor_is_feature_enabled(
             OBJECT_HANDLE_OUTER_OBJECT,
-            NonFungibleResourceManagerFeature::VaultRecall,
+            NonFungibleResourceManagerFeature::VaultRecall.feature_name(),
         )? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotRecallable),
@@ -788,7 +788,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::Balance,
+            NonFungibleVaultField::Balance.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref = api
@@ -805,7 +805,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedResource,
+            NonFungibleVaultField::LockedResource.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref = api
@@ -825,7 +825,7 @@ impl NonFungibleVaultBlueprint {
     {
         let items: Vec<NonFungibleLocalId> = api.actor_index_scan_keys_typed(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultCollection::NonFungibleIndex,
+            NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
             limit,
         )?;
         let ids = items.into_iter().collect();
@@ -841,7 +841,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedResource,
+            NonFungibleVaultField::LockedResource.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref = api
@@ -863,7 +863,7 @@ impl NonFungibleVaultBlueprint {
         // deduct from liquidity pool
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::Balance,
+            NonFungibleVaultField::Balance.into(),
             LockFlags::MUTABLE,
         )?;
         let mut balance = api
@@ -881,7 +881,7 @@ impl NonFungibleVaultBlueprint {
             let ids: Vec<(NonFungibleLocalId, NonFungibleVaultNonFungibleEntryPayload)> = api
                 .actor_index_drain_typed(
                     OBJECT_HANDLE_SELF,
-                    NonFungibleVaultCollection::NonFungibleIndex,
+                    NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
                     n,
                 )?;
             LiquidNonFungibleResource {
@@ -907,7 +907,7 @@ impl NonFungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::Balance,
+            NonFungibleVaultField::Balance.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref = api
@@ -920,7 +920,7 @@ impl NonFungibleVaultBlueprint {
         for id in ids {
             let removed = api.actor_index_remove(
                 OBJECT_HANDLE_SELF,
-                NonFungibleVaultCollection::NonFungibleIndex,
+                NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
                 scrypto_encode(id).unwrap(),
             )?;
 
@@ -955,7 +955,7 @@ impl NonFungibleVaultBlueprint {
 
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::Balance,
+            NonFungibleVaultField::Balance.into(),
             LockFlags::MUTABLE,
         )?;
         let mut vault = api
@@ -970,7 +970,7 @@ impl NonFungibleVaultBlueprint {
         for id in resource.ids {
             api.actor_index_insert_typed(
                 OBJECT_HANDLE_SELF,
-                NonFungibleVaultCollection::NonFungibleIndex,
+                NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
                 id,
                 NonFungibleVaultNonFungibleEntryPayload::from_content_source(()),
             )?;

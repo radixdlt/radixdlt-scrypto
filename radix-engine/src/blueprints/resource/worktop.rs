@@ -98,7 +98,7 @@ impl WorktopBlueprint {
         } else {
             let worktop_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                WorktopField::Worktop,
+                WorktopField::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
@@ -133,7 +133,7 @@ impl WorktopBlueprint {
         } else {
             let worktop_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                WorktopField::Worktop,
+                WorktopField::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
@@ -182,7 +182,7 @@ impl WorktopBlueprint {
         } else {
             let worktop_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                WorktopField::Worktop,
+                WorktopField::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
@@ -225,7 +225,7 @@ impl WorktopBlueprint {
 
         let worktop_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            WorktopField::Worktop,
+            WorktopField::Worktop.into(),
             LockFlags::MUTABLE,
         )?;
         let mut worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
@@ -254,7 +254,7 @@ impl WorktopBlueprint {
 
         let worktop_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            WorktopField::Worktop,
+            WorktopField::Worktop.into(),
             LockFlags::read_only(),
         )?;
         let worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
@@ -285,7 +285,7 @@ impl WorktopBlueprint {
 
         let worktop_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            WorktopField::Worktop,
+            WorktopField::Worktop.into(),
             LockFlags::read_only(),
         )?;
         let worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
@@ -316,7 +316,7 @@ impl WorktopBlueprint {
 
         let worktop_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            WorktopField::Worktop,
+            WorktopField::Worktop.into(),
             LockFlags::read_only(),
         )?;
         let worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
@@ -348,7 +348,7 @@ impl WorktopBlueprint {
 
         let worktop_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            WorktopField::Worktop,
+            WorktopField::Worktop.into(),
             LockFlags::MUTABLE,
         )?;
         let mut worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;

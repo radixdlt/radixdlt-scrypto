@@ -12,8 +12,8 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::system_modules::transaction_runtime_api::EventFlags;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldDescriptor, FieldValue,
-    GenericArgs, ObjectHandle,
+    ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldValue, GenericArgs,
+    ObjectHandle,
 };
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{KVEntry, LockFlags};
@@ -368,12 +368,10 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
     fn actor_open_field(
         &mut self,
         object_handle: u32,
-        field: impl FieldDescriptor,
+        field: u8,
         flags: LockFlags,
     ) -> Result<SubstateHandle, ClientApiError> {
-        let handle = unsafe {
-            actor_open_field(object_handle, u32::from(field.field_index()), flags.bits())
-        };
+        let handle = unsafe { actor_open_field(object_handle, u32::from(field), flags.bits()) };
 
         Ok(handle)
     }

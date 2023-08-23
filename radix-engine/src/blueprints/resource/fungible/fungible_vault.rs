@@ -286,7 +286,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_OUTER_OBJECT,
-            FungibleResourceManagerField::Divisibility,
+            FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
         let divisibility = api
@@ -398,7 +398,7 @@ impl FungibleVaultBlueprint {
         // Lock the substate (with special flags)
         let vault_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::Balance,
+            FungibleVaultField::Balance.into(),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
 
@@ -463,7 +463,7 @@ impl FungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::FreezeStatus,
+            FungibleVaultField::FreezeStatus.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -487,7 +487,7 @@ impl FungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::FreezeStatus,
+            FungibleVaultField::FreezeStatus.into(),
             LockFlags::MUTABLE,
         )?;
         let mut frozen = api
@@ -561,7 +561,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::LockedBalance,
+            FungibleVaultField::LockedBalance.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked = api
@@ -592,7 +592,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::LockedBalance,
+            FungibleVaultField::LockedBalance.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked = api
@@ -628,14 +628,14 @@ impl FungibleVaultBlueprint {
     {
         if !api.actor_is_feature_enabled(
             OBJECT_HANDLE_OUTER_OBJECT,
-            FungibleResourceManagerFeature::VaultFreeze,
+            FungibleResourceManagerFeature::VaultFreeze.feature_name(),
         )? {
             return Ok(());
         }
 
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::FreezeStatus,
+            FungibleVaultField::FreezeStatus.into(),
             LockFlags::read_only(),
         )?;
         let frozen = api
@@ -658,7 +658,7 @@ impl FungibleVaultBlueprint {
     {
         if !api.actor_is_feature_enabled(
             OBJECT_HANDLE_OUTER_OBJECT,
-            FungibleResourceManagerFeature::VaultFreeze,
+            FungibleResourceManagerFeature::VaultFreeze.feature_name(),
         )? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotFreezable),
@@ -674,7 +674,7 @@ impl FungibleVaultBlueprint {
     {
         if !api.actor_is_feature_enabled(
             OBJECT_HANDLE_OUTER_OBJECT,
-            FungibleResourceManagerFeature::VaultRecall,
+            FungibleResourceManagerFeature::VaultRecall.feature_name(),
         )? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotRecallable),
@@ -690,7 +690,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::Balance,
+            FungibleVaultField::Balance.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref = api
@@ -707,7 +707,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::LockedBalance,
+            FungibleVaultField::LockedBalance.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedFungibleResource = api
@@ -727,7 +727,7 @@ impl FungibleVaultBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::Balance,
+            FungibleVaultField::Balance.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref = api
@@ -757,7 +757,7 @@ impl FungibleVaultBlueprint {
 
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::Balance,
+            FungibleVaultField::Balance.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref = api

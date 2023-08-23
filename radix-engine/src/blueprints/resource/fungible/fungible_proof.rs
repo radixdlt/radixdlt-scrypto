@@ -76,7 +76,7 @@ impl FungibleProofBlueprint {
         let moveable = {
             let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
-                FungibleProofField::Moveable,
+                FungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
             let substate_ref: ProofMoveableSubstate = api.field_read_typed(handle)?;
@@ -87,7 +87,7 @@ impl FungibleProofBlueprint {
 
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleProofField::ProofRefs,
+            FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: FungibleProofSubstate = api.field_read_typed(handle)?;
@@ -111,7 +111,7 @@ impl FungibleProofBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleProofField::ProofRefs,
+            FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: FungibleProofSubstate = api.field_read_typed(handle)?;
@@ -143,7 +143,7 @@ impl FungibleProofBlueprint {
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
-            FungibleProofField::ProofRefs,
+            FungibleProofField::ProofRefs.into(),
             LockFlags::MUTABLE,
         )?;
         let proof_substate: FungibleProofSubstate = api.field_read_typed(handle)?;
@@ -174,7 +174,7 @@ impl FungibleProofBlueprint {
             if !is_to_self && (is_to_barrier || is_to_auth_zone) {
                 let handle = api.actor_open_field(
                     OBJECT_HANDLE_SELF,
-                    FungibleProofField::Moveable,
+                    FungibleProofField::Moveable.into(),
                     LockFlags::MUTABLE,
                 )?;
                 let mut proof: ProofMoveableSubstate = api.field_read_typed(handle)?;
