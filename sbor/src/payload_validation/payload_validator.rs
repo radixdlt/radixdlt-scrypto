@@ -571,7 +571,8 @@ mod tests {
             &cut_off_payload,
             schema.v1(),
             type_index,
-            &mut () ,64
+            &mut (),
+            64
         ) else {
             panic!("Validation did not error with too short a payload");
         };
@@ -605,7 +606,8 @@ mod tests {
             &payload,
             schema.v1(),
             type_index,
-            &mut (),64
+            &mut (),
+            64
         ) else {
             panic!("Validation did not error with too short a payload");
         };

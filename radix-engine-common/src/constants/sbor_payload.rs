@@ -34,3 +34,6 @@ pub const BLUEPRINT_PAYLOAD_MAX_DEPTH: usize = 48;
 
 /// Depth limit for the key and value of an entry in `KeyValueStore`
 pub const KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH: usize = 48;
+
+// Note that non-fungible data (transparent ScryptoValue) is soft limited by the function IO
+// do we want a hard limit on it?
