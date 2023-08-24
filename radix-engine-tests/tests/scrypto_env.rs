@@ -4,6 +4,46 @@ use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
+fn create_payload_of_depth(n: usize) -> Vec<u8> {
+    assert!(n >= 1);
+
+    // initial value with depth = 1
+    let mut value = ScryptoValue::Array {
+        element_value_kind: ScryptoValueKind::Array,
+        elements: vec![],
+    };
+    for _ in 1..n {
+        // increase depth by 1
+        value = ScryptoValue::Array {
+            element_value_kind: ScryptoValueKind::Array,
+            elements: vec![value],
+        }
+    }
+    scrypto_encode_with_depth_limit(&value, 128).unwrap()
+}
+
+#[test]
+fn test_write_kv_store_entry_with_depth() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "MaxSborDepthTest",
+            "write_kv_store_entry_with_depth",
+            manifest_args!(create_payload_of_depth(64)),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
 #[test]
 fn test_query_role_rules() {
     // Arrange

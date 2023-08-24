@@ -69,3 +69,55 @@ mod local_auth_zone {
         }
     }
 }
+
+#[blueprint]
+mod max_sbor_depth {
+    use sbor::basic_well_known_types::ANY_TYPE;
+    use sbor::*;
+
+    struct MaxSborDepthTest {
+        kv_store: Own,
+    }
+
+    impl MaxSborDepthTest {
+        pub fn write_kv_store_entry_with_depth(buffer: Vec<u8>) {
+            // Create KeyValueStore<Any, Any>
+            let schema = VersionedScryptoSchema::V1(SchemaV1 {
+                type_kinds: vec![],
+                type_metadata: vec![],
+                type_validations: vec![],
+            });
+            let schema_hash = schema.generate_schema_hash();
+            let kv_store = ScryptoVmV1Api::kv_store_new(KeyValueStoreGenericArgs {
+                additional_schema: Some(schema),
+                key_type: GenericSubstitution::Local(TypeIdentifier(
+                    schema_hash,
+                    LocalTypeIndex::from(ANY_TYPE),
+                )),
+                value_type: GenericSubstitution::Local(TypeIdentifier(
+                    schema_hash,
+                    LocalTypeIndex::from(ANY_TYPE),
+                )),
+                allow_ownership: false,
+            });
+
+            // Open entry
+            let handle = ScryptoVmV1Api::kv_store_open_entry(
+                &kv_store,
+                &scrypto_encode("key").unwrap(),
+                LockFlags::MUTABLE,
+            );
+
+            // Write entry
+            ScryptoVmV1Api::kv_entry_write(handle, buffer);
+
+            // Clean up
+            Self {
+                kv_store: Own(kv_store),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+    }
+}
