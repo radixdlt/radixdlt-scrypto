@@ -102,8 +102,9 @@ impl<'a, E: CustomExtension> RawPayload<'a, E> {
         T: for<'b> Decode<E::CustomValueKind, VecDecoder<'b, E::CustomValueKind>>,
     >(
         &self,
+        depth_limit: usize,
     ) -> Result<T, DecodeError> {
-        let mut decoder = VecDecoder::new(self.encoded_root_body_bytes(), E::MAX_DEPTH);
+        let mut decoder = VecDecoder::new(self.encoded_root_body_bytes(), depth_limit);
         T::decode_body_with_value_kind(&mut decoder, self.root_value_kind)
     }
 
@@ -231,6 +232,7 @@ impl<Ext: CustomExtension, D: Decoder<Ext::CustomValueKind>> Decode<Ext::CustomV
             decoder.peek_remaining(),
             value_kind,
             decoder.get_stack_depth(),
+            decoder.get_depth_limit(),
         )?;
         // Because Decode doesn't (currently) allow borrowing from the decoder, we have to to_vec here
         Ok(Self::new_from_valid_owned_value_body(

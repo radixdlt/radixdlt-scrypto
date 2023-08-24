@@ -109,8 +109,9 @@ pub fn validate_payload_against_schema<'s, E: ValidatableCustomExtension<T>, T>(
     schema: &'s Schema<E::CustomSchema>,
     index: LocalTypeIndex,
     context: &T,
+    depth_limit: usize,
 ) -> Result<(), LocatedValidationError<'s, E>> {
-    let mut traverser = traverse_payload_with_types::<E>(payload, &schema, index);
+    let mut traverser = traverse_payload_with_types::<E>(payload, &schema, index, depth_limit);
     loop {
         let typed_event = traverser.next_event();
         if validate_event_with_type::<E, T>(&schema, &typed_event.event, context).map_err(
@@ -334,6 +335,7 @@ mod tests {
             schema.v1(),
             type_index,
             &mut (),
+            64,
         );
         assert!(result.is_ok())
     }
@@ -352,6 +354,7 @@ mod tests {
             schema.v1(),
             type_index,
             &mut (),
+            64,
         );
         assert!(matches!(
             result,
@@ -435,6 +438,7 @@ mod tests {
             schema.v1(),
             type_index,
             &mut (),
+            64,
         );
         assert!(result.is_ok())
     }
@@ -470,7 +474,8 @@ mod tests {
                 &basic_encode(&vec![5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
-                &mut ()
+                &mut (),
+                64
             ),
             Ok(())
         );
@@ -480,7 +485,8 @@ mod tests {
                 &basic_encode(&vec![8u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
-                &mut ()
+                &mut (),
+                64
             )
             .map_err(|e| e.error),
             Err(PayloadValidationError::ValidationError(
@@ -499,7 +505,8 @@ mod tests {
                 &basic_encode(&vec![5u8, 5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
-                &mut ()
+                &mut (),
+                64
             )
             .map_err(|e| e.error),
             Err(PayloadValidationError::ValidationError(
@@ -564,7 +571,7 @@ mod tests {
             &cut_off_payload,
             schema.v1(),
             type_index,
-            &mut (),
+            &mut () ,64
         ) else {
             panic!("Validation did not error with too short a payload");
         };
@@ -598,7 +605,7 @@ mod tests {
             &payload,
             schema.v1(),
             type_index,
-            &mut (),
+            &mut (),64
         ) else {
             panic!("Validation did not error with too short a payload");
         };

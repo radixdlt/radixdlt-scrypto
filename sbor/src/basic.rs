@@ -241,7 +241,6 @@ create_well_known_lookup!(
 );
 
 impl CustomExtension for NoCustomExtension {
-    const MAX_DEPTH: usize = BASIC_SBOR_V1_MAX_DEPTH;
     const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
     type CustomValueKind = NoCustomValueKind;
     type CustomTraversal = NoCustomTraversal;
