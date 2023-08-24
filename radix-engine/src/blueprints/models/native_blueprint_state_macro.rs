@@ -743,7 +743,7 @@ mod helper_macros {
         };
         (Index, type $alias:ident = WRAPPED $content:ty$(,)?) => {
             // There is no system wrapper around Index substates
-            pub type $alias = $content;
+            pub type $alias = IndexEntrySubstate<$content>;
         };
         (SortedIndex, type $alias:ident = WRAPPED $content:ty$(,)?) => {
             // There is no system wrapper around SortedIndex substates

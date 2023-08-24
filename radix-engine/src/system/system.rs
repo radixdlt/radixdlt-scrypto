@@ -41,9 +41,8 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::internal_prelude::IndexEntrySubstate;
 use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
-
-pub type SortedIndexEntrySubstate<V> = V;
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
@@ -1810,8 +1809,9 @@ where
             &buffer,
         )?;
 
-        let value = IndexedScryptoValue::from_vec(buffer)
-            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
+        let value: ScryptoValue = scrypto_decode(&buffer).unwrap();
+        let kv_entry = IndexEntrySubstate::entry(value);
+        let value = IndexedScryptoValue::from_typed(&kv_entry);
 
         self.api
             .kernel_set_substate(&node_id, partition_num, SubstateKey::Map(key), value)
@@ -1835,7 +1835,10 @@ where
         let rtn = self
             .api
             .kernel_remove_substate(&node_id, partition_num, &SubstateKey::Map(key))?
-            .map(|v| v.into());
+            .map(|v| {
+                let value: IndexEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
+                scrypto_encode(value.value()).unwrap()
+            });
 
         Ok(rtn)
     }
@@ -1884,7 +1887,12 @@ where
             .api
             .kernel_drain_substates::<MapKey>(&node_id, partition_num, limit)?
             .into_iter()
-            .map(|(key, value)| (key.into_map(), value.into()))
+            .map(|(key, value)| {
+                let value: IndexEntrySubstate<ScryptoValue> = value.as_typed().unwrap();
+                let value = scrypto_encode(value.value()).unwrap();
+
+                (key.into_map(), value)
+            })
             .collect();
 
         Ok(substates)

@@ -543,23 +543,34 @@ impl SystemDatabaseChecker {
                                 &node_checker_state.node_id,
                                 partition_number,
                             ) {
-                                let map_key =
-                                    match key {
-                                        SubstateKey::Map(map_key) => map_key,
-                                        _ => return Err(
-                                            SystemPartitionCheckError::InvalidIndexCollectionKey,
-                                        ),
-                                    };
+                                // Key Check
+                                {
+                                    let map_key =
+                                        match key {
+                                            SubstateKey::Map(map_key) => map_key,
+                                            _ => return Err(
+                                                SystemPartitionCheckError::InvalidIndexCollectionKey,
+                                            ),
+                                        };
 
-                                self.validate_payload(reader, &map_key, &key_schema)
-                                    .map_err(|_| {
-                                        SystemPartitionCheckError::InvalidIndexCollectionKey
-                                    })?;
+                                    self.validate_payload(reader, &map_key, &key_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidIndexCollectionKey
+                                        })?;
 
-                                self.validate_payload(reader, &value, &value_schema)
-                                    .map_err(|_| {
-                                        SystemPartitionCheckError::InvalidIndexCollectionValue
-                                    })?;
+                                }
+
+                                // Value Check
+                                {
+                                    let entry: IndexEntrySubstate<ScryptoValue> = scrypto_decode(&value)
+                                        .map_err(|_| SystemPartitionCheckError::InvalidIndexCollectionValue)?;
+                                    let value = scrypto_encode(entry.value())
+                                        .map_err(|_| SystemPartitionCheckError::InvalidIndexCollectionValue)?;
+                                    self.validate_payload(reader, &value, &value_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidIndexCollectionValue
+                                        })?;
+                                }
 
                                 substate_count += 1;
                             }

@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,   341.280677000486227023,    100.0%
-- Execution Cost (XRD)                                                     ,                2.6261304,      0.8%
-- Finalization Cost (XRD)                                                  ,               2.47942275,      0.7%
+Total Cost (XRD)                                                           ,   341.392338795505752189,    100.0%
+- Execution Cost (XRD)                                                     ,                2.6262006,      0.8%
+- Finalization Cost (XRD)                                                  ,               2.47943445,      0.7%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
-- Storage Cost (XRD)                                                       ,   336.175123850486227023,     98.5%
+- Storage Cost (XRD)                                                       ,   336.286703745505752189,     98.5%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 52522608,    100.0%
+Execution Cost Breakdown                                                   ,                 52524012,    100.0%
 - AllocateNodeId                                                           ,                     2288,      0.0%
 - BeforeInvoke                                                             ,                  2094264,      4.0%
 - CloseSubstate                                                            ,                    51660,      0.1%
@@ -41,15 +41,15 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::put_NonFungibleVault                                      ,                    29816,      0.1%
 - RunNativeCode::try_deposit_batch_or_abort                                ,                    76963,      0.1%
 - RunWasmCode::Faucet_lock_fee                                             ,                    16988,      0.0%
-- SetSubstate                                                              ,                    58032,      0.1%
+- SetSubstate                                                              ,                    59436,      0.1%
 - ValidateTxPayload                                                        ,                 41840680,     79.7%
 - VerifyTxSignatures                                                       ,                        0,      0.0%
 - WriteSubstate                                                            ,                     5600,      0.0%
-Finalization Cost Breakdown                                                ,                 49588455,    100.0%
+Finalization Cost Breakdown                                                ,                 49588689,    100.0%
 - CommitEvents                                                             ,                    26608,      0.1%
 - CommitLogs                                                               ,                        0,      0.0%
 - CommitStateUpdates::GlobalAccount                                        ,                   100011,      0.2%
 - CommitStateUpdates::GlobalGenericComponent                               ,                   100018,      0.2%
 - CommitStateUpdates::GlobalNonFungibleResourceManager                     ,                 25561533,     51.5%
 - CommitStateUpdates::InternalFungibleVault                                ,                   100009,      0.2%
-- CommitStateUpdates::InternalNonFungibleVault                             ,                 23700276,     47.8%
+- CommitStateUpdates::InternalNonFungibleVault                             ,                 23700510,     47.8%

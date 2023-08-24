@@ -207,7 +207,7 @@ pub trait IndexEntryPayload:
     }
 
     fn into_substate(self) -> IndexEntrySubstate<Self> {
-        self
+        IndexEntrySubstate::entry(self)
     }
 }
 
@@ -253,7 +253,7 @@ pub trait SortedIndexEntryPayload:
     }
 
     fn into_substate(self) -> SortedIndexEntrySubstate<Self> {
-        self
+        SortedIndexEntrySubstate::entry(self)
     }
 }
 

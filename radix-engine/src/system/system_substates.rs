@@ -149,10 +149,50 @@ impl<V> KeyValueEntrySubstate<V> {
 impl<V> Default for KeyValueEntrySubstate<V> {
     fn default() -> Self {
         Self::V1(KeyValueEntrySubstateV1 {
-            value: Option::None,
+            value: None,
             mutability: SubstateMutability::Mutable,
         })
     }
 }
 
-pub type IndexEntrySubstate<V> = V;
+pub type IndexEntrySubstateV1<V> = V;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(categorize_types = "")]
+pub enum IndexEntrySubstate<V> {
+    V1(IndexEntrySubstateV1<V>)
+}
+
+impl<V> IndexEntrySubstate<V> {
+    pub fn entry(value: V) -> Self {
+        Self::V1(value)
+    }
+
+    pub fn value(&self) -> &V {
+        match self {
+            IndexEntrySubstate::V1(value) => value,
+        }
+    }
+
+    pub fn into_value(self) -> V {
+        match self {
+            IndexEntrySubstate::V1(value) => value,
+        }
+    }
+
+}
+
+
+pub type SortedIndexEntrySubstateV1<V> = V;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(categorize_types = "")]
+pub enum SortedIndexEntrySubstate<V> {
+    V1(SortedIndexEntrySubstateV1<V>)
+}
+
+impl<V> SortedIndexEntrySubstate<V> {
+    pub fn entry(value: V) -> Self {
+        Self::V1(value)
+    }
+}
