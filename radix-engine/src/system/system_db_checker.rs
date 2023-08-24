@@ -1,8 +1,15 @@
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::internal_prelude::*;
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use crate::system::system_db_reader::{
+    ObjectPartitionDescriptor, ResolvedPayloadSchema, SystemDatabaseReader,
+    SystemPartitionDescriptor, SystemReaderError,
+};
+use crate::system::system_substates::FieldSubstate;
+use crate::system::type_info::TypeInfoSubstate;
+use crate::types::Condition;
 use radix_engine_common::prelude::{
-    scrypto_decode, scrypto_encode, Hash, ScryptoCustomExtension, ScryptoSchema, ScryptoValue,
+    scrypto_decode, scrypto_encode, Hash, ScryptoCustomExtension, ScryptoValue,
+    VersionedScryptoSchema,
 };
 use radix_engine_interface::api::{FieldIndex, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
@@ -12,14 +19,7 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_store_interface::interface::ListableSubstateDatabase;
 use radix_engine_store_interface::interface::SubstateDatabase;
-use sbor::rust::prelude::*;
 use sbor::{validate_payload_against_schema, LocatedValidationError};
-
-use crate::system::system_db_reader::{
-    ObjectPartitionDescriptor, ResolvedPayloadSchema, SystemDatabaseReader,
-    SystemPartitionDescriptor, SystemReaderError,
-};
-use crate::types::Condition;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SystemNodeCheckerState {
@@ -97,6 +97,7 @@ pub enum SystemPartitionCheckError {
     MissingIndexCollectionValueSchema(SystemReaderError),
     InvalidIndexCollectionKey,
     InvalidIndexCollectionValue,
+    InvalidPartition,
     MissingSortedIndexCollectionKeySchema(SystemReaderError),
     MissingSortedIndexCollectionValueSchema(SystemReaderError),
     InvalidSortedIndexCollectionKey,
@@ -142,6 +143,16 @@ pub trait ApplicationChecker: Default {
         _info: BlueprintInfo,
         _node_id: NodeId,
         _field_index: FieldIndex,
+        _value: &Vec<u8>,
+    ) {
+    }
+
+    fn on_collection_entry(
+        &mut self,
+        _info: BlueprintInfo,
+        _node_id: NodeId,
+        _collection_index: CollectionIndex,
+        _key: &Vec<u8>,
         _value: &Vec<u8>,
     ) {
     }
@@ -299,49 +310,46 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                 let mut expected_fields = BTreeSet::new();
                 let mut excluded_fields = BTreeSet::new();
 
-                for (module_id, _version) in &object_info.module_versions {
-                    match module_id {
-                        ObjectModuleId::Main => {
-                            if let Some((_, fields)) = &bp_definition.interface.state.fields {
-                                for (field_index, field_schema) in fields.iter().enumerate() {
-                                    match &field_schema.condition {
-                                        Condition::Always => {
-                                            expected_fields.insert((*module_id, field_index as u8));
-                                        }
-                                        Condition::IfFeature(feature) => {
-                                            if object_info
-                                                .blueprint_info
-                                                .features
-                                                .contains(feature.as_str())
-                                            {
-                                                expected_fields
-                                                    .insert((*module_id, field_index as u8));
-                                            } else {
-                                                excluded_fields.insert(field_index as u8);
-                                            }
-                                        }
-                                        Condition::IfOuterFeature(feature) => {
-                                            if outer_object
-                                                .as_ref()
-                                                .ok_or_else(|| {
-                                                    SystemNodeCheckError::InvalidCondition
-                                                })?
-                                                .blueprint_info
-                                                .features
-                                                .contains(feature.as_str())
-                                            {
-                                                expected_fields
-                                                    .insert((*module_id, field_index as u8));
-                                            } else {
-                                                excluded_fields.insert(field_index as u8);
-                                            }
-                                        }
-                                    }
+                if let Some((_, fields)) = &bp_definition.interface.state.fields {
+                    for (field_index, field_schema) in fields.iter().enumerate() {
+                        match &field_schema.condition {
+                            Condition::Always => {
+                                expected_fields.insert((ObjectModuleId::Main, field_index as u8));
+                            }
+                            Condition::IfFeature(feature) => {
+                                if object_info
+                                    .blueprint_info
+                                    .features
+                                    .contains(feature.as_str())
+                                {
+                                    expected_fields
+                                        .insert((ObjectModuleId::Main, field_index as u8));
+                                } else {
+                                    excluded_fields.insert(field_index as u8);
+                                }
+                            }
+                            Condition::IfOuterFeature(feature) => {
+                                if outer_object
+                                    .as_ref()
+                                    .ok_or_else(|| SystemNodeCheckError::InvalidCondition)?
+                                    .blueprint_info
+                                    .features
+                                    .contains(feature.as_str())
+                                {
+                                    expected_fields
+                                        .insert((ObjectModuleId::Main, field_index as u8));
+                                } else {
+                                    excluded_fields.insert(field_index as u8);
                                 }
                             }
                         }
-                        _ => {
-                            let blueprint_id = module_id.static_blueprint().unwrap();
+                    }
+                }
+
+                match &object_info.object_type {
+                    ObjectType::Global { modules } => {
+                        for (module_id, _version) in modules {
+                            let blueprint_id = module_id.static_blueprint();
                             let module_def = reader
                                 .get_blueprint_definition(&blueprint_id)
                                 .map_err(SystemNodeCheckError::MissingBlueprint)?;
@@ -349,7 +357,10 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                 for (field_index, field_schema) in fields.iter().enumerate() {
                                     match &field_schema.condition {
                                         Condition::Always => {
-                                            expected_fields.insert((*module_id, field_index as u8));
+                                            let object_module_id: ObjectModuleId =
+                                                (*module_id).into();
+                                            expected_fields
+                                                .insert((object_module_id, field_index as u8));
                                         }
                                         _ => {
                                             return Err(SystemNodeCheckError::FoundModuleWithConditionalFields);
@@ -358,7 +369,8 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                 }
                             }
                         }
-                    };
+                    }
+                    ObjectType::Owned => {}
                 }
 
                 SystemNodeCheckerState {
@@ -390,7 +402,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
         }
 
         if let SystemNodeType::Object { object_info, .. } = &node_checker_state.node_type {
-            if object_info.global {
+            if object_info.is_global() {
                 node_counts.global_node_count += 1;
             } else {
                 node_counts.interior_node_count += 1;
@@ -444,8 +456,9 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                         let _schema_hash: Hash = scrypto_decode(&map_key)
                             .map_err(|_| SystemPartitionCheckError::InvalidSchemaKey)?;
 
-                        let _schema: KeyValueEntrySubstate<ScryptoSchema> = scrypto_decode(&value)
-                            .map_err(|_| SystemPartitionCheckError::InvalidSchemaValue)?;
+                        let _schema: KeyValueEntrySubstate<VersionedScryptoSchema> =
+                            scrypto_decode(&value)
+                                .map_err(|_| SystemPartitionCheckError::InvalidSchemaValue)?;
 
                         substate_count += 1;
                     }
@@ -482,7 +495,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                 .map_err(|_| {
                                     SystemPartitionCheckError::InvalidKeyValueStoreValue
                                 })?;
-                            if let Some(value) = entry.value {
+                            if let Some(value) = entry.into_value() {
                                 let entry_payload = scrypto_encode(&value).map_err(|_| {
                                     SystemPartitionCheckError::InvalidKeyValueStoreValue
                                 })?;
@@ -501,6 +514,17 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                         .get_blueprint_type_target(&node_checker_state.node_id, module_id)
                         .map_err(SystemPartitionCheckError::MissingObjectTypeTarget)?;
 
+                    let (expected_fields, excluded_fields, object_info) =
+                        match &mut node_checker_state.node_type {
+                            SystemNodeType::Object {
+                                expected_fields,
+                                excluded_fields,
+                                object_info,
+                                ..
+                            } => (expected_fields, excluded_fields, object_info),
+                            _ => return Err(SystemPartitionCheckError::InvalidPartition),
+                        };
+
                     match object_partition_descriptor {
                         ObjectPartitionDescriptor::Fields => {
                             for (key, value) in reader.substates_iter::<FieldKey>(
@@ -511,29 +535,19 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     SubstateKey::Field(field_index) => field_index,
                                     _ => return Err(SystemPartitionCheckError::InvalidFieldKey),
                                 };
-                                let blueprint_info = match &mut node_checker_state.node_type {
-                                    SystemNodeType::Object {
-                                        expected_fields,
-                                        excluded_fields,
-                                        object_info,
-                                        ..
-                                    } => {
-                                        expected_fields.remove(&(module_id, field_index));
 
-                                        if module_id.eq(&ObjectModuleId::Main)
-                                            && excluded_fields.contains(&field_index)
-                                        {
-                                            return Err(SystemPartitionCheckError::ContainsFieldWhichShouldNotExist);
-                                        }
-
-                                        object_info.blueprint_info.clone()
-                                    }
-                                    _ => return Err(SystemPartitionCheckError::InvalidFieldKey),
-                                };
+                                expected_fields.remove(&(module_id, field_index));
+                                if module_id.eq(&ObjectModuleId::Main)
+                                    && excluded_fields.contains(&field_index)
+                                {
+                                    return Err(
+                                        SystemPartitionCheckError::ContainsFieldWhichShouldNotExist,
+                                    );
+                                }
 
                                 let field: FieldSubstate<ScryptoValue> = scrypto_decode(&value)
                                     .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
-                                let field_payload = scrypto_encode(&field.value.0)
+                                let field_payload = scrypto_encode(field.payload())
                                     .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
 
                                 let field_identifier =
@@ -546,16 +560,12 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
 
                                 match module_id {
-                                    ObjectModuleId::Main => {
-                                        let (scrypto_value,) = field.value;
-                                        let value = scrypto_encode(&scrypto_value).unwrap();
-                                        self.application_checker.on_field(
-                                            blueprint_info,
-                                            node_checker_state.node_id,
-                                            field_index,
-                                            &value,
-                                        )
-                                    }
+                                    ObjectModuleId::Main => self.application_checker.on_field(
+                                        object_info.blueprint_info.clone(),
+                                        node_checker_state.node_id,
+                                        field_index,
+                                        &field_payload,
+                                    ),
                                     _ => {}
                                 }
 
@@ -589,23 +599,52 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                 &node_checker_state.node_id,
                                 partition_number,
                             ) {
-                                let map_key =
-                                    match key {
+                                // Key Check
+                                let key = {
+                                    let map_key = match key {
                                         SubstateKey::Map(map_key) => map_key,
                                         _ => return Err(
                                             SystemPartitionCheckError::InvalidIndexCollectionKey,
                                         ),
                                     };
 
-                                self.validate_payload(reader, &map_key, &key_schema)
-                                    .map_err(|_| {
-                                        SystemPartitionCheckError::InvalidIndexCollectionKey
-                                    })?;
+                                    self.validate_payload(reader, &map_key, &key_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidIndexCollectionKey
+                                        })?;
 
-                                self.validate_payload(reader, &value, &value_schema)
-                                    .map_err(|_| {
+                                    map_key
+                                };
+
+                                // Value Check
+                                let value = {
+                                    let entry: IndexEntrySubstate<ScryptoValue> =
+                                        scrypto_decode(&value).map_err(|_| {
+                                            SystemPartitionCheckError::InvalidIndexCollectionValue
+                                        })?;
+                                    let value = scrypto_encode(entry.value()).map_err(|_| {
                                         SystemPartitionCheckError::InvalidIndexCollectionValue
                                     })?;
+                                    self.validate_payload(reader, &value, &value_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidIndexCollectionValue
+                                        })?;
+
+                                    value
+                                };
+
+                                match module_id {
+                                    ObjectModuleId::Main => {
+                                        self.application_checker.on_collection_entry(
+                                            object_info.blueprint_info.clone(),
+                                            node_checker_state.node_id,
+                                            collection_index,
+                                            &key,
+                                            &value,
+                                        )
+                                    }
+                                    _ => {}
+                                }
 
                                 substate_count += 1;
                             }
@@ -638,7 +677,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                 partition_number,
                             ) {
                                 // Key check
-                                {
+                                let key = {
                                     let map_key = match key {
                                         SubstateKey::Map(map_key) => map_key,
                                         _ => return Err(
@@ -651,17 +690,32 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                                 key_identifier.clone(),
                                             )
                                         })?;
-                                }
+
+                                    map_key
+                                };
 
                                 // Value check
                                 {
                                     let entry: KeyValueEntrySubstate<ScryptoValue> = scrypto_decode(&value)
                                         .map_err(|_| SystemPartitionCheckError::InvalidKeyValueCollectionValue)?;
-                                    if let Some(value) = entry.value {
+                                    if let Some(value) = entry.into_value() {
                                         let entry_payload = scrypto_encode(&value)
                                             .map_err(|_| SystemPartitionCheckError::InvalidKeyValueCollectionValue)?;
                                         self.validate_payload(reader, &entry_payload, &value_schema)
                                             .map_err(|_| SystemPartitionCheckError::InvalidKeyValueCollectionValue)?;
+
+                                        match module_id {
+                                            ObjectModuleId::Main => {
+                                                self.application_checker.on_collection_entry(
+                                                    object_info.blueprint_info.clone(),
+                                                    node_checker_state.node_id,
+                                                    collection_index,
+                                                    &key,
+                                                    &entry_payload,
+                                                )
+                                            }
+                                            _ => {}
+                                        }
                                     }
                                 }
 
@@ -693,22 +747,50 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                 &node_checker_state.node_id,
                                 partition_number,
                             ) {
-                                let sorted_key = match key {
-                                    SubstateKey::Sorted(sorted_key) => sorted_key,
-                                    _ => return Err(
-                                        SystemPartitionCheckError::InvalidSortedIndexCollectionKey,
-                                    ),
+                                // Key Check
+                                let key = {
+                                    let sorted_key = match key {
+                                        SubstateKey::Sorted(sorted_key) => sorted_key,
+                                        _ => return Err(
+                                            SystemPartitionCheckError::InvalidSortedIndexCollectionKey,
+                                        ),
+                                    };
+
+                                    self.validate_payload(reader, &sorted_key.1, &key_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidSortedIndexCollectionKey
+                                        })?;
+
+                                    sorted_key.1
                                 };
 
-                                self.validate_payload(reader, &sorted_key.1, &key_schema)
-                                    .map_err(|_| {
-                                        SystemPartitionCheckError::InvalidSortedIndexCollectionKey
-                                    })?;
-
-                                self.validate_payload(reader, &value, &value_schema)
-                                    .map_err(|_| {
+                                // Value Check
+                                let value = {
+                                    let entry: SortedIndexEntrySubstate<ScryptoValue> = scrypto_decode(&value)
+                                        .map_err(|_| SystemPartitionCheckError::InvalidSortedIndexCollectionValue)?;
+                                    let value = scrypto_encode(entry.value()).map_err(|_| {
                                         SystemPartitionCheckError::InvalidSortedIndexCollectionValue
                                     })?;
+                                    self.validate_payload(reader, &value, &value_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidSortedIndexCollectionValue
+                                        })?;
+
+                                    value
+                                };
+
+                                match module_id {
+                                    ObjectModuleId::Main => {
+                                        self.application_checker.on_collection_entry(
+                                            object_info.blueprint_info.clone(),
+                                            node_checker_state.node_id,
+                                            collection_index,
+                                            &key,
+                                            &value,
+                                        )
+                                    }
+                                    _ => {}
+                                }
 
                                 substate_count += 1;
                             }
@@ -737,7 +819,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
 
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             payload,
-            &payload_schema.schema,
+            payload_schema.schema.v1(),
             payload_schema.type_index,
             &validation_context,
         )

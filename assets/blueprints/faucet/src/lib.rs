@@ -29,7 +29,7 @@ mod faucet {
             .globalize()
         }
 
-        /// Gives away tokens.
+        /// Gives away tokens
         pub fn free(&mut self) -> Bucket {
             let transaction_hash = Runtime::transaction_hash();
             let epoch = Runtime::current_epoch();
@@ -38,7 +38,7 @@ mod faucet {
             self.vault.take(10000)
         }
 
-        /// Locks fees.
+        /// Locks fee
         pub fn lock_fee(&mut self, amount: Decimal) {
             self.vault.as_fungible().lock_fee(amount);
         }

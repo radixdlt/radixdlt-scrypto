@@ -100,7 +100,7 @@ fn cannot_write_reference_in_non_transient_blueprint() {
                 "test" => {
                     let handle = api.actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE)?;
                     let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
-                    api.field_write_typed(handle, Reference(auth_zone))?;
+                    api.field_write_typed(handle, &Reference(auth_zone))?;
                 }
                 _ => {}
             }

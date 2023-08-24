@@ -19,7 +19,7 @@ PUBLISH_PACKAGE_ADVANCED
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1n2rmm3ak3l6gvhmg0vszwlhnuy8dqg5a0jzl3f9fa9e6d8nkvgf4la:#1#")
+                        NonFungibleGlobalId("resource_sim1ntyz0z6xtksc7uuu3xxhkr9zd246c5d7kscy5zudyn9l54j0rz8wd8:#1#")
                     )
                 )
             )
@@ -34,511 +34,513 @@ PUBLISH_PACKAGE_ADVANCED
                 Array<Address>(),
                 Tuple(
                     Array<Enum>(),
-                    Tuple(
-                        Array<Enum>(
-                            Enum<14u8>(
-                                Array<Enum>(
-                                    Enum<1u8>(
-                                        1u64
-                                    )
-                                )
-                            ),
-                            Enum<17u8>(
-                                Enum<0u8>()
-                            ),
-                            Enum<14u8>(
-                                Array<Enum>(
-                                    Enum<1u8>(
-                                        3u64
-                                    ),
-                                    Enum<0u8>(
-                                        133u8
-                                    ),
-                                    Enum<0u8>(
-                                        133u8
-                                    )
-                                )
-                            ),
-                            Enum<15u8>(
-                                Map<U8, Array>(
-                                    0u8 => Array<Enum>(),
-                                    1u8 => Array<Enum>(
+                    Enum<0u8>(
+                        Tuple(
+                            Array<Enum>(
+                                Enum<14u8>(
+                                    Array<Enum>(
                                         Enum<1u8>(
-                                            4u64
-                                        )
-                                    ),
-                                    2u8 => Array<Enum>(
-                                        Enum<1u8>(
-                                            4u64
+                                            1u64
                                         )
                                     )
-                                )
-                            ),
-                            Enum<15u8>(
-                                Map<U8, Array>(
-                                    0u8 => Array<Enum>(),
-                                    1u8 => Array<Enum>(),
-                                    2u8 => Array<Enum>(
+                                ),
+                                Enum<17u8>(
+                                    Enum<0u8>()
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
                                         Enum<1u8>(
-                                            5u64
-                                        )
-                                    )
-                                )
-                            ),
-                            Enum<15u8>(
-                                Map<U8, Array>(
-                                    0u8 => Array<Enum>(
-                                        Enum<1u8>(
-                                            6u64
-                                        )
-                                    ),
-                                    1u8 => Array<Enum>(
-                                        Enum<1u8>(
-                                            10u64
-                                        )
-                                    ),
-                                    2u8 => Array<Enum>(
-                                        Enum<1u8>(
-                                            10u64
-                                        )
-                                    )
-                                )
-                            ),
-                            Enum<15u8>(
-                                Map<U8, Array>(
-                                    0u8 => Array<Enum>(
-                                        Enum<1u8>(
-                                            7u64
-                                        )
-                                    ),
-                                    1u8 => Array<Enum>(
+                                            3u64
+                                        ),
                                         Enum<0u8>(
-                                            160u8
+                                            133u8
                                         ),
                                         Enum<0u8>(
                                             133u8
                                         )
-                                    ),
-                                    2u8 => Array<Enum>(
-                                        Enum<0u8>(
-                                            7u8
+                                    )
+                                ),
+                                Enum<15u8>(
+                                    Map<U8, Array>(
+                                        0u8 => Array<Enum>(),
+                                        1u8 => Array<Enum>(
+                                            Enum<1u8>(
+                                                4u64
+                                            )
                                         ),
-                                        Enum<1u8>(
-                                            9u64
-                                        )
-                                    ),
-                                    3u8 => Array<Enum>(
-                                        Enum<1u8>(
-                                            9u64
-                                        )
-                                    ),
-                                    4u8 => Array<Enum>(
-                                        Enum<1u8>(
-                                            9u64
+                                        2u8 => Array<Enum>(
+                                            Enum<1u8>(
+                                                4u64
+                                            )
                                         )
                                     )
-                                )
-                            ),
-                            Enum<15u8>(
-                                Map<U8, Array>(
-                                    0u8 => Array<Enum>(
-                                        Enum<1u8>(
-                                            8u64
+                                ),
+                                Enum<15u8>(
+                                    Map<U8, Array>(
+                                        0u8 => Array<Enum>(),
+                                        1u8 => Array<Enum>(),
+                                        2u8 => Array<Enum>(
+                                            Enum<1u8>(
+                                                5u64
+                                            )
                                         )
-                                    ),
-                                    1u8 => Array<Enum>(
+                                    )
+                                ),
+                                Enum<15u8>(
+                                    Map<U8, Array>(
+                                        0u8 => Array<Enum>(
+                                            Enum<1u8>(
+                                                6u64
+                                            )
+                                        ),
+                                        1u8 => Array<Enum>(
+                                            Enum<1u8>(
+                                                10u64
+                                            )
+                                        ),
+                                        2u8 => Array<Enum>(
+                                            Enum<1u8>(
+                                                10u64
+                                            )
+                                        )
+                                    )
+                                ),
+                                Enum<15u8>(
+                                    Map<U8, Array>(
+                                        0u8 => Array<Enum>(
+                                            Enum<1u8>(
+                                                7u64
+                                            )
+                                        ),
+                                        1u8 => Array<Enum>(
+                                            Enum<0u8>(
+                                                160u8
+                                            ),
+                                            Enum<0u8>(
+                                                133u8
+                                            )
+                                        ),
+                                        2u8 => Array<Enum>(
+                                            Enum<0u8>(
+                                                7u8
+                                            ),
+                                            Enum<1u8>(
+                                                9u64
+                                            )
+                                        ),
+                                        3u8 => Array<Enum>(
+                                            Enum<1u8>(
+                                                9u64
+                                            )
+                                        ),
+                                        4u8 => Array<Enum>(
+                                            Enum<1u8>(
+                                                9u64
+                                            )
+                                        )
+                                    )
+                                ),
+                                Enum<15u8>(
+                                    Map<U8, Array>(
+                                        0u8 => Array<Enum>(
+                                            Enum<1u8>(
+                                                8u64
+                                            )
+                                        ),
+                                        1u8 => Array<Enum>(
+                                            Enum<0u8>(
+                                                133u8
+                                            )
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
                                         Enum<0u8>(
                                             133u8
+                                        ),
+                                        Enum<0u8>(
+                                            192u8
                                         )
                                     )
-                                )
-                            ),
-                            Enum<14u8>(
-                                Array<Enum>(
-                                    Enum<0u8>(
-                                        133u8
-                                    ),
-                                    Enum<0u8>(
-                                        192u8
-                                    )
-                                )
-                            ),
-                            Enum<13u8>(
-                                Enum<1u8>(
-                                    7u64
-                                )
-                            ),
-                            Enum<13u8>(
-                                Enum<1u8>(
-                                    5u64
-                                )
-                            ),
-                            Enum<17u8>(
-                                Enum<0u8>()
-                            ),
-                            Enum<14u8>(
-                                Array<Enum>(
-                                    Enum<0u8>(
-                                        145u8
-                                    ),
-                                    Enum<0u8>(
-                                        145u8
-                                    )
-                                )
-                            ),
-                            Enum<14u8>(
-                                Array<Enum>(
-                                    Enum<0u8>(
-                                        145u8
-                                    ),
+                                ),
+                                Enum<13u8>(
                                     Enum<1u8>(
-                                        14u64
+                                        7u64
                                     )
-                                )
-                            ),
-                            Enum<15u8>(
-                                Map<U8, Array>(
-                                    0u8 => Array<Enum>(),
-                                    1u8 => Array<Enum>(
+                                ),
+                                Enum<13u8>(
+                                    Enum<1u8>(
+                                        5u64
+                                    )
+                                ),
+                                Enum<17u8>(
+                                    Enum<0u8>()
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
+                                            145u8
+                                        ),
+                                        Enum<0u8>(
+                                            145u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
+                                            145u8
+                                        ),
+                                        Enum<1u8>(
+                                            14u64
+                                        )
+                                    )
+                                ),
+                                Enum<15u8>(
+                                    Map<U8, Array>(
+                                        0u8 => Array<Enum>(),
+                                        1u8 => Array<Enum>(
+                                            Enum<0u8>(
+                                                145u8
+                                            )
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
+                                            145u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
+                                            145u8
+                                        ),
+                                        Enum<0u8>(
+                                            145u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
                                         Enum<0u8>(
                                             145u8
                                         )
                                     )
                                 )
                             ),
-                            Enum<14u8>(
-                                Array<Enum>(
-                                    Enum<0u8>(
-                                        145u8
-                                    )
-                                )
-                            ),
-                            Enum<14u8>(
-                                Array<Enum>(
-                                    Enum<0u8>(
-                                        145u8
-                                    ),
-                                    Enum<0u8>(
-                                        145u8
-                                    )
-                                )
-                            ),
-                            Enum<14u8>(
-                                Array<Enum>(
-                                    Enum<0u8>(
-                                        145u8
-                                    )
-                                )
-                            )
-                        ),
-                        Array<Tuple>(
-                            Tuple(
-                                Enum<1u8>(
-                                    "Radiswap"
-                                ),
-                                Enum<1u8>(
-                                    Enum<0u8>(
-                                        Array<String>(
-                                            "pool_component"
-                                        )
-                                    )
-                                )
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "GlobalTwoResourcePool"
-                                ),
-                                Enum<0u8>()
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "Radiswap_new_Input"
-                                ),
-                                Enum<1u8>(
-                                    Enum<0u8>(
-                                        Array<String>(
-                                            "owner_role",
-                                            "resource_address1",
-                                            "resource_address2"
-                                        )
-                                    )
-                                )
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "OwnerRole"
-                                ),
-                                Enum<1u8>(
+                            Array<Tuple>(
+                                Tuple(
                                     Enum<1u8>(
-                                        Map<U8, Tuple>(
-                                            0u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "None"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            1u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "Fixed"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            2u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "Updatable"
-                                                ),
-                                                Enum<0u8>()
-                                            )
-                                        )
-                                    )
-                                )
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "AccessRule"
-                                ),
-                                Enum<1u8>(
-                                    Enum<1u8>(
-                                        Map<U8, Tuple>(
-                                            0u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "AllowAll"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            1u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "DenyAll"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            2u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "Protected"
-                                                ),
-                                                Enum<0u8>()
-                                            )
-                                        )
-                                    )
-                                )
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "AccessRuleNode"
-                                ),
-                                Enum<1u8>(
-                                    Enum<1u8>(
-                                        Map<U8, Tuple>(
-                                            0u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "ProofRule"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            1u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "AnyOf"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            2u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "AllOf"
-                                                ),
-                                                Enum<0u8>()
-                                            )
-                                        )
-                                    )
-                                )
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "ProofRule"
-                                ),
-                                Enum<1u8>(
-                                    Enum<1u8>(
-                                        Map<U8, Tuple>(
-                                            0u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "Require"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            1u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "AmountOf"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            2u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "CountOf"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            3u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "AllOf"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            4u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "AnyOf"
-                                                ),
-                                                Enum<0u8>()
-                                            )
-                                        )
-                                    )
-                                )
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "ResourceOrNonFungible"
-                                ),
-                                Enum<1u8>(
-                                    Enum<1u8>(
-                                        Map<U8, Tuple>(
-                                            0u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "NonFungible"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            1u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "Resource"
-                                                ),
-                                                Enum<0u8>()
-                                            )
-                                        )
-                                    )
-                                )
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "NonFungibleGlobalId"
-                                ),
-                                Enum<0u8>()
-                            ),
-                            Tuple(
-                                Enum<0u8>(),
-                                Enum<0u8>()
-                            ),
-                            Tuple(
-                                Enum<0u8>(),
-                                Enum<0u8>()
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "GlobalRadiswap"
-                                ),
-                                Enum<0u8>()
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "Radiswap_add_liquidity_Input"
-                                ),
-                                Enum<1u8>(
-                                    Enum<0u8>(
-                                        Array<String>(
-                                            "resource1",
-                                            "resource2"
-                                        )
-                                    )
-                                )
-                            ),
-                            Tuple(
-                                Enum<0u8>(),
-                                Enum<0u8>()
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "Option"
-                                ),
-                                Enum<1u8>(
-                                    Enum<1u8>(
-                                        Map<U8, Tuple>(
-                                            0u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "None"
-                                                ),
-                                                Enum<0u8>()
-                                            ),
-                                            1u8 => Tuple(
-                                                Enum<1u8>(
-                                                    "Some"
-                                                ),
-                                                Enum<0u8>()
-                                            )
-                                        )
-                                    )
-                                )
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "Radiswap_remove_liquidity_Input"
-                                ),
-                                Enum<1u8>(
-                                    Enum<0u8>(
-                                        Array<String>(
-                                            "pool_units"
-                                        )
-                                    )
-                                )
-                            ),
-                            Tuple(
-                                Enum<0u8>(),
-                                Enum<0u8>()
-                            ),
-                            Tuple(
-                                Enum<1u8>(
-                                    "Radiswap_swap_Input"
-                                ),
-                                Enum<1u8>(
-                                    Enum<0u8>(
-                                        Array<String>(
-                                            "input_bucket"
-                                        )
-                                    )
-                                )
-                            )
-                        ),
-                        Array<Enum>(
-                            Enum<0u8>(),
-                            Enum<14u8>(
-                                Enum<0u8>(
-                                    Enum<4u8>(
-                                        Enum<1u8>(
-                                            Address("package_sim1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxl5e8k6")
-                                        ),
-                                        "TwoResourcePool"
-                                    )
-                                )
-                            ),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<14u8>(
-                                Enum<0u8>(
-                                    Enum<4u8>(
-                                        Enum<0u8>(),
                                         "Radiswap"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "pool_component"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "GlobalTwoResourcePool"
+                                    ),
+                                    Enum<0u8>()
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "Radiswap_new_Input"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "owner_role",
+                                                "resource_address1",
+                                                "resource_address2"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "OwnerRole"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<1u8>(
+                                            Map<U8, Tuple>(
+                                                0u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "None"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                1u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "Fixed"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                2u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "Updatable"
+                                                    ),
+                                                    Enum<0u8>()
+                                                )
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "AccessRule"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<1u8>(
+                                            Map<U8, Tuple>(
+                                                0u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "AllowAll"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                1u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "DenyAll"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                2u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "Protected"
+                                                    ),
+                                                    Enum<0u8>()
+                                                )
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "AccessRuleNode"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<1u8>(
+                                            Map<U8, Tuple>(
+                                                0u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "ProofRule"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                1u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "AnyOf"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                2u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "AllOf"
+                                                    ),
+                                                    Enum<0u8>()
+                                                )
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "ProofRule"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<1u8>(
+                                            Map<U8, Tuple>(
+                                                0u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "Require"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                1u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "AmountOf"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                2u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "CountOf"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                3u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "AllOf"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                4u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "AnyOf"
+                                                    ),
+                                                    Enum<0u8>()
+                                                )
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "ResourceOrNonFungible"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<1u8>(
+                                            Map<U8, Tuple>(
+                                                0u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "NonFungible"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                1u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "Resource"
+                                                    ),
+                                                    Enum<0u8>()
+                                                )
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "NonFungibleGlobalId"
+                                    ),
+                                    Enum<0u8>()
+                                ),
+                                Tuple(
+                                    Enum<0u8>(),
+                                    Enum<0u8>()
+                                ),
+                                Tuple(
+                                    Enum<0u8>(),
+                                    Enum<0u8>()
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "GlobalRadiswap"
+                                    ),
+                                    Enum<0u8>()
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "Radiswap_add_liquidity_Input"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "resource1",
+                                                "resource2"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<0u8>(),
+                                    Enum<0u8>()
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "Option"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<1u8>(
+                                            Map<U8, Tuple>(
+                                                0u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "None"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                1u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "Some"
+                                                    ),
+                                                    Enum<0u8>()
+                                                )
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "Radiswap_remove_liquidity_Input"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "pool_units"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<0u8>(),
+                                    Enum<0u8>()
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "Radiswap_swap_Input"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "input_bucket"
+                                            )
+                                        )
                                     )
                                 )
                             ),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<0u8>(),
-                            Enum<0u8>()
+                            Array<Enum>(
+                                Enum<0u8>(),
+                                Enum<14u8>(
+                                    Enum<0u8>(
+                                        Enum<4u8>(
+                                            Enum<1u8>(
+                                                Address("package_sim1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxl5e8k6")
+                                            ),
+                                            "TwoResourcePool"
+                                        )
+                                    )
+                                ),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<14u8>(
+                                    Enum<0u8>(
+                                        Enum<4u8>(
+                                            Enum<0u8>(),
+                                            "Radiswap"
+                                        )
+                                    )
+                                ),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>()
+                            )
                         )
                     ),
                     Tuple(
@@ -649,7 +651,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("9c8e6b37da442134aa68b95f3bd2bf13ad358a88272e9f4efd2c176772acb186")
+    Blob("3e3c85e4f9450d1ad2a84e9fde758e8f7fb241dc05f3803b62cc2c28ef388e65")
     Map<String, Tuple>(
         "description" => Tuple(
             Enum<1u8>(
@@ -693,7 +695,7 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1n2rmm3ak3l6gvhmg0vszwlhnuy8dqg5a0jzl3f9fa9e6d8nkvgf4la:#1#")
+                        NonFungibleGlobalId("resource_sim1ntyz0z6xtksc7uuu3xxhkr9zd246c5d7kscy5zudyn9l54j0rz8wd8:#1#")
                     )
                 )
             )
@@ -711,7 +713,7 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1n2rmm3ak3l6gvhmg0vszwlhnuy8dqg5a0jzl3f9fa9e6d8nkvgf4la:#1#")
+                        NonFungibleGlobalId("resource_sim1ntyz0z6xtksc7uuu3xxhkr9zd246c5d7kscy5zudyn9l54j0rz8wd8:#1#")
                     )
                 )
             )

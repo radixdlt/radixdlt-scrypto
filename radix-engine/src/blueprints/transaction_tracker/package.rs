@@ -2,10 +2,9 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::{ClientApi, FieldValue, ObjectModuleId};
+use radix_engine_interface::api::{ClientApi, FieldValue, ModuleId};
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
@@ -142,6 +141,19 @@ impl TransactionTrackerNativePackage {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub enum TransactionStatus {
+    V1(TransactionStatusV1),
+}
+
+impl TransactionStatus {
+    pub fn into_v1(self) -> TransactionStatusV1 {
+        match self {
+            TransactionStatus::V1(status) => status,
+        }
+    }
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum TransactionStatusV1 {
     CommittedSuccess,
     CommittedFailure,
     Cancelled,
@@ -150,7 +162,32 @@ pub enum TransactionStatus {
 pub type TransactionStatusSubstateContents = TransactionStatus;
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct TransactionTrackerSubstate {
+pub enum TransactionTrackerSubstate {
+    V1(TransactionTrackerSubstateV1),
+}
+
+impl TransactionTrackerSubstate {
+    pub fn v1(&self) -> &TransactionTrackerSubstateV1 {
+        match self {
+            TransactionTrackerSubstate::V1(tracker) => tracker,
+        }
+    }
+
+    pub fn into_v1(self) -> TransactionTrackerSubstateV1 {
+        match self {
+            TransactionTrackerSubstate::V1(tracker) => tracker,
+        }
+    }
+
+    pub fn v1_mut(&mut self) -> &mut TransactionTrackerSubstateV1 {
+        match self {
+            TransactionTrackerSubstate::V1(tracker) => tracker,
+        }
+    }
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct TransactionTrackerSubstateV1 {
     pub start_epoch: u64,
     pub start_partition: u8,
 
@@ -160,7 +197,7 @@ pub struct TransactionTrackerSubstate {
     pub epochs_per_partition: u64,
 }
 
-impl TransactionTrackerSubstate {
+impl TransactionTrackerSubstateV1 {
     pub fn partition_for_expiry_epoch(&self, epoch: Epoch) -> Option<u8> {
         let epoch = epoch.number();
 
@@ -214,25 +251,23 @@ impl TransactionTrackerBlueprint {
         let intent_store = api.new_simple_object(
             TRANSACTION_TRACKER_BLUEPRINT,
             btreemap!(
-                0u8 => FieldValue::new(&TransactionTrackerSubstate {
+                0u8 => FieldValue::new(&TransactionTrackerSubstate::V1(TransactionTrackerSubstateV1{
                     start_epoch: current_epoch.number(),
                     start_partition: PARTITION_RANGE_START,
                     partition_range_start_inclusive: PARTITION_RANGE_START,
                     partition_range_end_inclusive: PARTITION_RANGE_END,
                     epochs_per_partition: EPOCHS_PER_PARTITION,
-                })
+                }))
             ),
         )?;
         let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
+            intent_store,
             btreemap!(
-                ObjectModuleId::Main => intent_store,
-                ObjectModuleId::RoleAssignment => role_assignment.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
+                ModuleId::RoleAssignment => role_assignment.0,
+                ModuleId::Metadata => metadata.0,
             ),
             Some(address_reservation),
         )?;
@@ -259,39 +294,47 @@ mod tests {
 
     #[test]
     fn test_partition_calculation() {
-        let mut store = TransactionTrackerSubstate {
+        let mut store = TransactionTrackerSubstate::V1(TransactionTrackerSubstateV1 {
             start_epoch: 256,
             start_partition: 70,
             partition_range_start_inclusive: PARTITION_RANGE_START,
             partition_range_end_inclusive: PARTITION_RANGE_END,
             epochs_per_partition: EPOCHS_PER_PARTITION,
-        };
+        });
         let num_partitions = (PARTITION_RANGE_END - PARTITION_RANGE_START + 1) as u64;
 
-        assert_eq!(store.partition_for_expiry_epoch(Epoch::of(0)), None);
-        assert_eq!(store.partition_for_expiry_epoch(Epoch::of(256)), Some(70));
+        assert_eq!(store.v1().partition_for_expiry_epoch(Epoch::of(0)), None);
         assert_eq!(
-            store.partition_for_expiry_epoch(Epoch::of(256 + EPOCHS_PER_PARTITION - 1)),
+            store.v1().partition_for_expiry_epoch(Epoch::of(256)),
             Some(70)
         );
         assert_eq!(
-            store.partition_for_expiry_epoch(Epoch::of(256 + EPOCHS_PER_PARTITION)),
+            store
+                .v1()
+                .partition_for_expiry_epoch(Epoch::of(256 + EPOCHS_PER_PARTITION - 1)),
+            Some(70)
+        );
+        assert_eq!(
+            store
+                .v1()
+                .partition_for_expiry_epoch(Epoch::of(256 + EPOCHS_PER_PARTITION)),
             Some(71)
         );
         assert_eq!(
-            store.partition_for_expiry_epoch(Epoch::of(
+            store.v1().partition_for_expiry_epoch(Epoch::of(
                 256 + EPOCHS_PER_PARTITION * num_partitions - 1
             )),
             Some(69)
         );
         assert_eq!(
             store
+                .v1()
                 .partition_for_expiry_epoch(Epoch::of(256 + EPOCHS_PER_PARTITION * num_partitions)),
             None,
         );
 
-        store.advance();
-        assert_eq!(store.start_epoch, 256 + EPOCHS_PER_PARTITION);
-        assert_eq!(store.start_partition, 71);
+        store.v1_mut().advance();
+        assert_eq!(store.v1().start_epoch, 256 + EPOCHS_PER_PARTITION);
+        assert_eq!(store.v1().start_partition, 71);
     }
 }

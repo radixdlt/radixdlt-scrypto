@@ -12,26 +12,26 @@ use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
 };
+use crate::internal_prelude::*;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
+use crate::system::type_info::TypeInfoSubstate;
 use crate::track::SystemUpdates;
 use crate::transaction::{
     execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
     TransactionResult,
 };
-use crate::types::*;
 use lazy_static::lazy_static;
 use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
@@ -94,7 +94,10 @@ impl From<Secp256k1PublicKey> for GenesisValidator {
             fee_factor: Decimal::ONE,
             metadata: vec![(
                 "url".to_string(),
-                MetadataValue::Url(Url(format!("http://test.local?validator={:?}", key))),
+                MetadataValue::Url(UncheckedUrl::of(format!(
+                    "http://test.local?validator={:?}",
+                    key
+                ))),
             )],
             owner: default_owner_address,
         }
@@ -513,7 +516,12 @@ pub fn create_system_bootstrap_flash(
                 native_code_id.to_be_bytes().to_vec(),
                 system_instructions,
             )
-            .expect("Invalid Package Package definition");
+            .unwrap_or_else(|err| {
+                panic!(
+                    "Invalid flashed Package definition with native_code_id {}: {:?}",
+                    native_code_id, err
+                )
+            });
 
             create_bootstrap_package_partitions(package_structure, metadata_init)
         };
@@ -582,8 +590,7 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
             new_components,
             new_resources,
             new_vaults,
-            balance_changes: index_map_new(),
-            direct_vault_updates: index_map_new(),
+            vault_balance_changes: index_map_new(),
         },
         substate_system_structures,
     }
@@ -674,8 +681,8 @@ pub fn create_system_bootstrap_transaction(
                             "symbol" => "XRD".to_owned(), locked;
                             "name" => "Radix".to_owned(), locked;
                             "description" => "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.".to_owned(), locked;
-                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-xrd-32x32.png".to_owned()), locked;
-                            "info_url" => Url("https://tokens.radixdlt.com".to_owned()), locked;
+                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-xrd-32x32.png".to_owned()), locked;
+                            "info_url" => UncheckedUrl::of("https://tokens.radixdlt.com".to_owned()), locked;
                             "tags" => Vec::<String>::new(), locked;
                         }
                     },
@@ -714,7 +721,7 @@ pub fn create_system_bootstrap_transaction(
                             "name" => "Package Virtual Badges".to_owned(), locked;
                             "description" => "Virtual badges generated automatically by the Radix system to represent the authority of the package for a direct caller. These badges cease to exist at the end of their transaction.".to_owned(), locked;
                             "tags" => vec!["badge".to_owned()], locked;
-                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_virtual_badge.png".to_owned()), locked;
+                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_virtual_badge.png".to_owned()), locked;
                         }
                     },
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
@@ -751,7 +758,7 @@ pub fn create_system_bootstrap_transaction(
                             "name" => "Global Caller Virtual Badges".to_owned(), locked;
                             "description" => "Virtual badges generated automatically by the Radix system to represent the authority of a global caller. These badges cease to exist at the end of their transaction.".to_owned(), locked;
                             "tags" => vec!["badge".to_owned()], locked;
-                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-global_caller_virtual_badge.png".to_owned()), locked;
+                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-global_caller_virtual_badge.png".to_owned()), locked;
                         }
                     },
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
@@ -788,7 +795,7 @@ pub fn create_system_bootstrap_transaction(
                             "name" => "Package Owner Badges".to_owned(), locked;
                             "description" => "Badges created by the Radix system that provide individual control over blueprint packages deployed by developers.".to_owned(), locked;
                             "tags" => vec!["badge".to_owned(), "package".to_owned()], locked;
-                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-package_owner_badge.png".to_owned()), locked;
+                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_owner_badge.png".to_owned()), locked;
                         }
                     },
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
@@ -825,7 +832,7 @@ pub fn create_system_bootstrap_transaction(
                             "name" => "Identity Owner Badges".to_owned(), locked;
                             "description" => "Badges created by the Radix system that provide individual control over identity components.".to_owned(), locked;
                             "tags" => vec!["badge".to_owned(), "identity".to_owned()], locked;
-                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-identity_owner_badge.png".to_owned()), locked;
+                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-identity_owner_badge.png".to_owned()), locked;
                         }
                     },
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
@@ -906,7 +913,7 @@ pub fn create_system_bootstrap_transaction(
                                 "badge".to_owned(),
                                 "account".to_owned(),
                             ], locked;
-                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-account_owner_badge.png".to_owned()), locked;
+                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-account_owner_badge.png".to_owned()), locked;
                         }
                     },
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
@@ -1000,7 +1007,7 @@ pub fn create_system_bootstrap_transaction(
                             "name" => "ECDSA secp256k1 Virtual Badges".to_owned(), locked;
                             "description" => "Virtual badges generated automatically by the Radix system to represent ECDSA secp256k1 signatures applied to transactions. These badges cease to exist at the end of their transaction.".to_owned(), locked;
                             "tags" => vec!["badge".to_owned()], locked;
-                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_virtual_badge.png".to_owned()), locked;
+                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_virtual_badge.png".to_owned()), locked;
                         }
                     },
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
@@ -1031,7 +1038,7 @@ pub fn create_system_bootstrap_transaction(
                             "name" => "EdDSA Ed25519 Virtual Badges".to_owned(), locked;
                             "description" => "Virtual badges generated automatically by the Radix system to represent EdDSA Ed25519 signatures applied to transactions. These badges cease to exist at the end of their transaction.".to_owned(), locked;
                             "tags" => vec!["badge".to_owned()], locked;
-                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_virtual_badge.png".to_owned()), locked;
+                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_virtual_badge.png".to_owned()), locked;
                         }
                     },
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
@@ -1062,7 +1069,7 @@ pub fn create_system_bootstrap_transaction(
                             "name" => "System Transaction Badge".to_owned(), locked;
                             "description" => "Virtual badges are created under this resource to represent the Radix system's authority at genesis and to affect changes to system entities during protocol updates, or to represent the Radix system's authority in the regularly occurring system transactions including round and epoch changes.".to_owned(), locked;
                             "tags" => vec!["badge".to_owned(), "system badge".to_owned()], locked;
-                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-system_transaction_badge.png".to_owned()), locked;
+                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-system_transaction_badge.png".to_owned()), locked;
                         }
                     },
                     address_reservation: Some(id_allocator.new_address_reservation_id()),

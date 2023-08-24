@@ -73,15 +73,17 @@ macro_rules! declare_native_blueprint_state {
                 $(,)?
             },
         )?
-        features: {
-            $(
-                $feature_property_name:ident: {
-                    ident: $feature_ident:ident,
-                    description: $feature_description:expr,
-                }
-            ),*
-            $(,)?
-        },
+        $(
+            features: {
+                $(
+                    $feature_property_name:ident: {
+                        ident: $feature_ident:ident,
+                        description: $feature_description:expr,
+                    }
+                ),*
+                $(,)?
+            },
+        )?
         fields: {
             $(
                 $field_property_name:ident: {
@@ -160,6 +162,7 @@ macro_rules! declare_native_blueprint_state {
                         #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
                         struct [<$blueprint_ident $collection_ident KeyPayload>] = $collection_key_type
                     );
+                    pub type [<$blueprint_ident $collection_ident KeyContent>] = <[<$blueprint_ident $collection_ident KeyPayload>] as [<$collection_type KeyPayload>]>::Content;
 
                     // Values
                     // > If relevant, set up Versioned types, which:
@@ -214,7 +217,7 @@ macro_rules! declare_native_blueprint_state {
                                 $blueprint_ident,
                                 type_aggregator,
                                 $collection_key_type,
-                                [<$blueprint_ident $collection_ident KeyPayload>],
+                                [<$blueprint_ident $collection_ident KeyContent>],
                                 $collection_value_type,
                                 [<$blueprint_ident $collection_ident EntryPayload>],
                                 $collection_allow_ownership
@@ -230,54 +233,105 @@ macro_rules! declare_native_blueprint_state {
                 //--------------------------------------------------------
                 // System - Fields, Collections, Features and Generics
                 //--------------------------------------------------------
-                #[repr(u8)]
-                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-                pub enum [<$blueprint_ident Field>] {
-                    $($field_ident,)*
-                }
-
-                impl From<[<$blueprint_ident Field>]> for SubstateKey {
-                    fn from(value: [<$blueprint_ident Field>]) -> Self {
-                        SubstateKey::Field(value as u8)
-                    }
-                }
-
-                impl From<[<$blueprint_ident Field>]> for u8 {
-                    fn from(value: [<$blueprint_ident Field>]) -> Self {
-                        value as u8
-                    }
-                }
-
-                impl TryFrom<&SubstateKey> for [<$blueprint_ident Field>] {
-                    type Error = ();
-
-                    fn try_from(key: &SubstateKey) -> Result<Self, Self::Error> {
-                        match key {
-                            SubstateKey::Field(x) => Self::from_repr(*x).ok_or(()),
-                            _ => Err(()),
+                if_exists!(
+                    TEST: [[$($field_ident)*]],
+                    // Avoid https://doc.rust-lang.org/error_codes/E0084.html if no fields exist
+                    [[
+                        #[repr(u8)]
+                        #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+                        pub enum [<$blueprint_ident Field>] {
+                            $($field_ident,)*
                         }
-                    }
-                }
 
-                impl TryFrom<u8> for [<$blueprint_ident Field>] {
-                    type Error = ();
+                        impl [<$blueprint_ident Field>] {
+                            pub const fn field_index(&self) -> u8 {
+                                *self as u8
+                            }
+                        }
 
-                    fn try_from(offset: u8) -> Result<Self, Self::Error> {
-                        Self::from_repr(offset).ok_or(())
-                    }
-                }
+                        impl From<[<$blueprint_ident Field>]> for SubstateKey {
+                            fn from(value: [<$blueprint_ident Field>]) -> Self {
+                                SubstateKey::Field(value as u8)
+                            }
+                        }
 
-                #[repr(u8)]
-                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-                pub enum [<$blueprint_ident Collection>] {
-                    $([<$collection_ident $collection_type>],)*
-                }
+                        impl From<[<$blueprint_ident Field>]> for u8 {
+                            fn from(value: [<$blueprint_ident Field>]) -> Self {
+                                value as u8
+                            }
+                        }
 
-                impl [<$blueprint_ident Collection>] {
-                    pub const fn collection_index(&self) -> u8 {
-                        *self as u8
-                    }
-                }
+                        impl TryFrom<&SubstateKey> for [<$blueprint_ident Field>] {
+                            type Error = ();
+
+                            fn try_from(key: &SubstateKey) -> Result<Self, Self::Error> {
+                                match key {
+                                    SubstateKey::Field(x) => Self::from_repr(*x).ok_or(()),
+                                    _ => Err(()),
+                                }
+                            }
+                        }
+
+                        impl TryFrom<u8> for [<$blueprint_ident Field>] {
+                            type Error = ();
+
+                            fn try_from(offset: u8) -> Result<Self, Self::Error> {
+                                Self::from_repr(offset).ok_or(())
+                            }
+                        }
+
+                        impl FieldDescriptor for [<$blueprint_ident Field>] {
+                            fn field_index(&self) -> FieldIndex {
+                                *self as u8
+                            }
+                        }
+                    ]],
+                    [[
+                        #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+                        pub enum [<$blueprint_ident Field>] {}
+
+                        impl FieldDescriptor for [<$blueprint_ident Field>] {
+                            fn field_index(&self) -> FieldIndex {
+                                unreachable!("No fields exist")
+                            }
+                        }
+                    ]],
+                );
+
+                if_exists!(
+                    TEST: [[$($collection_ident)*]],
+                    [[
+                        #[repr(u8)]
+                        #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+                        pub enum [<$blueprint_ident Collection>] {
+                            $([<$collection_ident $collection_type>],)*
+                        }
+
+                        impl TryFrom<u8> for [<$blueprint_ident Collection>] {
+                            type Error = ();
+
+                            fn try_from(offset: u8) -> Result<Self, Self::Error> {
+                                Self::from_repr(offset).ok_or(())
+                            }
+                        }
+
+                        impl CollectionDescriptor for [<$blueprint_ident Collection>] {
+                            fn collection_index(&self) -> CollectionIndex {
+                                *self as u8
+                            }
+                        }
+                    ]],
+                    [[
+                        #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+                        pub enum [<$blueprint_ident Collection>] {}
+
+                        impl CollectionDescriptor for [<$blueprint_ident Collection>] {
+                            fn collection_index(&self) -> CollectionIndex {
+                                unreachable!("No collections exist")
+                            }
+                        }
+                    ]]
+                );
 
                 $(
                     #[repr(u8)]
@@ -295,32 +349,40 @@ macro_rules! declare_native_blueprint_state {
 
                 #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
                 pub enum [<$blueprint_ident Feature>] {
-                    $($feature_ident,)*
+                    $($($feature_ident,)*)?
                 }
 
                 impl BlueprintFeature for [<$blueprint_ident Feature>] {
                     fn feature_name(&self) -> &'static str {
-                        match *self {
-                            $(
-                                Self::$feature_ident => stringify!($feature_property_name),
-                            )*
-                        }
+                        if_exists!(
+                            TEST: [[$($($feature_ident)*)?]],
+                            [[
+                                match *self {
+                                    $($(
+                                        Self::$feature_ident => stringify!($feature_property_name),
+                                    )*)?
+                                }
+                            ]],
+                            [[
+                                unreachable!("No features exist")
+                            ]]
+                        )
                     }
                 }
 
-                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash)]
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, Default)]
                 pub struct [<$blueprint_ident FeatureSet>] {
-                    $(pub [<$feature_property_name>]: bool,)*
+                    $($(pub [<$feature_property_name>]: bool,)*)?
                 }
 
                 impl [<$blueprint_ident FeatureSet>] {
                     pub fn all_features() -> BTreeSet<String> {
                         let mut features = BTreeSet::new();
-                        $(
+                        $($(
                             features.insert(
                                 [<$blueprint_ident Feature>]::$feature_ident.feature_name().to_string()
                             );
-                        )*
+                        )*)?
                         features
                     }
                 }
@@ -328,11 +390,11 @@ macro_rules! declare_native_blueprint_state {
                 impl HasFeatures for [<$blueprint_ident FeatureSet>] {
                     fn feature_names_str(&self) -> Vec<&'static str> {
                         let mut names = vec![];
-                        $(
+                        $($(
                             if self.[<$feature_property_name>] {
                                 names.push([<$blueprint_ident Feature>]::$feature_ident.feature_name());
                             }
-                        )*
+                        )*)?
                         names
                     }
                 }
@@ -341,47 +403,99 @@ macro_rules! declare_native_blueprint_state {
                 // Typed - Substate Keys and Values
                 //---------------------------------
 
-                enum_filter_out_ignored!(
-                    /// All the SubstateKeys for all logical partitions for the $blueprint_ident blueprint.
-                    /// Does not include mapped partitions, as these substates are mapped via their canonical partition.
-                    #[derive(Debug, Clone)]
-                    pub enum [<$blueprint_ident TypedSubstateKey>]
-                    {
-                        [[
-                            Field([<$blueprint_ident Field>])
-                        ]],
-                        $(
-                            $(|IGNORE_ENTRY| { $mapped_physical_partition })?
-                            [[
-                                [<$collection_ident $collection_type Entry>]([<$blueprint_ident $collection_ident KeyPayload>])
-                            ]],
-                        )*
-                    }
+                if_exists!(
+                    TEST: [[$($field_ident)*]],
+                    [[
+                         enum_filter_out_ignored!(
+                            /// All the SubstateKeys for all logical partitions for the $blueprint_ident blueprint.
+                            /// Does not include mapped partitions, as these substates are mapped via their canonical partition.
+                            #[derive(Debug, Clone)]
+                            pub enum [<$blueprint_ident TypedSubstateKey>]
+                            {
+                                [[
+                                    Field([<$blueprint_ident Field>])
+                                ]],
+                                $(
+                                    $(|IGNORE_ENTRY| { $mapped_physical_partition })?
+                                    [[
+                                        [<$collection_ident $collection_type Entry>]([<$blueprint_ident $collection_ident KeyPayload>])
+                                    ]],
+                                )*
+                            }
+                        );
+                    ]],
+                    [[
+                        enum_filter_out_ignored!(
+                            /// All the SubstateKeys for all logical partitions for the $blueprint_ident blueprint.
+                            /// Does not include mapped partitions, as these substates are mapped via their canonical partition.
+                            #[derive(Debug, Clone)]
+                            pub enum [<$blueprint_ident TypedSubstateKey>]
+                            {
+                                $(
+                                    $(|IGNORE_ENTRY| { $mapped_physical_partition })?
+                                    [[
+                                        [<$collection_ident $collection_type Entry>]([<$blueprint_ident $collection_ident KeyPayload>])
+                                    ]],
+                                )*
+                            }
+                        );
+                    ]]
                 );
 
+
+
                 impl [<$blueprint_ident TypedSubstateKey>] {
-                    pub fn for_key_in_partition(partition: &[<$blueprint_ident PartitionOffset>], substate_key: &SubstateKey) -> Result<Self, ()> {
-                        let key = match_filter_out_ignored!(match partition {
-                            [[
-                                [<$blueprint_ident PartitionOffset>]::Field => {
-                                    [<$blueprint_ident TypedSubstateKey>]::Field(
-                                        [<$blueprint_ident Field>]::try_from(substate_key)?
-                                    )
-                                }
-                            ]],
-                            $(
-                                $(|IGNORE_ENTRY| { $mapped_physical_partition })?
-                                [[
-                                    [<$blueprint_ident PartitionOffset>]::[<$collection_ident $collection_type>] => {
-                                        [<$blueprint_ident TypedSubstateKey>]::[<$collection_ident $collection_type Entry>](
-                                            [<$blueprint_ident $collection_ident KeyPayload>]::try_from(substate_key)?,
-                                        )
-                                    }
-                                ]],
-                            )*
-                        });
-                        Ok(key)
+                    pub fn for_key_at_partition_offset(partition_offset: PartitionOffset, substate_key: &SubstateKey) -> Result<Self, ()> {
+                        Self::for_key_in_partition(
+                            &[<$blueprint_ident PartitionOffset>]::try_from(partition_offset)?,
+                            substate_key,
+                        )
                     }
+
+                    if_exists!(
+                        TEST: [[$($field_ident)*]],
+                        [[
+                            pub fn for_key_in_partition(partition: &[<$blueprint_ident PartitionOffset>], substate_key: &SubstateKey) -> Result<Self, ()> {
+                                let key = match_filter_out_ignored!(match partition {
+                                    [[
+                                        [<$blueprint_ident PartitionOffset>]::Field => {
+                                            [<$blueprint_ident TypedSubstateKey>]::Field(
+                                                [<$blueprint_ident Field>]::try_from(substate_key)?
+                                            )
+                                        }
+                                    ]],
+                                    $(
+                                        $(|IGNORE_ENTRY| { $mapped_physical_partition })?
+                                        [[
+                                            [<$blueprint_ident PartitionOffset>]::[<$collection_ident $collection_type>] => {
+                                                [<$blueprint_ident TypedSubstateKey>]::[<$collection_ident $collection_type Entry>](
+                                                    [<$blueprint_ident $collection_ident KeyPayload>]::try_from(substate_key)?,
+                                                )
+                                            }
+                                        ]],
+                                    )*
+                                });
+                                Ok(key)
+                            }
+                        ]],
+                        [[
+                            pub fn for_key_in_partition(partition: &[<$blueprint_ident PartitionOffset>], substate_key: &SubstateKey) -> Result<Self, ()> {
+                                let key = match_filter_out_ignored!(match partition {
+                                    $(
+                                        $(|IGNORE_ENTRY| { $mapped_physical_partition })?
+                                        [[
+                                            [<$blueprint_ident PartitionOffset>]::[<$collection_ident $collection_type>] => {
+                                                [<$blueprint_ident TypedSubstateKey>]::[<$collection_ident $collection_type Entry>](
+                                                    [<$blueprint_ident $collection_ident KeyPayload>]::try_from(substate_key)?,
+                                                )
+                                            }
+                                        ]],
+                                    )*
+                                });
+                                Ok(key)
+                            }
+                        ]]
+                    );
                 }
 
                 #[derive(Debug)]
@@ -470,6 +584,7 @@ mod helper_macros {
                 declare_payload_new_type!(
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
+                    ----
                     $(#[$attributes])*
                     pub struct $payload_type_name([<Versioned $ident_core>]);
                 );
@@ -510,6 +625,7 @@ mod helper_macros {
                 declare_payload_new_type!(
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
+                    ----
                     $(#[$attributes])*
                     pub struct $payload_type_name($static_type);
                 );
@@ -530,6 +646,7 @@ mod helper_macros {
                 declare_payload_new_type!(
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
+                    ----
                     $(#[$attributes])*
                     pub struct $payload_type_name<$generic_ident: [<$ident_core ContentMarker>] = ScryptoValue>($generic_ident);
                 );
@@ -580,6 +697,7 @@ mod helper_macros {
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
                     $(full_key_content: $full_key_content,)?
+                    ----
                     $(#[$attributes])*
                     pub struct $payload_type_name($static_type);
                 );
@@ -620,11 +738,11 @@ mod helper_macros {
         };
         (Index, type $alias:ident = WRAPPED $content:ty$(,)?) => {
             // There is no system wrapper around Index substates
-            pub type $alias = $content;
+            pub type $alias = IndexEntrySubstate<$content>;
         };
         (SortedIndex, type $alias:ident = WRAPPED $content:ty$(,)?) => {
             // There is no system wrapper around SortedIndex substates
-            pub type $alias = $content;
+            pub type $alias = SortedIndexEntrySubstate<$content>;
         };
         ($unknown_system_substate_type:ident, type $alias:ident = WRAPPED $content:ty$(,)?) => {
             compile_error!(concat!(
@@ -811,6 +929,25 @@ mod helper_macros {
     }
     #[allow(unused)]
     pub(crate) use match_filter_out_ignored;
+
+    macro_rules! if_exists {
+        (
+            TEST: [[]],
+            [[ $($present:tt)* ]],
+            [[ $($not_present:tt)* ]]$(,)?
+        ) => {
+            $($not_present)*
+        };
+        (
+            TEST: [[ $($exists:tt)* ]],
+            [[ $($present:tt)* ]],
+            [[ $($not_present:tt)* ]]$(,)?
+        ) => {
+            $($present)*
+        };
+    }
+    #[allow(unused)]
+    pub(crate) use if_exists;
 }
 
 #[cfg(test)]
@@ -838,6 +975,14 @@ mod tests {
         MyCoolKeyValueStoreKeyValue,
         MyCoolIndexIndex,
         MyCoolSortedIndexSortedIndex,
+    }
+
+    impl TryFrom<PartitionOffset> for TestBlueprintPartitionOffset {
+        type Error = ();
+
+        fn try_from(_value: PartitionOffset) -> Result<Self, Self::Error> {
+            Err(())
+        }
     }
 
     declare_native_blueprint_state! {

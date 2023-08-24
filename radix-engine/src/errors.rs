@@ -18,7 +18,7 @@ use crate::kernel::call_frame::{
     MovePartitionError, OpenSubstateError, PassMessageError, PinNodeError, ReadSubstateError,
     WriteSubstateError,
 };
-use crate::system::node_modules::metadata::MetadataPanicError;
+use crate::system::node_modules::metadata::MetadataError;
 use crate::system::node_modules::role_assignment::RoleAssignmentError;
 use crate::system::node_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
@@ -29,8 +29,8 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ActorStateHandle;
-use radix_engine_interface::blueprints::package::CanonicalBlueprintId;
+use radix_engine_interface::api::{ActorStateHandle, ModuleId};
+use radix_engine_interface::blueprints::package::{BlueprintPartitionType, CanonicalBlueprintId};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -227,9 +227,15 @@ pub enum SystemError {
     TypeCheckError(TypeCheckError),
     FieldDoesNotExist(BlueprintId, u8),
     CollectionIndexDoesNotExist(BlueprintId, u8),
+    CollectionIndexIsOfWrongType(
+        BlueprintId,
+        u8,
+        BlueprintPartitionType,
+        BlueprintPartitionType,
+    ),
     MutatingImmutableSubstate,
     MutatingImmutableFieldSubstate(ActorStateHandle, u8),
-    ObjectModuleDoesNotExist(ObjectModuleId),
+    ObjectModuleDoesNotExist(ModuleId),
     NotAKeyValueWriteLock,
     InvalidLockFlags,
     CannotGlobalize(CannotGlobalizeError),
@@ -412,7 +418,7 @@ pub enum ApplicationError {
     //===================
     RoleAssignmentError(RoleAssignmentError),
 
-    MetadataError(MetadataPanicError),
+    MetadataError(MetadataError),
 
     ComponentRoyaltyError(ComponentRoyaltyError),
 

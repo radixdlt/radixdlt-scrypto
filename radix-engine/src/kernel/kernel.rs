@@ -9,6 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::call_frame::{
     CallFrameIOAccessHandler, CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
     TransientSubstates,
@@ -21,11 +22,11 @@ use crate::kernel::kernel_callback_api::{
 };
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::{FieldSubstate, SystemService};
+use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
+use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -126,13 +127,14 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
                 )
                 .ok_or_else(|| KernelError::InvalidReference(*node_id))?;
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-            match type_substate {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_info: BlueprintInfo { blueprint_id, .. },
-                    global,
-                    ..
-                }) => {
-                    if global {
+            match &type_substate {
+                TypeInfoSubstate::Object(
+                    info @ ObjectInfo {
+                        blueprint_info: BlueprintInfo { blueprint_id, .. },
+                        ..
+                    },
+                ) => {
+                    if info.is_global() {
                         kernel
                             .current_frame
                             .add_global_reference(GlobalAddress::new_or_panic(
@@ -563,7 +565,7 @@ where
 
             Some(BucketSnapshot::Fungible {
                 resource_address,
-                liquid: liquid.value.0.amount(),
+                liquid: liquid.into_payload().amount(),
             })
         } else {
             let substate = self
@@ -578,7 +580,7 @@ where
 
             Some(BucketSnapshot::NonFungible {
                 resource_address,
-                liquid: liquid.value.0.ids().clone(),
+                liquid: liquid.into_payload().ids().clone(),
             })
         }
     }
@@ -633,7 +635,7 @@ where
 
             Some(ProofSnapshot::Fungible {
                 resource_address,
-                total_locked: proof.value.0.amount(),
+                total_locked: proof.into_payload().amount(),
             })
         } else {
             let substate = self
@@ -660,7 +662,7 @@ where
 
             Some(ProofSnapshot::NonFungible {
                 resource_address,
-                total_locked: proof.value.0.non_fungible_local_ids().clone(),
+                total_locked: proof.into_payload().non_fungible_local_ids().clone(),
             })
         }
     }

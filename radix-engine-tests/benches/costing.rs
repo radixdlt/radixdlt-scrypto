@@ -29,6 +29,14 @@ fn bench_decode_sbor(c: &mut Criterion) {
     });
 }
 
+fn bench_decode_sbor_bytes(c: &mut Criterion) {
+    let payload = manifest_encode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+    println!("Payload size: {}", payload.len());
+    c.bench_function("costing::decode_sbor_bytes", |b| {
+        b.iter(|| manifest_decode::<ManifestValue>(&payload))
+    });
+}
+
 fn bench_validate_sbor_payload(c: &mut Criterion) {
     let package_definition =
         manifest_decode::<PackageDefinition>(include_bytes!("../../assets/radiswap.rpd")).unwrap();
@@ -41,7 +49,24 @@ fn bench_validate_sbor_payload(c: &mut Criterion) {
         b.iter(|| {
             validate_payload_against_schema::<ScryptoCustomExtension, _>(
                 &payload,
-                &schema,
+                schema.v1(),
+                index,
+                &(),
+            )
+        })
+    });
+}
+
+fn bench_validate_sbor_payload_bytes(c: &mut Criterion) {
+    let payload = scrypto_encode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+    println!("Payload size: {}", payload.len());
+    let (index, schema) = generate_full_schema_from_single_type::<Vec<u8>, ScryptoCustomSchema>();
+
+    c.bench_function("costing::validate_sbor_payload_bytes", |b| {
+        b.iter(|| {
+            validate_payload_against_schema::<ScryptoCustomExtension, _>(
+                &payload,
+                schema.v1(),
                 index,
                 &(),
             )
@@ -185,7 +210,9 @@ fn bench_prepare_wasm(c: &mut Criterion) {
 criterion_group!(
     costing,
     bench_decode_sbor,
+    bench_decode_sbor_bytes,
     bench_validate_sbor_payload,
+    bench_validate_sbor_payload_bytes,
     bench_validate_secp256k1,
     bench_spin_loop,
     bench_instantiate_radiswap,

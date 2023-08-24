@@ -2,7 +2,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataValue, Origin, SingleMetadataVal, Url,
+    MetadataValue, SingleMetadataVal, UncheckedOrigin, UncheckedUrl,
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::package::*;
@@ -407,9 +407,13 @@ fn create_metadata() -> BTreeMap<String, MetadataValue> {
     add(
         &mut metadata,
         "url",
-        &[Url("https://www.radixdlt.com".to_owned())],
+        &[UncheckedUrl::of("https://www.radixdlt.com".to_owned())],
     );
-    add(&mut metadata, "", &[Origin("www.radixdlt.com".to_owned())]);
+    add(
+        &mut metadata,
+        "origin",
+        &[UncheckedOrigin::of("https://www.radixdlt.com".to_owned())],
+    );
     add(
         &mut metadata,
         "public_key_hash",

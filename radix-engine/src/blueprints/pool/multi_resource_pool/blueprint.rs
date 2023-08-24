@@ -1,7 +1,12 @@
 use crate::blueprints::pool::multi_resource_pool::*;
 use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
+use crate::internal_prelude::declare_native_blueprint_state;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::*;
+use crate::prelude::BlueprintSchemaInit;
+use crate::types::{BlueprintHooksInit, FunctionSchemaInit, ReceiverInfo, TypeRef};
+use crate::{event_schema, roles_template};
 use native_sdk::modules::metadata::*;
 use native_sdk::modules::role_assignment::*;
 use native_sdk::modules::royalty::*;
@@ -12,19 +17,208 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::package::{
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+};
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::prelude::BlueprintFunctionsSchemaInit;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 
 pub const MULTI_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "MultiResourcePool";
 
+declare_native_blueprint_state! {
+    blueprint_ident: MultiResourcePool,
+    blueprint_snake_case: multi_resource_pool,
+    features: {
+    },
+    fields: {
+        state:  {
+            ident: State,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        }
+    },
+    collections: {
+    }
+}
+
+pub type MultiResourcePoolStateV1 = MultiResourcePoolSubstate;
+
 pub struct MultiResourcePoolBlueprint;
 impl MultiResourcePoolBlueprint {
+    pub fn definition() -> BlueprintDefinitionInit {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let feature_set = MultiResourcePoolFeatureSet::all_features();
+        let state = MultiResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
+
+        let mut functions = BTreeMap::new();
+
+        functions.insert(
+            MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolInstantiateInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolInstantiateOutput>(),
+                ),
+                export: MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<MultiResourcePoolContributeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolContributeOutput>(),
+                ),
+                export: MULTI_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            MULTI_RESOURCE_POOL_REDEEM_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<MultiResourcePoolRedeemInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<MultiResourcePoolRedeemOutput>(),
+                ),
+                export: MULTI_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositOutput>(
+                        ),
+                ),
+                export: MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawInput>(
+                        ),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawOutput>(
+                        ),
+                ),
+                export: MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<MultiResourcePoolGetRedemptionValueInput>(
+                    )),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<MultiResourcePoolGetRedemptionValueOutput>(
+                    )),
+                export: MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsOutput>(),
+                ),
+                export: MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
+            },
+        );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                ContributionEvent,
+                RedemptionEvent,
+                WithdrawEvent,
+                DepositEvent
+            ]
+        };
+
+        let schema = generate_full_schema(aggregator);
+
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::default(),
+            is_transient: false,
+            dependencies: btreeset!(),
+            feature_set,
+
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema,
+                state,
+                events: event_schema,
+                functions: BlueprintFunctionsSchemaInit { functions },
+                hooks: BlueprintHooksInit::default(),
+            },
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AllowAll,
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
+                    roles {
+                        POOL_MANAGER_ROLE;
+                    },
+                    methods {
+                        MULTI_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
+                        MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
+                        MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodAccessibility::Public;
+                        MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                        MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                        MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                    }
+                }),
+            },
+        }
+    }
+
     pub fn instantiate<Y>(
         resource_addresses: BTreeSet<ResourceAddress>,
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<MultiResourcePoolInstantiateOutput, RuntimeError>
     where
@@ -50,10 +244,17 @@ impl MultiResourcePoolBlueprint {
 
         // Allocating the address of the pool - this is going to be needed for the metadata of the
         // pool unit resource.
-        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
-            package_address: POOL_PACKAGE,
-            blueprint_name: MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
-        })?;
+        let (address_reservation, address) = {
+            if let Some(address_reservation) = address_reservation {
+                let address = api.get_reservation_address(address_reservation.0.as_node_id())?;
+                (address_reservation, address)
+            } else {
+                api.allocate_global_address(BlueprintId {
+                    package_address: POOL_PACKAGE,
+                    blueprint_name: MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
+                })?
+            }
+        };
 
         // Creating the pool unit resource
         let pool_unit_resource_manager = {
@@ -115,17 +316,17 @@ impl MultiResourcePoolBlueprint {
             api.new_simple_object(
                 MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                 btreemap! {
-                    0u8 => FieldValue::immutable(&substate),
+                    MultiResourcePoolField::State.field_index() => FieldValue::new(&VersionedMultiResourcePoolState::V1(substate)),
                 },
             )?
         };
 
         api.globalize(
+            object_id,
             btreemap!(
-                ObjectModuleId::Main => object_id,
-                ObjectModuleId::RoleAssignment => role_assignment.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
+                ModuleId::RoleAssignment => role_assignment.0,
+                ModuleId::Metadata => metadata.0,
+                ModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;
@@ -589,9 +790,12 @@ impl MultiResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = MultiResourcePoolField::MultiResourcePool.into();
+        let substate_key = MultiResourcePoolField::State.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
-        let multi_resource_pool = api.field_read_typed(handle)?;
+        let multi_resource_pool: VersionedMultiResourcePoolState = api.field_read_typed(handle)?;
+        let multi_resource_pool = match multi_resource_pool {
+            VersionedMultiResourcePoolState::V1(pool) => pool,
+        };
 
         Ok((multi_resource_pool, handle))
     }

@@ -16,7 +16,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
-    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
@@ -376,11 +376,9 @@ pub fn decompile_instruction<F: fmt::Write>(
                 {
                     "CREATE_IDENTITY"
                 }
-                (
-                    package_address,
-                    ACCESS_CONTROLLER_BLUEPRINT,
-                    ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
-                ) if package_address.is_static_global_package_of(&ACCESS_CONTROLLER_PACKAGE) => {
+                (package_address, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT)
+                    if package_address.is_static_global_package_of(&ACCESS_CONTROLLER_PACKAGE) =>
+                {
                     "CREATE_ACCESS_CONTROLLER"
                 }
                 (

@@ -11,13 +11,15 @@ define_invocation! {
     input: struct {
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
-        resource_address: ResourceAddress
+        resource_address: ResourceAddress,
+        address_reservation: Option<GlobalAddressReservation>
     },
     output: type ComponentAddress,
     manifest_input: struct {
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
-        resource_address: ResourceAddress
+        resource_address: ResourceAddress,
+        address_reservation: Option<ManifestAddressReservation>
     }
 }
 

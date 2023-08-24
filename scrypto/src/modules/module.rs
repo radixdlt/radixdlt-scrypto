@@ -3,8 +3,7 @@ use crate::prelude::ScryptoEncode;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_derive::ScryptoSbor;
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ACTOR_REF_SELF;
+use radix_engine_interface::api::{ModuleId, ACTOR_REF_SELF};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
@@ -16,8 +15,8 @@ use scrypto::prelude::ScryptoDecode;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum ModuleHandle {
     Own(Own),
-    Attached(GlobalAddress, ObjectModuleId),
-    SELF(ObjectModuleId),
+    Attached(GlobalAddress, ModuleId),
+    SELF(ModuleId),
 }
 
 impl ModuleHandle {
@@ -46,7 +45,7 @@ impl<'a, O> Attached<'a, O> {
 }
 
 pub trait Attachable: Sized {
-    const MODULE_ID: ObjectModuleId;
+    const MODULE_ID: ModuleId;
 
     fn attached(address: GlobalAddress) -> Self {
         Self::new(ModuleHandle::Attached(address, Self::MODULE_ID))

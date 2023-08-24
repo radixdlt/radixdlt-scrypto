@@ -52,48 +52,6 @@ impl FungibleResourceRoles {
             },
         }
     }
-
-    pub fn to_features_and_roles(self) -> (Vec<&'static str>, RoleAssignmentInit) {
-        let mut features = Vec::new();
-        let mut roles = RoleAssignmentInit::new();
-
-        if self.mint_roles.is_some() {
-            features.push(MINT_FEATURE);
-        }
-
-        if self.burn_roles.is_some() {
-            features.push(BURN_FEATURE);
-        }
-
-        if self.freeze_roles.is_some() {
-            features.push(VAULT_FREEZE_FEATURE);
-        }
-
-        if self.recall_roles.is_some() {
-            features.push(VAULT_RECALL_FEATURE);
-        }
-
-        roles
-            .data
-            .extend(self.mint_roles.unwrap_or_default().to_role_init().data);
-        roles
-            .data
-            .extend(self.burn_roles.unwrap_or_default().to_role_init().data);
-        roles
-            .data
-            .extend(self.recall_roles.unwrap_or_default().to_role_init().data);
-        roles
-            .data
-            .extend(self.freeze_roles.unwrap_or_default().to_role_init().data);
-        roles
-            .data
-            .extend(self.deposit_roles.unwrap_or_default().to_role_init().data);
-        roles
-            .data
-            .extend(self.withdraw_roles.unwrap_or_default().to_role_init().data);
-
-        (features, roles)
-    }
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]

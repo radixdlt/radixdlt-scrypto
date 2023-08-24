@@ -1884,7 +1884,7 @@ fn create_account_events_can_be_looked_up() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll))
+        .new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 

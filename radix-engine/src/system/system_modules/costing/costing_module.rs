@@ -1,7 +1,7 @@
 use super::*;
 use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
-use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor, MethodType};
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
@@ -17,7 +17,7 @@ use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
     transaction::AbortReason,
 };
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
@@ -211,24 +211,25 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         let (optional_blueprint_id, ident, maybe_object_royalties) = {
             let (maybe_component, ident) = match &invocation.call_frame_data {
                 Actor::Method(MethodActor {
+                    method_type,
                     node_id,
-                    module_id,
                     ident,
                     object_info,
                     ..
                 }) => {
                     // Only do royalty costing for Main
-                    if module_id.ne(&ObjectModuleId::Main) {
-                        return Ok(());
+                    match method_type {
+                        MethodType::Main | MethodType::Direct => {}
+                        MethodType::Module(..) => return Ok(()),
                     }
 
-                    if object_info
-                        .module_versions
-                        .contains_key(&ObjectModuleId::Royalty)
-                    {
-                        (Some(node_id.clone()), ident)
-                    } else {
-                        (None, ident)
+                    match &object_info.object_type {
+                        ObjectType::Global { modules }
+                            if modules.contains_key(&ModuleId::Royalty) =>
+                        {
+                            (Some(node_id.clone()), ident)
+                        }
+                        _ => (None, ident),
                     }
                 }
                 Actor::Function(FunctionActor { ident, .. }) => (None, ident),

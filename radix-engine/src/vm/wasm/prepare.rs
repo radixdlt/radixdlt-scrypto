@@ -590,7 +590,14 @@ impl WasmModule {
                             if Self::function_type_matches(
                                 &self.module,
                                 type_index,
-                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+                                vec![
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                ],
                                 vec![ValType::I64],
                             ) {
                                 continue;
@@ -1386,11 +1393,11 @@ mod tests {
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
-                    schema: ScryptoSchema {
+                    schema: VersionedScryptoSchema::V1(SchemaV1 {
                         type_kinds: vec![],
                         type_metadata: vec![],
                         type_validations: vec![],
-                    },
+                    }),
                     state: BlueprintStateSchemaInit {
                         fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
                             UNIT_TYPE,

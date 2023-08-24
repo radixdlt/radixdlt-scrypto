@@ -1168,7 +1168,7 @@ mod tests {
                 .unwrap()
                 .serializable(SerializationParameters::WithSchema {
                     mode: SerializationMode::Programmatic,
-                    schema: &schema,
+                    schema: schema.v1(),
                     custom_context: (),
                     type_index,
                 }),
@@ -1213,7 +1213,7 @@ mod tests {
                 .unwrap()
                 .serializable(SerializationParameters::WithSchema {
                     mode: SerializationMode::Natural,
-                    schema: &schema,
+                    schema: schema.v1(),
                     custom_context: (),
                     type_index,
                 }),
@@ -1451,7 +1451,7 @@ mod tests {
                 .unwrap()
                 .serializable(SerializationParameters::WithSchema {
                     mode: SerializationMode::Model,
-                    schema: &schema,
+                    schema: schema.v1(),
                     custom_context: (),
                     type_index,
                 }),

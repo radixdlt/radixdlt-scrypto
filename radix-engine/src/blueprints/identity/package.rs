@@ -7,8 +7,7 @@ use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
@@ -201,7 +200,7 @@ impl IdentityBlueprint {
     {
         let role_assignment = SecurifiedIdentity::create_advanced(owner_role, api)?;
 
-        let modules = Self::create_object(
+        let (node_id, modules) = Self::create_object(
             role_assignment,
             metadata_init!(
                 "owner_badge" => EMPTY, locked;
@@ -209,7 +208,7 @@ impl IdentityBlueprint {
             api,
         )?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(modules, None)?;
+        let address = api.globalize(node_id, modules, None)?;
         Ok(address)
     }
 
@@ -230,7 +229,7 @@ impl IdentityBlueprint {
             api,
         )?;
 
-        let modules = Self::create_object(
+        let (node_id, modules) = Self::create_object(
             role_assignment,
             metadata_init! {
                 "owner_badge" => NonFungibleLocalId::bytes(address.as_node_id().0).unwrap(), locked;
@@ -238,7 +237,7 @@ impl IdentityBlueprint {
             api,
         )?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(modules, Some(address_reservation))?;
+        let address = api.globalize(node_id, modules, Some(address_reservation))?;
         Ok((address, bucket))
     }
 
@@ -288,7 +287,7 @@ impl IdentityBlueprint {
         let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
         let role_assignment = SecurifiedIdentity::create_presecurified(owner_id, api)?;
 
-        let modules = Self::create_object(
+        let (node_id, modules) = Self::create_object(
             role_assignment,
             metadata_init! {
                 // NOTE:
@@ -304,6 +303,7 @@ impl IdentityBlueprint {
         )?;
 
         api.globalize(
+            node_id,
             modules.into_iter().map(|(k, v)| (k, v.0)).collect(),
             Some(address_reservation),
         )?;
@@ -330,7 +330,7 @@ impl IdentityBlueprint {
         role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
-    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
+    ) -> Result<(NodeId, BTreeMap<ModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -340,13 +340,12 @@ impl IdentityBlueprint {
         let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, btreemap!())?;
 
         let modules = btreemap!(
-            ObjectModuleId::Main => Own(object_id),
-            ObjectModuleId::RoleAssignment => role_assignment.0,
-            ObjectModuleId::Metadata => metadata,
-            ObjectModuleId::Royalty => royalty,
+            ModuleId::RoleAssignment => role_assignment.0,
+            ModuleId::Metadata => metadata,
+            ModuleId::Royalty => royalty,
         );
 
-        Ok(modules)
+        Ok((object_id, modules))
     }
 }
 

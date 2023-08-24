@@ -4,8 +4,8 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::metadata::MetadataNativePackage;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
+use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::PrepareError;
@@ -128,7 +128,8 @@ fn validate_package_schema(
     for bp_def in blueprints.values() {
         let bp_schema = &bp_def.schema;
 
-        validate_schema(&bp_schema.schema).map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
+        validate_schema(bp_schema.schema.v1())
+            .map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
 
         if bp_schema.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
@@ -166,7 +167,7 @@ fn validate_package_schema(
                     TypeRef::Static(local_index) => {
                         validate_payload_against_schema::<ScryptoCustomExtension, ()>(
                             default_value,
-                            &bp_schema.schema,
+                            bp_schema.schema.v1(),
                             local_index,
                             &mut (),
                         )
@@ -215,6 +216,7 @@ fn validate_package_schema_type_ref(
         TypeRef::Static(local_type_index) => {
             if blueprint_schema_init
                 .schema
+                .v1()
                 .resolve_type_kind(local_type_index)
                 .is_some()
             {
@@ -241,6 +243,7 @@ fn extract_package_event_static_type_index(
         TypeRef::Static(local_type_index) => {
             if blueprint_init
                 .schema
+                .v1()
                 .resolve_type_kind(local_type_index)
                 .is_some()
             {
@@ -265,7 +268,7 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
                 extract_package_event_static_type_index(blueprint_schema_init, *type_ref)?;
 
             // Checking that the event is either a struct or an enum
-            let type_kind = schema.resolve_type_kind(local_type_index).map_or(
+            let type_kind = schema.v1().resolve_type_kind(local_type_index).map_or(
                 Err(PackageError::FailedToResolveLocalSchema { local_type_index }),
                 Ok,
             )?;
@@ -276,7 +279,7 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
             }?;
 
             // Checking that the event name is indeed what the user claims it to be
-            let actual_event_name = schema.resolve_type_metadata(local_type_index).map_or(
+            let actual_event_name = schema.v1().resolve_type_metadata(local_type_index).map_or(
                 Err(PackageError::FailedToResolveLocalSchema {
                     local_type_index: local_type_index,
                 }),
@@ -661,18 +664,18 @@ pub fn create_bootstrap_package_partitions(
         node_substates.insert(
             TYPE_INFO_FIELD_PARTITION,
             type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                global: true,
-                module_versions: btreemap!(
-                    ObjectModuleId::Main => BlueprintVersion::default(),
-                    ObjectModuleId::Metadata => BlueprintVersion::default(),
-                    ObjectModuleId::RoleAssignment => BlueprintVersion::default(),
-                ),
-
                 blueprint_info: BlueprintInfo {
                     blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+                    blueprint_version: BlueprintVersion::default(),
                     outer_obj_info: OuterObjectInfo::default(),
                     features: own_features.feature_names_string_set(),
                     generic_substitutions: vec![],
+                },
+                object_type: ObjectType::Global {
+                    modules: btreemap!(
+                        ModuleId::Metadata => BlueprintVersion::default(),
+                        ModuleId::RoleAssignment => BlueprintVersion::default(),
+                    ),
                 },
             })),
         );
@@ -705,10 +708,10 @@ where
     )?;
 
     let address = api.globalize(
+        package_object,
         btreemap!(
-            ObjectModuleId::Main => package_object,
-            ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::RoleAssignment => role_assignment.0.0,
+            ModuleId::Metadata => metadata.0,
+            ModuleId::RoleAssignment => role_assignment.0.0,
         ),
         package_address_reservation,
     )?;
@@ -1345,7 +1348,7 @@ impl PackageRoyaltyNativeBlueprint {
             let mut service = SystemService::new(api);
             if !service.is_feature_enabled(
                 receiver,
-                ObjectModuleId::Main,
+                None,
                 PackageFeature::PackageRoyalty.feature_name(),
             )? {
                 return Ok(());
@@ -1371,7 +1374,7 @@ impl PackageRoyaltyNativeBlueprint {
         api.kernel_close_substate(handle)?;
 
         let royalty_charge = substate
-            .value
+            .into_value()
             .and_then(|royalty_config| match royalty_config.into_latest() {
                 PackageRoyaltyConfig::Enabled(royalty_amounts) => {
                     royalty_amounts.get(ident).cloned()
@@ -1516,7 +1519,7 @@ impl PackageAuthNativeBlueprint {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_close_substate(handle)?;
 
-        let template = match auth_template.value {
+        let template = match auth_template.into_value() {
             Some(template) => template.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(

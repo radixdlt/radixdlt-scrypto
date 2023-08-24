@@ -1,11 +1,17 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::prelude::{scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoSchema};
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_common::prelude::{
+    scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoValue, VersionedScryptoSchema,
+};
+use radix_engine_interface::api::{CollectionIndex, ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_engine_store_interface::interface::ListableSubstateDatabase;
+use radix_engine_store_interface::db_key_mapper::{
+    MappedCommittableSubstateDatabase, SubstateKeyContent,
+};
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, ListableSubstateDatabase,
+};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -15,12 +21,14 @@ use sbor::HasLatestVersion;
 use sbor::LocalTypeIndex;
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::SchemaOrigin;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use crate::system::system_substates::FieldSubstate;
+use crate::system::system_substates::KeyValueEntrySubstate;
+use crate::system::system_substates::SubstateMutability;
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta,
 };
+use crate::system::type_info::TypeInfoSubstate;
 use crate::track::TrackedNode;
 use crate::transaction::{
     ObjectInstanceTypeReference, ObjectSubstateTypeReference, PackageTypeReference,
@@ -51,7 +59,7 @@ pub enum SystemPartitionDescriptor {
 }
 
 pub struct ResolvedPayloadSchema {
-    pub schema: ScryptoSchema,
+    pub schema: VersionedScryptoSchema,
     pub type_index: LocalTypeIndex,
     pub allow_ownership: bool,
     pub allow_non_global_refs: bool,
@@ -78,6 +86,7 @@ impl<'a, K: ScryptoEncode> ObjectCollectionKey<'a, K> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SystemReaderError {
     FieldDoesNotExist,
+    CollectionDoesNotExist,
     NodeIdDoesNotExist,
     PayloadDoesNotExist,
     BlueprintDoesNotExist,
@@ -142,14 +151,70 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
             blueprints.insert(
                 bp_version_key,
-                blueprint_definition.value.unwrap().into_latest(),
+                blueprint_definition.into_value().unwrap().into_latest(),
             );
         }
 
         blueprints
     }
 
-    pub fn read_object_field<V: ScryptoDecode>(
+    pub fn read_object_field(
+        &self,
+        node_id: &NodeId,
+        module_id: ObjectModuleId,
+        field_index: u8,
+    ) -> Result<IndexedScryptoValue, SystemReaderError> {
+        let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
+        let definition = self.get_blueprint_definition(&blueprint_id)?;
+        let partition_description = &definition
+            .interface
+            .state
+            .fields
+            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
+            .0;
+        let partition_number = match partition_description {
+            PartitionDescription::Logical(offset) => {
+                let base_partition = match module_id {
+                    ObjectModuleId::Main => MAIN_BASE_PARTITION,
+                    ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
+                    ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
+                    ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
+                };
+                base_partition.at_offset(*offset).unwrap()
+            }
+            PartitionDescription::Physical(partition_number) => *partition_number,
+        };
+
+        let substate: FieldSubstate<ScryptoValue> = self
+            .substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, _>(
+                node_id,
+                partition_number,
+                &SubstateKey::Field(field_index),
+            )
+            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?;
+
+        Ok(IndexedScryptoValue::from_scrypto_value(
+            substate.into_payload(),
+        ))
+    }
+
+    pub fn read_typed_kv_entry<K: ScryptoEncode, V: ScryptoDecode>(
+        &self,
+        node_id: &NodeId,
+        key: &K,
+    ) -> Option<V> {
+        let substate = self
+            .substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>>(
+                node_id,
+                MAIN_BASE_PARTITION,
+                &SubstateKey::Map(scrypto_encode(key).unwrap()),
+            );
+        substate.and_then(|v| v.into_value())
+    }
+
+    pub fn read_typed_object_field<V: ScryptoDecode>(
         &self,
         node_id: &NodeId,
         module_id: ObjectModuleId,
@@ -185,7 +250,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             )
             .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?;
 
-        Ok(substate.value.0)
+        Ok(substate.into_payload())
     }
 
     pub fn read_object_collection_entry<K: ScryptoEncode, V: ScryptoDecode>(
@@ -202,7 +267,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             .state
             .collections
             .get(collection_key.collection_index() as usize)
-            .expect("Missing generic");
+            .ok_or_else(|| SystemReaderError::CollectionDoesNotExist)?;
 
         let partition_number = match partition_description {
             PartitionDescription::Logical(offset) => {
@@ -225,7 +290,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                     partition_number,
                     &SubstateKey::Map(scrypto_encode(key).unwrap()),
                 )
-                .map(|value| value.value)
+                .map(|value| value.into_value())
                 .unwrap_or(None),
             ObjectCollectionKey::Index(_, key) => {
                 self.substate_db.get_mapped::<SpreadPrefixKeyMapper, V>(
@@ -244,6 +309,110 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         };
 
         Ok(entry)
+    }
+
+    pub fn key_value_store_iter(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>, SystemReaderError> {
+        if self.tracked.is_some() {
+            panic!("substates_iter with overlay not supported.");
+        }
+
+        match self.get_type_info(node_id)? {
+            TypeInfoSubstate::KeyValueStore(..) => {}
+            _ => return Err(SystemReaderError::NotAKeyValueStore),
+        }
+
+        let partition_key =
+            SpreadPrefixKeyMapper::to_db_partition_key(node_id, MAIN_BASE_PARTITION);
+        let iter = self
+            .substate_db
+            .list_entries(&partition_key)
+            .filter_map(move |entry| {
+                let substate_key = SpreadPrefixKeyMapper::from_db_sort_key::<MapKey>(&entry.0);
+                let key = match substate_key {
+                    SubstateKey::Map(map_key) => map_key,
+                    _ => panic!("Unexpected SubstateKey"),
+                };
+                let value: KeyValueEntrySubstate<ScryptoValue> = scrypto_decode(&entry.1).unwrap();
+                let value = value.into_value()?;
+                let value = scrypto_encode(&value).unwrap();
+
+                Some((key, value))
+            });
+
+        Ok(Box::new(iter))
+    }
+
+    pub fn collection_iter(
+        &self,
+        node_id: &NodeId,
+        module_id: ObjectModuleId,
+        collection_index: CollectionIndex,
+    ) -> Result<Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>, SystemReaderError> {
+        if self.tracked.is_some() {
+            panic!("substates_iter with overlay not supported.");
+        }
+
+        let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
+        let definition = self.get_blueprint_definition(&blueprint_id)?;
+
+        let (partition_description, schema) = definition
+            .interface
+            .state
+            .collections
+            .get(collection_index as usize)
+            .ok_or_else(|| SystemReaderError::CollectionDoesNotExist)?
+            .clone();
+
+        let partition_number = match partition_description {
+            PartitionDescription::Physical(partition_num) => partition_num,
+            PartitionDescription::Logical(offset) => {
+                module_id.base_partition_num().at_offset(offset).unwrap()
+            }
+        };
+
+        let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_number);
+        let iter = self
+            .substate_db
+            .list_entries(&partition_key)
+            .filter_map(move |entry| {
+                let key = match schema {
+                    BlueprintCollectionSchema::KeyValueStore(..)
+                    | BlueprintCollectionSchema::Index(..) => {
+                        let substate_key =
+                            SpreadPrefixKeyMapper::from_db_sort_key::<MapKey>(&entry.0);
+                        match substate_key {
+                            SubstateKey::Map(map_key) => map_key,
+                            _ => panic!("Unexpected SubstateKey"),
+                        }
+                    }
+                    BlueprintCollectionSchema::SortedIndex(..) => {
+                        let substate_key =
+                            SpreadPrefixKeyMapper::from_db_sort_key::<SortedKey>(&entry.0);
+                        match substate_key {
+                            SubstateKey::Sorted((_sort, map_key)) => map_key,
+                            _ => panic!("Unexpected SubstateKey"),
+                        }
+                    }
+                };
+
+                let value = match schema {
+                    BlueprintCollectionSchema::KeyValueStore(..) => {
+                        let value: KeyValueEntrySubstate<ScryptoValue> =
+                            scrypto_decode(&entry.1).unwrap();
+                        let value = value.into_value()?;
+                        scrypto_encode(&value).unwrap()
+                    }
+                    BlueprintCollectionSchema::SortedIndex(..)
+                    | BlueprintCollectionSchema::Index(..) => entry.1,
+                };
+
+                Some((key, value))
+            });
+
+        Ok(Box::new(iter))
     }
 
     pub fn get_object_info<A: Into<GlobalAddress>>(
@@ -279,19 +448,25 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
         let object_info = match type_info {
             TypeInfoSubstate::Object(object_info) => object_info,
-            i @ _ => panic!(
-                "Inconsistent Substate Database, found invalid type_info: {:?}",
-                i
-            ),
+            _ => {
+                return Err(SystemReaderError::NotAnObject);
+            }
         };
 
-        if let Some(_version) = object_info.module_versions.get(&module_id) {
-            match module_id {
-                ObjectModuleId::Main => Ok(object_info.blueprint_info.blueprint_id),
-                _ => Ok(module_id.static_blueprint().unwrap()),
+        let module_id = module_id.into();
+        if let Some(module_id) = module_id {
+            match object_info.object_type {
+                ObjectType::Global { modules } => {
+                    if !modules.contains_key(&module_id) {
+                        return Err(SystemReaderError::ModuleDoesNotExist);
+                    }
+                }
+                ObjectType::Owned => return Err(SystemReaderError::ModuleDoesNotExist),
             }
+
+            Ok(module_id.static_blueprint())
         } else {
-            Err(SystemReaderError::ModuleDoesNotExist)
+            Ok(object_info.blueprint_info.blueprint_id)
         }
     }
 
@@ -309,7 +484,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             ).ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?;
 
-        Ok(definition.value.unwrap().into_latest())
+        Ok(definition.into_value().unwrap().into_latest())
     }
 
     pub fn get_kv_store_type_target(
@@ -353,35 +528,38 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             _ => return Err(SystemReaderError::NotAnObject),
         };
 
-        let target = if let Some(_version) = object_info.module_versions.get(&module_id) {
-            match module_id {
-                ObjectModuleId::Main => {
-                    let target = BlueprintTypeTarget {
-                        blueprint_info: object_info.blueprint_info,
-                        meta: SchemaValidationMeta::ExistingObject {
-                            additional_schemas: *node_id,
-                        },
-                    };
-                    target
+        let module_id: Option<ModuleId> = module_id.into();
+        let target = if let Some(module_id) = module_id {
+            let blueprint_id = module_id.static_blueprint();
+            match object_info.object_type {
+                ObjectType::Global { modules } => {
+                    if !modules.contains_key(&module_id) {
+                        return Err(SystemReaderError::ModuleDoesNotExist);
+                    }
                 }
-                _ => {
-                    let blueprint_id = module_id.static_blueprint().unwrap();
-                    let target = BlueprintTypeTarget {
-                        blueprint_info: BlueprintInfo {
-                            blueprint_id,
-                            outer_obj_info: OuterObjectInfo::None,
-                            features: Default::default(),
-                            generic_substitutions: Default::default(),
-                        },
-                        meta: SchemaValidationMeta::ExistingObject {
-                            additional_schemas: *node_id,
-                        },
-                    };
-                    target
-                }
+                ObjectType::Owned => return Err(SystemReaderError::ModuleDoesNotExist),
             }
+
+            let target = BlueprintTypeTarget {
+                blueprint_info: BlueprintInfo {
+                    blueprint_id,
+                    blueprint_version: Default::default(),
+                    outer_obj_info: OuterObjectInfo::None,
+                    features: Default::default(),
+                    generic_substitutions: Default::default(),
+                },
+                meta: SchemaValidationMeta::ExistingObject {
+                    additional_schemas: *node_id,
+                },
+            };
+            target
         } else {
-            return Err(SystemReaderError::ModuleDoesNotExist);
+            BlueprintTypeTarget {
+                blueprint_info: object_info.blueprint_info,
+                meta: SchemaValidationMeta::ExistingObject {
+                    additional_schemas: *node_id,
+                },
+            }
         };
 
         Ok(target)
@@ -544,9 +722,9 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         &self,
         node_id: &NodeId,
         schema_hash: &SchemaHash,
-    ) -> Result<ScryptoSchema, SystemReaderError> {
+    ) -> Result<VersionedScryptoSchema, SystemReaderError> {
         let schema = self
-            .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+            .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<VersionedScryptoSchema>>(
                 node_id,
                 SCHEMAS_PARTITION,
                 &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
@@ -554,7 +732,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             .ok_or_else(|| SystemReaderError::SchemaDoesNotExist)?;
 
         Ok(schema
-            .value
+            .into_value()
             .expect("Schema should exist if substate exists"))
     }
 
@@ -573,7 +751,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             )
             .ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?;
 
-        Ok(definition.value.unwrap())
+        Ok(definition.into_value().unwrap())
     }
 
     pub fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(
@@ -647,41 +825,41 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 let (module_id, partition_offset) = if partition_num.ge(&MAIN_BASE_PARTITION) {
                     let partition_offset = PartitionOffset(partition_num.0 - MAIN_BASE_PARTITION.0);
                     (ObjectModuleId::Main, Some(partition_offset))
-                } else if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
-                    if object_info
-                        .module_versions
-                        .contains_key(&ObjectModuleId::RoleAssignment)
-                    {
-                        let partition_offset =
-                            PartitionOffset(partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0);
-                        (ObjectModuleId::RoleAssignment, Some(partition_offset))
-                    } else {
-                        (ObjectModuleId::Main, None)
-                    }
-                } else if partition_num.ge(&ROYALTY_BASE_PARTITION) {
-                    if object_info
-                        .module_versions
-                        .contains_key(&ObjectModuleId::Royalty)
-                    {
-                        let partition_offset =
-                            PartitionOffset(partition_num.0 - ROYALTY_BASE_PARTITION.0);
-                        (ObjectModuleId::Royalty, Some(partition_offset))
-                    } else {
-                        (ObjectModuleId::Main, None)
-                    }
-                } else if partition_num.ge(&METADATA_BASE_PARTITION) {
-                    if object_info
-                        .module_versions
-                        .contains_key(&ObjectModuleId::Metadata)
-                    {
-                        let partition_offset =
-                            PartitionOffset(partition_num.0 - METADATA_BASE_PARTITION.0);
-                        (ObjectModuleId::Metadata, Some(partition_offset))
-                    } else {
-                        (ObjectModuleId::Main, None)
-                    }
                 } else {
-                    (ObjectModuleId::Main, None)
+                    match object_info.object_type {
+                        ObjectType::Global { modules } => {
+                            if partition_num.ge(&ROLE_ASSIGNMENT_BASE_PARTITION) {
+                                if modules.contains_key(&ModuleId::RoleAssignment) {
+                                    let partition_offset = PartitionOffset(
+                                        partition_num.0 - ROLE_ASSIGNMENT_BASE_PARTITION.0,
+                                    );
+                                    (ObjectModuleId::RoleAssignment, Some(partition_offset))
+                                } else {
+                                    (ObjectModuleId::Main, None)
+                                }
+                            } else if partition_num.ge(&ROYALTY_BASE_PARTITION) {
+                                if modules.contains_key(&ModuleId::Royalty) {
+                                    let partition_offset =
+                                        PartitionOffset(partition_num.0 - ROYALTY_BASE_PARTITION.0);
+                                    (ObjectModuleId::Royalty, Some(partition_offset))
+                                } else {
+                                    (ObjectModuleId::Main, None)
+                                }
+                            } else if partition_num.ge(&METADATA_BASE_PARTITION) {
+                                if modules.contains_key(&ModuleId::Metadata) {
+                                    let partition_offset = PartitionOffset(
+                                        partition_num.0 - METADATA_BASE_PARTITION.0,
+                                    );
+                                    (ObjectModuleId::Metadata, Some(partition_offset))
+                                } else {
+                                    (ObjectModuleId::Main, None)
+                                }
+                            } else {
+                                (ObjectModuleId::Main, None)
+                            }
+                        }
+                        ObjectType::Owned => (ObjectModuleId::Main, None),
+                    }
                 };
 
                 let blueprint_id = match module_id {
@@ -785,5 +963,54 @@ impl<'a, S: SubstateDatabase + ListableSubstateDatabase> SystemDatabaseReader<'a
             canonical_partition
         });
         Box::new(iter)
+    }
+}
+
+pub struct SystemDatabaseWriter<'a, S: SubstateDatabase + CommittableSubstateDatabase> {
+    substate_db: &'a mut S,
+}
+
+impl<'a, S: SubstateDatabase + CommittableSubstateDatabase> SystemDatabaseWriter<'a, S> {
+    pub fn new(substate_db: &'a mut S) -> Self {
+        Self { substate_db }
+    }
+
+    pub fn write_typed_object_field<V: ScryptoEncode>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ObjectModuleId,
+        field_index: u8,
+        value: V,
+    ) -> Result<(), SystemReaderError> {
+        let reader = SystemDatabaseReader::new(self.substate_db);
+        let blueprint_id = reader.get_blueprint_id(node_id, module_id)?;
+        let definition = reader.get_blueprint_definition(&blueprint_id)?;
+        let partition_description = &definition
+            .interface
+            .state
+            .fields
+            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
+            .0;
+        let partition_number = match partition_description {
+            PartitionDescription::Logical(offset) => {
+                let base_partition = match module_id {
+                    ObjectModuleId::Main => MAIN_BASE_PARTITION,
+                    ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
+                    ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
+                    ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
+                };
+                base_partition.at_offset(*offset).unwrap()
+            }
+            PartitionDescription::Physical(partition_number) => *partition_number,
+        };
+
+        self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+            node_id,
+            partition_number,
+            &SubstateKey::Field(field_index),
+            &FieldSubstate::new_field(value, SubstateMutability::Mutable),
+        );
+
+        Ok(())
     }
 }

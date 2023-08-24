@@ -2,18 +2,19 @@ use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::ReferenceOrigin;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::{FieldSubstate, SystemService};
+use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
-use radix_engine_interface::api::{ClientBlueprintApi, LockFlags, ObjectModuleId};
+use radix_engine_interface::api::{ClientBlueprintApi, LockFlags, ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
 };
@@ -139,7 +140,7 @@ impl AuthModule {
     pub fn on_call_method<V, Y>(
         api: &mut SystemService<Y, V>,
         receiver: &NodeId,
-        module_id: ObjectModuleId,
+        obj_module_id: ObjectModuleId,
         direct_access: bool,
         ident: &str,
         args: &IndexedScryptoValue,
@@ -156,10 +157,23 @@ impl AuthModule {
         )?;
 
         // Step 1: Resolve method to permission
+        let module_id = match obj_module_id {
+            ObjectModuleId::Main => None,
+            ObjectModuleId::Metadata => Some(ModuleId::Metadata),
+            ObjectModuleId::Royalty => Some(ModuleId::Royalty),
+            ObjectModuleId::RoleAssignment => Some(ModuleId::RoleAssignment),
+        };
+
         let blueprint_id = api.get_blueprint_info(receiver, module_id)?.blueprint_id;
 
-        let permission =
-            Self::resolve_method_permission(api, &blueprint_id, receiver, &module_id, ident, args)?;
+        let permission = Self::resolve_method_permission(
+            api,
+            &blueprint_id,
+            receiver,
+            &obj_module_id,
+            ident,
+            args,
+        )?;
 
         // Step 2: Check permission
         let fn_identifier = FnIdentifier {
@@ -211,9 +225,11 @@ impl AuthModule {
             SystemLockData::default(),
         )?;
 
-        let auth_zone: FieldSubstate<AuthZone> =
-            system.kernel_read_substate(handle)?.as_typed().unwrap();
-        Ok((auth_zone.value.0.global_caller, Some(handle)))
+        let auth_zone = system
+            .kernel_read_substate(handle)?
+            .as_typed::<FieldSubstate<AuthZone>>()
+            .unwrap();
+        Ok((auth_zone.into_payload().global_caller, Some(handle)))
     }
 
     fn on_execution_start<V, Y>(
@@ -229,7 +245,7 @@ impl AuthModule {
         let (auth_zone, parent_lock_handle) = {
             let next_is_barrier = if let Some((receiver, direct_access)) = receiver {
                 let object_info = system.get_object_info(receiver)?;
-                object_info.global || direct_access
+                object_info.is_global() || direct_access
             } else {
                 true
             };
@@ -303,19 +319,17 @@ impl AuthModule {
             self_auth_zone,
             btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
-                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
+                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(auth_zone))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                    global: false,
-                    module_versions: btreemap!(
-                        ObjectModuleId::Main => BlueprintVersion::default(),
-                    ),
                     blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                        blueprint_version: BlueprintVersion::default(),
                         outer_obj_info: OuterObjectInfo::default(),
                         features: btreeset!(),
                         generic_substitutions: vec![],
-                    }
+                    },
+                    object_type: ObjectType::Owned,
                 }))
             ),
         )?;
@@ -344,10 +358,16 @@ impl AuthModule {
             LockFlags::MUTABLE,
             SystemLockData::Default,
         )?;
-        let mut substate: FieldSubstate<AuthZone> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
-        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
+        let mut auth_zone = api
+            .kernel_read_substate(handle)?
+            .as_typed::<FieldSubstate<AuthZone>>()
+            .unwrap()
+            .into_payload();
+        let proofs = core::mem::replace(&mut auth_zone.proofs, Vec::new());
+        api.kernel_write_substate(
+            handle,
+            IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(auth_zone)),
+        )?;
         api.kernel_close_substate(handle)?;
 
         // Drop all proofs (previously) owned by the auth zone
@@ -451,7 +471,7 @@ impl AuthModule {
                 let role_assignment_of = match static_roles.roles {
                     RoleSpecification::Normal(..) => {
                         // Non-globalized objects do not have access rules module
-                        if !receiver_object_info.global {
+                        if !receiver_object_info.is_global() {
                             return Ok(ResolvedPermission::AllowAll);
                         }
 

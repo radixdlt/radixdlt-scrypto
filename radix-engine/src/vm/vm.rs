@@ -1,9 +1,9 @@
 use crate::blueprints::package::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
-use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::types::*;
 use crate::vm::wasm::{WasmEngine, WasmValidator};
 use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
@@ -65,7 +65,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
             let vm_type: PackageCodeVmTypeEntrySubstate = vm_type.as_typed().unwrap();
             api.kernel_close_substate(handle)?;
             vm_type
-                .value
+                .into_value()
                 .expect(&format!("Vm type not found: {:?}", export))
         };
 
@@ -90,7 +90,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                         original_code.as_typed().unwrap();
                     api.kernel_close_substate(handle)?;
                     original_code
-                        .value
+                        .into_value()
                         .expect(&format!("Original code not found: {:?}", export))
                 };
 
@@ -123,7 +123,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                         instrumented_code.as_typed().unwrap();
                     api.kernel_close_substate(handle)?;
                     instrumented_code
-                        .value
+                        .into_value()
                         .expect(&format!("Instrumented code not found: {:?}", export))
                         .into_latest()
                 };

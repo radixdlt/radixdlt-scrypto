@@ -12,7 +12,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_SETTER_ROLE, COMPONENT_ROYALTY_SETTER_UPDATER_ROLE,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
-use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -32,7 +32,7 @@ pub trait HasComponentRoyalties {
 pub struct Royalty(pub ModuleHandle);
 
 impl Attachable for Royalty {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::Royalty;
+    const MODULE_ID: ModuleId = ModuleId::Royalty;
 
     fn new(handle: ModuleHandle) -> Self {
         Royalty(handle)

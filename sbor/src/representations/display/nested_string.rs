@@ -584,7 +584,7 @@ mod tests {
         let display_context = ValueDisplayParameters::Annotated {
             display_mode: DisplayMode::NestedString,
             print_mode: PrintMode::SingleLine,
-            schema: &schema,
+            schema: schema.v1(),
             custom_context: Default::default(),
             type_index,
         };
@@ -671,7 +671,7 @@ mod tests {
                 base_indent: 8,
                 first_line_indent: 0,
             },
-            schema: &schema,
+            schema: schema.v1(),
             custom_context: Default::default(),
             type_index,
         };

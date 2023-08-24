@@ -1,5 +1,5 @@
 use scrypto::api::key_value_store_api::KeyValueStoreGenericArgs;
-use scrypto::api::object_api::ObjectModuleId;
+use scrypto::api::object_api::ModuleId;
 use scrypto::api::LockFlags;
 use scrypto::prelude::wasm_api::*;
 use scrypto::prelude::*;
@@ -13,12 +13,11 @@ mod globalize_test {
     impl GlobalizeTest {
         pub fn globalize(x: Own) {
             let modules = btreemap!(
-                ObjectModuleId::Main => x.0,
-                ObjectModuleId::Metadata => Metadata::new().0.as_node_id().clone(),
-                ObjectModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
+                ModuleId::Metadata => Metadata::new().0.as_node_id().clone(),
+                ModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
             );
 
-            ScryptoVmV1Api::object_globalize(modules, None);
+            ScryptoVmV1Api::object_globalize(x.0, modules, None);
         }
 
         pub fn globalize_in_package(package_address: PackageAddress) {
