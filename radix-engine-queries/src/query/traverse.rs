@@ -57,7 +57,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
         }
     }
 
-    pub fn traverse_all_descendents(&mut self, node_id: NodeId) {
+    pub fn traverse_subtree(&mut self, node_id: NodeId) {
         Self::traverse_recursive(
             &self.system_db_reader,
             &mut self.visitor,

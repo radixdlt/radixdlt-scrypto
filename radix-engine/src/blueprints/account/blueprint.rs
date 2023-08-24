@@ -663,6 +663,7 @@ impl AccountBlueprint {
 
     pub fn create_advanced<Y>(
         owner_role: OwnerRole,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
@@ -679,7 +680,7 @@ impl AccountBlueprint {
         )?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(account.0, modules, None)?;
+        let address = api.globalize(account.0, modules, address_reservation)?;
 
         Ok(address)
     }
