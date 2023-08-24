@@ -11,6 +11,7 @@ use transaction::validation::{TransactionValidator, ValidationConfig};
 // - Adding a lock_fee instruction, with account protected by single signature/badge, whichever is worse
 // - Adding an amount assertion, for fungible/non-fungible, whichever is worse
 // - Adding a secp256k1 or ed25519 signature, whichever is worse
+// - Adding a notary signature
 
 #[test]
 fn estimate_locking_fee_from_an_account_protected_by_signature() {
@@ -288,6 +289,53 @@ fn estimate_adding_signature() {
 
     println!(
         "Adding a signature: {} XRD",
+        receipt2
+            .fee_summary
+            .total_cost()
+            .safe_sub(receipt1.fee_summary.total_cost())
+            .unwrap()
+    );
+}
+
+#[test]
+fn estimate_notarizing() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let network = NetworkDefinition::simulator();
+    let (pk1, sk1, account1) = test_runner.new_virtual_account();
+    let (_pk2, sk2, account2) = test_runner.new_virtual_account();
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_and_withdraw(account1, 20, XRD, 100)
+        .try_deposit_batch_or_abort(account2, None)
+        .build();
+
+    let receipt1 = test_runner.preview_manifest(
+        manifest.clone(),
+        vec![PublicKey::Secp256k1(pk1)], // signed by account 1
+        DEFAULT_TIP_PERCENTAGE,
+        PreviewFlags::default(),
+    );
+    receipt1.expect_commit_success();
+    println!("\n{:?}", receipt1);
+
+    let tx2 = create_notarized_transaction(
+        &mut test_runner,
+        &network,
+        manifest,
+        vec![&sk1], // signed by account 1
+        &sk2,       // notarized by account 2
+    );
+    let receipt2 = test_runner.execute_transaction(
+        validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
+        CostingParameters::default(),
+        ExecutionConfig::for_notarized_transaction().with_cost_breakdown(true),
+    );
+    receipt2.expect_commit_success();
+    println!("\n{:?}", receipt2);
+
+    println!(
+        "Notarizing (notary_is_signatory: false): {} XRD",
         receipt2
             .fee_summary
             .total_cost()
