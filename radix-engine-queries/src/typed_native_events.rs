@@ -342,7 +342,7 @@ type AccountRemoveAuthorizedDepositorEvent = account::RemoveAuthorizedDepositorE
 /// methods on appropriate types.
 ///
 /// The syntax allowed for by this macro looks like the following:
-/// ```no_run
+/// ```ignore
 /// define_structure! {
 ///     package_name1 => {
 ///         blueprint_name1 => [

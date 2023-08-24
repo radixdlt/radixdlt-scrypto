@@ -566,6 +566,7 @@ impl AccountBlueprint {
     {
         let metadata = Metadata::create_with_data(metadata_init, api)?;
 
+        // No component royalties
         let modules = btreemap!(
             ModuleId::RoleAssignment => role_assignment.0,
             ModuleId::Metadata => metadata,
@@ -1143,13 +1144,11 @@ impl AccountBlueprint {
             AccountField::DepositRule.field_index(),
             LockFlags::MUTABLE,
         )?;
-        let mut deposit_rule = api
-            .field_read_typed::<AccountDepositRuleFieldPayload>(handle)?
-            .into_latest();
-        deposit_rule.default_deposit_rule = default;
         api.field_write_typed(
             handle,
-            &AccountDepositRuleFieldPayload::from_content_source(deposit_rule),
+            &AccountDepositRuleFieldPayload::from_content_source(AccountDepositRuleV1 {
+                default_deposit_rule: default
+            }),
         )?;
         api.field_close(handle)?;
 
@@ -1231,7 +1230,7 @@ impl AccountBlueprint {
         )?;
         api.key_value_entry_set_typed(
             kv_store_entry_lock_handle,
-            &VersionedAccountAuthorizedDepositor::V1(()),
+            &AccountAuthorizedDepositorEntryPayload::from_content_source(()),
         )?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
 
@@ -1310,12 +1309,12 @@ impl AccountBlueprint {
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it if
         // instructed to.
         let vault = {
-            let entry = api.key_value_entry_get_typed::<VersionedAccountResourceVault>(
+            let entry = api.key_value_entry_get_typed::<AccountResourceVaultEntryPayload>(
                 kv_store_entry_lock_handle,
-            )?;
+            )?.map(|v| v.into_latest());
 
             match entry {
-                Some(VersionedAccountResourceVault::V1(vault)) => Ok(vault),
+                Some(vault) => Ok(vault),
                 None => {
                     if create {
                         api.key_value_entry_close(kv_store_entry_lock_handle)?;
@@ -1329,7 +1328,7 @@ impl AccountBlueprint {
                         let own = vault.0;
                         api.key_value_entry_set_typed(
                             kv_store_entry_lock_handle,
-                            &VersionedAccountResourceVault::V1(vault),
+                            &AccountResourceVaultEntryPayload::from_content_source(vault),
                         )?;
                         Ok(Vault(own))
                     } else {
@@ -1394,14 +1393,10 @@ impl AccountBlueprint {
         )?;
 
         let does_vault_exist = {
-            let entry = api.key_value_entry_get_typed::<VersionedAccountResourceVault>(
+            let entry = api.key_value_entry_get_typed::<AccountResourceVaultEntryPayload>(
                 kv_store_entry_lock_handle,
             )?;
-
-            match entry {
-                Option::Some(_) => true,
-                Option::None => false,
-            }
+            entry.is_some()
         };
 
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
@@ -1425,13 +1420,11 @@ impl AccountBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let entry = api.key_value_entry_get_typed::<VersionedAccountResourcePreference>(
+        let entry = api.key_value_entry_get_typed::<AccountResourcePreferenceEntryPayload>(
             kv_store_entry_lock_handle,
-        )?;
+        )?.map(|v| v.into_latest());
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
-        Ok(entry.map(|versioned| match versioned {
-            VersionedAccountResourcePreference::V1(pref) => pref,
-        }))
+        Ok(entry)
     }
 }
 

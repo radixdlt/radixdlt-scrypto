@@ -63,6 +63,7 @@ impl Compile {
     pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
         // Build
         let status = Command::new("cargo")
+            .env("RUSTFLAGS", "")
             .current_dir(package_dir.as_ref())
             .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
             .status()

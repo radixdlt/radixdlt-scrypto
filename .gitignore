@@ -71,5 +71,8 @@ perf.data
 # Emacs
 *~
 
-#Rusty-tags
+# Rusty-tags
 *.vi
+
+# Source based coverage
+*.profraw

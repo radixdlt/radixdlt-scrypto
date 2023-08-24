@@ -1,4 +1,3 @@
-use scrypto::api::node_modules::royalty::COMPONENT_ROYALTY_SETTER_ROLE;
 use scrypto::prelude::*;
 
 #[blueprint]
