@@ -1,11 +1,14 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_modules::role_assignment::OwnerRoleSubstate;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use crate::system::node_modules::role_assignment::{
+    RoleAssignmentAccessRuleEntryPayload, RoleAssignmentOwnerFieldPayload,
+};
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
 };
+use crate::system::system_substates::FieldSubstate;
+use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::types::*;
 use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use radix_engine_interface::api::{ClientObjectApi, LockFlags, ObjectModuleId};
@@ -340,12 +343,12 @@ impl Authorization {
                 }),
                 L::default(),
             )?;
-            let substate: KeyValueEntrySubstate<AccessRule> =
+            let substate: KeyValueEntrySubstate<RoleAssignmentAccessRuleEntryPayload> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             api.kernel_close_substate(handle)?;
 
-            match substate.value {
-                Some(access_rule) => access_rule,
+            match substate.into_value() {
+                Some(access_rule) => access_rule.content.into_latest(),
                 None => {
                     let handle = api.kernel_open_substate(
                         role_assignment_of.as_node_id(),
@@ -357,10 +360,14 @@ impl Authorization {
                         L::default(),
                     )?;
 
-                    let owner_role_substate: FieldSubstate<OwnerRoleSubstate> =
+                    let owner_role_substate: FieldSubstate<RoleAssignmentOwnerFieldPayload> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
                     api.kernel_close_substate(handle)?;
-                    owner_role_substate.into_payload().owner_role_entry.rule
+                    owner_role_substate
+                        .into_payload()
+                        .into_latest()
+                        .owner_role_entry
+                        .rule
                 }
             }
         };

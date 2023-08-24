@@ -6,7 +6,6 @@ use crate::internal_prelude::*;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeFungibleVault;
 use native_sdk::resource::NativeNonFungibleVault;
 use native_sdk::resource::NativeVault;
@@ -68,8 +67,8 @@ declare_native_blueprint_state! {
     features: {
     },
     fields: {
-        account:  {
-            ident: Account,
+        deposit_rule:  {
+            ident: DepositRule,
             field_type: {
                 kind: StaticSingleVersioned,
             },
@@ -113,7 +112,7 @@ declare_native_blueprint_state! {
     }
 }
 
-pub type AccountAccountV1 = AccountSubstate;
+pub type AccountDepositRuleV1 = AccountSubstate;
 pub type AccountResourceVaultV1 = Vault;
 pub type AccountResourcePreferenceV1 = ResourcePreference;
 pub type AccountAuthorizedDepositorV1 = ();
@@ -124,6 +123,7 @@ impl AccountBlueprint {
     pub fn get_definition() -> BlueprintDefinitionInit {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
+        let feature_set = AccountFeatureSet::all_features();
         let state = AccountStateSchemaInit::create_schema_init(&mut aggregator);
 
         let mut functions = BTreeMap::new();
@@ -499,7 +499,7 @@ impl AccountBlueprint {
         BlueprintDefinitionInit {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
-            feature_set: btreeset!(),
+            feature_set,
             dependencies: btreeset!(
                 SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                 ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -565,12 +565,10 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let metadata = Metadata::create_with_data(metadata_init, api)?;
-        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
             ModuleId::RoleAssignment => role_assignment.0,
             ModuleId::Metadata => metadata,
-            ModuleId::Royalty => royalty,
         );
 
         Ok(modules)
@@ -726,7 +724,7 @@ impl AccountBlueprint {
             vec![],
             GenericArgs::default(),
             btreemap! {
-                AccountField::Account.field_index() => FieldValue::new(&VersionedAccountAccount::V1(AccountAccountV1 {
+                AccountField::DepositRule.field_index() => FieldValue::new(&AccountDepositRuleFieldPayload::from_content_source(AccountDepositRuleV1 {
                     default_deposit_rule: DefaultDepositRule::Accept,
                 }))
             },
@@ -1140,17 +1138,19 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = AccountField::Account.into();
-        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::MUTABLE)?;
-        let mut account = api.field_read_typed::<VersionedAccountAccount>(handle)?;
-
-        match &mut account {
-            VersionedAccountAccount::V1(account) => {
-                account.default_deposit_rule = default;
-            }
-        }
-
-        api.field_write_typed(handle, &account)?;
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            AccountField::DepositRule.field_index(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut deposit_rule = api
+            .field_read_typed::<AccountDepositRuleFieldPayload>(handle)?
+            .into_latest();
+        deposit_rule.default_deposit_rule = default;
+        api.field_write_typed(
+            handle,
+            &AccountDepositRuleFieldPayload::from_content_source(deposit_rule),
+        )?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -1274,13 +1274,15 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = AccountField::Account.into();
-        let handle =
-            api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::read_only())?;
-        let account = api.field_read_typed::<VersionedAccountAccount>(handle)?;
-        let default = match account {
-            VersionedAccountAccount::V1(account) => account.default_deposit_rule,
-        };
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            AccountField::DepositRule.field_index(),
+            LockFlags::read_only(),
+        )?;
+        let deposit_rule = api
+            .field_read_typed::<AccountDepositRuleFieldPayload>(handle)?
+            .into_latest();
+        let default = deposit_rule.default_deposit_rule;
         api.field_close(handle)?;
 
         Ok(default)

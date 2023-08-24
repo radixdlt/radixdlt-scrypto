@@ -56,9 +56,11 @@ use clap::{Parser, Subcommand};
 use radix_engine::blueprints::consensus_manager::{
     ConsensusManagerSubstate, ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
 };
+use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::system::FieldSubstate;
-use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
+use radix_engine::system::system_db_reader::{
+    ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
+};
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -76,12 +78,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::{
-    db_key_mapper::{
-        MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
-    },
-    interface::SubstateDatabase,
-};
+use radix_engine_store_interface::interface::SubstateDatabase;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
@@ -354,7 +351,10 @@ pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectI
         .map_err(|_| Error::ComponentNotFound(component_address))
 }
 
-pub fn export_schema(node_id: &NodeId, schema_hash: SchemaHash) -> Result<ScryptoSchema, Error> {
+pub fn export_schema(
+    node_id: &NodeId,
+    schema_hash: SchemaHash,
+) -> Result<VersionedScryptoSchema, Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
@@ -401,7 +401,7 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
 pub fn get_event_schema<S: SubstateDatabase>(
     substate_db: &S,
     event_type_identifier: &EventTypeIdentifier,
-) -> Option<(LocalTypeIndex, ScryptoSchema)> {
+) -> Option<(LocalTypeIndex, VersionedScryptoSchema)> {
     let system_reader = SystemDatabaseReader::new(substate_db);
 
     let (blueprint_id, event_name) = match event_type_identifier {
@@ -433,7 +433,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let event_def = bp_interface.events.get(event_name)?;
     match event_def {
         BlueprintPayloadDef::Static(type_id) => {
-            let schema: ScryptoSchema = system_reader
+            let schema: VersionedScryptoSchema = system_reader
                 .read_object_collection_entry(
                     blueprint_id.package_address.as_node_id(),
                     ObjectModuleId::Main,
@@ -462,19 +462,29 @@ pub fn db_upsert_timestamps(
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
-    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
-        &CONSENSUS_MANAGER.as_node_id(),
-        MAIN_BASE_PARTITION,
-        &ConsensusManagerField::CurrentTime.into(),
-        &FieldSubstate::new_mutable_field(milli_timestamp),
-    );
+    let mut writer = SystemDatabaseWriter::new(&mut substate_db);
 
-    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
-        &CONSENSUS_MANAGER.as_node_id(),
-        MAIN_BASE_PARTITION,
-        &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
-        &FieldSubstate::new_mutable_field(minute_timestamp),
-    );
+    writer
+        .write_typed_object_field(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::ProposerMilliTimestamp.field_index(),
+            ConsensusManagerProposerMilliTimestampFieldPayload::from_content_source(
+                milli_timestamp,
+            ),
+        )
+        .unwrap();
+
+    writer
+        .write_typed_object_field(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
+            ConsensusManagerProposerMinuteTimestampFieldPayload::from_content_source(
+                minute_timestamp,
+            ),
+        )
+        .unwrap();
 
     Ok(())
 }
@@ -486,14 +496,16 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
-    let mut payload = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
-            &CONSENSUS_MANAGER.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &ConsensusManagerField::ConsensusManager.into(),
+    let reader = SystemDatabaseReader::new(&substate_db);
+
+    let mut consensus_mgr_state = reader
+        .read_typed_object_field::<ConsensusManagerStateFieldPayload>(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::State.field_index(),
         )
-        .unwrap_or_else(|| {
-            FieldSubstate::new_mutable_field(ConsensusManagerSubstate {
+        .unwrap_or_else(|_| {
+            ConsensusManagerStateFieldPayload::from_content_source(ConsensusManagerSubstate {
                 epoch: Epoch::zero(),
                 effective_epoch_start_milli: 0,
                 actual_epoch_start_milli: 0,
@@ -502,16 +514,20 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
                 started: true,
             })
         })
-        .into_payload();
+        .into_latest();
 
-    payload.epoch = epoch;
+    consensus_mgr_state.epoch = epoch;
 
-    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
-        &CONSENSUS_MANAGER.as_node_id(),
-        MAIN_BASE_PARTITION,
-        &ConsensusManagerField::ConsensusManager.into(),
-        &FieldSubstate::new_mutable_field(payload),
-    );
+    let mut writer = SystemDatabaseWriter::new(&mut substate_db);
+
+    writer
+        .write_typed_object_field(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::State.field_index(),
+            ConsensusManagerStateFieldPayload::from_content_source(consensus_mgr_state),
+        )
+        .unwrap();
 
     Ok(())
 }

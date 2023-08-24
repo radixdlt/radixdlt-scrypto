@@ -916,10 +916,12 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<1u8>()
     true
     Tuple(
-        Tuple(
-            Array<Enum>(),
-            Array<Tuple>(),
-            Array<Enum>()
+        Enum<0u8>(
+            Tuple(
+                Array<Enum>(),
+                Array<Tuple>(),
+                Array<Enum>()
+            )
         ),
         Enum<0u8>(
             66u8
@@ -1007,10 +1009,12 @@ CREATE_NON_FUNGIBLE_RESOURCE
     Enum<1u8>()
     true
     Tuple(
-        Tuple(
-            Array<Enum>(),
-            Array<Tuple>(),
-            Array<Enum>()
+        Enum<0u8>(
+            Tuple(
+                Array<Enum>(),
+                Array<Tuple>(),
+                Array<Enum>()
+            )
         ),
         Enum<0u8>(
             66u8

@@ -8,7 +8,7 @@ use crate::internal_prelude::*;
 use crate::types::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode, ScryptoSchema};
+use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode, VersionedScryptoSchema};
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
@@ -172,7 +172,7 @@ impl FieldValue {
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct GenericArgs {
-    pub additional_schema: Option<ScryptoSchema>,
+    pub additional_schema: Option<VersionedScryptoSchema>,
     pub generic_substitutions: Vec<GenericSubstitution>,
 }
 

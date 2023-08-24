@@ -1,7 +1,11 @@
 use crate::internal_prelude::*;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use crate::system::system_substates::KeyValueEntrySubstate;
+use radix_engine_common::prelude::{
+    scrypto_decode, scrypto_encode, Hash, ScryptoCustomExtension, ScryptoValue,
+    VersionedScryptoSchema,
+};
 use radix_engine_interface::api::{FieldIndex, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintPayloadIdentifier, BlueprintType, KeyOrValue,
@@ -16,6 +20,7 @@ use crate::system::system_db_reader::{
     ObjectPartitionDescriptor, ResolvedPayloadSchema, SystemDatabaseReader,
     SystemPartitionDescriptor, SystemReaderError,
 };
+use crate::system::system_substates::FieldSubstate;
 use crate::types::Condition;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -409,8 +414,9 @@ impl SystemDatabaseChecker {
                         let _schema_hash: Hash = scrypto_decode(&map_key)
                             .map_err(|_| SystemPartitionCheckError::InvalidSchemaKey)?;
 
-                        let _schema: KeyValueEntrySubstate<ScryptoSchema> = scrypto_decode(&value)
-                            .map_err(|_| SystemPartitionCheckError::InvalidSchemaValue)?;
+                        let _schema: KeyValueEntrySubstate<VersionedScryptoSchema> =
+                            scrypto_decode(&value)
+                                .map_err(|_| SystemPartitionCheckError::InvalidSchemaValue)?;
 
                         substate_count += 1;
                     }
@@ -447,7 +453,7 @@ impl SystemDatabaseChecker {
                                 .map_err(|_| {
                                     SystemPartitionCheckError::InvalidKeyValueStoreValue
                                 })?;
-                            if let Some(value) = entry.value {
+                            if let Some(value) = entry.into_value() {
                                 let entry_payload = scrypto_encode(&value).map_err(|_| {
                                     SystemPartitionCheckError::InvalidKeyValueStoreValue
                                 })?;
@@ -537,23 +543,35 @@ impl SystemDatabaseChecker {
                                 &node_checker_state.node_id,
                                 partition_number,
                             ) {
-                                let map_key =
-                                    match key {
+                                // Key Check
+                                {
+                                    let map_key = match key {
                                         SubstateKey::Map(map_key) => map_key,
                                         _ => return Err(
                                             SystemPartitionCheckError::InvalidIndexCollectionKey,
                                         ),
                                     };
 
-                                self.validate_payload(reader, &map_key, &key_schema)
-                                    .map_err(|_| {
-                                        SystemPartitionCheckError::InvalidIndexCollectionKey
-                                    })?;
+                                    self.validate_payload(reader, &map_key, &key_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidIndexCollectionKey
+                                        })?;
+                                }
 
-                                self.validate_payload(reader, &value, &value_schema)
-                                    .map_err(|_| {
+                                // Value Check
+                                {
+                                    let entry: IndexEntrySubstate<ScryptoValue> =
+                                        scrypto_decode(&value).map_err(|_| {
+                                            SystemPartitionCheckError::InvalidIndexCollectionValue
+                                        })?;
+                                    let value = scrypto_encode(entry.value()).map_err(|_| {
                                         SystemPartitionCheckError::InvalidIndexCollectionValue
                                     })?;
+                                    self.validate_payload(reader, &value, &value_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidIndexCollectionValue
+                                        })?;
+                                }
 
                                 substate_count += 1;
                             }
@@ -605,7 +623,7 @@ impl SystemDatabaseChecker {
                                 {
                                     let entry: KeyValueEntrySubstate<ScryptoValue> = scrypto_decode(&value)
                                         .map_err(|_| SystemPartitionCheckError::InvalidKeyValueCollectionValue)?;
-                                    if let Some(value) = entry.value {
+                                    if let Some(value) = entry.into_value() {
                                         let entry_payload = scrypto_encode(&value)
                                             .map_err(|_| SystemPartitionCheckError::InvalidKeyValueCollectionValue)?;
                                         self.validate_payload(reader, &entry_payload, &value_schema)
@@ -641,22 +659,33 @@ impl SystemDatabaseChecker {
                                 &node_checker_state.node_id,
                                 partition_number,
                             ) {
-                                let sorted_key = match key {
-                                    SubstateKey::Sorted(sorted_key) => sorted_key,
-                                    _ => return Err(
-                                        SystemPartitionCheckError::InvalidSortedIndexCollectionKey,
-                                    ),
-                                };
+                                // Key Check
+                                {
+                                    let sorted_key = match key {
+                                        SubstateKey::Sorted(sorted_key) => sorted_key,
+                                        _ => return Err(
+                                            SystemPartitionCheckError::InvalidSortedIndexCollectionKey,
+                                        ),
+                                    };
 
-                                self.validate_payload(reader, &sorted_key.1, &key_schema)
-                                    .map_err(|_| {
-                                        SystemPartitionCheckError::InvalidSortedIndexCollectionKey
-                                    })?;
+                                    self.validate_payload(reader, &sorted_key.1, &key_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidSortedIndexCollectionKey
+                                        })?;
+                                }
 
-                                self.validate_payload(reader, &value, &value_schema)
-                                    .map_err(|_| {
+                                // Value Check
+                                {
+                                    let entry: SortedIndexEntrySubstate<ScryptoValue> = scrypto_decode(&value)
+                                        .map_err(|_| SystemPartitionCheckError::InvalidSortedIndexCollectionValue)?;
+                                    let value = scrypto_encode(entry.value()).map_err(|_| {
                                         SystemPartitionCheckError::InvalidSortedIndexCollectionValue
                                     })?;
+                                    self.validate_payload(reader, &value, &value_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidSortedIndexCollectionValue
+                                        })?;
+                                }
 
                                 substate_count += 1;
                             }
@@ -685,7 +714,7 @@ impl SystemDatabaseChecker {
 
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             payload,
-            &payload_schema.schema,
+            payload_schema.schema.v1(),
             payload_schema.type_index,
             &validation_context,
         )

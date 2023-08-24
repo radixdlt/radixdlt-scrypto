@@ -6,6 +6,7 @@ use crate::errors::{
     InvalidGlobalizeAccess, InvalidModuleType, RuntimeError, SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
+use crate::internal_prelude::{IndexEntrySubstate, SortedIndexEntrySubstate};
 use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
 use crate::kernel::call_frame::{NodeVisibility, ReferenceOrigin};
 use crate::kernel::kernel_api::*;
@@ -18,6 +19,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::system::system_modules::SystemModuleMixer;
+use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta, SystemMapper,
 };
@@ -41,140 +43,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SubstateMutability {
-    Mutable,
-    Immutable,
-}
-
-// In case we ever are reading raw substate bytes, it may be useful for debugging to be able to tell apart different substate types.
-// So let's give them non-overlapping variant discriminators to enable that, just in case.
-pub const SUBSTATE_TYPE_FIELD_V1: u8 = 20;
-pub const SUBSTATE_TYPE_KEY_VALUE_ENTRY_V1: u8 = 30;
-pub const SUBSTATE_TYPE_INDEX_ENTRY_V1: u8 = 40;
-pub const SUBSTATE_TYPE_SORTED_INDEX_ENTRY_V1: u8 = 50;
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct DynSubstate<E> {
-    pub value: E,
-    pub mutability: SubstateMutability,
-}
-
-impl<E> DynSubstate<E> {
-    pub fn lock(&mut self) {
-        self.mutability = SubstateMutability::Immutable;
-    }
-
-    pub fn is_mutable(&self) -> bool {
-        matches!(self.mutability, SubstateMutability::Mutable)
-    }
-}
-
-// Note - we manually version these instead of using the defined_versioned! macro,
-// to avoid having additional / confusing methods on FieldSubstate<X>
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-#[sbor(categorize_types = "")]
-pub enum FieldSubstate<T> {
-    #[sbor(discriminator(SUBSTATE_TYPE_FIELD_V1))]
-    V1(FieldSubstateV1<T>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-#[sbor(categorize_types = "")]
-pub struct FieldSubstateV1<V> {
-    payload: V,
-    mutability: SubstateMutability,
-}
-
-impl<V> FieldSubstate<V> {
-    pub fn new_field(payload: V, mutability: SubstateMutability) -> Self {
-        FieldSubstate::V1(FieldSubstateV1 {
-            payload,
-            mutability,
-        })
-    }
-
-    pub fn new_mutable_field(payload: V) -> Self {
-        Self::new_field(payload, SubstateMutability::Mutable)
-    }
-
-    pub fn new_locked_field(payload: V) -> Self {
-        Self::new_field(payload, SubstateMutability::Immutable)
-    }
-
-    pub fn lock(&mut self) {
-        let mutability = match self {
-            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
-        };
-        *mutability = SubstateMutability::Immutable;
-    }
-
-    pub fn payload(&self) -> &V {
-        match self {
-            FieldSubstate::V1(FieldSubstateV1 { payload, .. }) => payload,
-        }
-    }
-
-    pub fn mutability(&self) -> &SubstateMutability {
-        match self {
-            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
-        }
-    }
-
-    pub fn into_payload(self) -> V {
-        match self {
-            FieldSubstate::V1(FieldSubstateV1 { payload, .. }) => payload,
-        }
-    }
-
-    pub fn into_mutability(self) -> SubstateMutability {
-        match self {
-            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
-        }
-    }
-}
-
-pub type KeyValueEntrySubstate<V> = DynSubstate<Option<V>>;
-
-impl<V> KeyValueEntrySubstate<V> {
-    pub fn entry(value: V) -> Self {
-        Self {
-            value: Some(value),
-            mutability: SubstateMutability::Mutable,
-        }
-    }
-
-    pub fn locked_entry(value: V) -> Self {
-        Self {
-            value: Some(value),
-            mutability: SubstateMutability::Immutable,
-        }
-    }
-
-    pub fn locked_empty_entry() -> Self {
-        Self {
-            value: None,
-            mutability: SubstateMutability::Immutable,
-        }
-    }
-
-    pub fn remove(&mut self) -> Option<V> {
-        self.value.take()
-    }
-}
-
-impl<V> Default for KeyValueEntrySubstate<V> {
-    fn default() -> Self {
-        Self {
-            value: Option::None,
-            mutability: SubstateMutability::Mutable,
-        }
-    }
-}
-
-pub type IndexEntrySubstate<V> = V;
-pub type SortedIndexEntrySubstate<V> = V;
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
@@ -255,7 +123,7 @@ where
             let mut additional_schemas = index_map_new();
 
             if let Some(schema) = generic_args.additional_schema {
-                validate_schema(&schema)
+                validate_schema(schema.v1())
                     .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
                 let schema_hash = schema.generate_schema_hash();
                 additional_schemas.insert(schema_hash, schema);
@@ -477,7 +345,7 @@ where
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
-        let definition = match substate.value {
+        let definition = match substate.into_value() {
             Some(definition) => definition.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(
@@ -1661,7 +1529,7 @@ where
 
         self.api.kernel_read_substate(handle).map(|v| {
             let wrapper: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
-            scrypto_encode(&wrapper.value).unwrap()
+            scrypto_encode(&wrapper.into_value()).unwrap()
         })
     }
 
@@ -1779,7 +1647,7 @@ where
     ) -> Result<NodeId, RuntimeError> {
         let mut additional_schemas = index_map_new();
         if let Some(schema) = generic_args.additional_schema {
-            validate_schema(&schema)
+            validate_schema(schema.v1())
                 .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
             let schema_hash = schema.generate_schema_hash();
             additional_schemas.insert(schema_hash, schema);
@@ -1877,7 +1745,7 @@ where
         if flags.contains(LockFlags::MUTABLE) {
             let mutability = self.api.kernel_read_substate(handle).map(|v| {
                 let kv_entry: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
-                kv_entry.mutability
+                kv_entry.mutability()
             })?;
 
             if let SubstateMutability::Immutable = mutability {
@@ -1941,8 +1809,9 @@ where
             &buffer,
         )?;
 
-        let value = IndexedScryptoValue::from_vec(buffer)
-            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
+        let value: ScryptoValue = scrypto_decode(&buffer).unwrap();
+        let index_entry = IndexEntrySubstate::entry(value);
+        let value = IndexedScryptoValue::from_typed(&index_entry);
 
         self.api
             .kernel_set_substate(&node_id, partition_num, SubstateKey::Map(key), value)
@@ -1966,7 +1835,10 @@ where
         let rtn = self
             .api
             .kernel_remove_substate(&node_id, partition_num, &SubstateKey::Map(key))?
-            .map(|v| v.into());
+            .map(|v| {
+                let value: IndexEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
+                scrypto_encode(value.value()).unwrap()
+            });
 
         Ok(rtn)
     }
@@ -2015,7 +1887,12 @@ where
             .api
             .kernel_drain_substates::<MapKey>(&node_id, partition_num, limit)?
             .into_iter()
-            .map(|(key, value)| (key.into_map(), value.into()))
+            .map(|(key, value)| {
+                let value: IndexEntrySubstate<ScryptoValue> = value.as_typed().unwrap();
+                let value = scrypto_encode(value.value()).unwrap();
+
+                (key.into_map(), value)
+            })
             .collect();
 
         Ok(substates)
@@ -2063,8 +1940,9 @@ where
             &buffer,
         )?;
 
-        let value = IndexedScryptoValue::from_vec(buffer)
-            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
+        let value: ScryptoValue = scrypto_decode(&buffer).unwrap();
+        let sorted_entry = SortedIndexEntrySubstate::entry(value);
+        let value = IndexedScryptoValue::from_typed(&sorted_entry);
 
         self.api.kernel_set_substate(
             &node_id,
@@ -2097,7 +1975,10 @@ where
                 partition_num,
                 &SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone())),
             )?
-            .map(|v| v.into());
+            .map(|v| {
+                let value: SortedIndexEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
+                scrypto_encode(value.value()).unwrap()
+            });
 
         Ok(rtn)
     }
@@ -2122,7 +2003,12 @@ where
             .api
             .kernel_scan_sorted_substates(&node_id, partition_num, limit)?
             .into_iter()
-            .map(|(key, value)| (key, value.into()))
+            .map(|(key, value)| {
+                let value: SortedIndexEntrySubstate<ScryptoValue> = value.as_typed().unwrap();
+                let value = scrypto_encode(value.value()).unwrap();
+
+                (key, value)
+            })
             .collect();
 
         Ok(substates)

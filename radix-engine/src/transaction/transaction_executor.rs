@@ -1,4 +1,7 @@
-use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
+use crate::blueprints::consensus_manager::{
+    ConsensusManagerField, ConsensusManagerStateFieldPayload,
+    ConsensusManagerValidatorRewardsFieldPayload,
+};
 use crate::blueprints::models::FieldPayload;
 use crate::blueprints::resource::{
     BurnFungibleResourceEvent, DepositEvent, FungibleVaultBalanceFieldPayload,
@@ -7,15 +10,17 @@ use crate::blueprints::resource::{
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
+use crate::internal_prelude::KeyValueEntrySubstateV1;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
+use crate::system::system_substates::KeyValueEntrySubstate;
+use crate::system::system_substates::{FieldSubstate, SubstateMutability};
 use crate::track::interface::CommitableSubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
@@ -448,11 +453,12 @@ where
         match track.read_substate(
             CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
-            &ConsensusManagerField::ConsensusManager.into(),
+            &ConsensusManagerField::State.into(),
         ) {
             Some(x) => {
-                let substate: FieldSubstate<ConsensusManagerSubstate> = x.as_typed().unwrap();
-                Some(substate.into_payload().epoch)
+                let substate: FieldSubstate<ConsensusManagerStateFieldPayload> =
+                    x.as_typed().unwrap();
+                Some(substate.into_payload().into_latest().epoch)
             }
             None => None,
         }
@@ -508,7 +514,7 @@ where
         match substate {
             Some(value) => {
                 let substate: KeyValueEntrySubstate<TransactionStatus> = value.as_typed().unwrap();
-                match substate.value {
+                match substate.into_value() {
                     Some(status) => match status {
                         TransactionStatus::CommittedSuccess
                         | TransactionStatus::CommittedFailure => {
@@ -829,19 +835,19 @@ where
         if !to_proposer.is_zero() || !to_validator_set.is_zero() {
             // Fetch current leader
             // TODO: maybe we should move current leader into validator rewards?
-            let substate: FieldSubstate<ConsensusManagerSubstate> = track
+            let substate: FieldSubstate<ConsensusManagerStateFieldPayload> = track
                 .read_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
-                    &ConsensusManagerField::ConsensusManager.into(),
+                    &ConsensusManagerField::State.into(),
                 )
                 .unwrap()
                 .as_typed()
                 .unwrap();
-            let current_leader = substate.into_payload().current_leader;
+            let current_leader = substate.into_payload().into_latest().current_leader;
 
             // Update validator rewards
-            let substate: FieldSubstate<ValidatorRewardsSubstate> = track
+            let substate: FieldSubstate<ConsensusManagerValidatorRewardsFieldPayload> = track
                 .read_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
@@ -850,7 +856,9 @@ where
                 .unwrap()
                 .as_typed()
                 .unwrap();
-            let mut rewards = substate.into_payload();
+
+            let mut rewards = substate.into_payload().into_latest();
+
             if let Some(current_leader) = current_leader {
                 let entry = rewards.proposer_rewards.entry(current_leader).or_default();
                 *entry = entry.safe_add(to_proposer).unwrap()
@@ -864,7 +872,9 @@ where
                     CONSENSUS_MANAGER.into_node_id(),
                     MAIN_BASE_PARTITION,
                     ConsensusManagerField::ValidatorRewards.into(),
-                    IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(rewards)),
+                    IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(
+                        ConsensusManagerValidatorRewardsFieldPayload::from_content_source(rewards),
+                    )),
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
@@ -953,15 +963,17 @@ where
                         TRANSACTION_TRACKER.into_node_id(),
                         PartitionNumber(partition_number),
                         SubstateKey::Map(scrypto_encode(intent_hash).unwrap()),
-                        IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                            value: Some(if is_success {
-                                TransactionStatus::CommittedSuccess
-                            } else {
-                                TransactionStatus::CommittedFailure
-                            }),
-                            // TODO: maybe make it immutable, but how does this affect partition deletion?
-                            mutability: SubstateMutability::Mutable,
-                        }),
+                        IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
+                            KeyValueEntrySubstateV1 {
+                                value: Some(if is_success {
+                                    TransactionStatus::CommittedSuccess
+                                } else {
+                                    TransactionStatus::CommittedFailure
+                                }),
+                                // TODO: maybe make it immutable, but how does this affect partition deletion?
+                                mutability: SubstateMutability::Mutable,
+                            },
+                        )),
                         &mut |_| -> Result<(), ()> { Ok(()) },
                     )
                     .unwrap();

@@ -4,14 +4,16 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::blueprints::consensus_manager::*;
+use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_db_checker::{
     SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults,
 };
-use radix_engine::system::system_db_reader::SystemDatabaseReader;
+use radix_engine::system::system_db_reader::{
+    ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
+};
 use radix_engine::transaction::{
     execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
     ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
@@ -22,7 +24,6 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
@@ -41,9 +42,7 @@ use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::db_key_mapper::{
-    MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
-};
+use radix_engine_store_interface::db_key_mapper::{SpreadPrefixKeyMapper};
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, ListableSubstateDatabase,
     SubstateDatabase,
@@ -500,60 +499,64 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataValue> {
-        // TODO: Move this to system wrapper around substate_store
-        let key = scrypto_encode(key).unwrap();
-
-        let metadata_value = self
-            .database
-            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader
+            .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
                 address.as_node_id(),
-                METADATA_BASE_PARTITION,
-                &SubstateKey::Map(key),
-            )?
-            .value;
-
-        metadata_value
+                ObjectModuleId::Metadata,
+                ObjectCollectionKey::KeyValue(
+                    MetadataCollection::EntryKeyValue.collection_index(),
+                    &key.to_string(),
+                ),
+            )
+            .unwrap()
+            .map(|v| v.into_latest())
     }
 
     pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
-        let accumulator = self
-            .database
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ComponentRoyaltySubstate>>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let accumulator = reader
+            .read_typed_object_field::<ComponentRoyaltyAccumulatorFieldPayload>(
                 component_address.as_node_id(),
-                ROYALTY_FIELDS_PARTITION,
-                &RoyaltyField::RoyaltyAccumulator.into(),
+                ObjectModuleId::Royalty,
+                ComponentRoyaltyField::Accumulator.field_index(),
             )
             .unwrap()
-            .into_payload();
-        self.database
-            .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
+            .into_latest();
+
+        let balance = reader
+            .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
                 accumulator.royalty_vault.0.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &FungibleVaultField::Balance.into(),
+                ObjectModuleId::Main,
+                FungibleVaultField::Balance.field_index(),
             )
             .unwrap()
-            .into_payload()
-            .into_latest()
-            .amount()
+            .into_latest();
+
+        balance.amount()
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        let output = self
-            .database
-            .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltyAccumulatorFieldSubstate>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let accumulator = reader
+            .read_typed_object_field::<PackageRoyaltyAccumulatorFieldPayload>(
                 package_address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &PackageField::RoyaltyAccumulator.into(),
-            )?
-            .into_payload();
-
-        self.database
-            .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
-                output.into_latest().royalty_vault.0.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &FungibleVaultField::Balance.into(),
+                ObjectModuleId::Main,
+                PackageField::RoyaltyAccumulator.field_index(),
             )
-            .map(|r| r.into_payload().into_latest().amount())
+            .ok()?
+            .into_latest();
+
+        let balance = reader
+            .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
+                accumulator.royalty_vault.0.as_node_id(),
+                ObjectModuleId::Main,
+                FungibleVaultField::Balance.field_index(),
+            )
+            .unwrap()
+            .into_latest();
+
+        Some(balance.amount())
     }
 
     pub fn find_all_nodes(&self) -> IndexSet<NodeId> {
@@ -598,56 +601,42 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn get_package_scrypto_schemas(
         &self,
         package_address: &PackageAddress,
-    ) -> IndexMap<SchemaHash, ScryptoSchema> {
-        let mut schemas = index_map_new();
-        for entry in self
-            .substate_db()
-            .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
+    ) -> IndexMap<SchemaHash, VersionedScryptoSchema> {
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader
+            .collection_iter(
                 package_address.as_node_id(),
-                SCHEMAS_PARTITION,
-            ))
-        {
-            let hash: SchemaHash =
-                scrypto_decode(&SpreadPrefixKeyMapper::map_from_db_sort_key(&entry.0)).unwrap();
-            let value: PackageSchemaEntrySubstate = scrypto_decode(&entry.1).unwrap();
-            match value.value {
-                Some(schema) => {
-                    schemas.insert(hash, schema.content);
-                }
-                None => {}
-            }
-        }
-
-        schemas
+                ObjectModuleId::Main,
+                PackageCollection::SchemaKeyValue.collection_index(),
+            )
+            .unwrap()
+            .map(|(key, value)| {
+                let hash: SchemaHash = scrypto_decode(&key).unwrap();
+                let schema: PackageSchemaEntryPayload = scrypto_decode(&value).unwrap();
+                (hash, schema.content)
+            })
+            .collect()
     }
 
     pub fn get_package_blueprint_definitions(
         &self,
         package_address: &PackageAddress,
     ) -> IndexMap<BlueprintVersionKey, BlueprintDefinition> {
-        let mut definitions = index_map_new();
-        for entry in self
-            .substate_db()
-            .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader
+            .collection_iter(
                 package_address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                    .unwrap(),
-            ))
-        {
-            let key: BlueprintVersionKey =
-                scrypto_decode(&SpreadPrefixKeyMapper::map_from_db_sort_key(&entry.0)).unwrap();
-            let value: PackageBlueprintVersionDefinitionEntrySubstate =
-                scrypto_decode(&entry.1).unwrap();
-            match value.value {
-                Some(definition) => {
-                    definitions.insert(key, definition.into_latest());
-                }
-                None => {}
-            }
-        }
-
-        definitions
+                ObjectModuleId::Main,
+                PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+            )
+            .unwrap()
+            .map(|(key, value)| {
+                let key: BlueprintVersionKey = scrypto_decode(&key).unwrap();
+                let definition: PackageBlueprintVersionDefinitionEntryPayload =
+                    scrypto_decode(&value).unwrap();
+                (key, definition.into_latest())
+            })
+            .collect()
     }
 
     pub fn sum_descendant_balance_changes(
@@ -695,13 +684,16 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let vault: Option<FungibleVaultBalanceFieldPayload> = reader
+            .read_typed_object_field(
                 &vault_id,
-                MAIN_BASE_PARTITION,
-                &FungibleVaultField::Balance.into(),
+                ObjectModuleId::Main,
+                FungibleVaultField::Balance.into(),
             )
-            .map(|output| output.into_payload().into_latest().amount())
+            .ok();
+
+        vault.map(|v| v.into_latest().amount())
     }
 
     pub fn inspect_non_fungible_vault(
@@ -747,31 +739,25 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         accounter.close().balances
     }
 
-    pub fn component_state<T: ScryptoDecode>(&self, component_address: ComponentAddress) -> T {
-        let node_id: &NodeId = component_address.as_node_id();
-        let component_state = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<T>>(
-                node_id,
-                MAIN_BASE_PARTITION,
-                &ComponentField::State0.into(),
-            );
-        component_state.unwrap().into_payload()
-    }
-
     pub fn get_non_fungible_data<T: NonFungibleData>(
         &self,
         resource: ResourceAddress,
         non_fungible_id: NonFungibleLocalId,
     ) -> T {
-        let substate = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<T>>(
-                &resource.as_node_id(),
-                NonFungibleResourceManagerPartitionOffset::DataKeyValue.as_main_partition(),
-                &SubstateKey::Map(non_fungible_id.to_key()),
-            );
-        substate.unwrap().value.unwrap()
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let payload = reader
+            .read_object_collection_entry::<_, NonFungibleResourceManagerDataEntryPayload>(
+                resource.as_node_id(),
+                ObjectModuleId::Main,
+                ObjectCollectionKey::KeyValue(
+                    NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
+                    &non_fungible_id,
+                ),
+            )
+            .unwrap()
+            .unwrap();
+
+        scrypto_decode(&scrypto_encode(&payload.content).unwrap()).unwrap()
     }
 
     pub fn get_kv_store_entry<K: ScryptoEncode, V: ScryptoEncode + ScryptoDecode>(
@@ -779,40 +765,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         kv_store_id: Own,
         key: &K,
     ) -> Option<V> {
-        let node_id = kv_store_id.as_node_id();
-        let substate = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>>(
-                node_id,
-                MAIN_BASE_PARTITION,
-                &SubstateKey::Map(scrypto_encode(&key).unwrap()),
-            );
-        substate.unwrap().value
-    }
-
-    pub fn get_all_kv_store_entries<
-        K: ScryptoEncode + ScryptoDecode + Eq + std::hash::Hash,
-        V: ScryptoEncode + ScryptoDecode,
-    >(
-        &self,
-        kv_store_id: Own,
-    ) -> hash_map::ext_HashMap<K, V> {
-        let partition_number = MAIN_BASE_PARTITION;
-        let node_id = kv_store_id.as_node_id();
-        let map = self
-            .substate_db()
-            .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>, MapKey>(
-                node_id,
-                partition_number,
-            )
-            .fold(hash_map::ext_HashMap::<K, V>::new(), |mut all, (k, v)| {
-                all.insert(
-                    scrypto_decode::<K>(k.for_map().unwrap()).unwrap(),
-                    v.value.unwrap(),
-                );
-                all
-            });
-        map
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader.read_typed_kv_entry(kv_store_id.as_node_id(), key)
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
@@ -863,27 +817,29 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn get_validator_info(&self, address: ComponentAddress) -> ValidatorSubstate {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ValidatorSubstate>>(
+        let reader = SystemDatabaseReader::new(&self.database);
+        let substate = reader
+            .read_typed_object_field::<ValidatorStateFieldPayload>(
                 address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ValidatorField::Validator.into(),
+                ObjectModuleId::Main,
+                ValidatorField::State.field_index(),
             )
             .unwrap()
-            .into_payload()
+            .into_latest();
+
+        substate
     }
 
     pub fn get_active_validator_with_key(&self, key: &Secp256k1PublicKey) -> ComponentAddress {
-        let substate = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<CurrentValidatorSetSubstate>>(
+        let reader = SystemDatabaseReader::new(&self.database);
+        let substate = reader
+            .read_typed_object_field::<ConsensusManagerCurrentValidatorSetFieldPayload>(
                 CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::CurrentValidatorSet.into(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::CurrentValidatorSet.field_index(),
             )
             .unwrap()
-            .into_payload();
-
+            .into_latest();
         substate
             .validator_set
             .get_by_public_key(key)
@@ -1872,22 +1828,27 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn set_current_epoch(&mut self, epoch: Epoch) {
-        let mut payload = self
-            .database
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
-                &CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::ConsensusManager.into(),
+        let reader = SystemDatabaseReader::new(&self.database);
+        let mut substate = reader
+            .read_typed_object_field::<ConsensusManagerStateFieldPayload>(
+                CONSENSUS_MANAGER.as_node_id(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::State.field_index(),
             )
             .unwrap()
-            .into_payload();
-        payload.epoch = epoch;
-        self.database.put_mapped::<SpreadPrefixKeyMapper, _>(
-            &CONSENSUS_MANAGER.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &ConsensusManagerField::ConsensusManager.into(),
-            &FieldSubstate::new_mutable_field(payload),
-        );
+            .into_latest();
+
+        substate.epoch = epoch;
+
+        let mut writer = SystemDatabaseWriter::new(&mut self.database);
+        writer
+            .write_typed_object_field(
+                CONSENSUS_MANAGER.as_node_id(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::State.field_index(),
+                ConsensusManagerStateFieldPayload::from_content_source(substate),
+            )
+            .unwrap();
     }
 
     pub fn get_current_epoch(&mut self) -> Epoch {
@@ -2022,26 +1983,21 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     /// Reads out the substate holding the "epoch milli" timestamp reported by the proposer on the
     /// most recent round change.
     pub fn get_current_proposer_timestamp_ms(&mut self) -> i64 {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ProposerMilliTimestampSubstate>>(
-                CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::CurrentTime.into(),
-            )
-            .unwrap()
-            .into_payload()
-            .epoch_milli
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader.read_typed_object_field::<ConsensusManagerProposerMilliTimestampFieldPayload>(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::ProposerMilliTimestamp.field_index()
+        ).unwrap().into_latest().epoch_milli
     }
 
     pub fn get_consensus_manager_state(&mut self) -> ConsensusManagerSubstate {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
-                CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::ConsensusManager.into(),
-            )
-            .unwrap()
-            .into_payload()
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader.read_typed_object_field::<ConsensusManagerStateFieldPayload>(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::State.field_index()
+        ).unwrap().into_latest()
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
@@ -2061,20 +2017,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn event_schema(
         &self,
         event_type_identifier: &EventTypeIdentifier,
-    ) -> (LocalTypeIndex, ScryptoSchema) {
+    ) -> (LocalTypeIndex, VersionedScryptoSchema) {
         let (blueprint_id, name) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
                 let blueprint_id = match node_module {
                     ObjectModuleId::Main => {
-                        let type_info = self
-                            .substate_db()
-                            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                                node_id,
-                                TYPE_INFO_FIELD_PARTITION,
-                                &TypeInfoField::TypeInfo.into(),
-                            )
-                            .unwrap();
-
+                        let reader = SystemDatabaseReader::new(self.substate_db());
+                        let type_info = reader.get_type_info(node_id).unwrap();
                         match type_info {
                             TypeInfoSubstate::Object(ObjectInfo {
                                 blueprint_info: BlueprintInfo { blueprint_id, .. },
@@ -2105,17 +2054,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         match schema_pointer {
             BlueprintPayloadDef::Static(type_identifier) => {
-                let schema = self
-                    .substate_db()
-                    .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
-                        blueprint_id.package_address.as_node_id(),
-                        SCHEMAS_PARTITION,
-                        &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
-                    )
-                    .unwrap()
-                    .value
-                    .unwrap();
-
+                let reader = SystemDatabaseReader::new(self.substate_db());
+                let schema = reader.get_schema(blueprint_id.package_address.as_node_id(), &type_identifier.0).unwrap();
                 (type_identifier.1, schema)
             }
             BlueprintPayloadDef::Generic(_instance_index) => {
@@ -2127,6 +2067,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn event_name(&self, event_type_identifier: &EventTypeIdentifier) -> String {
         let (local_type_index, schema) = self.event_schema(event_type_identifier);
         schema
+            .v1()
             .resolve_type_metadata(local_type_index)
             .unwrap()
             .get_name_string()
@@ -2141,6 +2082,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             let (local_type_index, schema) =
                 sbor::generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
             schema
+                .v1()
                 .resolve_type_metadata(local_type_index)
                 .unwrap()
                 .get_name_string()

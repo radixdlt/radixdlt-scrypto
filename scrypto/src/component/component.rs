@@ -275,7 +275,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         }
 
         let royalty_config = ModuleConfig {
-            init: ComponentRoyaltyConfig::Enabled(royalty_amounts),
+            init: ComponentRoyaltyConfig { royalty_amounts },
             roles: royalties.1,
         };
 

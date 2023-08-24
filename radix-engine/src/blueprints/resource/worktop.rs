@@ -1,8 +1,8 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::system::FieldSubstate;
 use crate::system::system_callback::SystemLockData;
+use crate::system::system_substates::FieldSubstate;
 use crate::types::*;
 use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, ResourceManager};
 use radix_engine_interface::api::field_api::LockFlags;

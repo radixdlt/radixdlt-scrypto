@@ -43,20 +43,6 @@ pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION: PartitionNumber = PartitionNumber(
 pub const ROLE_ASSIGNMENT_ROLE_DEF_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 pub const ROLE_ASSIGNMENT_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum RoleAssignmentField {
-    OwnerRole,
-}
-
-impl TryFrom<u8> for RoleAssignmentField {
-    type Error = ();
-
-    fn try_from(offset: u8) -> Result<Self, Self::Error> {
-        Self::from_repr(offset).ok_or(())
-    }
-}
-
 //=============================
 // Blueprint partition - common
 //=============================
@@ -136,6 +122,26 @@ macro_rules! blueprint_partition_offset {
     };
 }
 
+blueprint_partition_offset!(
+    pub enum ComponentRoyaltyPartitionOffset {
+        Field,
+        MethodAmountKeyValue,
+    }
+);
+
+blueprint_partition_offset!(
+    pub enum RoleAssignmentPartitionOffset {
+        Field,
+        AccessRuleKeyValue,
+    }
+);
+
+blueprint_partition_offset!(
+    pub enum MetadataPartitionOffset {
+        EntryKeyValue,
+    }
+);
+
 //===========
 // Blueprints
 //===========
@@ -144,13 +150,6 @@ macro_rules! blueprint_partition_offset {
 #[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum ComponentField {
     State0,
-}
-
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum FungibleResourceManagerField {
-    Divisibility,
-    TotalSupply,
 }
 
 blueprint_partition_offset!(
@@ -178,14 +177,6 @@ blueprint_partition_offset!(
         DataKeyValue,
     }
 );
-
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum NonFungibleResourceManagerField {
-    IdType,
-    MutableFields,
-    TotalSupply,
-}
 
 blueprint_partition_offset!(
     pub enum FungibleVaultPartitionOffset {
@@ -244,35 +235,22 @@ pub enum AuthZoneField {
 
 blueprint_partition_offset!(
     pub enum ConsensusManagerPartitionOffset {
-        ConsensusManager,
-        RegisteredValidatorsByStakeIndex,
+        Field,
+        RegisteredValidatorByStakeSortedIndex,
     }
 );
 
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
-pub enum ConsensusManagerField {
-    Config,
-    ConsensusManager,
-    ValidatorRewards,
-    CurrentValidatorSet,
-    CurrentProposalStatistic,
-    CurrentTimeRoundedToMinutes,
-    CurrentTime,
-}
+blueprint_partition_offset!(
+    pub enum ValidatorPartitionOffset {
+        Field,
+    }
+);
 
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
-pub enum ValidatorField {
-    Validator,
-    ProtocolUpdateReadinessSignal,
-}
-
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum AccessControllerField {
-    AccessController,
-}
+blueprint_partition_offset!(
+    pub enum AccessControllerPartitionOffset {
+        Field,
+    }
+);
 
 blueprint_partition_offset!(
     pub enum AccountPartitionOffset {
@@ -283,35 +261,17 @@ blueprint_partition_offset!(
     }
 );
 
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum OneResourcePoolField {
-    OneResourcePool,
-}
-
 blueprint_partition_offset!(
     pub enum OneResourcePoolPartitionOffset {
         Field,
     }
 );
 
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum TwoResourcePoolField {
-    TwoResourcePool,
-}
-
 blueprint_partition_offset!(
     pub enum TwoResourcePoolPartitionOffset {
         Field,
     }
 );
-
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum MultiResourcePoolField {
-    MultiResourcePool,
-}
 
 blueprint_partition_offset!(
     pub enum MultiResourcePoolPartitionOffset {
@@ -360,22 +320,13 @@ macro_rules! substate_key {
 
 substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
-substate_key!(RoleAssignmentField);
 substate_key!(ComponentField);
-substate_key!(FungibleResourceManagerField);
-substate_key!(FungibleBucketField);
-substate_key!(FungibleProofField);
-substate_key!(NonFungibleResourceManagerField);
-substate_key!(NonFungibleBucketField);
-substate_key!(NonFungibleProofField);
-substate_key!(ConsensusManagerField);
-substate_key!(ValidatorField);
-substate_key!(AccessControllerField);
-substate_key!(OneResourcePoolField);
-substate_key!(TwoResourcePoolField);
-substate_key!(MultiResourcePoolField);
 substate_key!(TransactionTrackerField);
 
 // Transient
+substate_key!(FungibleBucketField);
+substate_key!(FungibleProofField);
+substate_key!(NonFungibleBucketField);
+substate_key!(NonFungibleProofField);
 substate_key!(WorktopField);
 substate_key!(AuthZoneField);

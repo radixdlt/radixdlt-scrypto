@@ -1,4 +1,4 @@
-use crate::blueprints::resource::{FungibleVaultBalanceFieldSubstate, FungibleVaultField};
+use crate::blueprints::resource::{FungibleVaultBalanceFieldPayload, FungibleVaultField};
 use crate::internal_prelude::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
@@ -12,6 +12,7 @@ use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_db_reader::SystemDatabaseReader;
+use crate::system::system_substates::FieldSubstate;
 use crate::track::TrackedSubstateValue;
 use crate::track::{TrackedNode, Write};
 
@@ -181,7 +182,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn calculate_fungible_vault_balance_change(&self, vault_id: &NodeId) -> Option<BalanceChange> {
         self
             .system_reader
-            .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
+            .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, FieldSubstate<FungibleVaultBalanceFieldPayload>>(
                 vault_id,
                 MAIN_BASE_PARTITION,
                 &FungibleVaultField::Balance.into(),
@@ -190,7 +191,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             .map(|new_balance| {
                 let old_balance = self
                     .system_reader
-                    .fetch_substate_from_database::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
+                    .fetch_substate_from_database::<SpreadPrefixKeyMapper, FieldSubstate<FungibleVaultBalanceFieldPayload>>(
                         vault_id,
                         MAIN_BASE_PARTITION,
                         &FungibleVaultField::Balance.into(),

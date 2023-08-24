@@ -82,6 +82,7 @@ macro_rules! declare_payload_new_type {
         }
     }
 }
+use crate::system::system_substates::FieldSubstate;
 #[allow(unused)]
 pub(crate) use declare_payload_new_type;
 
@@ -206,7 +207,7 @@ pub trait IndexEntryPayload:
     }
 
     fn into_substate(self) -> IndexEntrySubstate<Self> {
-        self
+        IndexEntrySubstate::entry(self)
     }
 }
 
@@ -252,7 +253,7 @@ pub trait SortedIndexEntryPayload:
     }
 
     fn into_substate(self) -> SortedIndexEntrySubstate<Self> {
-        self
+        SortedIndexEntrySubstate::entry(self)
     }
 }
 

@@ -24,8 +24,8 @@ pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::role_assignment::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
-use radix_engine::system::system::FieldSubstate;
-pub use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::system::system_substates::FieldSubstate;
+pub use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine_interface::api::node_modules::royalty::*;
 use transaction::prelude::IntentHash;
 
@@ -139,10 +139,9 @@ pub enum TypedMainModuleSubstateKey {
     NonFungibleResourceManager(NonFungibleResourceManagerTypedSubstateKey),
     FungibleVault(FungibleVaultTypedSubstateKey),
     NonFungibleVault(NonFungibleVaultTypedSubstateKey),
-    ConsensusManagerField(ConsensusManagerField),
-    ConsensusManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
-    ValidatorField(ValidatorField),
-    AccessControllerField(AccessControllerField),
+    ConsensusManager(ConsensusManagerTypedSubstateKey),
+    ValidatorField(ValidatorTypedSubstateKey),
+    AccessController(AccessControllerTypedSubstateKey),
     Account(AccountTypedSubstateKey),
     OneResourcePool(OneResourcePoolTypedSubstateKey),
     TwoResourcePool(TwoResourcePoolTypedSubstateKey),
@@ -293,27 +292,20 @@ fn to_typed_object_substate_key_internal(
                 )?,
             )
         }
-        EntityType::GlobalConsensusManager => {
-            let partition_offset = ConsensusManagerPartitionOffset::try_from(partition_offset)?;
-            match partition_offset {
-                ConsensusManagerPartitionOffset::ConsensusManager => {
-                    TypedMainModuleSubstateKey::ConsensusManagerField(
-                        ConsensusManagerField::try_from(substate_key)?,
-                    )
-                }
-                ConsensusManagerPartitionOffset::RegisteredValidatorsByStakeIndex => {
-                    let key = substate_key.for_sorted().ok_or(())?;
-                    TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(
-                        key.clone().try_into().map_err(|_| ())?,
-                    )
-                }
-            }
-        }
-        EntityType::GlobalValidator => {
-            TypedMainModuleSubstateKey::ValidatorField(ValidatorField::try_from(substate_key)?)
-        }
-        EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessControllerField(
-            AccessControllerField::try_from(substate_key)?,
+        EntityType::GlobalConsensusManager => TypedMainModuleSubstateKey::ConsensusManager(
+            ConsensusManagerTypedSubstateKey::for_key_at_partition_offset(
+                partition_offset,
+                substate_key,
+            )?,
+        ),
+        EntityType::GlobalValidator => TypedMainModuleSubstateKey::ValidatorField(
+            ValidatorTypedSubstateKey::for_key_at_partition_offset(partition_offset, substate_key)?,
+        ),
+        EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessController(
+            AccessControllerTypedSubstateKey::for_key_in_partition(
+                &AccessControllerPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?,
         ),
         EntityType::GlobalVirtualSecp256k1Account
         | EntityType::GlobalVirtualEd25519Account
@@ -384,7 +376,7 @@ fn to_typed_object_substate_key_internal(
 #[derive(Debug)]
 pub enum TypedSubstateValue {
     TypeInfoModule(TypedTypeInfoModuleSubstateValue),
-    Schema(KeyValueEntrySubstate<ScryptoSchema>),
+    Schema(KeyValueEntrySubstate<VersionedScryptoSchema>),
     RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue),
     RoyaltyModule(TypedRoyaltyModuleSubstateValue),
     MetadataModule(TypedMetadataModuleSubstateValue),
@@ -398,19 +390,19 @@ pub enum TypedTypeInfoModuleSubstateValue {
 
 #[derive(Debug)]
 pub enum TypedRoleAssignmentModuleSubstateValue {
-    OwnerRole(FieldSubstate<OwnerRoleSubstate>),
-    Rule(KeyValueEntrySubstate<AccessRule>),
+    OwnerRole(FieldSubstate<RoleAssignmentOwnerFieldPayload>),
+    Rule(KeyValueEntrySubstate<RoleAssignmentAccessRuleEntryPayload>),
 }
 
 #[derive(Debug)]
 pub enum TypedRoyaltyModuleSubstateValue {
-    ComponentRoyalty(FieldSubstate<ComponentRoyaltySubstate>),
-    ComponentMethodRoyalty(ComponentMethodRoyaltySubstate),
+    ComponentRoyalty(FieldSubstate<ComponentRoyaltyAccumulatorFieldPayload>),
+    ComponentMethodRoyalty(ComponentRoyaltyMethodAmountEntryPayload),
 }
 
 #[derive(Debug)]
 pub enum TypedMetadataModuleSubstateValue {
-    MetadataEntry(MetadataEntrySubstate),
+    MetadataEntry(KeyValueEntrySubstate<MetadataEntryEntryPayload>),
 }
 
 /// Contains all the main module substate values, by each known partition layout
@@ -422,10 +414,9 @@ pub enum TypedMainModuleSubstateValue {
     NonFungibleResourceManager(NonFungibleResourceManagerTypedSubstateValue),
     FungibleVault(FungibleVaultTypedSubstateValue),
     NonFungibleVault(NonFungibleVaultTypedSubstateValue),
-    ConsensusManagerField(TypedConsensusManagerFieldValue),
-    ConsensusManagerRegisteredValidatorsByStakeIndexEntry(Validator),
-    Validator(TypedValidatorFieldValue),
-    AccessController(TypedAccessControllerFieldValue),
+    ConsensusManager(ConsensusManagerTypedSubstateValue),
+    Validator(ValidatorTypedSubstateValue),
+    AccessController(AccessControllerTypedSubstateValue),
     Account(AccountTypedSubstateValue),
     OneResourcePool(OneResourcePoolTypedSubstateValue),
     TwoResourcePool(TwoResourcePoolTypedSubstateValue),
@@ -452,11 +443,6 @@ pub enum TypedConsensusManagerFieldValue {
 pub enum TypedValidatorFieldValue {
     Validator(FieldSubstate<ValidatorSubstate>),
     ProtocolUpdateReadinessSignal(FieldSubstate<ValidatorProtocolUpdateReadinessSignalSubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedAccessControllerFieldValue {
-    AccessController(FieldSubstate<AccessControllerSubstate>),
 }
 
 #[derive(Debug)]
@@ -497,7 +483,7 @@ fn to_typed_substate_value_internal(
         TypedSubstateKey::RoleAssignmentModule(role_assignment_key) => match role_assignment_key {
             TypedRoleAssignmentSubstateKey::RoleAssignmentField(role_assignment_field_offset) => {
                 match role_assignment_field_offset {
-                    RoleAssignmentField::OwnerRole => TypedSubstateValue::RoleAssignmentModule(
+                    RoleAssignmentField::Owner => TypedSubstateValue::RoleAssignmentModule(
                         TypedRoleAssignmentModuleSubstateValue::OwnerRole(scrypto_decode(data)?),
                     ),
                 }
@@ -558,57 +544,21 @@ fn to_typed_object_substate_value(
                 NonFungibleVaultTypedSubstateValue::from_key_and_data(key, data)?,
             )
         }
-        TypedMainModuleSubstateKey::ConsensusManagerField(offset) => {
-            TypedMainModuleSubstateValue::ConsensusManagerField(match offset {
-                ConsensusManagerField::Config => {
-                    TypedConsensusManagerFieldValue::Config(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::ConsensusManager => {
-                    TypedConsensusManagerFieldValue::ConsensusManager(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::ValidatorRewards => {
-                    TypedConsensusManagerFieldValue::ValidatorRewards(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::CurrentValidatorSet => {
-                    TypedConsensusManagerFieldValue::CurrentValidatorSet(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::CurrentProposalStatistic => {
-                    TypedConsensusManagerFieldValue::CurrentProposalStatistic(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::CurrentTimeRoundedToMinutes => {
-                    TypedConsensusManagerFieldValue::CurrentTimeRoundedToMinutes(scrypto_decode(
-                        data,
-                    )?)
-                }
-                ConsensusManagerField::CurrentTime => {
-                    TypedConsensusManagerFieldValue::CurrentTime(scrypto_decode(data)?)
-                }
-            })
-        }
-        TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(_) => {
-            TypedMainModuleSubstateValue::ConsensusManagerRegisteredValidatorsByStakeIndexEntry(
-                scrypto_decode(data)?,
+        TypedMainModuleSubstateKey::ConsensusManager(key) => {
+            TypedMainModuleSubstateValue::ConsensusManager(
+                ConsensusManagerTypedSubstateValue::from_key_and_data(key, data)?,
             )
         }
-        TypedMainModuleSubstateKey::ValidatorField(offset) => {
-            TypedMainModuleSubstateValue::Validator(match offset {
-                ValidatorField::Validator => {
-                    TypedValidatorFieldValue::Validator(scrypto_decode(data)?)
-                }
-                ValidatorField::ProtocolUpdateReadinessSignal => {
-                    TypedValidatorFieldValue::ProtocolUpdateReadinessSignal(scrypto_decode(data)?)
-                }
-            })
-        }
+        TypedMainModuleSubstateKey::ValidatorField(key) => TypedMainModuleSubstateValue::Validator(
+            ValidatorTypedSubstateValue::from_key_and_data(key, data)?,
+        ),
         TypedMainModuleSubstateKey::Account(key) => TypedMainModuleSubstateValue::Account(
             AccountTypedSubstateValue::from_key_and_data(key, data)?,
         ),
-        TypedMainModuleSubstateKey::AccessControllerField(offset) => {
-            TypedMainModuleSubstateValue::AccessController(match offset {
-                AccessControllerField::AccessController => {
-                    TypedAccessControllerFieldValue::AccessController(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::AccessController(key) => {
+            TypedMainModuleSubstateValue::AccessController(
+                AccessControllerTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
         TypedMainModuleSubstateKey::GenericScryptoComponentField(offset) => {
             TypedMainModuleSubstateValue::GenericScryptoComponent(match offset {

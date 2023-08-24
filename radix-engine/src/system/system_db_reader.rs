@@ -1,13 +1,17 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_common::prelude::{
-    scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoSchema, ScryptoValue,
+    scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoValue, VersionedScryptoSchema,
 };
 use radix_engine_interface::api::{CollectionIndex, ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_engine_store_interface::interface::ListableSubstateDatabase;
+use radix_engine_store_interface::db_key_mapper::{
+    MappedCommittableSubstateDatabase, SubstateKeyContent,
+};
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, ListableSubstateDatabase,
+};
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -19,7 +23,9 @@ use sbor::LocalTypeIndex;
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::SchemaOrigin;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use crate::system::system_substates::FieldSubstate;
+use crate::system::system_substates::KeyValueEntrySubstate;
+use crate::system::system_substates::SubstateMutability;
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta,
 };
@@ -53,7 +59,7 @@ pub enum SystemPartitionDescriptor {
 }
 
 pub struct ResolvedPayloadSchema {
-    pub schema: ScryptoSchema,
+    pub schema: VersionedScryptoSchema,
     pub type_index: LocalTypeIndex,
     pub allow_ownership: bool,
     pub allow_non_global_refs: bool,
@@ -145,7 +151,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
             blueprints.insert(
                 bp_version_key,
-                blueprint_definition.value.unwrap().into_latest(),
+                blueprint_definition.into_value().unwrap().into_latest(),
             );
         }
 
@@ -191,6 +197,21 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Ok(IndexedScryptoValue::from_scrypto_value(
             substate.into_payload(),
         ))
+    }
+
+    pub fn read_typed_kv_entry<K: ScryptoEncode, V: ScryptoDecode>(
+        &self,
+        node_id: &NodeId,
+        key: &K,
+    ) -> Option<V> {
+        let substate = self
+            .substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>>(
+                node_id,
+                MAIN_BASE_PARTITION,
+                &SubstateKey::Map(scrypto_encode(key).unwrap()),
+            );
+        substate.and_then(|v| v.into_value())
     }
 
     pub fn read_typed_object_field<V: ScryptoDecode>(
@@ -269,7 +290,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                     partition_number,
                     &SubstateKey::Map(scrypto_encode(key).unwrap()),
                 )
-                .map(|value| value.value)
+                .map(|value| value.into_value())
                 .unwrap_or(None),
             ObjectCollectionKey::Index(_, key) => {
                 self.substate_db.get_mapped::<SpreadPrefixKeyMapper, V>(
@@ -315,7 +336,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                     _ => panic!("Unexpected SubstateKey"),
                 };
                 let value: KeyValueEntrySubstate<ScryptoValue> = scrypto_decode(&entry.1).unwrap();
-                let value = value.value?;
+                let value = value.into_value()?;
                 let value = scrypto_encode(&value).unwrap();
 
                 Some((key, value))
@@ -381,7 +402,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                     BlueprintCollectionSchema::KeyValueStore(..) => {
                         let value: KeyValueEntrySubstate<ScryptoValue> =
                             scrypto_decode(&entry.1).unwrap();
-                        let value = value.value?;
+                        let value = value.into_value()?;
                         scrypto_encode(&value).unwrap()
                     }
                     BlueprintCollectionSchema::SortedIndex(..)
@@ -463,7 +484,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             ).ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?;
 
-        Ok(definition.value.unwrap().into_latest())
+        Ok(definition.into_value().unwrap().into_latest())
     }
 
     pub fn get_kv_store_type_target(
@@ -701,9 +722,9 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         &self,
         node_id: &NodeId,
         schema_hash: &SchemaHash,
-    ) -> Result<ScryptoSchema, SystemReaderError> {
+    ) -> Result<VersionedScryptoSchema, SystemReaderError> {
         let schema = self
-            .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+            .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<VersionedScryptoSchema>>(
                 node_id,
                 SCHEMAS_PARTITION,
                 &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
@@ -711,7 +732,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             .ok_or_else(|| SystemReaderError::SchemaDoesNotExist)?;
 
         Ok(schema
-            .value
+            .into_value()
             .expect("Schema should exist if substate exists"))
     }
 
@@ -730,7 +751,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             )
             .ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?;
 
-        Ok(definition.value.unwrap())
+        Ok(definition.into_value().unwrap())
     }
 
     pub fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(
@@ -942,5 +963,54 @@ impl<'a, S: SubstateDatabase + ListableSubstateDatabase> SystemDatabaseReader<'a
             canonical_partition
         });
         Box::new(iter)
+    }
+}
+
+pub struct SystemDatabaseWriter<'a, S: SubstateDatabase + CommittableSubstateDatabase> {
+    substate_db: &'a mut S,
+}
+
+impl<'a, S: SubstateDatabase + CommittableSubstateDatabase> SystemDatabaseWriter<'a, S> {
+    pub fn new(substate_db: &'a mut S) -> Self {
+        Self { substate_db }
+    }
+
+    pub fn write_typed_object_field<V: ScryptoEncode>(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ObjectModuleId,
+        field_index: u8,
+        value: V,
+    ) -> Result<(), SystemReaderError> {
+        let reader = SystemDatabaseReader::new(self.substate_db);
+        let blueprint_id = reader.get_blueprint_id(node_id, module_id)?;
+        let definition = reader.get_blueprint_definition(&blueprint_id)?;
+        let partition_description = &definition
+            .interface
+            .state
+            .fields
+            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
+            .0;
+        let partition_number = match partition_description {
+            PartitionDescription::Logical(offset) => {
+                let base_partition = match module_id {
+                    ObjectModuleId::Main => MAIN_BASE_PARTITION,
+                    ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
+                    ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
+                    ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
+                };
+                base_partition.at_offset(*offset).unwrap()
+            }
+            PartitionDescription::Physical(partition_number) => *partition_number,
+        };
+
+        self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+            node_id,
+            partition_number,
+            &SubstateKey::Field(field_index),
+            &FieldSubstate::new_field(value, SubstateMutability::Mutable),
+        );
+
+        Ok(())
     }
 }

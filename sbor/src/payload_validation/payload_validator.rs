@@ -331,7 +331,7 @@ mod tests {
 
         let result = validate_payload_against_schema::<NoCustomExtension, ()>(
             &payload,
-            &schema,
+            schema.v1(),
             type_index,
             &mut (),
         );
@@ -349,7 +349,7 @@ mod tests {
 
         let result = validate_payload_against_schema::<NoCustomExtension, ()>(
             &payload,
-            &schema,
+            schema.v1(),
             type_index,
             &mut (),
         );
@@ -432,7 +432,7 @@ mod tests {
             generate_full_schema_from_single_type::<SimpleStruct, NoCustomSchema>();
         let result = validate_payload_against_schema::<NoCustomExtension, _>(
             &bytes,
-            &schema,
+            schema.v1(),
             type_index,
             &mut (),
         );
@@ -562,13 +562,13 @@ mod tests {
 
         let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
             &cut_off_payload,
-            &schema,
+            schema.v1(),
             type_index,
             &mut (),
         ) else {
             panic!("Validation did not error with too short a payload");
         };
-        let path_message = error.location.path_to_string(&schema);
+        let path_message = error.location.path_to_string(schema.v1());
         assert_eq!(
             path_message,
             "MyStruct.[0|hello]->MyEnum::{1|Option2}.[0|inner]->MyEnum::{0|Option1}.[0]->Map.[0].Value->Array.[0]->Tuple.[0]->Enum::{6}.[0]->Tuple.[1]->Map.[0].Key"
@@ -596,13 +596,13 @@ mod tests {
 
         let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
             &payload,
-            &schema,
+            schema.v1(),
             type_index,
             &mut (),
         ) else {
             panic!("Validation did not error with too short a payload");
         };
-        assert_eq!(error.location.path_to_string(&schema), expected_path);
+        assert_eq!(error.location.path_to_string(schema.v1()), expected_path);
         assert_eq!(error.error.to_string(), expected_cause);
     }
 

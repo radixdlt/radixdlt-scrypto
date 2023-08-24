@@ -54,6 +54,7 @@ pub struct TwoResourcePoolBlueprint;
 impl TwoResourcePoolBlueprint {
     pub fn definition() -> BlueprintDefinitionInit {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let feature_set = TwoResourcePoolFeatureSet::all_features();
         let state = TwoResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
 
         let mut functions = BTreeMap::new();
@@ -181,7 +182,7 @@ impl TwoResourcePoolBlueprint {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
             dependencies: btreeset!(),
-            feature_set: btreeset!(),
+            feature_set,
 
             schema: BlueprintSchemaInit {
                 generics: vec![],
@@ -315,7 +316,7 @@ impl TwoResourcePoolBlueprint {
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
                 btreemap! {
-                    0u8 => FieldValue::immutable(&VersionedTwoResourcePoolState::V1(substate)),
+                    TwoResourcePoolField::State.field_index() => FieldValue::immutable(&TwoResourcePoolStateFieldPayload::from_content_source(substate)),
                 },
             )?
         };
@@ -739,7 +740,7 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = TwoResourcePoolField::TwoResourcePool.into();
+        let substate_key = TwoResourcePoolField::State.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
         let two_resource_pool_substate =
             api.field_read_typed::<VersionedTwoResourcePoolState>(handle)?;

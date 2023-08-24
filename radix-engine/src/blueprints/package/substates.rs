@@ -52,7 +52,7 @@ declare_native_blueprint_state! {
             value_type: {
                 kind: Static,
                 // TODO(David): Change to VersionedSchema in this substate in the SCHEMAS_PARTITION
-                content_type: ScryptoSchema,
+                content_type: VersionedScryptoSchema,
             },
             allow_ownership: false,
         },
