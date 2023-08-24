@@ -1,24 +1,17 @@
-use radix_engine::blueprints::consensus_manager::ProposerMinuteTimestampSubstate;
-use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::bootstrap::{
-    Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
-    GenesisStakeAllocation, DEFAULT_TESTING_FAUCET_SUPPLY,
-};
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::bootstrap::*;
 use radix_engine::system::system_db_checker::SystemDatabaseChecker;
+use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
-use radix_engine_queries::typed_substate_layout::{
-    BurnFungibleResourceEvent, MintFungibleResourceEvent,
-};
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::{CustomGenesis, TestRunnerBuilder};
+use scrypto_unit::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
@@ -241,23 +234,28 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         .unwrap();
 
     let total_supply = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerTotalSupplySubstate>>(
+        .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
             &resource_address.as_node_id(),
             MAIN_BASE_PARTITION,
             &FungibleResourceManagerField::TotalSupply.into(),
         )
-        .unwrap().value.0;
+        .unwrap()
+        .into_payload()
+        .into_latest();
     assert_eq!(total_supply, allocation_amount);
 
-    let key = scrypto_encode("symbol").unwrap();
-    let entry = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
-            &resource_address.as_node_id(),
-            METADATA_BASE_PARTITION,
-            &SubstateKey::Map(key),
+    let reader = SystemDatabaseReader::new(&substate_db);
+    let entry = reader
+        .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
+            resource_address.as_node_id(),
+            ObjectModuleId::Metadata,
+            ObjectCollectionKey::KeyValue(
+                MetadataCollection::EntryKeyValue.collection_index(),
+                &"symbol".to_string(),
+            ),
         )
         .unwrap()
-        .value;
+        .map(|v| v.into_latest());
 
     if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");
@@ -269,38 +267,33 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let resource_creation_receipt = data_ingestion_receipts.pop().unwrap();
 
     println!("{:?}", resource_creation_receipt);
+    let resource_creation_commit = resource_creation_receipt.expect_commit_success();
 
     if owned_resource {
-        let created_owner_badge = resource_creation_receipt
-            .expect_commit_success()
-            .new_resource_addresses()[1];
+        let created_owner_badge = resource_creation_commit.new_resource_addresses()[1];
+        let owner_badge_vault = resource_creation_commit.new_vault_addresses()[0];
 
         assert_eq!(
-            resource_creation_receipt
-                .expect_commit_success()
+            resource_creation_commit
                 .state_update_summary
-                .balance_changes
-                .get(&GlobalAddress::from(resource_owner))
-                .unwrap()
-                .get(&created_owner_badge)
+                .vault_balance_changes
+                .get(owner_badge_vault.as_node_id())
                 .unwrap(),
-            &BalanceChange::Fungible(1.into())
+            &(created_owner_badge, BalanceChange::Fungible(1.into()))
         );
     }
 
-    let created_resource = resource_creation_receipt
-        .expect_commit_success()
-        .new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
+    let created_resource = resource_creation_commit.new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
+    let allocation_commit = allocation_receipt.expect_commit_success();
+    let created_vault = allocation_commit.new_vault_addresses()[0];
+
     assert_eq!(
-        allocation_receipt
-            .expect_commit_success()
+        allocation_commit
             .state_update_summary
-            .balance_changes
-            .get(&GlobalAddress::from(token_holder))
-            .unwrap()
-            .get(&created_resource)
+            .vault_balance_changes
+            .get(created_vault.as_node_id())
             .unwrap(),
-        &BalanceChange::Fungible(allocation_amount)
+        &(created_resource, BalanceChange::Fungible(allocation_amount))
     );
 }
 
@@ -378,30 +371,14 @@ fn test_genesis_stake_allocation() {
 
     let allocate_stakes_receipt = data_ingestion_receipts.pop().unwrap();
 
-    // Staker 0 should have one liquidity balance entry
-    {
-        let address: GlobalAddress = staker_0.into();
-        let balances = allocate_stakes_receipt
-            .expect_commit_success()
-            .state_update_summary
-            .balance_changes
-            .get(&address)
-            .unwrap();
-        assert_eq!(balances.len(), 1);
-        assert!(balances
-            .values()
-            .any(|bal| *bal == BalanceChange::Fungible(dec!("10"))));
-    }
+    let commit = allocate_stakes_receipt.expect_commit_success();
+    let descendant_vaults = SubtreeVaults::new(&substate_db);
 
     // Staker 1 should have two liquidity balance entries
     {
         let address: GlobalAddress = staker_1.into();
-        let balances = allocate_stakes_receipt
-            .expect_commit_success()
-            .state_update_summary
-            .balance_changes
-            .get(&address)
-            .unwrap();
+        let balances = descendant_vaults
+            .sum_balance_changes(address.as_node_id(), commit.vault_balance_changes());
         assert_eq!(balances.len(), 2);
         assert!(balances
             .values()
@@ -422,21 +399,27 @@ fn test_genesis_stake_allocation() {
             .cloned()
             .collect();
 
+        let reader = SystemDatabaseReader::new(&substate_db);
+
         for (index, validator_key) in vec![validator_0_key, validator_1_key]
             .into_iter()
             .enumerate()
         {
-            let validator_url_entry = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
+            let validator_url_entry = reader
+                .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
                     &new_validators[index].as_node_id(),
-                    METADATA_BASE_PARTITION,
-                    &SubstateKey::Map(scrypto_encode("url").unwrap()),
+                    ObjectModuleId::Metadata,
+                    ObjectCollectionKey::KeyValue(
+                        MetadataCollection::EntryKeyValue.collection_index(),
+                        &"url".to_string(),
+                    ),
                 )
-                .unwrap();
-            if let Some(MetadataValue::Url(url)) = validator_url_entry.value {
+                .unwrap()
+                .map(|v| v.into_latest());
+            if let Some(MetadataValue::Url(url)) = validator_url_entry {
                 assert_eq!(
                     url,
-                    Url(format!("http://test.local?validator={:?}", validator_key))
+                    UncheckedUrl::of(format!("http://test.local?validator={:?}", validator_key))
                 );
             } else {
                 panic!("Validator url was not a Url");
@@ -465,17 +448,17 @@ fn test_genesis_time() {
         )
         .unwrap();
 
-    let proposer_minute_timestamp = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ProposerMinuteTimestampSubstate>>(
+    let reader = SystemDatabaseReader::new(&mut substate_db);
+    let timestamp = reader
+        .read_typed_object_field::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
             CONSENSUS_MANAGER.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
         )
         .unwrap()
-        .value
-        .0;
+        .into_latest();
 
-    assert_eq!(proposer_minute_timestamp.epoch_minute, 123);
+    assert_eq!(timestamp.epoch_minute, 123);
 }
 
 #[test]

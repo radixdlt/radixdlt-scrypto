@@ -187,6 +187,7 @@ impl LockedNonFungibleResource {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
 pub struct LiquidNonFungibleVault {
     pub amount: Decimal,
 }

@@ -68,17 +68,17 @@ mod metadata {
 
         pub fn get_string(&self, key: String) -> String {
             let global: Global<MetadataTest> = Runtime::global_address().into();
-            global.get_metadata(key).unwrap()
+            global.get_metadata(key).unwrap().unwrap()
         }
 
         pub fn get_address(&self, key: String) -> GlobalAddress {
             let global: Global<MetadataTest> = Runtime::global_address().into();
-            global.get_metadata(key).unwrap()
+            global.get_metadata(key).unwrap().unwrap()
         }
 
         pub fn get_array(&self, key: String) -> Vec<GlobalAddress> {
             let global: Global<MetadataTest> = Runtime::global_address().into();
-            global.get_metadata(key).unwrap()
+            global.get_metadata(key).unwrap().unwrap()
         }
     }
 }

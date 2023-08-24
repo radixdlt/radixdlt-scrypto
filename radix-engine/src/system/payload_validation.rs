@@ -9,10 +9,10 @@ use radix_engine_interface::constants::*;
 use sbor::rust::prelude::*;
 use sbor::traversal::TerminalValueRef;
 
-use super::node_modules::type_info::TypeInfoSubstate;
 use super::system::SystemService;
 use super::system_callback::SystemConfig;
 use super::system_callback_api::SystemCallbackObject;
+use super::type_info::TypeInfoSubstate;
 
 //=======================================================================================================
 // NOTE:

@@ -1,11 +1,14 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_modules::role_assignment::OwnerRoleSubstate;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use crate::system::node_modules::role_assignment::{
+    RoleAssignmentAccessRuleEntryPayload, RoleAssignmentOwnerFieldPayload,
+};
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
 };
+use crate::system::system_substates::FieldSubstate;
+use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::types::*;
 use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use radix_engine_interface::api::{ClientObjectApi, LockFlags, ObjectModuleId};
@@ -63,9 +66,11 @@ impl Authorization {
                 LockFlags::read_only(),
                 L::default(),
             )?;
-            let auth_zone: FieldSubstate<AuthZone> =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let auth_zone = auth_zone.value.0.clone();
+            let auth_zone = api
+                .kernel_read_substate(handle)?
+                .as_typed::<FieldSubstate<AuthZone>>()
+                .unwrap()
+                .into_payload();
             handles.push(handle);
 
             {
@@ -129,9 +134,11 @@ impl Authorization {
         // The suggested Rust pattern seems to be to use RAII pattern + Drop but
         // at the moment this does not seem practical to be able to implement
         let rtn = (|| -> Result<bool, RuntimeError> {
-            let auth_zone: FieldSubstate<AuthZone> =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let auth_zone = auth_zone.value.0;
+            let auth_zone = api
+                .kernel_read_substate(handle)?
+                .as_typed::<FieldSubstate<AuthZone>>()
+                .unwrap()
+                .into_payload();
 
             // Check Local virtual non fungibles
             let virtual_proofs = auth_zone.local_virtual_non_fungibles();
@@ -336,12 +343,12 @@ impl Authorization {
                 }),
                 L::default(),
             )?;
-            let substate: KeyValueEntrySubstate<AccessRule> =
+            let substate: KeyValueEntrySubstate<RoleAssignmentAccessRuleEntryPayload> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             api.kernel_close_substate(handle)?;
 
-            match substate.value {
-                Some(access_rule) => access_rule,
+            match substate.into_value() {
+                Some(access_rule) => access_rule.content.into_latest(),
                 None => {
                     let handle = api.kernel_open_substate(
                         role_assignment_of.as_node_id(),
@@ -353,10 +360,14 @@ impl Authorization {
                         L::default(),
                     )?;
 
-                    let owner_role_substate: FieldSubstate<OwnerRoleSubstate> =
+                    let owner_role_substate: FieldSubstate<RoleAssignmentOwnerFieldPayload> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
                     api.kernel_close_substate(handle)?;
-                    owner_role_substate.value.0.owner_role_entry.rule
+                    owner_role_substate
+                        .into_payload()
+                        .into_latest()
+                        .owner_role_entry
+                        .rule
                 }
             }
         };

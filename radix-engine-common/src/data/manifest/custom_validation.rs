@@ -314,7 +314,7 @@ mod tests {
 
         let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
             &payload,
-            &schema,
+            schema.v1(),
             type_index,
             &(),
         );
@@ -387,7 +387,7 @@ mod tests {
 
         let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
             &payload,
-            &schema,
+            schema.v1(),
             type_index,
             &(),
         );
@@ -401,7 +401,7 @@ mod tests {
 
         let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
             &payload,
-            &schema,
+            schema.v1(),
             type_index,
             &(),
         );

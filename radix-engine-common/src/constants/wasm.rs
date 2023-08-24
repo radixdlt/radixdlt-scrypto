@@ -21,3 +21,7 @@ pub const MAX_NUMBER_OF_FUNCTION_LOCALS: u32 = 128;
 
 /// The number of entries in the engine cache
 pub const WASM_ENGINE_CACHE_SIZE: usize = 1000;
+
+pub const MAX_URL_LENGTH: usize = 1024;
+
+pub const MAX_ORIGIN_LENGTH: usize = 512;

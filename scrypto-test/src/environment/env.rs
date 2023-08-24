@@ -557,8 +557,9 @@ impl TestEnvironment {
                 SystemLockData::Field(FieldLockData::Read),
             )?;
             let state = kernel.kernel_read_substate(handle).map(|v| {
-                let wrapper: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
-                scrypto_encode(&wrapper.value.0).unwrap()
+                let FieldSubstate::<ScryptoValue>::V1(FieldSubstateV1 { payload, .. }) =
+                    v.as_typed().unwrap();
+                scrypto_encode(&payload).unwrap()
             })?;
             kernel.kernel_close_substate(handle)?;
 
@@ -586,7 +587,7 @@ impl TestEnvironment {
             }
 
             // Decode and return
-            Ok(indexed_state.as_typed::<S>().unwrap())
+            Ok(scrypto_decode::<S>(&state).unwrap())
         })
     }
 

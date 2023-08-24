@@ -38,7 +38,7 @@ fn bench_transfer(c: &mut Criterion) {
             )));
             let manifest = ManifestBuilder::new()
                 .lock_fee_from_faucet()
-                .new_account_advanced(owner_role)
+                .new_account_advanced(owner_role, None)
                 .build();
             let account = execute_and_commit_transaction(
                 &mut substate_db,

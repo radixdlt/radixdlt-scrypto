@@ -11,15 +11,14 @@ pub mod object_api;
 pub mod system_modules;
 
 // Re-exports
-pub use actor_api::ClientActorApi;
-use actor_index_api::ClientActorIndexApi;
-pub use actor_key_value_entry_api::ClientActorKeyValueEntryApi;
-pub use actor_sorted_index_api::ClientActorSortedIndexApi;
-pub use blueprint_api::ClientBlueprintApi;
-pub use field_api::ClientFieldApi;
-pub use field_api::LockFlags;
-use key_value_entry_api::ClientKeyValueEntryApi;
-use key_value_store_api::ClientKeyValueStoreApi;
+pub use actor_api::*;
+pub use actor_index_api::*;
+pub use actor_key_value_entry_api::*;
+pub use actor_sorted_index_api::*;
+pub use blueprint_api::*;
+pub use field_api::*;
+pub use key_value_entry_api::*;
+pub use key_value_store_api::*;
 pub use object_api::*;
 pub use system_modules::costing_api::ClientCostingApi;
 pub use system_modules::execution_trace_api::ClientExecutionTraceApi;
@@ -58,3 +57,5 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientExecutionTraceApi<E>
 {
 }
+
+// TODO: decide if to use marker traits for type safety and act on it

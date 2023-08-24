@@ -646,6 +646,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
     let mut low = 16;
     let mut high = 16 * 1024;
     let mut last_success_receipt = None;
+    let mut last_fail_receipt = None;
     while low <= high {
         let mid = low + (high - low) / 2;
         let mut entries = BTreeMap::new();
@@ -680,13 +681,18 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
                 last_success_receipt = Some((mid, receipt, raw_transaction));
                 low = mid + 1;
             } else {
+                last_fail_receipt = Some((mid, receipt, raw_transaction));
                 high = mid - 1;
             }
         }
     }
 
     // Assert
-    let (n, receipt, raw_transaction) = last_success_receipt.unwrap();
+    let (n, receipt, raw_transaction) = last_success_receipt.unwrap_or_else(|| {
+        // Print an error message from the failing commit
+        last_fail_receipt.unwrap().1.expect_commit_success();
+        unreachable!()
+    });
     println!(
         "Transaction payload size: {} bytes",
         raw_transaction.0.len()

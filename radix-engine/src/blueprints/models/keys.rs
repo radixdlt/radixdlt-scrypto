@@ -10,6 +10,7 @@ macro_rules! declare_key_new_type {
             sort_prefix_property_name: $sort_prefix_property_name:ident
             $(,)?
         },
+        ----
         $(#[$attributes:meta])*
         $vis:vis struct $payload_type_name:ident
             $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
@@ -96,6 +97,7 @@ macro_rules! declare_key_new_type {
     (
         content_trait: SortedIndexKeyContentSource,
         payload_trait: SortedIndexKeyPayload,
+        ----
         $(#[$attributes:meta])*
         $vis:vis struct $payload_type_name:ident
             $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
@@ -109,6 +111,7 @@ macro_rules! declare_key_new_type {
         content_trait: $content_trait:ident,
         payload_trait: $payload_trait:ident,
         full_key_content: $full_key_content:tt,
+        ----
         $(#[$attributes:meta])*
         $vis:vis struct $payload_type_name:ident
             $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
@@ -122,6 +125,7 @@ macro_rules! declare_key_new_type {
     (
         content_trait: $content_trait:ident,
         payload_trait: $payload_trait:ident,
+        ----
         $(#[$attributes:meta])*
         $vis:vis struct $payload_type_name:ident
         $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?

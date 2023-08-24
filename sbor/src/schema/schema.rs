@@ -12,6 +12,20 @@ define_versioned!(
 );
 
 impl<S: CustomSchema> VersionedSchema<S> {
+    pub fn v1(&self) -> &SchemaV1<S> {
+        match self {
+            VersionedSchema::V1(schema) => schema,
+        }
+    }
+
+    pub fn v1_mut(&mut self) -> &mut SchemaV1<S> {
+        match self {
+            VersionedSchema::V1(schema) => schema,
+        }
+    }
+}
+
+impl<S: CustomSchema> VersionedSchema<S> {
     pub fn empty() -> Self {
         Schema::empty().into()
     }
@@ -105,7 +119,11 @@ impl<S: CustomSchema> SchemaV1<S> {
     }
 
     pub fn resolve_matching_map_metadata(&self, type_index: LocalTypeIndex) -> MapData<'_> {
-        let Some(TypeKind::Map { key_type, value_type }) = self.resolve_type_kind(type_index) else {
+        let Some(TypeKind::Map {
+            key_type,
+            value_type,
+        }) = self.resolve_type_kind(type_index)
+        else {
             return MapData::default();
         };
         MapData {

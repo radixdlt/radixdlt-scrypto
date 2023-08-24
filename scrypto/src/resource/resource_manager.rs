@@ -184,10 +184,12 @@ impl ResourceManagerStub {
         )
     }
 
-    pub fn burn(&self, bucket: Bucket) {
+    pub fn burn<B: Into<Bucket>>(&self, bucket: B) {
         self.call(
             RESOURCE_MANAGER_BURN_IDENT,
-            &ResourceManagerBurnInput { bucket },
+            &ResourceManagerBurnInput {
+                bucket: bucket.into(),
+            },
         )
     }
 

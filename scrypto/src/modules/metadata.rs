@@ -15,7 +15,10 @@ use scrypto::modules::Attachable;
 
 pub trait HasMetadata {
     fn set_metadata<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V);
-    fn get_metadata<K: ToString, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError>;
+    fn get_metadata<K: ToString, V: MetadataVal>(
+        &self,
+        name: K,
+    ) -> Result<Option<V>, MetadataConversionError>;
     fn remove_metadata<K: ToString>(&self, name: K) -> bool;
 }
 
@@ -83,7 +86,10 @@ impl Metadata {
         self.call_raw(METADATA_SET_IDENT, buffer);
     }
 
-    pub fn get<K: ToString, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError> {
+    pub fn get<K: ToString, V: MetadataVal>(
+        &self,
+        name: K,
+    ) -> Result<Option<V>, MetadataConversionError> {
         let rtn = self.call_raw(
             METADATA_GET_IDENT,
             scrypto_encode(&MetadataGetInput {
@@ -102,7 +108,7 @@ impl Metadata {
         decoder.read_and_check_value_kind(ValueKind::Enum).unwrap();
         match decoder.read_discriminator().unwrap() {
             OPTION_VARIANT_NONE => {
-                return Err(MetadataError::NotFound);
+                return Ok(None);
             }
             OPTION_VARIANT_SOME => {
                 decoder.read_and_check_size(1).unwrap();
@@ -111,9 +117,9 @@ impl Metadata {
                 if id == V::DISCRIMINATOR {
                     decoder.read_and_check_size(1).unwrap();
                     let v: V = decoder.decode().unwrap();
-                    return Ok(v);
+                    return Ok(Some(v));
                 } else {
-                    return Err(MetadataError::UnexpectedType {
+                    return Err(MetadataConversionError::UnexpectedType {
                         expected_type_id: V::DISCRIMINATOR,
                         actual_type_id: id,
                     });
@@ -123,7 +129,10 @@ impl Metadata {
         }
     }
 
-    pub fn get_string<K: ToString>(&self, name: K) -> Result<String, MetadataError> {
+    pub fn get_string<K: ToString>(
+        &self,
+        name: K,
+    ) -> Result<Option<String>, MetadataConversionError> {
         self.get(name)
     }
 

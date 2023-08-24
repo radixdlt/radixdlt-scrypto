@@ -30,6 +30,7 @@ pub use radix_engine::system::system_modules::auth::*;
 pub use radix_engine::system::system_modules::costing::*;
 pub use radix_engine::system::system_modules::execution_trace::*;
 pub use radix_engine::system::system_modules::*;
+pub use radix_engine::system::system_substates::*;
 pub use radix_engine::track::*;
 pub use radix_engine::transaction::*;
 pub use radix_engine::utils::*;

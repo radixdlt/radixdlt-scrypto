@@ -4,6 +4,7 @@ macro_rules! declare_payload_new_type {
     (
         content_trait: $content_trait:ident,
         payload_trait: $payload_trait:ident,
+        ----
         $(#[$attributes:meta])*
         $vis:vis struct $payload_type_name:ident
             $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
@@ -69,6 +70,7 @@ macro_rules! declare_payload_new_type {
         }
     }
 }
+use crate::system::system_substates::FieldSubstate;
 #[allow(unused)]
 pub(crate) use declare_payload_new_type;
 
@@ -80,8 +82,9 @@ pub trait FieldPayload:
     type Content: FieldContentSource<Self>;
 
     fn into_content(self) -> Self::Content;
-    fn from_content(inner_content: Self::Content) -> Self {
-        Self::from(inner_content)
+
+    fn from_content(content: Self::Content) -> Self {
+        Self::from(content)
     }
 
     fn from_content_source<T: FieldContentSource<Self>>(content: T) -> Self {
@@ -93,7 +96,7 @@ pub trait FieldPayload:
     }
 
     fn into_mutable_substate(self) -> FieldSubstate<Self> {
-        FieldSubstate::new_field(self)
+        FieldSubstate::new_mutable_field(self)
     }
 }
 
@@ -188,7 +191,7 @@ pub trait IndexEntryPayload:
     }
 
     fn into_substate(self) -> IndexEntrySubstate<Self> {
-        self
+        IndexEntrySubstate::entry(self)
     }
 }
 
@@ -230,7 +233,7 @@ pub trait SortedIndexEntryPayload:
     }
 
     fn into_substate(self) -> SortedIndexEntrySubstate<Self> {
-        self
+        SortedIndexEntrySubstate::entry(self)
     }
 }
 

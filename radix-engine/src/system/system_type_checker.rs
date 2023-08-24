@@ -1,11 +1,10 @@
 use super::payload_validation::*;
 use crate::errors::{RuntimeError, SystemError};
 use crate::kernel::kernel_api::KernelApi;
-use crate::system::system::{
-    FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
-};
+use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -22,7 +21,7 @@ pub enum SchemaValidationMeta {
         additional_schemas: NodeId,
     },
     NewObject {
-        additional_schemas: NonIterMap<SchemaHash, ScryptoSchema>,
+        additional_schemas: NonIterMap<SchemaHash, VersionedScryptoSchema>,
     },
     Blueprint,
 }
@@ -64,7 +63,7 @@ where
     pub fn validate_bp_generic_args(
         &mut self,
         blueprint_interface: &BlueprintInterface,
-        schemas: &IndexMap<SchemaHash, ScryptoSchema>,
+        schemas: &IndexMap<SchemaHash, VersionedScryptoSchema>,
         generic_substitutions: &Vec<GenericSubstitution>,
     ) -> Result<(), TypeCheckError> {
         let generics = &blueprint_interface.generics;
@@ -86,7 +85,7 @@ where
     /// Validate that the type substitutions for a kv store exist in a given schema
     pub fn validate_kv_store_generic_args(
         &mut self,
-        schemas: &IndexMap<SchemaHash, ScryptoSchema>,
+        schemas: &IndexMap<SchemaHash, VersionedScryptoSchema>,
         key: &GenericSubstitution,
         value: &GenericSubstitution,
     ) -> Result<(), TypeCheckError> {
@@ -97,7 +96,7 @@ where
     }
 
     fn validate_generic_arg(
-        schemas: &IndexMap<SchemaHash, ScryptoSchema>,
+        schemas: &IndexMap<SchemaHash, VersionedScryptoSchema>,
         substitution: &GenericSubstitution,
     ) -> Result<(), TypeCheckError> {
         match substitution {
@@ -106,7 +105,7 @@ where
                     .get(&type_id.0)
                     .ok_or_else(|| TypeCheckError::MissingSchema)?;
 
-                if schema.resolve_type_kind(type_id.1).is_none() {
+                if schema.v1().resolve_type_kind(type_id.1).is_none() {
                     return Err(TypeCheckError::InvalidLocalTypeIndex(type_id.1));
                 }
             }
@@ -119,7 +118,16 @@ where
         &mut self,
         target: &BlueprintTypeTarget,
         payload_identifier: &BlueprintPayloadIdentifier,
-    ) -> Result<(ScryptoSchema, LocalTypeIndex, bool, bool, SchemaOrigin), RuntimeError> {
+    ) -> Result<
+        (
+            VersionedScryptoSchema,
+            LocalTypeIndex,
+            bool,
+            bool,
+            SchemaOrigin,
+        ),
+        RuntimeError,
+    > {
         let blueprint_interface =
             self.get_blueprint_default_interface(target.blueprint_info.blueprint_id.clone())?;
 
@@ -225,7 +233,7 @@ where
                 TypeCheckError::BlueprintPayloadValidationError(
                     Box::new(target.blueprint_info.clone()),
                     payload_identifier,
-                    err.error_message(&schema),
+                    err.error_message(schema.v1()),
                 ),
             ))
         })?;
@@ -307,7 +315,7 @@ where
                     RuntimeError::SystemError(SystemError::TypeCheckError(
                         TypeCheckError::KeyValueStorePayloadValidationError(
                             payload_identifier,
-                            err.error_message(&schema),
+                            err.error_message(schema.v1()),
                         ),
                     ))
                 })?;
@@ -320,7 +328,7 @@ where
     fn validate_payload<'s>(
         &mut self,
         payload: &[u8],
-        schema: &'s ScryptoSchema,
+        schema: &'s VersionedScryptoSchema,
         type_index: LocalTypeIndex,
         schema_origin: SchemaOrigin,
         allow_ownership: bool,
@@ -335,7 +343,7 @@ where
             ));
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             payload,
-            schema,
+            schema.v1(),
             type_index,
             &validation_context,
         )
@@ -345,7 +353,7 @@ where
         &mut self,
         node_id: &NodeId,
         schema_hash: &SchemaHash,
-    ) -> Result<ScryptoSchema, RuntimeError> {
+    ) -> Result<VersionedScryptoSchema, RuntimeError> {
         let def = self
             .api
             .kernel_get_system_state()
@@ -368,11 +376,11 @@ where
             SystemLockData::default(),
         )?;
 
-        let substate: KeyValueEntrySubstate<ScryptoSchema> =
+        let substate: KeyValueEntrySubstate<VersionedScryptoSchema> =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
-        let schema = substate.value.unwrap();
+        let schema = substate.into_value().unwrap();
 
         self.api
             .kernel_get_system_state()
@@ -409,17 +417,16 @@ impl SystemMapper {
             let mut field_partition = BTreeMap::new();
 
             for (index, field) in system_struct.0.into_iter() {
-                let value: ScryptoValue =
+                let payload: ScryptoValue =
                     scrypto_decode(&field.value).expect("Checked by payload-schema validation");
 
-                let substate = FieldSubstate {
-                    value: (value,),
-                    mutability: if field.locked {
-                        SubstateMutability::Immutable
-                    } else {
-                        SubstateMutability::Mutable
-                    },
+                let mutability = if field.locked {
+                    SubstateMutability::Immutable
+                } else {
+                    SubstateMutability::Mutable
                 };
+
+                let substate = FieldSubstate::new_field(payload, mutability);
 
                 let value = IndexedScryptoValue::from_typed(&substate);
                 field_partition.insert(SubstateKey::Field(index), value);

@@ -57,7 +57,7 @@ fn bench_schema_new(b: &mut Criterion) {
         b.iter(|| {
             let result = validate_payload_against_schema::<ScryptoCustomExtension, _>(
                 &bytes,
-                &schema,
+                schema.v1(),
                 type_index,
                 &(),
             );

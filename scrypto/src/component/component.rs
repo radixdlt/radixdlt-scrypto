@@ -11,7 +11,7 @@ use radix_engine_common::prelude::{
 };
 use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
+    MetadataConversionError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
     METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
@@ -275,7 +275,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         }
 
         let royalty_config = ModuleConfig {
-            init: ComponentRoyaltyConfig::Enabled(royalty_amounts),
+            init: ComponentRoyaltyConfig { royalty_amounts },
             roles: royalties.1,
         };
 
@@ -402,7 +402,10 @@ impl<O: HasStub> HasMetadata for Global<O> {
         self.metadata().set(name, value);
     }
 
-    fn get_metadata<K: ToString, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError> {
+    fn get_metadata<K: ToString, V: MetadataVal>(
+        &self,
+        name: K,
+    ) -> Result<Option<V>, MetadataConversionError> {
         self.metadata().get(name)
     }
 

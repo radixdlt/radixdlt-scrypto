@@ -225,16 +225,8 @@ impl CommitResult {
         &self.state_update_summary.new_vaults
     }
 
-    pub fn balance_changes(
-        &self,
-    ) -> &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>> {
-        &self.state_update_summary.balance_changes
-    }
-
-    pub fn direct_vault_updates(
-        &self,
-    ) -> &IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>> {
-        &self.state_update_summary.direct_vault_updates
+    pub fn vault_balance_changes(&self) -> &IndexMap<NodeId, (ResourceAddress, BalanceChange)> {
+        &self.state_update_summary.vault_balance_changes
     }
 
     pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
@@ -506,8 +498,9 @@ impl fmt::Debug for TransactionReceipt {
 #[derive(Default)]
 pub struct TransactionReceiptDisplayContext<'a> {
     pub encoder: Option<&'a AddressBech32Encoder>,
-    pub schema_lookup_callback:
-        Option<Box<dyn Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, ScryptoSchema)> + 'a>>,
+    pub schema_lookup_callback: Option<
+        Box<dyn Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, VersionedScryptoSchema)> + 'a>,
+    >,
 }
 
 impl<'a> TransactionReceiptDisplayContext<'a> {
@@ -524,7 +517,7 @@ impl<'a> TransactionReceiptDisplayContext<'a> {
     pub fn lookup_schema(
         &self,
         event_type_identifier: &EventTypeIdentifier,
-    ) -> Option<(LocalTypeIndex, ScryptoSchema)> {
+    ) -> Option<(LocalTypeIndex, VersionedScryptoSchema)> {
         match self.schema_lookup_callback {
             Some(ref callback) => {
                 let callback = callback.as_ref();
@@ -570,7 +563,7 @@ impl<'a> TransactionReceiptDisplayContextBuilder<'a> {
 
     pub fn schema_lookup_callback<F>(mut self, callback: F) -> Self
     where
-        F: Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, ScryptoSchema)> + 'a,
+        F: Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, VersionedScryptoSchema)> + 'a,
     {
         self.0.schema_lookup_callback = Some(Box::new(callback));
         self
@@ -716,56 +709,21 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                 }
             }
 
-            let mut balance_changes = Vec::new();
-            for (address, map) in c.balance_changes() {
-                for (resource, delta) in map {
-                    balance_changes.push((address, resource, delta));
-                }
-            }
+            let balance_changes = c.vault_balance_changes();
             write!(
                 f,
                 "\n{} {}",
                 "Balance Changes:".bold().green(),
                 balance_changes.len()
             )?;
-            for (i, (address, resource, delta)) in balance_changes.iter().enumerate() {
-                write!(
-                    f,
-                    // NB - we use ResAddr instead of Resource to protect people who read new resources as
-                    //      `Resource: ` from the receipts (see eg resim.sh)
-                    "\n{} Entity: {}\n   ResAddr: {}\n   Change: {}",
-                    prefix!(i, balance_changes),
-                    address.display(address_display_context),
-                    resource.display(address_display_context),
-                    match delta {
-                        BalanceChange::Fungible(d) => format!("{}", d),
-                        BalanceChange::NonFungible { added, removed } => {
-                            format!("+{:?}, -{:?}", added, removed)
-                        }
-                    }
-                )?;
-            }
-
-            let mut direct_vault_updates = Vec::new();
-            for (object_id, map) in c.direct_vault_updates() {
-                for (resource, delta) in map {
-                    direct_vault_updates.push((object_id, resource, delta));
-                }
-            }
-            write!(
-                f,
-                "\n{} {}",
-                "Direct Vault Updates:".bold().green(),
-                direct_vault_updates.len()
-            )?;
-            for (i, (object_id, resource, delta)) in direct_vault_updates.iter().enumerate() {
+            for (i, (vault_id, (resource, delta))) in balance_changes.iter().enumerate() {
                 write!(
                     f,
                     // NB - we use ResAddr instead of Resource to protect people who read new resources as
                     //      `Resource: ` from the receipts (see eg resim.sh)
                     "\n{} Vault: {}\n   ResAddr: {}\n   Change: {}",
-                    prefix!(i, direct_vault_updates),
-                    hex::encode(object_id),
+                    prefix!(i, balance_changes),
+                    vault_id.display(address_display_context),
                     resource.display(address_display_context),
                     match delta {
                         BalanceChange::Fungible(d) => format!("{}", d),
@@ -866,7 +824,7 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
                 first_line_indent: 0,
             },
             custom_context: receipt_context.display_context(),
-            schema: &schema,
+            schema: schema.v1(),
             type_index: local_type_index,
         },
     );

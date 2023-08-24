@@ -101,8 +101,8 @@ impl VmInvoke for TestInvoke {
                 api.call_function(
                     ACCESS_CONTROLLER_PACKAGE,
                     ACCESS_CONTROLLER_BLUEPRINT,
-                    ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
-                    scrypto_encode(&AccessControllerCreateGlobalInput {
+                    ACCESS_CONTROLLER_CREATE_IDENT,
+                    scrypto_encode(&AccessControllerCreateInput {
                         controlled_asset: bucket,
                         rule_set: RuleSet {
                             primary_role: AccessRule::AllowAll,
@@ -110,6 +110,7 @@ impl VmInvoke for TestInvoke {
                             confirmation_role: AccessRule::AllowAll,
                         },
                         timed_recovery_delay_in_minutes: None,
+                        address_reservation: None,
                     })
                     .unwrap(),
                 )?;

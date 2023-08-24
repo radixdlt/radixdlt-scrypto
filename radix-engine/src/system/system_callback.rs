@@ -1,4 +1,4 @@
-use super::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
@@ -17,10 +17,10 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::module::SystemModule;
-use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
+use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -80,7 +80,7 @@ impl SystemLockData {
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, BlueprintDefinition>,
-    pub schema_cache: NonIterMap<SchemaHash, ScryptoSchema>,
+    pub schema_cache: NonIterMap<SchemaHash, VersionedScryptoSchema>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
 }
