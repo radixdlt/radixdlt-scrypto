@@ -1,6 +1,6 @@
 use crate::blueprints::consensus_manager::{
     ConsensusManagerField, ConsensusManagerStateFieldPayload,
-    ConsensusManagerValidatorRewardsFieldPayload, VersionedConsensusManagerValidatorRewards,
+    ConsensusManagerValidatorRewardsFieldPayload,
 };
 use crate::blueprints::models::FieldPayload;
 use crate::blueprints::resource::{
@@ -456,7 +456,7 @@ where
             Some(x) => {
                 let substate: FieldSubstate<ConsensusManagerStateFieldPayload> =
                     x.as_typed().unwrap();
-                Some(substate.value.0.into_latest().epoch)
+                Some(substate.into_payload().into_latest().epoch)
             }
             None => None,
         }
@@ -499,8 +499,7 @@ where
             .unwrap();
 
         let partition_number = substate
-            .value
-            .0
+            .into_payload()
             .partition_for_expiry_epoch(expiry_epoch)
             .expect("Transaction tracker should cover all valid epoch ranges");
 
@@ -843,10 +842,10 @@ where
                 .unwrap()
                 .as_typed()
                 .unwrap();
-            let current_leader = substate.value.0.into_latest().current_leader;
+            let current_leader = substate.into_payload().into_latest().current_leader;
 
             // Update validator rewards
-            let mut substate: FieldSubstate<ConsensusManagerValidatorRewardsFieldPayload> = track
+            let substate: FieldSubstate<ConsensusManagerValidatorRewardsFieldPayload> = track
                 .read_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
@@ -856,28 +855,24 @@ where
                 .as_typed()
                 .unwrap();
 
+            let mut rewards = substate.into_payload().into_latest();
+
             if let Some(current_leader) = current_leader {
-                match &mut substate.value.0.content {
-                    VersionedConsensusManagerValidatorRewards::V1(rewards) => {
-                        let entry = rewards.proposer_rewards.entry(current_leader).or_default();
-                        *entry = entry.safe_add(to_proposer).unwrap()
-                    }
-                }
+                let entry = rewards.proposer_rewards.entry(current_leader).or_default();
+                *entry = entry.safe_add(to_proposer).unwrap()
             } else {
                 // If there is no current leader, the rewards go to the pool
             };
-            let vault_node_id = match &substate.value.0.content {
-                VersionedConsensusManagerValidatorRewards::V1(rewards) => {
-                    rewards.rewards_vault.0 .0
-                }
-            };
+            let vault_node_id = rewards.rewards_vault.0 .0;
 
             track
                 .set_substate(
                     CONSENSUS_MANAGER.into_node_id(),
                     MAIN_BASE_PARTITION,
                     ConsensusManagerField::ValidatorRewards.into(),
-                    IndexedScryptoValue::from_typed(&substate),
+                    IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(
+                        ConsensusManagerValidatorRewardsFieldPayload::from_content_source(rewards),
+                    )),
                     &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
@@ -941,15 +936,16 @@ where
         is_success: bool,
     ) {
         // Read the intent hash store
-        let mut transaction_tracker: FieldSubstate<TransactionTrackerSubstate> = track
+        let mut transaction_tracker = track
             .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
             )
             .unwrap()
-            .as_typed()
-            .unwrap();
+            .as_typed::<FieldSubstate<TransactionTrackerSubstate>>()
+            .unwrap()
+            .into_payload();
 
         // Update the status of the intent hash
         if let TransactionIntentHash::ToCheck {
@@ -957,10 +953,8 @@ where
             intent_hash,
         } = intent_hash
         {
-            if let Some(partition_number) = transaction_tracker
-                .value
-                .0
-                .partition_for_expiry_epoch(*expiry_epoch)
+            if let Some(partition_number) =
+                transaction_tracker.partition_for_expiry_epoch(*expiry_epoch)
             {
                 track
                     .set_substate(
@@ -992,10 +986,9 @@ where
         //
         // Also, we need to make sure epoch doesn't jump by a large distance.
         if next_epoch.number()
-            >= transaction_tracker.value.0.start_epoch
-                + transaction_tracker.value.0.epochs_per_partition
+            >= transaction_tracker.start_epoch + transaction_tracker.epochs_per_partition
         {
-            let discarded_partition = transaction_tracker.value.0.advance();
+            let discarded_partition = transaction_tracker.advance();
             track.delete_partition(
                 TRANSACTION_TRACKER.as_node_id(),
                 PartitionNumber(discarded_partition),
@@ -1006,8 +999,8 @@ where
                 TRANSACTION_TRACKER.into_node_id(),
                 MAIN_BASE_PARTITION,
                 TransactionTrackerField::TransactionTracker.into(),
-                IndexedScryptoValue::from_typed(&FieldSubstate::new_field(
-                    transaction_tracker.value.0,
+                IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(
+                    transaction_tracker,
                 )),
                 &mut |_| -> Result<(), ()> { Ok(()) },
             )

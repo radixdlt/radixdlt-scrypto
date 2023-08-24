@@ -21,6 +21,7 @@ use sbor::HasLatestVersion;
 use sbor::LocalTypeIndex;
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
+use crate::internal_prelude::SubstateMutability;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::SchemaOrigin;
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
@@ -192,7 +193,9 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             )
             .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?;
 
-        Ok(IndexedScryptoValue::from_scrypto_value(substate.value.0))
+        Ok(IndexedScryptoValue::from_scrypto_value(
+            substate.into_payload(),
+        ))
     }
 
     pub fn read_typed_object_field<V: ScryptoDecode>(
@@ -231,7 +234,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             )
             .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?;
 
-        Ok(substate.value.0)
+        Ok(substate.into_payload())
     }
 
     pub fn read_object_collection_entry<K: ScryptoEncode, V: ScryptoDecode>(
@@ -989,7 +992,7 @@ impl<'a, S: SubstateDatabase + CommittableSubstateDatabase> SystemDatabaseWriter
             node_id,
             partition_number,
             &SubstateKey::Field(field_index),
-            &FieldSubstate::new_field(value),
+            &FieldSubstate::new_field(value, SubstateMutability::Mutable),
         );
 
         Ok(())

@@ -143,7 +143,7 @@ impl TransactionProcessorBlueprint {
             worktop_node_id,
             btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
-                    WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(WorktopSubstate::new()))
+                    WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(WorktopSubstate::new()))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {

@@ -56,13 +56,15 @@ impl WorktopBlueprint {
             LockFlags::MUTABLE,
             SystemLockData::Default,
         )?;
-        let mut worktop_substate: FieldSubstate<WorktopSubstate> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let resources =
-            core::mem::replace(&mut worktop_substate.value.0.resources, BTreeMap::new());
+        let mut worktop = api
+            .kernel_read_substate(handle)?
+            .as_typed::<FieldSubstate<WorktopSubstate>>()
+            .unwrap()
+            .into_payload();
+        let resources = core::mem::replace(&mut worktop.resources, BTreeMap::new());
         api.kernel_write_substate(
             handle,
-            IndexedScryptoValue::from_typed(&FieldSubstate::new_field(worktop_substate)),
+            IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(worktop)),
         )?;
         api.kernel_close_substate(handle)?;
 

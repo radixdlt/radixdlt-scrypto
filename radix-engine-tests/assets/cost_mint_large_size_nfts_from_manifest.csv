@@ -1,33 +1,33 @@
-Total Cost (XRD)                                                           ,   341.160505882338447108,    100.0%
-- Execution Cost (XRD)                                                     ,               2.62597585,      0.8%
-- Finalization Cost (XRD)                                                  ,                2.4794102,      0.7%
+Total Cost (XRD)                                                           ,   341.161331960935452273,    100.0%
+- Execution Cost (XRD)                                                     ,               2.62600715,      0.8%
+- Finalization Cost (XRD)                                                  ,               2.47941025,      0.7%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
-- Storage Cost (XRD)                                                       ,   336.055119832338447108,     98.5%
+- Storage Cost (XRD)                                                       ,   336.055914560935452273,     98.5%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 52519517,    100.0%
+Execution Cost Breakdown                                                   ,                 52520143,    100.0%
 - AllocateNodeId                                                           ,                     2288,      0.0%
 - BeforeInvoke                                                             ,                  2094264,      4.0%
 - CloseSubstate                                                            ,                    51660,      0.1%
-- CreateNode                                                               ,                  2107129,      4.0%
-- DropNode                                                                 ,                    29222,      0.1%
+- CreateNode                                                               ,                  2107175,      4.0%
+- DropNode                                                                 ,                    29438,      0.1%
 - EmitEvent                                                                ,                    15370,      0.0%
 - LockFee                                                                  ,                      500,      0.0%
 - MarkSubstateAsTransient                                                  ,                      100,      0.0%
 - MoveModule                                                               ,                    41832,      0.1%
-- OpenSubstate::GlobalAccount                                              ,                   365757,      0.7%
-- OpenSubstate::GlobalFungibleResourceManager                              ,                   121592,      0.2%
-- OpenSubstate::GlobalGenericComponent                                     ,                    43212,      0.1%
+- OpenSubstate::GlobalAccount                                              ,                   365759,      0.7%
+- OpenSubstate::GlobalFungibleResourceManager                              ,                   121594,      0.2%
+- OpenSubstate::GlobalGenericComponent                                     ,                    43214,      0.1%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    12964,      0.0%
 - OpenSubstate::GlobalPackage                                              ,                  3289595,      6.3%
-- OpenSubstate::InternalFungibleVault                                      ,                    85458,      0.2%
-- OpenSubstate::InternalGenericComponent                                   ,                    50629,      0.1%
+- OpenSubstate::InternalFungibleVault                                      ,                    85460,      0.2%
+- OpenSubstate::InternalGenericComponent                                   ,                    50683,      0.1%
 - OpenSubstate::InternalKeyValueStore                                      ,                    40474,      0.1%
-- OpenSubstate::InternalNonFungibleVault                                   ,                   116936,      0.2%
+- OpenSubstate::InternalNonFungibleVault                                   ,                   116940,      0.2%
 - PinNode                                                                  ,                     1900,      0.0%
 - PrepareWasmCode                                                          ,                   662094,      1.3%
 - QueryActor                                                               ,                     3000,      0.0%
-- ReadSubstate                                                             ,                   936790,      1.8%
+- ReadSubstate                                                             ,                   936866,      1.8%
 - RunNativeCode::Worktop_drain                                             ,                    13505,      0.0%
 - RunNativeCode::Worktop_drop                                              ,                    15385,      0.0%
 - RunNativeCode::Worktop_put                                               ,                    18262,      0.0%
@@ -44,12 +44,12 @@ Execution Cost Breakdown                                                   ,    
 - SetSubstate                                                              ,                    58032,      0.1%
 - ValidateTxPayload                                                        ,                 41840680,     79.7%
 - VerifyTxSignatures                                                       ,                        0,      0.0%
-- WriteSubstate                                                            ,                     5372,      0.0%
-Finalization Cost Breakdown                                                ,                 49588204,    100.0%
+- WriteSubstate                                                            ,                     5594,      0.0%
+Finalization Cost Breakdown                                                ,                 49588205,    100.0%
 - CommitEvents                                                             ,                    26608,      0.1%
 - CommitLogs                                                               ,                        0,      0.0%
 - CommitStateUpdates::GlobalAccount                                        ,                   100010,      0.2%
 - CommitStateUpdates::GlobalGenericComponent                               ,                   100018,      0.2%
-- CommitStateUpdates::GlobalNonFungibleResourceManager                     ,                 25561283,     51.5%
+- CommitStateUpdates::GlobalNonFungibleResourceManager                     ,                 25561284,     51.5%
 - CommitStateUpdates::InternalFungibleVault                                ,                   100009,      0.2%
 - CommitStateUpdates::InternalNonFungibleVault                             ,                 23700276,     47.8%

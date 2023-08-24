@@ -564,7 +564,7 @@ where
 
             Some(BucketSnapshot::Fungible {
                 resource_address,
-                liquid: liquid.value.0.amount(),
+                liquid: liquid.into_payload().amount(),
             })
         } else {
             let substate = self
@@ -579,7 +579,7 @@ where
 
             Some(BucketSnapshot::NonFungible {
                 resource_address,
-                liquid: liquid.value.0.ids().clone(),
+                liquid: liquid.into_payload().ids().clone(),
             })
         }
     }
@@ -634,7 +634,7 @@ where
 
             Some(ProofSnapshot::Fungible {
                 resource_address,
-                total_locked: proof.value.0.amount(),
+                total_locked: proof.into_payload().amount(),
             })
         } else {
             let substate = self
@@ -661,7 +661,7 @@ where
 
             Some(ProofSnapshot::NonFungible {
                 resource_address,
-                total_locked: proof.value.0.non_fungible_local_ids().clone(),
+                total_locked: proof.into_payload().non_fungible_local_ids().clone(),
             })
         }
     }

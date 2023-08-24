@@ -107,7 +107,7 @@ pub trait FieldPayload:
     }
 
     fn into_mutable_substate(self) -> FieldSubstate<Self> {
-        FieldSubstate::new_field(self)
+        FieldSubstate::new_mutable_field(self)
     }
 }
 

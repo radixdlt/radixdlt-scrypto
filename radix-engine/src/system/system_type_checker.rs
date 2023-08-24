@@ -418,17 +418,16 @@ impl SystemMapper {
             let mut field_partition = BTreeMap::new();
 
             for (index, field) in system_struct.0.into_iter() {
-                let value: ScryptoValue =
+                let payload: ScryptoValue =
                     scrypto_decode(&field.value).expect("Checked by payload-schema validation");
 
-                let substate = FieldSubstate {
-                    value: (value,),
-                    mutability: if field.locked {
-                        SubstateMutability::Immutable
-                    } else {
-                        SubstateMutability::Mutable
-                    },
+                let mutability = if field.locked {
+                    SubstateMutability::Immutable
+                } else {
+                    SubstateMutability::Mutable
                 };
+
+                let substate = FieldSubstate::new_field(payload, mutability);
 
                 let value = IndexedScryptoValue::from_typed(&substate);
                 field_partition.insert(SubstateKey::Field(index), value);

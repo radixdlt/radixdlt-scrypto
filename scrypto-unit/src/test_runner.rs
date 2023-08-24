@@ -2037,8 +2037,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 &ConsensusManagerField::ProposerMilliTimestamp.into(),
             )
             .unwrap()
-            .value
-            .0
+            .into_payload()
             .into_latest()
             .epoch_milli
     }
@@ -2051,8 +2050,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 &ConsensusManagerField::State.into(),
             )
             .unwrap()
-            .value
-            .0
+            .into_payload()
             .into_latest()
     }
 

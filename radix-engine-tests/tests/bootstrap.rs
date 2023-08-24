@@ -240,8 +240,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
             &FungibleResourceManagerField::TotalSupply.into(),
         )
         .unwrap()
-        .value
-        .0
+        .into_payload()
         .into_latest();
     assert_eq!(total_supply, allocation_amount);
 

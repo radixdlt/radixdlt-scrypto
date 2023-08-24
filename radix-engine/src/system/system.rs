@@ -48,6 +48,13 @@ pub enum SubstateMutability {
     Immutable,
 }
 
+// In case we ever are reading raw substate bytes, it may be useful for debugging to be able to tell apart different substate types.
+// So let's give them non-overlapping variant discriminators to enable that, just in case.
+pub const SUBSTATE_TYPE_FIELD_V1: u8 = 20;
+pub const SUBSTATE_TYPE_KEY_VALUE_ENTRY_V1: u8 = 30;
+pub const SUBSTATE_TYPE_INDEX_ENTRY_V1: u8 = 40;
+pub const SUBSTATE_TYPE_SORTED_INDEX_ENTRY_V1: u8 = 50;
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct DynSubstate<E> {
     pub value: E,
@@ -64,29 +71,67 @@ impl<E> DynSubstate<E> {
     }
 }
 
-pub type FieldSubstate<V> = DynSubstate<(V,)>;
+// Note - we manually version these instead of using the defined_versioned! macro,
+// to avoid having additional / confusing methods on FieldSubstate<X>
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(categorize_types = "")]
+pub enum FieldSubstate<T> {
+    #[sbor(discriminator(SUBSTATE_TYPE_FIELD_V1))]
+    V1(FieldSubstateV1<T>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(categorize_types = "")]
+pub struct FieldSubstateV1<V> {
+    payload: V,
+    mutability: SubstateMutability,
+}
 
 impl<V> FieldSubstate<V> {
-    pub fn new_field(value: V) -> Self {
-        Self {
-            value: (value,),
-            mutability: SubstateMutability::Mutable,
-        }
+    pub fn new_field(payload: V, mutability: SubstateMutability) -> Self {
+        FieldSubstate::V1(FieldSubstateV1 {
+            payload,
+            mutability,
+        })
     }
 
-    pub fn new_locked_field(value: V) -> Self {
-        Self {
-            value: (value,),
-            mutability: SubstateMutability::Immutable,
-        }
+    pub fn new_mutable_field(payload: V) -> Self {
+        Self::new_field(payload, SubstateMutability::Mutable)
+    }
+
+    pub fn new_locked_field(payload: V) -> Self {
+        Self::new_field(payload, SubstateMutability::Immutable)
+    }
+
+    pub fn lock(&mut self) {
+        let mutability = match self {
+            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
+        };
+        *mutability = SubstateMutability::Immutable;
     }
 
     pub fn payload(&self) -> &V {
-        &self.value.0
+        match self {
+            FieldSubstate::V1(FieldSubstateV1 { payload, .. }) => payload,
+        }
+    }
+
+    pub fn mutability(&self) -> &SubstateMutability {
+        match self {
+            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
+        }
     }
 
     pub fn into_payload(self) -> V {
-        self.value.0
+        match self {
+            FieldSubstate::V1(FieldSubstateV1 { payload, .. }) => payload,
+        }
+    }
+
+    pub fn into_mutability(self) -> SubstateMutability {
+        match self {
+            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
+        }
     }
 }
 
@@ -1177,7 +1222,7 @@ where
 
         self.api.kernel_read_substate(handle).map(|v| {
             let wrapper: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
-            scrypto_encode(&wrapper.value.0).unwrap()
+            scrypto_encode(&wrapper.into_payload()).unwrap()
         })
     }
 
@@ -1205,7 +1250,7 @@ where
         let value: ScryptoValue =
             scrypto_decode(&buffer).expect("Should be valid due to payload check");
 
-        let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_field(value));
+        let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(value));
 
         self.api.kernel_write_substate(handle, substate)?;
 
@@ -1584,7 +1629,7 @@ where
                 .into_iter()
                 .map(|(_key, v)| {
                     let substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
-                    scrypto_encode(&substate.value.0).unwrap()
+                    scrypto_encode(&substate.into_payload()).unwrap()
                 })
                 .collect()
         } else {
@@ -2456,7 +2501,9 @@ where
                     &SubstateKey::Field(field_index),
                     flags,
                     Some(|| {
-                        IndexedScryptoValue::from_typed(&FieldSubstate::new_field(default_value))
+                        IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(
+                            default_value,
+                        ))
                     }),
                     SystemLockData::Field(lock_data),
                 )?
@@ -2466,7 +2513,7 @@ where
         if flags.contains(LockFlags::MUTABLE) {
             let mutability = self.api.kernel_read_substate(handle).map(|v| {
                 let field: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
-                field.mutability
+                field.into_mutability()
             })?;
 
             if let SubstateMutability::Immutable = mutability {

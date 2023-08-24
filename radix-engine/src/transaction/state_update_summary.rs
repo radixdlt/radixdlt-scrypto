@@ -186,7 +186,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 MAIN_BASE_PARTITION,
                 &FungibleVaultField::Balance.into(),
             )
-            .map(|new_substate| new_substate.value.0.into_latest().amount())
+            .map(|new_substate| new_substate.into_payload().into_latest().amount())
             .map(|new_balance| {
                 let old_balance = self
                     .system_reader
@@ -195,7 +195,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                         MAIN_BASE_PARTITION,
                         &FungibleVaultField::Balance.into(),
                     )
-                    .map(|old_balance| old_balance.value.0.into_latest().amount())
+                    .map(|old_balance| old_balance.into_payload().into_latest().amount())
                     .unwrap_or(Decimal::ZERO);
 
                 new_balance.safe_sub(old_balance).unwrap()
