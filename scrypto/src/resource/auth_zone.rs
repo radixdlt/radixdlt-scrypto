@@ -10,7 +10,7 @@ use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 pub trait ScryptoAuthZone {
     fn push<P: Into<Proof>>(&self, proof: P);
 
-    fn pop(&self) -> Proof;
+    fn pop(&self) -> Option<Proof>;
 
     fn create_proof_of_amount<A: Into<Decimal>>(
         &self,
@@ -43,7 +43,7 @@ impl ScryptoAuthZone for AuthZoneRef {
         );
     }
 
-    fn pop(&self) -> Proof {
+    fn pop(&self) -> Option<Proof> {
         let rtn = ScryptoVmV1Api::object_call(
             &self.0,
             AUTH_ZONE_POP_IDENT,
