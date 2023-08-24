@@ -496,7 +496,7 @@ impl NonFungibleResourceManagerBlueprint {
         let mut mutable_field_index = indexmap!();
 
         // Validate schema
-        validate_schema(&non_fungible_schema.schema).map_err(|e| {
+        validate_schema(non_fungible_schema.schema.v1()).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
                 NonFungibleResourceManagerError::InvalidNonFungibleSchema(
                     InvalidNonFungibleSchema::SchemaValidationError(e),
@@ -507,6 +507,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Validate type kind
         let type_kind = non_fungible_schema
             .schema
+            .v1()
             .resolve_type_kind(non_fungible_schema.non_fungible)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
@@ -529,6 +530,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Validate names
         let type_metadata = non_fungible_schema
             .schema
+            .v1()
             .resolve_type_metadata(non_fungible_schema.non_fungible)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(

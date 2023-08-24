@@ -106,7 +106,7 @@ where
                     .get(&type_id.0)
                     .ok_or_else(|| TypeCheckError::MissingSchema)?;
 
-                if schema.resolve_type_kind(type_id.1).is_none() {
+                if schema.v1().resolve_type_kind(type_id.1).is_none() {
                     return Err(TypeCheckError::InvalidLocalTypeIndex(type_id.1));
                 }
             }
@@ -225,7 +225,7 @@ where
                 TypeCheckError::BlueprintPayloadValidationError(
                     Box::new(target.blueprint_info.clone()),
                     payload_identifier,
-                    err.error_message(&schema),
+                    err.error_message(schema.v1()),
                 ),
             ))
         })?;
@@ -307,7 +307,7 @@ where
                     RuntimeError::SystemError(SystemError::TypeCheckError(
                         TypeCheckError::KeyValueStorePayloadValidationError(
                             payload_identifier,
-                            err.error_message(&schema),
+                            err.error_message(schema.v1()),
                         ),
                     ))
                 })?;
@@ -335,7 +335,7 @@ where
             ));
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             payload,
-            schema,
+            schema.v1(),
             type_index,
             &validation_context,
         )

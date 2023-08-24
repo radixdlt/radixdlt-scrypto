@@ -688,7 +688,7 @@ impl SystemDatabaseChecker {
 
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             payload,
-            &payload_schema.schema,
+            payload_schema.schema.v1(),
             payload_schema.type_index,
             &validation_context,
         )

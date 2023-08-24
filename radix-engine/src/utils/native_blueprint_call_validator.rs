@@ -286,7 +286,7 @@ fn get_arguments_schema<'s>(
             {
                 Ok(Some((
                     function_schema.input.clone(),
-                    &blueprint_schema.schema.schema,
+                    blueprint_schema.schema.schema.v1(),
                 )))
             } else {
                 Err(InstructionSchemaValidationError::InvalidReceiver)

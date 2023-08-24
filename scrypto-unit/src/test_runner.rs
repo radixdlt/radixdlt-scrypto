@@ -2131,6 +2131,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn event_name(&self, event_type_identifier: &EventTypeIdentifier) -> String {
         let (local_type_index, schema) = self.event_schema(event_type_identifier);
         schema
+            .v1()
             .resolve_type_metadata(local_type_index)
             .unwrap()
             .get_name_string()
@@ -2144,7 +2145,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let expected_type_name = {
             let (local_type_index, schema) =
                 sbor::generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
-            schema
+            schema.v1()
                 .resolve_type_metadata(local_type_index)
                 .unwrap()
                 .get_name_string()

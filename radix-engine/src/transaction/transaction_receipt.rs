@@ -823,7 +823,7 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
                 first_line_indent: 0,
             },
             custom_context: receipt_context.display_context(),
-            schema: &schema,
+            schema: schema.v1(),
             type_index: local_type_index,
         },
     );

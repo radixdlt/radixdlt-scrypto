@@ -57,8 +57,7 @@ use radix_engine::blueprints::consensus_manager::{
     ConsensusManagerSubstate, ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
 };
 use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::system::FieldSubstate;
-use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
+use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter};
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -77,15 +76,13 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::{
-    db_key_mapper::{
-        MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
-    },
     interface::SubstateDatabase,
 };
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+use radix_engine::blueprints::models::FieldPayload;
 use transaction::manifest::decompile;
 use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
@@ -462,19 +459,21 @@ pub fn db_upsert_timestamps(
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
-    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
-        &CONSENSUS_MANAGER.as_node_id(),
-        MAIN_BASE_PARTITION,
-        &ConsensusManagerField::CurrentTime.into(),
-        &FieldSubstate::new_field(milli_timestamp),
-    );
+    let mut writer = SystemDatabaseWriter::new(&mut substate_db);
 
-    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
-        &CONSENSUS_MANAGER.as_node_id(),
-        MAIN_BASE_PARTITION,
-        &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
-        &FieldSubstate::new_field(minute_timestamp),
-    );
+    writer.write_typed_object_field(
+        CONSENSUS_MANAGER.as_node_id(),
+        ObjectModuleId::Main,
+        ConsensusManagerField::ProposerMilliTimestamp.field_index(),
+        ConsensusManagerProposerMilliTimestampFieldPayload::from_content_source(milli_timestamp),
+    ).unwrap();
+
+    writer.write_typed_object_field(
+        CONSENSUS_MANAGER.as_node_id(),
+        ObjectModuleId::Main,
+        ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
+        ConsensusManagerProposerMinuteTimestampFieldPayload::from_content_source(minute_timestamp),
+    ).unwrap();
 
     Ok(())
 }
@@ -486,31 +485,34 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
-    let mut consensus_manager_substate = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
-            &CONSENSUS_MANAGER.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &ConsensusManagerField::ConsensusManager.into(),
-        )
-        .unwrap_or_else(|| {
-            FieldSubstate::new_field(ConsensusManagerSubstate {
-                epoch: Epoch::zero(),
-                effective_epoch_start_milli: 0,
-                actual_epoch_start_milli: 0,
-                round: Round::zero(),
-                current_leader: Some(0),
-                started: true,
-            })
-        });
 
-    consensus_manager_substate.value.0.epoch = epoch;
+    let reader = SystemDatabaseReader::new(&substate_db);
 
-    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
-        &CONSENSUS_MANAGER.as_node_id(),
-        MAIN_BASE_PARTITION,
-        &ConsensusManagerField::ConsensusManager.into(),
-        &consensus_manager_substate,
-    );
+    let mut consensus_mgr_state = reader.read_typed_object_field::<ConsensusManagerStateFieldPayload>(
+        CONSENSUS_MANAGER.as_node_id(),
+        ObjectModuleId::Main,
+        ConsensusManagerField::State.field_index()
+    ).unwrap_or_else(|_| {
+        ConsensusManagerStateFieldPayload::from_content_source(ConsensusManagerSubstate {
+            epoch: Epoch::zero(),
+            effective_epoch_start_milli: 0,
+            actual_epoch_start_milli: 0,
+            round: Round::zero(),
+            current_leader: Some(0),
+            started: true,
+        })
+    }).into_latest();
+
+    consensus_mgr_state.epoch = epoch;
+
+    let mut writer = SystemDatabaseWriter::new(&mut substate_db);
+
+    writer.write_typed_object_field(
+        CONSENSUS_MANAGER.as_node_id(),
+        ObjectModuleId::Main,
+        ConsensusManagerField::State.field_index(),
+        ConsensusManagerStateFieldPayload::from_content_source(consensus_mgr_state),
+    ).unwrap();
 
     Ok(())
 }

@@ -151,19 +151,19 @@ fn check_identical_types<T1: Describe<NoCustomTypeKind>, T2: Describe<NoCustomTy
     let (type_index2, schema2) = generate_full_schema_from_single_type::<T2, NoCustomSchema>();
 
     assert_eq!(
-        schema1.resolve_type_kind(type_index1),
-        schema2.resolve_type_kind(type_index2)
+        schema1.v1().resolve_type_kind(type_index1),
+        schema2.v1().resolve_type_kind(type_index2)
     );
     assert_eq!(
-        schema1.resolve_type_metadata(type_index1).unwrap().clone(),
-        schema2
+        schema1.v1().resolve_type_metadata(type_index1).unwrap().clone(),
+        schema2.v1()
             .resolve_type_metadata(type_index2)
             .unwrap()
             .clone()
             .with_name(Some(Cow::Borrowed(rename)))
     );
     assert_eq!(
-        schema1.resolve_type_validation(type_index1),
-        schema2.resolve_type_validation(type_index2)
+        schema1.v1().resolve_type_validation(type_index1),
+        schema2.v1().resolve_type_validation(type_index2)
     );
 }

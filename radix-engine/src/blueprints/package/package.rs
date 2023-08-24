@@ -128,7 +128,7 @@ fn validate_package_schema(
     for bp_def in blueprints.values() {
         let bp_schema = &bp_def.schema;
 
-        validate_schema(&bp_schema.schema).map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
+        validate_schema(bp_schema.schema.v1()).map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
 
         if bp_schema.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
@@ -166,7 +166,7 @@ fn validate_package_schema(
                     TypeRef::Static(local_index) => {
                         validate_payload_against_schema::<ScryptoCustomExtension, ()>(
                             default_value,
-                            &bp_schema.schema,
+                            bp_schema.schema.v1(),
                             local_index,
                             &mut (),
                         )
@@ -215,6 +215,7 @@ fn validate_package_schema_type_ref(
         TypeRef::Static(local_type_index) => {
             if blueprint_schema_init
                 .schema
+                .v1()
                 .resolve_type_kind(local_type_index)
                 .is_some()
             {
@@ -241,6 +242,7 @@ fn extract_package_event_static_type_index(
         TypeRef::Static(local_type_index) => {
             if blueprint_init
                 .schema
+                .v1()
                 .resolve_type_kind(local_type_index)
                 .is_some()
             {
@@ -265,7 +267,7 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
                 extract_package_event_static_type_index(blueprint_schema_init, *type_ref)?;
 
             // Checking that the event is either a struct or an enum
-            let type_kind = schema.resolve_type_kind(local_type_index).map_or(
+            let type_kind = schema.v1().resolve_type_kind(local_type_index).map_or(
                 Err(PackageError::FailedToResolveLocalSchema { local_type_index }),
                 Ok,
             )?;
@@ -276,7 +278,7 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
             }?;
 
             // Checking that the event name is indeed what the user claims it to be
-            let actual_event_name = schema.resolve_type_metadata(local_type_index).map_or(
+            let actual_event_name = schema.v1().resolve_type_metadata(local_type_index).map_or(
                 Err(PackageError::FailedToResolveLocalSchema {
                     local_type_index: local_type_index,
                 }),

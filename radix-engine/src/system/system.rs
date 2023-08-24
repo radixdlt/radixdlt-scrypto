@@ -210,7 +210,7 @@ where
             let mut additional_schemas = index_map_new();
 
             if let Some(schema) = generic_args.additional_schema {
-                validate_schema(&schema)
+                validate_schema(schema.v1())
                     .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
                 let schema_hash = schema.generate_schema_hash();
                 additional_schemas.insert(schema_hash, schema);
@@ -1734,7 +1734,7 @@ where
     ) -> Result<NodeId, RuntimeError> {
         let mut additional_schemas = index_map_new();
         if let Some(schema) = generic_args.additional_schema {
-            validate_schema(&schema)
+            validate_schema(schema.v1())
                 .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
             let schema_hash = schema.generate_schema_hash();
             additional_schemas.insert(schema_hash, schema);

@@ -20,11 +20,11 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
     );
 
     // Empty Schema
-    let empty_schema = ScryptoSchema {
+    let empty_schema = ScryptoSchema::V1(SchemaV1 {
         type_kinds: Vec::new(),
         type_metadata: Vec::new(),
         type_validations: Vec::new(),
-    };
+    });
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),

@@ -202,7 +202,7 @@ fn check_type_internal(
     match index {
         LocalTypeIndex::WellKnown(x) => return is_safe_well_known_type(schema, x),
         LocalTypeIndex::SchemaLocalIndex(i) => {
-            let type_kind = &schema.type_kinds[i];
+            let type_kind = &schema.v1().type_kinds[i];
             match type_kind {
                 ScryptoTypeKind::Array { element_type } => {
                     return check_type_internal(schema, *element_type, visited_indices);
@@ -230,7 +230,7 @@ fn check_type_internal(
                     );
                 }
                 ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own) => {
-                    match &schema.type_validations[i] {
+                    match &schema.v1().type_validations[i] {
                         TypeValidation::Custom(ScryptoCustomTypeValidation::Own(x)) => match x {
                             OwnValidation::IsTypedObject(_, _) => {
                                 return CheckResult::Safe;
@@ -246,7 +246,7 @@ fn check_type_internal(
                             _ => {
                                 return CheckResult::PossiblyUnsafe {
                                     type_kind: type_kind.clone(),
-                                    type_validation: schema.type_validations[i].clone(),
+                                    type_validation: schema.v1().type_validations[i].clone(),
                                 };
                             }
                         },
@@ -254,7 +254,7 @@ fn check_type_internal(
                     }
                 }
                 ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference) => {
-                    match &schema.type_validations[i] {
+                    match &schema.v1().type_validations[i] {
                         TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(x)) => {
                             match x {
                                 ReferenceValidation::IsGlobalTyped(_, _)
@@ -267,7 +267,7 @@ fn check_type_internal(
                                 _ => {
                                     return CheckResult::PossiblyUnsafe {
                                         type_kind: type_kind.clone(),
-                                        type_validation: schema.type_validations[i].clone(),
+                                        type_validation: schema.v1().type_validations[i].clone(),
                                     };
                                 }
                             }
@@ -332,10 +332,12 @@ fn is_safe_well_known_type(schema: &ScryptoSchema, type_id: WellKnownTypeIndex) 
     } else {
         CheckResult::PossiblyUnsafe {
             type_kind: schema
+                .v1()
                 .resolve_type_kind(LocalTypeIndex::WellKnown(type_id))
                 .unwrap()
                 .clone(),
             type_validation: schema
+                .v1()
                 .resolve_type_validation(LocalTypeIndex::WellKnown(type_id))
                 .unwrap()
                 .clone(),

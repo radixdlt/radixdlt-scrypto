@@ -12,6 +12,20 @@ define_versioned!(
 );
 
 impl<S: CustomSchema> VersionedSchema<S> {
+    pub fn v1(&self) -> &SchemaV1<S> {
+        match self {
+            VersionedSchema::V1(schema) => schema,
+        }
+    }
+
+    pub fn v1_mut(&mut self) -> &mut SchemaV1<S> {
+        match self {
+            VersionedSchema::V1(schema) => schema,
+        }
+    }
+}
+
+impl<S: CustomSchema> VersionedSchema<S> {
     pub fn empty() -> Self {
         Schema::empty().into()
     }

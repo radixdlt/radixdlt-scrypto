@@ -102,7 +102,7 @@ pub fn build_call_arguments<'a>(
     account: Option<ComponentAddress>,
 ) -> Result<(ManifestBuilder, ManifestValue), BuildCallArgumentsError> {
     let mut built_args = Vec::<ManifestValue>::new();
-    match schema.resolve_type_kind(type_index) {
+    match schema.v1().resolve_type_kind(type_index) {
         Some(TypeKind::Tuple { field_types }) => {
             if args.len() != field_types.len() {
                 return Err(BuildCallArgumentsError::WrongNumberOfArguments(
@@ -115,8 +115,9 @@ pub fn build_call_arguments<'a>(
                 let (returned_builder, value) = build_call_argument(
                     builder,
                     address_bech32_decoder,
-                    schema.resolve_type_kind(*f).expect("Inconsistent schema"),
+                    schema.v1().resolve_type_kind(*f).expect("Inconsistent schema"),
                     schema
+                        .v1()
                         .resolve_type_validation(*f)
                         .expect("Inconsistent schema"),
                     args[i].clone(),

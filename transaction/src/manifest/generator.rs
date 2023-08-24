@@ -1754,10 +1754,12 @@ mod tests {
                 Enum<NonFungibleIdType::Integer>()
                 false
                 Tuple(
-                    Tuple(
-                        Array<Enum>(),
-                        Array<Tuple>(),
-                        Array<Enum>()
+                    Enum<0u8>(
+                        Tuple(
+                            Array<Enum>(),
+                            Array<Tuple>(),
+                            Array<Enum>()
+                        )
                     ),
                     Enum<0u8>(66u8),
                     Array<String>()
@@ -1854,10 +1856,12 @@ mod tests {
                 Enum<NonFungibleIdType::Integer>()
                 false
                 Tuple(
-                    Tuple(
-                        Array<Enum>(),
-                        Array<Tuple>(),
-                        Array<Enum>()
+                    Enum<0u8>(
+                        Tuple(
+                            Array<Enum>(),
+                            Array<Tuple>(),
+                            Array<Enum>()
+                        )
                     ),
                     Enum<0u8>(66u8),
                     Array<String>()

@@ -41,11 +41,11 @@ impl Default for BlueprintSchemaInit {
     fn default() -> Self {
         Self {
             generics: Vec::new(),
-            schema: ScryptoSchema {
+            schema: ScryptoSchema::V1(SchemaV1 {
                 type_kinds: Vec::new(),
                 type_metadata: Vec::new(),
                 type_validations: Vec::new(),
-            },
+            }),
             state: BlueprintStateSchemaInit::default(),
             events: BlueprintEventSchemaInit::default(),
             functions: BlueprintFunctionsSchemaInit::default(),

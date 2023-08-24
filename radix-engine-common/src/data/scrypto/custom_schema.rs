@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomTypeKind, L>;
-pub type ScryptoSchema = Schema<ScryptoCustomSchema>;
+pub type ScryptoSchema = VersionedSchema<ScryptoCustomSchema>;
 pub type VersionedScryptoSchema = VersionedSchema<ScryptoCustomSchema>;
 pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 
@@ -265,7 +265,7 @@ impl CustomExtension for ScryptoCustomExtension {
 }
 
 pub fn replace_self_package_address(schema: &mut ScryptoSchema, package_address: PackageAddress) {
-    for type_validation in &mut schema.type_validations {
+    for type_validation in &mut schema.v1_mut().type_validations {
         match type_validation {
             TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
                 OwnValidation::IsTypedObject(package, _),
