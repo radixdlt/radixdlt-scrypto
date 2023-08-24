@@ -227,6 +227,7 @@ where
             schema_origin,
             allow_ownership,
             allow_non_global_ref,
+            BLUEPRINT_PAYLOAD_MAX_DEPTH,
         )
         .map_err(|err| {
             RuntimeError::SystemError(SystemError::TypeCheckError(
@@ -310,6 +311,7 @@ where
                     SchemaOrigin::KeyValueStore,
                     allow_ownership,
                     false,
+                    KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH,
                 )
                 .map_err(|err| {
                     RuntimeError::SystemError(SystemError::TypeCheckError(
@@ -333,6 +335,7 @@ where
         schema_origin: SchemaOrigin,
         allow_ownership: bool,
         allow_non_global_ref: bool,
+        depth_limit: usize,
     ) -> Result<(), LocatedValidationError<'s, ScryptoCustomExtension>> {
         let validation_context: Box<dyn ValidationContext<Error = RuntimeError>> =
             Box::new(SystemServiceTypeInfoLookup::new(
@@ -346,6 +349,7 @@ where
             schema.v1(),
             type_index,
             &validation_context,
+            depth_limit,
         )
     }
 

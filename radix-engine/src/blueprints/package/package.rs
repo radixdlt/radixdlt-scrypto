@@ -170,6 +170,7 @@ fn validate_package_schema(
                             bp_schema.schema.v1(),
                             local_index,
                             &mut (),
+                            TRANSIENT_SUBSTATE_DEFAULT_VALUE_MAX_DEPTH,
                         )
                         .map_err(|_| PackageError::InvalidTransientField)?;
                     }
