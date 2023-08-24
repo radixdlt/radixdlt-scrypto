@@ -224,8 +224,8 @@ pub enum StableReferenceType {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TransientReference {
-    ref_count: usize,
-    ref_origin: ReferenceOrigin,
+    pub ref_count: usize,
+    pub ref_origin: ReferenceOrigin,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -1507,6 +1507,16 @@ impl<C, L: Clone> CallFrame<C, L> {
         } else {
             Err(TakeNodeError::OwnNotFound(node_id.clone()))
         }
+    }
+
+    #[cfg(feature = "radix_engine_tests")]
+    pub fn transient_references_mut(&mut self) -> &mut NonIterMap<NodeId, TransientReference> {
+        &mut self.transient_references
+    }
+
+    #[cfg(feature = "radix_engine_tests")]
+    pub fn stable_references(&mut self) -> &mut NonIterMap<NodeId, StableReferenceType> {
+        &mut self.stable_references
     }
 }
 

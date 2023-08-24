@@ -1,7 +1,7 @@
-use std::str::FromStr;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use radix_engine_common::address::AddressBech32Decoder;
+use std::str::FromStr;
 use syn::parse::{Parse, ParseStream, Parser};
 use syn::spanned::Spanned;
 use syn::token::{Brace, Comma};
@@ -1424,11 +1424,14 @@ fn generate_test_bindings_fns(bp_name: &str, items: &[ImplItem]) -> Result<Vec<T
                     FnArg::Receiver(receiver) => {
                         args.push(quote!(#receiver));
                         is_receiver_encountered = true;
-                    },
+                    }
                     FnArg::Typed(typed) => {
                         let arg_ident = match typed.pat.as_ref() {
                             Pat::Ident(PatIdent { ident, .. }) => ident.clone(),
-                            _ => parse2(TokenStream::from_str(&format!("unnamed_argument_index_{}", i)).unwrap())?,
+                            _ => parse2(
+                                TokenStream::from_str(&format!("unnamed_argument_index_{}", i))
+                                    .unwrap(),
+                            )?,
                         };
                         let arg_type = typed.ty.as_ref();
 
@@ -1441,15 +1444,15 @@ fn generate_test_bindings_fns(bp_name: &str, items: &[ImplItem]) -> Result<Vec<T
                             if str.contains("Owned<") {
                                 parse_quote! { ::scrypto::prelude::Own }
                             } else if str.contains("Global<") {
-                                parse_quote!( ::scrypto::prelude::Reference )
+                                parse_quote!(::scrypto::prelude::Reference)
                             } else {
                                 arg_type.clone()
                             }
                         };
 
-                        args.push(quote!{ #arg_ident: #arg_type });
+                        args.push(quote! { #arg_ident: #arg_type });
                         arg_idents.push(arg_ident.clone());
-                    },
+                    }
                 }
             }
 
@@ -1458,7 +1461,11 @@ fn generate_test_bindings_fns(bp_name: &str, items: &[ImplItem]) -> Result<Vec<T
             }
             args.push(quote! { env: &mut Y });
 
-            let invocation_type = TokenStream::from_str(if is_receiver_encountered { "call_method" } else { "call_function" })?;
+            let invocation_type = TokenStream::from_str(if is_receiver_encountered {
+                "call_method"
+            } else {
+                "call_function"
+            })?;
             let invocation_args = {
                 if !is_receiver_encountered {
                     quote! { blueprint_package_address, #bp_name, stringify!(#func_ident), ::scrypto::prelude::scrypto_encode(&( #(#arg_idents,)* )).unwrap() }
@@ -1468,10 +1475,12 @@ fn generate_test_bindings_fns(bp_name: &str, items: &[ImplItem]) -> Result<Vec<T
             };
 
             let rtn_type = match &impl_item.sig.output {
-                ReturnType::Default => parse_quote!( () ),
+                ReturnType::Default => parse_quote!(()),
                 ReturnType::Type(_, rtn_type) => {
                     let str = rtn_type.to_token_stream().to_string().replace(" ", "");
-                    if str.contains(format!("Owned<{}>", bp_name).as_str()) || str.contains(format!("Global<{}>", bp_name).as_str()) {
+                    if str.contains(format!("Owned<{}>", bp_name).as_str())
+                        || str.contains(format!("Global<{}>", bp_name).as_str())
+                    {
                         parse_quote! { Self }
                     } else if str.contains("Owned<") {
                         parse_quote! { ::scrypto::prelude::InternalAddress }

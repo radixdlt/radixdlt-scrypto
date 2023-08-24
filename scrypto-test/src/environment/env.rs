@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::prelude::*;
+use std::ops::AddAssign;
 
 /// The environment that the tests are run against.
 ///
@@ -562,15 +563,51 @@ impl TestEnvironment {
             kernel.kernel_close_substate(handle)?;
 
             // Add all of the references in the state to the current call-frame
-            let current_frame = kernel.kernel_current_frame_mut();
             let indexed_state = IndexedScryptoValue::from_slice(&state).unwrap();
             for reference in indexed_state.references() {
-                current_frame.add_global_reference(GlobalAddress::new_or_panic(reference.0))
+                kernel
+                    .kernel_current_frame_mut()
+                    .add_global_reference(GlobalAddress::new_or_panic(reference.0))
+            }
+
+            // Add all of the owned nodes from the state as transient nodes to the test call frame
+            for own in indexed_state.owned_nodes() {
+                let device = Self::get_node_device(kernel, own);
+                kernel
+                    .kernel_current_frame_mut()
+                    .transient_references_mut()
+                    .entry(*own)
+                    .or_insert(TransientReference {
+                        ref_count: 0,
+                        ref_origin: ReferenceOrigin::SubstateNonGlobalReference(device),
+                    })
+                    .ref_count
+                    .add_assign(1);
             }
 
             // Decode and return
             Ok(indexed_state.as_typed::<S>().unwrap())
         })
+    }
+
+    //=========
+    // Helpers
+    //=========
+
+    // TODO: Feels hacky, something better is needed.
+    /// Determines the device that the node is in based on whether it's in the heap or not.
+    fn get_node_device(kernel: &TestKernel<'_>, node_id: &NodeId) -> SubstateDevice {
+        let substate_io = kernel.kernel_substate_io();
+        if substate_io
+            .heap
+            .scan_keys(node_id, MAIN_BASE_PARTITION, 1)
+            .len()
+            == 1
+        {
+            SubstateDevice::Heap
+        } else {
+            SubstateDevice::Store
+        }
     }
 }
 
