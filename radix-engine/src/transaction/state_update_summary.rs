@@ -12,6 +12,7 @@ use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_db_reader::SystemDatabaseReader;
+use crate::system::system_substates::FieldSubstate;
 use crate::track::TrackedSubstateValue;
 use crate::track::{TrackedNode, Write};
 

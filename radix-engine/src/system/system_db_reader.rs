@@ -21,10 +21,11 @@ use sbor::HasLatestVersion;
 use sbor::LocalTypeIndex;
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
-use crate::internal_prelude::SubstateMutability;
+use crate::system::system_substates::SubstateMutability;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::SchemaOrigin;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use crate::system::system::KeyValueEntrySubstate;
+use crate::system::system_substates::FieldSubstate;
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta,
 };

@@ -12,7 +12,7 @@ use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrack
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
+use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::*;
@@ -29,6 +29,7 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
+use crate::system::system_substates::{FieldSubstate, SubstateMutability};
 
 /// Protocol-defined costing parameters
 #[derive(Debug, Copy, Clone, ScryptoSbor)]

@@ -84,6 +84,7 @@ macro_rules! declare_payload_new_type {
 }
 #[allow(unused)]
 pub(crate) use declare_payload_new_type;
+use crate::system::system_substates::FieldSubstate;
 
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular field.

@@ -41,19 +41,7 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SubstateMutability {
-    Mutable,
-    Immutable,
-}
-
-// In case we ever are reading raw substate bytes, it may be useful for debugging to be able to tell apart different substate types.
-// So let's give them non-overlapping variant discriminators to enable that, just in case.
-pub const SUBSTATE_TYPE_FIELD_V1: u8 = 20;
-pub const SUBSTATE_TYPE_KEY_VALUE_ENTRY_V1: u8 = 30;
-pub const SUBSTATE_TYPE_INDEX_ENTRY_V1: u8 = 40;
-pub const SUBSTATE_TYPE_SORTED_INDEX_ENTRY_V1: u8 = 50;
+use crate::system::system_substates::{FieldSubstate, SubstateMutability};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct DynSubstate<E> {
@@ -68,70 +56,6 @@ impl<E> DynSubstate<E> {
 
     pub fn is_mutable(&self) -> bool {
         matches!(self.mutability, SubstateMutability::Mutable)
-    }
-}
-
-// Note - we manually version these instead of using the defined_versioned! macro,
-// to avoid having additional / confusing methods on FieldSubstate<X>
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-#[sbor(categorize_types = "")]
-pub enum FieldSubstate<T> {
-    #[sbor(discriminator(SUBSTATE_TYPE_FIELD_V1))]
-    V1(FieldSubstateV1<T>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-#[sbor(categorize_types = "")]
-pub struct FieldSubstateV1<V> {
-    payload: V,
-    mutability: SubstateMutability,
-}
-
-impl<V> FieldSubstate<V> {
-    pub fn new_field(payload: V, mutability: SubstateMutability) -> Self {
-        FieldSubstate::V1(FieldSubstateV1 {
-            payload,
-            mutability,
-        })
-    }
-
-    pub fn new_mutable_field(payload: V) -> Self {
-        Self::new_field(payload, SubstateMutability::Mutable)
-    }
-
-    pub fn new_locked_field(payload: V) -> Self {
-        Self::new_field(payload, SubstateMutability::Immutable)
-    }
-
-    pub fn lock(&mut self) {
-        let mutability = match self {
-            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
-        };
-        *mutability = SubstateMutability::Immutable;
-    }
-
-    pub fn payload(&self) -> &V {
-        match self {
-            FieldSubstate::V1(FieldSubstateV1 { payload, .. }) => payload,
-        }
-    }
-
-    pub fn mutability(&self) -> &SubstateMutability {
-        match self {
-            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
-        }
-    }
-
-    pub fn into_payload(self) -> V {
-        match self {
-            FieldSubstate::V1(FieldSubstateV1 { payload, .. }) => payload,
-        }
-    }
-
-    pub fn into_mutability(self) -> SubstateMutability {
-        match self {
-            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
-        }
     }
 }
 

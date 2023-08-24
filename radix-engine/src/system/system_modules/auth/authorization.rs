@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_modules::role_assignment::{
     RoleAssignmentAccessRuleEntryPayload, RoleAssignmentOwnerFieldPayload,
 };
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
 };
@@ -13,6 +13,7 @@ use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use radix_engine_interface::api::{ClientObjectApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
+use crate::system::system_substates::FieldSubstate;
 
 pub struct Authorization;
 
