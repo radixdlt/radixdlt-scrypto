@@ -694,13 +694,16 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let vault: Option<FungibleVaultBalanceFieldPayload> = reader
+            .read_typed_object_field(
                 &vault_id,
-                MAIN_BASE_PARTITION,
-                &FungibleVaultField::Balance.into(),
+                ObjectModuleId::Main,
+                FungibleVaultField::Balance.into(),
             )
-            .map(|output| output.into_payload().into_latest().amount())
+            .ok();
+
+        vault.map(|v| v.into_latest().amount())
     }
 
     pub fn inspect_non_fungible_vault(
@@ -751,14 +754,17 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         resource: ResourceAddress,
         non_fungible_id: NonFungibleLocalId,
     ) -> T {
-        let substate = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<T>>(
-                &resource.as_node_id(),
-                NonFungibleResourceManagerPartitionOffset::DataKeyValue.as_main_partition(),
-                &SubstateKey::Map(non_fungible_id.to_key()),
-            );
-        substate.unwrap().value.unwrap()
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let payload = reader.read_object_collection_entry::<_, NonFungibleResourceManagerDataEntryPayload>(
+            resource.as_node_id(),
+            ObjectModuleId::Main,
+            ObjectCollectionKey::KeyValue(
+                NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
+                &non_fungible_id,
+            )
+        ).unwrap().unwrap();
+
+        scrypto_decode(&scrypto_encode(&payload.content).unwrap()).unwrap()
     }
 
     pub fn get_kv_store_entry<K: ScryptoEncode, V: ScryptoEncode + ScryptoDecode>(
