@@ -1,6 +1,5 @@
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
@@ -199,15 +198,12 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                         let metadata = Metadata::create(api)?;
                         let role_assignment =
                             RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
-                        let royalty =
-                            ComponentRoyalty::create(ComponentRoyaltyConfig::Disabled, api)?;
 
                         let address = api.globalize(
                             parent,
                             btreemap!(
                                 ModuleId::Metadata => metadata.0,
                                 ModuleId::RoleAssignment => role_assignment.0.0,
-                                ModuleId::Royalty => royalty.0,
                             ),
                             None,
                         )?;

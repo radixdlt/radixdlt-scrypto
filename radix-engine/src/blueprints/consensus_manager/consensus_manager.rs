@@ -6,7 +6,6 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
@@ -316,14 +315,12 @@ impl ConsensusManagerBlueprint {
             },
             api,
         )?;
-        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(
             consensus_manager_id,
             btreemap!(
                 ModuleId::RoleAssignment => role_assignment.0,
                 ModuleId::Metadata => metadata.0,
-                ModuleId::Royalty => royalty.0,
             ),
             Some(consensus_manager_address_reservation),
         )?;
