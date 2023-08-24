@@ -48,6 +48,13 @@ pub enum SubstateMutability {
     Immutable,
 }
 
+// In case we ever are reading raw substate bytes, it may be useful for debugging to be able to tell apart different substate types.
+// So let's give them non-overlapping variant discriminators to enable that, just in case.
+pub const SUBSTATE_TYPE_FIELD_V1: u8 = 20;
+pub const SUBSTATE_TYPE_KEY_VALUE_ENTRY_V1: u8 = 30;
+pub const SUBSTATE_TYPE_INDEX_ENTRY_V1: u8 = 40;
+pub const SUBSTATE_TYPE_SORTED_INDEX_ENTRY_V1: u8 = 50;
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct DynSubstate<E> {
     pub value: E,
@@ -64,11 +71,12 @@ impl<E> DynSubstate<E> {
     }
 }
 
-// Manually versioned instead of using the defined_versioned! macro, to avoid having
-// additional / confusing methods on FieldSubstate<X>
+// Note - we manually version these instead of using the defined_versioned! macro,
+// to avoid having additional / confusing methods on FieldSubstate<X>
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(categorize_types = "")]
 pub enum FieldSubstate<T> {
+    #[sbor(discriminator(SUBSTATE_TYPE_FIELD_V1))]
     V1(FieldSubstateV1<T>),
 }
 
