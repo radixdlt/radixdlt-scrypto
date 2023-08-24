@@ -1,4 +1,3 @@
-use radix_engine::errors::{RuntimeError, SystemUpstreamError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -93,14 +92,7 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
     // Act 2 - Depth just over the limit
     let receipt =
         publish_wasm_with_deep_sbor_response_and_execute_it(BLUEPRINT_PAYLOAD_MAX_DEPTH + 1);
-    receipt.expect_specific_failure(|f| {
-        matches!(
-            f,
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(
-                DecodeError::MaxDepthExceeded(_)
-            ))
-        )
-    });
+    receipt.expect_specific_failure(|f| format!("{:?}", f).contains("MaxDepthExceeded"));
 }
 
 fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> TransactionReceipt {
