@@ -23,7 +23,7 @@ fn create_payload_of_depth(n: usize) -> Vec<u8> {
 }
 
 #[test]
-fn test_write_kv_store_entry_with_depth() {
+fn test_write_kv_store_entry_within_depth_limit() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
@@ -35,13 +35,37 @@ fn test_write_kv_store_entry_with_depth() {
             package_address,
             "MaxSborDepthTest",
             "write_kv_store_entry_with_depth",
-            manifest_args!(create_payload_of_depth(64)),
+            manifest_args!(create_payload_of_depth(KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH)),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn test_write_kv_store_entry_exceeding_depth_limit() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "MaxSborDepthTest",
+            "write_kv_store_entry_with_depth",
+            manifest_args!(create_payload_of_depth(
+                KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH + 1
+            )),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| format!("{:?}", e).contains("MaxDepthExceeded"))
 }
 
 #[test]
