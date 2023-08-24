@@ -1,5 +1,5 @@
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
+use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
 use radix_engine_interface::api::{ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::{

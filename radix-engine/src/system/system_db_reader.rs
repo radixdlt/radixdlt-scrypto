@@ -17,12 +17,12 @@ use sbor::HasLatestVersion;
 use sbor::LocalTypeIndex;
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::SchemaOrigin;
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta,
 };
+use crate::system::type_info::TypeInfoSubstate;
 use crate::track::TrackedNode;
 use crate::transaction::{
     ObjectInstanceTypeReference, ObjectSubstateTypeReference, PackageTypeReference,

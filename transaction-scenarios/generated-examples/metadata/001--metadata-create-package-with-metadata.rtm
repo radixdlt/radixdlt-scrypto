@@ -472,26 +472,8 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("d0cf9666798d4566312eb36e9d31a7b459ec00966087d617a77d5bc3471156c4")
+    Blob("e25e087f021a76d6844400748e6ec4432242060b51e358b6f270ac08a5c8b142")
     Map<String, Tuple>(
-        "" => Tuple(
-            Enum<1u8>(
-                Enum<14u8>(
-                    "www.radixdlt.com"
-                )
-            ),
-            false
-        ),
-        "_array" => Tuple(
-            Enum<1u8>(
-                Enum<142u8>(
-                    Array<String>(
-                        "www.radixdlt.com"
-                    )
-                )
-            ),
-            false
-        ),
         "address" => Tuple(
             Enum<1u8>(
                 Enum<8u8>(
@@ -638,6 +620,24 @@ PUBLISH_PACKAGE_ADVANCED
                         NonFungibleLocalId("#42#"),
                         NonFungibleLocalId("[01]"),
                         NonFungibleLocalId("{0101010101010101-0101010101010101-0101010101010101-0101010101010101}")
+                    )
+                )
+            ),
+            false
+        ),
+        "origin" => Tuple(
+            Enum<1u8>(
+                Enum<14u8>(
+                    "https://www.radixdlt.com"
+                )
+            ),
+            false
+        ),
+        "origin_array" => Tuple(
+            Enum<1u8>(
+                Enum<142u8>(
+                    Array<String>(
+                        "https://www.radixdlt.com"
                     )
                 )
             ),

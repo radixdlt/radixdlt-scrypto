@@ -1,6 +1,6 @@
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use crate::system::type_info::TypeInfoSubstate;
 use radix_engine_common::prelude::{
     scrypto_decode, scrypto_encode, Hash, ScryptoCustomExtension, ScryptoSchema, ScryptoValue,
 };
