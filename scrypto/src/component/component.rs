@@ -372,13 +372,13 @@ impl<O: HasStub> Global<O> {
         }
     }
 
-    pub fn metadata(&self) -> Attached<Metadata> {
+    fn metadata(&self) -> Attached<Metadata> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let metadata = Metadata::attached(address);
         Attached(metadata, PhantomData::default())
     }
 
-    pub fn role_assignment(&self) -> Attached<RoleAssignment> {
+    fn role_assignment(&self) -> Attached<RoleAssignment> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let role_assignment = RoleAssignment::attached(address);
         Attached(role_assignment, PhantomData::default())
