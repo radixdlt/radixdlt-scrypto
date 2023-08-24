@@ -8,7 +8,7 @@ use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::system::system_substates::KeyValueEntrySubstate;
 use radix_engine::system::system_db_checker::{
     SystemDatabaseChecker, SystemDatabaseCheckerResults, SystemDatabaseCheckError,
 };
@@ -604,55 +604,32 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         &self,
         package_address: &PackageAddress,
     ) -> IndexMap<SchemaHash, VersionedScryptoSchema> {
-        let mut schemas = index_map_new();
-        for entry in self
-            .substate_db()
-            .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
-                package_address.as_node_id(),
-                SCHEMAS_PARTITION,
-            ))
-        {
-            let hash: SchemaHash =
-                scrypto_decode(&SpreadPrefixKeyMapper::map_from_db_sort_key(&entry.0)).unwrap();
-            let value: PackageSchemaEntrySubstate = scrypto_decode(&entry.1).unwrap();
-            match value.value {
-                Some(schema) => {
-                    schemas.insert(hash, schema.content);
-                }
-                None => {}
-            }
-        }
-
-        schemas
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader.collection_iter(
+            package_address.as_node_id(),
+            ObjectModuleId::Main,
+            PackageCollection::SchemaKeyValue.collection_index(),
+        ).unwrap().map(|(key, value)| {
+            let hash: SchemaHash = scrypto_decode(&key).unwrap();
+            let schema: PackageSchemaEntryPayload = scrypto_decode(&value).unwrap();
+            (hash, schema.content)
+        }).collect()
     }
 
     pub fn get_package_blueprint_definitions(
         &self,
         package_address: &PackageAddress,
     ) -> IndexMap<BlueprintVersionKey, BlueprintDefinition> {
-        let mut definitions = index_map_new();
-        for entry in self
-            .substate_db()
-            .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
-                package_address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                    .unwrap(),
-            ))
-        {
-            let key: BlueprintVersionKey =
-                scrypto_decode(&SpreadPrefixKeyMapper::map_from_db_sort_key(&entry.0)).unwrap();
-            let value: PackageBlueprintVersionDefinitionEntrySubstate =
-                scrypto_decode(&entry.1).unwrap();
-            match value.value {
-                Some(definition) => {
-                    definitions.insert(key, definition.into_latest());
-                }
-                None => {}
-            }
-        }
-
-        definitions
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader.collection_iter(
+            package_address.as_node_id(),
+            ObjectModuleId::Main,
+            PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+        ).unwrap().map(|(key, value)| {
+            let key: BlueprintVersionKey = scrypto_decode(&key).unwrap();
+            let definition: PackageBlueprintVersionDefinitionEntryPayload = scrypto_decode(&value).unwrap();
+            (key, definition.into_latest())
+        }).collect()
     }
 
     pub fn sum_descendant_balance_changes(
@@ -781,40 +758,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         kv_store_id: Own,
         key: &K,
     ) -> Option<V> {
-        let node_id = kv_store_id.as_node_id();
-        let substate = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>>(
-                node_id,
-                MAIN_BASE_PARTITION,
-                &SubstateKey::Map(scrypto_encode(&key).unwrap()),
-            );
-        substate.unwrap().value
-    }
-
-    pub fn get_all_kv_store_entries<
-        K: ScryptoEncode + ScryptoDecode + Eq + std::hash::Hash,
-        V: ScryptoEncode + ScryptoDecode,
-    >(
-        &self,
-        kv_store_id: Own,
-    ) -> hash_map::ext_HashMap<K, V> {
-        let partition_number = MAIN_BASE_PARTITION;
-        let node_id = kv_store_id.as_node_id();
-        let map = self
-            .substate_db()
-            .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>, MapKey>(
-                node_id,
-                partition_number,
-            )
-            .fold(hash_map::ext_HashMap::<K, V>::new(), |mut all, (k, v)| {
-                all.insert(
-                    scrypto_decode::<K>(k.for_map().unwrap()).unwrap(),
-                    v.value.unwrap(),
-                );
-                all
-            });
-        map
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader.read_typed_kv_entry(kv_store_id.as_node_id(), key)
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
@@ -2124,7 +2069,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                         &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
                     )
                     .unwrap()
-                    .value
+                    .into_value()
                     .unwrap();
 
                 (type_identifier.1, schema)

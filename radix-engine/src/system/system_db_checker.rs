@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
-use crate::system::system::KeyValueEntrySubstate;
+use crate::system::system_substates::KeyValueEntrySubstate;
 use radix_engine_common::prelude::{
     Hash, scrypto_decode, scrypto_encode, ScryptoCustomExtension, ScryptoValue,
     VersionedScryptoSchema,
@@ -453,7 +453,7 @@ impl SystemDatabaseChecker {
                                 .map_err(|_| {
                                     SystemPartitionCheckError::InvalidKeyValueStoreValue
                                 })?;
-                            if let Some(value) = entry.value {
+                            if let Some(value) = entry.into_value() {
                                 let entry_payload = scrypto_encode(&value).map_err(|_| {
                                     SystemPartitionCheckError::InvalidKeyValueStoreValue
                                 })?;
@@ -611,7 +611,7 @@ impl SystemDatabaseChecker {
                                 {
                                     let entry: KeyValueEntrySubstate<ScryptoValue> = scrypto_decode(&value)
                                         .map_err(|_| SystemPartitionCheckError::InvalidKeyValueCollectionValue)?;
-                                    if let Some(value) = entry.value {
+                                    if let Some(value) = entry.into_value() {
                                         let entry_payload = scrypto_encode(&value)
                                             .map_err(|_| SystemPartitionCheckError::InvalidKeyValueCollectionValue)?;
                                         self.validate_payload(reader, &entry_payload, &value_schema)

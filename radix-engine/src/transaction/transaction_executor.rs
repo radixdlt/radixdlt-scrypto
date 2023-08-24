@@ -12,7 +12,7 @@ use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrack
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
-use crate::system::system::KeyValueEntrySubstate;
+use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::*;
@@ -29,6 +29,7 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
+use crate::internal_prelude::KeyValueEntrySubstateV1;
 use crate::system::system_substates::{FieldSubstate, SubstateMutability};
 
 /// Protocol-defined costing parameters
@@ -513,7 +514,7 @@ where
         match substate {
             Some(value) => {
                 let substate: KeyValueEntrySubstate<TransactionStatus> = value.as_typed().unwrap();
-                match substate.value {
+                match substate.into_value() {
                     Some(status) => match status {
                         TransactionStatus::CommittedSuccess
                         | TransactionStatus::CommittedFailure => {
@@ -962,7 +963,7 @@ where
                         TRANSACTION_TRACKER.into_node_id(),
                         PartitionNumber(partition_number),
                         SubstateKey::Map(scrypto_encode(intent_hash).unwrap()),
-                        IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
+                        IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(KeyValueEntrySubstateV1 {
                             value: Some(if is_success {
                                 TransactionStatus::CommittedSuccess
                             } else {
@@ -970,7 +971,7 @@ where
                             }),
                             // TODO: maybe make it immutable, but how does this affect partition deletion?
                             mutability: SubstateMutability::Mutable,
-                        }),
+                        })),
                         &mut |_| -> Result<(), ()> { Ok(()) },
                     )
                     .unwrap();

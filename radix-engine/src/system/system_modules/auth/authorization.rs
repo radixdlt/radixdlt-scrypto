@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_modules::role_assignment::{
     RoleAssignmentAccessRuleEntryPayload, RoleAssignmentOwnerFieldPayload,
 };
-use crate::system::system::KeyValueEntrySubstate;
+use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
 };
@@ -347,7 +347,7 @@ impl Authorization {
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             api.kernel_close_substate(handle)?;
 
-            match substate.value {
+            match substate.into_value() {
                 Some(access_rule) => access_rule.content.into_latest(),
                 None => {
                     let handle = api.kernel_open_substate(

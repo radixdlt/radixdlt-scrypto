@@ -1,9 +1,7 @@
 use super::payload_validation::*;
 use crate::errors::{RuntimeError, SystemError};
 use crate::kernel::kernel_api::KernelApi;
-use crate::system::system::{
-    KeyValueEntrySubstate, SystemService,
-};
+use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::NodeSubstates;
@@ -13,7 +11,7 @@ use radix_engine_interface::api::{CollectionIndex, FieldValue, KVEntry};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::KeyValueStoreGenericSubstitutions;
 use sbor::rust::vec::Vec;
-use crate::system::system_substates::{FieldSubstate, SubstateMutability};
+use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
 
 /// Metadata for schema validation to help with location of certain schemas
 /// since location of schemas are somewhat scattered
@@ -382,7 +380,7 @@ where
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
-        let schema = substate.value.unwrap();
+        let schema = substate.into_value().unwrap();
 
         self.api
             .kernel_get_system_state()

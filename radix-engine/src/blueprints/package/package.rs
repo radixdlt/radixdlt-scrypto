@@ -1374,7 +1374,7 @@ impl PackageRoyaltyNativeBlueprint {
         api.kernel_close_substate(handle)?;
 
         let royalty_charge = substate
-            .value
+            .into_value()
             .and_then(|royalty_config| match royalty_config.into_latest() {
                 PackageRoyaltyConfig::Enabled(royalty_amounts) => {
                     royalty_amounts.get(ident).cloned()
@@ -1519,7 +1519,7 @@ impl PackageAuthNativeBlueprint {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_close_substate(handle)?;
 
-        let template = match auth_template.value {
+        let template = match auth_template.into_value() {
             Some(template) => template.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(

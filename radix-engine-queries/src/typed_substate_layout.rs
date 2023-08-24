@@ -25,7 +25,7 @@ pub use radix_engine::system::node_modules::role_assignment::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
 use radix_engine::system::system_substates::FieldSubstate;
-pub use radix_engine::system::system::KeyValueEntrySubstate;
+pub use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine_interface::api::node_modules::royalty::*;
 use transaction::prelude::IntentHash;
 

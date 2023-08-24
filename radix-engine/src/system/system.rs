@@ -41,63 +41,8 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use crate::system::system_substates::{FieldSubstate, SubstateMutability};
+use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct DynSubstate<E> {
-    pub value: E,
-    pub mutability: SubstateMutability,
-}
-
-impl<E> DynSubstate<E> {
-    pub fn lock(&mut self) {
-        self.mutability = SubstateMutability::Immutable;
-    }
-
-    pub fn is_mutable(&self) -> bool {
-        matches!(self.mutability, SubstateMutability::Mutable)
-    }
-}
-
-pub type KeyValueEntrySubstate<V> = DynSubstate<Option<V>>;
-
-impl<V> KeyValueEntrySubstate<V> {
-    pub fn entry(value: V) -> Self {
-        Self {
-            value: Some(value),
-            mutability: SubstateMutability::Mutable,
-        }
-    }
-
-    pub fn locked_entry(value: V) -> Self {
-        Self {
-            value: Some(value),
-            mutability: SubstateMutability::Immutable,
-        }
-    }
-
-    pub fn locked_empty_entry() -> Self {
-        Self {
-            value: None,
-            mutability: SubstateMutability::Immutable,
-        }
-    }
-
-    pub fn remove(&mut self) -> Option<V> {
-        self.value.take()
-    }
-}
-
-impl<V> Default for KeyValueEntrySubstate<V> {
-    fn default() -> Self {
-        Self {
-            value: Option::None,
-            mutability: SubstateMutability::Mutable,
-        }
-    }
-}
-
-pub type IndexEntrySubstate<V> = V;
 pub type SortedIndexEntrySubstate<V> = V;
 
 /// Provided to upper layer for invoking lower layer service
@@ -401,7 +346,7 @@ where
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
-        let definition = match substate.value {
+        let definition = match substate.into_value() {
             Some(definition) => definition.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(
@@ -1585,7 +1530,7 @@ where
 
         self.api.kernel_read_substate(handle).map(|v| {
             let wrapper: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
-            scrypto_encode(&wrapper.value).unwrap()
+            scrypto_encode(&wrapper.into_value()).unwrap()
         })
     }
 
@@ -1801,7 +1746,7 @@ where
         if flags.contains(LockFlags::MUTABLE) {
             let mutability = self.api.kernel_read_substate(handle).map(|v| {
                 let kv_entry: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
-                kv_entry.mutability
+                kv_entry.mutability()
             })?;
 
             if let SubstateMutability::Immutable = mutability {
