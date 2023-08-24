@@ -22,10 +22,10 @@ pub const SCRYPTO_SBOR_V1_MAX_DEPTH: usize = 64;
 
 pub const MANIFEST_SBOR_V1_MAX_DEPTH: usize = 24;
 
-/// Depth limit for default value for a transient substate
+/// Depth limit for the default value of a transient substate
 pub const TRANSIENT_SUBSTATE_DEFAULT_VALUE_MAX_DEPTH: usize = 48;
 
-/// Depth limit for payload from
+/// Depth limit for various types of blueprint payload
 /// - Function inputs and outputs
 /// - Events
 /// - Object Field
