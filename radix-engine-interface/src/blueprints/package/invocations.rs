@@ -262,8 +262,9 @@ impl PackageDefinition {
     }
 
     // For testing only
-    pub fn new_with_field_test_definition(
+    pub fn new_with_fields_test_definition(
         blueprint_name: &str,
+        num_fields: usize,
         functions: Vec<(&str, &str, bool)>,
     ) -> PackageDefinition {
         let mut blueprints = BTreeMap::new();
@@ -272,9 +273,9 @@ impl PackageDefinition {
             BlueprintDefinitionInit {
                 schema: BlueprintSchemaInit {
                     state: BlueprintStateSchemaInit {
-                        fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
-                            ANY_TYPE,
-                        ))],
+                        fields: (0..num_fields)
+                            .map(|_| FieldSchema::static_field(LocalTypeIndex::WellKnown(ANY_TYPE)))
+                            .collect(),
                         ..Default::default()
                     },
                     functions: BlueprintFunctionsSchemaInit {
@@ -302,6 +303,13 @@ impl PackageDefinition {
             },
         );
         PackageDefinition { blueprints }
+    }
+
+    pub fn new_with_field_test_definition(
+        blueprint_name: &str,
+        functions: Vec<(&str, &str, bool)>,
+    ) -> PackageDefinition {
+        Self::new_with_fields_test_definition(blueprint_name, 1, functions)
     }
 
     // For testing only
