@@ -466,14 +466,14 @@ pub fn db_upsert_timestamps(
         &CONSENSUS_MANAGER.as_node_id(),
         MAIN_BASE_PARTITION,
         &ConsensusManagerField::CurrentTime.into(),
-        &FieldSubstate::new_field(milli_timestamp),
+        &FieldSubstate::new_mutable_field(milli_timestamp),
     );
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
         MAIN_BASE_PARTITION,
         &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
-        &FieldSubstate::new_field(minute_timestamp),
+        &FieldSubstate::new_mutable_field(minute_timestamp),
     );
 
     Ok(())
@@ -486,14 +486,14 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
-    let mut consensus_manager_substate = substate_db
+    let mut payload = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
             &CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
         )
         .unwrap_or_else(|| {
-            FieldSubstate::new_field(ConsensusManagerSubstate {
+            FieldSubstate::new_mutable_field(ConsensusManagerSubstate {
                 epoch: Epoch::zero(),
                 effective_epoch_start_milli: 0,
                 actual_epoch_start_milli: 0,
@@ -501,15 +501,16 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
                 current_leader: Some(0),
                 started: true,
             })
-        });
+        })
+        .into_payload();
 
-    consensus_manager_substate.value.0.epoch = epoch;
+    payload.epoch = epoch;
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
         MAIN_BASE_PARTITION,
         &ConsensusManagerField::ConsensusManager.into(),
-        &consensus_manager_substate,
+        &FieldSubstate::new_mutable_field(payload),
     );
 
     Ok(())

@@ -1,9 +1,7 @@
+use crate::internal_prelude::*;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
-use radix_engine_common::prelude::{
-    scrypto_decode, scrypto_encode, Hash, ScryptoCustomExtension, ScryptoSchema, ScryptoValue,
-};
 use radix_engine_interface::api::{FieldIndex, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintPayloadIdentifier, BlueprintType, KeyOrValue,
@@ -12,7 +10,6 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_store_interface::interface::ListableSubstateDatabase;
 use radix_engine_store_interface::interface::SubstateDatabase;
-use sbor::rust::prelude::*;
 use sbor::{validate_payload_against_schema, LocatedValidationError};
 
 use crate::system::system_db_reader::{
@@ -498,7 +495,7 @@ impl SystemDatabaseChecker {
 
                                 let field: FieldSubstate<ScryptoValue> = scrypto_decode(&value)
                                     .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
-                                let field_payload = scrypto_encode(&field.value.0)
+                                let field_payload = scrypto_encode(&field.into_payload())
                                     .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
 
                                 let field_identifier =

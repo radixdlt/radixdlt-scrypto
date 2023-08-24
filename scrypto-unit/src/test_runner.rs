@@ -524,8 +524,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 &RoyaltyField::RoyaltyAccumulator.into(),
             )
             .unwrap()
-            .value
-            .0;
+            .into_payload();
         self.database
             .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
                 accumulator.royalty_vault.0.as_node_id(),
@@ -546,8 +545,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 MAIN_BASE_PARTITION,
                 &PackageField::RoyaltyAccumulator.into(),
             )?
-            .value
-            .0;
+            .into_payload();
 
         self.database
             .get_mapped::<SpreadPrefixKeyMapper, FungibleVaultBalanceFieldSubstate>(
@@ -750,7 +748,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 MAIN_BASE_PARTITION,
                 &ComponentField::State0.into(),
             );
-        component_state.unwrap().value.0
+        component_state.unwrap().into_payload()
     }
 
     pub fn get_non_fungible_data<T: NonFungibleData>(
@@ -864,8 +862,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 &ValidatorField::Validator.into(),
             )
             .unwrap()
-            .value
-            .0
+            .into_payload()
     }
 
     pub fn get_active_validator_with_key(&self, key: &Secp256k1PublicKey) -> ComponentAddress {
@@ -877,8 +874,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 &ConsensusManagerField::CurrentValidatorSet.into(),
             )
             .unwrap()
-            .value
-            .0;
+            .into_payload();
 
         substate
             .validator_set
@@ -1867,20 +1863,21 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn set_current_epoch(&mut self, epoch: Epoch) {
-        let mut substate = self
+        let mut payload = self
             .database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
                 &CONSENSUS_MANAGER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &ConsensusManagerField::ConsensusManager.into(),
             )
-            .unwrap();
-        substate.value.0.epoch = epoch;
+            .unwrap()
+            .into_payload();
+        payload.epoch = epoch;
         self.database.put_mapped::<SpreadPrefixKeyMapper, _>(
             &CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
-            &substate,
+            &FieldSubstate::new_mutable_field(payload),
         );
     }
 
@@ -2023,8 +2020,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 &ConsensusManagerField::CurrentTime.into(),
             )
             .unwrap()
-            .value
-            .0
+            .into_payload()
             .epoch_milli
     }
 
@@ -2036,8 +2032,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 &ConsensusManagerField::ConsensusManager.into(),
             )
             .unwrap()
-            .value
-            .0
+            .into_payload()
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {

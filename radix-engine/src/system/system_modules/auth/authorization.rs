@@ -63,9 +63,11 @@ impl Authorization {
                 LockFlags::read_only(),
                 L::default(),
             )?;
-            let auth_zone: FieldSubstate<AuthZone> =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let auth_zone = auth_zone.value.0.clone();
+            let auth_zone = api
+                .kernel_read_substate(handle)?
+                .as_typed::<FieldSubstate<AuthZone>>()
+                .unwrap()
+                .into_payload();
             handles.push(handle);
 
             {
@@ -129,9 +131,11 @@ impl Authorization {
         // The suggested Rust pattern seems to be to use RAII pattern + Drop but
         // at the moment this does not seem practical to be able to implement
         let rtn = (|| -> Result<bool, RuntimeError> {
-            let auth_zone: FieldSubstate<AuthZone> =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let auth_zone = auth_zone.value.0;
+            let auth_zone = api
+                .kernel_read_substate(handle)?
+                .as_typed::<FieldSubstate<AuthZone>>()
+                .unwrap()
+                .into_payload();
 
             // Check Local virtual non fungibles
             let virtual_proofs = auth_zone.local_virtual_non_fungibles();
@@ -356,7 +360,7 @@ impl Authorization {
                     let owner_role_substate: FieldSubstate<OwnerRoleSubstate> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
                     api.kernel_close_substate(handle)?;
-                    owner_role_substate.value.0.owner_role_entry.rule
+                    owner_role_substate.into_payload().owner_role_entry.rule
                 }
             }
         };
