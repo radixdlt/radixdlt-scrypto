@@ -232,6 +232,14 @@ impl VmPackageValidation {
                         ));
                     }
 
+                    if fields.len() > 1 {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                "More than 1 substate field not supported".to_string(),
+                            )),
+                        ));
+                    }
+
                     for field in fields {
                         match &field.condition {
                             Condition::Always => {}
