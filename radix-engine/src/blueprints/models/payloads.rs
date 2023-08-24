@@ -4,7 +4,6 @@ macro_rules! declare_payload_new_type {
     (
         content_trait: $content_trait:ident,
         payload_trait: $payload_trait:ident,
-        $(payload_marker_trait: $payload_marker_trait:ident,)?
         ----
         $(#[$attributes:meta])*
         $vis:vis struct $payload_type_name:ident
@@ -50,17 +49,6 @@ macro_rules! declare_payload_new_type {
             }
         }
 
-        if_exists!(
-            TEST: [[$($payload_marker_trait)?]],
-            [[
-                impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-                    $($payload_marker_trait)?
-                    for $payload_type_name $(< $( $lt ),+ >)?
-                {}
-            ]],
-            [[]]
-        );
-
         impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
             $payload_trait
             for $payload_type_name $(< $( $lt ),+ >)?
@@ -89,7 +77,7 @@ pub(crate) use declare_payload_new_type;
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular field.
 pub trait FieldPayload:
-    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content> + FieldPayloadMarker
+    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content>
 {
     type Content: FieldContentSource<Self>;
 
@@ -139,11 +127,7 @@ pub trait FieldContentSource<Payload: FieldPayload>: Sized {
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular key value collection.
 pub trait KeyValueEntryPayload:
-    Sized
-    + AsRef<Self::Content>
-    + AsMut<Self::Content>
-    + From<Self::Content>
-    + KeyValueEntryPayloadMarker
+    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content>
 {
     type Content: KeyValueEntryContentSource<Self>;
 
@@ -193,7 +177,7 @@ pub trait KeyValueEntryContentSource<Payload: KeyValueEntryPayload>: Sized {
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular index collection.
 pub trait IndexEntryPayload:
-    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content> + IndexEntryPayloadMarker
+    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content>
 {
     type Content: IndexEntryContentSource<Self>;
 
@@ -234,11 +218,7 @@ pub trait IndexEntryContentSource<Payload: IndexEntryPayload>: Sized {
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular sorted index collection.
 pub trait SortedIndexEntryPayload:
-    Sized
-    + AsRef<Self::Content>
-    + AsMut<Self::Content>
-    + From<Self::Content>
-    + SortedIndexEntryPayloadMarker
+    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content>
 {
     type Content: SortedIndexEntryContentSource<Self>;
 

@@ -21,10 +21,7 @@ pub trait ClientActorKeyValueEntryApi<E: Debug> {
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, E>;
 
-    fn actor_remove_key_value_entry_typed<
-        // TODO: add a KeyValueEntryPayloadMarker bound once all native blueprints have been updated
-        V: ScryptoDecode,
-    >(
+    fn actor_remove_key_value_entry_typed<V: ScryptoDecode>(
         &mut self,
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,

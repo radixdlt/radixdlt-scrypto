@@ -6,9 +6,6 @@ use radix_engine_interface::api::CollectionIndex;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
-pub trait IndexKeyPayloadMarker {}
-pub trait IndexEntryPayloadMarker {}
-
 /// Api to manage an iterable index
 pub trait ClientActorIndexApi<E> {
     /// Inserts an entry into an index
@@ -21,12 +18,7 @@ pub trait ClientActorIndexApi<E> {
     ) -> Result<(), E>;
 
     /// Inserts an entry into an index
-    fn actor_index_insert_typed<
-        // TODO: add a IndexKeyPayloadMarker bound once all native blueprints have been updated
-        K: ScryptoEncode,
-        // TODO: add a IndexEntryPayloadMarker bound once all native blueprints have been updated
-        V: ScryptoEncode,
-    >(
+    fn actor_index_insert_typed<K: ScryptoEncode, V: ScryptoEncode>(
         &mut self,
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
@@ -50,10 +42,7 @@ pub trait ClientActorIndexApi<E> {
     ) -> Result<Option<Vec<u8>>, E>;
 
     /// Removes an entry from an index
-    fn actor_index_remove_typed<
-        // TODO: add a IndexEntryPayloadMarker bound once all native blueprints have been updated
-        V: ScryptoDecode,
-    >(
+    fn actor_index_remove_typed<V: ScryptoDecode>(
         &mut self,
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
@@ -74,10 +63,7 @@ pub trait ClientActorIndexApi<E> {
     ) -> Result<Vec<Vec<u8>>, E>;
 
     /// Scans arbitrary elements of count from an index
-    fn actor_index_scan_keys_typed<
-        // TODO: add a IndexKeyPayloadMarker bound once all native blueprints have been updated
-        K: ScryptoDecode,
-    >(
+    fn actor_index_scan_keys_typed<K: ScryptoDecode>(
         &mut self,
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
@@ -104,12 +90,7 @@ pub trait ClientActorIndexApi<E> {
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, E>;
 
     /// Removes and returns arbitrary elements of count from an index
-    fn actor_index_drain_typed<
-        // TODO: add a IndexKeyPayloadMarker bound once all native blueprints have been updated
-        K: ScryptoDecode,
-        // TODO: add a IndexEntryPayloadMarker bound once all native blueprints have been updated
-        V: ScryptoDecode,
-    >(
+    fn actor_index_drain_typed<K: ScryptoDecode, V: ScryptoDecode>(
         &mut self,
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,

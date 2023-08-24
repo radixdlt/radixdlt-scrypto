@@ -42,7 +42,7 @@ use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::db_key_mapper::{SpreadPrefixKeyMapper};
+use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, ListableSubstateDatabase,
     SubstateDatabase,
@@ -1984,20 +1984,27 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     /// most recent round change.
     pub fn get_current_proposer_timestamp_ms(&mut self) -> i64 {
         let reader = SystemDatabaseReader::new(self.substate_db());
-        reader.read_typed_object_field::<ConsensusManagerProposerMilliTimestampFieldPayload>(
-            CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
-            ConsensusManagerField::ProposerMilliTimestamp.field_index()
-        ).unwrap().into_latest().epoch_milli
+        reader
+            .read_typed_object_field::<ConsensusManagerProposerMilliTimestampFieldPayload>(
+                CONSENSUS_MANAGER.as_node_id(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::ProposerMilliTimestamp.field_index(),
+            )
+            .unwrap()
+            .into_latest()
+            .epoch_milli
     }
 
     pub fn get_consensus_manager_state(&mut self) -> ConsensusManagerSubstate {
         let reader = SystemDatabaseReader::new(self.substate_db());
-        reader.read_typed_object_field::<ConsensusManagerStateFieldPayload>(
-            CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
-            ConsensusManagerField::State.field_index()
-        ).unwrap().into_latest()
+        reader
+            .read_typed_object_field::<ConsensusManagerStateFieldPayload>(
+                CONSENSUS_MANAGER.as_node_id(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::State.field_index(),
+            )
+            .unwrap()
+            .into_latest()
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
@@ -2055,7 +2062,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         match schema_pointer {
             BlueprintPayloadDef::Static(type_identifier) => {
                 let reader = SystemDatabaseReader::new(self.substate_db());
-                let schema = reader.get_schema(blueprint_id.package_address.as_node_id(), &type_identifier.0).unwrap();
+                let schema = reader
+                    .get_schema(
+                        blueprint_id.package_address.as_node_id(),
+                        &type_identifier.0,
+                    )
+                    .unwrap();
                 (type_identifier.1, schema)
             }
             BlueprintPayloadDef::Generic(_instance_index) => {

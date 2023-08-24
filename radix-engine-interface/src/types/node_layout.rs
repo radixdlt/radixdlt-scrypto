@@ -318,6 +318,26 @@ macro_rules! substate_key {
     };
 }
 
+pub trait FieldDescriptor {
+    fn field_index(&self) -> FieldIndex;
+}
+
+impl FieldDescriptor for FieldIndex {
+    fn field_index(&self) -> FieldIndex {
+        *self
+    }
+}
+
+pub trait CollectionDescriptor {
+    fn collection_index(&self) -> CollectionIndex;
+}
+
+impl CollectionDescriptor for CollectionIndex {
+    fn collection_index(&self) -> CollectionIndex {
+        *self
+    }
+}
+
 substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
 substate_key!(ComponentField);

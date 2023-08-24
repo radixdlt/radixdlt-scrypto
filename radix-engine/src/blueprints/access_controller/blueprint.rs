@@ -602,7 +602,7 @@ impl AccessControllerBlueprint {
         let object_id = api.new_simple_object(
             ACCESS_CONTROLLER_BLUEPRINT,
             btreemap! {
-                0u8 => FieldValue::new(&AccessControllerStateFieldPayload::from_content_source(substate)),
+                AccessControllerField::State.field_index() => FieldValue::new(&AccessControllerStateFieldPayload::from_content_source(substate)),
             },
         )?;
 

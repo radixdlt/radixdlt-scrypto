@@ -140,7 +140,6 @@ macro_rules! declare_native_blueprint_state {
                     generate_content_type!(
                         content_trait: FieldContentSource,
                         payload_trait: FieldPayload,
-                        payload_marker_trait: FieldPayloadMarker,
                         ident_core: [<$blueprint_ident $field_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
                         struct [<$blueprint_ident $field_ident FieldPayload>] = $field_type
@@ -159,7 +158,6 @@ macro_rules! declare_native_blueprint_state {
                     generate_key_type!(
                         content_trait: [<$collection_type KeyContentSource>],
                         payload_trait: [<$collection_type KeyPayload>],
-                        payload_marker_trait: [<$collection_type KeyPayloadMarker>],
                         $(full_key_content: $full_key_content,)?
                         #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
                         struct [<$blueprint_ident $collection_ident KeyPayload>] = $collection_key_type
@@ -179,7 +177,6 @@ macro_rules! declare_native_blueprint_state {
                     generate_content_type!(
                         content_trait: [<$collection_type EntryContentSource>],
                         payload_trait: [<$collection_type EntryPayload>],
-                        payload_marker_trait: [<$collection_type EntryPayloadMarker>],
                         ident_core: [<$blueprint_ident $collection_ident>],
                         #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
                         struct [<$blueprint_ident $collection_ident EntryPayload>] = $collection_value_type
@@ -564,7 +561,6 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
-            $(payload_marker_trait: $payload_marker_trait:ident,)?
             ident_core: $ident_core:ident,
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
@@ -580,7 +576,6 @@ mod helper_macros {
                 declare_payload_new_type!(
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
-                    $(payload_marker_trait: $payload_marker_trait,)?
                     ----
                     $(#[$attributes])*
                     pub struct $payload_type_name([<Versioned $ident_core>]);
@@ -610,7 +605,6 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
-            $(payload_marker_trait: $payload_marker_trait:ident,)?
             ident_core: $ident_core:ident,
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
@@ -623,7 +617,6 @@ mod helper_macros {
                 declare_payload_new_type!(
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
-                    $(payload_marker_trait: $payload_marker_trait,)?
                     ----
                     $(#[$attributes])*
                     pub struct $payload_type_name($static_type);
@@ -633,7 +626,6 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
-            $(payload_marker_trait: $payload_marker_trait:ident,)?
             ident_core: $ident_core:ident,
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
@@ -646,7 +638,6 @@ mod helper_macros {
                 declare_payload_new_type!(
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
-                    $(payload_marker_trait: $payload_marker_trait,)?
                     ----
                     $(#[$attributes])*
                     pub struct $payload_type_name<$generic_ident: [<$ident_core ContentMarker>] = ScryptoValue>($generic_ident);
@@ -671,7 +662,6 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
-            $(payload_marker_trait: $payload_marker_trait:ident,)?
             $(full_key_content: $full_key_content:tt,)?
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
@@ -686,7 +676,6 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
-            $(payload_marker_trait: $payload_marker_trait:ident,)?
             $(full_key_content: $full_key_content:tt,)?
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {
@@ -699,7 +688,6 @@ mod helper_macros {
                 declare_key_new_type!(
                     content_trait: $content_trait,
                     payload_trait: $payload_trait,
-                    $(payload_marker_trait: $payload_marker_trait,)?
                     $(full_key_content: $full_key_content,)?
                     ----
                     $(#[$attributes])*
@@ -710,7 +698,6 @@ mod helper_macros {
         (
             content_trait: $content_trait:ident,
             payload_trait: $payload_trait:ident,
-            $(payload_marker_trait: $payload_marker_trait:ident,)?
             $(full_key_content: $full_key_content:tt,)?
             $(#[$attributes:meta])*
             struct $payload_type_name:ident = {

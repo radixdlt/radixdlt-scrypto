@@ -37,13 +37,7 @@ impl<T: FieldPayloadMarker> FieldPayloadMarker for &T {}
 pub trait ClientFieldApi<E: Debug> {
     fn field_read(&mut self, handle: FieldHandle) -> Result<Vec<u8>, E>;
 
-    fn field_read_typed<
-        // TODO: enable the FieldPayloadMarker bound once all native blueprints have been updated
-        S: ScryptoDecode,
-    >(
-        &mut self,
-        handle: FieldHandle,
-    ) -> Result<S, E> {
+    fn field_read_typed<S: ScryptoDecode>(&mut self, handle: FieldHandle) -> Result<S, E> {
         let buf = self.field_read(handle)?;
         let typed_substate: S = scrypto_decode(&buf).map_err(|e| e).unwrap();
         Ok(typed_substate)
@@ -51,10 +45,7 @@ pub trait ClientFieldApi<E: Debug> {
 
     fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), E>;
 
-    fn field_write_typed<
-        // TODO: enable the FieldPayloadMarker bound once all native blueprints have been updated
-        S: ScryptoEncode,
-    >(
+    fn field_write_typed<S: ScryptoEncode>(
         &mut self,
         handle: FieldHandle,
         substate: &S,

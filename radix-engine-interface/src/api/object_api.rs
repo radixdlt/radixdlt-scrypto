@@ -145,24 +145,14 @@ pub struct FieldValue {
 }
 
 impl FieldValue {
-    pub fn new<
-        // TODO: enable the FieldPayloadMarker bound once all native blueprints have been updated
-        E: ScryptoEncode,
-    >(
-        value: E,
-    ) -> Self {
+    pub fn new<E: ScryptoEncode>(value: E) -> Self {
         Self {
             value: scrypto_encode(&value).unwrap(),
             locked: false,
         }
     }
 
-    pub fn immutable<
-        // TODO: enable the FieldPayloadMarker bound once all native blueprints have been updated
-        E: ScryptoEncode,
-    >(
-        value: E,
-    ) -> Self {
+    pub fn immutable<E: ScryptoEncode>(value: E) -> Self {
         Self {
             value: scrypto_encode(&value).unwrap(),
             locked: true,
