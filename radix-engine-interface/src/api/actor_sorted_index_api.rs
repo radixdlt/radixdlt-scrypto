@@ -10,7 +10,6 @@ use sbor::rust::vec::Vec;
 pub trait SortedIndexKeyPayloadMarker {}
 pub trait SortedIndexEntryPayloadMarker {}
 
-// TODO: Add locked entry interface
 pub trait ClientActorSortedIndexApi<E> {
     /// Inserts an entry into a sorted index
     fn actor_sorted_index_insert(

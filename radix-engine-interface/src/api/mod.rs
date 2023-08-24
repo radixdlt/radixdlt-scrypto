@@ -57,3 +57,5 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientExecutionTraceApi<E>
 {
 }
+
+// TODO: decide if to use marker traits for type safety and act on it
