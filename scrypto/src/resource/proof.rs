@@ -202,7 +202,9 @@ impl ScryptoUncheckedProof for Proof {
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         LocalAuthZone::push(self.clone());
         let output = f();
-        LocalAuthZone::pop().drop();
+        LocalAuthZone::pop()
+            .expect("Authorized closure changed auth zone proof stack")
+            .drop();
         output
     }
 }

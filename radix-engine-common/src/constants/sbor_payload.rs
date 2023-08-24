@@ -21,3 +21,19 @@ pub const TRANSACTION_HASHABLE_PAYLOAD_PREFIX: u8 = 0x54;
 pub const SCRYPTO_SBOR_V1_MAX_DEPTH: usize = 64;
 
 pub const MANIFEST_SBOR_V1_MAX_DEPTH: usize = 24;
+
+/// Depth limit for the default value of a transient substate
+pub const TRANSIENT_SUBSTATE_DEFAULT_VALUE_MAX_DEPTH: usize = BLUEPRINT_PAYLOAD_MAX_DEPTH;
+
+/// Depth limit for various types of blueprint payload
+/// - Function inputs and outputs
+/// - Events
+/// - Object Field
+/// - Object KeyValue/Index/SortedIndex collection entry keys and values
+pub const BLUEPRINT_PAYLOAD_MAX_DEPTH: usize = 48;
+
+/// Depth limit for the key and value of an entry in `KeyValueStore`
+pub const KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH: usize = 48;
+
+// Note that non-fungible data (transparent ScryptoValue) is soft limited by the function IO
+// do we want a hard limit on it?

@@ -2,6 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine_common::data::scrypto::{
     scrypto_encode, ScryptoCustomExtension, ScryptoCustomSchema,
 };
+use radix_engine_common::prelude::SCRYPTO_SBOR_V1_MAX_DEPTH;
 use radix_engine_common::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -60,6 +61,7 @@ fn bench_schema_new(b: &mut Criterion) {
                 schema.v1(),
                 type_index,
                 &(),
+                SCRYPTO_SBOR_V1_MAX_DEPTH,
             );
             assert!(result.is_ok())
         })

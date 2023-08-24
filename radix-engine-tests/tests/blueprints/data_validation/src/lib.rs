@@ -1,5 +1,4 @@
 use sbor::*;
-use scrypto::api::LockFlags;
 use scrypto::prelude::*;
 
 #[blueprint]

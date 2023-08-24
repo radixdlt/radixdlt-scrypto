@@ -52,6 +52,7 @@ fn bench_validate_sbor_payload(c: &mut Criterion) {
                 schema.v1(),
                 index,
                 &(),
+                SCRYPTO_SBOR_V1_MAX_DEPTH,
             )
         })
     });
@@ -69,6 +70,7 @@ fn bench_validate_sbor_payload_bytes(c: &mut Criterion) {
                 schema.v1(),
                 index,
                 &(),
+                SCRYPTO_SBOR_V1_MAX_DEPTH,
             )
         })
     });

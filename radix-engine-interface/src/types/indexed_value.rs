@@ -151,7 +151,8 @@ impl fmt::Debug for IndexedScryptoValue {
             self.display(ValueDisplayParameters::Schemaless {
                 display_mode: DisplayMode::RustLike,
                 print_mode: PrintMode::SingleLine,
-                custom_context: ScryptoValueDisplayContext::no_context()
+                custom_context: ScryptoValueDisplayContext::no_context(),
+                depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH
             })
         )
     }

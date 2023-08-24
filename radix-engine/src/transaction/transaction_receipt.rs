@@ -701,7 +701,8 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                                         base_indent: 3,
                                         first_line_indent: 0
                                     },
-                                    custom_context: scrypto_value_display_context
+                                    custom_context: scrypto_value_display_context,
+                                    depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH
                                 }),
                             InstructionOutput::None => "None".to_string(),
                         }
@@ -797,6 +798,7 @@ fn display_event_with_network_context<'a, F: fmt::Write>(
                 first_line_indent: 0
             },
             custom_context: receipt_context.display_context(),
+            depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH
         })
     )?;
     Ok(())
@@ -826,6 +828,7 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
             custom_context: receipt_context.display_context(),
             schema: schema.v1(),
             type_index: local_type_index,
+            depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
         },
     );
 

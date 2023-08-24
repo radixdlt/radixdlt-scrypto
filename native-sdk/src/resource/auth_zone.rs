@@ -39,7 +39,10 @@ pub trait NativeAuthZone {
     where
         Y: ClientApi<E>;
 
-    fn pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
+    fn pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Option<Proof>, E>
     where
         Y: ClientApi<E>;
 
@@ -139,7 +142,10 @@ impl NativeAuthZone for AuthZoneRef {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
+    fn pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Option<Proof>, E>
     where
         Y: ClientApi<E>,
     {

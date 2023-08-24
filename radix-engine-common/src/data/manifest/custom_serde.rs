@@ -301,6 +301,7 @@ mod tests {
                 SerializationParameters::Schemaless {
                     mode: SerializationMode::Natural,
                     custom_context: context.into(),
+                    depth_limit: MANIFEST_SBOR_V1_MAX_DEPTH,
                 },
             ),
             expected,
@@ -323,6 +324,7 @@ mod tests {
                 SerializationParameters::Schemaless {
                     mode: SerializationMode::Programmatic,
                     custom_context: context.into(),
+                    depth_limit: MANIFEST_SBOR_V1_MAX_DEPTH,
                 },
             ),
             expected,

@@ -1539,7 +1539,8 @@ where
         let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::KeyValueEntry(
-                KeyValueEntryLockData::Write { .. } | KeyValueEntryLockData::BlueprintWrite { .. },
+                KeyValueEntryLockData::KVStoreWrite { .. }
+                | KeyValueEntryLockData::KVCollectionWrite { .. },
             ) => {}
             _ => {
                 return Err(RuntimeError::SystemError(
@@ -1586,7 +1587,7 @@ where
         let data = self.api.kernel_get_lock_data(handle)?;
 
         match data {
-            SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVCollectionWrite {
                 collection_index,
                 target,
             }) => {
@@ -1596,7 +1597,7 @@ where
                     &buffer,
                 )?;
             }
-            SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVStoreWrite {
                 kv_store_validation_target,
             }) => {
                 self.validate_kv_store_payload(
@@ -1724,7 +1725,7 @@ where
         self.validate_kv_store_payload(&target, KeyOrValue::Key, &key)?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
-            SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVStoreWrite {
                 kv_store_validation_target: target,
             })
         } else {
@@ -2481,7 +2482,7 @@ where
         )?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
-            KeyValueEntryLockData::BlueprintWrite {
+            KeyValueEntryLockData::KVCollectionWrite {
                 collection_index,
                 target,
             }

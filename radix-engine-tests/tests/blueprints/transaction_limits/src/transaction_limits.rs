@@ -1,5 +1,4 @@
 use sbor::*;
-use scrypto::api::*;
 use scrypto::prelude::*;
 
 #[derive(Sbor, ScryptoEvent)]

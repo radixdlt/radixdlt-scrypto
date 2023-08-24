@@ -197,6 +197,8 @@ pub trait Decoder<X: CustomValueKind>: Sized {
 
     fn peek_remaining(&self) -> &[u8];
 
+    fn get_depth_limit(&self) -> usize;
+
     fn get_stack_depth(&self) -> usize;
 
     fn get_offset(&self) -> usize;
@@ -308,6 +310,11 @@ impl<'de, X: CustomValueKind> Decoder<X> for VecDecoder<'de, X> {
     #[inline]
     fn peek_remaining(&self) -> &[u8] {
         &self.input[self.offset..]
+    }
+
+    #[inline]
+    fn get_depth_limit(&self) -> usize {
+        self.max_depth
     }
 
     #[inline]

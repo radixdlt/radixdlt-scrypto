@@ -58,6 +58,7 @@ pub enum TransactionProcessorError {
     InvalidPackageSchema(DecodeError),
     NotPackageAddress(NodeId),
     NotGlobalAddress(NodeId),
+    AuthZoneIsEmpty,
 }
 
 pub struct TransactionProcessorBlueprint;
@@ -228,7 +229,11 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 InstructionV1::PopFromAuthZone {} => {
-                    let proof = LocalAuthZone::pop(api)?;
+                    let proof = LocalAuthZone::pop(api)?.ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::AuthZoneIsEmpty,
+                        ),
+                    ))?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
