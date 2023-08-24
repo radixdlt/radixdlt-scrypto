@@ -47,7 +47,7 @@ mod component_role_rule {
                 .prepare_to_globalize(OwnerRole::None)
                 .globalize();
             (
-                global.role_assignment().get_role("no_existent"),
+                global.role_assignment().get_role("nonexistent"),
                 global
                     .role_assignment()
                     .get_metadata_role(METADATA_SETTER_ROLE),
