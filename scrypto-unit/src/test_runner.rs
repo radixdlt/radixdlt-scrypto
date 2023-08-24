@@ -14,8 +14,6 @@ use radix_engine::system::system_db_checker::{
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
-use radix_engine::system::system_substates::FieldSubstate;
-use radix_engine::system::system_substates::KeyValueEntrySubstate;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
     ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
@@ -44,7 +42,7 @@ use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine_store_interface::db_key_mapper::{SpreadPrefixKeyMapper};
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, ListableSubstateDatabase,
     SubstateDatabase,
@@ -1985,28 +1983,21 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     /// Reads out the substate holding the "epoch milli" timestamp reported by the proposer on the
     /// most recent round change.
     pub fn get_current_proposer_timestamp_ms(&mut self) -> i64 {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerProposerMilliTimestampFieldPayload>>(
-                CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::ProposerMilliTimestamp.into(),
-            )
-            .unwrap()
-            .into_payload()
-            .into_latest()
-            .epoch_milli
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader.read_typed_object_field::<ConsensusManagerProposerMilliTimestampFieldPayload>(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::ProposerMilliTimestamp.field_index()
+        ).unwrap().into_latest().epoch_milli
     }
 
     pub fn get_consensus_manager_state(&mut self) -> ConsensusManagerSubstate {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerStateFieldPayload>>(
-                CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::State.into(),
-            )
-            .unwrap()
-            .into_payload()
-            .into_latest()
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader.read_typed_object_field::<ConsensusManagerStateFieldPayload>(
+            CONSENSUS_MANAGER.as_node_id(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::State.field_index()
+        ).unwrap().into_latest()
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
@@ -2031,15 +2022,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
                 let blueprint_id = match node_module {
                     ObjectModuleId::Main => {
-                        let type_info = self
-                            .substate_db()
-                            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                                node_id,
-                                TYPE_INFO_FIELD_PARTITION,
-                                &TypeInfoField::TypeInfo.into(),
-                            )
-                            .unwrap();
-
+                        let reader = SystemDatabaseReader::new(self.substate_db());
+                        let type_info = reader.get_type_info(node_id).unwrap();
                         match type_info {
                             TypeInfoSubstate::Object(ObjectInfo {
                                 blueprint_info: BlueprintInfo { blueprint_id, .. },
@@ -2070,17 +2054,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         match schema_pointer {
             BlueprintPayloadDef::Static(type_identifier) => {
-                let schema = self
-                    .substate_db()
-                    .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<VersionedScryptoSchema>>(
-                        blueprint_id.package_address.as_node_id(),
-                        SCHEMAS_PARTITION,
-                        &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
-                    )
-                    .unwrap()
-                    .into_value()
-                    .unwrap();
-
+                let reader = SystemDatabaseReader::new(self.substate_db());
+                let schema = reader.get_schema(blueprint_id.package_address.as_node_id(), &type_identifier.0).unwrap();
                 (type_identifier.1, schema)
             }
             BlueprintPayloadDef::Generic(_instance_index) => {
