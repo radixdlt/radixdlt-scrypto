@@ -376,7 +376,7 @@ fn to_typed_object_substate_key_internal(
 #[derive(Debug)]
 pub enum TypedSubstateValue {
     TypeInfoModule(TypedTypeInfoModuleSubstateValue),
-    Schema(KeyValueEntrySubstate<ScryptoSchema>),
+    Schema(KeyValueEntrySubstate<VersionedScryptoSchema>),
     RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue),
     RoyaltyModule(TypedRoyaltyModuleSubstateValue),
     MetadataModule(TypedMetadataModuleSubstateValue),

@@ -246,11 +246,17 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     assert_eq!(total_supply, allocation_amount);
 
     let reader = SystemDatabaseReader::new(&substate_db);
-    let entry = reader.read_object_collection_entry::<_, MetadataEntryEntryPayload>(
-        resource_address.as_node_id(),
-        ObjectModuleId::Metadata,
-        ObjectCollectionKey::KeyValue(MetadataCollection::EntryKeyValue.collection_index(), &"symbol".to_string()),
-    ).unwrap().map(|v| v.into_latest());
+    let entry = reader
+        .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
+            resource_address.as_node_id(),
+            ObjectModuleId::Metadata,
+            ObjectCollectionKey::KeyValue(
+                MetadataCollection::EntryKeyValue.collection_index(),
+                &"symbol".to_string(),
+            ),
+        )
+        .unwrap()
+        .map(|v| v.into_latest());
 
     if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");
@@ -400,11 +406,17 @@ fn test_genesis_stake_allocation() {
             .into_iter()
             .enumerate()
         {
-            let validator_url_entry = reader.read_object_collection_entry::<_, MetadataEntryEntryPayload>(
-                &new_validators[index].as_node_id(),
-                ObjectModuleId::Metadata,
-                ObjectCollectionKey::KeyValue(MetadataCollection::EntryKeyValue.collection_index(), &"url".to_string())
-            ).unwrap().map(|v| v.into_latest());
+            let validator_url_entry = reader
+                .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
+                    &new_validators[index].as_node_id(),
+                    ObjectModuleId::Metadata,
+                    ObjectCollectionKey::KeyValue(
+                        MetadataCollection::EntryKeyValue.collection_index(),
+                        &"url".to_string(),
+                    ),
+                )
+                .unwrap()
+                .map(|v| v.into_latest());
             if let Some(MetadataValue::Url(url)) = validator_url_entry {
                 assert_eq!(
                     url,

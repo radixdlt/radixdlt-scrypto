@@ -128,7 +128,8 @@ fn validate_package_schema(
     for bp_def in blueprints.values() {
         let bp_schema = &bp_def.schema;
 
-        validate_schema(bp_schema.schema.v1()).map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
+        validate_schema(bp_schema.schema.v1())
+            .map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
 
         if bp_schema.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);

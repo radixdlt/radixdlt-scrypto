@@ -1393,7 +1393,7 @@ mod tests {
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
-                    schema: ScryptoSchema::V1(SchemaV1 {
+                    schema: VersionedScryptoSchema::V1(SchemaV1 {
                         type_kinds: vec![],
                         type_metadata: vec![],
                         type_validations: vec![],

@@ -96,7 +96,7 @@ pub fn create_proof_from_account<'a>(
 pub fn build_call_arguments<'a>(
     mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
-    schema: &ScryptoSchema,
+    schema: &VersionedScryptoSchema,
     type_index: LocalTypeIndex,
     args: Vec<String>,
     account: Option<ComponentAddress>,
@@ -115,7 +115,10 @@ pub fn build_call_arguments<'a>(
                 let (returned_builder, value) = build_call_argument(
                     builder,
                     address_bech32_decoder,
-                    schema.v1().resolve_type_kind(*f).expect("Inconsistent schema"),
+                    schema
+                        .v1()
+                        .resolve_type_kind(*f)
+                        .expect("Inconsistent schema"),
                     schema
                         .v1()
                         .resolve_type_validation(*f)

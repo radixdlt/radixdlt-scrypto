@@ -22,7 +22,7 @@ pub enum SchemaValidationMeta {
         additional_schemas: NodeId,
     },
     NewObject {
-        additional_schemas: NonIterMap<SchemaHash, ScryptoSchema>,
+        additional_schemas: NonIterMap<SchemaHash, VersionedScryptoSchema>,
     },
     Blueprint,
 }
@@ -64,7 +64,7 @@ where
     pub fn validate_bp_generic_args(
         &mut self,
         blueprint_interface: &BlueprintInterface,
-        schemas: &IndexMap<SchemaHash, ScryptoSchema>,
+        schemas: &IndexMap<SchemaHash, VersionedScryptoSchema>,
         generic_substitutions: &Vec<GenericSubstitution>,
     ) -> Result<(), TypeCheckError> {
         let generics = &blueprint_interface.generics;
@@ -86,7 +86,7 @@ where
     /// Validate that the type substitutions for a kv store exist in a given schema
     pub fn validate_kv_store_generic_args(
         &mut self,
-        schemas: &IndexMap<SchemaHash, ScryptoSchema>,
+        schemas: &IndexMap<SchemaHash, VersionedScryptoSchema>,
         key: &GenericSubstitution,
         value: &GenericSubstitution,
     ) -> Result<(), TypeCheckError> {
@@ -97,7 +97,7 @@ where
     }
 
     fn validate_generic_arg(
-        schemas: &IndexMap<SchemaHash, ScryptoSchema>,
+        schemas: &IndexMap<SchemaHash, VersionedScryptoSchema>,
         substitution: &GenericSubstitution,
     ) -> Result<(), TypeCheckError> {
         match substitution {
@@ -119,7 +119,16 @@ where
         &mut self,
         target: &BlueprintTypeTarget,
         payload_identifier: &BlueprintPayloadIdentifier,
-    ) -> Result<(ScryptoSchema, LocalTypeIndex, bool, bool, SchemaOrigin), RuntimeError> {
+    ) -> Result<
+        (
+            VersionedScryptoSchema,
+            LocalTypeIndex,
+            bool,
+            bool,
+            SchemaOrigin,
+        ),
+        RuntimeError,
+    > {
         let blueprint_interface =
             self.get_blueprint_default_interface(target.blueprint_info.blueprint_id.clone())?;
 
@@ -320,7 +329,7 @@ where
     fn validate_payload<'s>(
         &mut self,
         payload: &[u8],
-        schema: &'s ScryptoSchema,
+        schema: &'s VersionedScryptoSchema,
         type_index: LocalTypeIndex,
         schema_origin: SchemaOrigin,
         allow_ownership: bool,
@@ -345,7 +354,7 @@ where
         &mut self,
         node_id: &NodeId,
         schema_hash: &SchemaHash,
-    ) -> Result<ScryptoSchema, RuntimeError> {
+    ) -> Result<VersionedScryptoSchema, RuntimeError> {
         let def = self
             .api
             .kernel_get_system_state()
@@ -368,7 +377,7 @@ where
             SystemLockData::default(),
         )?;
 
-        let substate: KeyValueEntrySubstate<ScryptoSchema> =
+        let substate: KeyValueEntrySubstate<VersionedScryptoSchema> =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 

@@ -4,7 +4,9 @@ use crate::*;
 use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::ManifestValue;
-use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
+use radix_engine_common::data::scrypto::{
+    ScryptoCustomTypeKind, ScryptoValue, VersionedScryptoSchema,
+};
 use radix_engine_common::prelude::replace_self_package_address;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
@@ -245,7 +247,7 @@ pub type NonFungibleResourceManagerMintSingleRuidOutput = (Bucket, NonFungibleLo
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleDataSchema {
-    pub schema: ScryptoSchema,
+    pub schema: VersionedScryptoSchema,
     pub non_fungible: LocalTypeIndex,
     pub mutable_fields: BTreeSet<String>,
 }

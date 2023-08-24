@@ -2,7 +2,8 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine_common::prelude::{
-    scrypto_decode, scrypto_encode, Hash, ScryptoCustomExtension, ScryptoSchema, ScryptoValue,
+    scrypto_decode, scrypto_encode, Hash, ScryptoCustomExtension, ScryptoValue,
+    VersionedScryptoSchema,
 };
 use radix_engine_interface::api::{FieldIndex, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
@@ -412,8 +413,9 @@ impl SystemDatabaseChecker {
                         let _schema_hash: Hash = scrypto_decode(&map_key)
                             .map_err(|_| SystemPartitionCheckError::InvalidSchemaKey)?;
 
-                        let _schema: KeyValueEntrySubstate<ScryptoSchema> = scrypto_decode(&value)
-                            .map_err(|_| SystemPartitionCheckError::InvalidSchemaValue)?;
+                        let _schema: KeyValueEntrySubstate<VersionedScryptoSchema> =
+                            scrypto_decode(&value)
+                                .map_err(|_| SystemPartitionCheckError::InvalidSchemaValue)?;
 
                         substate_count += 1;
                     }

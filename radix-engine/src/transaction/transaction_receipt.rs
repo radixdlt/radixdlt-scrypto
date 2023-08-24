@@ -498,8 +498,9 @@ impl fmt::Debug for TransactionReceipt {
 #[derive(Default)]
 pub struct TransactionReceiptDisplayContext<'a> {
     pub encoder: Option<&'a AddressBech32Encoder>,
-    pub schema_lookup_callback:
-        Option<Box<dyn Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, ScryptoSchema)> + 'a>>,
+    pub schema_lookup_callback: Option<
+        Box<dyn Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, VersionedScryptoSchema)> + 'a>,
+    >,
 }
 
 impl<'a> TransactionReceiptDisplayContext<'a> {
@@ -516,7 +517,7 @@ impl<'a> TransactionReceiptDisplayContext<'a> {
     pub fn lookup_schema(
         &self,
         event_type_identifier: &EventTypeIdentifier,
-    ) -> Option<(LocalTypeIndex, ScryptoSchema)> {
+    ) -> Option<(LocalTypeIndex, VersionedScryptoSchema)> {
         match self.schema_lookup_callback {
             Some(ref callback) => {
                 let callback = callback.as_ref();
@@ -562,7 +563,7 @@ impl<'a> TransactionReceiptDisplayContextBuilder<'a> {
 
     pub fn schema_lookup_callback<F>(mut self, callback: F) -> Self
     where
-        F: Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, ScryptoSchema)> + 'a,
+        F: Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, VersionedScryptoSchema)> + 'a,
     {
         self.0.schema_lookup_callback = Some(Box::new(callback));
         self

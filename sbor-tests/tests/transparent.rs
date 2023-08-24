@@ -155,8 +155,13 @@ fn check_identical_types<T1: Describe<NoCustomTypeKind>, T2: Describe<NoCustomTy
         schema2.v1().resolve_type_kind(type_index2)
     );
     assert_eq!(
-        schema1.v1().resolve_type_metadata(type_index1).unwrap().clone(),
-        schema2.v1()
+        schema1
+            .v1()
+            .resolve_type_metadata(type_index1)
+            .unwrap()
+            .clone(),
+        schema2
+            .v1()
             .resolve_type_metadata(type_index2)
             .unwrap()
             .clone()

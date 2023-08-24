@@ -30,7 +30,7 @@ pub enum BlueprintHook {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchemaInit {
     pub generics: Vec<GenericBound>,
-    pub schema: ScryptoSchema,
+    pub schema: VersionedScryptoSchema,
     pub state: BlueprintStateSchemaInit,
     pub events: BlueprintEventSchemaInit,
     pub functions: BlueprintFunctionsSchemaInit,
@@ -41,7 +41,7 @@ impl Default for BlueprintSchemaInit {
     fn default() -> Self {
         Self {
             generics: Vec::new(),
-            schema: ScryptoSchema::V1(SchemaV1 {
+            schema: VersionedScryptoSchema::V1(SchemaV1 {
                 type_kinds: Vec::new(),
                 type_metadata: Vec::new(),
                 type_validations: Vec::new(),

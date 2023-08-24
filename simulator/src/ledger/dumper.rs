@@ -277,7 +277,11 @@ fn get_entity_metadata<T: SubstateDatabase>(
 ) -> IndexMap<String, MetadataValue> {
     let reader = SystemDatabaseReader::new(substate_db);
     reader
-        .collection_iter(entity_node_id, ObjectModuleId::Metadata, MetadataCollection::EntryKeyValue.collection_index())
+        .collection_iter(
+            entity_node_id,
+            ObjectModuleId::Metadata,
+            MetadataCollection::EntryKeyValue.collection_index(),
+        )
         .unwrap()
         .map(|(key, value)| {
             let key = scrypto_decode::<String>(&key).unwrap();

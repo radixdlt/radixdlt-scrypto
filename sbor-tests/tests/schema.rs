@@ -64,7 +64,10 @@ fn create_unit_struct_schema_works_correctly() {
     assert!(matches!(type_index, LocalTypeIndex::SchemaLocalIndex(0)));
     assert_eq!(schema.v1().type_kinds.len(), 1);
     assert_eq!(schema.v1().type_metadata.len(), 1);
-    assert_eq!(schema.v1().type_metadata[0].get_name().unwrap(), "UnitStruct");
+    assert_eq!(
+        schema.v1().type_metadata[0].get_name().unwrap(),
+        "UnitStruct"
+    );
     assert!(matches!(&schema.v1().type_metadata[0].child_names, None));
     assert!(schema.v1().validate().is_ok());
 }

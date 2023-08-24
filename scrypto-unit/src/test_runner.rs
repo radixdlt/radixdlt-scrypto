@@ -12,7 +12,9 @@ use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_db_checker::{
     SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults,
 };
-use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter};
+use radix_engine::system::system_db_reader::{
+    ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
+};
 use radix_engine::transaction::{
     execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
     ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
@@ -503,7 +505,10 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
                 address.as_node_id(),
                 ObjectModuleId::Metadata,
-                ObjectCollectionKey::KeyValue(MetadataCollection::EntryKeyValue.collection_index(), &key.to_string()),
+                ObjectCollectionKey::KeyValue(
+                    MetadataCollection::EntryKeyValue.collection_index(),
+                    &key.to_string(),
+                ),
             )
             .unwrap()
             .map(|v| v.into_latest())
@@ -597,7 +602,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn get_package_scrypto_schemas(
         &self,
         package_address: &PackageAddress,
-    ) -> IndexMap<SchemaHash, ScryptoSchema> {
+    ) -> IndexMap<SchemaHash, VersionedScryptoSchema> {
         let mut schemas = index_map_new();
         for entry in self
             .substate_db()
@@ -755,14 +760,17 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         non_fungible_id: NonFungibleLocalId,
     ) -> T {
         let reader = SystemDatabaseReader::new(self.substate_db());
-        let payload = reader.read_object_collection_entry::<_, NonFungibleResourceManagerDataEntryPayload>(
-            resource.as_node_id(),
-            ObjectModuleId::Main,
-            ObjectCollectionKey::KeyValue(
-                NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
-                &non_fungible_id,
+        let payload = reader
+            .read_object_collection_entry::<_, NonFungibleResourceManagerDataEntryPayload>(
+                resource.as_node_id(),
+                ObjectModuleId::Main,
+                ObjectCollectionKey::KeyValue(
+                    NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
+                    &non_fungible_id,
+                ),
             )
-        ).unwrap().unwrap();
+            .unwrap()
+            .unwrap();
 
         scrypto_decode(&scrypto_encode(&payload.content).unwrap()).unwrap()
     }
@@ -2065,7 +2073,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn event_schema(
         &self,
         event_type_identifier: &EventTypeIdentifier,
-    ) -> (LocalTypeIndex, ScryptoSchema) {
+    ) -> (LocalTypeIndex, VersionedScryptoSchema) {
         let (blueprint_id, name) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
                 let blueprint_id = match node_module {
@@ -2111,7 +2119,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             BlueprintPayloadDef::Static(type_identifier) => {
                 let schema = self
                     .substate_db()
-                    .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+                    .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<VersionedScryptoSchema>>(
                         blueprint_id.package_address.as_node_id(),
                         SCHEMAS_PARTITION,
                         &SubstateKey::Map(scrypto_encode(&type_identifier.0).unwrap()),
@@ -2145,7 +2153,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let expected_type_name = {
             let (local_type_index, schema) =
                 sbor::generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
-            schema.v1()
+            schema
+                .v1()
                 .resolve_type_metadata(local_type_index)
                 .unwrap()
                 .get_name_string()

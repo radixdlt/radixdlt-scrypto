@@ -1143,9 +1143,14 @@ impl AccountBlueprint {
             AccountField::DepositRule.field_index(),
             LockFlags::MUTABLE,
         )?;
-        let mut deposit_rule = api.field_read_typed::<AccountDepositRuleFieldPayload>(handle)?.into_latest();
+        let mut deposit_rule = api
+            .field_read_typed::<AccountDepositRuleFieldPayload>(handle)?
+            .into_latest();
         deposit_rule.default_deposit_rule = default;
-        api.field_write_typed(handle, &AccountDepositRuleFieldPayload::from_content_source(deposit_rule))?;
+        api.field_write_typed(
+            handle,
+            &AccountDepositRuleFieldPayload::from_content_source(deposit_rule),
+        )?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -1270,11 +1275,13 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-                ACTOR_STATE_SELF,
-                AccountField::DepositRule.field_index(),
-                LockFlags::read_only(),
-            )?;
-        let deposit_rule = api.field_read_typed::<AccountDepositRuleFieldPayload>(handle)?.into_latest();
+            ACTOR_STATE_SELF,
+            AccountField::DepositRule.field_index(),
+            LockFlags::read_only(),
+        )?;
+        let deposit_rule = api
+            .field_read_typed::<AccountDepositRuleFieldPayload>(handle)?
+            .into_latest();
         let default = deposit_rule.default_deposit_rule;
         api.field_close(handle)?;
 

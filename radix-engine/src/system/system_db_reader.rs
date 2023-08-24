@@ -1,6 +1,6 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_common::prelude::{
-    scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoSchema, ScryptoValue,
+    scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoValue, VersionedScryptoSchema,
 };
 use radix_engine_interface::api::{CollectionIndex, ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::*;
@@ -57,7 +57,7 @@ pub enum SystemPartitionDescriptor {
 }
 
 pub struct ResolvedPayloadSchema {
-    pub schema: ScryptoSchema,
+    pub schema: VersionedScryptoSchema,
     pub type_index: LocalTypeIndex,
     pub allow_ownership: bool,
     pub allow_non_global_refs: bool,
@@ -703,9 +703,9 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         &self,
         node_id: &NodeId,
         schema_hash: &SchemaHash,
-    ) -> Result<ScryptoSchema, SystemReaderError> {
+    ) -> Result<VersionedScryptoSchema, SystemReaderError> {
         let schema = self
-            .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
+            .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<VersionedScryptoSchema>>(
                 node_id,
                 SCHEMAS_PARTITION,
                 &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
