@@ -975,6 +975,7 @@ dependencies = [
  "paste",
  "radix-engine-common",
  "radix-engine-derive",
+ "regex",
  "sbor",
  "scrypto-schema",
  "serde_json",
