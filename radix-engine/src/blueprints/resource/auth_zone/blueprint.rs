@@ -15,14 +15,13 @@ use super::{compose_proof_by_amount, compose_proof_by_ids, AuthZone, ComposeProo
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthZoneError {
-    EmptyAuthZone,
     ComposeProofError(ComposeProofError),
 }
 
 pub struct AuthZoneBlueprint;
 
 impl AuthZoneBlueprint {
-    pub fn pop<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
+    pub fn pop<Y>(api: &mut Y) -> Result<Option<Proof>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -33,13 +32,10 @@ impl AuthZoneBlueprint {
         )?;
 
         let mut auth_zone: AuthZone = api.field_read_typed(auth_zone_handle)?;
-        let proof = auth_zone.pop().ok_or(RuntimeError::ApplicationError(
-            ApplicationError::AuthZoneError(AuthZoneError::EmptyAuthZone),
-        ))?;
-
+        let maybe_proof = auth_zone.pop();
         api.field_write_typed(auth_zone_handle, &auth_zone)?;
 
-        Ok(proof)
+        Ok(maybe_proof)
     }
 
     pub fn push<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>

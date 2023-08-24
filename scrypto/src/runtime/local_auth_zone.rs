@@ -23,7 +23,7 @@ impl LocalAuthZone {
         AuthZoneRef(node_id).push(proof)
     }
 
-    pub fn pop() -> Proof {
+    pub fn pop() -> Option<Proof> {
         let node_id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_AUTH_ZONE);
         AuthZoneRef(node_id).pop()
     }

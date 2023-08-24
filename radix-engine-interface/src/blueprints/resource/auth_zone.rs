@@ -18,7 +18,7 @@ pub const AUTH_ZONE_POP_IDENT: &str = "pop";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZonePopInput {}
 
-pub type AuthZonePopOutput = Proof;
+pub type AuthZonePopOutput = Option<Proof>;
 
 pub const AUTH_ZONE_PUSH_IDENT: &str = "push";
 
