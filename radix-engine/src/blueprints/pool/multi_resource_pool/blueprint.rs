@@ -316,7 +316,7 @@ impl MultiResourcePoolBlueprint {
             api.new_simple_object(
                 MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                 btreemap! {
-                    0u8 => FieldValue::new(&VersionedMultiResourcePoolState::V1(substate)),
+                    MultiResourcePoolField::State.field_index() => FieldValue::new(&VersionedMultiResourcePoolState::V1(substate)),
                 },
             )?
         };
