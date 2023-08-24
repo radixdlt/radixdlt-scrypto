@@ -2,22 +2,29 @@ use radix_engine::types::*;
 
 // Import and re-export these types so they are available easily with a single import
 pub use radix_engine::blueprints::access_controller::*;
-pub use radix_engine::blueprints::account::{
-    AccountAuthorizedDepositorEntryContents, AccountBlueprint, AccountError, AccountNativePackage,
-    AccountResourcePreferenceEntryContents, AccountSubstate, AccountVaultEntryContents,
-};
+pub use radix_engine::blueprints::account::{AccountBlueprint, AccountError, AccountNativePackage};
+use radix_engine::blueprints::account::{AccountTypedSubstateKey, AccountTypedSubstateValue};
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
 pub use radix_engine::blueprints::pool::multi_resource_pool;
+use radix_engine::blueprints::pool::multi_resource_pool::{
+    MultiResourcePoolTypedSubstateKey, MultiResourcePoolTypedSubstateValue,
+};
 pub use radix_engine::blueprints::pool::one_resource_pool;
+use radix_engine::blueprints::pool::one_resource_pool::{
+    OneResourcePoolTypedSubstateKey, OneResourcePoolTypedSubstateValue,
+};
 pub use radix_engine::blueprints::pool::two_resource_pool;
+use radix_engine::blueprints::pool::two_resource_pool::{
+    TwoResourcePoolTypedSubstateKey, TwoResourcePoolTypedSubstateValue,
+};
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::blueprints::transaction_tracker::*;
 pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::role_assignment::*;
 pub use radix_engine::system::node_modules::royalty::*;
-use radix_engine::system::system::FieldSubstate;
-pub use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::system::system_substates::FieldSubstate;
+use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine::system::type_info::*;
 pub use radix_engine_interface::api::node_modules::royalty::*;
 use transaction::prelude::IntentHash;
@@ -84,11 +91,11 @@ impl TypedSubstateKey {
     /// Just a work around for now to filter out "transient" substates we shouldn't really be storing.
     pub fn value_is_mappable(&self) -> bool {
         match self {
-            TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultField(
-                NonFungibleVaultField::LockedNonFungible,
+            TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVault(
+                NonFungibleVaultTypedSubstateKey::Field(NonFungibleVaultField::LockedResource),
             )) => false,
-            TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVaultField(
-                FungibleVaultField::LockedFungible,
+            TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVault(
+                FungibleVaultTypedSubstateKey::Field(FungibleVaultField::LockedBalance),
             )) => false,
             _ => true,
         }
@@ -126,30 +133,24 @@ pub enum TypedMetadataModuleSubstateKey {
 /// Doesn't include non-object modules, nor transient nodes.
 #[derive(Debug, Clone)]
 pub enum TypedMainModuleSubstateKey {
-    // Objects
+    // Objects - Native
     Package(PackageTypedSubstateKey),
-    FungibleResourceField(FungibleResourceManagerField),
-    NonFungibleResourceField(NonFungibleResourceManagerField),
-    NonFungibleResourceData(NonFungibleLocalId),
-    FungibleVaultField(FungibleVaultField),
-    NonFungibleVaultField(NonFungibleVaultField),
-    NonFungibleVaultContentsIndexKey(NonFungibleLocalId),
-    ConsensusManagerField(ConsensusManagerField),
-    ConsensusManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
-    ValidatorField(ValidatorField),
-    AccessControllerField(AccessControllerField),
-    AccountField(AccountField),
-    AccountVaultKey(ResourceAddress),
-    AccountResourcePreferenceKey(ResourceAddress),
-    AccountAuthorizedDepositorKey(ResourceOrNonFungible),
-    OneResourcePoolField(OneResourcePoolField),
-    TwoResourcePoolField(TwoResourcePoolField),
-    MultiResourcePoolField(MultiResourcePoolField),
+    FungibleResourceManager(FungibleResourceManagerTypedSubstateKey),
+    NonFungibleResourceManager(NonFungibleResourceManagerTypedSubstateKey),
+    FungibleVault(FungibleVaultTypedSubstateKey),
+    NonFungibleVault(NonFungibleVaultTypedSubstateKey),
+    ConsensusManager(ConsensusManagerTypedSubstateKey),
+    ValidatorField(ValidatorTypedSubstateKey),
+    AccessController(AccessControllerTypedSubstateKey),
+    Account(AccountTypedSubstateKey),
+    OneResourcePool(OneResourcePoolTypedSubstateKey),
+    TwoResourcePool(TwoResourcePoolTypedSubstateKey),
+    MultiResourcePool(MultiResourcePoolTypedSubstateKey),
     TransactionTrackerField(TransactionTrackerField),
     TransactionTrackerCollectionEntry(IntentHash),
-    // Generic Scrypto Components
+    // Objects - Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
-    // Substates for Generic KV Stores
+    // KVStores - Generic KV Stores
     GenericKeyValueStoreKey(MapKey),
 }
 
@@ -248,18 +249,22 @@ pub fn to_typed_object_module_substate_key(
     partition_offset: u8,
     substate_key: &SubstateKey,
 ) -> Result<TypedMainModuleSubstateKey, String> {
-    return to_typed_object_substate_key_internal(entity_type, partition_offset, substate_key)
-        .map_err(|_| {
-            format!(
-                "Could not convert {:?} (partition offset {}) {:?} key to TypedObjectSubstateKey",
-                entity_type, partition_offset, substate_key
-            )
-        });
+    return to_typed_object_substate_key_internal(
+        entity_type,
+        PartitionOffset(partition_offset),
+        substate_key,
+    )
+    .map_err(|_| {
+        format!(
+            "Could not convert {:?} (partition offset {}) {:?} key to TypedObjectSubstateKey",
+            entity_type, partition_offset, substate_key
+        )
+    });
 }
 
 fn to_typed_object_substate_key_internal(
     entity_type: EntityType,
-    partition_offset: u8,
+    partition_offset: PartitionOffset,
     substate_key: &SubstateKey,
 ) -> Result<TypedMainModuleSubstateKey, ()> {
     let substate_type = match entity_type {
@@ -268,120 +273,84 @@ fn to_typed_object_substate_key_internal(
                 substate_key,
             )?)
         }
-        EntityType::GlobalPackage => {
-            TypedMainModuleSubstateKey::Package(PackageTypedSubstateKey::for_key_in_partition(
-                &PackagePartitionOffset::try_from(PartitionOffset(partition_offset))?,
-                substate_key,
-            )?)
-        }
+        EntityType::GlobalPackage => TypedMainModuleSubstateKey::Package(
+            PackageTypedSubstateKey::for_key_at_partition_offset(partition_offset, substate_key)?,
+        ),
         EntityType::GlobalFungibleResourceManager => {
-            TypedMainModuleSubstateKey::FungibleResourceField(
-                FungibleResourceManagerField::try_from(substate_key)?,
+            TypedMainModuleSubstateKey::FungibleResourceManager(
+                FungibleResourceManagerTypedSubstateKey::for_key_at_partition_offset(
+                    partition_offset,
+                    substate_key,
+                )?,
             )
         }
         EntityType::GlobalNonFungibleResourceManager => {
-            let partition_offset =
-                NonFungibleResourceManagerPartitionOffset::try_from(partition_offset)?;
-            match partition_offset {
-                NonFungibleResourceManagerPartitionOffset::ResourceManager => {
-                    TypedMainModuleSubstateKey::NonFungibleResourceField(
-                        NonFungibleResourceManagerField::try_from(substate_key)?,
-                    )
-                }
-                NonFungibleResourceManagerPartitionOffset::NonFungibleData => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::NonFungibleResourceData(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-            }
+            TypedMainModuleSubstateKey::NonFungibleResourceManager(
+                NonFungibleResourceManagerTypedSubstateKey::for_key_at_partition_offset(
+                    partition_offset,
+                    substate_key,
+                )?,
+            )
         }
-        EntityType::GlobalConsensusManager => {
-            let partition_offset = ConsensusManagerPartitionOffset::try_from(partition_offset)?;
-            match partition_offset {
-                ConsensusManagerPartitionOffset::ConsensusManager => {
-                    TypedMainModuleSubstateKey::ConsensusManagerField(
-                        ConsensusManagerField::try_from(substate_key)?,
-                    )
-                }
-                ConsensusManagerPartitionOffset::RegisteredValidatorsByStakeIndex => {
-                    let key = substate_key.for_sorted().ok_or(())?;
-                    TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(
-                        key.clone().try_into().map_err(|_| ())?,
-                    )
-                }
-            }
-        }
-        EntityType::GlobalValidator => {
-            TypedMainModuleSubstateKey::ValidatorField(ValidatorField::try_from(substate_key)?)
-        }
-        EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessControllerField(
-            AccessControllerField::try_from(substate_key)?,
+        EntityType::GlobalConsensusManager => TypedMainModuleSubstateKey::ConsensusManager(
+            ConsensusManagerTypedSubstateKey::for_key_at_partition_offset(
+                partition_offset,
+                substate_key,
+            )?,
+        ),
+        EntityType::GlobalValidator => TypedMainModuleSubstateKey::ValidatorField(
+            ValidatorTypedSubstateKey::for_key_at_partition_offset(partition_offset, substate_key)?,
+        ),
+        EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessController(
+            AccessControllerTypedSubstateKey::for_key_in_partition(
+                &AccessControllerPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?,
         ),
         EntityType::GlobalVirtualSecp256k1Account
         | EntityType::GlobalVirtualEd25519Account
         | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
-            let partition_offset = AccountPartitionOffset::try_from(partition_offset)?;
-
-            match partition_offset {
-                AccountPartitionOffset::AccountVaultsByResourceAddress => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountVaultKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                AccountPartitionOffset::AccountResourcePreferenceByAddress => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountResourcePreferenceKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                AccountPartitionOffset::AccountAuthorizedDepositorByResourceOrNonFungible => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-                AccountPartitionOffset::Account => {
-                    TypedMainModuleSubstateKey::AccountField(AccountField::try_from(substate_key)?)
-                }
-            }
+            TypedMainModuleSubstateKey::Account(AccountTypedSubstateKey::for_key_in_partition(
+                &AccountPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?)
         }
         EntityType::GlobalVirtualSecp256k1Identity
         | EntityType::GlobalVirtualEd25519Identity
         | EntityType::GlobalIdentity => Err(())?, // Identity doesn't have any substates
-        EntityType::InternalFungibleVault => TypedMainModuleSubstateKey::FungibleVaultField(
-            FungibleVaultField::try_from(substate_key)?,
+        EntityType::InternalFungibleVault => TypedMainModuleSubstateKey::FungibleVault(
+            FungibleVaultTypedSubstateKey::for_key_at_partition_offset(
+                partition_offset,
+                substate_key,
+            )?,
         ),
-        EntityType::InternalNonFungibleVault => {
-            let partition_offset = NonFungibleVaultPartitionOffset::try_from(partition_offset)?;
-
-            match partition_offset {
-                NonFungibleVaultPartitionOffset::Balance => {
-                    TypedMainModuleSubstateKey::NonFungibleVaultField(
-                        NonFungibleVaultField::try_from(substate_key)?,
-                    )
-                }
-                NonFungibleVaultPartitionOffset::NonFungibles => {
-                    let key = substate_key.for_map().ok_or(())?;
-                    TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(
-                        scrypto_decode(&key).map_err(|_| ())?,
-                    )
-                }
-            }
-        }
-        EntityType::GlobalOneResourcePool => TypedMainModuleSubstateKey::OneResourcePoolField(
-            OneResourcePoolField::try_from(substate_key)?,
+        EntityType::InternalNonFungibleVault => TypedMainModuleSubstateKey::NonFungibleVault(
+            NonFungibleVaultTypedSubstateKey::for_key_at_partition_offset(
+                partition_offset,
+                substate_key,
+            )?,
         ),
-        EntityType::GlobalTwoResourcePool => TypedMainModuleSubstateKey::TwoResourcePoolField(
-            TwoResourcePoolField::try_from(substate_key)?,
+        EntityType::GlobalOneResourcePool => TypedMainModuleSubstateKey::OneResourcePool(
+            OneResourcePoolTypedSubstateKey::for_key_in_partition(
+                &OneResourcePoolPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?,
         ),
-        EntityType::GlobalMultiResourcePool => TypedMainModuleSubstateKey::MultiResourcePoolField(
-            MultiResourcePoolField::try_from(substate_key)?,
+        EntityType::GlobalTwoResourcePool => TypedMainModuleSubstateKey::TwoResourcePool(
+            TwoResourcePoolTypedSubstateKey::for_key_in_partition(
+                &TwoResourcePoolPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?,
+        ),
+        EntityType::GlobalMultiResourcePool => TypedMainModuleSubstateKey::MultiResourcePool(
+            MultiResourcePoolTypedSubstateKey::for_key_in_partition(
+                &MultiResourcePoolPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?,
         ),
         EntityType::GlobalTransactionTracker => {
-            if partition_offset == 0 {
+            if partition_offset == PartitionOffset(0) {
                 TypedMainModuleSubstateKey::TransactionTrackerField(
                     TransactionTrackerField::try_from(substate_key)?,
                 )
@@ -407,7 +376,7 @@ fn to_typed_object_substate_key_internal(
 #[derive(Debug)]
 pub enum TypedSubstateValue {
     TypeInfoModule(TypedTypeInfoModuleSubstateValue),
-    Schema(KeyValueEntrySubstate<ScryptoSchema>),
+    Schema(KeyValueEntrySubstate<VersionedScryptoSchema>),
     RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue),
     RoyaltyModule(TypedRoyaltyModuleSubstateValue),
     MetadataModule(TypedMetadataModuleSubstateValue),
@@ -421,19 +390,19 @@ pub enum TypedTypeInfoModuleSubstateValue {
 
 #[derive(Debug)]
 pub enum TypedRoleAssignmentModuleSubstateValue {
-    OwnerRole(FieldSubstate<OwnerRoleSubstate>),
-    Rule(KeyValueEntrySubstate<AccessRule>),
+    OwnerRole(FieldSubstate<RoleAssignmentOwnerFieldPayload>),
+    Rule(KeyValueEntrySubstate<RoleAssignmentAccessRuleEntryPayload>),
 }
 
 #[derive(Debug)]
 pub enum TypedRoyaltyModuleSubstateValue {
-    ComponentRoyalty(FieldSubstate<ComponentRoyaltySubstate>),
-    ComponentMethodRoyalty(ComponentMethodRoyaltySubstate),
+    ComponentRoyalty(FieldSubstate<ComponentRoyaltyAccumulatorFieldPayload>),
+    ComponentMethodRoyalty(ComponentRoyaltyMethodAmountEntryPayload),
 }
 
 #[derive(Debug)]
 pub enum TypedMetadataModuleSubstateValue {
-    MetadataEntry(MetadataEntrySubstate),
+    MetadataEntry(KeyValueEntrySubstate<MetadataEntryEntryPayload>),
 }
 
 /// Contains all the main module substate values, by each known partition layout
@@ -441,53 +410,22 @@ pub enum TypedMetadataModuleSubstateValue {
 pub enum TypedMainModuleSubstateValue {
     // Objects
     Package(PackageTypedSubstateValue),
-    FungibleResource(TypedFungibleResourceManagerFieldValue),
-    NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
-    NonFungibleResourceData(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
-    FungibleVault(TypedFungibleVaultFieldValue),
-    NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
-    NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
-    ConsensusManagerField(TypedConsensusManagerFieldValue),
-    ConsensusManagerRegisteredValidatorsByStakeIndexEntry(Validator),
-    Validator(TypedValidatorFieldValue),
-    AccessController(TypedAccessControllerFieldValue),
-    Account(TypedAccountFieldValue),
-    AccountVaultEntry(KeyValueEntrySubstate<AccountVaultEntryContents>),
-    AccountResourcePreferenceEntry(KeyValueEntrySubstate<AccountResourcePreferenceEntryContents>),
-    AccountAuthorizedDepositorEntry(KeyValueEntrySubstate<AccountAuthorizedDepositorEntryContents>),
-    OneResourcePool(TypedOneResourcePoolFieldValue),
-    TwoResourcePool(TypedTwoResourcePoolFieldValue),
-    MultiResourcePool(TypedMultiResourcePoolFieldValue),
+    FungibleResourceManager(FungibleResourceManagerTypedSubstateValue),
+    NonFungibleResourceManager(NonFungibleResourceManagerTypedSubstateValue),
+    FungibleVault(FungibleVaultTypedSubstateValue),
+    NonFungibleVault(NonFungibleVaultTypedSubstateValue),
+    ConsensusManager(ConsensusManagerTypedSubstateValue),
+    Validator(ValidatorTypedSubstateValue),
+    AccessController(AccessControllerTypedSubstateValue),
+    Account(AccountTypedSubstateValue),
+    OneResourcePool(OneResourcePoolTypedSubstateValue),
+    TwoResourcePool(TwoResourcePoolTypedSubstateValue),
+    MultiResourcePool(MultiResourcePoolTypedSubstateValue),
     TransactionTracker(TypedTransactionTrackerFieldValue),
     TransactionTrackerCollectionEntry(KeyValueEntrySubstate<TransactionStatusSubstateContents>),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStoreEntry(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
-}
-
-#[derive(Debug)]
-pub enum TypedFungibleResourceManagerFieldValue {
-    Divisibility(FieldSubstate<FungibleResourceManagerDivisibilitySubstate>),
-    TotalSupply(FieldSubstate<FungibleResourceManagerTotalSupplySubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedNonFungibleResourceManagerFieldValue {
-    IdType(FieldSubstate<NonFungibleResourceManagerIdTypeSubstate>),
-    MutableFields(FieldSubstate<NonFungibleResourceManagerMutableFieldsSubstate>),
-    TotalSupply(FieldSubstate<NonFungibleResourceManagerTotalSupplySubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedFungibleVaultFieldValue {
-    Balance(FieldSubstate<FungibleVaultBalanceSubstate>),
-    VaultFrozenFlag(FieldSubstate<VaultFrozenFlag>),
-}
-
-#[derive(Debug)]
-pub enum TypedNonFungibleVaultFieldValue {
-    Balance(FieldSubstate<NonFungibleVaultBalanceSubstate>),
-    VaultFrozenFlag(FieldSubstate<VaultFrozenFlag>),
 }
 
 #[derive(Debug)]
@@ -508,33 +446,8 @@ pub enum TypedValidatorFieldValue {
 }
 
 #[derive(Debug)]
-pub enum TypedAccessControllerFieldValue {
-    AccessController(FieldSubstate<AccessControllerSubstate>),
-}
-
-#[derive(Debug)]
 pub enum GenericScryptoComponentFieldValue {
     State(FieldSubstate<ScryptoValue>),
-}
-
-#[derive(Debug)]
-pub enum TypedAccountFieldValue {
-    Account(FieldSubstate<AccountSubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedOneResourcePoolFieldValue {
-    OneResourcePool(FieldSubstate<one_resource_pool::OneResourcePoolSubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedTwoResourcePoolFieldValue {
-    TwoResourcePool(FieldSubstate<two_resource_pool::TwoResourcePoolSubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedMultiResourcePoolFieldValue {
-    MultiResourcePool(FieldSubstate<multi_resource_pool::MultiResourcePoolSubstate>),
 }
 
 #[derive(Debug)]
@@ -570,7 +483,7 @@ fn to_typed_substate_value_internal(
         TypedSubstateKey::RoleAssignmentModule(role_assignment_key) => match role_assignment_key {
             TypedRoleAssignmentSubstateKey::RoleAssignmentField(role_assignment_field_offset) => {
                 match role_assignment_field_offset {
-                    RoleAssignmentField::OwnerRole => TypedSubstateValue::RoleAssignmentModule(
+                    RoleAssignmentField::Owner => TypedSubstateValue::RoleAssignmentModule(
                         TypedRoleAssignmentModuleSubstateValue::OwnerRole(scrypto_decode(data)?),
                     ),
                 }
@@ -611,121 +524,41 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::Package(key) => TypedMainModuleSubstateValue::Package(
             PackageTypedSubstateValue::from_key_and_data(key, data)?,
         ),
-        TypedMainModuleSubstateKey::FungibleResourceField(offset) => {
-            TypedMainModuleSubstateValue::FungibleResource(match offset {
-                FungibleResourceManagerField::Divisibility => {
-                    TypedFungibleResourceManagerFieldValue::Divisibility(scrypto_decode(data)?)
-                }
-                FungibleResourceManagerField::TotalSupply => {
-                    TypedFungibleResourceManagerFieldValue::TotalSupply(scrypto_decode(data)?)
-                }
-            })
-        }
-        TypedMainModuleSubstateKey::NonFungibleResourceField(offset) => {
-            TypedMainModuleSubstateValue::NonFungibleResource(match offset {
-                NonFungibleResourceManagerField::IdType => {
-                    TypedNonFungibleResourceManagerFieldValue::IdType(scrypto_decode(data)?)
-                }
-                NonFungibleResourceManagerField::MutableFields => {
-                    TypedNonFungibleResourceManagerFieldValue::MutableFields(scrypto_decode(data)?)
-                }
-                NonFungibleResourceManagerField::TotalSupply => {
-                    TypedNonFungibleResourceManagerFieldValue::TotalSupply(scrypto_decode(data)?)
-                }
-            })
-        }
-        TypedMainModuleSubstateKey::NonFungibleResourceData(_) => {
-            TypedMainModuleSubstateValue::NonFungibleResourceData(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::FungibleVaultField(offset) => {
-            TypedMainModuleSubstateValue::FungibleVault(match offset {
-                FungibleVaultField::LiquidFungible => {
-                    TypedFungibleVaultFieldValue::Balance(scrypto_decode(data)?)
-                }
-                // This shouldn't be persistable - so use a bizarre (but temporary!) placeholder error code here!
-                FungibleVaultField::LockedFungible => Err(DecodeError::InvalidCustomValue)?,
-                FungibleVaultField::VaultFrozenFlag => {
-                    TypedFungibleVaultFieldValue::VaultFrozenFlag(scrypto_decode(data)?)
-                }
-            })
-        }
-        TypedMainModuleSubstateKey::NonFungibleVaultField(offset) => {
-            TypedMainModuleSubstateValue::NonFungibleVaultField(match offset {
-                NonFungibleVaultField::LiquidNonFungible => {
-                    TypedNonFungibleVaultFieldValue::Balance(scrypto_decode(data)?)
-                }
-                // This shouldn't be persistable - so use a bizarre (but temporary!) placeholder error code here!
-                NonFungibleVaultField::LockedNonFungible => Err(DecodeError::InvalidCustomValue)?,
-                NonFungibleVaultField::VaultFrozenFlag => {
-                    TypedNonFungibleVaultFieldValue::VaultFrozenFlag(scrypto_decode(data)?)
-                }
-            })
-        }
-        TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(_) => {
-            TypedMainModuleSubstateValue::NonFungibleVaultContentsIndexEntry(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::ConsensusManagerField(offset) => {
-            TypedMainModuleSubstateValue::ConsensusManagerField(match offset {
-                ConsensusManagerField::Config => {
-                    TypedConsensusManagerFieldValue::Config(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::ConsensusManager => {
-                    TypedConsensusManagerFieldValue::ConsensusManager(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::ValidatorRewards => {
-                    TypedConsensusManagerFieldValue::ValidatorRewards(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::CurrentValidatorSet => {
-                    TypedConsensusManagerFieldValue::CurrentValidatorSet(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::CurrentProposalStatistic => {
-                    TypedConsensusManagerFieldValue::CurrentProposalStatistic(scrypto_decode(data)?)
-                }
-                ConsensusManagerField::CurrentTimeRoundedToMinutes => {
-                    TypedConsensusManagerFieldValue::CurrentTimeRoundedToMinutes(scrypto_decode(
-                        data,
-                    )?)
-                }
-                ConsensusManagerField::CurrentTime => {
-                    TypedConsensusManagerFieldValue::CurrentTime(scrypto_decode(data)?)
-                }
-            })
-        }
-        TypedMainModuleSubstateKey::ConsensusManagerRegisteredValidatorsByStakeIndexKey(_) => {
-            TypedMainModuleSubstateValue::ConsensusManagerRegisteredValidatorsByStakeIndexEntry(
-                scrypto_decode(data)?,
+        TypedMainModuleSubstateKey::FungibleResourceManager(key) => {
+            TypedMainModuleSubstateValue::FungibleResourceManager(
+                FungibleResourceManagerTypedSubstateValue::from_key_and_data(key, data)?,
             )
         }
-        TypedMainModuleSubstateKey::ValidatorField(offset) => {
-            TypedMainModuleSubstateValue::Validator(match offset {
-                ValidatorField::Validator => {
-                    TypedValidatorFieldValue::Validator(scrypto_decode(data)?)
-                }
-                ValidatorField::ProtocolUpdateReadinessSignal => {
-                    TypedValidatorFieldValue::ProtocolUpdateReadinessSignal(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::NonFungibleResourceManager(key) => {
+            TypedMainModuleSubstateValue::NonFungibleResourceManager(
+                NonFungibleResourceManagerTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
-        TypedMainModuleSubstateKey::AccountField(offset) => {
-            TypedMainModuleSubstateValue::Account(match offset {
-                AccountField::Account => TypedAccountFieldValue::Account(scrypto_decode(data)?),
-            })
+        TypedMainModuleSubstateKey::FungibleVault(key) => {
+            TypedMainModuleSubstateValue::FungibleVault(
+                FungibleVaultTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
-        TypedMainModuleSubstateKey::AccountVaultKey(_) => {
-            TypedMainModuleSubstateValue::AccountVaultEntry(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::NonFungibleVault(key) => {
+            TypedMainModuleSubstateValue::NonFungibleVault(
+                NonFungibleVaultTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
-        TypedMainModuleSubstateKey::AccountResourcePreferenceKey(_) => {
-            TypedMainModuleSubstateValue::AccountResourcePreferenceEntry(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::ConsensusManager(key) => {
+            TypedMainModuleSubstateValue::ConsensusManager(
+                ConsensusManagerTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
-        TypedMainModuleSubstateKey::AccountAuthorizedDepositorKey(_) => {
-            TypedMainModuleSubstateValue::AccountAuthorizedDepositorEntry(scrypto_decode(data)?)
-        }
-        TypedMainModuleSubstateKey::AccessControllerField(offset) => {
-            TypedMainModuleSubstateValue::AccessController(match offset {
-                AccessControllerField::AccessController => {
-                    TypedAccessControllerFieldValue::AccessController(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::ValidatorField(key) => TypedMainModuleSubstateValue::Validator(
+            ValidatorTypedSubstateValue::from_key_and_data(key, data)?,
+        ),
+        TypedMainModuleSubstateKey::Account(key) => TypedMainModuleSubstateValue::Account(
+            AccountTypedSubstateValue::from_key_and_data(key, data)?,
+        ),
+        TypedMainModuleSubstateKey::AccessController(key) => {
+            TypedMainModuleSubstateValue::AccessController(
+                AccessControllerTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
         TypedMainModuleSubstateKey::GenericScryptoComponentField(offset) => {
             TypedMainModuleSubstateValue::GenericScryptoComponent(match offset {
@@ -737,26 +570,20 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
             TypedMainModuleSubstateValue::GenericKeyValueStoreEntry(scrypto_decode(data)?)
         }
-        TypedMainModuleSubstateKey::OneResourcePoolField(offset) => {
-            TypedMainModuleSubstateValue::OneResourcePool(match offset {
-                OneResourcePoolField::OneResourcePool => {
-                    TypedOneResourcePoolFieldValue::OneResourcePool(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::OneResourcePool(key) => {
+            TypedMainModuleSubstateValue::OneResourcePool(
+                OneResourcePoolTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
-        TypedMainModuleSubstateKey::TwoResourcePoolField(offset) => {
-            TypedMainModuleSubstateValue::TwoResourcePool(match offset {
-                TwoResourcePoolField::TwoResourcePool => {
-                    TypedTwoResourcePoolFieldValue::TwoResourcePool(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::TwoResourcePool(key) => {
+            TypedMainModuleSubstateValue::TwoResourcePool(
+                TwoResourcePoolTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
-        TypedMainModuleSubstateKey::MultiResourcePoolField(offset) => {
-            TypedMainModuleSubstateValue::MultiResourcePool(match offset {
-                MultiResourcePoolField::MultiResourcePool => {
-                    TypedMultiResourcePoolFieldValue::MultiResourcePool(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::MultiResourcePool(key) => {
+            TypedMainModuleSubstateValue::MultiResourcePool(
+                MultiResourcePoolTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
 
         TypedMainModuleSubstateKey::TransactionTrackerField(offset) => {

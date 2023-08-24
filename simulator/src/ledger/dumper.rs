@@ -48,7 +48,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {} bytes",
         "Code size".green().bold(),
-        substate.value.unwrap().into_latest().code.len()
+        substate.into_value().unwrap().into_latest().code.len()
     );
 
     let metadata = get_entity_metadata(package_address.as_node_id(), substate_db);
@@ -186,7 +186,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         .blueprint_name
         .eq(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
     {
-        let id_type: NonFungibleIdType = reader
+        let id_type: VersionedNonFungibleResourceManagerIdType = reader
             .read_typed_object_field(
                 resource_address.as_node_id(),
                 ObjectModuleId::Main,
@@ -202,14 +202,18 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         );
         writeln!(output, "{}: {:?}", "ID Type".green().bold(), id_type);
 
-        if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
-            let total_supply: Decimal = reader
-                .read_typed_object_field(
+        if info
+            .get_features()
+            .contains(NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name())
+        {
+            let total_supply = reader
+                .read_typed_object_field::<NonFungibleResourceManagerTotalSupplyFieldPayload>(
                     resource_address.as_node_id(),
                     ObjectModuleId::Main,
                     NonFungibleResourceManagerField::TotalSupply.into(),
                 )
-                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?;
+                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
+                .into_latest();
 
             writeln!(
                 output,
@@ -219,13 +223,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             );
         }
     } else {
-        let divisibility: FungibleResourceManagerDivisibilitySubstate = reader
-            .read_typed_object_field(
+        let divisibility = reader
+            .read_typed_object_field::<FungibleResourceManagerDivisibilityFieldPayload>(
                 resource_address.as_node_id(),
                 ObjectModuleId::Main,
                 FungibleResourceManagerField::Divisibility.into(),
             )
-            .map_err(|_| EntityDumpError::InvalidStore("Missing Divisibility".to_string()))?;
+            .map_err(|_| EntityDumpError::InvalidStore("Missing Divisibility".to_string()))?
+            .into_latest();
 
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
         writeln!(
@@ -235,14 +240,18 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             divisibility
         );
 
-        if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
-            let total_supply: FungibleResourceManagerTotalSupplySubstate = reader
-                .read_typed_object_field(
+        if info
+            .get_features()
+            .contains(FungibleResourceManagerFeature::TrackTotalSupply.feature_name())
+        {
+            let total_supply = reader
+                .read_typed_object_field::<FungibleResourceManagerTotalSupplyFieldPayload>(
                     resource_address.as_node_id(),
                     ObjectModuleId::Main,
                     FungibleResourceManagerField::TotalSupply.into(),
                 )
-                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?;
+                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
+                .into_latest();
 
             writeln!(
                 output,
@@ -266,21 +275,18 @@ fn get_entity_metadata<T: SubstateDatabase>(
     entity_node_id: &NodeId,
     substate_db: &T,
 ) -> IndexMap<String, MetadataValue> {
-    let mut metadata = indexmap!();
-    for (substate_key, substate_value) in substate_db
-        .list_mapped::<SpreadPrefixKeyMapper, MetadataEntrySubstate, MapKey>(
+    let reader = SystemDatabaseReader::new(substate_db);
+    reader
+        .collection_iter(
             entity_node_id,
-            METADATA_BASE_PARTITION
-                .at_offset(METADATA_KV_STORE_PARTITION_OFFSET)
-                .unwrap(),
+            ObjectModuleId::Metadata,
+            MetadataCollection::EntryKeyValue.collection_index(),
         )
-    {
-        if let SubstateKey::Map(key) = substate_key {
-            if let Some(value) = substate_value.value {
-                let key = scrypto_decode::<String>(&key).unwrap();
-                metadata.insert(key, value);
-            }
-        }
-    }
-    metadata
+        .unwrap()
+        .map(|(key, value)| {
+            let key = scrypto_decode::<String>(&key).unwrap();
+            let value = scrypto_decode::<MetadataEntryEntryPayload>(&value).unwrap();
+            (key, value.into_latest())
+        })
+        .collect()
 }

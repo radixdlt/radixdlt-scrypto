@@ -1,5 +1,9 @@
-use radix_engine_common::prelude::scrypto_decode;
-use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use crate::blueprints::resource::{FungibleVaultBalanceFieldPayload, FungibleVaultField};
+use crate::internal_prelude::*;
+use crate::system::system_db_reader::SystemDatabaseReader;
+use crate::system::type_info::TypeInfoSubstate;
+use crate::track::TrackedSubstateValue;
+use crate::track::{TrackedNode, Write};
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
@@ -9,12 +13,6 @@ use radix_engine_store_interface::{
 };
 use sbor::rust::ops::Add;
 use sbor::rust::prelude::*;
-
-use crate::system::system::FieldSubstate;
-use crate::system::system_db_reader::SystemDatabaseReader;
-use crate::system::type_info::TypeInfoSubstate;
-use crate::track::TrackedSubstateValue;
-use crate::track::{TrackedNode, Write};
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
@@ -182,21 +180,21 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn calculate_fungible_vault_balance_change(&self, vault_id: &NodeId) -> Option<BalanceChange> {
         self
             .system_reader
-            .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
+            .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, FieldSubstate<FungibleVaultBalanceFieldPayload>>(
                 vault_id,
                 MAIN_BASE_PARTITION,
-                &FungibleVaultField::LiquidFungible.into(),
+                &FungibleVaultField::Balance.into(),
             )
-            .map(|new_substate| new_substate.value.0.amount())
+            .map(|new_substate| new_substate.into_payload().into_latest().amount())
             .map(|new_balance| {
                 let old_balance = self
                     .system_reader
-                    .fetch_substate_from_database::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
+                    .fetch_substate_from_database::<SpreadPrefixKeyMapper, FieldSubstate<FungibleVaultBalanceFieldPayload>>(
                         vault_id,
                         MAIN_BASE_PARTITION,
-                        &FungibleVaultField::LiquidFungible.into(),
+                        &FungibleVaultField::Balance.into(),
                     )
-                    .map(|old_balance| old_balance.value.0.amount())
+                    .map(|old_balance| old_balance.into_payload().into_latest().amount())
                     .unwrap_or(Decimal::ZERO);
 
                 new_balance.safe_sub(old_balance).unwrap()

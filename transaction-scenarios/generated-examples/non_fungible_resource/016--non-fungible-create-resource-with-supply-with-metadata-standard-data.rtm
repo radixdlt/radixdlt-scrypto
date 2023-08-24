@@ -8,52 +8,54 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<1u8>()
     true
     Tuple(
-        Tuple(
-            Array<Enum>(
-                Enum<14u8>(
-                    Array<Enum>(
-                        Enum<0u8>(
-                            12u8
-                        ),
-                        Enum<0u8>(
-                            12u8
-                        ),
-                        Enum<1u8>(
-                            1u64
-                        ),
-                        Enum<0u8>(
-                            10u8
-                        )
-                    )
-                ),
-                Enum<12u8>()
-            ),
-            Array<Tuple>(
-                Tuple(
-                    Enum<1u8>(
-                        "MetadataStandardNonFungibleData"
-                    ),
-                    Enum<1u8>(
-                        Enum<0u8>(
-                            Array<String>(
-                                "name",
-                                "description",
-                                "key_image_url",
-                                "arbitrary_coolness_rating"
+        Enum<0u8>(
+            Tuple(
+                Array<Enum>(
+                    Enum<14u8>(
+                        Array<Enum>(
+                            Enum<0u8>(
+                                12u8
+                            ),
+                            Enum<0u8>(
+                                12u8
+                            ),
+                            Enum<1u8>(
+                                1u64
+                            ),
+                            Enum<0u8>(
+                                10u8
                             )
                         )
+                    ),
+                    Enum<12u8>()
+                ),
+                Array<Tuple>(
+                    Tuple(
+                        Enum<1u8>(
+                            "MetadataStandardNonFungibleData"
+                        ),
+                        Enum<1u8>(
+                            Enum<0u8>(
+                                Array<String>(
+                                    "name",
+                                    "description",
+                                    "key_image_url",
+                                    "arbitrary_coolness_rating"
+                                )
+                            )
+                        )
+                    ),
+                    Tuple(
+                        Enum<1u8>(
+                            "UncheckedUrl"
+                        ),
+                        Enum<0u8>()
                     )
                 ),
-                Tuple(
-                    Enum<1u8>(
-                        "UncheckedUrl"
-                    ),
+                Array<Enum>(
+                    Enum<0u8>(),
                     Enum<0u8>()
                 )
-            ),
-            Array<Enum>(
-                Enum<0u8>(),
-                Enum<0u8>()
             )
         ),
         Enum<1u8>(

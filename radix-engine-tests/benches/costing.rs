@@ -49,7 +49,7 @@ fn bench_validate_sbor_payload(c: &mut Criterion) {
         b.iter(|| {
             validate_payload_against_schema::<ScryptoCustomExtension, _>(
                 &payload,
-                &schema,
+                schema.v1(),
                 index,
                 &(),
             )
@@ -66,7 +66,7 @@ fn bench_validate_sbor_payload_bytes(c: &mut Criterion) {
         b.iter(|| {
             validate_payload_against_schema::<ScryptoCustomExtension, _>(
                 &payload,
-                &schema,
+                schema.v1(),
                 index,
                 &(),
             )

@@ -1,20 +1,19 @@
+use radix_engine::blueprints::resource::*;
+use radix_engine::prelude::*;
+use radix_engine::system::node_modules::royalty::ComponentRoyaltyAccumulatorFieldPayload;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::system::type_info::TypeInfoSubstate;
-use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
 use radix_engine_interface::api::{ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
-use radix_engine_interface::prelude::scrypto_decode;
 use radix_engine_interface::types::{
-    BlueprintId, FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField, ObjectType,
-    ResourceAddress,
+    BlueprintId, IndexedScryptoValue, ObjectType, ResourceAddress,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::interface::SubstateDatabase;
-use sbor::rust::prelude::*;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> {
     system_db_reader: SystemDatabaseReader<'s, S>,
@@ -104,13 +103,17 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                     &RESOURCE_PACKAGE,
                     FUNGIBLE_VAULT_BLUEPRINT,
                 )) {
-                    let liquid: LiquidFungibleResource = system_db_reader
+                    let liquid: VersionedFungibleVaultBalance = system_db_reader
                         .read_typed_object_field(
                             &node_id,
                             ObjectModuleId::Main,
-                            FungibleVaultField::LiquidFungible.into(),
+                            FungibleVaultField::Balance.into(),
                         )
                         .expect("Broken database");
+
+                    let liquid = match liquid {
+                        VersionedFungibleVaultBalance::V1(liquid) => liquid,
+                    };
 
                     visitor.visit_fungible_vault(
                         node_id,
@@ -121,13 +124,17 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                     &RESOURCE_PACKAGE,
                     NON_FUNGIBLE_VAULT_BLUEPRINT,
                 )) {
-                    let liquid: LiquidNonFungibleVault = system_db_reader
+                    let liquid: VersionedNonFungibleVaultBalance = system_db_reader
                         .read_typed_object_field(
                             &node_id,
                             ObjectModuleId::Main,
-                            NonFungibleVaultField::LiquidNonFungible.into(),
+                            NonFungibleVaultField::Balance.into(),
                         )
                         .expect("Broken database");
+
+                    let liquid = match liquid {
+                        VersionedNonFungibleVaultBalance::V1(liquid) => liquid,
+                    };
 
                     visitor.visit_non_fungible_vault(
                         node_id,
@@ -136,7 +143,11 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                     );
 
                     for (key, _value) in system_db_reader
-                        .collection_iter(&node_id, ObjectModuleId::Main, 0u8)
+                        .collection_iter(
+                            &node_id,
+                            ObjectModuleId::Main,
+                            NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
+                        )
                         .unwrap()
                     {
                         let non_fungible_local_id: NonFungibleLocalId =
@@ -153,13 +164,14 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                             for (module_id, _) in modules {
                                 match &module_id {
                                     ModuleId::Royalty => {
-                                        let royalty: ComponentRoyaltySubstate = system_db_reader
-                                            .read_typed_object_field(
+                                        let royalty = system_db_reader
+                                            .read_typed_object_field::<ComponentRoyaltyAccumulatorFieldPayload>(
                                                 &node_id,
                                                 module_id.into(),
                                                 0u8,
                                             )
-                                            .expect("Broken database");
+                                            .expect("Broken database")
+                                            .into_latest();
                                         Self::traverse_recursive(
                                             system_db_reader,
                                             visitor,

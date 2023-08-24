@@ -34,7 +34,6 @@ use arbitrary::Arbitrary;
 use radix_engine_common::math::*;
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
-use sbor::rust::vec::Vec;
 
 pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
     !amount.is_negative()

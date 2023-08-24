@@ -2,13 +2,14 @@ use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::ReferenceOrigin;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::system::{FieldSubstate, SystemService};
+use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::type_info::TypeInfoSubstate;
@@ -224,9 +225,11 @@ impl AuthModule {
             SystemLockData::default(),
         )?;
 
-        let auth_zone: FieldSubstate<AuthZone> =
-            system.kernel_read_substate(handle)?.as_typed().unwrap();
-        Ok((auth_zone.value.0.global_caller, Some(handle)))
+        let auth_zone = system
+            .kernel_read_substate(handle)?
+            .as_typed::<FieldSubstate<AuthZone>>()
+            .unwrap();
+        Ok((auth_zone.into_payload().global_caller, Some(handle)))
     }
 
     fn on_execution_start<V, Y>(
@@ -316,7 +319,7 @@ impl AuthModule {
             self_auth_zone,
             btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
-                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
+                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(auth_zone))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint_info: BlueprintInfo {
@@ -355,10 +358,16 @@ impl AuthModule {
             LockFlags::MUTABLE,
             SystemLockData::Default,
         )?;
-        let mut substate: FieldSubstate<AuthZone> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
-        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
+        let mut auth_zone = api
+            .kernel_read_substate(handle)?
+            .as_typed::<FieldSubstate<AuthZone>>()
+            .unwrap()
+            .into_payload();
+        let proofs = core::mem::replace(&mut auth_zone.proofs, Vec::new());
+        api.kernel_write_substate(
+            handle,
+            IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(auth_zone)),
+        )?;
         api.kernel_close_substate(handle)?;
 
         // Drop all proofs (previously) owned by the auth zone

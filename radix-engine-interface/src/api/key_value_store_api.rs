@@ -1,6 +1,6 @@
 use radix_engine_common::prelude::{
     replace_self_package_address, HasSchemaHash, ScryptoCustomTypeKind, ScryptoDescribe,
-    ScryptoSchema,
+    VersionedScryptoSchema,
 };
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
@@ -11,7 +11,7 @@ use sbor::{generate_full_schema, TypeAggregator};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreGenericArgs {
-    pub additional_schema: Option<ScryptoSchema>,
+    pub additional_schema: Option<VersionedScryptoSchema>,
     pub key_type: GenericSubstitution,
     pub value_type: GenericSubstitution,
     pub allow_ownership: bool,

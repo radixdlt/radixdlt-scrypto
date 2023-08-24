@@ -13,4 +13,5 @@ pub mod util;
 
 pub(crate) mod internal_prelude {
     pub use super::models::*;
+    pub use super::package::*;
 }

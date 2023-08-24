@@ -318,7 +318,7 @@ fn change_lock_owner_role_rules() {
     receipt.expect_specific_failure(|error: &RuntimeError| {
         matches!(
             error,
-            RuntimeError::SystemError(SystemError::MutatingImmutableFieldSubstate(..)),
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..)),
         )
     })
 }

@@ -1,21 +1,14 @@
-use radix_engine::blueprints::consensus_manager::ProposerMinuteTimestampSubstate;
-use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::bootstrap::{
-    Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
-    GenesisStakeAllocation, DEFAULT_TESTING_FAUCET_SUPPLY,
-};
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::bootstrap::*;
 use radix_engine::system::system_db_checker::SystemDatabaseChecker;
+use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
-use radix_engine_queries::typed_substate_layout::{
-    BurnFungibleResourceEvent, MintFungibleResourceEvent,
-};
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
@@ -241,23 +234,28 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         .unwrap();
 
     let total_supply = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerTotalSupplySubstate>>(
+        .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
             &resource_address.as_node_id(),
             MAIN_BASE_PARTITION,
             &FungibleResourceManagerField::TotalSupply.into(),
         )
-        .unwrap().value.0;
+        .unwrap()
+        .into_payload()
+        .into_latest();
     assert_eq!(total_supply, allocation_amount);
 
-    let key = scrypto_encode("symbol").unwrap();
-    let entry = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
-            &resource_address.as_node_id(),
-            METADATA_BASE_PARTITION,
-            &SubstateKey::Map(key),
+    let reader = SystemDatabaseReader::new(&substate_db);
+    let entry = reader
+        .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
+            resource_address.as_node_id(),
+            ObjectModuleId::Metadata,
+            ObjectCollectionKey::KeyValue(
+                MetadataCollection::EntryKeyValue.collection_index(),
+                &"symbol".to_string(),
+            ),
         )
         .unwrap()
-        .value;
+        .map(|v| v.into_latest());
 
     if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");
@@ -401,18 +399,24 @@ fn test_genesis_stake_allocation() {
             .cloned()
             .collect();
 
+        let reader = SystemDatabaseReader::new(&substate_db);
+
         for (index, validator_key) in vec![validator_0_key, validator_1_key]
             .into_iter()
             .enumerate()
         {
-            let validator_url_entry = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
+            let validator_url_entry = reader
+                .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
                     &new_validators[index].as_node_id(),
-                    METADATA_BASE_PARTITION,
-                    &SubstateKey::Map(scrypto_encode("url").unwrap()),
+                    ObjectModuleId::Metadata,
+                    ObjectCollectionKey::KeyValue(
+                        MetadataCollection::EntryKeyValue.collection_index(),
+                        &"url".to_string(),
+                    ),
                 )
-                .unwrap();
-            if let Some(MetadataValue::Url(url)) = validator_url_entry.value {
+                .unwrap()
+                .map(|v| v.into_latest());
+            if let Some(MetadataValue::Url(url)) = validator_url_entry {
                 assert_eq!(
                     url,
                     UncheckedUrl::of(format!("http://test.local?validator={:?}", validator_key))
@@ -444,17 +448,17 @@ fn test_genesis_time() {
         )
         .unwrap();
 
-    let proposer_minute_timestamp = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ProposerMinuteTimestampSubstate>>(
+    let reader = SystemDatabaseReader::new(&mut substate_db);
+    let timestamp = reader
+        .read_typed_object_field::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
             CONSENSUS_MANAGER.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
         )
         .unwrap()
-        .value
-        .0;
+        .into_latest();
 
-    assert_eq!(proposer_minute_timestamp.epoch_minute, 123);
+    assert_eq!(timestamp.epoch_minute, 123);
 }
 
 #[test]

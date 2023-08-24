@@ -64,12 +64,12 @@ impl Decimal {
     pub const ONE: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE), 0, 0]));
 
     /// Returns `Decimal` of 0.
-    pub fn zero() -> Self {
+    pub const fn zero() -> Self {
         Self::ZERO
     }
 
     /// Returns `Decimal` of 1.
-    pub fn one() -> Self {
+    pub const fn one() -> Self {
         Self::ONE
     }
 
