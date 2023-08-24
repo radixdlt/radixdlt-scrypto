@@ -8,7 +8,9 @@ use crate::blueprints::resource::{
     FungibleVaultBalanceFieldSubstate, FungibleVaultField, PayFeeEvent,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
+use crate::blueprints::transaction_tracker::{
+    TransactionStatus, TransactionStatusV1, TransactionTrackerSubstate,
+};
 use crate::errors::*;
 use crate::internal_prelude::KeyValueEntrySubstateV1;
 use crate::kernel::id_allocator::IdAllocator;
@@ -502,6 +504,7 @@ where
 
         let partition_number = substate
             .into_payload()
+            .v1()
             .partition_for_expiry_epoch(expiry_epoch)
             .expect("Transaction tracker should cover all valid epoch ranges");
 
@@ -515,12 +518,12 @@ where
             Some(value) => {
                 let substate: KeyValueEntrySubstate<TransactionStatus> = value.as_typed().unwrap();
                 match substate.into_value() {
-                    Some(status) => match status {
-                        TransactionStatus::CommittedSuccess
-                        | TransactionStatus::CommittedFailure => {
+                    Some(status) => match status.into_v1() {
+                        TransactionStatusV1::CommittedSuccess
+                        | TransactionStatusV1::CommittedFailure => {
                             return Err(RejectionReason::IntentHashPreviouslyCommitted);
                         }
-                        TransactionStatus::Cancelled => {
+                        TransactionStatusV1::Cancelled => {
                             return Err(RejectionReason::IntentHashPreviouslyCancelled);
                         }
                     },
@@ -938,7 +941,7 @@ where
         is_success: bool,
     ) {
         // Read the intent hash store
-        let mut transaction_tracker = track
+        let transaction_tracker = track
             .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
@@ -948,6 +951,8 @@ where
             .as_typed::<FieldSubstate<TransactionTrackerSubstate>>()
             .unwrap()
             .into_payload();
+
+        let mut transaction_tracker = transaction_tracker.into_v1();
 
         // Update the status of the intent hash
         if let TransactionIntentHash::ToCheck {
@@ -966,9 +971,9 @@ where
                         IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
                             KeyValueEntrySubstateV1 {
                                 value: Some(if is_success {
-                                    TransactionStatus::CommittedSuccess
+                                    TransactionStatus::V1(TransactionStatusV1::CommittedSuccess)
                                 } else {
-                                    TransactionStatus::CommittedFailure
+                                    TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
                                 }),
                                 // TODO: maybe make it immutable, but how does this affect partition deletion?
                                 mutability: SubstateMutability::Mutable,
@@ -1004,7 +1009,7 @@ where
                 MAIN_BASE_PARTITION,
                 TransactionTrackerField::TransactionTracker.into(),
                 IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(
-                    transaction_tracker,
+                    TransactionTrackerSubstate::V1(transaction_tracker),
                 )),
                 &mut |_| -> Result<(), ()> { Ok(()) },
             )
