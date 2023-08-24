@@ -5,6 +5,58 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
+fn test_query_role_rules() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ComponentRoleRuleTest",
+            "query_role_rules",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    assert_eq!(
+        receipt
+            .expect_commit_success()
+            .output::<(Option<AccessRule>, Option<AccessRule>, Option<AccessRule>)>(1),
+        (None, None, None)
+    );
+}
+
+#[test]
+fn test_pop_empty_auth_zone() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "LocalAuthZoneTest",
+            "pop_empty_auth_zone",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    assert_eq!(
+        receipt.expect_commit_success().output::<Option<Proof>>(1),
+        None
+    );
+}
+
+#[test]
 fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

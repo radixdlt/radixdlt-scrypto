@@ -1,6 +1,3 @@
-use scrypto::api::key_value_store_api::KeyValueStoreGenericArgs;
-use scrypto::api::object_api::ModuleId;
-use scrypto::api::LockFlags;
 use scrypto::prelude::wasm_api::*;
 use scrypto::prelude::*;
 

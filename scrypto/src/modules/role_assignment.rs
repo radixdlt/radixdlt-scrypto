@@ -97,7 +97,7 @@ impl RoleAssignment {
         self.internal_set_role(ObjectModuleId::Metadata, name, rule);
     }
 
-    pub fn get_metadata_role<A: Into<AccessRule>>(&self, name: &str) -> Option<AccessRule> {
+    pub fn get_metadata_role(&self, name: &str) -> Option<AccessRule> {
         self.internal_get_role(ObjectModuleId::Metadata, name)
     }
 
@@ -105,10 +105,7 @@ impl RoleAssignment {
         self.internal_set_role(ObjectModuleId::Royalty, name, rule);
     }
 
-    pub fn get_component_royalties_role<A: Into<AccessRule>>(
-        &self,
-        name: &str,
-    ) -> Option<AccessRule> {
+    pub fn get_component_royalties_role(&self, name: &str) -> Option<AccessRule> {
         self.internal_get_role(ObjectModuleId::Royalty, name)
     }
 }

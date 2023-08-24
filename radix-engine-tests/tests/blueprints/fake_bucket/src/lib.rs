@@ -1,4 +1,3 @@
-use scrypto::api::FieldValue;
 use scrypto::prelude::*;
 
 #[blueprint]
