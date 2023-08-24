@@ -4,7 +4,6 @@ use crate::internal_prelude::*;
 pub enum ManifestCustomExtension {}
 
 impl CustomExtension for ManifestCustomExtension {
-    const MAX_DEPTH: usize = MANIFEST_SBOR_V1_MAX_DEPTH;
     const PAYLOAD_PREFIX: u8 = MANIFEST_SBOR_V1_PAYLOAD_PREFIX;
 
     type CustomValueKind = ManifestCustomValueKind;
