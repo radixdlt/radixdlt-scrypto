@@ -331,6 +331,7 @@ mod serde_serialization {
 
 #[cfg(test)]
 mod tests {
+    use crate::rust::prelude::*;
     use crate::{
         basic_decode_with_depth_limit, basic_encode_with_depth_limit, BasicValue, BasicValueKind,
     };
