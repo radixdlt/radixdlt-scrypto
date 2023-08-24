@@ -7,13 +7,13 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system_db_checker::{
     SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults,
 };
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
+use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
     ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,

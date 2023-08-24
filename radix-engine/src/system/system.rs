@@ -6,12 +6,12 @@ use crate::errors::{
     InvalidGlobalizeAccess, InvalidModuleType, RuntimeError, SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
+use crate::internal_prelude::*;
 use crate::internal_prelude::{IndexEntrySubstate, SortedIndexEntrySubstate};
 use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
 use crate::kernel::call_frame::{NodeVisibility, ReferenceOrigin};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
-use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
@@ -19,10 +19,11 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::system::system_modules::SystemModuleMixer;
-use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
+use crate::system::system_substates::{KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta, SystemMapper,
 };
+use crate::system::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::actor_api::EventFlags;

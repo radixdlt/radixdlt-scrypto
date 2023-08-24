@@ -1,5 +1,9 @@
 use crate::blueprints::resource::{FungibleVaultBalanceFieldPayload, FungibleVaultField};
 use crate::internal_prelude::*;
+use crate::system::system_db_reader::SystemDatabaseReader;
+use crate::system::type_info::TypeInfoSubstate;
+use crate::track::TrackedSubstateValue;
+use crate::track::{TrackedNode, Write};
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
@@ -9,12 +13,6 @@ use radix_engine_store_interface::{
 };
 use sbor::rust::ops::Add;
 use sbor::rust::prelude::*;
-
-use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system_db_reader::SystemDatabaseReader;
-use crate::system::system_substates::FieldSubstate;
-use crate::track::TrackedSubstateValue;
-use crate::track::{TrackedNode, Write};
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {

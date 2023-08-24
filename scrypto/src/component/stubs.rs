@@ -188,7 +188,7 @@ extern_blueprint_internal! {
     "GlobalAccessController",
     AccessControllerFunctions
     {
-        fn create_global(controlled_asset: Bucket, rule_set: RuleSet, timed_recovery_delay_in_minutes: Option<u32>) -> Global<AccessController>;
+        fn create(controlled_asset: Bucket, rule_set: RuleSet, timed_recovery_delay_in_minutes: Option<u32>) -> Global<AccessController>;
     },
     {
         fn cancel_primary_role_badge_withdraw_attempt(&mut self);

@@ -13,3 +13,4 @@ pub mod system_db_reader;
 pub mod system_modules;
 pub mod system_substates;
 pub mod system_type_checker;
+pub mod type_info;

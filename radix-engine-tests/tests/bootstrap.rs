@@ -7,7 +7,7 @@ use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -419,7 +419,7 @@ fn test_genesis_stake_allocation() {
             if let Some(MetadataValue::Url(url)) = validator_url_entry {
                 assert_eq!(
                     url,
-                    Url(format!("http://test.local?validator={:?}", validator_key))
+                    UncheckedUrl::of(format!("http://test.local?validator={:?}", validator_key))
                 );
             } else {
                 panic!("Validator url was not a Url");

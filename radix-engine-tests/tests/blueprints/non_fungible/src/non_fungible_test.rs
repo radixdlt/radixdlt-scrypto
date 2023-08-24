@@ -181,7 +181,7 @@ mod non_fungible_test {
             let address = data.reference.unwrap();
 
             let some_component: Global<AnyComponent> = address.into();
-            some_component.get_metadata("test_key").unwrap()
+            some_component.get_metadata("test_key").unwrap().unwrap()
         }
 
         pub fn update_non_fungible_with_ownership() -> Bucket {

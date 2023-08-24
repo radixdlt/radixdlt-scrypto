@@ -1,15 +1,14 @@
 use radix_engine::blueprints::resource::*;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::prelude::*;
+use radix_engine::system::node_modules::royalty::ComponentRoyaltyAccumulatorFieldPayload;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
+use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine_interface::api::{ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
-
-use radix_engine::prelude::*;
-use radix_engine::system::node_modules::royalty::ComponentRoyaltyAccumulatorFieldPayload;
 use radix_engine_interface::types::{
     BlueprintId, IndexedScryptoValue, ObjectType, ResourceAddress,
 };

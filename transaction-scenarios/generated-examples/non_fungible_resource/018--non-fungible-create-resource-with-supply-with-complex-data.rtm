@@ -196,7 +196,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         NonFungibleLocalId("#1#") => Tuple(
             Tuple(
                 100u64,
-                NonFungibleGlobalId("resource_sim1nt4dkqjhyp9wknee6rghft6g08nn7yvddaktm244p8tkmxusxaxrzr:#8#"),
+                NonFungibleGlobalId("resource_sim1n2jzarmvf4cq5gfhugld6t2v0sc627uad2g7g48plta4znp88v6xx5:#8#"),
                 "Some string which could be made long for test cases",
                 Tuple(
                     42u8,

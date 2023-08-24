@@ -1,7 +1,12 @@
 use crate::internal_prelude::*;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
-use crate::system::system_substates::KeyValueEntrySubstate;
+use crate::system::system_db_reader::{
+    ObjectPartitionDescriptor, ResolvedPayloadSchema, SystemDatabaseReader,
+    SystemPartitionDescriptor, SystemReaderError,
+};
+use crate::system::system_substates::FieldSubstate;
+use crate::system::type_info::TypeInfoSubstate;
+use crate::types::Condition;
 use radix_engine_common::prelude::{
     scrypto_decode, scrypto_encode, Hash, ScryptoCustomExtension, ScryptoValue,
     VersionedScryptoSchema,
@@ -15,13 +20,6 @@ use radix_engine_interface::*;
 use radix_engine_store_interface::interface::ListableSubstateDatabase;
 use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::{validate_payload_against_schema, LocatedValidationError};
-
-use crate::system::system_db_reader::{
-    ObjectPartitionDescriptor, ResolvedPayloadSchema, SystemDatabaseReader,
-    SystemPartitionDescriptor, SystemReaderError,
-};
-use crate::system::system_substates::FieldSubstate;
-use crate::types::Condition;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SystemNodeCheckerState {
