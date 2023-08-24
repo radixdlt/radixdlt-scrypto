@@ -76,19 +76,19 @@ pub fn validate_custom_type_validation<'a, S: CustomSchema>(
             validate_numeric_validation(numeric_validation)?;
         }
         TypeKind::String => {
-            let TypeValidation::String (length_validation ) = type_validation else {
+            let TypeValidation::String(length_validation) = type_validation else {
                 return Err(SchemaValidationError::TypeValidationMismatch);
             };
             validate_length_validation(length_validation)?;
         }
         TypeKind::Array { .. } => {
-            let TypeValidation::Array (length_validation ) = type_validation else {
+            let TypeValidation::Array(length_validation) = type_validation else {
                 return Err(SchemaValidationError::TypeValidationMismatch);
             };
             validate_length_validation(length_validation)?;
         }
         TypeKind::Map { .. } => {
-            let TypeValidation::Map (length_validation ) = type_validation else {
+            let TypeValidation::Map(length_validation) = type_validation else {
                 return Err(SchemaValidationError::TypeValidationMismatch);
             };
             validate_length_validation(length_validation)?;

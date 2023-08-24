@@ -23,7 +23,12 @@ extern_blueprint_internal! {
     "GlobalMultiResourcePool",
     MultiResourcePoolFunctions
     {
-        fn instantiate(owner_role: OwnerRole, pool_manager_rule: AccessRule, resource_addresses: Vec<ResourceAddress>) -> Global<MultiResourcePool>;
+        fn instantiate(
+            owner_role: OwnerRole,
+            pool_manager_rule: AccessRule,
+            resource_addresses: Vec<ResourceAddress>,
+            address_reservation: Option<GlobalAddressReservation>
+        ) -> Global<MultiResourcePool>;
     },
     {
         fn contribute(&mut self, buckets: Vec<Bucket>) -> (Bucket, Vec<Bucket>);
@@ -55,7 +60,12 @@ extern_blueprint_internal! {
     "GlobalOneResourcePool",
     OneResourcePoolFunctions
     {
-        fn instantiate(owner_role: OwnerRole, pool_manager_rule: AccessRule, resource_address: ResourceAddress) -> Global<OneResourcePool>;
+        fn instantiate(
+            owner_role: OwnerRole,
+            pool_manager_rule: AccessRule,
+            resource_address: ResourceAddress,
+            address_reservation: Option<GlobalAddressReservation>
+        ) -> Global<OneResourcePool>;
     },
     {
         fn contribute(&mut self, bucket: Bucket) -> Bucket;
@@ -87,7 +97,12 @@ extern_blueprint_internal! {
     "GlobalTwoResourcePool",
     TwoResourcePoolFunctions
     {
-        fn instantiate(owner_role: OwnerRole, pool_manager_rule: AccessRule, resource_addresses: (ResourceAddress, ResourceAddress)) -> Global<TwoResourcePool>;
+        fn instantiate(
+            owner_role: OwnerRole,
+            pool_manager_rule: AccessRule,
+            resource_addresses: (ResourceAddress, ResourceAddress),
+            address_reservation: Option<GlobalAddressReservation>
+        ) -> Global<TwoResourcePool>;
     },
     {
         fn contribute(&mut self, buckets: (Bucket, Bucket)) -> (Bucket, Option<Bucket>);
