@@ -8,16 +8,16 @@ use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system_substates::KeyValueEntrySubstate;
 use radix_engine::system::system_db_checker::{
-    SystemDatabaseChecker, SystemDatabaseCheckerResults, SystemDatabaseCheckError,
+    SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults,
 };
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
 use radix_engine::system::system_substates::FieldSubstate;
+use radix_engine::system::system_substates::KeyValueEntrySubstate;
 use radix_engine::transaction::{
-    BalanceChange, CommitResult, CostingParameters, execute_preview, execute_transaction,
+    execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
     ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
@@ -30,10 +30,10 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
-    CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT, CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
-    CONSENSUS_MANAGER_NEXT_ROUND_IDENT, ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
+    ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
     ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
-    LeaderProposalHistory, TimePrecision,
+    LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
@@ -605,15 +605,19 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         package_address: &PackageAddress,
     ) -> IndexMap<SchemaHash, VersionedScryptoSchema> {
         let reader = SystemDatabaseReader::new(self.substate_db());
-        reader.collection_iter(
-            package_address.as_node_id(),
-            ObjectModuleId::Main,
-            PackageCollection::SchemaKeyValue.collection_index(),
-        ).unwrap().map(|(key, value)| {
-            let hash: SchemaHash = scrypto_decode(&key).unwrap();
-            let schema: PackageSchemaEntryPayload = scrypto_decode(&value).unwrap();
-            (hash, schema.content)
-        }).collect()
+        reader
+            .collection_iter(
+                package_address.as_node_id(),
+                ObjectModuleId::Main,
+                PackageCollection::SchemaKeyValue.collection_index(),
+            )
+            .unwrap()
+            .map(|(key, value)| {
+                let hash: SchemaHash = scrypto_decode(&key).unwrap();
+                let schema: PackageSchemaEntryPayload = scrypto_decode(&value).unwrap();
+                (hash, schema.content)
+            })
+            .collect()
     }
 
     pub fn get_package_blueprint_definitions(
@@ -621,15 +625,20 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         package_address: &PackageAddress,
     ) -> IndexMap<BlueprintVersionKey, BlueprintDefinition> {
         let reader = SystemDatabaseReader::new(self.substate_db());
-        reader.collection_iter(
-            package_address.as_node_id(),
-            ObjectModuleId::Main,
-            PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
-        ).unwrap().map(|(key, value)| {
-            let key: BlueprintVersionKey = scrypto_decode(&key).unwrap();
-            let definition: PackageBlueprintVersionDefinitionEntryPayload = scrypto_decode(&value).unwrap();
-            (key, definition.into_latest())
-        }).collect()
+        reader
+            .collection_iter(
+                package_address.as_node_id(),
+                ObjectModuleId::Main,
+                PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+            )
+            .unwrap()
+            .map(|(key, value)| {
+                let key: BlueprintVersionKey = scrypto_decode(&key).unwrap();
+                let definition: PackageBlueprintVersionDefinitionEntryPayload =
+                    scrypto_decode(&value).unwrap();
+                (key, definition.into_latest())
+            })
+            .collect()
     }
 
     pub fn sum_descendant_balance_changes(

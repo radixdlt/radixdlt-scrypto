@@ -747,7 +747,7 @@ mod helper_macros {
         };
         (SortedIndex, type $alias:ident = WRAPPED $content:ty$(,)?) => {
             // There is no system wrapper around SortedIndex substates
-            pub type $alias = $content;
+            pub type $alias = SortedIndexEntrySubstate<$content>;
         };
         ($unknown_system_substate_type:ident, type $alias:ident = WRAPPED $content:ty$(,)?) => {
             compile_error!(concat!(

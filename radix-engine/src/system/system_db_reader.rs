@@ -21,11 +21,11 @@ use sbor::HasLatestVersion;
 use sbor::LocalTypeIndex;
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
-use crate::system::system_substates::SubstateMutability;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::SchemaOrigin;
-use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_substates::FieldSubstate;
+use crate::system::system_substates::KeyValueEntrySubstate;
+use crate::system::system_substates::SubstateMutability;
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta,
 };
@@ -204,7 +204,8 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         node_id: &NodeId,
         key: &K,
     ) -> Option<V> {
-        let substate = self.substate_db
+        let substate = self
+            .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<V>>(
                 node_id,
                 MAIN_BASE_PARTITION,

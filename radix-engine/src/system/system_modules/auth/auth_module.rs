@@ -12,6 +12,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_substates::FieldSubstate;
 use crate::types::*;
 use radix_engine_interface::api::{ClientBlueprintApi, LockFlags, ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
@@ -21,7 +22,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
-use crate::system::system_substates::FieldSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {

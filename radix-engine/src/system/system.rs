@@ -6,6 +6,7 @@ use crate::errors::{
     InvalidGlobalizeAccess, InvalidModuleType, RuntimeError, SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
+use crate::internal_prelude::{IndexEntrySubstate, SortedIndexEntrySubstate};
 use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
 use crate::kernel::call_frame::{NodeVisibility, ReferenceOrigin};
 use crate::kernel::kernel_api::*;
@@ -18,6 +19,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::system::system_modules::SystemModuleMixer;
+use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta, SystemMapper,
 };
@@ -41,8 +43,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use crate::internal_prelude::IndexEntrySubstate;
-use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
@@ -1810,8 +1810,8 @@ where
         )?;
 
         let value: ScryptoValue = scrypto_decode(&buffer).unwrap();
-        let kv_entry = IndexEntrySubstate::entry(value);
-        let value = IndexedScryptoValue::from_typed(&kv_entry);
+        let index_entry = IndexEntrySubstate::entry(value);
+        let value = IndexedScryptoValue::from_typed(&index_entry);
 
         self.api
             .kernel_set_substate(&node_id, partition_num, SubstateKey::Map(key), value)
@@ -1940,8 +1940,9 @@ where
             &buffer,
         )?;
 
-        let value = IndexedScryptoValue::from_vec(buffer)
-            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
+        let value: ScryptoValue = scrypto_decode(&buffer).unwrap();
+        let sorted_entry = SortedIndexEntrySubstate::entry(value);
+        let value = IndexedScryptoValue::from_typed(&sorted_entry);
 
         self.api.kernel_set_substate(
             &node_id,
@@ -1974,7 +1975,10 @@ where
                 partition_num,
                 &SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone())),
             )?
-            .map(|v| v.into());
+            .map(|v| {
+                let value: SortedIndexEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
+                scrypto_encode(value.value()).unwrap()
+            });
 
         Ok(rtn)
     }
@@ -1999,7 +2003,12 @@ where
             .api
             .kernel_scan_sorted_substates(&node_id, partition_num, limit)?
             .into_iter()
-            .map(|(key, value)| (key, value.into()))
+            .map(|(key, value)| {
+                let value: SortedIndexEntrySubstate<ScryptoValue> = value.as_typed().unwrap();
+                let value = scrypto_encode(value.value()).unwrap();
+
+                (key, value)
+            })
             .collect();
 
         Ok(substates)

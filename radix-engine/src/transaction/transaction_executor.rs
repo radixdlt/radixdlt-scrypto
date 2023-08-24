@@ -10,15 +10,17 @@ use crate::blueprints::resource::{
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
+use crate::internal_prelude::KeyValueEntrySubstateV1;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
-use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
+use crate::system::system_substates::KeyValueEntrySubstate;
+use crate::system::system_substates::{FieldSubstate, SubstateMutability};
 use crate::track::interface::CommitableSubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
@@ -29,8 +31,6 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
-use crate::internal_prelude::KeyValueEntrySubstateV1;
-use crate::system::system_substates::{FieldSubstate, SubstateMutability};
 
 /// Protocol-defined costing parameters
 #[derive(Debug, Copy, Clone, ScryptoSbor)]
@@ -963,15 +963,17 @@ where
                         TRANSACTION_TRACKER.into_node_id(),
                         PartitionNumber(partition_number),
                         SubstateKey::Map(scrypto_encode(intent_hash).unwrap()),
-                        IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(KeyValueEntrySubstateV1 {
-                            value: Some(if is_success {
-                                TransactionStatus::CommittedSuccess
-                            } else {
-                                TransactionStatus::CommittedFailure
-                            }),
-                            // TODO: maybe make it immutable, but how does this affect partition deletion?
-                            mutability: SubstateMutability::Mutable,
-                        })),
+                        IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
+                            KeyValueEntrySubstateV1 {
+                                value: Some(if is_success {
+                                    TransactionStatus::CommittedSuccess
+                                } else {
+                                    TransactionStatus::CommittedFailure
+                                }),
+                                // TODO: maybe make it immutable, but how does this affect partition deletion?
+                                mutability: SubstateMutability::Mutable,
+                            },
+                        )),
                         &mut |_| -> Result<(), ()> { Ok(()) },
                     )
                     .unwrap();

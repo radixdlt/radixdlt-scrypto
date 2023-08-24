@@ -69,7 +69,6 @@ pub enum SubstateMutability {
     Immutable,
 }
 
-
 pub type KeyValueEntrySubstateV1<V> = KVSubstate<Option<V>>;
 
 // NOTE: This type trick seems to fix the generic ScryptoSbor issue
@@ -82,7 +81,7 @@ pub struct KVSubstate<E> {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(categorize_types = "")]
 pub enum KeyValueEntrySubstate<V> {
-    V1(KeyValueEntrySubstateV1<V>)
+    V1(KeyValueEntrySubstateV1<V>),
 }
 
 impl<V> KeyValueEntrySubstate<V> {
@@ -131,17 +130,13 @@ impl<V> KeyValueEntrySubstate<V> {
 
     pub fn remove(&mut self) -> Option<V> {
         match self {
-            KeyValueEntrySubstate::V1(substate) => {
-                substate.value.take()
-            }
+            KeyValueEntrySubstate::V1(substate) => substate.value.take(),
         }
     }
 
     pub fn mutability(&self) -> SubstateMutability {
         match self {
-            KeyValueEntrySubstate::V1(substate) => {
-                substate.mutability.clone()
-            }
+            KeyValueEntrySubstate::V1(substate) => substate.mutability.clone(),
         }
     }
 }
@@ -160,7 +155,7 @@ pub type IndexEntrySubstateV1<V> = V;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(categorize_types = "")]
 pub enum IndexEntrySubstate<V> {
-    V1(IndexEntrySubstateV1<V>)
+    V1(IndexEntrySubstateV1<V>),
 }
 
 impl<V> IndexEntrySubstate<V> {
@@ -179,20 +174,30 @@ impl<V> IndexEntrySubstate<V> {
             IndexEntrySubstate::V1(value) => value,
         }
     }
-
 }
-
 
 pub type SortedIndexEntrySubstateV1<V> = V;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(categorize_types = "")]
 pub enum SortedIndexEntrySubstate<V> {
-    V1(SortedIndexEntrySubstateV1<V>)
+    V1(SortedIndexEntrySubstateV1<V>),
 }
 
 impl<V> SortedIndexEntrySubstate<V> {
     pub fn entry(value: V) -> Self {
         Self::V1(value)
+    }
+
+    pub fn value(&self) -> &V {
+        match self {
+            SortedIndexEntrySubstate::V1(value) => value,
+        }
+    }
+
+    pub fn into_value(self) -> V {
+        match self {
+            SortedIndexEntrySubstate::V1(value) => value,
+        }
     }
 }

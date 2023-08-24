@@ -3,7 +3,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use radix_engine_common::prelude::{
-    Hash, scrypto_decode, scrypto_encode, ScryptoCustomExtension, ScryptoValue,
+    scrypto_decode, scrypto_encode, Hash, ScryptoCustomExtension, ScryptoValue,
     VersionedScryptoSchema,
 };
 use radix_engine_interface::api::{FieldIndex, ObjectModuleId};
@@ -14,7 +14,7 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_store_interface::interface::ListableSubstateDatabase;
 use radix_engine_store_interface::interface::SubstateDatabase;
-use sbor::{LocatedValidationError, validate_payload_against_schema};
+use sbor::{validate_payload_against_schema, LocatedValidationError};
 
 use crate::system::system_db_reader::{
     ObjectPartitionDescriptor, ResolvedPayloadSchema, SystemDatabaseReader,
@@ -545,27 +545,28 @@ impl SystemDatabaseChecker {
                             ) {
                                 // Key Check
                                 {
-                                    let map_key =
-                                        match key {
-                                            SubstateKey::Map(map_key) => map_key,
-                                            _ => return Err(
-                                                SystemPartitionCheckError::InvalidIndexCollectionKey,
-                                            ),
-                                        };
+                                    let map_key = match key {
+                                        SubstateKey::Map(map_key) => map_key,
+                                        _ => return Err(
+                                            SystemPartitionCheckError::InvalidIndexCollectionKey,
+                                        ),
+                                    };
 
                                     self.validate_payload(reader, &map_key, &key_schema)
                                         .map_err(|_| {
                                             SystemPartitionCheckError::InvalidIndexCollectionKey
                                         })?;
-
                                 }
 
                                 // Value Check
                                 {
-                                    let entry: IndexEntrySubstate<ScryptoValue> = scrypto_decode(&value)
-                                        .map_err(|_| SystemPartitionCheckError::InvalidIndexCollectionValue)?;
-                                    let value = scrypto_encode(entry.value())
-                                        .map_err(|_| SystemPartitionCheckError::InvalidIndexCollectionValue)?;
+                                    let entry: IndexEntrySubstate<ScryptoValue> =
+                                        scrypto_decode(&value).map_err(|_| {
+                                            SystemPartitionCheckError::InvalidIndexCollectionValue
+                                        })?;
+                                    let value = scrypto_encode(entry.value()).map_err(|_| {
+                                        SystemPartitionCheckError::InvalidIndexCollectionValue
+                                    })?;
                                     self.validate_payload(reader, &value, &value_schema)
                                         .map_err(|_| {
                                             SystemPartitionCheckError::InvalidIndexCollectionValue
@@ -658,22 +659,33 @@ impl SystemDatabaseChecker {
                                 &node_checker_state.node_id,
                                 partition_number,
                             ) {
-                                let sorted_key = match key {
-                                    SubstateKey::Sorted(sorted_key) => sorted_key,
-                                    _ => return Err(
-                                        SystemPartitionCheckError::InvalidSortedIndexCollectionKey,
-                                    ),
-                                };
+                                // Key Check
+                                {
+                                    let sorted_key = match key {
+                                        SubstateKey::Sorted(sorted_key) => sorted_key,
+                                        _ => return Err(
+                                            SystemPartitionCheckError::InvalidSortedIndexCollectionKey,
+                                        ),
+                                    };
 
-                                self.validate_payload(reader, &sorted_key.1, &key_schema)
-                                    .map_err(|_| {
-                                        SystemPartitionCheckError::InvalidSortedIndexCollectionKey
-                                    })?;
+                                    self.validate_payload(reader, &sorted_key.1, &key_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidSortedIndexCollectionKey
+                                        })?;
+                                }
 
-                                self.validate_payload(reader, &value, &value_schema)
-                                    .map_err(|_| {
+                                // Value Check
+                                {
+                                    let entry: SortedIndexEntrySubstate<ScryptoValue> = scrypto_decode(&value)
+                                        .map_err(|_| SystemPartitionCheckError::InvalidSortedIndexCollectionValue)?;
+                                    let value = scrypto_encode(entry.value()).map_err(|_| {
                                         SystemPartitionCheckError::InvalidSortedIndexCollectionValue
                                     })?;
+                                    self.validate_payload(reader, &value, &value_schema)
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidSortedIndexCollectionValue
+                                        })?;
+                                }
 
                                 substate_count += 1;
                             }
