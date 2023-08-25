@@ -103,6 +103,7 @@ fn check_encode_decode_schema<T: BasicEncode + BasicDecode + BasicDescribe + Eq 
         schema.v1(),
         type_index,
         &(),
+        64,
     )
     .unwrap();
 }

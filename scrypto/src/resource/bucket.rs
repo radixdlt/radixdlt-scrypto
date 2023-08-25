@@ -219,7 +219,9 @@ impl ScryptoBucket for Bucket {
     fn authorize_with_all<F: FnOnce() -> O, O>(&self, f: F) -> O {
         LocalAuthZone::push(self.create_proof_of_all());
         let output = f();
-        LocalAuthZone::pop().drop();
+        LocalAuthZone::pop()
+            .expect("Authorized closure changed auth zone proof stack")
+            .drop();
         output
     }
 }
@@ -307,7 +309,9 @@ impl ScryptoFungibleBucket for FungibleBucket {
     fn authorize_with_amount<A: Into<Decimal>, F: FnOnce() -> O, O>(&self, amount: A, f: F) -> O {
         LocalAuthZone::push(self.create_proof_of_amount(amount));
         let output = f();
-        LocalAuthZone::pop().drop();
+        LocalAuthZone::pop()
+            .expect("Authorized closure changed auth zone proof stack")
+            .drop();
         output
     }
 }
@@ -477,7 +481,9 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
     ) -> O {
         LocalAuthZone::push(self.create_proof_of_non_fungibles(non_fungible_local_ids));
         let output = f();
-        LocalAuthZone::pop().drop();
+        LocalAuthZone::pop()
+            .expect("Authorized closure changed auth zone proof stack")
+            .drop();
         output
     }
 }

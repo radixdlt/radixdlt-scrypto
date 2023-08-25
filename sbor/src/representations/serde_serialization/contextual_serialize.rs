@@ -9,21 +9,24 @@ pub enum SerializationParameters<'s, 'a, E: SerializableCustomExtension> {
     Schemaless {
         mode: SerializationMode,
         custom_context: E::CustomDisplayContext<'a>,
+        depth_limit: usize,
     },
     WithSchema {
         mode: SerializationMode,
         custom_context: E::CustomDisplayContext<'a>,
         schema: &'s Schema<E::CustomSchema>,
         type_index: LocalTypeIndex,
+        depth_limit: usize,
     },
 }
 
 impl<'s, 'a, E: SerializableCustomExtension> SerializationParameters<'s, 'a, E> {
-    pub fn get_context_and_type_index(&self) -> (SerializationContext<'s, 'a, E>, LocalTypeIndex) {
+    pub fn get_context_params(&self) -> (SerializationContext<'s, 'a, E>, LocalTypeIndex, usize) {
         match self {
             SerializationParameters::Schemaless {
                 mode,
                 custom_context,
+                depth_limit,
             } => (
                 SerializationContext {
                     schema: E::CustomSchema::empty_schema(),
@@ -31,12 +34,14 @@ impl<'s, 'a, E: SerializableCustomExtension> SerializationParameters<'s, 'a, E> 
                     custom_context: *custom_context,
                 },
                 LocalTypeIndex::any(),
+                *depth_limit,
             ),
             SerializationParameters::WithSchema {
                 mode,
                 custom_context,
                 schema,
                 type_index,
+                depth_limit,
             } => (
                 SerializationContext {
                     schema: *schema,
@@ -44,6 +49,7 @@ impl<'s, 'a, E: SerializableCustomExtension> SerializationParameters<'s, 'a, E> 
                     custom_context: *custom_context,
                 },
                 *type_index,
+                *depth_limit,
             ),
         }
     }
@@ -57,8 +63,14 @@ impl<'s, 'a, 'b, E: SerializableCustomExtension>
         serializer: S,
         context: &SerializationParameters<'s, 'a, E>,
     ) -> Result<S::Ok, S::Error> {
-        let (context, type_index) = context.get_context_and_type_index();
-        serialize_payload(serializer, self.payload_bytes(), &context, type_index)
+        let (context, type_index, depth_limit) = context.get_context_params();
+        serialize_payload(
+            serializer,
+            self.payload_bytes(),
+            &context,
+            type_index,
+            depth_limit,
+        )
     }
 }
 
@@ -70,7 +82,7 @@ impl<'s, 'a, 'b, E: SerializableCustomExtension>
         serializer: S,
         context: &SerializationParameters<'s, 'a, E>,
     ) -> Result<S::Ok, S::Error> {
-        let (context, type_index) = context.get_context_and_type_index();
+        let (context, type_index, depth_limit) = context.get_context_params();
         serialize_partial_payload(
             serializer,
             self.value_body_bytes(),
@@ -79,6 +91,7 @@ impl<'s, 'a, 'b, E: SerializableCustomExtension>
             0,
             &context,
             type_index,
+            depth_limit,
         )
     }
 }

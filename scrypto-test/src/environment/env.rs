@@ -541,6 +541,27 @@ impl TestEnvironment {
     // State
     //=======
 
+    /// Reads the state of a component and SBOR decodes it to the specified generic.
+    ///
+    /// This method reads the state of a component and returns it as an instance of [`S`]. Owned
+    /// nodes encountered in the component state are added as transient references to the test call
+    /// frame and references are added as references to the test call frame. This means that all
+    /// nodes in the component state become visible to the tests.
+    ///
+    /// # Arguments
+    ///
+    /// * `component_address`: [`ComponentAddress`] - The address of the component to read the state
+    /// of.
+    ///
+    /// # Returns
+    ///
+    /// * [`Result<S, RuntimeError>`] - If the component state could be read successfully then an
+    /// [`Ok`] is returned, otherwise an [`Err`] is returned.
+    ///
+    /// # Panics
+    ///
+    /// This method panics if the component state can not be decoded as the generic type parameter
+    /// [`S`].
     pub fn read_component_state<S>(
         &mut self,
         component_address: ComponentAddress,

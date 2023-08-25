@@ -1,4 +1,3 @@
-use scrypto::api::field_api::LockFlags;
 use scrypto::prelude::*;
 
 #[blueprint]

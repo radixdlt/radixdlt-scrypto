@@ -57,11 +57,12 @@ pub trait CustomSchema: Debug + Clone + Copy + PartialEq + Eq + 'static {
 }
 
 pub trait CustomExtension: Debug + Clone + PartialEq + Eq + 'static {
-    const MAX_DEPTH: usize;
     const PAYLOAD_PREFIX: u8;
+
     type CustomValueKind: CustomValueKind;
 
     type CustomTraversal: CustomTraversal<CustomValueKind = Self::CustomValueKind>;
+
     type CustomSchema: CustomSchema;
 
     /// Used in the typed traverser

@@ -1,4 +1,3 @@
-use scrypto::api::*;
 use scrypto::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, NonFungibleData)]

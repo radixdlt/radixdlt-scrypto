@@ -8,12 +8,13 @@ pub fn traverse_payload_with_types<'de, 's, E: CustomExtension>(
     payload: &'de [u8],
     schema: &'s Schema<E::CustomSchema>,
     index: LocalTypeIndex,
+    depth_limit: usize,
 ) -> TypedTraverser<'de, 's, E> {
     TypedTraverser::new(
         payload,
         schema,
         index,
-        E::MAX_DEPTH,
+        depth_limit,
         ExpectedStart::PayloadPrefix(E::PAYLOAD_PREFIX),
         true,
     )
@@ -26,12 +27,13 @@ pub fn traverse_partial_payload_with_types<'de, 's, E: CustomExtension>(
     current_depth: usize,
     schema: &'s Schema<E::CustomSchema>,
     index: LocalTypeIndex,
+    depth_limit: usize,
 ) -> TypedTraverser<'de, 's, E> {
     TypedTraverser::new(
         partial_payload,
         schema,
         index,
-        E::MAX_DEPTH - current_depth,
+        depth_limit - current_depth,
         expected_start,
         check_exact_end,
     )

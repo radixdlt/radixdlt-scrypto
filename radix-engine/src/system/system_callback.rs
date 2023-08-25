@@ -53,10 +53,10 @@ impl Default for SystemLockData {
 #[derive(Clone)]
 pub enum KeyValueEntryLockData {
     Read,
-    Write {
+    KVStoreWrite {
         kv_store_validation_target: KVStoreTypeTarget,
     },
-    BlueprintWrite {
+    KVCollectionWrite {
         target: BlueprintTypeTarget,
         collection_index: CollectionIndex,
     },

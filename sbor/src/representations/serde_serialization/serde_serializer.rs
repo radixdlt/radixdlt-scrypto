@@ -74,8 +74,9 @@ pub(crate) fn serialize_payload<S: Serializer, E: SerializableCustomExtension>(
     payload: &[u8],
     context: &SerializationContext<'_, '_, E>,
     index: LocalTypeIndex,
+    depth_limit: usize,
 ) -> Result<S::Ok, S::Error> {
-    let mut traverser = traverse_payload_with_types(payload, context.schema, index);
+    let mut traverser = traverse_payload_with_types(payload, context.schema, index, depth_limit);
     let success =
         serialize_value_tree::<S, E>(serializer, &mut traverser, context, &ValueContext::Default)?;
     consume_end_event::<S, E>(&mut traverser)?;
@@ -90,6 +91,7 @@ pub(crate) fn serialize_partial_payload<S: Serializer, E: SerializableCustomExte
     current_depth: usize,
     context: &SerializationContext<'_, '_, E>,
     index: LocalTypeIndex,
+    depth_limit: usize,
 ) -> Result<S::Ok, S::Error> {
     let mut traverser = traverse_partial_payload_with_types(
         partial_payload,
@@ -98,6 +100,7 @@ pub(crate) fn serialize_partial_payload<S: Serializer, E: SerializableCustomExte
         current_depth,
         context.schema,
         index,
+        depth_limit,
     );
     let success =
         serialize_value_tree::<S, E>(serializer, &mut traverser, context, &ValueContext::Default)?;
@@ -800,6 +803,7 @@ mod tests {
                 .serializable(SerializationParameters::Schemaless {
                     mode: SerializationMode::Natural,
                     custom_context: (),
+                    depth_limit: 64,
                 }),
             expected_simple,
         );
@@ -1171,6 +1175,7 @@ mod tests {
                     schema: schema.v1(),
                     custom_context: (),
                     type_index,
+                    depth_limit: 64,
                 }),
             expected_programmatic,
         );
@@ -1216,6 +1221,7 @@ mod tests {
                     schema: schema.v1(),
                     custom_context: (),
                     type_index,
+                    depth_limit: 64,
                 }),
             expected_natural,
         );
@@ -1454,6 +1460,7 @@ mod tests {
                     schema: schema.v1(),
                     custom_context: (),
                     type_index,
+                    depth_limit: 64,
                 }),
             expected_model,
         );

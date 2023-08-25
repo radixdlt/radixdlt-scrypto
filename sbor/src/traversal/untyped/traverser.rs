@@ -9,10 +9,11 @@ pub fn calculate_value_tree_body_byte_length<'de, 's, E: CustomExtension>(
     partial_payload: &'de [u8],
     value_kind: ValueKind<E::CustomValueKind>,
     current_depth: usize,
+    depth_limit: usize,
 ) -> Result<usize, DecodeError> {
     let mut traverser = VecTraverser::<E::CustomTraversal>::new(
         partial_payload,
-        E::MAX_DEPTH - current_depth,
+        depth_limit - current_depth,
         ExpectedStart::ValueBody(value_kind),
         false,
     );

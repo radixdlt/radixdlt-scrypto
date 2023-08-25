@@ -18,8 +18,10 @@ pub fn format_payload_as_rustlike_value<F: fmt::Write, E: FormattableCustomExten
     context: &RustLikeDisplayContext<'_, '_, E>,
     payload: &'_ [u8],
     type_index: LocalTypeIndex,
+    depth_limit: usize,
 ) -> Result<(), FormattingError> {
-    let mut traverser = traverse_payload_with_types(payload, context.schema, type_index);
+    let mut traverser =
+        traverse_payload_with_types(payload, context.schema, type_index, depth_limit);
     if let PrintMode::MultiLine {
         first_line_indent, ..
     } = &context.print_mode
@@ -42,6 +44,7 @@ pub(crate) fn format_partial_payload_as_rustlike_value<
     current_depth: usize,
     context: &RustLikeDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
+    depth_limit: usize,
 ) -> Result<(), FormattingError> {
     let mut traverser = traverse_partial_payload_with_types(
         partial_payload,
@@ -50,6 +53,7 @@ pub(crate) fn format_partial_payload_as_rustlike_value<
         current_depth,
         context.schema,
         type_index,
+        depth_limit,
     );
     if let PrintMode::MultiLine {
         first_line_indent, ..
@@ -599,6 +603,7 @@ mod tests {
             schema: schema.v1(),
             custom_context: Default::default(),
             type_index,
+            depth_limit: 64,
         };
         assert_eq!(
             &BasicRawPayload::new_from_valid_slice_with_checks(&payload)
@@ -681,6 +686,7 @@ mod tests {
             schema: schema.v1(),
             custom_context: Default::default(),
             type_index,
+            depth_limit: 64,
         };
         assert_eq!(
             &BasicRawPayload::new_from_valid_slice_with_checks(&payload)

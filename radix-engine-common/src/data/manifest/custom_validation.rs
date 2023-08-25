@@ -317,6 +317,7 @@ mod tests {
             schema.v1(),
             type_index,
             &(),
+            MANIFEST_SBOR_V1_MAX_DEPTH,
         );
 
         result.expect("Validation check failed");
@@ -390,6 +391,7 @@ mod tests {
             schema.v1(),
             type_index,
             &(),
+            MANIFEST_SBOR_V1_MAX_DEPTH,
         );
 
         result.expect("Expected validation to succeed");
@@ -404,6 +406,7 @@ mod tests {
             schema.v1(),
             type_index,
             &(),
+            MANIFEST_SBOR_V1_MAX_DEPTH,
         );
 
         matches!(

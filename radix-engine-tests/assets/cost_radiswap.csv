@@ -1,11 +1,20 @@
+<<<<<<< HEAD
 Total Cost (XRD)                                                           ,     0.508586350488275582,    100.0%
 - Execution Cost (XRD)                                                     ,                 0.362126,     71.2%
+=======
+Total Cost (XRD)                                                           ,     0.508514000488275582,    100.0%
+- Execution Cost (XRD)                                                     ,               0.36205365,     71.2%
+>>>>>>> origin/release/rcnet-v3
 - Finalization Cost (XRD)                                                  ,               0.04250985,      8.4%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,     0.103950500488275582,     20.4%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
+<<<<<<< HEAD
 Execution Cost Breakdown                                                   ,                  7242520,    100.0%
+=======
+Execution Cost Breakdown                                                   ,                  7241073,    100.0%
+>>>>>>> origin/release/rcnet-v3
 - AllocateNodeId                                                           ,                     3432,      0.0%
 - BeforeInvoke                                                             ,                     4362,      0.1%
 - CloseSubstate                                                            ,                    58380,      0.8%
@@ -17,14 +26,24 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalAccount                                              ,                   653961,      9.0%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   421132,      5.8%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43173,      0.6%
+<<<<<<< HEAD
 - OpenSubstate::GlobalPackage                                              ,                  2745341,     37.9%
 - OpenSubstate::GlobalTwoResourcePool                                      ,                   655432,      9.0%
 - OpenSubstate::InternalFungibleVault                                      ,                   351248,      4.8%
+=======
+- OpenSubstate::GlobalPackage                                              ,                  2744848,     37.9%
+- OpenSubstate::GlobalTwoResourcePool                                      ,                   655432,      9.1%
+- OpenSubstate::InternalFungibleVault                                      ,                   351248,      4.9%
+>>>>>>> origin/release/rcnet-v3
 - OpenSubstate::InternalGenericComponent                                   ,                    99254,      1.4%
 - PinNode                                                                  ,                     3200,      0.0%
 - PrepareWasmCode                                                          ,                   581890,      8.0%
 - QueryActor                                                               ,                     5000,      0.1%
+<<<<<<< HEAD
 - ReadSubstate                                                             ,                   812068,     11.2%
+=======
+- ReadSubstate                                                             ,                   811598,     11.2%
+>>>>>>> origin/release/rcnet-v3
 - RunNativeCode::Worktop_drain                                             ,                    13505,      0.2%
 - RunNativeCode::Worktop_drop                                              ,                    15385,      0.2%
 - RunNativeCode::Worktop_put                                               ,                    36524,      0.5%

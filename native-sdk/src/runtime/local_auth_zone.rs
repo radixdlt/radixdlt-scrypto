@@ -50,7 +50,9 @@ impl LocalAuthZone {
         AuthZoneRef(auth_zone).drop_signature_proofs(api)
     }
 
-    pub fn pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<Proof, E>
+    pub fn pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        api: &mut Y,
+    ) -> Result<Option<Proof>, E>
     where
         Y: ClientApi<E>,
     {
