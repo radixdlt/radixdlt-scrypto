@@ -1,6 +1,8 @@
 use radix_engine::blueprints::resource::*;
 use radix_engine::prelude::*;
-use radix_engine::system::node_modules::royalty::ComponentRoyaltyAccumulatorFieldPayload;
+use radix_engine::system::node_modules::royalty::{
+    ComponentRoyaltyAccumulatorFieldPayload, ComponentRoyaltyField,
+};
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine_interface::api::{ModuleId, ObjectModuleId};
@@ -45,6 +47,14 @@ pub trait StateTreeVisitor {
         _id: &NonFungibleLocalId,
     ) {
     }
+
+    fn visit_node_id(
+        &mut self,
+        _parent_id: Option<&(NodeId, PartitionNumber, SubstateKey)>,
+        _node_id: &NodeId,
+        _depth: u32,
+    ) {
+    }
 }
 
 impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'s, 'v, S, V> {
@@ -56,10 +66,15 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
         }
     }
 
-    pub fn traverse_subtree(&mut self, node_id: NodeId) {
+    pub fn traverse_subtree(
+        &mut self,
+        parent_node_id: Option<&(NodeId, PartitionNumber, SubstateKey)>,
+        node_id: NodeId,
+    ) {
         Self::traverse_recursive(
             &self.system_db_reader,
-            &mut self.visitor,
+            self.visitor,
+            parent_node_id,
             node_id,
             0,
             self.max_depth,
@@ -69,6 +84,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
     fn traverse_recursive(
         system_db_reader: &SystemDatabaseReader<'s, S>,
         visitor: &mut V,
+        parent: Option<&(NodeId, PartitionNumber, SubstateKey)>,
         node_id: NodeId,
         depth: u32,
         max_depth: u32,
@@ -77,6 +93,9 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
             return;
         }
 
+        // Notify visitor
+        visitor.visit_node_id(parent, &node_id, depth);
+
         // Load type info
         let type_info = system_db_reader
             .get_type_info(&node_id)
@@ -84,13 +103,14 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
 
         match type_info {
             TypeInfoSubstate::KeyValueStore(_) => {
-                for (_key, value) in system_db_reader.key_value_store_iter(&node_id).unwrap() {
+                for (key, value) in system_db_reader.key_value_store_iter(&node_id).unwrap() {
                     let (_, owned_nodes, _) =
                         IndexedScryptoValue::from_slice(&value).unwrap().unpack();
                     for child_node_id in owned_nodes {
                         Self::traverse_recursive(
                             system_db_reader,
                             visitor,
+                            Some(&(node_id, MAIN_BASE_PARTITION, SubstateKey::Map(key.clone()))),
                             child_node_id,
                             depth + 1,
                             max_depth,
@@ -150,8 +170,9 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                         )
                         .unwrap()
                     {
+                        let map_key = key.into_map();
                         let non_fungible_local_id: NonFungibleLocalId =
-                            scrypto_decode(&key).unwrap();
+                            scrypto_decode(&map_key).unwrap();
                         visitor.visit_non_fungible(
                             node_id,
                             &ResourceAddress::new_or_panic(info.get_outer_object().into()),
@@ -175,6 +196,14 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                                         Self::traverse_recursive(
                                             system_db_reader,
                                             visitor,
+                                            Some(&(
+                                                node_id,
+                                                ROYALTY_BASE_PARTITION,
+                                                SubstateKey::Field(
+                                                    ComponentRoyaltyField::Accumulator
+                                                        .field_index(),
+                                                ),
+                                            )),
                                             royalty.royalty_vault.0 .0,
                                             depth + 1,
                                             max_depth,
@@ -193,14 +222,24 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
 
                     if let Some((_, fields)) = blueprint_def.interface.state.fields {
                         for (index, _field) in fields.iter().enumerate() {
-                            let field_value = system_db_reader
-                                .read_object_field(&node_id, ObjectModuleId::Main, index as u8)
+                            // TODO: what if the field is conditional?
+                            let (field_value, partition_number) = system_db_reader
+                                .read_object_field_advanced(
+                                    &node_id,
+                                    ObjectModuleId::Main,
+                                    index as u8,
+                                )
                                 .expect("Broken database");
                             let (_, owned_nodes, _) = field_value.unpack();
                             for child_node_id in owned_nodes {
                                 Self::traverse_recursive(
                                     system_db_reader,
                                     visitor,
+                                    Some(&(
+                                        node_id,
+                                        partition_number,
+                                        SubstateKey::Field(index as u8),
+                                    )),
                                     child_node_id,
                                     depth + 1,
                                     max_depth,
@@ -212,16 +251,18 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                     for (index, _collection) in
                         blueprint_def.interface.state.collections.iter().enumerate()
                     {
-                        for (_key, value) in system_db_reader
-                            .collection_iter(&node_id, ObjectModuleId::Main, index as u8)
-                            .unwrap()
-                        {
+                        let (iter, partition_number) = system_db_reader
+                            .collection_iter_advanced(&node_id, ObjectModuleId::Main, index as u8)
+                            .unwrap();
+
+                        for (substate_key, value) in iter {
                             let (_, owned_nodes, _) =
                                 IndexedScryptoValue::from_slice(&value).unwrap().unpack();
                             for child_node_id in owned_nodes {
                                 Self::traverse_recursive(
                                     system_db_reader,
                                     visitor,
+                                    Some(&(node_id, partition_number, substate_key.clone())),
                                     child_node_id,
                                     depth + 1,
                                     max_depth,
