@@ -38,7 +38,8 @@ fn test_bootstrap_receipt_should_match_constants() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -117,7 +118,8 @@ fn test_bootstrap_receipts_should_have_complete_system_structure() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -217,7 +219,8 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
@@ -353,7 +356,8 @@ fn test_genesis_stake_allocation() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
@@ -435,7 +439,8 @@ fn test_genesis_time() {
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
-    let mut bootstrapper = Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
 
     let _ = bootstrapper
         .bootstrap_with_genesis_data(

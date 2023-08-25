@@ -312,7 +312,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         let native_vm = NativeVm::new_with_extension(self.custom_extension);
         let vm = Vm::new(&scrypto_vm, native_vm.clone());
         let mut substate_db = self.custom_database;
-        let mut bootstrapper = Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, bootstrap_trace);
+        let mut bootstrapper = Bootstrapper::new(
+            NetworkDefinition::simulator(),
+            &mut substate_db,
+            vm,
+            bootstrap_trace,
+        );
         let GenesisReceipts {
             system_bootstrap_receipt,
             data_ingestion_receipts,

@@ -69,7 +69,8 @@ impl Publish {
             let native_vm = DefaultNativeVm::new();
             let vm = Vm::new(&scrypto_vm, native_vm);
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false).bootstrap_test_default();
+            Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
+                .bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
 

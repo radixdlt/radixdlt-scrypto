@@ -16,7 +16,8 @@ impl Show {
         let native_vm = DefaultNativeVm::new();
         let vm = Vm::new(&scrypto_vm, native_vm);
         let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false).bootstrap_test_default();
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
+            .bootstrap_test_default();
 
         if let Ok(a) = SimulatorPackageAddress::from_str(&self.address) {
             dump_package(a.0, &substate_db, out).map_err(Error::LedgerDumpError)
