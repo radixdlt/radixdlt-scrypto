@@ -7,7 +7,7 @@ use crate::blueprints::resource::{
 use crate::system::checkers::ApplicationChecker;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::{scrypto_decode, RESOURCE_PACKAGE};
-use radix_engine_common::types::{NodeId, ResourceAddress};
+use radix_engine_common::types::{NodeId, resource_address, ResourceAddress};
 use radix_engine_interface::api::FieldIndex;
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT,
@@ -25,19 +25,19 @@ pub struct ResourceCounter {
 }
 
 #[derive(Debug, Default)]
-pub struct ResourceChecker {
+pub struct ResourceDatabaseChecker {
     resources: BTreeMap<ResourceAddress, ResourceCounter>,
     non_fungible_vaults: BTreeMap<NodeId, ResourceCounter>,
 }
 
 #[derive(Debug, Default)]
-pub struct ResourceCheckerResults {
+pub struct ResourceDatabaseCheckerResults {
     pub num_resources: usize,
     pub total_supply: BTreeMap<ResourceAddress, Decimal>,
 }
 
-impl ApplicationChecker for ResourceChecker {
-    type ApplicationCheckerResults = ResourceCheckerResults;
+impl ApplicationChecker for ResourceDatabaseChecker {
+    type ApplicationCheckerResults = ResourceDatabaseCheckerResults;
 
     fn on_field(
         &mut self,
@@ -181,30 +181,9 @@ impl ApplicationChecker for ResourceChecker {
             total_supply.insert(*address, tracker.tracking_supply);
         }
 
-        ResourceCheckerResults {
+        ResourceDatabaseCheckerResults {
             num_resources: self.resources.len(),
             total_supply,
         }
     }
 }
-
-/*
-#[derive(Debug, Default)]
-pub struct ResourceEventChecker;
-
-impl ResourceEventChecker {
-    pub fn check_events(
-        db_result: ResourceCheckerResults,
-        collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
-    ) {
-        for (event_id, event) in collected_events.into_iter().flat_map(|e| e.into_iter()) {
-            match event_id.0 {
-                Emitter::Method(node_id, object_module_id)
-            }
-
-        }
-
-    }
-
-}
- */

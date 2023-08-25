@@ -7,8 +7,8 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::checkers::{ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults, ResourceEventChecker};
-use radix_engine::system::checkers::{ResourceChecker, SystemEventChecker};
+use radix_engine::system::checkers::{ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults, ResourceEventChecker, ApplicationEventChecker, SystemEventCheckerError};
+use radix_engine::system::checkers::SystemEventChecker;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
@@ -2108,6 +2108,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     > {
         let mut checker = SystemDatabaseChecker::<A>::new();
         checker.check_db(&self.database)
+    }
+
+    pub fn check_events<A: ApplicationEventChecker>(&self) -> Result<A::ApplicationEventCheckerResults, SystemEventCheckerError> {
+        let mut event_checker = SystemEventChecker::<A>::new();
+        event_checker.check_all_events(&self.database, self.collected_events())
     }
 }
 
