@@ -13,8 +13,6 @@ use transaction::validation::{TransactionValidator, ValidationConfig};
 // - Adding a secp256k1 or ed25519 signature, whichever is worse
 // - Adding a notary signature
 
-// ED25519 signature is larger than Secp256k1 due to lack of public key recovery
-
 #[test]
 fn estimate_locking_fee_from_an_account_protected_by_signature() {
     // Arrange
@@ -255,6 +253,8 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     );
 }
 
+// ED25519 signature is larger than Secp256k1 due to lack of public key recovery
+// Thus, we use ed25519 when estimating signer signature cost
 #[test]
 fn estimate_adding_signature() {
     // Arrange
@@ -319,12 +319,15 @@ fn estimate_adding_signature() {
     );
 }
 
+// Different from signer signature, no public key is needed in the notary signature (stored in header instead)
+// Without signature, Secp256k1 signature is larger than ED25519 signature due to recovery byte
+// Thus, we use Secp256k1 when estimating notarization cost
 fn estimate_notarizing(notary_is_signatory: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let account1 = test_runner.new_account_advanced(OwnerRole::Updatable(AccessRule::AllowAll));
-    let (_pk2, sk2, account2) = test_runner.new_ed25519_virtual_account();
+    let (_pk2, sk2, account2) = test_runner.new_virtual_account();
 
     // Additional signature has an impact on the size of `AuthZone` substate.
     // We're doing 5 withdraw-deposit calls, which is "larger" than most transactions.
@@ -387,12 +390,12 @@ fn estimate_notarizing_notary_is_signatory() {
     estimate_notarizing(true);
 }
 
-fn create_notarized_transaction(
+fn create_notarized_transaction<S: Signer>(
     test_runner: &mut DefaultTestRunner,
     network: &NetworkDefinition,
     manifest: TransactionManifestV1,
-    signers: Vec<&Ed25519PrivateKey>,
-    notary: &Ed25519PrivateKey,
+    signers: Vec<&S>,
+    notary: &S,
     notary_is_signatory: bool,
 ) -> NotarizedTransactionV1 {
     let notarized_transaction = TransactionBuilder::new()
