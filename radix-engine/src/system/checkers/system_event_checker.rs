@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::system::system_db_reader::{SystemDatabaseReader, SystemReaderError};
 use crate::system::system_type_checker::{BlueprintTypeTarget, SchemaValidationMeta};
 use radix_engine_common::constants::BLUEPRINT_PAYLOAD_MAX_DEPTH;
@@ -7,6 +8,26 @@ use radix_engine_interface::types::Emitter;
 use radix_engine_store_interface::interface::SubstateDatabase;
 use utils::btreeset;
 
+pub trait ApplicationEventChecker: Default {
+    type ApplicationEventCheckerResults: Debug + Default;
+
+    fn on_event(
+        &mut self,
+        _info: BlueprintInfo,
+        _emitter: Emitter,
+        _event: &Vec<u8>,
+    ) {
+    }
+
+    fn on_finish(&self) -> Self::ApplicationEventCheckerResults {
+        Self::ApplicationEventCheckerResults::default()
+    }
+}
+
+impl ApplicationEventChecker for () {
+    type ApplicationEventCheckerResults = ();
+}
+
 #[derive(Debug)]
 pub enum SystemEventCheckerError {
     MissingObjectTypeTarget,
@@ -14,18 +35,22 @@ pub enum SystemEventCheckerError {
     InvalidEvent,
 }
 
-pub struct SystemEventChecker;
+pub struct SystemEventChecker<A: ApplicationEventChecker> {
+    application_checker: A,
+}
 
-impl SystemEventChecker {
+impl<A: ApplicationEventChecker> SystemEventChecker<A> {
     pub fn new() -> Self {
-        Self
+        Self {
+            application_checker: A::default()
+        }
     }
 
     pub fn check_all_events<S: SubstateDatabase>(
-        &self,
+        &mut self,
         substate_db: &S,
         events: &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
-    ) -> Result<(), SystemEventCheckerError> {
+    ) -> Result<A::ApplicationEventCheckerResults, SystemEventCheckerError> {
         let reader = SystemDatabaseReader::new(substate_db);
 
         for (event_id, event_payload) in events.iter().flatten() {
@@ -55,8 +80,12 @@ impl SystemEventChecker {
             reader
                 .validate_payload(&event_payload, &event_schema, BLUEPRINT_PAYLOAD_MAX_DEPTH)
                 .map_err(|_| SystemEventCheckerError::InvalidEvent)?;
+
+            self.application_checker.on_event(type_target.blueprint_info, event_id.0.clone(), event_payload);
         }
 
-        Ok(())
+        let results = self.application_checker.on_finish();
+
+        Ok(results)
     }
 }

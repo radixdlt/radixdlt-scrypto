@@ -7,10 +7,7 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::checkers::{
-    ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker,
-    SystemDatabaseCheckerResults,
-};
+use radix_engine::system::checkers::{ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults, ResourceEventChecker};
 use radix_engine::system::checkers::{ResourceChecker, SystemEventChecker};
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
@@ -391,7 +388,7 @@ impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
             .expect("Database should be consistent after running test");
         println!("{:?}", results);
 
-        SystemEventChecker::new()
+        SystemEventChecker::<ResourceEventChecker>::new()
             .check_all_events(&self.database, &self.collected_events)
             .expect("Events should be consistent");
     }
