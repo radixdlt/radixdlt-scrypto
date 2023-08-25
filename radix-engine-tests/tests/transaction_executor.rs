@@ -77,7 +77,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     let receipt = test_runner.execute_transaction(
         get_validated(&transaction).unwrap().get_executable(),
         CostingParameters::default(),
-        ExecutionConfig::for_test_transaction(),
+        ExecutionConfig::for_test_transaction()
     );
 
     // Assert
@@ -102,7 +102,7 @@ fn test_normal_transaction_flow() {
     let vm = Vm::new(&scrypto_vm, native_vm);
 
     let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::new(&mut substate_db, vm.clone(), true)
+    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm.clone(), true)
         .bootstrap_test_default()
         .unwrap();
 

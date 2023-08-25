@@ -31,7 +31,7 @@ mod multi_threaded_test {
             native_vm,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::new(&mut substate_db, vm.clone(), false)
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm.clone(), false)
             .bootstrap_test_default()
             .unwrap();
 

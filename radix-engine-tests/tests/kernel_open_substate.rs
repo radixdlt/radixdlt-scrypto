@@ -38,7 +38,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         scrypto_vm: &scrypto_vm,
         native_vm: native_vm.clone(),
     };
-    Bootstrapper::new(&mut database, vm, false);
+    Bootstrapper::new(NetworkDefinition::simulator(), &mut database, vm, false);
 
     // Create kernel
     let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
