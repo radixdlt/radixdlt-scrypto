@@ -321,19 +321,16 @@ fn estimate_notarizing(notary_is_signatory: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (pk1, sk1, account1) = test_runner.new_virtual_account();
-    let (_pk2, sk2, account2) = test_runner.new_virtual_account();
+    let (_pk1, sk1, account1) = test_runner.new_virtual_account();
 
     // Additional signature has an impact on the size of `AuthZone` substate.
-    // We're doing 5 withdraw-deposit calls, which is "larger" than most transactions.
+    // We're doing 10 method calls, which is "larger" than most transactions.
     // But, in theory, the cost could be even higher.
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 20)
+        .lock_fee_from_faucet()
         .then(|mut builder| {
-            for _ in 0..5 {
-                builder = builder
-                    .withdraw_from_account(account1, XRD, 1)
-                    .try_deposit_batch_or_abort(account2, None);
+            for _ in 0..10 {
+                builder = builder.try_deposit_batch_or_abort(account1, None);
             }
             builder
         })
@@ -341,7 +338,7 @@ fn estimate_notarizing(notary_is_signatory: bool) {
 
     let receipt1 = test_runner.preview_manifest(
         manifest.clone(),
-        vec![PublicKey::Secp256k1(pk1)], // signed by account 1
+        vec![], // signed by nobody
         DEFAULT_TIP_PERCENTAGE,
         PreviewFlags::default(),
     );
@@ -352,8 +349,8 @@ fn estimate_notarizing(notary_is_signatory: bool) {
         &mut test_runner,
         &network,
         manifest,
-        vec![&sk1], // signed by account 1
-        &sk2,       // notarized by account 2
+        vec![&sk1], // signed by nobody
+        &sk1,       // notarized by account 1
         notary_is_signatory,
     );
     let receipt2 = test_runner.execute_transaction(
