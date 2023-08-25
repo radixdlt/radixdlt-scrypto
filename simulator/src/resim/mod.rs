@@ -194,7 +194,8 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &mut substate_db,
         vm,
         &CostingParameters::default(),
-        &ExecutionConfig::for_system_transaction().with_kernel_trace(trace),
+        &ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
+            .with_kernel_trace(trace),
         &transaction
             .prepare()
             .map_err(Error::TransactionPrepareError)?
