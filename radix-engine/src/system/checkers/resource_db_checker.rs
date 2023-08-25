@@ -15,8 +15,9 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::prelude::SafeAdd;
 use radix_engine_interface::prelude::{BlueprintInfo, CollectionIndex};
+use sbor::rust::collections::BTreeMap;
+use sbor::rust::vec::Vec;
 use sbor::HasLatestVersion;
-use std::collections::BTreeMap;
 
 #[derive(Debug, Default)]
 pub struct ResourceCounter {

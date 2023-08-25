@@ -462,6 +462,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         (public_key, private_key)
     }
 
+    pub fn new_ed25519_key_pair(&mut self) -> (Ed25519PublicKey, Ed25519PrivateKey) {
+        let private_key = Ed25519PrivateKey::from_u64(self.next_private_key()).unwrap();
+        let public_key = private_key.public_key();
+
+        (public_key, private_key)
+    }
+
     pub fn new_key_pair_with_auth_address(
         &mut self,
     ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, NonFungibleGlobalId) {
@@ -606,6 +613,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             )
             .unwrap()
             .map(|(key, value)| {
+                let key = key.into_map();
                 let hash: SchemaHash = scrypto_decode(&key).unwrap();
                 let schema: PackageSchemaEntryPayload = scrypto_decode(&value).unwrap();
                 (hash, schema.content)
@@ -626,7 +634,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             )
             .unwrap()
             .map(|(key, value)| {
-                let key: BlueprintVersionKey = scrypto_decode(&key).unwrap();
+                let map_key = key.into_map();
+                let key: BlueprintVersionKey = scrypto_decode(&map_key).unwrap();
                 let definition: PackageBlueprintVersionDefinitionEntryPayload =
                     scrypto_decode(&value).unwrap();
                 (key, definition.into_latest())
@@ -716,7 +725,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             )
             .unwrap()
             .map(|(key, _)| {
-                let id: NonFungibleLocalId = scrypto_decode(&key).unwrap();
+                let map_key = key.into_map();
+                let id: NonFungibleLocalId = scrypto_decode(&map_key).unwrap();
                 id
             })
             .collect();
@@ -806,6 +816,16 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         (pub_key, priv_key, account)
     }
 
+    pub fn new_ed25519_virtual_account(
+        &mut self,
+    ) -> (Ed25519PublicKey, Ed25519PrivateKey, ComponentAddress) {
+        let (pub_key, priv_key) = self.new_ed25519_key_pair();
+        let account =
+            ComponentAddress::virtual_account_from_public_key(&PublicKey::Ed25519(pub_key.clone()));
+        self.load_account_from_faucet(account);
+        (pub_key, priv_key, account)
+    }
+
     pub fn get_active_validator_info_by_key(&self, key: &Secp256k1PublicKey) -> ValidatorSubstate {
         let address = self.get_active_validator_with_key(key);
         self.get_validator_info(address)
@@ -852,24 +872,24 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         (key_pair.0, key_pair.1, account)
     }
 
-    pub fn new_virtual_account_with_access_controller(
+    pub fn new_ed25519_virtual_account_with_access_controller(
         &mut self,
     ) -> (
-        Secp256k1PublicKey,
-        Secp256k1PrivateKey,
-        Secp256k1PublicKey,
-        Secp256k1PrivateKey,
-        Secp256k1PublicKey,
-        Secp256k1PrivateKey,
-        Secp256k1PublicKey,
-        Secp256k1PrivateKey,
+        Ed25519PublicKey,
+        Ed25519PrivateKey,
+        Ed25519PublicKey,
+        Ed25519PrivateKey,
+        Ed25519PublicKey,
+        Ed25519PrivateKey,
+        Ed25519PublicKey,
+        Ed25519PrivateKey,
         ComponentAddress,
         ComponentAddress,
     ) {
-        let (pk1, sk1, account) = self.new_virtual_account();
-        let (pk2, sk2) = self.new_key_pair();
-        let (pk3, sk3) = self.new_key_pair();
-        let (pk4, sk4) = self.new_key_pair();
+        let (pk1, sk1, account) = self.new_ed25519_virtual_account();
+        let (pk2, sk2) = self.new_ed25519_key_pair();
+        let (pk3, sk3) = self.new_ed25519_key_pair();
+        let (pk4, sk4) = self.new_ed25519_key_pair();
 
         let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(
             1,
@@ -2138,7 +2158,7 @@ impl<'d, D: SubstateDatabase> SubtreeVaults<'d, D> {
     pub fn get_all(&self, node_id: &NodeId) -> IndexMap<ResourceAddress, Vec<NodeId>> {
         let mut vault_finder = VaultFinder::new();
         let mut traverser = StateTreeTraverser::new(self.database, &mut vault_finder, 100);
-        traverser.traverse_subtree(*node_id);
+        traverser.traverse_subtree(None, *node_id);
         vault_finder.to_vaults()
     }
 

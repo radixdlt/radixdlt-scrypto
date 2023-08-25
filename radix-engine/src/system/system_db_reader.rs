@@ -165,6 +165,16 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         module_id: ObjectModuleId,
         field_index: u8,
     ) -> Result<IndexedScryptoValue, SystemReaderError> {
+        self.read_object_field_advanced(node_id, module_id, field_index)
+            .map(|x| x.0)
+    }
+
+    pub fn read_object_field_advanced(
+        &self,
+        node_id: &NodeId,
+        module_id: ObjectModuleId,
+        field_index: u8,
+    ) -> Result<(IndexedScryptoValue, PartitionNumber), SystemReaderError> {
         let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
         let definition = self.get_blueprint_definition(&blueprint_id)?;
         let partition_description = &definition
@@ -195,8 +205,9 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             )
             .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?;
 
-        Ok(IndexedScryptoValue::from_scrypto_value(
-            substate.into_payload(),
+        Ok((
+            IndexedScryptoValue::from_scrypto_value(substate.into_payload()),
+            partition_number,
         ))
     }
 
@@ -351,7 +362,23 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         node_id: &NodeId,
         module_id: ObjectModuleId,
         collection_index: CollectionIndex,
-    ) -> Result<Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>, SystemReaderError> {
+    ) -> Result<Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_>, SystemReaderError> {
+        self.collection_iter_advanced(node_id, module_id, collection_index)
+            .map(|x| x.0)
+    }
+
+    pub fn collection_iter_advanced(
+        &self,
+        node_id: &NodeId,
+        module_id: ObjectModuleId,
+        collection_index: CollectionIndex,
+    ) -> Result<
+        (
+            Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_>,
+            PartitionNumber,
+        ),
+        SystemReaderError,
+    > {
         if self.tracked.is_some() {
             panic!("substates_iter with overlay not supported.");
         }
@@ -382,20 +409,10 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 let key = match schema {
                     BlueprintCollectionSchema::KeyValueStore(..)
                     | BlueprintCollectionSchema::Index(..) => {
-                        let substate_key =
-                            SpreadPrefixKeyMapper::from_db_sort_key::<MapKey>(&entry.0);
-                        match substate_key {
-                            SubstateKey::Map(map_key) => map_key,
-                            _ => panic!("Unexpected SubstateKey"),
-                        }
+                        SpreadPrefixKeyMapper::from_db_sort_key::<MapKey>(&entry.0)
                     }
                     BlueprintCollectionSchema::SortedIndex(..) => {
-                        let substate_key =
-                            SpreadPrefixKeyMapper::from_db_sort_key::<SortedKey>(&entry.0);
-                        match substate_key {
-                            SubstateKey::Sorted((_sort, map_key)) => map_key,
-                            _ => panic!("Unexpected SubstateKey"),
-                        }
+                        SpreadPrefixKeyMapper::from_db_sort_key::<SortedKey>(&entry.0)
                     }
                 };
 
@@ -413,7 +430,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 Some((key, value))
             });
 
-        Ok(Box::new(iter))
+        Ok((Box::new(iter), partition_number))
     }
 
     pub fn get_object_info<A: Into<GlobalAddress>>(

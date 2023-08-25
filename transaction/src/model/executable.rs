@@ -18,6 +18,7 @@ pub struct ExecutionContext {
     pub epoch_range: Option<EpochRange>,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
+    pub num_of_signature_validations: usize,
     pub auth_zone_params: AuthZoneParams,
     pub costing_parameters: TransactionCostingParameters,
 }
@@ -165,5 +166,9 @@ impl<'a> Executable<'a> {
 
     pub fn payload_size(&self) -> usize {
         self.context.payload_size
+    }
+
+    pub fn num_of_signature_validations(&self) -> usize {
+        self.context.num_of_signature_validations
     }
 }
