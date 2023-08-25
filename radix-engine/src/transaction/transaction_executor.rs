@@ -565,7 +565,7 @@ where
                 fee_reserve,
                 fee_table,
                 executable.payload_size(),
-                executable.auth_zone_params().initial_proofs.len(),
+                executable.num_of_signature_validations(),
                 execution_config,
             ),
         };

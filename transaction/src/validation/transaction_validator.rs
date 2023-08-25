@@ -116,10 +116,19 @@ impl TransactionValidator<PreparedNotarizedTransactionV1> for NotarizedTransacti
             .validate_signatures_v1(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
+        let num_of_signature_validations = transaction
+            .signed_intent
+            .intent_signatures
+            .inner
+            .signatures
+            .len()
+            + 1;
+
         Ok(ValidatedNotarizedTransactionV1 {
             prepared: transaction,
             encoded_instructions,
             signer_keys,
+            num_of_signature_validations,
         })
     }
 }

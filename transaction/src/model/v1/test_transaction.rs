@@ -63,6 +63,8 @@ impl PreparedTestTransaction {
                 epoch_range: None,
                 payload_size: self.encoded_instructions.len()
                     + self.blobs.values().map(|x| x.len()).sum::<usize>(),
+                // For testing purpose, assume `num_of_signature_validations = num_of_initial_proofs + 1`
+                num_of_signature_validations: initial_proofs.len() + 1,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtual_resources: BTreeSet::new(),

@@ -110,6 +110,7 @@ impl PreparedSystemTransactionV1 {
                 },
                 epoch_range: None,
                 payload_size: 0,
+                num_of_signature_validations: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtual_resources: BTreeSet::new(),
