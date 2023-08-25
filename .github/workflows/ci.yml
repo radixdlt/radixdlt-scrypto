@@ -364,8 +364,7 @@ jobs:
     name: Coverage
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
+        os: [k8s-linux-runner]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
