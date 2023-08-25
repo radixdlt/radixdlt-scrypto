@@ -1,7 +1,5 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::prelude::{
-    scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoValue, VersionedScryptoSchema,
-};
+use radix_engine_common::prelude::{scrypto_decode, scrypto_encode, ScryptoCustomExtension, ScryptoEncode, ScryptoValue, VersionedScryptoSchema};
 use radix_engine_interface::api::{CollectionIndex, ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
@@ -17,11 +15,11 @@ use radix_engine_store_interface::{
     interface::SubstateDatabase,
 };
 use sbor::rust::prelude::*;
-use sbor::HasLatestVersion;
+use sbor::{HasLatestVersion, LocatedValidationError, validate_payload_against_schema};
 use sbor::LocalTypeIndex;
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
-use crate::system::payload_validation::SchemaOrigin;
+use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
 use crate::system::system_substates::FieldSubstate;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_substates::SubstateMutability;
@@ -754,6 +752,30 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Ok(definition.into_value().unwrap())
     }
 
+
+    pub fn validate_payload<'b>(
+        &'b self,
+        payload: &[u8],
+        payload_schema: &'b ResolvedPayloadSchema,
+        depth_limit: usize,
+    ) -> Result<(), LocatedValidationError<ScryptoCustomExtension>> {
+        let validation_context: Box<dyn ValidationContext<Error = String>> =
+            Box::new(ValidationPayloadCheckerContext {
+                reader: self,
+                schema_origin: payload_schema.schema_origin.clone(),
+                allow_ownership: payload_schema.allow_ownership,
+                allow_non_global_ref: payload_schema.allow_non_global_refs,
+            });
+
+        validate_payload_against_schema::<ScryptoCustomExtension, _>(
+            payload,
+            payload_schema.schema.v1(),
+            payload_schema.type_index,
+            &validation_context,
+            depth_limit,
+        )
+    }
+
     pub fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
@@ -951,6 +973,53 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Box::new(iter)
     }
 }
+
+
+struct ValidationPayloadCheckerContext<'a, S: SubstateDatabase> {
+    reader: &'a SystemDatabaseReader<'a, S>,
+    schema_origin: SchemaOrigin,
+    allow_non_global_ref: bool,
+    allow_ownership: bool,
+}
+
+impl<'a, S: SubstateDatabase> ValidationContext for ValidationPayloadCheckerContext<'a, S> {
+    type Error = String;
+
+    fn get_node_type_info(&self, node_id: &NodeId) -> Result<TypeInfoForValidation, String> {
+        let type_info = self
+            .reader
+            .get_type_info(node_id)
+            .map_err(|_| "Type Info missing".to_string())?;
+        let type_info_for_validation = match type_info {
+            TypeInfoSubstate::Object(object_info) => TypeInfoForValidation::Object {
+                package: object_info.blueprint_info.blueprint_id.package_address,
+                blueprint: object_info.blueprint_info.blueprint_id.blueprint_name,
+            },
+            TypeInfoSubstate::KeyValueStore(..) => TypeInfoForValidation::KeyValueStore,
+            TypeInfoSubstate::GlobalAddressReservation(..) => {
+                TypeInfoForValidation::GlobalAddressReservation
+            }
+            TypeInfoSubstate::GlobalAddressPhantom(..) => {
+                return Err("Found invalid stored address phantom".to_string())
+            }
+        };
+
+        Ok(type_info_for_validation)
+    }
+
+    fn schema_origin(&self) -> &SchemaOrigin {
+        &self.schema_origin
+    }
+
+    fn allow_ownership(&self) -> bool {
+        self.allow_ownership
+    }
+
+    fn allow_non_global_ref(&self) -> bool {
+        self.allow_non_global_ref
+    }
+}
+
 
 impl<'a, S: SubstateDatabase + ListableSubstateDatabase> SystemDatabaseReader<'a, S> {
     pub fn partitions_iter(&self) -> Box<dyn Iterator<Item = (NodeId, PartitionNumber)> + '_> {

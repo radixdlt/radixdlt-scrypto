@@ -16,7 +16,6 @@ use radix_engine_interface::prelude::SafeAdd;
 use radix_engine_interface::prelude::{BlueprintInfo, CollectionIndex};
 use sbor::HasLatestVersion;
 use std::collections::BTreeMap;
-use radix_engine_interface::types::{Emitter, EventTypeIdentifier};
 use crate::system::checkers::ApplicationChecker;
 
 #[derive(Debug, Default)]
