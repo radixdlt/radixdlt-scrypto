@@ -611,6 +611,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             )
             .unwrap()
             .map(|(key, value)| {
+                let key = key.into_map();
                 let hash: SchemaHash = scrypto_decode(&key).unwrap();
                 let schema: PackageSchemaEntryPayload = scrypto_decode(&value).unwrap();
                 (hash, schema.content)
@@ -631,7 +632,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             )
             .unwrap()
             .map(|(key, value)| {
-                let key: BlueprintVersionKey = scrypto_decode(&key).unwrap();
+                let map_key = key.into_map();
+                let key: BlueprintVersionKey = scrypto_decode(&map_key).unwrap();
                 let definition: PackageBlueprintVersionDefinitionEntryPayload =
                     scrypto_decode(&value).unwrap();
                 (key, definition.into_latest())
@@ -721,7 +723,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             )
             .unwrap()
             .map(|(key, _)| {
-                let id: NonFungibleLocalId = scrypto_decode(&key).unwrap();
+                let map_key = key.into_map();
+                let id: NonFungibleLocalId = scrypto_decode(&map_key).unwrap();
                 id
             })
             .collect();
@@ -2131,7 +2134,7 @@ impl<'d, D: SubstateDatabase> SubtreeVaults<'d, D> {
     pub fn get_all(&self, node_id: &NodeId) -> IndexMap<ResourceAddress, Vec<NodeId>> {
         let mut vault_finder = VaultFinder::new();
         let mut traverser = StateTreeTraverser::new(self.database, &mut vault_finder, 100);
-        traverser.traverse_subtree(*node_id);
+        traverser.traverse_subtree(None, *node_id);
         vault_finder.to_vaults()
     }
 
