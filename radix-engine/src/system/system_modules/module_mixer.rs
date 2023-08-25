@@ -141,7 +141,7 @@ impl SystemModuleMixer {
                 fee_table,
                 max_call_depth: execution_config.max_call_depth,
                 tx_payload_len: payload_len,
-                tx_number_of_signature_validations: num_of_signature_validations,
+                tx_num_of_signature_validations: num_of_signature_validations,
                 max_per_function_royalty_in_xrd: execution_config.max_per_function_royalty_in_xrd,
                 enable_cost_breakdown: execution_config.enable_cost_breakdown,
                 execution_cost_breakdown: index_map_new(),

@@ -41,7 +41,7 @@ pub struct CostingModule {
     pub fee_table: FeeTable,
     pub max_call_depth: usize,
     pub tx_payload_len: usize,
-    pub tx_number_of_signature_validations: usize,
+    pub tx_num_of_signature_validations: usize,
     /// The maximum allowed method royalty in XRD allowed to be set by package and component owners
     pub max_per_function_royalty_in_xrd: Decimal,
     pub enable_cost_breakdown: bool,
@@ -184,7 +184,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             size: costing.tx_payload_len,
         })?;
         costing.apply_deferred_execution_cost(ExecutionCostingEntry::VerifyTxSignatures {
-            num_signatures: costing.tx_number_of_signature_validations,
+            num_signatures: costing.tx_num_of_signature_validations,
         })?;
 
         Ok(())
