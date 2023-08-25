@@ -7,8 +7,10 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
+use radix_engine::system::resource_checker::ResourceChecker;
 use radix_engine::system::system_db_checker::{
-    SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults,
+    ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker,
+    SystemDatabaseCheckerResults,
 };
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
@@ -399,7 +401,7 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
 impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
     fn drop(&mut self) {
         let results = self
-            .check_db()
+            .check_db::<ResourceChecker>()
             .expect("Database should be consistent after running test");
         println!("{:?}", results);
     }
@@ -2133,8 +2135,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .collect::<Vec<_>>()
     }
 
-    pub fn check_db(&self) -> Result<SystemDatabaseCheckerResults, SystemDatabaseCheckError> {
-        let checker = SystemDatabaseChecker::new();
+    pub fn check_db<A: ApplicationChecker>(
+        &self,
+    ) -> Result<
+        (SystemDatabaseCheckerResults, A::ApplicationCheckerResults),
+        SystemDatabaseCheckError,
+    > {
+        let mut checker = SystemDatabaseChecker::<A>::new();
         checker.check_db(&self.database)
     }
 }

@@ -307,6 +307,14 @@ macro_rules! declare_native_blueprint_state {
                             $([<$collection_ident $collection_type>],)*
                         }
 
+                        impl TryFrom<u8> for [<$blueprint_ident Collection>] {
+                            type Error = ();
+
+                            fn try_from(offset: u8) -> Result<Self, Self::Error> {
+                                Self::from_repr(offset).ok_or(())
+                            }
+                        }
+
                         impl CollectionDescriptor for [<$blueprint_ident Collection>] {
                             fn collection_index(&self) -> CollectionIndex {
                                 *self as u8

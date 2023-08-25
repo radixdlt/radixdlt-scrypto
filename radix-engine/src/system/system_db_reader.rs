@@ -44,7 +44,7 @@ pub enum SystemPartitionDescription {
 
 #[derive(Clone, Debug)]
 pub enum ObjectPartitionDescriptor {
-    Field,
+    Fields,
     KeyValueCollection(u8),
     IndexCollection(u8),
     SortedIndexCollection(u8),
@@ -896,7 +896,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                         if offset.eq(partition_offset) {
                             descriptors.push(SystemPartitionDescriptor::Object(
                                 module_id,
-                                ObjectPartitionDescriptor::Field,
+                                ObjectPartitionDescriptor::Fields,
                             ));
                         }
                     }

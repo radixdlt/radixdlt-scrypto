@@ -17,6 +17,15 @@ pub enum OuterObjectInfo {
     None,
 }
 
+impl OuterObjectInfo {
+    pub fn expect(&self) -> GlobalAddress {
+        match self {
+            OuterObjectInfo::Some { outer_object } => *outer_object,
+            OuterObjectInfo::None => panic!("Object has no outer object"),
+        }
+    }
+}
+
 impl Default for OuterObjectInfo {
     fn default() -> Self {
         OuterObjectInfo::None

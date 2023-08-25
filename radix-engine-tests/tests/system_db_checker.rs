@@ -37,7 +37,7 @@ fn system_database_checker_should_report_missing_owner_error_on_broken_db() {
     substate_db.commit(&remove_owner_update);
 
     // Act
-    let checker = SystemDatabaseChecker::new();
+    let mut checker = SystemDatabaseChecker::<()>::new();
     let checker_result = checker.check_db(&substate_db);
 
     // Assert
