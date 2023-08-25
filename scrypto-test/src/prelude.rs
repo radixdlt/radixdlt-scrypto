@@ -68,6 +68,14 @@ pub use radix_engine_interface::blueprints::pool::*;
 pub use radix_engine_interface::blueprints::resource::*;
 pub use radix_engine_interface::blueprints::transaction_processor::*;
 
+/* Native SDK */
+pub use native_sdk::account::*;
+pub use native_sdk::component::*;
+pub use native_sdk::consensus_manager::*;
+pub use native_sdk::modules::*;
+pub use native_sdk::resource::*;
+pub use native_sdk::runtime::*;
+
 /* Sbor */
 pub use sbor::prelude::*;
 pub use sbor::*;

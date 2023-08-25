@@ -314,7 +314,7 @@ impl TestEnvironment {
         self.enable_module(EnabledModules::AUTH)
     }
 
-    /// Enables the transaction runtime kernel module of the Radix Engine.
+    /// Enables the transaction env kernel module of the Radix Engine.
     pub fn enable_transaction_runtime_module(&mut self) {
         self.enable_module(EnabledModules::TRANSACTION_RUNTIME)
     }
@@ -344,7 +344,7 @@ impl TestEnvironment {
         self.disable_module(EnabledModules::AUTH)
     }
 
-    /// Disables the transaction runtime kernel module of the Radix Engine.
+    /// Disables the transaction env kernel module of the Radix Engine.
     pub fn disable_transaction_runtime_module(&mut self) {
         self.disable_module(EnabledModules::TRANSACTION_RUNTIME)
     }
@@ -406,7 +406,7 @@ impl TestEnvironment {
         rtn
     }
 
-    /// Calls the passed `callback` with the transaction runtime kernel module enabled and then
+    /// Calls the passed `callback` with the transaction env kernel module enabled and then
     /// resets the state of the kernel modules.
     pub fn with_transaction_runtime_module_enabled<F, O>(&mut self, callback: F) -> O
     where
@@ -484,7 +484,7 @@ impl TestEnvironment {
         rtn
     }
 
-    /// Calls the passed `callback` with the transaction runtime kernel module disabled and then
+    /// Calls the passed `callback` with the transaction env kernel module disabled and then
     /// resets the state of the kernel modules.
     pub fn with_transaction_runtime_module_disabled<F, O>(&mut self, callback: F) -> O
     where
@@ -612,6 +612,46 @@ impl TestEnvironment {
         })
     }
 
+    //===================
+    // Epoch & Timestamp
+    //===================
+
+    /// Gets the current epoch from the Consensus Manager.
+    pub fn get_current_epoch(&mut self) -> Epoch {
+        Runtime::current_epoch(self).unwrap()
+    }
+
+    /// Sets the current epoch.
+    pub fn set_current_epoch(&mut self, epoch: Epoch) {
+        self.as_method_actor(
+            CONSENSUS_MANAGER,
+            ObjectModuleId::Main,
+            CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+            |env: &mut TestEnvironment| -> Result<(), RuntimeError> {
+                let manager_handle = env
+                    .actor_open_field(
+                        ACTOR_STATE_SELF,
+                        ConsensusManagerField::State.into(),
+                        LockFlags::MUTABLE,
+                    )
+                    .unwrap();
+                let mut manager_substate =
+                    env.field_read_typed::<VersionedConsensusManagerState>(manager_handle)?;
+                match &mut manager_substate {
+                    VersionedConsensusManagerState::V1(ConsensusManagerSubstate {
+                        epoch: state_epoch,
+                        ..
+                    }) => *state_epoch = epoch,
+                }
+                env.field_write_typed(manager_handle, &manager_substate)?;
+                env.field_close(manager_handle)?;
+                Ok(())
+            },
+        )
+        .unwrap()
+        .unwrap();
+    }
+
     //=========
     // Helpers
     //=========
@@ -630,6 +670,87 @@ impl TestEnvironment {
         } else {
             SubstateDevice::Store
         }
+    }
+
+    /// Allows us to perform some action as another actor.
+    ///
+    /// This function pushes a new call-frame onto the stack with the actor information we desire,
+    /// performs the call-back, and then pops the call-frame off.
+    fn as_method_actor<N, F, O>(
+        &mut self,
+        node_id: N,
+        module_id: ObjectModuleId,
+        method_ident: &str,
+        callback: F,
+    ) -> Result<O, RuntimeError>
+    where
+        N: Into<NodeId> + Copy,
+        F: FnOnce(&mut Self) -> O,
+    {
+        let object_info = self.0.with_kernel_mut(|kernel: &mut TestKernel<'_>| {
+            SystemService {
+                api: kernel,
+                phantom: PhantomData,
+            }
+            .get_object_info(&node_id.into())
+        })?;
+        let auth_zone = self.0.with_kernel_mut(|kernel| {
+            let mut system_service = SystemService {
+                api: kernel,
+                phantom: PhantomData,
+            };
+            AuthModule::create_mock(
+                &mut system_service,
+                Some((&node_id.into(), false)),
+                Default::default(),
+                Default::default(),
+            )
+        })?;
+        let actor = Actor::Method(MethodActor {
+            method_type: match module_id {
+                ObjectModuleId::Main => MethodType::Main,
+                ObjectModuleId::Royalty => MethodType::Module(ModuleId::Royalty),
+                ObjectModuleId::Metadata => MethodType::Module(ModuleId::Metadata),
+                ObjectModuleId::RoleAssignment => MethodType::Module(ModuleId::RoleAssignment),
+            },
+            ident: method_ident.to_owned(),
+            node_id: node_id.into(),
+            auth_zone,
+            object_info,
+        });
+        self.as_actor(actor, callback)
+    }
+
+    /// Allows us to perform some action as another actor.
+    ///
+    /// This function pushes a new call-frame onto the stack with the actor information we desire,
+    /// performs the call-back, and then pops the call-frame off.
+    fn as_actor<F, O>(&mut self, actor: Actor, callback: F) -> Result<O, RuntimeError>
+    where
+        F: FnOnce(&mut Self) -> O,
+    {
+        // Creating the next frame.
+        let message = CallFrameMessage::from_input(&IndexedScryptoValue::from_typed(&()), &actor);
+        self.0.with_kernel_mut(|kernel| {
+            let current_frame = kernel.kernel_current_frame_mut();
+            let new_frame =
+                CallFrame::new_child_from_parent(current_frame, actor, message).unwrap();
+            let old = core::mem::replace(current_frame, new_frame);
+            kernel.kernel_prev_frame_stack_mut().push(old);
+        });
+
+        // Executing the callback
+        let rtn = callback(self);
+
+        // Popping the last frame & Passing message
+        self.0
+            .with_kernel_mut(|kernel| -> Result<(), RuntimeError> {
+                let previous_frame = kernel.kernel_prev_frame_stack_mut().pop().unwrap();
+                *kernel.kernel_current_frame_mut() = previous_frame;
+                Ok(())
+            })?;
+
+        Ok(rtn)
     }
 }
 

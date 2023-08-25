@@ -5,7 +5,7 @@ use radix_engine_queries::typed_substate_layout::two_resource_pool::{
 use scrypto_test::prelude::*;
 
 #[test]
-pub fn kernel_modules_are_reset_after_calling_a_with_method() {
+fn kernel_modules_are_reset_after_calling_a_with_method() {
     // Arrange
     let mut env = TestEnvironment::new();
     let with_methods: &[fn(&mut TestEnvironment, fn(&mut TestEnvironment))] = &[
@@ -35,7 +35,7 @@ pub fn kernel_modules_are_reset_after_calling_a_with_method() {
 }
 
 #[test]
-pub fn auth_module_can_be_disabled_at_runtime() {
+fn auth_module_can_be_disabled_at_runtime() {
     // Arrange
     let mut env = TestEnvironment::new();
     env.with_auth_module_disabled(|env| {
@@ -48,7 +48,7 @@ pub fn auth_module_can_be_disabled_at_runtime() {
 }
 
 #[test]
-pub fn state_of_components_can_be_read() {
+fn state_of_components_can_be_read() {
     // Arrange
     let mut env = TestEnvironment::new();
 
@@ -60,7 +60,7 @@ pub fn state_of_components_can_be_read() {
 }
 
 #[test]
-pub fn can_invoke_owned_nodes_read_from_state() {
+fn can_invoke_owned_nodes_read_from_state() {
     // Arrange
     let mut env = TestEnvironment::new();
 
@@ -76,7 +76,7 @@ pub fn can_invoke_owned_nodes_read_from_state() {
 }
 
 #[test]
-pub fn references_read_from_state_are_visible_in_tests() {
+fn references_read_from_state_are_visible_in_tests() {
     // Arrange
     let mut env = TestEnvironment::new();
 
@@ -129,7 +129,7 @@ pub fn references_read_from_state_are_visible_in_tests() {
 }
 
 #[test]
-pub fn references_read_from_state_are_visible_in_tests1() {
+fn references_read_from_state_are_visible_in_tests1() {
     // Arrange
     let mut env = TestEnvironment::new();
 
@@ -183,7 +183,7 @@ pub fn references_read_from_state_are_visible_in_tests1() {
 }
 
 #[test]
-pub fn can_read_kv_entries_from_a_store_read_from_state() {
+fn can_read_kv_entries_from_a_store_read_from_state() {
     // Arrange
     let mut env = TestEnvironment::new();
     let _ = env
@@ -205,4 +205,16 @@ pub fn can_read_kv_entries_from_a_store_read_from_state() {
 
     // Assert
     assert!(epoch.is_some())
+}
+
+#[test]
+fn can_get_and_set_epoch() {
+    // Arrange
+    let mut env = TestEnvironment::new();
+
+    // Act
+    env.set_current_epoch(Epoch::of(200));
+
+    // Assert
+    assert_eq!(env.get_current_epoch().number(), 200)
 }

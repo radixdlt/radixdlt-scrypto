@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 # The Radix Engine Stack
 sbor = { path = "../sbor" }
+native-sdk = { path = "../native-sdk" }
 transaction = { path = "../transaction" }
 radix-engine = { path = "../radix-engine", features = ["radix_engine_tests"] }
 radix-engine-stores = { path = "../radix-engine-stores" }
