@@ -27,6 +27,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         manifest1,
         vec![], // no sign
         &sk,    // notarize
+        false,
     );
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(100)),
@@ -43,6 +44,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         manifest2,
         vec![&sk], // sign
         &sk,       // notarize
+        false,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -77,6 +79,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         manifest1,
         vec![], // no sign
         &sk1,   // notarize
+        false,
     );
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(100)),
@@ -100,6 +103,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         manifest2,
         vec![&sk1], // sign
         &sk1,       // notarize
+        false,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -140,6 +144,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         manifest1,
         vec![&sk], // no sign
         &sk,       // notarize
+        false,
     );
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
@@ -161,6 +166,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         manifest2,
         vec![&sk], // sign
         &sk,       // notarize
+        false,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -205,6 +211,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         manifest1,
         vec![&sk], // no sign
         &sk,       // notarize
+        false,
     );
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
@@ -226,6 +233,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         manifest2,
         vec![&sk], // sign
         &sk,       // notarize
+        false,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -263,6 +271,7 @@ fn estimate_adding_signature() {
         manifest.clone(),
         vec![&sk1], // no sign
         &sk1,       // notarize
+        false,
     );
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
@@ -278,6 +287,7 @@ fn estimate_adding_signature() {
         manifest,
         vec![&sk1, &sk2], // sign
         &sk1,             // notarize
+        false,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -297,8 +307,7 @@ fn estimate_adding_signature() {
     );
 }
 
-#[test]
-fn estimate_notarizing() {
+fn estimate_notarizing(notary_is_signatory: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
@@ -325,6 +334,7 @@ fn estimate_notarizing() {
         manifest,
         vec![&sk1], // signed by account 1
         &sk2,       // notarized by account 2
+        notary_is_signatory,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -335,7 +345,8 @@ fn estimate_notarizing() {
     println!("\n{:?}", receipt2);
 
     println!(
-        "Notarizing (notary_is_signatory: false): {} XRD",
+        "Notarizing (notary_is_signatory: {}): {} XRD",
+        notary_is_signatory,
         receipt2
             .fee_summary
             .total_cost()
@@ -344,12 +355,23 @@ fn estimate_notarizing() {
     );
 }
 
+#[test]
+fn estimate_notarizing_notary_is_not_signatory() {
+    estimate_notarizing(false);
+}
+
+#[test]
+fn estimate_notarizing_notary_is_signatory() {
+    estimate_notarizing(true);
+}
+
 fn create_notarized_transaction(
     test_runner: &mut DefaultTestRunner,
     network: &NetworkDefinition,
     manifest: TransactionManifestV1,
     signers: Vec<&Secp256k1PrivateKey>,
     notary: &Secp256k1PrivateKey,
+    notary_is_signatory: bool,
 ) -> NotarizedTransactionV1 {
     let notarized_transaction = TransactionBuilder::new()
         .header(TransactionHeaderV1 {
@@ -358,7 +380,7 @@ fn create_notarized_transaction(
             end_epoch_exclusive: Epoch::of(99),
             nonce: test_runner.next_transaction_nonce(),
             notary_public_key: notary.public_key().into(),
-            notary_is_signatory: false,
+            notary_is_signatory: notary_is_signatory,
             tip_percentage: DEFAULT_TIP_PERCENTAGE,
         })
         .manifest(manifest)
