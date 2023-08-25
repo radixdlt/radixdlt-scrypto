@@ -652,6 +652,40 @@ impl TestEnvironment {
         .unwrap();
     }
 
+    /// Gets the current time stamp from the Consensus Manager.
+    pub fn get_current_time(&mut self) -> Instant {
+        Runtime::current_time(self, TimePrecision::Minute).unwrap()
+    }
+
+    pub fn set_current_time(&mut self, instant: Instant) {
+        self.as_method_actor(
+            CONSENSUS_MANAGER,
+            ObjectModuleId::Main,
+            CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+            |env: &mut TestEnvironment| -> Result<(), RuntimeError> {
+                let handle = env.actor_open_field(
+                    ACTOR_STATE_SELF,
+                    ConsensusManagerField::ProposerMinuteTimestamp.into(),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut proposer_minute_timestamp =
+                    env.field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
+                        handle,
+                    )?;
+                match &mut proposer_minute_timestamp {
+                    ConsensusManagerProposerMinuteTimestampFieldPayload {
+                        content: VersionedConsensusManagerProposerMinuteTimestamp::V1(timestamp),
+                    } => timestamp.epoch_minute = (instant.seconds_since_unix_epoch / 60) as i32,
+                };
+                env.field_write_typed(handle, &proposer_minute_timestamp)?;
+                env.field_close(handle)?;
+                Ok(())
+            },
+        )
+        .unwrap()
+        .unwrap();
+    }
+
     //=========
     // Helpers
     //=========

@@ -218,3 +218,15 @@ fn can_get_and_set_epoch() {
     // Assert
     assert_eq!(env.get_current_epoch().number(), 200)
 }
+
+#[test]
+fn can_get_and_set_timestamp() {
+    // Arrange
+    let mut env = TestEnvironment::new();
+
+    // Act
+    env.set_current_time(Instant::new(1692951060));
+
+    // Assert
+    assert_eq!(env.get_current_time(), Instant::new(1692951060))
+}
