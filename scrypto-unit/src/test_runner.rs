@@ -40,6 +40,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
+use radix_engine_queries::typed_native_events::to_typed_native_event;
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
@@ -1246,6 +1247,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             if let Some(events) = &mut self.collected_events {
                 events.push(commit.application_events.clone());
             }
+
+            assert_receipt_substate_changes_can_be_typed(commit);
         }
         transaction_receipt
     }
@@ -2299,4 +2302,32 @@ pub fn create_notarized_transaction(
         .sign(&sk2)
         .notarize(&sk_notary)
         .build()
+}
+
+pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
+    let system_updates = &commit_result.state_updates.system_updates;
+    for ((node_id, partition_num), partition_updates) in system_updates.into_iter() {
+        for (substate_key, database_update) in partition_updates.into_iter() {
+            let typed_substate_key =
+                to_typed_substate_key(node_id.entity_type().unwrap(), *partition_num, substate_key)
+                    .expect("Substate key should be typeable");
+            if !typed_substate_key.value_is_mappable() {
+                continue;
+            }
+            match database_update {
+                DatabaseUpdate::Set(raw_value) => {
+                    // Check that typed value mapping works
+                    to_typed_substate_value(&typed_substate_key, raw_value)
+                        .expect("Substate value should be typeable");
+                }
+                DatabaseUpdate::Delete => {}
+            }
+        }
+    }
+}
+
+pub fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
+    for (event_type_identifier, event_data) in &commit_result.application_events {
+        let _ = to_typed_native_event(event_type_identifier, event_data).unwrap();
+    }
 }

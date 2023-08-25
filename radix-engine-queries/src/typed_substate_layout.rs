@@ -154,24 +154,6 @@ pub enum TypedMainModuleSubstateKey {
     GenericKeyValueStoreKey(MapKey),
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct ValidatorByStakeKey {
-    pub divided_stake: u16,
-    pub validator_address: ComponentAddress,
-}
-
-impl TryFrom<SortedKey> for ValidatorByStakeKey {
-    type Error = DecodeError;
-
-    fn try_from(value: SortedKey) -> Result<Self, Self::Error> {
-        // See to_sorted_key in validator.rs
-        Ok(Self {
-            divided_stake: u16::MAX - u16::from_be_bytes(value.0),
-            validator_address: scrypto_decode(&value.1)?,
-        })
-    }
-}
-
 fn error(descriptor: &'static str) -> String {
     format!("Could not convert {} to TypedSubstateKey", descriptor)
 }
@@ -397,7 +379,7 @@ pub enum TypedRoleAssignmentModuleSubstateValue {
 #[derive(Debug)]
 pub enum TypedRoyaltyModuleSubstateValue {
     ComponentRoyalty(FieldSubstate<ComponentRoyaltyAccumulatorFieldPayload>),
-    ComponentMethodRoyalty(ComponentRoyaltyMethodAmountEntryPayload),
+    ComponentMethodRoyalty(KeyValueEntrySubstate<ComponentRoyaltyMethodAmountEntryPayload>),
 }
 
 #[derive(Debug)]
@@ -426,23 +408,6 @@ pub enum TypedMainModuleSubstateValue {
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStoreEntry(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
-}
-
-#[derive(Debug)]
-pub enum TypedConsensusManagerFieldValue {
-    Config(FieldSubstate<ConsensusManagerConfigSubstate>),
-    ConsensusManager(FieldSubstate<ConsensusManagerSubstate>),
-    ValidatorRewards(FieldSubstate<ValidatorRewardsSubstate>),
-    CurrentValidatorSet(FieldSubstate<CurrentValidatorSetSubstate>),
-    CurrentProposalStatistic(FieldSubstate<CurrentProposalStatisticSubstate>),
-    CurrentTimeRoundedToMinutes(FieldSubstate<ProposerMinuteTimestampSubstate>),
-    CurrentTime(FieldSubstate<ProposerMilliTimestampSubstate>),
-}
-
-#[derive(Debug)]
-pub enum TypedValidatorFieldValue {
-    Validator(FieldSubstate<ValidatorSubstate>),
-    ProtocolUpdateReadinessSignal(FieldSubstate<ValidatorProtocolUpdateReadinessSignalSubstate>),
 }
 
 #[derive(Debug)]
