@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,     0.440997022021473689,    100.0%
-- Execution Cost (XRD)                                                     ,               0.19350585,     43.9%
+Total Cost (XRD)                                                           ,     0.441347022021473689,    100.0%
+- Execution Cost (XRD)                                                     ,               0.19385585,     43.9%
 - Finalization Cost (XRD)                                                  ,                0.0515111,     11.7%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,     0.195980072021473689,     44.4%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  3870117,    100.0%
+Execution Cost Breakdown                                                   ,                  3877117,    100.0%
 - AllocateNodeId                                                           ,                     2392,      0.1%
 - BeforeInvoke                                                             ,                     3178,      0.1%
 - CloseSubstate                                                            ,                    32760,      0.8%
@@ -18,10 +18,10 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalAccount                                              ,                   248180,      6.4%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   173431,      4.5%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    42414,      1.1%
-- OpenSubstate::GlobalPackage                                              ,                  2038410,     52.7%
-- OpenSubstate::GlobalVirtualSecp256k1Account                              ,                   486107,     12.6%
+- OpenSubstate::GlobalPackage                                              ,                  2038410,     52.6%
+- OpenSubstate::GlobalVirtualSecp256k1Account                              ,                   486107,     12.5%
 - OpenSubstate::InternalAccount                                            ,                      786,      0.0%
-- OpenSubstate::InternalFungibleVault                                      ,                    94951,      2.5%
+- OpenSubstate::InternalFungibleVault                                      ,                    94951,      2.4%
 - OpenSubstate::InternalGenericComponent                                   ,                    50713,      1.3%
 - PinNode                                                                  ,                     2100,      0.1%
 - QueryActor                                                               ,                     3500,      0.1%
@@ -40,7 +40,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::try_deposit_batch_or_abort                                ,                    76963,      2.0%
 - RunNativeCode::withdraw                                                  ,                    30320,      0.8%
 - ValidateTxPayload                                                        ,                     9880,      0.3%
-- VerifyTxSignatures                                                       ,                     7000,      0.2%
+- VerifyTxSignatures                                                       ,                    14000,      0.4%
 - WriteSubstate                                                            ,                     6112,      0.2%
 Finalization Cost Breakdown                                                ,                  1030222,    100.0%
 - CommitEvents                                                             ,                    30060,      2.9%
