@@ -14,7 +14,7 @@ pub trait ApplicationEventChecker: Default {
     fn on_event(
         &mut self,
         _info: BlueprintInfo,
-        _emitter: Emitter,
+        _event_id: EventTypeIdentifier,
         _event: &Vec<u8>,
     ) {
     }
@@ -81,7 +81,7 @@ impl<A: ApplicationEventChecker> SystemEventChecker<A> {
                 .validate_payload(&event_payload, &event_schema, BLUEPRINT_PAYLOAD_MAX_DEPTH)
                 .map_err(|_| SystemEventCheckerError::InvalidEvent)?;
 
-            self.application_checker.on_event(type_target.blueprint_info, event_id.0.clone(), event_payload);
+            self.application_checker.on_event(type_target.blueprint_info, event_id.clone(), event_payload);
         }
 
         let results = self.application_checker.on_finish();
