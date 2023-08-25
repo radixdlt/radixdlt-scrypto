@@ -1946,7 +1946,6 @@ fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceA
 fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
     let mut test_runner = TestRunnerBuilder::new()
         .without_trace()
-        .collect_events()
         .build();
     let (pk, _, account) = test_runner.new_allocated_account();
 
@@ -2045,7 +2044,6 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
 fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
     let mut test_runner = TestRunnerBuilder::new()
         .without_trace()
-        .collect_events()
         .build();
     let (pk, _, account) = test_runner.new_allocated_account();
 

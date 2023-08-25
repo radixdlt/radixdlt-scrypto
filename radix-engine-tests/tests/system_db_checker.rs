@@ -1,5 +1,5 @@
 use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::system_db_checker::{
+use radix_engine::system::checkers::{
     SystemDatabaseCheckError, SystemDatabaseChecker, SystemNodeCheckError,
 };
 use radix_engine::types::*;

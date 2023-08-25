@@ -1,7 +1,7 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::resource_checker::ResourceChecker;
-use radix_engine::system::system_db_checker::SystemDatabaseChecker;
+use radix_engine::system::checkers::ResourceChecker;
+use radix_engine::system::checkers::SystemDatabaseChecker;
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
@@ -556,7 +556,6 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
 
     // Bootstrap
     let mut test_runner = TestRunnerBuilder::new()
-        .collect_events()
         .with_custom_genesis(CustomGenesis {
             genesis_data_chunks: genesis_data_chunks,
             genesis_epoch: Epoch::of(1),

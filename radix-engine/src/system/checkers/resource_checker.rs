@@ -4,7 +4,6 @@ use crate::blueprints::resource::{
     NonFungibleResourceManagerTotalSupplyFieldPayload, NonFungibleVaultBalanceFieldPayload,
     NonFungibleVaultCollection, NonFungibleVaultField,
 };
-use crate::system::system_db_checker::ApplicationChecker;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::{scrypto_decode, RESOURCE_PACKAGE};
 use radix_engine_common::types::{NodeId, ResourceAddress};
@@ -17,6 +16,8 @@ use radix_engine_interface::prelude::SafeAdd;
 use radix_engine_interface::prelude::{BlueprintInfo, CollectionIndex};
 use sbor::HasLatestVersion;
 use std::collections::BTreeMap;
+use radix_engine_interface::types::{Emitter, EventTypeIdentifier};
+use crate::system::checkers::ApplicationChecker;
 
 #[derive(Debug, Default)]
 pub struct ResourceCounter {
@@ -33,6 +34,7 @@ pub struct ResourceChecker {
 #[derive(Debug, Default)]
 pub struct ResourceCheckerResults {
     pub num_resources: usize,
+    pub total_supply: BTreeMap<ResourceAddress, Decimal>,
 }
 
 impl ApplicationChecker for ResourceChecker {
@@ -165,6 +167,8 @@ impl ApplicationChecker for ResourceChecker {
             }
         }
 
+        let mut total_supply = BTreeMap::new();
+
         for (address, tracker) in &self.resources {
             if let Some(total_supply) = tracker.expected {
                 if !total_supply.eq(&tracker.tracking_supply) {
@@ -174,10 +178,34 @@ impl ApplicationChecker for ResourceChecker {
                     );
                 }
             }
+
+            total_supply.insert(*address, tracker.tracking_supply);
         }
 
         ResourceCheckerResults {
             num_resources: self.resources.len(),
+            total_supply,
         }
     }
 }
+
+/*
+#[derive(Debug, Default)]
+pub struct ResourceEventChecker;
+
+impl ResourceEventChecker {
+    pub fn check_events(
+        db_result: ResourceCheckerResults,
+        collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    ) {
+        for (event_id, event) in collected_events.into_iter().flat_map(|e| e.into_iter()) {
+            match event_id.0 {
+                Emitter::Method(node_id, object_module_id)
+            }
+
+        }
+
+    }
+
+}
+ */

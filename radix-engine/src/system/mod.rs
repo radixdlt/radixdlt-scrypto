@@ -4,13 +4,11 @@ pub mod module;
 pub mod node_init;
 pub mod node_modules;
 pub mod payload_validation;
-#[cfg(feature = "db_checker")]
-pub mod resource_checker;
 pub mod system;
 pub mod system_callback;
 pub mod system_callback_api;
 #[cfg(feature = "db_checker")]
-pub mod system_db_checker;
+pub mod checkers;
 pub mod system_db_reader;
 pub mod system_modules;
 pub mod system_substates;
