@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use crate::system::system_db_reader::{SystemDatabaseReader, SystemReaderError};
 use crate::system::system_type_checker::{BlueprintTypeTarget, SchemaValidationMeta};
 use radix_engine_common::constants::BLUEPRINT_PAYLOAD_MAX_DEPTH;
@@ -6,17 +5,13 @@ use radix_engine_interface::blueprints::package::{BlueprintPayloadIdentifier, Bl
 use radix_engine_interface::prelude::{BlueprintInfo, EventTypeIdentifier, OuterObjectInfo};
 use radix_engine_interface::types::Emitter;
 use radix_engine_store_interface::interface::SubstateDatabase;
+use std::fmt::Debug;
 use utils::btreeset;
 
 pub trait ApplicationEventChecker: Default {
     type ApplicationEventCheckerResults: Debug + Default;
 
-    fn on_event(
-        &mut self,
-        _info: BlueprintInfo,
-        _event_id: EventTypeIdentifier,
-        _event: &Vec<u8>,
-    ) {
+    fn on_event(&mut self, _info: BlueprintInfo, _event_id: EventTypeIdentifier, _event: &Vec<u8>) {
     }
 
     fn on_finish(&self) -> Self::ApplicationEventCheckerResults {
@@ -42,7 +37,7 @@ pub struct SystemEventChecker<A: ApplicationEventChecker> {
 impl<A: ApplicationEventChecker> SystemEventChecker<A> {
     pub fn new() -> Self {
         Self {
-            application_checker: A::default()
+            application_checker: A::default(),
         }
     }
 
@@ -81,7 +76,11 @@ impl<A: ApplicationEventChecker> SystemEventChecker<A> {
                 .validate_payload(&event_payload, &event_schema, BLUEPRINT_PAYLOAD_MAX_DEPTH)
                 .map_err(|_| SystemEventCheckerError::InvalidEvent)?;
 
-            self.application_checker.on_event(type_target.blueprint_info, event_id.clone(), event_payload);
+            self.application_checker.on_event(
+                type_target.blueprint_info,
+                event_id.clone(),
+                event_payload,
+            );
         }
 
         let results = self.application_checker.on_finish();

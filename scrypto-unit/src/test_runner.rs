@@ -7,8 +7,12 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::checkers::{ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults, ResourceEventChecker, ApplicationEventChecker, SystemEventCheckerError, ResourceDatabaseChecker, ResourceReconciler};
 use radix_engine::system::checkers::SystemEventChecker;
+use radix_engine::system::checkers::{
+    ApplicationChecker, ApplicationEventChecker, ResourceDatabaseChecker, ResourceEventChecker,
+    ResourceReconciler, SystemDatabaseCheckError, SystemDatabaseChecker,
+    SystemDatabaseCheckerResults, SystemEventCheckerError,
+};
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
@@ -393,7 +397,8 @@ impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
             .expect("Events should be consistent");
         println!("{:#?}", event_results);
 
-        ResourceReconciler::reconcile(&db_results.1, &event_results).expect("Resource reconciliation failed");
+        ResourceReconciler::reconcile(&db_results.1, &event_results)
+            .expect("Resource reconciliation failed");
     }
 }
 
@@ -2113,7 +2118,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         checker.check_db(&self.database)
     }
 
-    pub fn check_events<A: ApplicationEventChecker>(&self) -> Result<A::ApplicationEventCheckerResults, SystemEventCheckerError> {
+    pub fn check_events<A: ApplicationEventChecker>(
+        &self,
+    ) -> Result<A::ApplicationEventCheckerResults, SystemEventCheckerError> {
         let mut event_checker = SystemEventChecker::<A>::new();
         event_checker.check_all_events(&self.database, self.collected_events())
     }

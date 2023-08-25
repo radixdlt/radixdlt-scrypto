@@ -1,7 +1,9 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::checkers::{ResourceDatabaseChecker, ResourceEventChecker, ResourceReconciler, SystemEventChecker};
 use radix_engine::system::checkers::SystemDatabaseChecker;
+use radix_engine::system::checkers::{
+    ResourceDatabaseChecker, ResourceEventChecker, ResourceReconciler, SystemEventChecker,
+};
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
@@ -96,14 +98,30 @@ fn test_bootstrap_receipt_should_match_constants() {
 
     let mut event_checker = SystemEventChecker::<ResourceEventChecker>::new();
     let mut events = Vec::new();
-    events.push(system_bootstrap_receipt.expect_commit_success().application_events.clone());
-    events.extend(data_ingestion_receipts.into_iter().map(|r| r.expect_commit_success().application_events.clone()));
-    events.push(wrap_up_receipt.expect_commit_success().application_events.clone());
-    let event_results = event_checker.check_all_events(&substate_db, &events)
+    events.push(
+        system_bootstrap_receipt
+            .expect_commit_success()
+            .application_events
+            .clone(),
+    );
+    events.extend(
+        data_ingestion_receipts
+            .into_iter()
+            .map(|r| r.expect_commit_success().application_events.clone()),
+    );
+    events.push(
+        wrap_up_receipt
+            .expect_commit_success()
+            .application_events
+            .clone(),
+    );
+    let event_results = event_checker
+        .check_all_events(&substate_db, &events)
         .expect("Events should be consistent");
     println!("{:#?}", event_results);
 
-    ResourceReconciler::reconcile(&db_results.1, &event_results).expect("Resource reconciliation failed.");
+    ResourceReconciler::reconcile(&db_results.1, &event_results)
+        .expect("Resource reconciliation failed.");
 }
 
 #[test]
