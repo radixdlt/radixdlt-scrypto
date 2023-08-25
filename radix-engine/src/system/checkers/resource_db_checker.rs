@@ -7,7 +7,7 @@ use crate::blueprints::resource::{
 use crate::system::checkers::ApplicationChecker;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::{scrypto_decode, RESOURCE_PACKAGE};
-use radix_engine_common::types::{NodeId, resource_address, ResourceAddress};
+use radix_engine_common::types::{NodeId, ResourceAddress};
 use radix_engine_interface::api::FieldIndex;
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT,

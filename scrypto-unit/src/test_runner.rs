@@ -7,7 +7,7 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::checkers::{ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults, ResourceEventChecker, ApplicationEventChecker, SystemEventCheckerError};
+use radix_engine::system::checkers::{ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker, SystemDatabaseCheckerResults, ResourceEventChecker, ApplicationEventChecker, SystemEventCheckerError, ResourceDatabaseChecker, ResourceReconciler};
 use radix_engine::system::checkers::SystemEventChecker;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
@@ -383,14 +383,17 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
 #[cfg(feature = "post_run_db_check")]
 impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
     fn drop(&mut self) {
-        let results = self
-            .check_db::<ResourceChecker>()
+        let db_results = self
+            .check_db::<ResourceDatabaseChecker>()
             .expect("Database should be consistent after running test");
-        println!("{:?}", results);
+        println!("{:#?}", db_results);
 
-        SystemEventChecker::<ResourceEventChecker>::new()
+        let event_results = SystemEventChecker::<ResourceEventChecker>::new()
             .check_all_events(&self.database, &self.collected_events)
             .expect("Events should be consistent");
+        println!("{:#?}", event_results);
+
+        ResourceReconciler::reconcile(&db_results.1, &event_results).expect("Resource reconciliation failed");
     }
 }
 

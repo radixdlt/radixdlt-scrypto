@@ -1,6 +1,6 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::checkers::{ResourceDatabaseChecker, ResourceEventChecker, ResourceReconciliation, SystemEventChecker};
+use radix_engine::system::checkers::{ResourceDatabaseChecker, ResourceEventChecker, ResourceReconciler, SystemEventChecker};
 use radix_engine::system::checkers::SystemDatabaseChecker;
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
@@ -103,7 +103,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         .expect("Events should be consistent");
     println!("{:#?}", event_results);
 
-    ResourceReconciliation::reconcile(&db_results.1, &event_results).expect("Resource reconciliation failed.");
+    ResourceReconciler::reconcile(&db_results.1, &event_results).expect("Resource reconciliation failed.");
 }
 
 #[test]
