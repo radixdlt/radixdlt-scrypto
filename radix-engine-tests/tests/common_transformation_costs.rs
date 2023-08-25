@@ -264,12 +264,12 @@ fn estimate_adding_signature() {
     let (_pk2, sk2, account2) = test_runner.new_ed25519_virtual_account();
 
     // Additional signature has an impact on the size of `AuthZone` substate.
-    // We're doing 5 withdraw-deposit calls, which is "larger" than most transactions.
+    // We're doing 10 withdraw-deposit calls, which is "larger" than most transactions.
     // But, in theory, the cost could be even higher.
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 20)
         .then(|mut builder| {
-            for _ in 0..5 {
+            for _ in 0..10 {
                 builder = builder
                     .withdraw_from_account(account1, XRD, 1) // require auth
                     .try_deposit_batch_or_abort(account2, None); // require no auth
@@ -330,12 +330,12 @@ fn estimate_notarizing(notary_is_signatory: bool) {
     let (_pk2, sk2, account2) = test_runner.new_virtual_account();
 
     // Additional signature has an impact on the size of `AuthZone` substate.
-    // We're doing 5 withdraw-deposit calls, which is "larger" than most transactions.
+    // We're doing 10 withdraw-deposit calls, which is "larger" than most transactions.
     // But, in theory, the cost could be even higher.
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 20)
         .then(|mut builder| {
-            for _ in 0..5 {
+            for _ in 0..10 {
                 builder = builder
                     .withdraw_from_account(account1, XRD, 1) // require auth
                     .try_deposit_batch_or_abort(account2, None); // require no auth
