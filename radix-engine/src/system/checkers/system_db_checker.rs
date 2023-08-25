@@ -1,14 +1,12 @@
 use crate::internal_prelude::*;
 use crate::system::system_db_reader::{
-    ObjectPartitionDescriptor, SystemDatabaseReader,
-    SystemPartitionDescriptor, SystemReaderError,
+    ObjectPartitionDescriptor, SystemDatabaseReader, SystemPartitionDescriptor, SystemReaderError,
 };
 use crate::system::system_substates::FieldSubstate;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::Condition;
 use radix_engine_common::prelude::{
-    scrypto_decode, scrypto_encode, Hash, ScryptoValue,
-    VersionedScryptoSchema,
+    scrypto_decode, scrypto_encode, Hash, ScryptoValue, VersionedScryptoSchema,
 };
 use radix_engine_interface::api::{FieldIndex, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
@@ -483,12 +481,13 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     return Err(SystemPartitionCheckError::InvalidKeyValueStoreKey)
                                 }
                             };
-                            reader.validate_payload(
-                                &map_key,
-                                &key_schema,
-                                KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH,
-                            )
-                            .map_err(|_| SystemPartitionCheckError::InvalidKeyValueStoreKey)?;
+                            reader
+                                .validate_payload(
+                                    &map_key,
+                                    &key_schema,
+                                    KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH,
+                                )
+                                .map_err(|_| SystemPartitionCheckError::InvalidKeyValueStoreKey)?;
                         }
 
                         // Value Check
@@ -501,14 +500,15 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                 let entry_payload = scrypto_encode(&value).map_err(|_| {
                                     SystemPartitionCheckError::InvalidKeyValueStoreValue
                                 })?;
-                                reader.validate_payload(
-                                    &entry_payload,
-                                    &value_schema,
-                                    KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH,
-                                )
-                                .map_err(|_| {
-                                    SystemPartitionCheckError::InvalidKeyValueStoreValue
-                                })?;
+                                reader
+                                    .validate_payload(
+                                        &entry_payload,
+                                        &value_schema,
+                                        KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH,
+                                    )
+                                    .map_err(|_| {
+                                        SystemPartitionCheckError::InvalidKeyValueStoreValue
+                                    })?;
                             }
                         }
 
@@ -562,12 +562,13 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     .get_blueprint_payload_schema(&type_target, &field_identifier)
                                     .map_err(SystemPartitionCheckError::MissingFieldSchema)?;
 
-                                reader.validate_payload(
-                                    &field_payload,
-                                    &field_schema,
-                                    BLUEPRINT_PAYLOAD_MAX_DEPTH,
-                                )
-                                .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
+                                reader
+                                    .validate_payload(
+                                        &field_payload,
+                                        &field_schema,
+                                        BLUEPRINT_PAYLOAD_MAX_DEPTH,
+                                    )
+                                    .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
 
                                 match module_id {
                                     ObjectModuleId::Main => self.application_checker.on_field(
@@ -618,14 +619,15 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                         ),
                                     };
 
-                                    reader.validate_payload(
-                                        &map_key,
-                                        &key_schema,
-                                        BLUEPRINT_PAYLOAD_MAX_DEPTH,
-                                    )
-                                    .map_err(|_| {
-                                        SystemPartitionCheckError::InvalidIndexCollectionKey
-                                    })?;
+                                    reader
+                                        .validate_payload(
+                                            &map_key,
+                                            &key_schema,
+                                            BLUEPRINT_PAYLOAD_MAX_DEPTH,
+                                        )
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidIndexCollectionKey
+                                        })?;
 
                                     map_key
                                 };
@@ -640,14 +642,15 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                         SystemPartitionCheckError::InvalidIndexCollectionValue
                                     })?;
 
-                                    reader.validate_payload(
-                                        &value,
-                                        &value_schema,
-                                        BLUEPRINT_PAYLOAD_MAX_DEPTH,
-                                    )
-                                    .map_err(|_| {
-                                        SystemPartitionCheckError::InvalidIndexCollectionValue
-                                    })?;
+                                    reader
+                                        .validate_payload(
+                                            &value,
+                                            &value_schema,
+                                            BLUEPRINT_PAYLOAD_MAX_DEPTH,
+                                        )
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::InvalidIndexCollectionValue
+                                        })?;
 
                                     value
                                 };
@@ -703,16 +706,17 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                             SystemPartitionCheckError::InvalidKeyValueCollectionKey,
                                         ),
                                     };
-                                    reader.validate_payload(
-                                        &map_key,
-                                        &key_schema,
-                                        BLUEPRINT_PAYLOAD_MAX_DEPTH,
-                                    )
-                                    .map_err(|_| {
-                                        SystemPartitionCheckError::FailedBlueprintSchemaCheck(
-                                            key_identifier.clone(),
+                                    reader
+                                        .validate_payload(
+                                            &map_key,
+                                            &key_schema,
+                                            BLUEPRINT_PAYLOAD_MAX_DEPTH,
                                         )
-                                    })?;
+                                        .map_err(|_| {
+                                            SystemPartitionCheckError::FailedBlueprintSchemaCheck(
+                                                key_identifier.clone(),
+                                            )
+                                        })?;
 
                                     map_key
                                 };

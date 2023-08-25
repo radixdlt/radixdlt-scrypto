@@ -7,11 +7,11 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::checkers::ResourceChecker;
 use radix_engine::system::checkers::{
     ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker,
     SystemDatabaseCheckerResults,
 };
+use radix_engine::system::checkers::{ResourceChecker, SystemEventChecker};
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
@@ -390,6 +390,10 @@ impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
             .check_db::<ResourceChecker>()
             .expect("Database should be consistent after running test");
         println!("{:?}", results);
+
+        SystemEventChecker::new()
+            .check_all_events(&self.database, &self.collected_events)
+            .expect("Events should be consistent");
     }
 }
 
@@ -433,8 +437,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn collected_events(&self) -> &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>> {
-        self.collected_events
-            .as_ref()
+        self.collected_events.as_ref()
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -1228,7 +1231,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 state_hash_support.update_with(&commit.state_updates.database_updates);
             }
 
-            self.collected_events.push(commit.application_events.clone());
+            self.collected_events
+                .push(commit.application_events.clone());
         }
         transaction_receipt
     }

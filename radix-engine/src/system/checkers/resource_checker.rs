@@ -4,6 +4,7 @@ use crate::blueprints::resource::{
     NonFungibleResourceManagerTotalSupplyFieldPayload, NonFungibleVaultBalanceFieldPayload,
     NonFungibleVaultCollection, NonFungibleVaultField,
 };
+use crate::system::checkers::ApplicationChecker;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::{scrypto_decode, RESOURCE_PACKAGE};
 use radix_engine_common::types::{NodeId, ResourceAddress};
@@ -16,7 +17,6 @@ use radix_engine_interface::prelude::SafeAdd;
 use radix_engine_interface::prelude::{BlueprintInfo, CollectionIndex};
 use sbor::HasLatestVersion;
 use std::collections::BTreeMap;
-use crate::system::checkers::ApplicationChecker;
 
 #[derive(Debug, Default)]
 pub struct ResourceCounter {

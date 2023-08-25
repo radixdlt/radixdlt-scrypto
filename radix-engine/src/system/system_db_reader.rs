@@ -1,5 +1,8 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::prelude::{scrypto_decode, scrypto_encode, ScryptoCustomExtension, ScryptoEncode, ScryptoValue, VersionedScryptoSchema};
+use radix_engine_common::prelude::{
+    scrypto_decode, scrypto_encode, ScryptoCustomExtension, ScryptoEncode, ScryptoValue,
+    VersionedScryptoSchema,
+};
 use radix_engine_interface::api::{CollectionIndex, ModuleId, ObjectModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
@@ -15,8 +18,8 @@ use radix_engine_store_interface::{
     interface::SubstateDatabase,
 };
 use sbor::rust::prelude::*;
-use sbor::{HasLatestVersion, LocatedValidationError, validate_payload_against_schema};
 use sbor::LocalTypeIndex;
+use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
@@ -752,7 +755,6 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Ok(definition.into_value().unwrap())
     }
 
-
     pub fn validate_payload<'b>(
         &'b self,
         payload: &[u8],
@@ -974,7 +976,6 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
     }
 }
 
-
 struct ValidationPayloadCheckerContext<'a, S: SubstateDatabase> {
     reader: &'a SystemDatabaseReader<'a, S>,
     schema_origin: SchemaOrigin,
@@ -1019,7 +1020,6 @@ impl<'a, S: SubstateDatabase> ValidationContext for ValidationPayloadCheckerCont
         self.allow_non_global_ref
     }
 }
-
 
 impl<'a, S: SubstateDatabase + ListableSubstateDatabase> SystemDatabaseReader<'a, S> {
     pub fn partitions_iter(&self) -> Box<dyn Iterator<Item = (NodeId, PartitionNumber)> + '_> {
