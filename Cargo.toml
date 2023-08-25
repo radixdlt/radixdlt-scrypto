@@ -37,4 +37,5 @@ members = [
     "utils",
     "radix-engine-profiling",
     "radix-engine-profiling/resources-tracker-macro",
+    "xtask"
 ]
