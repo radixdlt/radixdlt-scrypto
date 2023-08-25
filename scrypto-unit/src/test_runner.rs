@@ -359,6 +359,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             next_transaction_nonce,
             trace,
             collected_events: events,
+            xrd_free_credits_used: false,
         };
 
         let next_epoch = wrap_up_receipt
@@ -382,6 +383,7 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    xrd_free_credits_used: bool,
 }
 
 #[cfg(feature = "post_run_db_check")]
@@ -397,8 +399,12 @@ impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
             .expect("Events should be consistent");
         println!("{:#?}", event_results);
 
-        ResourceReconciler::reconcile(&db_results.1, &event_results)
-            .expect("Resource reconciliation failed");
+        // If free credits (xrd from thin air) have been used then reconciliation will fail
+        // due to missing mint events
+        if !self.xrd_free_credits_used {
+            ResourceReconciler::reconcile(&db_results.1, &event_results)
+                .expect("Resource reconciliation failed");
+        }
     }
 }
 
@@ -1237,6 +1243,14 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     ) -> TransactionReceipt {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.trace);
+
+        if executable
+            .costing_parameters()
+            .free_credit_in_xrd
+            .is_positive()
+        {
+            self.xrd_free_credits_used = true;
+        }
 
         let vm = Vm {
             scrypto_vm: &self.scrypto_vm,
