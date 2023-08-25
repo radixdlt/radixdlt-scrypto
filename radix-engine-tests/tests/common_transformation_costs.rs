@@ -13,12 +13,14 @@ use transaction::validation::{TransactionValidator, ValidationConfig};
 // - Adding a secp256k1 or ed25519 signature, whichever is worse
 // - Adding a notary signature
 
+// ED25519 signature is larger than Secp256k1 due to lack of public key recovery
+
 #[test]
 fn estimate_locking_fee_from_an_account_protected_by_signature() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk, sk, account) = test_runner.new_virtual_account();
+    let (_pk, sk, account) = test_runner.new_ed25519_virtual_account();
 
     let manifest1 = ManifestBuilder::new().build();
     let tx1 = create_notarized_transaction(
@@ -70,7 +72,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let (_pk1, sk1, _pk2, _sk2, _pk3, _sk3, _pk4, _sk4, account, access_controller) =
-        test_runner.new_virtual_account_with_access_controller();
+        test_runner.new_ed25519_virtual_account_with_access_controller();
 
     let manifest1 = ManifestBuilder::new().build();
     let tx1 = create_notarized_transaction(
@@ -130,7 +132,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk, sk, account) = test_runner.new_virtual_account();
+    let (_pk, sk, account) = test_runner.new_ed25519_virtual_account();
     let resource_address = test_runner.create_fungible_resource(AMOUNT.into(), 18, account);
 
     let manifest1 = ManifestBuilder::new()
@@ -193,7 +195,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk, sk, account) = test_runner.new_virtual_account();
+    let (_pk, sk, account) = test_runner.new_ed25519_virtual_account();
     let resource_address = test_runner.create_non_fungible_resource_advanced(
         NonFungibleResourceRoles::default(),
         account,
@@ -258,8 +260,8 @@ fn estimate_adding_signature() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk1, sk1, account1) = test_runner.new_virtual_account();
-    let (_pk2, sk2, account2) = test_runner.new_virtual_account();
+    let (_pk1, sk1, account1) = test_runner.new_ed25519_virtual_account();
+    let (_pk2, sk2, account2) = test_runner.new_ed25519_virtual_account();
 
     // Additional signature has an impact on the size of `AuthZone` substate.
     // We're doing 5 withdraw-deposit calls, which is "larger" than most transactions.
@@ -322,7 +324,7 @@ fn estimate_notarizing(notary_is_signatory: bool) {
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let account1 = test_runner.new_account_advanced(OwnerRole::Updatable(AccessRule::AllowAll));
-    let (_pk2, sk2, account2) = test_runner.new_virtual_account();
+    let (_pk2, sk2, account2) = test_runner.new_ed25519_virtual_account();
 
     // Additional signature has an impact on the size of `AuthZone` substate.
     // We're doing 5 withdraw-deposit calls, which is "larger" than most transactions.
@@ -389,8 +391,8 @@ fn create_notarized_transaction(
     test_runner: &mut DefaultTestRunner,
     network: &NetworkDefinition,
     manifest: TransactionManifestV1,
-    signers: Vec<&Secp256k1PrivateKey>,
-    notary: &Secp256k1PrivateKey,
+    signers: Vec<&Ed25519PrivateKey>,
+    notary: &Ed25519PrivateKey,
     notary_is_signatory: bool,
 ) -> NotarizedTransactionV1 {
     let notarized_transaction = TransactionBuilder::new()
