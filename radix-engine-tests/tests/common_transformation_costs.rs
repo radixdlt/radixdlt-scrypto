@@ -261,15 +261,25 @@ fn estimate_adding_signature() {
     let (_pk1, sk1, account1) = test_runner.new_virtual_account();
     let (_pk2, sk2, account2) = test_runner.new_virtual_account();
 
+    // Additional signature has an impact on the size of `AuthZone` substate.
+    // We're doing 5 withdraw-deposit calls, which is "larger" than most transactions.
+    // But, in theory, the cost could be even higher.
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account1, 20, XRD, 100)
-        .try_deposit_batch_or_abort(account2, None)
+        .lock_fee(account1, 20)
+        .then(|mut builder| {
+            for _ in 0..5 {
+                builder = builder
+                    .withdraw_from_account(account1, XRD, 1)
+                    .try_deposit_batch_or_abort(account2, None);
+            }
+            builder
+        })
         .build();
     let tx1 = create_notarized_transaction(
         &mut test_runner,
         &network,
         manifest.clone(),
-        vec![&sk1], // no sign
+        vec![&sk1], // signed by account 1
         &sk1,       // notarize
         false,
     );
@@ -285,7 +295,7 @@ fn estimate_adding_signature() {
         &mut test_runner,
         &network,
         manifest,
-        vec![&sk1, &sk2], // sign
+        vec![&sk1, &sk2], // signed by account 1 & 2
         &sk1,             // notarize
         false,
     );
@@ -298,7 +308,7 @@ fn estimate_adding_signature() {
     println!("\n{:?}", receipt2);
 
     println!(
-        "Adding a signature: {} XRD",
+        "Adding a signer signature: {} XRD",
         receipt2
             .fee_summary
             .total_cost()
@@ -314,9 +324,19 @@ fn estimate_notarizing(notary_is_signatory: bool) {
     let (pk1, sk1, account1) = test_runner.new_virtual_account();
     let (_pk2, sk2, account2) = test_runner.new_virtual_account();
 
+    // Additional signature has an impact on the size of `AuthZone` substate.
+    // We're doing 5 withdraw-deposit calls, which is "larger" than most transactions.
+    // But, in theory, the cost could be even higher.
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account1, 20, XRD, 100)
-        .try_deposit_batch_or_abort(account2, None)
+        .lock_fee(account1, 20)
+        .then(|mut builder| {
+            for _ in 0..5 {
+                builder = builder
+                    .withdraw_from_account(account1, XRD, 1)
+                    .try_deposit_batch_or_abort(account2, None);
+            }
+            builder
+        })
         .build();
 
     let receipt1 = test_runner.preview_manifest(
