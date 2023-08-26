@@ -727,15 +727,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
         }
 
-        impl<T> ::core::convert::From<T> for #bp_ident
-        where
-            T: ::core::convert::Into<::scrypto::prelude::NodeId>,
-        {
-            fn from(value: T) -> Self {
-                Self(value.into())
-            }
-        }
-
         impl ::core::convert::TryFrom<#bp_ident> for ::scrypto::prelude::ComponentAddress {
             type Error = ::scrypto::prelude::ParseComponentAddressError;
 
@@ -781,6 +772,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 Self(value.0)
             }
         }
+        impl ::core::convert::From<#bp_ident> for ::scrypto::prelude::NodeId {
+            fn from(value: #bp_ident) -> ::scrypto::prelude::NodeId {
+                value.0
+            }
+        }
     };
 
     let output_test_bindings_fns = {
@@ -792,6 +788,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
         }
     };
+
+    let output_test_bindings_state = generate_test_bindings_state(bp_strut);
 
     let output = quote! {
         #[automatically_derived]
@@ -826,6 +824,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         #[automatically_derived]
         pub mod test_bindings {
             #(#use_statements)*
+
+            #output_test_bindings_state
 
             #output_test_bindings_struct
 
@@ -1510,6 +1510,54 @@ fn generate_test_bindings_fns(bp_name: &str, items: &[ImplItem]) -> Result<Vec<T
     Ok(functions)
 }
 
+fn generate_test_bindings_state(bp_struct: &ItemStruct) -> ItemStruct {
+    let mut bp_struct = bp_struct.clone();
+    bp_struct.ident = format_ident!("{}State", bp_struct.ident);
+
+    match &mut bp_struct.fields {
+        Fields::Unit => {}
+        Fields::Named(named) => named.named.iter_mut().for_each(|Field { ty, vis, .. }| {
+            *ty = type_replacement(ty, bp_struct.ident.to_string().as_str());
+            *vis = Visibility::Public(VisPublic {
+                pub_token: token::Pub::default(),
+            });
+        }),
+        Fields::Unnamed(unnamed) => {
+            unnamed
+                .unnamed
+                .iter_mut()
+                .for_each(|Field { ty, vis, .. }| {
+                    *ty = type_replacement(ty, bp_struct.ident.to_string().as_str());
+                    *vis = Visibility::Public(VisPublic {
+                        pub_token: token::Pub::default(),
+                    });
+                })
+        }
+    };
+
+    bp_struct.attrs = vec![parse_quote! { #[derive(::scrypto::prelude::ScryptoSbor)] }];
+    bp_struct.vis = Visibility::Public(VisPublic {
+        pub_token: token::Pub::default(),
+    });
+
+    bp_struct
+}
+
+fn type_replacement(ty: &Type, bp_name: &str) -> Type {
+    let str = ty.to_token_stream().to_string().replace(" ", "");
+    if str.contains(format!("Owned<{}>", bp_name).as_str())
+        || str.contains(format!("Global<{}>", bp_name).as_str())
+    {
+        parse_quote! { Self }
+    } else if str.contains("Owned<") {
+        parse_quote! { ::scrypto::prelude::InternalAddress }
+    } else if str.contains("Global<") {
+        parse_quote! { ::scrypto::prelude::GlobalAddress }
+    } else {
+        ty.clone()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1801,8 +1849,15 @@ mod tests {
                     use scrypto::prelude::MethodAccessibility::*;
                     use scrypto::prelude::RoyaltyAmount::*;
 
-                    #[derive(Debug)]
+                    #[derive(:: scrypto :: prelude :: ScryptoSbor)]
+                    pub struct TestState {
+                        pub a: u32,
+                        pub admin: ResourceManager
+                    }
+
+                    #[derive(Debug, Clone, Copy)]
                     pub struct Test(pub NodeId);
+
                     impl<D: ::sbor::Decoder<::scrypto::prelude::ScryptoCustomValueKind>>
                         ::scrypto::prelude::Decode<::scrypto::prelude::ScryptoCustomValueKind, D> for Test
                     {
@@ -1832,14 +1887,6 @@ mod tests {
                         }
                     }
 
-                    impl<T> ::core::convert::From<T> for Test
-                    where
-                        T: ::core::convert::Into<::scrypto::prelude::NodeId>,
-                    {
-                        fn from(value: T) -> Self {
-                            Self(value.into())
-                        }
-                    }
                     impl ::core::convert::TryFrom<Test> for ::scrypto::prelude::ComponentAddress {
                         type Error = ::scrypto::prelude::ParseComponentAddressError;
                         fn try_from(value: Test) -> ::std::result::Result<Self, Self::Error> {
@@ -1878,6 +1925,11 @@ mod tests {
                     impl ::core::convert::From<Test> for ::scrypto::prelude::Reference {
                         fn from(value: Test) -> Self {
                             Self(value.0)
+                        }
+                    }
+                    impl ::core::convert::From<Test> for ::scrypto::prelude::NodeId {
+                        fn from(value: Test) -> ::scrypto::prelude::NodeId {
+                            value.0
                         }
                     }
 

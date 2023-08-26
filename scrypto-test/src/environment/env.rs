@@ -550,8 +550,8 @@ impl TestEnvironment {
     ///
     /// # Arguments
     ///
-    /// * `component_address`: [`ComponentAddress`] - The address of the component to read the state
-    /// of.
+    /// * `node_id`: [`N`] - The address of the component to read the state of. This is a generic
+    /// type parameter that's satisfied by any type that implements [`Into<NodeId>`].
     ///
     /// # Returns
     ///
@@ -562,16 +562,14 @@ impl TestEnvironment {
     ///
     /// This method panics if the component state can not be decoded as the generic type parameter
     /// [`S`].
-    pub fn read_component_state<S>(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<S, RuntimeError>
+    pub fn read_component_state<S, N>(&mut self, node_id: N) -> Result<S, RuntimeError>
     where
         S: ScryptoDecode,
+        N: Into<NodeId>,
     {
         self.0.with_kernel_mut(|kernel| {
             let handle = kernel.kernel_open_substate(
-                component_address.as_node_id(),
+                &node_id.into(),
                 MAIN_BASE_PARTITION,
                 &SubstateKey::Field(ComponentField::State0.into()),
                 LockFlags::read_only(),

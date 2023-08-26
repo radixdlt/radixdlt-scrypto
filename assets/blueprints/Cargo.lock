@@ -1129,6 +1129,7 @@ dependencies = [
 name = "scrypto-test"
 version = "0.12.0"
 dependencies = [
+ "native-sdk",
  "ouroboros",
  "paste",
  "radix-engine",
