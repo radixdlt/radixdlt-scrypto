@@ -159,6 +159,30 @@ fn calling_get_redemption_value_on_staked_validator_with_max_amount_should_not_c
 }
 
 #[test]
+fn calling_get_redemption_value_on_staked_validator_with_smallest_amount_should_not_crash() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pub_key, _, account) = test_runner.new_allocated_account();
+    let validator_address = test_runner.new_staked_validator_with_pub_key(pub_key, account);
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(
+                validator_address,
+                VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
+                manifest_args!(Decimal(I192::ONE)),
+            )
+            .build(),
+        vec![],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn calling_get_redemption_value_on_staked_validator_with_min_amount_should_not_crash() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
