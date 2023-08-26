@@ -23,6 +23,7 @@ pub enum MultiResourcePoolError {
     PoolCreationWithSameResource,
     ContributionOfEmptyBucketError,
     CantCreatePoolWithLessThanOneResource,
+    DecimalOverflowError,
 }
 
 impl From<MultiResourcePoolError> for RuntimeError {

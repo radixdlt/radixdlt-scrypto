@@ -464,9 +464,21 @@ impl MultiResourcePoolBlueprint {
             let pool_units_to_mint = amounts_of_resources_provided
                 .values()
                 .copied()
-                .reduce(|acc, item| acc.safe_mul(item).unwrap())
-                .and_then(|value| value.sqrt())
-                .unwrap();
+                .fold(
+                    Ok(None),
+                    |acc: Result<Option<Decimal>, MultiResourcePoolError>, item| match acc? {
+                        None => Ok(Some(item)),
+                        Some(acc) => {
+                            let result = acc
+                                .safe_mul(item)
+                                .ok_or_else(|| MultiResourcePoolError::DecimalOverflowError)?;
+                            Ok(Some(result))
+                        }
+                    },
+                )?
+                .ok_or_else(|| MultiResourcePoolError::DecimalOverflowError)?
+                .sqrt()
+                .ok_or_else(|| MultiResourcePoolError::DecimalOverflowError)?;
 
             // The following unwrap is safe to do. We've already checked that all of the buckets
             // provided belong to the pool and have a corresponding vault.
@@ -634,7 +646,7 @@ impl MultiResourcePoolBlueprint {
         }
 
         let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
+            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
 
         let event = RedemptionEvent {
             redeemed_resources: amounts_owed.clone(),
@@ -752,7 +764,7 @@ impl MultiResourcePoolBlueprint {
         }
 
         let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
+            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
 
         api.field_close(handle)?;
 
@@ -804,7 +816,7 @@ impl MultiResourcePoolBlueprint {
         pool_units_to_redeem: Decimal,
         pool_units_total_supply: Decimal,
         reserves: BTreeMap<ResourceAddress, ReserveResourceInformation>,
-    ) -> BTreeMap<ResourceAddress, Decimal> {
+    ) -> Result<BTreeMap<ResourceAddress, Decimal>, RuntimeError> {
         reserves
             .into_iter()
             .map(
@@ -817,9 +829,9 @@ impl MultiResourcePoolBlueprint {
                 )| {
                     let amount_owed = pool_units_to_redeem
                         .safe_div(pool_units_total_supply)
-                        .unwrap()
+                        .ok_or_else(|| MultiResourcePoolError::DecimalOverflowError)?
                         .safe_mul(reserves)
-                        .unwrap();
+                        .ok_or_else(|| MultiResourcePoolError::DecimalOverflowError)?;
 
                     let amount_owed = if divisibility == 18 {
                         amount_owed
@@ -827,7 +839,7 @@ impl MultiResourcePoolBlueprint {
                         amount_owed.round(divisibility, RoundingMode::ToNegativeInfinity)
                     };
 
-                    (resource_address, amount_owed)
+                    Ok((resource_address, amount_owed))
                 },
             )
             .collect()

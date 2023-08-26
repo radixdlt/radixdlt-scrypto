@@ -437,7 +437,7 @@ impl OneResourcePoolBlueprint {
             pool_units_total_supply,
             pool_resource_reserves,
             pool_resource_divisibility,
-        );
+        )?;
 
         // Burn the pool units and take the owed resources from the bucket.
         bucket.burn(api)?;
@@ -541,7 +541,7 @@ impl OneResourcePoolBlueprint {
             pool_units_total_supply,
             pool_resource_reserves,
             pool_resource_divisibility,
-        );
+        )?;
 
         api.field_close(handle)?;
 
@@ -569,18 +569,20 @@ impl OneResourcePoolBlueprint {
         pool_units_total_supply: Decimal,
         pool_resource_reserves: Decimal,
         pool_resource_divisibility: u8,
-    ) -> Decimal {
+    ) -> Result<Decimal, RuntimeError> {
         let amount_owed = pool_units_to_redeem
             .safe_mul(pool_resource_reserves)
-            .unwrap()
+            .ok_or_else(|| OneResourcePoolError::DecimalOverflowError)?
             .safe_div(pool_units_total_supply)
-            .unwrap();
+            .ok_or_else(|| OneResourcePoolError::DecimalOverflowError)?;
 
-        if pool_resource_divisibility == 18 {
+        let amount_owed = if pool_resource_divisibility == 18 {
             amount_owed
         } else {
             amount_owed.round(pool_resource_divisibility, RoundingMode::ToNegativeInfinity)
-        }
+        };
+
+        Ok(amount_owed)
     }
 
     fn lock_and_read<Y>(

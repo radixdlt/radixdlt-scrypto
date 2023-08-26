@@ -5,6 +5,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::pool::*;
+use scrypto::prelude::Pow;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -646,6 +647,28 @@ pub fn owner_can_update_pool_metadata() {
     // Arrange
 }
 
+#[test]
+fn get_redemption_value_should_not_panic_on_large_values() {
+    // Arrange
+    let max_mint_amount = Decimal(I192::from(2).pow(152));
+    let mut test_runner = TestEnvironment::new(18);
+    let receipt = test_runner.contribute(max_mint_amount, true);
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.call_get_redemption_value(Decimal::MAX, true);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::OneResourcePoolError(
+                OneResourcePoolError::DecimalOverflowError
+            ))
+        )
+    });
+}
+
 fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {
     match event_type_identifier.0 {
         Emitter::Method(node_id, ObjectModuleId::Main) => match node_id.entity_type() {
@@ -805,6 +828,15 @@ impl TestEnvironment {
         amount_of_pool_units: D,
         sign: bool,
     ) -> Decimal {
+        let receipt = self.call_get_redemption_value(amount_of_pool_units, sign);
+        receipt.expect_commit_success().output(1)
+    }
+
+    fn call_get_redemption_value<D: Into<Decimal>>(
+        &mut self,
+        amount_of_pool_units: D,
+        sign: bool,
+    ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
@@ -814,8 +846,7 @@ impl TestEnvironment {
                 },
             )
             .build();
-        let receipt = self.execute_manifest(manifest, sign);
-        receipt.expect_commit_success().output(1)
+        self.execute_manifest(manifest, sign)
     }
 
     fn get_vault_amount(&mut self, sign: bool) -> Decimal {

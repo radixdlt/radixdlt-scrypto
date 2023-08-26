@@ -8,6 +8,7 @@ use radix_engine::{
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::pool::*;
+use scrypto::prelude::Pow;
 use scrypto_unit::{is_auth_error, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 
@@ -745,6 +746,62 @@ fn cant_withdraw_without_proper_signature() {
     receipt.expect_specific_failure(is_auth_error)
 }
 
+#[test]
+fn contribution_of_large_values_should_not_cause_panic() {
+    // Arrange
+    let max_mint_amount = Decimal(I192::from(2).pow(152));
+    let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
+
+    // Act
+    let receipt = test_runner.contribute(
+        btreemap!(
+            test_runner.pool_resources[0] => max_mint_amount,
+            test_runner.pool_resources[1] => max_mint_amount,
+            test_runner.pool_resources[2] => max_mint_amount,
+        ),
+        true,
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MultiResourcePoolError(
+                MultiResourcePoolError::DecimalOverflowError
+            ))
+        )
+    });
+}
+
+#[test]
+fn get_redemption_value_should_not_panic_on_large_values() {
+    // Arrange
+    let mint_amount = Decimal(I192::from(2).pow(40));
+    let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
+    let receipt = test_runner.contribute(
+        btreemap!(
+            test_runner.pool_resources[0] => mint_amount,
+            test_runner.pool_resources[1] => mint_amount,
+            test_runner.pool_resources[2] => mint_amount,
+        ),
+        true,
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.call_get_redemption_value(Decimal::MAX, true);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MultiResourcePoolError(
+                MultiResourcePoolError::DecimalOverflowError
+            ))
+        )
+    });
+}
+
 fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {
     match event_type_identifier.0 {
         Emitter::Method(node_id, ObjectModuleId::Main) => match node_id.entity_type() {
@@ -946,6 +1003,15 @@ impl<const N: usize> TestEnvironment<N> {
         amount_of_pool_units: D,
         sign: bool,
     ) -> MultiResourcePoolGetRedemptionValueOutput {
+        let receipt = self.call_get_redemption_value(amount_of_pool_units, sign);
+        receipt.expect_commit_success().output(1)
+    }
+
+    fn call_get_redemption_value<D: Into<Decimal>>(
+        &mut self,
+        amount_of_pool_units: D,
+        sign: bool,
+    ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
@@ -955,8 +1021,7 @@ impl<const N: usize> TestEnvironment<N> {
                 },
             )
             .build();
-        let receipt = self.execute_manifest(manifest, sign);
-        receipt.expect_commit_success().output(1)
+        self.execute_manifest(manifest, sign)
     }
 }
 
