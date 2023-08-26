@@ -1,44 +1,10 @@
-use rand::Rng;
-use rand_chacha::ChaCha8Rng;
-use rand_chacha::rand_core::{RngCore, SeedableRng};
+use rand_chacha::rand_core::{RngCore};
 use radix_engine::transaction::{TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
+use resource_tests::ResourceTestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
-
-struct ResourceTestFuzzer {
-    rng: ChaCha8Rng,
-}
-
-impl ResourceTestFuzzer {
-    fn new() -> Self {
-        let rng = ChaCha8Rng::seed_from_u64(1234);
-        Self {
-            rng,
-        }
-    }
-
-    fn next_amount(&mut self) -> Decimal {
-        let next_amount_type = self.rng.gen_range(0u32..6u32);
-        match next_amount_type {
-            0 => Decimal::ZERO,
-            1 => Decimal::ONE,
-            2 => Decimal::MAX,
-            3 => Decimal::MIN,
-            4 => Decimal(I192::ONE),
-            _ => {
-                let mut bytes = [0u8; 24];
-                self.rng.fill_bytes(&mut bytes);
-                Decimal(I192::from_le_bytes(&bytes))
-            }
-        }
-    }
-
-    fn next_u32(&mut self, count: u32) -> u32 {
-        self.rng.gen_range(0u32..count)
-    }
-}
 
 #[test]
 fn fuzz_one_pool() {
@@ -49,7 +15,7 @@ fn fuzz_one_pool() {
         match fuzzer.next_u32(5u32) {
             0u32 => one_pool_test.contribute(fuzzer.next_amount(), true),
             1u32 => one_pool_test.protected_deposit(fuzzer.next_amount(), true),
-            2u32 => one_pool_test.protected_withdraw(fuzzer.next_amount(), WithdrawStrategy::Exact, true),
+            2u32 => one_pool_test.protected_withdraw(fuzzer.next_amount(), fuzzer.next_withdraw_strategy(), true),
             3u32 => one_pool_test.redeem(fuzzer.next_amount(), true),
             _ => one_pool_test.get_redemption_value(fuzzer.next_amount(), true),
         };
