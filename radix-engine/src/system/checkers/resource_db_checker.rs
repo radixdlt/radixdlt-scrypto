@@ -78,10 +78,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                         );
                         let amount = vault_balance.into_latest().amount();
                         let tracker = self.resources.entry(address).or_default();
-                        tracker.tracking_supply = tracker
-                            .tracking_supply
-                            .safe_add(amount)
-                            .unwrap();
+                        tracker.tracking_supply = tracker.tracking_supply.safe_add(amount).unwrap();
 
                         self.fungible_vaults.insert(node_id, amount);
                     }
@@ -172,7 +169,11 @@ impl ApplicationChecker for ResourceDatabaseChecker {
             }
         }
 
-        let mut vaults: BTreeMap<NodeId, Decimal> = self.non_fungible_vaults.iter().map(|(vault_id, counter)| (*vault_id, counter.tracking_supply)).collect();
+        let mut vaults: BTreeMap<NodeId, Decimal> = self
+            .non_fungible_vaults
+            .iter()
+            .map(|(vault_id, counter)| (*vault_id, counter.tracking_supply))
+            .collect();
         vaults.extend(self.fungible_vaults.clone());
 
         let mut total_supply = BTreeMap::new();
