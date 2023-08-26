@@ -155,6 +155,7 @@ impl NonFungibleData for UnstakeData {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ValidatorError {
     InvalidClaimResource,
+    InvalidGetRedemptionAmount,
     EpochUnlockHasNotOccurredYet,
     PendingOwnerStakeWithdrawalLimitReached,
     InvalidValidatorFeeFactor,
@@ -1086,17 +1087,33 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        if amount_of_stake_units.is_negative() || amount_of_stake_units.is_zero() {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(ValidatorError::InvalidGetRedemptionAmount),
+            ));
+        }
+
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.into(),
             LockFlags::read_only(),
         )?;
-
-        let substate = api
+        let validator = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
             .into_latest();
+
+        {
+            let stake_unit_resman = ResourceManager(validator.stake_unit_resource);
+            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
+            if amount_of_stake_units > total_stake_unit_supply {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ValidatorError(ValidatorError::InvalidGetRedemptionAmount),
+                ));
+            }
+        }
+
         let redemption_value =
-            Self::calculate_redemption_value(amount_of_stake_units, &substate, api)?;
+            Self::calculate_redemption_value(amount_of_stake_units, &validator, api)?;
         api.field_close(handle)?;
 
         Ok(redemption_value)
