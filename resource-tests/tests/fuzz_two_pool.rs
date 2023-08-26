@@ -1,4 +1,6 @@
 use rand_chacha::rand_core::{RngCore};
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
 use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::transaction::{TransactionReceipt};
 use radix_engine::types::*;
@@ -9,34 +11,14 @@ use transaction::prelude::*;
 
 #[test]
 fn fuzz_two_pool() {
-    let mut two_pool_test = TwoPoolTest::new((7, 18));
-    let mut fuzzer = ResourceTestFuzzer::new();
-
-    for _ in 0..5000 {
-        match fuzzer.next_u32(8u32) {
-            0u32 => {
-                two_pool_test.contribute(
-                    (two_pool_test.pool_resource1, fuzzer.next_amount()),
-                    (two_pool_test.pool_resource2, fuzzer.next_amount()),
-                )
-            },
-            1u32 => {
-                two_pool_test.contribute(
-                    (two_pool_test.pool_resource2, fuzzer.next_amount()),
-                    (two_pool_test.pool_resource1, fuzzer.next_amount()),
-                )
-            }
-            2u32 => two_pool_test.protected_deposit(two_pool_test.pool_resource1, fuzzer.next_amount()),
-            3u32 => two_pool_test.protected_deposit(two_pool_test.pool_resource2, fuzzer.next_amount()),
-            4u32 => two_pool_test.protected_withdraw(two_pool_test.pool_resource1, fuzzer.next_amount(), fuzzer.next_withdraw_strategy()),
-            5u32 => two_pool_test.protected_withdraw(two_pool_test.pool_resource2, fuzzer.next_amount(), fuzzer.next_withdraw_strategy()),
-            6u32 => two_pool_test.redeem(fuzzer.next_amount()),
-            _ => two_pool_test.get_redemption_value(fuzzer.next_amount()),
-        };
-    }
+    (1u64..64u64).into_par_iter().for_each(|seed| {
+        let mut two_pool_fuzz_test = TwoPoolFuzzTest::new(seed);
+        two_pool_fuzz_test.run_fuzz();
+    });
 }
 
-struct TwoPoolTest {
+struct TwoPoolFuzzTest {
+    fuzzer: ResourceTestFuzzer,
     test_runner: DefaultTestRunner,
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
@@ -46,12 +28,9 @@ struct TwoPoolTest {
     account_component_address: ComponentAddress,
 }
 
-impl TwoPoolTest {
-    pub fn new((divisibility1, divisibility2): (u8, u8)) -> Self {
-        Self::new_with_owner((divisibility1, divisibility2), OwnerRole::None)
-    }
-
-    pub fn new_with_owner((divisibility1, divisibility2): (u8, u8), owner_role: OwnerRole) -> Self {
+impl TwoPoolFuzzTest {
+    pub fn new(seed: u64) -> Self {
+        let mut fuzzer = ResourceTestFuzzer::new(seed);
         let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -59,13 +38,13 @@ impl TwoPoolTest {
         let pool_resource1 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
             OwnerRole::None,
             None,
-            divisibility1,
+            fuzzer.next_divisibility(),
             account,
         );
         let pool_resource2 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
             OwnerRole::None,
             None,
-            divisibility2,
+            fuzzer.next_divisibility(),
             account,
         );
 
@@ -78,7 +57,7 @@ impl TwoPoolTest {
                     TwoResourcePoolInstantiateManifestInput {
                         resource_addresses: (pool_resource1, pool_resource2),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
-                        owner_role,
+                        owner_role: OwnerRole::None,
                         address_reservation: None,
                     },
                 )
@@ -93,6 +72,7 @@ impl TwoPoolTest {
         };
 
         Self {
+            fuzzer,
             test_runner,
             pool_component_address: pool_component,
             pool_unit_resource_address: pool_unit_resource,
@@ -100,6 +80,55 @@ impl TwoPoolTest {
             pool_resource2,
             account_public_key: public_key.into(),
             account_component_address: account,
+        }
+    }
+
+    fn run_fuzz(&mut self) {
+        for _ in 0..5000 {
+            match self.fuzzer.next_u32(8u32) {
+                0u32 => {
+                    let amount1 = self.fuzzer.next_amount();
+                    let amount2 = self.fuzzer.next_amount();
+                    self.contribute(
+                        (self.pool_resource1, amount1),
+                        (self.pool_resource2, amount2),
+                    )
+                },
+                1u32 => {
+                    let amount1 = self.fuzzer.next_amount();
+                    let amount2 = self.fuzzer.next_amount();
+                    self.contribute(
+                        (self.pool_resource2, amount1),
+                        (self.pool_resource1, amount2),
+                    )
+                }
+                2u32 => {
+                    let amount = self.fuzzer.next_amount();
+                    self.protected_deposit(self.pool_resource1, amount)
+                },
+                3u32 => {
+                    let amount = self.fuzzer.next_amount();
+                    self.protected_deposit(self.pool_resource2, amount)
+                },
+                4u32 => {
+                    let amount = self.fuzzer.next_amount();
+                    let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
+                    self.protected_withdraw(self.pool_resource1, amount, withdraw_strategy)
+                },
+                5u32 => {
+                    let amount = self.fuzzer.next_amount();
+                    let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
+                    self.protected_withdraw(self.pool_resource2, amount, withdraw_strategy)
+                },
+                6u32 => {
+                    let amount = self.fuzzer.next_amount();
+                    self.redeem(amount)
+                },
+                _ => {
+                    let amount = self.fuzzer.next_amount();
+                    self.get_redemption_value(amount)
+                },
+            };
         }
     }
 

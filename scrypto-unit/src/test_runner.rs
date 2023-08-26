@@ -8,7 +8,6 @@ use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::resource_checker::ResourceChecker;
 use radix_engine::system::system_db_checker::{
     ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker,
     SystemDatabaseCheckerResults,

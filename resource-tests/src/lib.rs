@@ -2,7 +2,6 @@ use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use radix_engine::types::*;
-use transaction::prelude::*;
 
 pub struct ResourceTestFuzzer {
     rng: ChaCha8Rng,
@@ -30,6 +29,14 @@ impl ResourceTestFuzzer {
                 Decimal(I192::from_le_bytes(&bytes))
             }
         }
+    }
+
+    pub fn next_u8(&mut self, count: u8) -> u8 {
+        self.rng.gen_range(0u8..count)
+    }
+
+    pub fn next_divisibility(&mut self) -> u8 {
+        self.rng.gen_range(0u8..=18u8)
     }
 
     pub fn next_u32(&mut self, count: u32) -> u32 {

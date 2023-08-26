@@ -10,7 +10,7 @@ use transaction::prelude::*;
 
 #[test]
 fn fuzz_one_pool() {
-    (1u64..12u64).into_par_iter().for_each(|seed| {
+    (1u64..64u64).into_par_iter().for_each(|seed| {
         let mut one_pool_fuzz_test = OnePoolFuzzTest::new(seed);
         one_pool_fuzz_test.run_fuzz();
     })
@@ -28,7 +28,7 @@ struct OnePoolFuzzTest {
 
 impl OnePoolFuzzTest {
     fn new(seed: u64) -> Self {
-        let fuzzer = ResourceTestFuzzer::new(seed);
+        let mut fuzzer = ResourceTestFuzzer::new(seed);
         let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -36,7 +36,7 @@ impl OnePoolFuzzTest {
         let resource_address = test_runner.create_freely_mintable_and_burnable_fungible_resource(
             OwnerRole::None,
             None,
-            7,
+            fuzzer.next_u8(19),
             account,
         );
 
