@@ -29,12 +29,14 @@ pub struct ResourceCounter {
 pub struct ResourceDatabaseChecker {
     resources: BTreeMap<ResourceAddress, ResourceCounter>,
     non_fungible_vaults: BTreeMap<NodeId, ResourceCounter>,
+    fungible_vaults: BTreeMap<NodeId, Decimal>,
 }
 
 #[derive(Debug, Default)]
 pub struct ResourceDatabaseCheckerResults {
     pub num_resources: usize,
     pub total_supply: BTreeMap<ResourceAddress, Decimal>,
+    pub vaults: BTreeMap<NodeId, Decimal>,
 }
 
 impl ApplicationChecker for ResourceDatabaseChecker {
@@ -74,11 +76,14 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                         let address = ResourceAddress::new_or_panic(
                             info.outer_obj_info.expect().into_node_id().0,
                         );
+                        let amount = vault_balance.into_latest().amount();
                         let tracker = self.resources.entry(address).or_default();
                         tracker.tracking_supply = tracker
                             .tracking_supply
-                            .safe_add(vault_balance.into_latest().amount())
+                            .safe_add(amount)
                             .unwrap();
+
+                        self.fungible_vaults.insert(node_id, amount);
                     }
                     _ => {}
                 }
@@ -167,6 +172,9 @@ impl ApplicationChecker for ResourceDatabaseChecker {
             }
         }
 
+        let mut vaults: BTreeMap<NodeId, Decimal> = self.non_fungible_vaults.iter().map(|(vault_id, counter)| (*vault_id, counter.tracking_supply)).collect();
+        vaults.extend(self.fungible_vaults.clone());
+
         let mut total_supply = BTreeMap::new();
 
         for (address, tracker) in &self.resources {
@@ -185,6 +193,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
         ResourceDatabaseCheckerResults {
             num_resources: self.resources.len(),
             total_supply,
+            vaults,
         }
     }
 }
