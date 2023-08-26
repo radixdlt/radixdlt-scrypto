@@ -936,8 +936,18 @@ fn get_redemption_value_should_not_panic_on_large_values() {
     );
     receipt.expect_commit_success();
 
-    // Act / Assert
-    test_runner.call_get_redemption_value(Decimal::MAX, true);
+    // Act
+    let receipt = test_runner.call_get_redemption_value(Decimal::MAX, true);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::TwoResourcePoolError(
+                TwoResourcePoolError::InvalidGetRedemptionAmount
+            ))
+        )
+    })
 }
 
 fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {

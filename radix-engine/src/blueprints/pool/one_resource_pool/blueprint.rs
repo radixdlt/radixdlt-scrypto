@@ -524,6 +524,14 @@ impl OneResourcePoolBlueprint {
         let pool_units_total_supply = pool_unit_resource_manager
             .total_supply(api)?
             .expect("Total supply is always enabled for pool unit resource.");
+
+        if amount_of_pool_units.is_negative()
+            || amount_of_pool_units.is_zero()
+            || amount_of_pool_units > pool_units_total_supply
+        {
+            return Err(OneResourcePoolError::InvalidGetRedemptionAmount.into());
+        }
+
         let pool_resource_reserves = vault.amount(api)?;
         let pool_resource_divisibility = vault
             .resource_address(api)

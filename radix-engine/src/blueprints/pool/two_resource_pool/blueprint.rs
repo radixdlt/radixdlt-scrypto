@@ -695,6 +695,14 @@ impl TwoResourcePoolBlueprint {
             .pool_unit_resource_manager
             .total_supply(api)?
             .expect("Total supply is always enabled for pool unit resource.");
+
+        if amount_of_pool_units.is_negative()
+            || amount_of_pool_units.is_zero()
+            || amount_of_pool_units > pool_units_total_supply
+        {
+            return Err(TwoResourcePoolError::InvalidGetRedemptionAmount.into());
+        }
+
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;

@@ -663,7 +663,7 @@ fn get_redemption_value_should_not_panic_on_large_values() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::OneResourcePoolError(
-                OneResourcePoolError::DecimalOverflowError
+                OneResourcePoolError::InvalidGetRedemptionAmount
             ))
         )
     });

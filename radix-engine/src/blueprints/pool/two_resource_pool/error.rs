@@ -19,6 +19,7 @@ pub enum TwoResourcePoolError {
     PoolCreationWithSameResource,
     ContributionOfEmptyBucketError,
     DecimalOverflowError,
+    InvalidGetRedemptionAmount,
 }
 
 impl From<TwoResourcePoolError> for RuntimeError {
