@@ -418,7 +418,9 @@ impl MultiResourcePoolBlueprint {
                 if let Some(value) =
                     resource_bucket_amount_mapping.get_mut(&bucket_resource_address)
                 {
-                    *value = value.safe_add(bucket_amount).unwrap();
+                    *value = value
+                        .safe_add(bucket_amount)
+                        .ok_or_else(|| MultiResourcePoolError::DecimalOverflowError)?;
                     Ok(())
                 } else {
                     Err(MultiResourcePoolError::ResourceDoesNotBelongToPool {
@@ -476,8 +478,7 @@ impl MultiResourcePoolBlueprint {
                         }
                     },
                 )?
-                .ok_or_else(|| MultiResourcePoolError::DecimalOverflowError)?
-                .sqrt()
+                .and_then(|d| d.sqrt())
                 .ok_or_else(|| MultiResourcePoolError::DecimalOverflowError)?;
 
             // The following unwrap is safe to do. We've already checked that all of the buckets
@@ -541,9 +542,12 @@ impl MultiResourcePoolBlueprint {
                 .values()
                 .map(|(vault, bucket)| {
                     vault.amount(api).and_then(|vault_amount| {
-                        bucket
-                            .amount(api)
-                            .map(|bucket_amount| bucket_amount.safe_div(vault_amount).unwrap())
+                        bucket.amount(api).and_then(|bucket_amount| {
+                            let rtn = bucket_amount
+                                .safe_div(vault_amount)
+                                .ok_or_else(|| MultiResourcePoolError::DecimalOverflowError)?;
+                            Ok(rtn)
+                        })
                     })
                 })
                 .collect::<Result<Vec<Decimal>, _>>()?
@@ -564,7 +568,10 @@ impl MultiResourcePoolBlueprint {
                     })?;
 
                 let amount_to_contribute = {
-                    let amount_to_contribute = vault.amount(api)?.safe_mul(minimum_ratio).unwrap();
+                    let amount_to_contribute = vault
+                        .amount(api)?
+                        .safe_mul(minimum_ratio)
+                        .ok_or_else(|| MultiResourcePoolError::DecimalOverflowError)?;
                     if divisibility == 18 {
                         amount_to_contribute
                     } else {
@@ -578,7 +585,9 @@ impl MultiResourcePoolBlueprint {
                 change.push(bucket)
             }
 
-            let pool_units_to_mint = pool_unit_total_supply.safe_mul(minimum_ratio).unwrap();
+            let pool_units_to_mint = pool_unit_total_supply
+                .safe_mul(minimum_ratio)
+                .ok_or_else(|| MultiResourcePoolError::DecimalOverflowError)?;
 
             Runtime::emit_event(
                 api,

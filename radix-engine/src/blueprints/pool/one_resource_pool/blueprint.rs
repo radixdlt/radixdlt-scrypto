@@ -21,8 +21,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::prelude::{
-    BlueprintFunctionsSchemaInit, BlueprintHooksInit, BlueprintSchemaInit,
-    BlueprintStateSchemaInit, FunctionSchemaInit,
+    BlueprintFunctionsSchemaInit, BlueprintHooksInit, BlueprintSchemaInit, FunctionSchemaInit,
 };
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
@@ -363,13 +362,15 @@ impl OneResourcePoolBlueprint {
             reserves > Decimal::ZERO,
         ) {
             (false, false) => Ok(amount_of_contributed_resources),
-            (false, true) => Ok(amount_of_contributed_resources.safe_add(reserves).unwrap()),
+            (false, true) => Ok(amount_of_contributed_resources
+                .safe_add(reserves)
+                .ok_or_else(|| OneResourcePoolError::DecimalOverflowError)?),
             (true, false) => Err(OneResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves),
             (true, true) => Ok(amount_of_contributed_resources
                 .safe_mul(pool_unit_total_supply)
-                .unwrap()
+                .ok_or_else(|| OneResourcePoolError::DecimalOverflowError)?
                 .safe_div(reserves)
-                .unwrap()),
+                .ok_or_else(|| OneResourcePoolError::DecimalOverflowError)?),
         }?;
 
         vault.put(bucket, api)?;

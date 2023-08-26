@@ -436,8 +436,7 @@ impl TwoResourcePoolBlueprint {
                 (false, false, false) => Ok((
                     contribution1
                         .safe_mul(contribution2)
-                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?
-                        .sqrt()
+                        .and_then(|d| d.sqrt())
                         .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?,
                     contribution1,
                     contribution2,
@@ -445,11 +444,9 @@ impl TwoResourcePoolBlueprint {
                 (false, _, _) => Ok((
                     contribution1
                         .safe_add(reserves1)
-                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?
-                        .safe_mul(contribution2.safe_add(reserves2).unwrap())
-                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?
-                        .sqrt()
-                        .unwrap(),
+                        .and_then(|d| d.safe_mul(contribution2.safe_add(reserves2)?))
+                        .and_then(|d| d.sqrt())
+                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?,
                     contribution1,
                     contribution2,
                 )),
