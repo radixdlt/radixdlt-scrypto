@@ -156,6 +156,7 @@ impl NonFungibleData for UnstakeData {
 pub enum ValidatorError {
     InvalidClaimResource,
     InvalidGetRedemptionAmount,
+    UnexpectedDecimalComputationError,
     EpochUnlockHasNotOccurredYet,
     PendingOwnerStakeWithdrawalLimitReached,
     InvalidValidatorFeeFactor,
@@ -1589,9 +1590,17 @@ impl ValidatorBlueprint {
         } else {
             amount_of_stake_units
                 .safe_mul(active_stake_amount)
-                .unwrap()
+                .ok_or_else(|| {
+                    RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                        ValidatorError::UnexpectedDecimalComputationError,
+                    ))
+                })?
                 .safe_div(total_stake_unit_supply)
-                .unwrap()
+                .ok_or_else(|| {
+                    RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                        ValidatorError::UnexpectedDecimalComputationError,
+                    ))
+                })?
         };
 
         Ok(xrd_amount)
