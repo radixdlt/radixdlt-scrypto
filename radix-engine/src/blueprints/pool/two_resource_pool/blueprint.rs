@@ -436,20 +436,17 @@ impl TwoResourcePoolBlueprint {
                 (false, false, false) => Ok((
                     contribution1
                         .safe_mul(contribution2)
-                        .unwrap()
-                        .sqrt()
-                        .unwrap(),
+                        .and_then(|d| d.sqrt())
+                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?,
                     contribution1,
                     contribution2,
                 )),
                 (false, _, _) => Ok((
                     contribution1
                         .safe_add(reserves1)
-                        .unwrap()
-                        .safe_mul(contribution2.safe_add(reserves2).unwrap())
-                        .unwrap()
-                        .sqrt()
-                        .unwrap(),
+                        .and_then(|d| d.safe_mul(contribution2.safe_add(reserves2)?))
+                        .and_then(|d| d.sqrt())
+                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?,
                     contribution1,
                     contribution2,
                 )),
@@ -466,15 +463,30 @@ impl TwoResourcePoolBlueprint {
                     let dm = contribution1;
                     let dn = contribution2;
 
-                    let m_div_n = m.safe_div(n).unwrap();
-                    let dm_div_dn = dm.safe_div(dn).unwrap();
+                    let m_div_n = m
+                        .safe_div(n)
+                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?;
+                    let dm_div_dn = dm
+                        .safe_div(dn)
+                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?;
 
                     let (mut amount1, mut amount2) = if m_div_n == dm_div_dn {
                         (dm, dn)
                     } else if m_div_n < dm_div_dn {
-                        (dn.safe_mul(m_div_n).unwrap(), dn)
+                        (
+                            dn.safe_mul(m_div_n)
+                                .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?,
+                            dn,
+                        )
                     } else {
-                        (dm, dm.safe_mul(n.safe_div(m).unwrap()).unwrap())
+                        (
+                            dm,
+                            dm.safe_mul(
+                                n.safe_div(m)
+                                    .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?,
+                            )
+                            .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?,
+                        )
                     };
 
                     if divisibility1 != 18 {
@@ -486,9 +498,9 @@ impl TwoResourcePoolBlueprint {
 
                     let pool_units_to_mint = amount1
                         .safe_div(reserves1)
-                        .unwrap()
+                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?
                         .safe_mul(pool_unit_total_supply)
-                        .unwrap();
+                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?;
 
                     Ok((pool_units_to_mint, amount1, amount2))
                 }
@@ -585,7 +597,7 @@ impl TwoResourcePoolBlueprint {
         }
 
         let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
+            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
 
         let event = RedemptionEvent {
             redeemed_resources: amounts_owed.clone(),
@@ -680,6 +692,14 @@ impl TwoResourcePoolBlueprint {
             .pool_unit_resource_manager
             .total_supply(api)?
             .expect("Total supply is always enabled for pool unit resource.");
+
+        if amount_of_pool_units.is_negative()
+            || amount_of_pool_units.is_zero()
+            || amount_of_pool_units > pool_units_total_supply
+        {
+            return Err(TwoResourcePoolError::InvalidGetRedemptionAmount.into());
+        }
+
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;
@@ -702,7 +722,7 @@ impl TwoResourcePoolBlueprint {
         }
 
         let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
+            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
 
         api.field_close(handle)?;
 
@@ -757,7 +777,7 @@ impl TwoResourcePoolBlueprint {
         pool_units_to_redeem: Decimal,
         pool_units_total_supply: Decimal,
         reserves: BTreeMap<ResourceAddress, ReserveResourceInformation>,
-    ) -> BTreeMap<ResourceAddress, Decimal> {
+    ) -> Result<BTreeMap<ResourceAddress, Decimal>, RuntimeError> {
         reserves
             .into_iter()
             .map(
@@ -770,9 +790,9 @@ impl TwoResourcePoolBlueprint {
                 )| {
                     let amount_owed = pool_units_to_redeem
                         .safe_div(pool_units_total_supply)
-                        .unwrap()
+                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?
                         .safe_mul(reserves)
-                        .unwrap();
+                        .ok_or_else(|| TwoResourcePoolError::DecimalOverflowError)?;
 
                     let amount_owed = if divisibility == 18 {
                         amount_owed
@@ -780,7 +800,7 @@ impl TwoResourcePoolBlueprint {
                         amount_owed.round(divisibility, RoundingMode::ToNegativeInfinity)
                     };
 
-                    (resource_address, amount_owed)
+                    Ok((resource_address, amount_owed))
                 },
             )
             .collect()

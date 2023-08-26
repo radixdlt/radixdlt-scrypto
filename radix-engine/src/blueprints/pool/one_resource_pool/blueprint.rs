@@ -21,8 +21,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::prelude::{
-    BlueprintFunctionsSchemaInit, BlueprintHooksInit, BlueprintSchemaInit,
-    BlueprintStateSchemaInit, FunctionSchemaInit,
+    BlueprintFunctionsSchemaInit, BlueprintHooksInit, BlueprintSchemaInit, FunctionSchemaInit,
 };
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
@@ -363,13 +362,15 @@ impl OneResourcePoolBlueprint {
             reserves > Decimal::ZERO,
         ) {
             (false, false) => Ok(amount_of_contributed_resources),
-            (false, true) => Ok(amount_of_contributed_resources.safe_add(reserves).unwrap()),
+            (false, true) => Ok(amount_of_contributed_resources
+                .safe_add(reserves)
+                .ok_or_else(|| OneResourcePoolError::DecimalOverflowError)?),
             (true, false) => Err(OneResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves),
             (true, true) => Ok(amount_of_contributed_resources
                 .safe_mul(pool_unit_total_supply)
-                .unwrap()
+                .ok_or_else(|| OneResourcePoolError::DecimalOverflowError)?
                 .safe_div(reserves)
-                .unwrap()),
+                .ok_or_else(|| OneResourcePoolError::DecimalOverflowError)?),
         }?;
 
         vault.put(bucket, api)?;
@@ -437,7 +438,7 @@ impl OneResourcePoolBlueprint {
             pool_units_total_supply,
             pool_resource_reserves,
             pool_resource_divisibility,
-        );
+        )?;
 
         // Burn the pool units and take the owed resources from the bucket.
         bucket.burn(api)?;
@@ -524,6 +525,14 @@ impl OneResourcePoolBlueprint {
         let pool_units_total_supply = pool_unit_resource_manager
             .total_supply(api)?
             .expect("Total supply is always enabled for pool unit resource.");
+
+        if amount_of_pool_units.is_negative()
+            || amount_of_pool_units.is_zero()
+            || amount_of_pool_units > pool_units_total_supply
+        {
+            return Err(OneResourcePoolError::InvalidGetRedemptionAmount.into());
+        }
+
         let pool_resource_reserves = vault.amount(api)?;
         let pool_resource_divisibility = vault
             .resource_address(api)
@@ -541,7 +550,7 @@ impl OneResourcePoolBlueprint {
             pool_units_total_supply,
             pool_resource_reserves,
             pool_resource_divisibility,
-        );
+        )?;
 
         api.field_close(handle)?;
 
@@ -569,18 +578,20 @@ impl OneResourcePoolBlueprint {
         pool_units_total_supply: Decimal,
         pool_resource_reserves: Decimal,
         pool_resource_divisibility: u8,
-    ) -> Decimal {
+    ) -> Result<Decimal, RuntimeError> {
         let amount_owed = pool_units_to_redeem
             .safe_mul(pool_resource_reserves)
-            .unwrap()
+            .ok_or_else(|| OneResourcePoolError::DecimalOverflowError)?
             .safe_div(pool_units_total_supply)
-            .unwrap();
+            .ok_or_else(|| OneResourcePoolError::DecimalOverflowError)?;
 
-        if pool_resource_divisibility == 18 {
+        let amount_owed = if pool_resource_divisibility == 18 {
             amount_owed
         } else {
             amount_owed.round(pool_resource_divisibility, RoundingMode::ToNegativeInfinity)
-        }
+        };
+
+        Ok(amount_owed)
     }
 
     fn lock_and_read<Y>(
