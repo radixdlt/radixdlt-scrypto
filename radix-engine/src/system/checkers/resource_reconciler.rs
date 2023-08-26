@@ -1,6 +1,6 @@
 use crate::system::checkers::{ResourceDatabaseCheckerResults, ResourceEventCheckerResults};
 use radix_engine_common::math::Decimal;
-use radix_engine_common::prelude::ResourceAddress;
+use radix_engine_common::prelude::{NodeId, ResourceAddress};
 use std::collections::BTreeMap;
 
 #[derive(Debug)]
@@ -9,6 +9,7 @@ pub enum ResourceReconciliationError {
         BTreeMap<ResourceAddress, Decimal>,
         BTreeMap<ResourceAddress, Decimal>,
     ),
+    VaultAmountsDontMatch(BTreeMap<NodeId, Decimal>, BTreeMap<NodeId, Decimal>),
 }
 
 pub struct ResourceReconciler;
@@ -28,6 +29,19 @@ impl ResourceReconciler {
             return Err(ResourceReconciliationError::TotalSuppliesDontMatch(
                 db_total_supplies,
                 event_total_supplies,
+            ));
+        }
+
+        let mut db_vault_amounts = db_results.vaults.clone();
+        db_vault_amounts.retain(|_, amount| amount.is_positive());
+
+        let mut event_vault_amounts = event_results.vault_amounts.clone();
+        event_vault_amounts.retain(|_, amount| amount.is_positive());
+
+        if db_vault_amounts.ne(&event_vault_amounts) {
+            return Err(ResourceReconciliationError::VaultAmountsDontMatch(
+                db_vault_amounts,
+                event_vault_amounts,
             ));
         }
 
