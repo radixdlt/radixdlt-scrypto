@@ -33,6 +33,7 @@ members = [
     "radix-engine-stores",
     "radix-engine-tests",
     "radix-engine-queries",
+    "resource-tests",
     "utils",
     "radix-engine-profiling",
     "radix-engine-profiling/resources-tracker-macro",
