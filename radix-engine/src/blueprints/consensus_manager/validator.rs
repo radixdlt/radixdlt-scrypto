@@ -541,40 +541,24 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        Self::stake_internal(xrd_bucket, api)
+        Self::stake_internal(xrd_bucket, true, api)
     }
 
     pub fn stake<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
-            ACTOR_STATE_SELF,
-            ValidatorField::State.field_index(),
-            LockFlags::read_only(),
-        )?;
-        let substate = api
-            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .into_latest();
-        api.field_close(handle)?;
-        if !substate.accepts_delegated_stake {
-            // TODO: Should this be an Option returned instead similar to Account?
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::ValidatorError(
-                    ValidatorError::ValidatorIsNotAcceptingDelegatedStake,
-                ),
-            ));
-        }
-
-        Self::stake_internal(xrd_bucket, api)
+        Self::stake_internal(xrd_bucket, false, api)
     }
 
-    fn stake_internal<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
+    fn stake_internal<Y>(
+        xrd_bucket: Bucket,
+        is_owner: bool,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let xrd_bucket_amount = xrd_bucket.amount(api)?;
-
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.field_index(),
@@ -584,6 +568,21 @@ impl ValidatorBlueprint {
         let mut validator = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
             .into_latest();
+
+        if !is_owner {
+            if !validator.accepts_delegated_stake {
+                api.field_close(handle)?;
+
+                // TODO: Should this be an Option returned instead similar to Account?
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ValidatorError(
+                        ValidatorError::ValidatorIsNotAcceptingDelegatedStake,
+                    ),
+                ));
+            }
+        }
+
+        let xrd_bucket_amount = xrd_bucket.amount(api)?;
 
         // Stake
         let (stake_unit_bucket, new_stake_amount) = {
@@ -1312,6 +1311,7 @@ impl ValidatorBlueprint {
                 .unwrap();
         }
     }
+
     /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
     /// value of all its stake units.
     /// Note: the validator's proposal statistics passed to this method are used only for creating
