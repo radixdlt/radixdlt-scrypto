@@ -9,8 +9,8 @@ pub struct ResourceTestFuzzer {
 }
 
 impl ResourceTestFuzzer {
-    pub fn new() -> Self {
-        let rng = ChaCha8Rng::seed_from_u64(1234);
+    pub fn new(seed: u64) -> Self {
+        let rng = ChaCha8Rng::seed_from_u64(seed);
         Self {
             rng,
         }

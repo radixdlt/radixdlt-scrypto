@@ -1,4 +1,6 @@
 use rand_chacha::rand_core::{RngCore};
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
 use radix_engine::transaction::{TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
@@ -8,21 +10,14 @@ use transaction::prelude::*;
 
 #[test]
 fn fuzz_one_pool() {
-    let mut one_pool_test = OnePoolTest::new(7);
-    let mut fuzzer = ResourceTestFuzzer::new();
-
-    for _ in 0..5000 {
-        match fuzzer.next_u32(5u32) {
-            0u32 => one_pool_test.contribute(fuzzer.next_amount(), true),
-            1u32 => one_pool_test.protected_deposit(fuzzer.next_amount(), true),
-            2u32 => one_pool_test.protected_withdraw(fuzzer.next_amount(), fuzzer.next_withdraw_strategy(), true),
-            3u32 => one_pool_test.redeem(fuzzer.next_amount(), true),
-            _ => one_pool_test.get_redemption_value(fuzzer.next_amount(), true),
-        };
-    }
+    (1u64..12u64).into_par_iter().for_each(|seed| {
+        let mut one_pool_fuzz_test = OnePoolFuzzTest::new(seed);
+        one_pool_fuzz_test.run_fuzz();
+    })
 }
 
-struct OnePoolTest {
+struct OnePoolFuzzTest {
+    fuzzer: ResourceTestFuzzer,
     test_runner: DefaultTestRunner,
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
@@ -31,8 +26,9 @@ struct OnePoolTest {
     account_component_address: ComponentAddress,
 }
 
-impl OnePoolTest {
-    fn new(divisibility: u8) -> Self {
+impl OnePoolFuzzTest {
+    fn new(seed: u64) -> Self {
+        let fuzzer = ResourceTestFuzzer::new(seed);
         let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -40,7 +36,7 @@ impl OnePoolTest {
         let resource_address = test_runner.create_freely_mintable_and_burnable_fungible_resource(
             OwnerRole::None,
             None,
-            divisibility,
+            7,
             account,
         );
 
@@ -50,6 +46,7 @@ impl OnePoolTest {
         );
 
         Self {
+            fuzzer,
             test_runner,
             pool_component_address: pool_component,
             pool_unit_resource_address: pool_unit_resource,
@@ -59,7 +56,35 @@ impl OnePoolTest {
         }
     }
 
-    fn contribute<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
+    fn run_fuzz(&mut self) {
+        for _ in 0..5000 {
+            match self.fuzzer.next_u32(5u32) {
+                0u32 => {
+                    let amount = self.fuzzer.next_amount();
+                    self.contribute(amount)
+                },
+                1u32 => {
+                    let amount = self.fuzzer.next_amount();
+                    self.protected_deposit(amount)
+                },
+                2u32 => {
+                    let amount = self.fuzzer.next_amount();
+                    let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
+                    self.protected_withdraw(amount, withdraw_strategy)
+                },
+                3u32 => {
+                    let amount = self.fuzzer.next_amount();
+                    self.redeem(amount)
+                },
+                _ => {
+                    let amount = self.fuzzer.next_amount();
+                    self.get_redemption_value(amount)
+                },
+            };
+        }
+    }
+
+    fn contribute<D: Into<Decimal>>(&mut self, amount: D) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "contribution")
@@ -74,10 +99,10 @@ impl OnePoolTest {
             })
             .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
-        self.execute_manifest(manifest, sign)
+        self.execute_manifest(manifest)
     }
 
-    fn redeem<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
+    fn redeem<D: Into<Decimal>>(&mut self, amount: D) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .withdraw_from_account(
                 self.account_component_address,
@@ -96,10 +121,10 @@ impl OnePoolTest {
             })
             .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
-        self.execute_manifest(manifest, sign)
+        self.execute_manifest(manifest)
     }
 
-    fn protected_deposit<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
+    fn protected_deposit<D: Into<Decimal>>(&mut self, amount: D) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "to_deposit")
@@ -113,14 +138,13 @@ impl OnePoolTest {
                 )
             })
             .build();
-        self.execute_manifest(manifest, sign)
+        self.execute_manifest(manifest)
     }
 
     fn protected_withdraw<D: Into<Decimal>>(
         &mut self,
         amount: D,
         withdraw_strategy: WithdrawStrategy,
-        sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
@@ -133,13 +157,12 @@ impl OnePoolTest {
             )
             .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
-        self.execute_manifest(manifest, sign)
+        self.execute_manifest(manifest)
     }
 
     fn get_redemption_value<D: Into<Decimal>>(
         &mut self,
         amount_of_pool_units: D,
-        sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
@@ -150,27 +173,22 @@ impl OnePoolTest {
                 },
             )
             .build();
-        self.execute_manifest(manifest, sign)
+        self.execute_manifest(manifest)
     }
 
     fn execute_manifest(
         &mut self,
         manifest: TransactionManifestV1,
-        sign: bool,
     ) -> TransactionReceipt {
         self.test_runner
-            .execute_manifest_ignoring_fee(manifest, self.initial_proofs(sign))
+            .execute_manifest_ignoring_fee(manifest, self.initial_proofs())
     }
 
     fn virtual_signature_badge(&self) -> NonFungibleGlobalId {
         NonFungibleGlobalId::from_public_key(&self.account_public_key)
     }
 
-    fn initial_proofs(&self, sign: bool) -> Vec<NonFungibleGlobalId> {
-        if sign {
-            vec![self.virtual_signature_badge()]
-        } else {
-            vec![]
-        }
+    fn initial_proofs(&self) -> Vec<NonFungibleGlobalId> {
+        vec![self.virtual_signature_badge()]
     }
 }
