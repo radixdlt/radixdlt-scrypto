@@ -315,7 +315,6 @@ impl FungibleVaultBlueprint {
 
         // Apply withdraw strategy
         let divisibility = Self::get_divisibility(api)?;
-        let amount = amount.for_withdrawal(divisibility, withdraw_strategy);
 
         // Check amount
         if !check_fungible_amount(&amount, divisibility) {
@@ -323,6 +322,8 @@ impl FungibleVaultBlueprint {
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
         }
+
+        let amount = amount.for_withdrawal(divisibility, withdraw_strategy);
 
         // Take
         let taken = Self::internal_take(amount, api)?;
