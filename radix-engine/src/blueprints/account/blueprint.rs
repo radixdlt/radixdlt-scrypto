@@ -1147,7 +1147,7 @@ impl AccountBlueprint {
         api.field_write_typed(
             handle,
             &AccountDepositRuleFieldPayload::from_content_source(AccountDepositRuleV1 {
-                default_deposit_rule: default
+                default_deposit_rule: default,
             }),
         )?;
         api.field_close(handle)?;
@@ -1309,9 +1309,11 @@ impl AccountBlueprint {
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it if
         // instructed to.
         let vault = {
-            let entry = api.key_value_entry_get_typed::<AccountResourceVaultEntryPayload>(
-                kv_store_entry_lock_handle,
-            )?.map(|v| v.into_latest());
+            let entry = api
+                .key_value_entry_get_typed::<AccountResourceVaultEntryPayload>(
+                    kv_store_entry_lock_handle,
+                )?
+                .map(|v| v.into_latest());
 
             match entry {
                 Some(vault) => Ok(vault),
@@ -1420,9 +1422,11 @@ impl AccountBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let entry = api.key_value_entry_get_typed::<AccountResourcePreferenceEntryPayload>(
-            kv_store_entry_lock_handle,
-        )?.map(|v| v.into_latest());
+        let entry = api
+            .key_value_entry_get_typed::<AccountResourcePreferenceEntryPayload>(
+                kv_store_entry_lock_handle,
+            )?
+            .map(|v| v.into_latest());
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
         Ok(entry)
     }
