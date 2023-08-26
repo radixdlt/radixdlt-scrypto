@@ -1,12 +1,8 @@
-use rand::distributions::uniform::SampleUniform;
 use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
-use radix_engine::blueprints::pool::one_resource_pool::*;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
-use radix_engine::transaction::{BalanceChange, TransactionReceipt};
+use radix_engine::transaction::{TransactionReceipt};
 use radix_engine::types::*;
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -38,41 +34,29 @@ impl ResourceTestFuzzer {
             }
         }
     }
+
+    fn next_u32(&mut self, count: u32) -> u32 {
+        self.rng.gen_range(0u32..count)
+    }
 }
 
 #[test]
-fn run() {
-    let mut test_runner = TestEnvironment::new(18);
+fn fuzz_one_pool() {
+    let mut one_pool_test = OnePoolTest::new(7);
     let mut fuzzer = ResourceTestFuzzer::new();
 
-    for _ in 0..1000 {
-        let contribute_amount = fuzzer.next_amount();
-        test_runner.contribute(contribute_amount, true);
-
-        let pool_unit_amount = fuzzer.next_amount();
-        test_runner.call_get_redemption_value(pool_unit_amount, true);
+    for _ in 0..5000 {
+        match fuzzer.next_u32(5u32) {
+            0u32 => one_pool_test.contribute(fuzzer.next_amount(), true),
+            1u32 => one_pool_test.protected_deposit(fuzzer.next_amount(), true),
+            2u32 => one_pool_test.protected_withdraw(fuzzer.next_amount(), WithdrawStrategy::Exact, true),
+            3u32 => one_pool_test.redeem(fuzzer.next_amount(), true),
+            _ => one_pool_test.get_redemption_value(fuzzer.next_amount(), true),
+        };
     }
 }
 
-fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {
-    match event_type_identifier.0 {
-        Emitter::Method(node_id, ObjectModuleId::Main) => match node_id.entity_type() {
-            Some(
-                EntityType::GlobalOneResourcePool
-                | EntityType::GlobalTwoResourcePool
-                | EntityType::GlobalMultiResourcePool,
-            ) => true,
-            _ => false,
-        },
-        _ => false,
-    }
-}
-
-//===================================
-// Test Runner and Utility Functions
-//===================================
-
-struct TestEnvironment {
+struct OnePoolTest {
     test_runner: DefaultTestRunner,
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
@@ -81,16 +65,8 @@ struct TestEnvironment {
     account_component_address: ComponentAddress,
 }
 
-impl TestEnvironment {
+impl OnePoolTest {
     fn new(divisibility: u8) -> Self {
-        Self::new_with_owner(divisibility, OwnerRole::None)
-    }
-
-    fn new_account() {
-
-    }
-
-    fn new_with_owner(divisibility: u8, owner_role: OwnerRole) -> Self {
         let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -102,28 +78,10 @@ impl TestEnvironment {
             account,
         );
 
-        let (pool_component, pool_unit_resource) = {
-            let manifest = ManifestBuilder::new()
-                .call_function(
-                    POOL_PACKAGE,
-                    ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
-                    ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
-                    OneResourcePoolInstantiateManifestInput {
-                        resource_address,
-                        pool_manager_rule: rule!(require(virtual_signature_badge)),
-                        owner_role,
-                        address_reservation: None,
-                    },
-                )
-                .build();
-            let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-            let commit_result = receipt.expect_commit_success();
-
-            (
-                commit_result.new_component_addresses()[0],
-                commit_result.new_resource_addresses()[0],
-            )
-        };
+        let (pool_component, pool_unit_resource) = test_runner.create_one_resource_pool(
+            resource_address,
+            rule!(require(virtual_signature_badge)),
+        );
 
         Self {
             test_runner,
@@ -216,15 +174,6 @@ impl TestEnvironment {
         &mut self,
         amount_of_pool_units: D,
         sign: bool,
-    ) -> Decimal {
-        let receipt = self.call_get_redemption_value(amount_of_pool_units, sign);
-        receipt.expect_commit_success().output(1)
-    }
-
-    fn call_get_redemption_value<D: Into<Decimal>>(
-        &mut self,
-        amount_of_pool_units: D,
-        sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
@@ -236,18 +185,6 @@ impl TestEnvironment {
             )
             .build();
         self.execute_manifest(manifest, sign)
-    }
-
-    fn get_vault_amount(&mut self, sign: bool) -> Decimal {
-        let manifest = ManifestBuilder::new()
-            .call_method(
-                self.pool_component_address,
-                ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,
-                OneResourcePoolGetVaultAmountManifestInput,
-            )
-            .build();
-        let receipt = self.execute_manifest(manifest, sign);
-        receipt.expect_commit_success().output(1)
     }
 
     fn execute_manifest(
@@ -270,15 +207,4 @@ impl TestEnvironment {
             vec![]
         }
     }
-}
-
-fn is_one_resource_pool_does_non_fungible_resources_are_not_accepted(
-    runtime_error: &RuntimeError,
-) -> bool {
-    matches!(
-        runtime_error,
-        RuntimeError::ApplicationError(ApplicationError::OneResourcePoolError(
-            OneResourcePoolError::NonFungibleResourcesAreNotAccepted { .. }
-        ))
-    )
 }

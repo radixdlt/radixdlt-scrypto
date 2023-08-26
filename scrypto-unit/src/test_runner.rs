@@ -5,6 +5,7 @@ use std::process::Command;
 
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
+use radix_engine::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::resource_checker::ResourceChecker;
@@ -41,6 +42,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, freeze_roles, rule};
+use radix_engine_interface::blueprints::pool::{ONE_RESOURCE_POOL_INSTANTIATE_IDENT, OneResourcePoolInstantiateManifestInput};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_native_events::to_typed_native_event;
 use radix_engine_queries::typed_substate_layout::*;
@@ -1833,6 +1835,29 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
+    }
+
+    pub fn create_one_resource_pool(&mut self, resource_address: ResourceAddress, pool_manager_rule: AccessRule) -> (ComponentAddress, ResourceAddress) {
+        let manifest = ManifestBuilder::new()
+            .call_function(
+                POOL_PACKAGE,
+                ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
+                ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
+                OneResourcePoolInstantiateManifestInput {
+                    resource_address,
+                    pool_manager_rule,
+                    owner_role: OwnerRole::None,
+                    address_reservation: None,
+                },
+            )
+            .build();
+        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        let commit_result = receipt.expect_commit_success();
+
+        (
+            commit_result.new_component_addresses()[0],
+            commit_result.new_resource_addresses()[0],
+        )
     }
 
     pub fn new_component<F>(
