@@ -59,7 +59,7 @@ impl FungibleBucketBlueprint {
         {
             if amount.is_negative() {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::VaultError(VaultError::InvalidAmount),
+                    ApplicationError::BucketError(BucketError::InvalidAmount),
                 ));
             }
             let bucket_amount_plus_one = liquid

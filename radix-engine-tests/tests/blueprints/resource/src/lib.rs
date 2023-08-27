@@ -320,6 +320,23 @@ mod rounding {
             );
         }
 
+        pub fn non_fungible_bucket_take_advanced_max() {
+            let mut bucket = Self::non_fungible_resource_amount_for_withdrawal();
+            let _ = bucket.take_advanced(
+                Decimal::MAX,
+                WithdrawStrategy::Rounded(RoundingMode::AwayFromZero),
+            );
+        }
+
+        pub fn non_fungible_vault_take_advanced_max() {
+            let bucket = Self::non_fungible_resource_amount_for_withdrawal();
+            let mut vault = Vault::with_bucket(bucket);
+            let _ = vault.take_advanced(
+                Decimal::MAX,
+                WithdrawStrategy::Rounded(RoundingMode::AwayFromZero),
+            );
+        }
+
         pub fn non_fungible_resource_take_advanced() {
             let mut bucket = Self::non_fungible_resource_amount_for_withdrawal();
             let bucket2 = bucket.take_advanced(
