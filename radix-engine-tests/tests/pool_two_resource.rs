@@ -5,6 +5,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::pool::*;
+use radix_engine_queries::typed_substate_layout::FungibleResourceManagerError;
 use scrypto::prelude::Pow;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -906,19 +907,36 @@ fn contribution_of_large_values_should_not_cause_panic() {
     let max_mint_amount = Decimal(I192::from(2).pow(152));
     let mut test_runner = TestEnvironment::new((18, 18));
 
+    let manifest = ManifestBuilder::new()
+        .mint_fungible(test_runner.pool_resource1, max_mint_amount)
+        .mint_fungible(test_runner.pool_resource1, max_mint_amount)
+        .mint_fungible(test_runner.pool_resource2, max_mint_amount)
+        .mint_fungible(test_runner.pool_resource2, max_mint_amount)
+        .take_all_from_worktop(test_runner.pool_resource1, "resource_1")
+        .take_all_from_worktop(test_runner.pool_resource2, "resource_2")
+        .with_name_lookup(|builder, lookup| {
+            let bucket1 = lookup.bucket("resource_1");
+            let bucket2 = lookup.bucket("resource_2");
+            builder.call_method(
+                test_runner.pool_component_address,
+                TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
+                TwoResourcePoolContributeManifestInput {
+                    buckets: (bucket1, bucket2),
+                },
+            )
+        })
+        .try_deposit_batch_or_abort(test_runner.account_component_address, None)
+        .build();
+
     // Act
-    let receipt = test_runner.contribute(
-        (test_runner.pool_resource1, max_mint_amount),
-        (test_runner.pool_resource2, max_mint_amount),
-        true,
-    );
+    let receipt = test_runner.execute_manifest(manifest, true);
 
     // Assert
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::TwoResourcePoolError(
-                TwoResourcePoolError::DecimalOverflowError
+            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
+                FungibleResourceManagerError::MaxMintAmountExceeded
             ))
         )
     });
