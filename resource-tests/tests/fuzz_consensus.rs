@@ -1,16 +1,7 @@
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
-use radix_engine::system::bootstrap::{
-    GenesisDataChunk, GenesisStakeAllocation, GenesisValidator, DEFAULT_TESTING_FAUCET_SUPPLY,
-};
-use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
+use radix_engine::transaction::{TransactionOutcome, TransactionReceipt};
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ValidatorGetRedemptionValueInput, ValidatorStakeInput, VALIDATOR_CLAIM_XRD_IDENT,
-    VALIDATOR_GET_REDEMPTION_VALUE_IDENT, VALIDATOR_STAKE_AS_OWNER_IDENT, VALIDATOR_STAKE_IDENT,
-    VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT, VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT,
-    VALIDATOR_UNSTAKE_IDENT,
-};
-use radix_engine_interface::blueprints::pool::*;
+use radix_engine_interface::blueprints::consensus_manager::{ValidatorGetRedemptionValueInput, VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT, VALIDATOR_STAKE_IDENT, VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT, VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT, VALIDATOR_UNSTAKE_IDENT, VALIDATOR_UPDATE_FEE_IDENT};
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use resource_tests::ResourceTestFuzzer;
@@ -40,6 +31,7 @@ enum ConsensusFuzzAction {
     Stake,
     Unstake,
     Claim,
+    UpdateFee,
     ConsensusRound,
 }
 
@@ -65,7 +57,7 @@ struct ConsensusFuzzTest {
 
 impl ConsensusFuzzTest {
     fn new(seed: u64) -> Self {
-        let mut fuzzer = ResourceTestFuzzer::new(seed);
+        let fuzzer = ResourceTestFuzzer::new(seed);
         let initial_epoch = Epoch::of(5);
         let genesis = CustomGenesis::default_with_xrd_amount(
             Decimal::from(24_000_000_000u64),
@@ -147,7 +139,7 @@ impl ConsensusFuzzTest {
             BTreeMap<ConsensusFuzzActionResult, u64>,
         > = BTreeMap::new();
         for _ in 0..100 {
-            let action = ConsensusFuzzAction::from_repr(self.fuzzer.next_u8(5u8)).unwrap();
+            let action = ConsensusFuzzAction::from_repr(self.fuzzer.next_u8(6u8)).unwrap();
             let (trivial, receipt) = match action {
                 ConsensusFuzzAction::GetRedemptionValue => {
                     let amount = self.next_amount();
@@ -164,6 +156,10 @@ impl ConsensusFuzzTest {
                 ConsensusFuzzAction::Claim => {
                     let amount = self.next_amount();
                     (amount.is_zero(), self.claim(amount))
+                }
+                ConsensusFuzzAction::UpdateFee => {
+                    let amount = self.next_amount();
+                    (amount.is_zero(), self.update_fee(amount))
                 }
                 ConsensusFuzzAction::ConsensusRound => {
                     let rounds = self.fuzzer.next(1u64..10u64);
@@ -268,6 +264,26 @@ impl ConsensusFuzzTest {
             vec![NonFungibleGlobalId::from_public_key(
                 &self.account_public_key,
             )],
+        )
+    }
+
+    fn update_fee(&mut self, fee_factor: Decimal) -> TransactionReceipt {
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_non_fungibles(
+                self.account_component_address,
+                VALIDATOR_OWNER_BADGE,
+                &btreeset!(NonFungibleLocalId::bytes(self.validator_address.as_node_id().0).unwrap()),
+            )
+            .call_method(
+                self.validator_address,
+                VALIDATOR_UPDATE_FEE_IDENT,
+                manifest_args!(fee_factor),
+            )
+            .build();
+        self.test_runner.execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&self.account_public_key)],
         )
     }
 
