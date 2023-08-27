@@ -36,6 +36,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+    VALIDATOR_STAKE_AS_OWNER_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::pool::{
@@ -1014,6 +1015,50 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let receipt = self.execute_manifest(manifest, vec![]);
         let address = receipt.expect_commit(true).new_component_addresses()[0];
         address
+    }
+
+    pub fn new_staked_validator_with_pub_key(
+        &mut self,
+        pub_key: Secp256k1PublicKey,
+        account: ComponentAddress,
+    ) -> ComponentAddress {
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
+            .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
+            .try_deposit_batch_or_abort(account, None)
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        let validator_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+        let receipt =
+            self.execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .get_free_xrd_from_faucet()
+                    .create_proof_from_account_of_non_fungibles(
+                        account,
+                        VALIDATOR_OWNER_BADGE,
+                        &btreeset!(
+                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
+                        ),
+                    )
+                    .take_all_from_worktop(XRD, "bucket")
+                    .with_bucket("bucket", |builder, bucket| {
+                        builder.call_method(
+                            validator_address,
+                            VALIDATOR_STAKE_AS_OWNER_IDENT,
+                            manifest_args!(bucket),
+                        )
+                    })
+                    .deposit_batch(account)
+                    .build(),
+                vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+            );
+        receipt.expect_commit_success();
+
+        validator_address
     }
 
     pub fn publish_native_package(
