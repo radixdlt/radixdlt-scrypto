@@ -500,23 +500,20 @@ impl TwoResourcePoolBlueprint {
                     // can be minted for both of them and then take the one which yield the largest
                     // amount of pool units.
                     [
-                        (
-                            contribution1,
-                            contribution1
-                                .safe_div(reserves1)
-                                .and_then(|d| d.safe_mul(reserves2))
-                                .ok_or(TwoResourcePoolError::DecimalOverflowError)?,
-                        ),
-                        (
-                            contribution2
-                                .safe_div(reserves2)
-                                .and_then(|d| d.safe_mul(reserves1))
-                                .ok_or(TwoResourcePoolError::DecimalOverflowError)?,
-                            contribution2,
-                        ),
+                        contribution1
+                            .safe_div(reserves1)
+                            .and_then(|d| d.safe_mul(reserves2))
+                            .map(|contribution2_required| (contribution1, contribution2_required)),
+                        contribution2
+                            .safe_div(reserves2)
+                            .and_then(|d| d.safe_mul(reserves1))
+                            .map(|contribution1_required| (contribution1_required, contribution2)),
                     ]
                     .into_iter()
-                    .filter(|(c1, c2)| *c1 <= contribution1 && *c2 <= contribution2)
+                    .filter_map(|item| match item {
+                        v @ Some((c1, c2)) if c1 <= contribution1 && c2 <= contribution2 => v,
+                        _ => None,
+                    })
                     .map(|(c1, c2)| {
                         (
                             c1.round(divisibility1, RoundingMode::ToNegativeInfinity),
