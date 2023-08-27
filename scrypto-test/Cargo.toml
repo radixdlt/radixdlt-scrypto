@@ -5,14 +5,14 @@ edition = "2021"
 
 [dependencies]
 # The Radix Engine Stack
-sbor = { path = "../sbor" }
-native-sdk = { path = "../native-sdk" }
-transaction = { path = "../transaction" }
-radix-engine = { path = "../radix-engine", features = ["radix_engine_tests"] }
-radix-engine-stores = { path = "../radix-engine-stores" }
-radix-engine-common = { path = "../radix-engine-common" }
-radix-engine-interface = { path = "../radix-engine-interface" }
-radix-engine-store-interface = { path = "../radix-engine-store-interface" }
+sbor = { path = "../sbor", default-features = false }
+native-sdk = { path = "../native-sdk", default-features = false }
+transaction = { path = "../transaction", default-features = false }
+radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_tests"] }
+radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
+radix-engine-common = { path = "../radix-engine-common", default-features = false }
+radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
+radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
 
 # A library used to allow for self-referencing structs in Rust. This is used in the TestRuntime's 
 # internal implementation to have do self-referencing.
@@ -20,4 +20,13 @@ ouroboros = { version = "0.17.2" }
 
 # A library used for more powerful declarative macros.
 paste = { version = "1.0.14" }
-serde_json = "1.0.105"
+
+# Used for the JSON serialization and deserialization involved in the package compilation
+serde_json = { version = "1.0.105" }
+
+[features]
+default = ["std", "moka"]
+std = ["sbor/std", "native-sdk/std", "transaction/std", "radix-engine/std", "radix-engine-stores/std", "radix-engine-common/std", "radix-engine-interface/std", "radix-engine-store-interface/std"]
+alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-stores/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc"]
+moka = ["radix-engine/moka"]
+lru = ["radix-engine/lru"]
