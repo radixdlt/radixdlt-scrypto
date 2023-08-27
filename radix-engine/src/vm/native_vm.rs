@@ -7,7 +7,7 @@ use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
-use crate::errors::{ApplicationError, NativeRuntimeError, RuntimeError, VmError};
+use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
@@ -90,7 +90,8 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
-        let func = || match self {
+        #[allow(unused_mut)]
+        let mut func = || match self {
             NativeVmInstance::Extension(e) => e.invoke(export_name, input, api),
             NativeVmInstance::Native {
                 native_package_code_id,
@@ -156,7 +157,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                             "Unknown panic!".to_string()
                         };
                         Err(RuntimeError::ApplicationError(
-                            ApplicationError::NativePanic {
+                            crate::errors::ApplicationError::NativePanic {
                                 export_name: export_name.to_owned(),
                                 input: input.as_scrypto_value().clone(),
                                 error: message,
