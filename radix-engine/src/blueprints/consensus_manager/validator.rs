@@ -1231,7 +1231,7 @@ impl ValidatorBlueprint {
             .and_modify(|pending_amount| {
                 *pending_amount = pending_amount
                     .safe_add(requested_stake_unit_amount)
-                    .unwrap()
+                    .unwrap_or(Decimal::MAX)
             })
             .or_insert(requested_stake_unit_amount);
 

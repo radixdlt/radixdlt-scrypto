@@ -1,7 +1,7 @@
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt};
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::consensus_manager::{ValidatorGetRedemptionValueInput, VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT, VALIDATOR_STAKE_IDENT, VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT, VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT, VALIDATOR_UNSTAKE_IDENT, VALIDATOR_UPDATE_FEE_IDENT, VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT};
+use radix_engine_interface::blueprints::consensus_manager::{ValidatorGetRedemptionValueInput, VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT, VALIDATOR_STAKE_IDENT, VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT, VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT, VALIDATOR_UNSTAKE_IDENT, VALIDATOR_UPDATE_FEE_IDENT, VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT};
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use resource_tests::ResourceTestFuzzer;
@@ -33,6 +33,7 @@ enum ConsensusFuzzAction {
     Claim,
     UpdateFee,
     LockOwnerStake,
+    StartUnlockOwnerStake,
     ConsensusRound,
 }
 
@@ -140,7 +141,7 @@ impl ConsensusFuzzTest {
             BTreeMap<ConsensusFuzzActionResult, u64>,
         > = BTreeMap::new();
         for _ in 0..100 {
-            let action = ConsensusFuzzAction::from_repr(self.fuzzer.next_u8(7u8)).unwrap();
+            let action = ConsensusFuzzAction::from_repr(self.fuzzer.next_u8(8u8)).unwrap();
             let (trivial, receipt) = match action {
                 ConsensusFuzzAction::GetRedemptionValue => {
                     let amount = self.next_amount();
@@ -165,6 +166,10 @@ impl ConsensusFuzzTest {
                 ConsensusFuzzAction::LockOwnerStake => {
                     let amount = self.next_amount();
                     (amount.is_zero(), self.lock_owner_stake(amount))
+                }
+                ConsensusFuzzAction::StartUnlockOwnerStake => {
+                    let amount = self.next_amount();
+                    (amount.is_zero(), self.start_unlock_owner_stake(amount))
                 }
                 ConsensusFuzzAction::ConsensusRound => {
                     let rounds = self.fuzzer.next(1u64..10u64);
@@ -307,6 +312,25 @@ impl ConsensusFuzzTest {
                     manifest_args!(bucket),
                 )
             })
+            .build();
+        self.test_runner.execute_manifest_ignoring_fee(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&self.account_public_key)],
+        )
+    }
+
+    fn start_unlock_owner_stake(&mut self, amount: Decimal) -> TransactionReceipt {
+        let manifest = ManifestBuilder::new()
+            .create_proof_from_account_of_non_fungibles(
+                self.account_component_address,
+                VALIDATOR_OWNER_BADGE,
+                &btreeset!(NonFungibleLocalId::bytes(self.validator_address.as_node_id().0).unwrap()),
+            )
+            .call_method(
+                self.validator_address,
+                VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+                manifest_args!(amount),
+            )
             .build();
         self.test_runner.execute_manifest_ignoring_fee(
             manifest,
