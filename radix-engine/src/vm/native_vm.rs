@@ -90,7 +90,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
-        let rtn = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match self {
+        let rtn = catch_unwind(|| match self {
             NativeVmInstance::Extension(e) => e.invoke(export_name, input, api),
             NativeVmInstance::Native {
                 native_package_code_id,
@@ -138,7 +138,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     }
                 }
             }
-        }));
+        });
         match rtn {
             Ok(rtn) => rtn,
             Err(cause) => {
@@ -234,4 +234,20 @@ impl<C: VmInvoke + Clone> NativeVmExtension for OverridePackageCode<C> {
             None
         }
     }
+}
+
+/// This function catches panic unwinds in the callbacks passed to it. If the crate is build with
+/// no-std then this function will not be able to catch the panics since [`catch_unwind`] is in the
+/// Rust standard library and not available to no_std:
+/// https://github.com/rust-lang/rfcs/issues/2810
+///
+/// [`catch_unwind`]: std::panic::catch_unwind
+fn catch_unwind<F: FnOnce() -> R, R>(f: F) -> Result<R, Box<dyn core::any::Any + Send + 'static>> {
+    #[cfg(feature = "std")]
+    let rtn = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
+
+    #[cfg(not(feature = "std"))]
+    let rtn = Ok(f());
+
+    rtn
 }

@@ -18,6 +18,7 @@ use radix_engine_stores::memory_db::*;
 use scrypto::prelude::*;
 use transaction::prelude::*;
 
+#[cfg(feature = "std")]
 #[test]
 fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     // Arrange
