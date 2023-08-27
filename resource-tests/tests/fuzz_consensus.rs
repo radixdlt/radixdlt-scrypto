@@ -3,6 +3,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::system::bootstrap::{DEFAULT_TESTING_FAUCET_SUPPLY, GenesisDataChunk, GenesisStakeAllocation, GenesisValidator};
 use radix_engine_interface::blueprints::consensus_manager::{VALIDATOR_GET_REDEMPTION_VALUE_IDENT, VALIDATOR_STAKE_AS_OWNER_IDENT, VALIDATOR_STAKE_IDENT, ValidatorGetRedemptionValueInput, ValidatorStakeInput};
 use resource_tests::ResourceTestFuzzer;
@@ -17,7 +18,6 @@ fn fuzz_consensus() {
     }).collect();
 
     println!("{:#?}", results);
-    panic!("oops");
 }
 
 #[repr(u8)]
@@ -25,6 +25,7 @@ fn fuzz_consensus() {
 enum ConsensusFuzzAction {
     GetRedemptionValue,
     Stake,
+    ConsensusRound,
 }
 
 #[repr(u8)]
@@ -40,6 +41,7 @@ struct ConsensusFuzzTest {
     validator_address: ComponentAddress,
     account_public_key: PublicKey,
     account_component_address: ComponentAddress,
+    cur_round: Round,
 }
 
 impl ConsensusFuzzTest {
@@ -65,13 +67,14 @@ impl ConsensusFuzzTest {
             validator_address,
             account_public_key: public_key.into(),
             account_component_address: account,
+            cur_round: Round::of(1u64),
         }
     }
 
     fn run_fuzz(&mut self) -> BTreeMap<ConsensusFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>> {
         let mut fuzz_results: BTreeMap<ConsensusFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>> = BTreeMap::new();
         for _ in 0..100 {
-            let action = ConsensusFuzzAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
+            let action = ConsensusFuzzAction::from_repr(self.fuzzer.next_u8(3u8)).unwrap();
             let receipt = match action {
                 ConsensusFuzzAction::GetRedemptionValue => {
                     let amount = self.fuzzer.next_amount();
@@ -80,6 +83,9 @@ impl ConsensusFuzzTest {
                 ConsensusFuzzAction::Stake => {
                     let amount = self.fuzzer.next_amount();
                     self.stake(amount)
+                }
+                ConsensusFuzzAction::ConsensusRound => {
+                    self.consensus_round()
                 }
             };
 
@@ -131,5 +137,26 @@ impl ConsensusFuzzTest {
             .build();
         self.test_runner
             .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&self.account_public_key)])
+    }
+
+    fn consensus_round(
+        &mut self,
+    ) -> TransactionReceipt {
+        let receipt = self.test_runner.advance_to_round(Round::of(self.cur_round.number() + 1));
+        let result = receipt.expect_commit_success();
+        let events = result.application_events.clone();
+        let epoch_change_event = events
+            .into_iter()
+            .filter(|(id, _data)| self.test_runner.is_event_name_equal::<EpochChangeEvent>(id))
+            .map(|(_id, data)| scrypto_decode::<EpochChangeEvent>(&data).unwrap())
+            .collect::<Vec<_>>().into_iter().next();
+
+        if let Some(..) = epoch_change_event {
+            self.cur_round = Round::of(1u64);
+        } else {
+            self.cur_round = Round::of(self.cur_round.number() + 1);
+        }
+
+        receipt
     }
 }
