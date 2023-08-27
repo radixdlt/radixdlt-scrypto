@@ -35,7 +35,9 @@ enum ConsensusFuzzAction {
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
 enum ConsensusFuzzActionResult {
+    TrivialSuccess,
     Success,
+    TrivialFailure,
     Failure,
 }
 
@@ -87,33 +89,35 @@ impl ConsensusFuzzTest {
         let mut fuzz_results: BTreeMap<ConsensusFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>> = BTreeMap::new();
         for _ in 0..100 {
             let action = ConsensusFuzzAction::from_repr(self.fuzzer.next_u8(5u8)).unwrap();
-            let receipt = match action {
+            let (trivial, receipt) = match action {
                 ConsensusFuzzAction::GetRedemptionValue => {
                     let amount = self.fuzzer.next_amount();
-                    self.get_redemption_value(amount)
+                    (amount.is_zero(), self.get_redemption_value(amount))
                 }
                 ConsensusFuzzAction::Stake => {
                     let amount = self.fuzzer.next_amount();
-                    self.stake(amount)
+                    (amount.is_zero(), self.stake(amount))
                 }
                 ConsensusFuzzAction::Unstake => {
                     let amount = self.fuzzer.next_amount();
-                    self.unstake(amount)
+                    (amount.is_zero(), self.unstake(amount))
                 }
                 ConsensusFuzzAction::Claim => {
                     let amount = self.fuzzer.next_amount();
-                    self.claim(amount)
+                    (amount.is_zero(), self.claim(amount))
                 }
                 ConsensusFuzzAction::ConsensusRound => {
                     let rounds = self.fuzzer.next(1u64..10u64);
-                    self.consensus_round(rounds)
+                    (false, self.consensus_round(rounds))
                 }
             };
 
             let result = receipt.expect_commit_ignore_outcome();
-            let result = match &result.outcome {
-                TransactionOutcome::Success(..) => ConsensusFuzzActionResult::Success,
-                TransactionOutcome::Failure(..) => ConsensusFuzzActionResult::Failure,
+            let result = match (&result.outcome, trivial) {
+                (TransactionOutcome::Success(..), true) => ConsensusFuzzActionResult::TrivialSuccess,
+                (TransactionOutcome::Success(..), false) => ConsensusFuzzActionResult::Success,
+                (TransactionOutcome::Failure(..), true) => ConsensusFuzzActionResult::TrivialFailure,
+                (TransactionOutcome::Failure(..), false) => ConsensusFuzzActionResult::Failure,
             };
 
             let results = fuzz_results.entry(action).or_default();
