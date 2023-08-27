@@ -5,7 +5,8 @@ use radix_engine_interface::blueprints::package::{BlueprintPayloadIdentifier, Bl
 use radix_engine_interface::prelude::{BlueprintInfo, EventTypeIdentifier, OuterObjectInfo};
 use radix_engine_interface::types::Emitter;
 use radix_engine_store_interface::interface::SubstateDatabase;
-use std::fmt::Debug;
+use sbor::rust::fmt::Debug;
+use sbor::rust::vec::Vec;
 use utils::btreeset;
 
 pub trait ApplicationEventChecker: Default {
