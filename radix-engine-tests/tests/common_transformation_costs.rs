@@ -18,7 +18,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk, sk, account) = test_runner.new_virtual_account();
+    let (_pk, sk, account) = test_runner.new_ed25519_virtual_account();
 
     let manifest1 = ManifestBuilder::new().build();
     let tx1 = create_notarized_transaction(
@@ -27,6 +27,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         manifest1,
         vec![], // no sign
         &sk,    // notarize
+        false,
     );
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(100)),
@@ -43,6 +44,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         manifest2,
         vec![&sk], // sign
         &sk,       // notarize
+        false,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -68,7 +70,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let (_pk1, sk1, _pk2, _sk2, _pk3, _sk3, _pk4, _sk4, account, access_controller) =
-        test_runner.new_virtual_account_with_access_controller();
+        test_runner.new_ed25519_virtual_account_with_access_controller();
 
     let manifest1 = ManifestBuilder::new().build();
     let tx1 = create_notarized_transaction(
@@ -77,6 +79,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         manifest1,
         vec![], // no sign
         &sk1,   // notarize
+        false,
     );
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(100)),
@@ -100,6 +103,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         manifest2,
         vec![&sk1], // sign
         &sk1,       // notarize
+        false,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -126,7 +130,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk, sk, account) = test_runner.new_virtual_account();
+    let (_pk, sk, account) = test_runner.new_ed25519_virtual_account();
     let resource_address = test_runner.create_fungible_resource(AMOUNT.into(), 18, account);
 
     let manifest1 = ManifestBuilder::new()
@@ -140,6 +144,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         manifest1,
         vec![&sk], // no sign
         &sk,       // notarize
+        false,
     );
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
@@ -161,6 +166,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         manifest2,
         vec![&sk], // sign
         &sk,       // notarize
+        false,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -187,7 +193,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk, sk, account) = test_runner.new_virtual_account();
+    let (_pk, sk, account) = test_runner.new_ed25519_virtual_account();
     let resource_address = test_runner.create_non_fungible_resource_advanced(
         NonFungibleResourceRoles::default(),
         account,
@@ -205,6 +211,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         manifest1,
         vec![&sk], // no sign
         &sk,       // notarize
+        false,
     );
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
@@ -226,6 +233,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         manifest2,
         vec![&sk], // sign
         &sk,       // notarize
+        false,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -245,24 +253,37 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     );
 }
 
+// ED25519 signature is larger than Secp256k1 due to lack of public key recovery
+// Thus, we use ed25519 when estimating signer signature cost
 #[test]
 fn estimate_adding_signature() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk1, sk1, account1) = test_runner.new_virtual_account();
-    let (_pk2, sk2, account2) = test_runner.new_virtual_account();
+    let (_pk1, sk1, account1) = test_runner.new_ed25519_virtual_account();
+    let (_pk2, sk2, account2) = test_runner.new_ed25519_virtual_account();
 
+    // Additional signature has an impact on the size of `AuthZone` substate.
+    // We're doing 10 withdraw-deposit calls, which is "larger" than most transactions.
+    // But, in theory, the cost could be even higher.
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account1, 20, XRD, 100)
-        .try_deposit_batch_or_abort(account2, None)
+        .lock_fee(account1, 20)
+        .then(|mut builder| {
+            for _ in 0..10 {
+                builder = builder
+                    .withdraw_from_account(account1, XRD, 1) // require auth
+                    .try_deposit_batch_or_abort(account2, None); // require no auth
+            }
+            builder
+        })
         .build();
     let tx1 = create_notarized_transaction(
         &mut test_runner,
         &network,
         manifest.clone(),
-        vec![&sk1], // no sign
+        vec![&sk1], // signed by account 1
         &sk1,       // notarize
+        false,
     );
     let receipt1 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
@@ -276,8 +297,9 @@ fn estimate_adding_signature() {
         &mut test_runner,
         &network,
         manifest,
-        vec![&sk1, &sk2], // sign
+        vec![&sk1, &sk2], // signed by account 1 & 2
         &sk1,             // notarize
+        false,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -288,7 +310,7 @@ fn estimate_adding_signature() {
     println!("\n{:?}", receipt2);
 
     println!(
-        "Adding a signature: {} XRD",
+        "Adding a signer signature: {} XRD",
         receipt2
             .fee_summary
             .total_cost()
@@ -297,22 +319,34 @@ fn estimate_adding_signature() {
     );
 }
 
-#[test]
-fn estimate_notarizing() {
+// Different from signer signature, no public key is needed in the notary signature (stored in header instead)
+// Without signature, Secp256k1 signature is larger than ED25519 signature due to recovery byte
+// Thus, we use Secp256k1 when estimating notarization cost
+fn estimate_notarizing(notary_is_signatory: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (pk1, sk1, account1) = test_runner.new_virtual_account();
+    let account1 = test_runner.new_account_advanced(OwnerRole::Updatable(AccessRule::AllowAll));
     let (_pk2, sk2, account2) = test_runner.new_virtual_account();
 
+    // Additional signature has an impact on the size of `AuthZone` substate.
+    // We're doing 10 withdraw-deposit calls, which is "larger" than most transactions.
+    // But, in theory, the cost could be even higher.
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account1, 20, XRD, 100)
-        .try_deposit_batch_or_abort(account2, None)
+        .lock_fee(account1, 20)
+        .then(|mut builder| {
+            for _ in 0..10 {
+                builder = builder
+                    .withdraw_from_account(account1, XRD, 1) // require auth
+                    .try_deposit_batch_or_abort(account2, None); // require no auth
+            }
+            builder
+        })
         .build();
 
     let receipt1 = test_runner.preview_manifest(
         manifest.clone(),
-        vec![PublicKey::Secp256k1(pk1)], // signed by account 1
+        vec![], // signed by nobody
         DEFAULT_TIP_PERCENTAGE,
         PreviewFlags::default(),
     );
@@ -323,8 +357,9 @@ fn estimate_notarizing() {
         &mut test_runner,
         &network,
         manifest,
-        vec![&sk1], // signed by account 1
-        &sk2,       // notarized by account 2
+        vec![], // signed by nobody
+        &sk2,   // notarized by account 2
+        notary_is_signatory,
     );
     let receipt2 = test_runner.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
@@ -335,7 +370,8 @@ fn estimate_notarizing() {
     println!("\n{:?}", receipt2);
 
     println!(
-        "Notarizing (notary_is_signatory: false): {} XRD",
+        "Notarizing (notary_is_signatory: {}): {} XRD",
+        notary_is_signatory,
         receipt2
             .fee_summary
             .total_cost()
@@ -344,12 +380,23 @@ fn estimate_notarizing() {
     );
 }
 
-fn create_notarized_transaction(
+#[test]
+fn estimate_notarizing_notary_is_not_signatory() {
+    estimate_notarizing(false);
+}
+
+#[test]
+fn estimate_notarizing_notary_is_signatory() {
+    estimate_notarizing(true);
+}
+
+fn create_notarized_transaction<S: Signer>(
     test_runner: &mut DefaultTestRunner,
     network: &NetworkDefinition,
     manifest: TransactionManifestV1,
-    signers: Vec<&Secp256k1PrivateKey>,
-    notary: &Secp256k1PrivateKey,
+    signers: Vec<&S>,
+    notary: &S,
+    notary_is_signatory: bool,
 ) -> NotarizedTransactionV1 {
     let notarized_transaction = TransactionBuilder::new()
         .header(TransactionHeaderV1 {
@@ -358,7 +405,7 @@ fn create_notarized_transaction(
             end_epoch_exclusive: Epoch::of(99),
             nonce: test_runner.next_transaction_nonce(),
             notary_public_key: notary.public_key().into(),
-            notary_is_signatory: false,
+            notary_is_signatory: notary_is_signatory,
             tip_percentage: DEFAULT_TIP_PERCENTAGE,
         })
         .manifest(manifest)

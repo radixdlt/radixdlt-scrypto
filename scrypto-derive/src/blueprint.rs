@@ -690,7 +690,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_stubs = generate_stubs(&stub_ident, &functions_ident, bp_ident, bp_items)?;
 
     let output_test_bindings_struct = quote! {
-        #[derive(Debug)]
+        #[derive(Debug, Clone, Copy)]
         pub struct #bp_ident(pub NodeId);
     };
 

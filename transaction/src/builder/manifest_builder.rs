@@ -911,12 +911,41 @@ impl ManifestBuilder {
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
+        self.call_module_method(address, ObjectModuleId::Main, method_name, arguments)
+    }
+
+    pub fn call_module_method(
+        self,
+        address: impl ResolvableGlobalAddress,
+        module_id: ObjectModuleId,
+        method_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallMethod {
-            address,
-            method_name: method_name.into(),
-            args: arguments.resolve(),
-        })
+        match module_id {
+            ObjectModuleId::Main => self.add_instruction(InstructionV1::CallMethod {
+                address,
+                method_name: method_name.into(),
+                args: arguments.resolve(),
+            }),
+            ObjectModuleId::Metadata => self.add_instruction(InstructionV1::CallMetadataMethod {
+                address,
+                method_name: method_name.into(),
+                args: arguments.resolve(),
+            }),
+            ObjectModuleId::Royalty => self.add_instruction(InstructionV1::CallRoyaltyMethod {
+                address,
+                method_name: method_name.into(),
+                args: arguments.resolve(),
+            }),
+            ObjectModuleId::RoleAssignment => {
+                self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
+                    address,
+                    method_name: method_name.into(),
+                    args: arguments.resolve(),
+                })
+            }
+        }
     }
 
     /// Calls a scrypto method where the arguments are a raw ManifestValue.

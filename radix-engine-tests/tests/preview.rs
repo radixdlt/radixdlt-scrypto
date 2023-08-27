@@ -61,6 +61,13 @@ fn test_transaction_preview_cost_estimate() {
                     .safe_mul(size_diff)
                     .unwrap()
             )
+            .unwrap()
+            .safe_add(
+                Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD)
+                    .unwrap()
+                    .safe_mul(FeeTable::new().verify_tx_signatures_cost(2))
+                    .unwrap()
+            )
             .unwrap(),
         actual_receipt.fee_summary.total_cost(),
     );

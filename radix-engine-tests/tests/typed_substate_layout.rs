@@ -3,13 +3,11 @@ use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
-use radix_engine::transaction::{CommitResult, TransactionResult};
+use radix_engine::transaction::TransactionResult;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_queries::typed_native_events::{to_typed_native_event, TypedNativeEvent};
-use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
-use radix_engine_store_interface::interface::DatabaseUpdate;
+use radix_engine_queries::typed_native_events::TypedNativeEvent;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use sbor::rust::ops::Deref;
 use scrypto_unit::*;
@@ -285,33 +283,5 @@ fn typed_native_event_type_contains_all_native_events() {
                 "There is a difference between the actual blueprint events and the ones registered in the typed model. Package name: \"{package_name}\", Blueprint name: \"{blueprint_name}\""
             )
         }
-    }
-}
-
-fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
-    let system_updates = &commit_result.state_updates.system_updates;
-    for ((node_id, partition_num), partition_updates) in system_updates.into_iter() {
-        for (substate_key, database_update) in partition_updates.into_iter() {
-            let typed_substate_key =
-                to_typed_substate_key(node_id.entity_type().unwrap(), *partition_num, substate_key)
-                    .expect("Substate key should be typeable");
-            if !typed_substate_key.value_is_mappable() {
-                continue;
-            }
-            match database_update {
-                DatabaseUpdate::Set(raw_value) => {
-                    // Check that typed value mapping works
-                    to_typed_substate_value(&typed_substate_key, raw_value)
-                        .expect("Substate value should be typeable");
-                }
-                DatabaseUpdate::Delete => {}
-            }
-        }
-    }
-}
-
-fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
-    for (event_type_identifier, event_data) in &commit_result.application_events {
-        let _ = to_typed_native_event(event_type_identifier, event_data).unwrap();
     }
 }

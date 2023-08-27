@@ -53,7 +53,7 @@ fn state_of_components_can_be_read() {
     let mut env = TestEnvironment::new();
 
     // Act
-    let rtn = env.read_component_state::<(Vault, Own)>(FAUCET);
+    let rtn = env.read_component_state::<(Vault, Own), _>(FAUCET);
 
     // Assert
     assert!(rtn.is_ok())
@@ -66,7 +66,7 @@ fn can_invoke_owned_nodes_read_from_state() {
 
     // Act
     let (vault, _) = env
-        .read_component_state::<(Vault, Own)>(FAUCET)
+        .read_component_state::<(Vault, Own), _>(FAUCET)
         .expect("Should succeed");
 
     // Assert
@@ -115,7 +115,7 @@ fn references_read_from_state_are_visible_in_tests() {
 
     // Act
     let (radiswap_pool_component,) = env
-        .read_component_state::<(ComponentAddress,)>(radiswap_component)
+        .read_component_state::<(ComponentAddress,), _>(radiswap_component)
         .unwrap();
 
     // Assert
@@ -167,7 +167,7 @@ fn references_read_from_state_are_visible_in_tests1() {
         .unwrap();
 
     let (radiswap_pool_component,) = env
-        .read_component_state::<(ComponentAddress,)>(radiswap_component)
+        .read_component_state::<(ComponentAddress,), _>(radiswap_component)
         .unwrap();
 
     // Act
@@ -190,7 +190,7 @@ fn can_read_kv_entries_from_a_store_read_from_state() {
         .call_method_typed::<_, _, Bucket>(FAUCET, "free", &())
         .unwrap();
     let (_, kv_store) = env
-        .read_component_state::<(Vault, Own)>(FAUCET)
+        .read_component_state::<(Vault, Own), _>(FAUCET)
         .expect("Should succeed");
 
     // Act

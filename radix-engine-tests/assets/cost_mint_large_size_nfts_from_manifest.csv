@@ -1,20 +1,11 @@
-<<<<<<< HEAD
-Total Cost (XRD)                                                           ,   341.392297195505752189,    100.0%
-- Execution Cost (XRD)                                                     ,                 2.626159,      0.8%
-=======
-Total Cost (XRD)                                                           ,   341.392328845505752189,    100.0%
-- Execution Cost (XRD)                                                     ,               2.62619065,      0.8%
->>>>>>> origin/release/rcnet-v3
+Total Cost (XRD)                                                           ,   341.392646545505752189,    100.0%
+- Execution Cost (XRD)                                                     ,               2.62650835,      0.8%
 - Finalization Cost (XRD)                                                  ,               2.47943445,      0.7%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,   336.286703745505752189,     98.5%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-<<<<<<< HEAD
-Execution Cost Breakdown                                                   ,                 52523180,    100.0%
-=======
-Execution Cost Breakdown                                                   ,                 52523813,    100.0%
->>>>>>> origin/release/rcnet-v3
+Execution Cost Breakdown                                                   ,                 52530167,    100.0%
 - AllocateNodeId                                                           ,                     2288,      0.0%
 - BeforeInvoke                                                             ,                  2094264,      4.0%
 - CloseSubstate                                                            ,                    51660,      0.1%
@@ -28,23 +19,15 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   121600,      0.2%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43214,      0.1%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    12970,      0.0%
-<<<<<<< HEAD
-- OpenSubstate::GlobalPackage                                              ,                  3289810,      6.3%
-=======
-- OpenSubstate::GlobalPackage                                              ,                  3290033,      6.3%
->>>>>>> origin/release/rcnet-v3
+- OpenSubstate::GlobalPackage                                              ,                  3289811,      6.3%
 - OpenSubstate::InternalFungibleVault                                      ,                    85460,      0.2%
 - OpenSubstate::InternalGenericComponent                                   ,                    50683,      0.1%
 - OpenSubstate::InternalKeyValueStore                                      ,                    40474,      0.1%
 - OpenSubstate::InternalNonFungibleVault                                   ,                   116940,      0.2%
 - PinNode                                                                  ,                     1900,      0.0%
-- PrepareWasmCode                                                          ,                   661754,      1.3%
+- PrepareWasmCode                                                          ,                   661740,      1.3%
 - QueryActor                                                               ,                     3000,      0.0%
-<<<<<<< HEAD
 - ReadSubstate                                                             ,                   937094,      1.8%
-=======
-- ReadSubstate                                                             ,                   937306,      1.8%
->>>>>>> origin/release/rcnet-v3
 - RunNativeCode::Worktop_drain                                             ,                    13505,      0.0%
 - RunNativeCode::Worktop_drop                                              ,                    15385,      0.0%
 - RunNativeCode::Worktop_put                                               ,                    18262,      0.0%
@@ -60,7 +43,7 @@ Execution Cost Breakdown                                                   ,    
 - RunWasmCode::Faucet_lock_fee                                             ,                    16988,      0.0%
 - SetSubstate                                                              ,                    59436,      0.1%
 - ValidateTxPayload                                                        ,                 41840680,     79.7%
-- VerifyTxSignatures                                                       ,                        0,      0.0%
+- VerifyTxSignatures                                                       ,                     7000,      0.0%
 - WriteSubstate                                                            ,                     5600,      0.0%
 Finalization Cost Breakdown                                                ,                 49588689,    100.0%
 - CommitEvents                                                             ,                    26608,      0.1%
