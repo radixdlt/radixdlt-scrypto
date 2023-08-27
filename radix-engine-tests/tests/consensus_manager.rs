@@ -2204,6 +2204,89 @@ fn owner_can_start_unlocking_stake_units() {
 }
 
 #[test]
+fn owner_can_start_unlock_of_max_should_not_panic() {
+    // Arrange
+    let genesis_epoch = Epoch::of(7);
+    let unlock_epochs_delay = 2;
+    let total_stake_amount = dec!("10.5");
+    let stake_units_to_lock_amount = dec!("2.2");
+    let stake_units_to_unlock_amount = dec!("0.1");
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        total_stake_amount,
+        validator_account,
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
+    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
+    let stake_unit_resource = test_runner
+        .get_validator_info(validator_address)
+        .stake_unit_resource;
+
+    // Lock
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
+        .withdraw_from_account(
+            validator_account,
+            stake_unit_resource,
+            stake_units_to_lock_amount,
+        )
+        .take_all_from_worktop(stake_unit_resource, "stake_units")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_method(
+                validator_address,
+                VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+                manifest_args!(lookup.bucket("stake_units")),
+            )
+        })
+        .build();
+    test_runner
+        .execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .expect_commit_success();
+
+    // Act (start unlock)
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
+        .call_method(
+            validator_address,
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            manifest_args!(stake_units_to_unlock_amount),
+        )
+        .call_method(
+            validator_address,
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            manifest_args!(Decimal::MAX),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+    );
+
+    // Assert
+    receipt.expect_failure();
+}
+
+#[test]
 fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     // Arrange
     let genesis_epoch = Epoch::of(7);
