@@ -145,6 +145,23 @@ impl CustomGenesis {
         Self::single_validator_and_staker(
             pub_key,
             Decimal::one(),
+            Decimal::zero(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+            genesis_epoch,
+            initial_config,
+        )
+    }
+
+    pub fn default_with_xrd_amount(
+        xrd_amount: Decimal,
+        genesis_epoch: Epoch,
+        initial_config: ConsensusManagerConfig,
+    ) -> CustomGenesis {
+        let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+        Self::single_validator_and_staker(
+            pub_key,
+            Decimal::one(),
+            xrd_amount,
             ComponentAddress::virtual_account_from_public_key(&pub_key),
             genesis_epoch,
             initial_config,
@@ -171,6 +188,7 @@ impl CustomGenesis {
     pub fn single_validator_and_staker(
         validator_public_key: Secp256k1PublicKey,
         stake_xrd_amount: Decimal,
+        xrd_amount: Decimal,
         staker_account: ComponentAddress,
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
@@ -178,6 +196,7 @@ impl CustomGenesis {
         Self::validators_and_single_staker(
             vec![(validator_public_key, stake_xrd_amount)],
             staker_account,
+            xrd_amount,
             genesis_epoch,
             initial_config,
         )
@@ -186,6 +205,7 @@ impl CustomGenesis {
     pub fn validators_and_single_staker(
         validators_and_stakes: Vec<(Secp256k1PublicKey, Decimal)>,
         staker_account: ComponentAddress,
+        xrd_amount: Decimal,
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
@@ -212,6 +232,13 @@ impl CustomGenesis {
                 accounts: vec![staker_account],
                 allocations: stake_allocations,
             },
+            GenesisDataChunk::ResourceBalances {
+                accounts: vec![staker_account],
+                allocations: vec![(XRD, vec![GenesisResourceAllocation {
+                    account_index: 0u32,
+                    amount: xrd_amount,
+                }])],
+            }
         ];
         CustomGenesis {
             genesis_data_chunks,

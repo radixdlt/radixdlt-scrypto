@@ -1,20 +1,37 @@
-use radix_engine::transaction::TransactionReceipt;
+use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use radix_engine::system::bootstrap::{DEFAULT_TESTING_FAUCET_SUPPLY, GenesisDataChunk, GenesisStakeAllocation, GenesisValidator};
-use radix_engine_interface::blueprints::consensus_manager::{VALIDATOR_GET_REDEMPTION_VALUE_IDENT, ValidatorGetRedemptionValueInput};
+use radix_engine_interface::blueprints::consensus_manager::{VALIDATOR_GET_REDEMPTION_VALUE_IDENT, VALIDATOR_STAKE_AS_OWNER_IDENT, VALIDATOR_STAKE_IDENT, ValidatorGetRedemptionValueInput, ValidatorStakeInput};
 use resource_tests::ResourceTestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
 fn fuzz_consensus() {
-    (1u64..64u64).into_par_iter().for_each(|seed| {
+    let results: Vec<BTreeMap<ConsensusFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>>> = (1u64..64u64).into_par_iter().map(|seed| {
         let mut one_pool_fuzz_test = ConsensusFuzzTest::new(seed);
-        one_pool_fuzz_test.run_fuzz();
-    })
+        one_pool_fuzz_test.run_fuzz()
+    }).collect();
+
+    println!("{:#?}", results);
+    panic!("oops");
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
+enum ConsensusFuzzAction {
+    GetRedemptionValue,
+    Stake,
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
+enum ConsensusFuzzActionResult {
+    Success,
+    Failure,
 }
 
 struct ConsensusFuzzTest {
@@ -28,9 +45,9 @@ struct ConsensusFuzzTest {
 impl ConsensusFuzzTest {
     fn new(seed: u64) -> Self {
         let mut fuzzer = ResourceTestFuzzer::new(seed);
-
         let initial_epoch = Epoch::of(5);
-        let genesis = CustomGenesis::default(
+        let genesis = CustomGenesis::default_with_xrd_amount(
+            Decimal::from(24_000_000_000u64),
             initial_epoch,
             CustomGenesis::default_consensus_manager_config(),
         );
@@ -51,15 +68,32 @@ impl ConsensusFuzzTest {
         }
     }
 
-    fn run_fuzz(&mut self) {
+    fn run_fuzz(&mut self) -> BTreeMap<ConsensusFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>> {
+        let mut fuzz_results: BTreeMap<ConsensusFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>> = BTreeMap::new();
         for _ in 0..100 {
-            match self.fuzzer.next_u32(1u32) {
-                _ => {
+            let action = ConsensusFuzzAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
+            let receipt = match action {
+                ConsensusFuzzAction::GetRedemptionValue => {
                     let amount = self.fuzzer.next_amount();
                     self.get_redemption_value(amount)
                 }
+                ConsensusFuzzAction::Stake => {
+                    let amount = self.fuzzer.next_amount();
+                    self.stake(amount)
+                }
             };
+
+            let result = receipt.expect_commit_ignore_outcome();
+            let result = match &result.outcome {
+                TransactionOutcome::Success(..) => ConsensusFuzzActionResult::Success,
+                TransactionOutcome::Failure(..) => ConsensusFuzzActionResult::Failure,
+            };
+
+            let results = fuzz_results.entry(action).or_default();
+            results.entry(result).or_default().add_assign(&1);
         }
+
+        fuzz_results
     }
 
     fn get_redemption_value(
@@ -77,5 +111,25 @@ impl ConsensusFuzzTest {
             .build();
         self.test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
+    }
+
+    fn stake(
+        &mut self,
+        amount_to_stake: Decimal,
+    ) -> TransactionReceipt {
+        let manifest = ManifestBuilder::new()
+            .withdraw_from_account(self.account_component_address, XRD, amount_to_stake)
+            .take_all_from_worktop(XRD, "xrd")
+            .with_bucket("xrd", |builder, bucket| {
+                builder.call_method(
+                    self.validator_address,
+                    VALIDATOR_STAKE_IDENT,
+                    manifest_args!(bucket),
+                )
+            })
+            .deposit_batch(self.account_component_address)
+            .build();
+        self.test_runner
+            .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&self.account_public_key)])
     }
 }
