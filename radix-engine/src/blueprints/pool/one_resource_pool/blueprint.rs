@@ -371,7 +371,7 @@ impl OneResourcePoolBlueprint {
             (true, true) => amount_of_contributed_resources
                 .safe_div(reserves)
                 .and_then(|d| d.safe_mul(pool_unit_total_supply))
-                .ok_or_else(|| OneResourcePoolError::DecimalOverflowError),
+                .ok_or(OneResourcePoolError::DecimalOverflowError),
         }?;
 
         vault.put(bucket, api)?;
@@ -583,7 +583,7 @@ impl OneResourcePoolBlueprint {
         let amount_owed = pool_units_to_redeem
             .safe_div(pool_units_total_supply)
             .and_then(|d| d.safe_mul(pool_resource_reserves))
-            .ok_or_else(|| OneResourcePoolError::DecimalOverflowError)?;
+            .ok_or(OneResourcePoolError::DecimalOverflowError)?;
 
         let amount_owed = if pool_resource_divisibility == 18 {
             amount_owed
