@@ -429,6 +429,28 @@ fn test_fungible_resource_take_advanced() {
 }
 
 #[test]
+fn fungible_bucket_take_advanced_max_should_not_panic() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoundingTest",
+            "fungible_bucket_take_advanced_max",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_failure();
+}
+
+#[test]
 fn test_non_fungible_resource_take_advanced() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
