@@ -234,11 +234,14 @@ impl CustomGenesis {
             },
             GenesisDataChunk::ResourceBalances {
                 accounts: vec![staker_account],
-                allocations: vec![(XRD, vec![GenesisResourceAllocation {
-                    account_index: 0u32,
-                    amount: xrd_amount,
-                }])],
-            }
+                allocations: vec![(
+                    XRD,
+                    vec![GenesisResourceAllocation {
+                        account_index: 0u32,
+                        amount: xrd_amount,
+                    }],
+                )],
+            },
         ];
         CustomGenesis {
             genesis_data_chunks,

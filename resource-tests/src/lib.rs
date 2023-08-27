@@ -1,5 +1,5 @@
-use rand::distributions::uniform::{SampleRange, SampleUniform};
 use radix_engine::types::*;
+use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -23,7 +23,7 @@ impl ResourceTestFuzzer {
             3 => Decimal::MIN,
             4 => Decimal(I192::ONE),
             5 => {
-               let amount = self.rng.gen_range(0u64..u64::MAX);
+                let amount = self.rng.gen_range(0u64..u64::MAX);
                 Decimal::from(amount)
             }
             _ => {
@@ -51,9 +51,10 @@ impl ResourceTestFuzzer {
     }
 
     pub fn next<T, R>(&mut self, range: R) -> T
-        where
-            T: SampleUniform,
-            R: SampleRange<T> {
+    where
+        T: SampleUniform,
+        R: SampleRange<T>,
+    {
         self.rng.gen_range(range)
     }
 
