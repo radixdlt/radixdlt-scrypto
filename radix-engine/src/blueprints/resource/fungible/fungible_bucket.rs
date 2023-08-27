@@ -62,9 +62,16 @@ impl FungibleBucketBlueprint {
                     ApplicationError::VaultError(VaultError::InvalidAmount),
                 ));
             }
-            let bucket_amount_plus_one = liquid.amount().safe_add(Decimal::ONE).ok_or_else(|| BucketError::DecimalOverflow)?;
+            let bucket_amount_plus_one = liquid
+                .amount()
+                .safe_add(Decimal::ONE)
+                .ok_or_else(|| BucketError::DecimalOverflow)?;
             if amount > bucket_amount_plus_one {
-                return Err(RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ResourceError(ResourceError::InsufficientBalance))));
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::BucketError(BucketError::ResourceError(
+                        ResourceError::InsufficientBalance,
+                    )),
+                ));
             }
         }
 
