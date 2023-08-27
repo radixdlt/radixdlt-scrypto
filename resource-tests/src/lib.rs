@@ -1,3 +1,4 @@
+use rand::distributions::uniform::{SampleRange, SampleUniform};
 use radix_engine::types::*;
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
@@ -14,13 +15,17 @@ impl ResourceTestFuzzer {
     }
 
     pub fn next_amount(&mut self) -> Decimal {
-        let next_amount_type = self.rng.gen_range(0u32..6u32);
+        let next_amount_type = self.rng.gen_range(0u32..7u32);
         match next_amount_type {
             0 => Decimal::ZERO,
             1 => Decimal::ONE,
             2 => Decimal::MAX,
             3 => Decimal::MIN,
             4 => Decimal(I192::ONE),
+            5 => {
+               let amount = self.rng.gen_range(0u64..u64::MAX);
+                Decimal::from(amount)
+            }
             _ => {
                 let mut bytes = [0u8; 24];
                 self.rng.fill_bytes(&mut bytes);
@@ -43,6 +48,13 @@ impl ResourceTestFuzzer {
 
     pub fn next_u32(&mut self, count: u32) -> u32 {
         self.rng.gen_range(0u32..count)
+    }
+
+    pub fn next<T, R>(&mut self, range: R) -> T
+        where
+            T: SampleUniform,
+            R: SampleRange<T> {
+        self.rng.gen_range(range)
     }
 
     pub fn next_withdraw_strategy(&mut self) -> WithdrawStrategy {
