@@ -411,7 +411,13 @@ pub enum ApplicationError {
     // TODO: this should never happen because of schema check?
     InputDecodeError(DecodeError),
 
-    Panic(String),
+    ScryptoPanic(String),
+
+    NativePanic {
+        export_name: String,
+        input: ScryptoValue,
+        error: String,
+    },
 
     //===================
     // Node module errors

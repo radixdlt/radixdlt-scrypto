@@ -7,7 +7,7 @@ use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
-use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
+use crate::errors::{ApplicationError, NativeRuntimeError, RuntimeError, VmError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
@@ -90,7 +90,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
-        match self {
+        let rtn = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match self {
             NativeVmInstance::Extension(e) => e.invoke(export_name, input, api),
             NativeVmInstance::Native {
                 native_package_code_id,
@@ -137,6 +137,25 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         )));
                     }
                 }
+            }
+        }));
+        match rtn {
+            Ok(rtn) => rtn,
+            Err(cause) => {
+                let message = if let Some(s) = cause.downcast_ref::<&'static str>() {
+                    (*s).to_string()
+                } else if let Some(s) = cause.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic!".to_string()
+                };
+                Err(RuntimeError::ApplicationError(
+                    ApplicationError::NativePanic {
+                        export_name: export_name.to_owned(),
+                        input: input.as_scrypto_value().clone(),
+                        error: message,
+                    },
+                ))
             }
         }
     }

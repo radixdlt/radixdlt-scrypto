@@ -37,3 +37,14 @@ members = [
     "radix-engine-profiling",
     "radix-engine-profiling/resources-tracker-macro",
 ]
+
+# Both the release and test profiles use `panic = "unwind"` to allow certain parts of the Radix
+# Engine to be able to catch panics. As an example, the native-vm has a `catch_unwind` to catch
+# all panics that may occur in the native blueprints and convert them to `Result`s instead of
+# crashing the engine.
+
+[profile.release]
+panic = "unwind"
+
+[profile.test]
+panic = "unwind"
