@@ -1,9 +1,9 @@
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
 use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
-use radix_engine::transaction::{TransactionReceipt};
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
 use resource_tests::ResourceTestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -33,16 +33,23 @@ impl MultiPoolFuzzTest {
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
-        let divisibility = vec![fuzzer.next_valid_divisibility(), fuzzer.next_valid_divisibility(), fuzzer.next_valid_divisibility()];
+        let divisibility = vec![
+            fuzzer.next_valid_divisibility(),
+            fuzzer.next_valid_divisibility(),
+            fuzzer.next_valid_divisibility(),
+        ];
 
-        let resource_addresses: Vec<ResourceAddress> = divisibility.into_iter().map(|divisibility| {
-            test_runner.create_freely_mintable_and_burnable_fungible_resource(
-                OwnerRole::None,
-                None,
-                divisibility,
-                account,
-            )
-        }).collect();
+        let resource_addresses: Vec<ResourceAddress> = divisibility
+            .into_iter()
+            .map(|divisibility| {
+                test_runner.create_freely_mintable_and_burnable_fungible_resource(
+                    OwnerRole::None,
+                    None,
+                    divisibility,
+                    account,
+                )
+            })
+            .collect();
 
         let (pool_component, pool_unit_resource) = {
             let manifest = ManifestBuilder::new()
@@ -82,34 +89,41 @@ impl MultiPoolFuzzTest {
         for _ in 0..5000 {
             match self.fuzzer.next_u32(5u32) {
                 0u32 => {
-                    let resource_to_amount_mapping = self.pool_resources.iter().map(|resource| {
-                        (*resource, self.fuzzer.next_amount())
-                    }).collect();
+                    let resource_to_amount_mapping = self
+                        .pool_resources
+                        .iter()
+                        .map(|resource| (*resource, self.fuzzer.next_amount()))
+                        .collect();
                     self.contribute(resource_to_amount_mapping);
-                },
+                }
                 1u32 => {
-                    let resource = self.pool_resources.get(self.fuzzer.next_usize(self.pool_resources.len())).unwrap();
+                    let resource = self
+                        .pool_resources
+                        .get(self.fuzzer.next_usize(self.pool_resources.len()))
+                        .unwrap();
                     let amount = self.fuzzer.next_amount();
                     self.protected_deposit(*resource, amount);
-                },
+                }
                 2u32 => {
-                    let resource = self.pool_resources.get(self.fuzzer.next_usize(self.pool_resources.len())).unwrap();
+                    let resource = self
+                        .pool_resources
+                        .get(self.fuzzer.next_usize(self.pool_resources.len()))
+                        .unwrap();
                     let amount = self.fuzzer.next_amount();
                     let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
                     self.protected_withdraw(*resource, amount, withdraw_strategy);
-                },
+                }
                 3u32 => {
                     let amount = self.fuzzer.next_amount();
                     self.redeem(amount);
-                },
+                }
                 _ => {
                     let amount = self.fuzzer.next_amount();
                     self.get_redemption_value(amount);
-                },
+                }
             };
         }
     }
-
 
     pub fn contribute(
         &mut self,
@@ -193,10 +207,7 @@ impl MultiPoolFuzzTest {
         self.execute_manifest(manifest)
     }
 
-    fn execute_manifest(
-        &mut self,
-        manifest: TransactionManifestV1,
-    ) -> TransactionReceipt {
+    fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
         self.test_runner
             .execute_manifest_ignoring_fee(manifest, self.initial_proofs())
     }

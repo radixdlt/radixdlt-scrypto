@@ -1,8 +1,8 @@
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
-use radix_engine::transaction::{TransactionReceipt};
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
 use resource_tests::ResourceTestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -39,10 +39,8 @@ impl OnePoolFuzzTest {
             account,
         );
 
-        let (pool_component, pool_unit_resource) = test_runner.create_one_resource_pool(
-            resource_address,
-            rule!(require(virtual_signature_badge)),
-        );
+        let (pool_component, pool_unit_resource) = test_runner
+            .create_one_resource_pool(resource_address, rule!(require(virtual_signature_badge)));
 
         Self {
             fuzzer,
@@ -61,24 +59,24 @@ impl OnePoolFuzzTest {
                 0u32 => {
                     let amount = self.fuzzer.next_amount();
                     self.contribute(amount)
-                },
+                }
                 1u32 => {
                     let amount = self.fuzzer.next_amount();
                     self.protected_deposit(amount)
-                },
+                }
                 2u32 => {
                     let amount = self.fuzzer.next_amount();
                     let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
                     self.protected_withdraw(amount, withdraw_strategy)
-                },
+                }
                 3u32 => {
                     let amount = self.fuzzer.next_amount();
                     self.redeem(amount)
-                },
+                }
                 _ => {
                     let amount = self.fuzzer.next_amount();
                     self.get_redemption_value(amount)
-                },
+                }
             };
         }
     }
@@ -175,10 +173,7 @@ impl OnePoolFuzzTest {
         self.execute_manifest(manifest)
     }
 
-    fn execute_manifest(
-        &mut self,
-        manifest: TransactionManifestV1,
-    ) -> TransactionReceipt {
+    fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
         self.test_runner
             .execute_manifest_ignoring_fee(manifest, self.initial_proofs())
     }

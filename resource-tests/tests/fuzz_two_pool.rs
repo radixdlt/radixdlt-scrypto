@@ -1,9 +1,9 @@
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
 use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
-use radix_engine::transaction::{TransactionReceipt};
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
 use resource_tests::ResourceTestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -92,7 +92,7 @@ impl TwoPoolFuzzTest {
                         (self.pool_resource1, amount1),
                         (self.pool_resource2, amount2),
                     )
-                },
+                }
                 1u32 => {
                     let amount1 = self.fuzzer.next_amount();
                     let amount2 = self.fuzzer.next_amount();
@@ -104,29 +104,29 @@ impl TwoPoolFuzzTest {
                 2u32 => {
                     let amount = self.fuzzer.next_amount();
                     self.protected_deposit(self.pool_resource1, amount)
-                },
+                }
                 3u32 => {
                     let amount = self.fuzzer.next_amount();
                     self.protected_deposit(self.pool_resource2, amount)
-                },
+                }
                 4u32 => {
                     let amount = self.fuzzer.next_amount();
                     let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
                     self.protected_withdraw(self.pool_resource1, amount, withdraw_strategy)
-                },
+                }
                 5u32 => {
                     let amount = self.fuzzer.next_amount();
                     let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
                     self.protected_withdraw(self.pool_resource2, amount, withdraw_strategy)
-                },
+                }
                 6u32 => {
                     let amount = self.fuzzer.next_amount();
                     self.redeem(amount)
-                },
+                }
                 _ => {
                     let amount = self.fuzzer.next_amount();
                     self.get_redemption_value(amount)
-                },
+                }
             };
         }
     }
@@ -136,9 +136,9 @@ impl TwoPoolFuzzTest {
         (resource_address1, amount1): (ResourceAddress, A),
         (resource_address2, amount2): (ResourceAddress, B),
     ) -> TransactionReceipt
-        where
-            A: Into<Decimal>,
-            B: Into<Decimal>,
+    where
+        A: Into<Decimal>,
+        B: Into<Decimal>,
     {
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address1, amount1.into())
@@ -224,10 +224,7 @@ impl TwoPoolFuzzTest {
         self.execute_manifest(manifest)
     }
 
-    fn execute_manifest(
-        &mut self,
-        manifest: TransactionManifestV1,
-    ) -> TransactionReceipt {
+    fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
         self.test_runner
             .execute_manifest_ignoring_fee(manifest, self.initial_proofs())
     }

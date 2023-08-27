@@ -1,7 +1,7 @@
-use rand::Rng;
-use rand_chacha::ChaCha8Rng;
-use rand_chacha::rand_core::{RngCore, SeedableRng};
 use radix_engine::types::*;
+use rand::Rng;
+use rand_chacha::rand_core::{RngCore, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 
 pub struct ResourceTestFuzzer {
     rng: ChaCha8Rng,
@@ -10,9 +10,7 @@ pub struct ResourceTestFuzzer {
 impl ResourceTestFuzzer {
     pub fn new(seed: u64) -> Self {
         let rng = ChaCha8Rng::seed_from_u64(seed);
-        Self {
-            rng,
-        }
+        Self { rng }
     }
 
     pub fn next_amount(&mut self) -> Decimal {

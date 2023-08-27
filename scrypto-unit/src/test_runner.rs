@@ -38,12 +38,14 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::blueprints::pool::{
+    OneResourcePoolInstantiateManifestInput, ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, freeze_roles, rule};
-use radix_engine_interface::blueprints::pool::{ONE_RESOURCE_POOL_INSTANTIATE_IDENT, OneResourcePoolInstantiateManifestInput};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_native_events::to_typed_native_event;
 use radix_engine_queries::typed_substate_layout::*;
@@ -1838,7 +1840,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
-    pub fn create_one_resource_pool(&mut self, resource_address: ResourceAddress, pool_manager_rule: AccessRule) -> (ComponentAddress, ResourceAddress) {
+    pub fn create_one_resource_pool(
+        &mut self,
+        resource_address: ResourceAddress,
+        pool_manager_rule: AccessRule,
+    ) -> (ComponentAddress, ResourceAddress) {
         let manifest = ManifestBuilder::new()
             .call_function(
                 POOL_PACKAGE,
