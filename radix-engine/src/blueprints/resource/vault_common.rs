@@ -2,6 +2,7 @@ use crate::blueprints::resource::*;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
+use crate::errors::{ApplicationError, RuntimeError};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VaultError {
@@ -15,6 +16,14 @@ pub enum VaultError {
 
     LockFeeNotRadixToken,
     LockFeeInsufficientBalance,
+
+    DecimalOverflow,
+}
+
+impl From<VaultError> for RuntimeError {
+    fn from(error: VaultError) -> Self {
+        RuntimeError::ApplicationError(ApplicationError::VaultError(error))
+    }
 }
 
 pub struct VaultUtil;

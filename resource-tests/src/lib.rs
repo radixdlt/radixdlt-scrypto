@@ -31,11 +31,15 @@ impl ResourceTestFuzzer {
         }
     }
 
+    pub fn next_usize(&mut self, count: usize) -> usize {
+        self.rng.gen_range(0usize..count)
+    }
+
     pub fn next_u8(&mut self, count: u8) -> u8 {
         self.rng.gen_range(0u8..count)
     }
 
-    pub fn next_divisibility(&mut self) -> u8 {
+    pub fn next_valid_divisibility(&mut self) -> u8 {
         self.rng.gen_range(0u8..=18u8)
     }
 

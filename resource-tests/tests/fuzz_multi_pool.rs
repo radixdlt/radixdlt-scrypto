@@ -1,6 +1,6 @@
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
+use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::transaction::{TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
@@ -9,52 +9,49 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-fn fuzz_two_pool() {
+fn fuzz_multi_pool() {
     (1u64..64u64).into_par_iter().for_each(|seed| {
-        let mut two_pool_fuzz_test = TwoPoolFuzzTest::new(seed);
-        two_pool_fuzz_test.run_fuzz();
+        let mut multi_pool_fuzz_test = MultiPoolFuzzTest::new(seed);
+        multi_pool_fuzz_test.run_fuzz();
     });
 }
 
-struct TwoPoolFuzzTest {
+struct MultiPoolFuzzTest {
     fuzzer: ResourceTestFuzzer,
     test_runner: DefaultTestRunner,
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
-    pool_resource1: ResourceAddress,
-    pool_resource2: ResourceAddress,
+    pool_resources: Vec<ResourceAddress>,
     account_public_key: PublicKey,
     account_component_address: ComponentAddress,
 }
 
-impl TwoPoolFuzzTest {
+impl MultiPoolFuzzTest {
     pub fn new(seed: u64) -> Self {
         let mut fuzzer = ResourceTestFuzzer::new(seed);
         let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
-        let pool_resource1 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
-            OwnerRole::None,
-            None,
-            fuzzer.next_valid_divisibility(),
-            account,
-        );
-        let pool_resource2 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
-            OwnerRole::None,
-            None,
-            fuzzer.next_valid_divisibility(),
-            account,
-        );
+        let divisibility = vec![fuzzer.next_valid_divisibility(), fuzzer.next_valid_divisibility(), fuzzer.next_valid_divisibility()];
+
+        let resource_addresses: Vec<ResourceAddress> = divisibility.into_iter().map(|divisibility| {
+            test_runner.create_freely_mintable_and_burnable_fungible_resource(
+                OwnerRole::None,
+                None,
+                divisibility,
+                account,
+            )
+        }).collect();
 
         let (pool_component, pool_unit_resource) = {
             let manifest = ManifestBuilder::new()
                 .call_function(
                     POOL_PACKAGE,
-                    TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
-                    TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
-                    TwoResourcePoolInstantiateManifestInput {
-                        resource_addresses: (pool_resource1, pool_resource2),
+                    MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
+                    MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
+                    MultiResourcePoolInstantiateManifestInput {
+                        resource_addresses: resource_addresses.clone().into_iter().collect(),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                         owner_role: OwnerRole::None,
                         address_reservation: None,
@@ -75,8 +72,7 @@ impl TwoPoolFuzzTest {
             test_runner,
             pool_component_address: pool_component,
             pool_unit_resource_address: pool_unit_resource,
-            pool_resource1,
-            pool_resource2,
+            pool_resources: resource_addresses,
             account_public_key: public_key.into(),
             account_component_address: account,
         }
@@ -84,78 +80,51 @@ impl TwoPoolFuzzTest {
 
     fn run_fuzz(&mut self) {
         for _ in 0..5000 {
-            match self.fuzzer.next_u32(8u32) {
+            match self.fuzzer.next_u32(5u32) {
                 0u32 => {
-                    let amount1 = self.fuzzer.next_amount();
-                    let amount2 = self.fuzzer.next_amount();
-                    self.contribute(
-                        (self.pool_resource1, amount1),
-                        (self.pool_resource2, amount2),
-                    )
+                    let resource_to_amount_mapping = self.pool_resources.iter().map(|resource| {
+                        (*resource, self.fuzzer.next_amount())
+                    }).collect();
+                    self.contribute(resource_to_amount_mapping);
                 },
                 1u32 => {
-                    let amount1 = self.fuzzer.next_amount();
-                    let amount2 = self.fuzzer.next_amount();
-                    self.contribute(
-                        (self.pool_resource2, amount1),
-                        (self.pool_resource1, amount2),
-                    )
-                }
-                2u32 => {
+                    let resource = self.pool_resources.get(self.fuzzer.next_usize(self.pool_resources.len())).unwrap();
                     let amount = self.fuzzer.next_amount();
-                    self.protected_deposit(self.pool_resource1, amount)
+                    self.protected_deposit(*resource, amount);
+                },
+                2u32 => {
+                    let resource = self.pool_resources.get(self.fuzzer.next_usize(self.pool_resources.len())).unwrap();
+                    let amount = self.fuzzer.next_amount();
+                    let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
+                    self.protected_withdraw(*resource, amount, withdraw_strategy);
                 },
                 3u32 => {
                     let amount = self.fuzzer.next_amount();
-                    self.protected_deposit(self.pool_resource2, amount)
-                },
-                4u32 => {
-                    let amount = self.fuzzer.next_amount();
-                    let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
-                    self.protected_withdraw(self.pool_resource1, amount, withdraw_strategy)
-                },
-                5u32 => {
-                    let amount = self.fuzzer.next_amount();
-                    let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
-                    self.protected_withdraw(self.pool_resource2, amount, withdraw_strategy)
-                },
-                6u32 => {
-                    let amount = self.fuzzer.next_amount();
-                    self.redeem(amount)
+                    self.redeem(amount);
                 },
                 _ => {
                     let amount = self.fuzzer.next_amount();
-                    self.get_redemption_value(amount)
+                    self.get_redemption_value(amount);
                 },
             };
         }
     }
 
-    pub fn contribute<A, B>(
+
+    pub fn contribute(
         &mut self,
-        (resource_address1, amount1): (ResourceAddress, A),
-        (resource_address2, amount2): (ResourceAddress, B),
-    ) -> TransactionReceipt
-        where
-            A: Into<Decimal>,
-            B: Into<Decimal>,
-    {
-        let manifest = ManifestBuilder::new()
-            .mint_fungible(resource_address1, amount1.into())
-            .mint_fungible(resource_address2, amount2.into())
-            .take_all_from_worktop(resource_address1, "resource_1")
-            .take_all_from_worktop(resource_address2, "resource_2")
-            .with_name_lookup(|builder, lookup| {
-                let bucket1 = lookup.bucket("resource_1");
-                let bucket2 = lookup.bucket("resource_2");
-                builder.call_method(
-                    self.pool_component_address,
-                    TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
-                    TwoResourcePoolContributeManifestInput {
-                        buckets: (bucket1, bucket2),
-                    },
-                )
-            })
+        resource_to_amount_mapping: BTreeMap<ResourceAddress, Decimal>,
+    ) -> TransactionReceipt {
+        let mut manifest_builder = ManifestBuilder::new();
+        for (resource_address, amount) in resource_to_amount_mapping.iter() {
+            manifest_builder = manifest_builder.mint_fungible(*resource_address, *amount)
+        }
+        let manifest = manifest_builder
+            .call_method(
+                self.pool_component_address,
+                MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
             .try_deposit_batch_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest)
@@ -168,13 +137,14 @@ impl TwoPoolFuzzTest {
                 self.pool_unit_resource_address,
                 amount.into(),
             )
-            .take_all_from_worktop(self.pool_unit_resource_address, "pool_units")
+            .take_all_from_worktop(self.pool_unit_resource_address, "pool_unit")
             .with_name_lookup(|builder, lookup| {
-                let bucket = lookup.bucket("pool_units");
                 builder.call_method(
                     self.pool_component_address,
-                    TWO_RESOURCE_POOL_REDEEM_IDENT,
-                    TwoResourcePoolRedeemManifestInput { bucket },
+                    MULTI_RESOURCE_POOL_REDEEM_IDENT,
+                    MultiResourcePoolRedeemManifestInput {
+                        bucket: lookup.bucket("pool_unit"),
+                    },
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address, None)
@@ -189,14 +159,13 @@ impl TwoPoolFuzzTest {
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, amount.into())
-            .take_all_from_worktop(resource_address, "deposit")
+            .take_all_from_worktop(resource_address, "to_deposit")
             .with_name_lookup(|builder, lookup| {
+                let bucket = lookup.bucket("to_deposit");
                 builder.call_method(
                     self.pool_component_address,
-                    TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-                    TwoResourcePoolProtectedDepositManifestInput {
-                        bucket: lookup.bucket("deposit"),
-                    },
+                    MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
+                    MultiResourcePoolProtectedDepositManifestInput { bucket },
                 )
             })
             .build();
@@ -212,8 +181,8 @@ impl TwoPoolFuzzTest {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
-                TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                TwoResourcePoolProtectedWithdrawManifestInput {
+                MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
+                MultiResourcePoolProtectedWithdrawManifestInput {
                     resource_address,
                     amount: amount.into(),
                     withdraw_strategy,
@@ -247,8 +216,8 @@ impl TwoPoolFuzzTest {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
-                TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
-                TwoResourcePoolGetRedemptionValueManifestInput {
+                MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
+                MultiResourcePoolGetRedemptionValueManifestInput {
                     amount_of_pool_units: amount_of_pool_units.into(),
                 },
             )
