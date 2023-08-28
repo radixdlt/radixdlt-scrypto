@@ -15,6 +15,9 @@ use rayon::iter::ParallelIterator;
 use resource_tests::ResourceTestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
+use radix_engine::prelude::node_modules::auth::RoleDefinition;
+use radix_engine_interface::prelude::node_modules::ModuleConfig;
 
 #[test]
 fn fuzz_resource() {
@@ -38,6 +41,7 @@ enum ResourceFuzzStartAction {
     Mint,
     VaultTake,
     VaultTakeAdvanced,
+    VaultRecall,
 }
 
 #[repr(u8)]
@@ -121,6 +125,7 @@ struct ResourceFuzzTest {
     test_runner: TestRunner<OverridePackageCode<TestInvoke>, InMemorySubstateDatabase>,
     resource_address: ResourceAddress,
     component_address: ComponentAddress,
+    vault_id: InternalAddress,
     account_public_key: PublicKey,
     account_component_address: ComponentAddress,
 }
@@ -141,16 +146,37 @@ impl ResourceFuzzTest {
 
         let (public_key, _, account) = test_runner.new_account(false);
 
-        let resource_address = test_runner.create_freely_mintable_and_burnable_fungible_resource(
-            OwnerRole::None,
-            None,
-            18u8,
-            account,
-        );
-
-        let receipt = test_runner.execute_manifest(
+        let receipt = test_runner.execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .lock_fee(test_runner.faucet_component(), 500u32)
+                .create_fungible_resource(
+                    OwnerRole::None,
+                    true,
+                    18u8,
+                    FungibleResourceRoles {
+                        mint_roles: mint_roles! {
+                            minter => rule!(allow_all);
+                            minter_updater => rule!(deny_all);
+                        },
+                        burn_roles: burn_roles! {
+                            burner => rule!(allow_all);
+                            burner_updater => rule!(deny_all);
+                        },
+                        recall_roles: recall_roles! {
+                            recaller => rule!(allow_all);
+                            recaller_updater => rule!(deny_all);
+                        },
+                        ..Default::default()
+                    },
+                    metadata!(),
+                    None,
+                )
+                .build(),
+            vec![],
+        );
+        let resource_address = receipt.expect_commit_success().new_resource_addresses()[0];
+
+        let receipt = test_runner.execute_manifest_ignoring_fee(
+            ManifestBuilder::new()
                 .call_function(
                     package_address,
                     BLUEPRINT_NAME,
@@ -162,11 +188,14 @@ impl ResourceFuzzTest {
         );
         let component_address = receipt.expect_commit_success().new_component_addresses()[0];
 
+        let vault_id = test_runner.get_component_vaults(component_address, resource_address)[0];
+
         Self {
             fuzzer,
             test_runner,
             resource_address,
             component_address,
+            vault_id: InternalAddress::try_from(vault_id).unwrap(),
             account_public_key: public_key.into(),
             account_component_address: account,
         }
@@ -183,9 +212,9 @@ impl ResourceFuzzTest {
             ResourceFuzzAction,
             BTreeMap<ConsensusFuzzActionResult, u64>,
         > = BTreeMap::new();
-        for _ in 0..100 {
+        for _ in 0..500 {
             let mut builder = ManifestBuilder::new();
-            let start = ResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(3u8)).unwrap();
+            let start = ResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(4u8)).unwrap();
             let (mut builder, start_trivial) = match start {
                 ResourceFuzzStartAction::Mint => {
                     let amount = self.next_amount();
@@ -213,6 +242,11 @@ impl ResourceFuzzTest {
                         "call_vault",
                         manifest_args!(VAULT_TAKE_ADVANCED_IDENT, (amount, withdraw_strategy)),
                     );
+                    (builder, amount.is_zero())
+                }
+                ResourceFuzzStartAction::VaultRecall => {
+                    let amount = self.next_amount();
+                    let builder = builder.recall(self.vault_id, amount);
                     (builder, amount.is_zero())
                 }
             };
