@@ -1,17 +1,17 @@
-use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
-use radix_engine::transaction::{TransactionOutcome, TransactionReceipt};
-use radix_engine::types::*;
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::{NativeVault, ResourceManager};
+use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
+use radix_engine::transaction::{TransactionOutcome, TransactionReceipt};
+use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
 use resource_tests::ResourceTestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -37,6 +37,7 @@ fn fuzz_resource() {
 enum ResourceFuzzStartAction {
     Mint,
     VaultTake,
+    VaultTakeAdvanced,
 }
 
 #[repr(u8)]
@@ -48,7 +49,6 @@ enum ResourceFuzzEndAction {
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 struct ResourceFuzzAction(ResourceFuzzStartAction, ResourceFuzzEndAction);
-
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
@@ -71,37 +71,41 @@ impl VmInvoke for TestInvoke {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+    where
+        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
         match export_name {
             "call_vault" => {
-                let handle = api.actor_open_field(
-                    ACTOR_STATE_SELF,
-                    0u8,
-                    LockFlags::read_only(),
-                ).unwrap();
+                let handle = api
+                    .actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::read_only())
+                    .unwrap();
                 let vault: Vault = api.field_read_typed(handle).unwrap();
 
                 let input: (String, ScryptoValue) = scrypto_decode(input.as_slice()).unwrap();
 
-                let rtn = api.call_method(vault.0.as_node_id(), input.0.as_str(), scrypto_encode(&input.1).unwrap())?;
+                let rtn = api.call_method(
+                    vault.0.as_node_id(),
+                    input.0.as_str(),
+                    scrypto_encode(&input.1).unwrap(),
+                )?;
                 return Ok(IndexedScryptoValue::from_vec(rtn).unwrap());
             }
             "new" => {
-                let resource_address: (ResourceAddress,) = scrypto_decode(input.as_slice()).unwrap();
+                let resource_address: (ResourceAddress,) =
+                    scrypto_decode(input.as_slice()).unwrap();
                 let vault = Vault::create(resource_address.0, api).unwrap();
 
                 let metadata = Metadata::create(api)?;
                 let access_rules = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
-                let node_id = api.new_simple_object(BLUEPRINT_NAME, btreemap!(0u8 => FieldValue::new(&vault)))?;
+                let node_id = api
+                    .new_simple_object(BLUEPRINT_NAME, btreemap!(0u8 => FieldValue::new(&vault)))?;
 
                 api.globalize(
                     node_id,
                     btreemap!(
-                            ModuleId::Metadata => metadata.0,
-                            ModuleId::RoleAssignment => access_rules.0.0,
-                        ),
+                        ModuleId::Metadata => metadata.0,
+                        ModuleId::RoleAssignment => access_rules.0.0,
+                    ),
                     None,
                 )?;
             }
@@ -147,7 +151,12 @@ impl ResourceFuzzTest {
         let receipt = test_runner.execute_manifest(
             ManifestBuilder::new()
                 .lock_fee(test_runner.faucet_component(), 500u32)
-                .call_function(package_address, BLUEPRINT_NAME, "new", manifest_args!(resource_address))
+                .call_function(
+                    package_address,
+                    BLUEPRINT_NAME,
+                    "new",
+                    manifest_args!(resource_address),
+                )
                 .build(),
             vec![],
         );
@@ -176,50 +185,59 @@ impl ResourceFuzzTest {
         > = BTreeMap::new();
         for _ in 0..100 {
             let mut builder = ManifestBuilder::new();
-            let start = ResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
+            let start = ResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(3u8)).unwrap();
             let (mut builder, start_trivial) = match start {
                 ResourceFuzzStartAction::Mint => {
                     let amount = self.next_amount();
-                    let builder = builder
-                        .call_method(
-                            self.resource_address,
-                            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-                            FungibleResourceManagerMintInput {
-                                amount,
-                            }
-                        );
+                    let builder = builder.call_method(
+                        self.resource_address,
+                        FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+                        FungibleResourceManagerMintInput { amount },
+                    );
                     (builder, amount.is_zero())
                 }
                 ResourceFuzzStartAction::VaultTake => {
                     let amount = self.next_amount();
-                    let builder = builder
-                        .call_method(self.component_address, "call_vault", manifest_args!(VAULT_TAKE_IDENT, (amount,)));
+                    let builder = builder.call_method(
+                        self.component_address,
+                        "call_vault",
+                        manifest_args!(VAULT_TAKE_IDENT, (amount,)),
+                    );
+                    (builder, amount.is_zero())
+                }
+                ResourceFuzzStartAction::VaultTakeAdvanced => {
+                    let amount = self.next_amount();
+                    let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
+                    let builder = builder.call_method(
+                        self.component_address,
+                        "call_vault",
+                        manifest_args!(VAULT_TAKE_ADVANCED_IDENT, (amount, withdraw_strategy)),
+                    );
                     (builder, amount.is_zero())
                 }
             };
 
-
             let end = ResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
             let (mut builder, end_trivial) = match end {
                 ResourceFuzzEndAction::Burn => {
-                    {
-                        let amount = self.next_amount();
-                        let builder = builder
-                            .take_from_worktop(self.resource_address, amount, "bucket")
-                            .burn_resource("bucket");
-                        (builder, amount.is_zero())
-                    }
+                    let amount = self.next_amount();
+                    let builder = builder
+                        .take_from_worktop(self.resource_address, amount, "bucket")
+                        .burn_resource("bucket");
+                    (builder, amount.is_zero())
                 }
                 ResourceFuzzEndAction::VaultPut => {
-                    {
-                        let amount = self.next_amount();
-                        let builder = builder
-                            .take_from_worktop(self.resource_address, amount, "bucket")
-                            .with_bucket("bucket", |builder, bucket| {
-                                builder.call_method(self.component_address, "call_vault", manifest_args!(VAULT_PUT_IDENT, (bucket,)))
-                            });
-                        (builder, amount.is_zero())
-                    }
+                    let amount = self.next_amount();
+                    let builder = builder
+                        .take_from_worktop(self.resource_address, amount, "bucket")
+                        .with_bucket("bucket", |builder, bucket| {
+                            builder.call_method(
+                                self.component_address,
+                                "call_vault",
+                                manifest_args!(VAULT_PUT_IDENT, (bucket,)),
+                            )
+                        });
+                    (builder, amount.is_zero())
                 }
             };
 
@@ -245,10 +263,10 @@ impl ResourceFuzzTest {
                 (TransactionOutcome::Failure(..), false) => ConsensusFuzzActionResult::Failure,
             };
 
-            let results = fuzz_results.entry(ResourceFuzzAction(start, end)).or_default();
+            let results = fuzz_results
+                .entry(ResourceFuzzAction(start, end))
+                .or_default();
             results.entry(result).or_default().add_assign(&1);
-
-
         }
 
         fuzz_results
