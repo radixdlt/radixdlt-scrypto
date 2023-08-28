@@ -155,6 +155,8 @@ impl NonFungibleData for UnstakeData {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ValidatorError {
     InvalidClaimResource,
+    InvalidGetRedemptionAmount,
+    UnexpectedDecimalComputationError,
     EpochUnlockHasNotOccurredYet,
     PendingOwnerStakeWithdrawalLimitReached,
     InvalidValidatorFeeFactor,
@@ -541,40 +543,24 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        Self::stake_internal(xrd_bucket, api)
+        Self::stake_internal(xrd_bucket, true, api)
     }
 
     pub fn stake<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
-            ACTOR_STATE_SELF,
-            ValidatorField::State.field_index(),
-            LockFlags::read_only(),
-        )?;
-        let substate = api
-            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .into_latest();
-        api.field_close(handle)?;
-        if !substate.accepts_delegated_stake {
-            // TODO: Should this be an Option returned instead similar to Account?
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::ValidatorError(
-                    ValidatorError::ValidatorIsNotAcceptingDelegatedStake,
-                ),
-            ));
-        }
-
-        Self::stake_internal(xrd_bucket, api)
+        Self::stake_internal(xrd_bucket, false, api)
     }
 
-    fn stake_internal<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
+    fn stake_internal<Y>(
+        xrd_bucket: Bucket,
+        is_owner: bool,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let xrd_bucket_amount = xrd_bucket.amount(api)?;
-
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.field_index(),
@@ -584,6 +570,21 @@ impl ValidatorBlueprint {
         let mut validator = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
             .into_latest();
+
+        if !is_owner {
+            if !validator.accepts_delegated_stake {
+                api.field_close(handle)?;
+
+                // TODO: Should this be an Option returned instead similar to Account?
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ValidatorError(
+                        ValidatorError::ValidatorIsNotAcceptingDelegatedStake,
+                    ),
+                ));
+            }
+        }
+
+        let xrd_bucket_amount = xrd_bucket.amount(api)?;
 
         // Stake
         let (stake_unit_bucket, new_stake_amount) = {
@@ -1087,17 +1088,33 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        if amount_of_stake_units.is_negative() || amount_of_stake_units.is_zero() {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(ValidatorError::InvalidGetRedemptionAmount),
+            ));
+        }
+
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.into(),
             LockFlags::read_only(),
         )?;
-
-        let substate = api
+        let validator = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
             .into_latest();
+
+        {
+            let stake_unit_resman = ResourceManager(validator.stake_unit_resource);
+            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
+            if amount_of_stake_units > total_stake_unit_supply {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ValidatorError(ValidatorError::InvalidGetRedemptionAmount),
+                ));
+            }
+        }
+
         let redemption_value =
-            Self::calculate_redemption_value(amount_of_stake_units, &substate, api)?;
+            Self::calculate_redemption_value(amount_of_stake_units, &validator, api)?;
         api.field_close(handle)?;
 
         Ok(redemption_value)
@@ -1312,6 +1329,7 @@ impl ValidatorBlueprint {
                 .unwrap();
         }
     }
+
     /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
     /// value of all its stake units.
     /// Note: the validator's proposal statistics passed to this method are used only for creating
@@ -1572,9 +1590,17 @@ impl ValidatorBlueprint {
         } else {
             amount_of_stake_units
                 .safe_mul(active_stake_amount)
-                .unwrap()
+                .ok_or_else(|| {
+                    RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                        ValidatorError::UnexpectedDecimalComputationError,
+                    ))
+                })?
                 .safe_div(total_stake_unit_supply)
-                .unwrap()
+                .ok_or_else(|| {
+                    RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                        ValidatorError::UnexpectedDecimalComputationError,
+                    ))
+                })?
         };
 
         Ok(xrd_amount)
