@@ -14,6 +14,8 @@ pub enum OneResourcePoolError {
         actual: ResourceAddress,
     },
     ContributionOfEmptyBucketError,
+    DecimalOverflowError,
+    InvalidGetRedemptionAmount,
 }
 
 impl From<OneResourcePoolError> for RuntimeError {
