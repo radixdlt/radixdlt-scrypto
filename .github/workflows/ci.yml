@@ -48,4 +48,4 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
         name: sbor-coverage
-        path: target/coverage/html
+        path: sbor/target/coverage/html
