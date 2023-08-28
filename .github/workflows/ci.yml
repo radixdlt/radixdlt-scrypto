@@ -14,7 +14,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  run-sbor-unit-tests:
-    uses: radixdlt/public-iac-resuable-artifacts/rust-coverage.yml@feature/rust-coverage
-    with:
-      tests-dir: sbor
+  sbor-unit-tests:
+    name: Run SBOR unit tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
+    steps:
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage.yml@feature/rust-coverage
+        with:
+          tests-dir: sbor
