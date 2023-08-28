@@ -53,6 +53,10 @@ jobs:
     - name: Generate coverage
       run: grcov . --binary-path ../target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/coverage/html
       working-directory: sbor
+    - uses: actions/upload-artifact@v3
+      with:
+        name: sbor-coverage
+        path: target/coverage/html
     - name: Run derive tests
       run: cargo test
       working-directory: sbor-derive-common
