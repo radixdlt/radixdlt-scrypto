@@ -29,6 +29,9 @@ pub enum BuildError {
     SchemaEncodeError(sbor::EncodeError),
 
     InvalidManifestFile(PathBuf),
+
+    #[cfg(feature = "wasm-opt")]
+    OptimizationError(wasm_opt::OptimizationError),
 }
 
 #[derive(Debug)]
@@ -178,6 +181,18 @@ pub fn build_package<P: AsRef<Path>>(
 
     // Build without SCHEMA
     run_cargo_build(&manifest_path, &target_path, trace, true)?;
+
+    // Optimize the WASM with wasm-opt if the feature is enabled. This will do in-place optimization
+    // where the file will be replaced.
+    #[cfg(feature = "wasm-opt")]
+    {
+        wasm_opt::OptimizationOptions::new_optimize_for_size_aggressively()
+            .add_pass(wasm_opt::Pass::StripDebug)
+            .add_pass(wasm_opt::Pass::StripDwarf)
+            .add_pass(wasm_opt::Pass::StripProducers)
+            .run(&wasm_path, &wasm_path)
+            .map_err(BuildError::OptimizationError)?;
+    }
 
     Ok((wasm_path, definition_path))
 }
