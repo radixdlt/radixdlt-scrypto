@@ -21,6 +21,6 @@ jobs:
       matrix:
         os: [k8s-linux-runner]
     steps:
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage.yml@feature/rust-coverage
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
         with:
           tests-dir: sbor
