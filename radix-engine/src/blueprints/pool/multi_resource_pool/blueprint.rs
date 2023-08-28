@@ -418,7 +418,9 @@ impl MultiResourcePoolBlueprint {
                 if let Some(value) =
                     resource_bucket_amount_mapping.get_mut(&bucket_resource_address)
                 {
-                    *value = value.safe_add(bucket_amount).unwrap();
+                    *value = value
+                        .safe_add(bucket_amount)
+                        .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
                     Ok(())
                 } else {
                     Err(MultiResourcePoolError::ResourceDoesNotBelongToPool {
@@ -464,9 +466,20 @@ impl MultiResourcePoolBlueprint {
             let pool_units_to_mint = amounts_of_resources_provided
                 .values()
                 .copied()
-                .reduce(|acc, item| acc.safe_mul(item).unwrap())
-                .and_then(|value| value.sqrt())
-                .unwrap();
+                .fold(
+                    Ok(None),
+                    |acc: Result<Option<Decimal>, MultiResourcePoolError>, item| match acc? {
+                        None => Ok(Some(item)),
+                        Some(acc) => {
+                            let result = acc
+                                .safe_mul(item)
+                                .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
+                            Ok(Some(result))
+                        }
+                    },
+                )?
+                .and_then(|d| d.sqrt())
+                .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
 
             // The following unwrap is safe to do. We've already checked that all of the buckets
             // provided belong to the pool and have a corresponding vault.
@@ -529,9 +542,12 @@ impl MultiResourcePoolBlueprint {
                 .values()
                 .map(|(vault, bucket)| {
                     vault.amount(api).and_then(|vault_amount| {
-                        bucket
-                            .amount(api)
-                            .map(|bucket_amount| bucket_amount.safe_div(vault_amount).unwrap())
+                        bucket.amount(api).and_then(|bucket_amount| {
+                            let rtn = bucket_amount
+                                .safe_div(vault_amount)
+                                .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
+                            Ok(rtn)
+                        })
                     })
                 })
                 .collect::<Result<Vec<Decimal>, _>>()?
@@ -552,7 +568,10 @@ impl MultiResourcePoolBlueprint {
                     })?;
 
                 let amount_to_contribute = {
-                    let amount_to_contribute = vault.amount(api)?.safe_mul(minimum_ratio).unwrap();
+                    let amount_to_contribute = vault
+                        .amount(api)?
+                        .safe_mul(minimum_ratio)
+                        .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
                     if divisibility == 18 {
                         amount_to_contribute
                     } else {
@@ -566,7 +585,9 @@ impl MultiResourcePoolBlueprint {
                 change.push(bucket)
             }
 
-            let pool_units_to_mint = pool_unit_total_supply.safe_mul(minimum_ratio).unwrap();
+            let pool_units_to_mint = pool_unit_total_supply
+                .safe_mul(minimum_ratio)
+                .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
 
             Runtime::emit_event(
                 api,
@@ -634,7 +655,7 @@ impl MultiResourcePoolBlueprint {
         }
 
         let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
+            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
 
         let event = RedemptionEvent {
             redeemed_resources: amounts_owed.clone(),
@@ -730,6 +751,14 @@ impl MultiResourcePoolBlueprint {
             .pool_unit_resource_manager
             .total_supply(api)?
             .expect("Total supply is always enabled for pool unit resource.");
+
+        if amount_of_pool_units.is_negative()
+            || amount_of_pool_units.is_zero()
+            || amount_of_pool_units > pool_units_total_supply
+        {
+            return Err(MultiResourcePoolError::InvalidGetRedemptionAmount.into());
+        }
+
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;
@@ -752,7 +781,7 @@ impl MultiResourcePoolBlueprint {
         }
 
         let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
+            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
 
         api.field_close(handle)?;
 
@@ -804,7 +833,7 @@ impl MultiResourcePoolBlueprint {
         pool_units_to_redeem: Decimal,
         pool_units_total_supply: Decimal,
         reserves: BTreeMap<ResourceAddress, ReserveResourceInformation>,
-    ) -> BTreeMap<ResourceAddress, Decimal> {
+    ) -> Result<BTreeMap<ResourceAddress, Decimal>, RuntimeError> {
         reserves
             .into_iter()
             .map(
@@ -817,9 +846,8 @@ impl MultiResourcePoolBlueprint {
                 )| {
                     let amount_owed = pool_units_to_redeem
                         .safe_div(pool_units_total_supply)
-                        .unwrap()
-                        .safe_mul(reserves)
-                        .unwrap();
+                        .and_then(|d| d.safe_mul(reserves))
+                        .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
 
                     let amount_owed = if divisibility == 18 {
                         amount_owed
@@ -827,7 +855,7 @@ impl MultiResourcePoolBlueprint {
                         amount_owed.round(divisibility, RoundingMode::ToNegativeInfinity)
                     };
 
-                    (resource_address, amount_owed)
+                    Ok((resource_address, amount_owed))
                 },
             )
             .collect()
