@@ -15,6 +15,6 @@ concurrency:
 
 jobs:
   run-sbor-unit-tests:
-    uses: radixdlt/iac-resuable-artifacts/.github/workflows/rust-coverage.yml@feat/rust-coverage
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/rust-coverage.yml@feat/rust-coverage
     with:
       tests-dir: sbor
