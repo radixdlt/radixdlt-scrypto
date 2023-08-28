@@ -15,11 +15,8 @@ do
   echo "Building $crate_name..."
   (cd $crate_name; $scrypto build)
 
-  for extension in "wasm" "rpd"
-  do
-    cp \
-      "./target/wasm32-unknown-unknown/release/$crate_name.$extension" \
-      "../$crate_name.$extension"
-  done
+  cp \
+    ./target/wasm32-unknown-unknown/release/$crate_name.{wasm,rpd} \
+    ../
   echo "Done $crate_name!"
 done
