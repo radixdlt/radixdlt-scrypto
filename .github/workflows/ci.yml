@@ -53,3 +53,43 @@ jobs:
       - name: Run bench
         run: cargo bench
         working-directory: sbor-tests
+
+  scrypto-unit-tests:
+    name: Run Scrypto unit tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@feature/rust-coverage
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      with:
+        tests-dir: scrypto
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      with:
+        tests-dir: scrypto
+        flags: --no-default-features --features alloc
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      with:
+        tests-dir: scrypto-schema
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      with:
+        tests-dir: scrypto-derive
+  
+  scrypto-integration-tests:
+    name: Run Scrypto integration tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@feature/rust-coverage
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      with:
+        tests-dir: scrypto-tests
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      with:
+        tests-dir: scrypto-tests
+        flags: --no-default-features --features alloc
