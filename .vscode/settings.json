@@ -29,6 +29,7 @@
         "keyvaluestore",
         "ledgertransaction",
         "notarizedtransaction",
+        "pdec",
         "persistable",
         "Presecurified",
         "radiswap",
