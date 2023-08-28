@@ -3,8 +3,13 @@ name: CI
 on:
   push:
     branches:
-      # Temp thing so that this only runs on this branch
-      - feature/coverage
+      - main
+      - develop
+      - docs
+      - alphanet
+      - betanet
+      - release\/*
+  pull_request:
 
 env:
   CARGO_TERM_COLOR: always
