@@ -32,6 +32,7 @@ impl NewPackage {
             scrypto,
             transaction,
             radix_engine,
+            radix_engine_interface,
             scrypto_unit,
             scrypto_test,
             optional_scrypto_test,
@@ -46,6 +47,7 @@ impl NewPackage {
                 format!("{{ path = \"{}/scrypto\" }}", scrypto_dir),
                 format!("{{ path = \"{}/transaction\" }}", scrypto_dir),
                 format!("{{ path = \"{}/radix-engine\" }}", scrypto_dir),
+                format!("{{ path = \"{}/radix-engine-interface\" }}", scrypto_dir),
                 format!("{{ path = \"{}/scrypto-unit\" }}", scrypto_dir),
                 format!("{{ path = \"{}/scrypto-test\" }}", scrypto_dir),
                 format!(
@@ -58,7 +60,7 @@ impl NewPackage {
                 "{{ git = \"https://github.com/radixdlt/radixdlt-scrypto\", tag = \"v{}\" }}",
                 env!("CARGO_PKG_VERSION")
             );
-            (s.clone(), s.clone(), s.clone(), s.clone(), s.clone(), s, format!(
+            (s.clone(), s.clone(), s.clone(), s.clone(), s.clone(), s.clone(), s, format!(
                 "{{ git = \"https://github.com/radixdlt/radixdlt-scrypto\", tag = \"v{}\", optional = true }}",
                 env!("CARGO_PKG_VERSION")
             ))
@@ -78,6 +80,7 @@ impl NewPackage {
                     .replace("${scrypto}", &scrypto)
                     .replace("${transaction}", &transaction)
                     .replace("${radix-engine}", &radix_engine)
+                    .replace("${radix-engine-interface}", &radix_engine_interface)
                     .replace("${scrypto-unit}", &scrypto_unit)
                     .replace("${scrypto-test}", &scrypto_test)
                     .replace("${optional-scrypto-test}", &optional_scrypto_test),

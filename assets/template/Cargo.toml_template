@@ -7,13 +7,13 @@ resolver = "2"
 [dependencies]
 sbor = ${sbor}
 scrypto = ${scrypto}
-scrypto-test = ${optional-scrypto-test}
 
 [dev-dependencies]
 transaction = ${transaction}
 radix-engine = ${radix-engine}
 scrypto-unit = ${scrypto-unit}
 scrypto-test = ${scrypto-test}
+radix-engine-interface = ${radix-engine-interface}
 ${package_name} = { path = ".", features = ["test"] }
 
 [profile.release]
@@ -26,7 +26,7 @@ overflow-checks = true # Panic in the case of an overflow.
 
 [features]
 default = []
-test = ["dep:scrypto-test"]
+test = []
 
 [lib]
 crate-type = ["cdylib", "lib"]
