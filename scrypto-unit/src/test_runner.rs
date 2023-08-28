@@ -1474,13 +1474,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     /// * Call `.expect_commit_success()` on the receipt to get access to receipt details.
     pub fn call_method(
         &mut self,
-        component_address: impl ResolvableGlobalAddress,
+        address: impl ResolvableGlobalAddress,
         method_name: impl Into<String>,
         args: impl ResolvableArguments,
     ) -> TransactionReceipt {
         self.execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .call_method(component_address, method_name, args)
+                .call_method(address, method_name, args)
                 .build(),
             vec![],
         )

@@ -24,8 +24,8 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-fn fuzz_consensus() {
-    let results: Vec<BTreeMap<ConsensusFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>>> =
+fn fuzz_resource() {
+    let results: Vec<BTreeMap<ResourceFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>>> =
         (1u64..64u64)
             .into_par_iter()
             .map(|seed| {
@@ -35,21 +35,28 @@ fn fuzz_consensus() {
             .collect();
 
     println!("{:#?}", results);
+
+    panic!("oops");
 }
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-enum ConsensusFuzzAction {
-    GetRedemptionValue,
-    Stake,
-    Unstake,
-    Claim,
-    UpdateFee,
-    LockOwnerStake,
-    StartUnlockOwnerStake,
-    FinishUnlockOwnerStake,
-    ConsensusRound,
+enum ResourceFuzzStartAction {
+    Mint
 }
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
+enum ResourceFuzzEndAction {
+    Burn
+}
+
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+struct ResourceFuzzAction {
+    start: ResourceFuzzStartAction,
+    end: ResourceFuzzEndAction,
+}
+
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
@@ -99,6 +106,7 @@ impl VmInvoke for TestInvoke {
 struct ResourceFuzzTest {
     fuzzer: ResourceTestFuzzer,
     test_runner: TestRunner<OverridePackageCode<TestInvoke>, InMemorySubstateDatabase>,
+    resource_address: ResourceAddress,
     component_address: ComponentAddress,
     account_public_key: PublicKey,
     account_component_address: ComponentAddress,
@@ -117,6 +125,17 @@ impl ResourceFuzzTest {
                 vec![("new", "new", false)],
             ),
         );
+
+        let (public_key, _, account) = test_runner.new_account(false);
+
+        let resource_address = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+            OwnerRole::None,
+            None,
+            18u8,
+            account,
+        );
+
+
         let receipt = test_runner.execute_manifest(
             ManifestBuilder::new()
                 .lock_fee(test_runner.faucet_component(), 500u32)
@@ -126,11 +145,10 @@ impl ResourceFuzzTest {
         );
         let component_address = receipt.expect_commit_success().new_component_addresses()[0];
 
-        let (public_key, _, account) = test_runner.new_account(false);
-
         Self {
             fuzzer,
             test_runner,
+            resource_address,
             component_address,
             account_public_key: public_key.into(),
             account_component_address: account,
@@ -143,23 +161,57 @@ impl ResourceFuzzTest {
 
     fn run_fuzz(
         &mut self,
-    ) -> BTreeMap<ConsensusFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>> {
+    ) -> BTreeMap<ResourceFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>> {
         let mut fuzz_results: BTreeMap<
-            ConsensusFuzzAction,
+            ResourceFuzzAction,
             BTreeMap<ConsensusFuzzActionResult, u64>,
         > = BTreeMap::new();
         for _ in 0..100 {
-            /*
-            let action = ConsensusFuzzAction::from_repr(self.fuzzer.next_u8(8u8)).unwrap();
-            let (trivial, receipt) = match action {
-                ConsensusFuzzAction::GetRedemptionValue => {
+            let mut builder = ManifestBuilder::new();
+            let start = ResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(1u8)).unwrap();
+            let (mut builder, start_trivial) = match start {
+                ResourceFuzzStartAction::Mint => {
                     let amount = self.next_amount();
-                    (amount.is_zero(), self.get_redemption_value(amount))
+                    let builder = builder
+                        .call_method(
+                            self.resource_address,
+                            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+                            FungibleResourceManagerMintInput {
+                                amount,
+                            }
+                        );
+                    (builder, amount.is_zero())
                 }
             };
 
+
+            let end = ResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(1u8)).unwrap();
+            let (mut builder, end_trivial) = match end {
+                ResourceFuzzEndAction::Burn => {
+                    {
+                        let amount = self.next_amount();
+                        let builder = builder
+                            .take_from_worktop(self.resource_address, amount, "bucket")
+                            .burn_resource("bucket");
+                        (builder, amount.is_zero())
+                    }
+                }
+            };
+
+
+
+            let manifest = builder
+                .deposit_batch(self.account_component_address)
+                .build();
+            let receipt = self.test_runner.execute_manifest_ignoring_fee(
+                manifest,
+                vec![NonFungibleGlobalId::from_public_key(
+                    &self.account_public_key,
+                )],
+            );
+
             let result = receipt.expect_commit_ignore_outcome();
-            let result = match (&result.outcome, trivial) {
+            let result = match (&result.outcome, start_trivial && end_trivial) {
                 (TransactionOutcome::Success(..), true) => {
                     ConsensusFuzzActionResult::TrivialSuccess
                 }
@@ -170,11 +222,10 @@ impl ResourceFuzzTest {
                 (TransactionOutcome::Failure(..), false) => ConsensusFuzzActionResult::Failure,
             };
 
-            let results = fuzz_results.entry(action).or_default();
+            let results = fuzz_results.entry(ResourceFuzzAction { start, end }).or_default();
             results.entry(result).or_default().add_assign(&1);
 
 
-             */
         }
 
         fuzz_results
