@@ -1,13 +1,6 @@
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt};
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ValidatorGetRedemptionValueInput, VALIDATOR_CLAIM_XRD_IDENT,
-    VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
-    VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_STAKE_IDENT,
-    VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT,
-    VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT, VALIDATOR_UNSTAKE_IDENT, VALIDATOR_UPDATE_FEE_IDENT,
-};
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use native_sdk::modules::metadata::Metadata;
@@ -42,21 +35,19 @@ fn fuzz_resource() {
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
 enum ResourceFuzzStartAction {
-    Mint
+    Mint,
+    VaultTake,
 }
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
 enum ResourceFuzzEndAction {
     Burn,
-    Deposit,
+    VaultPut,
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
-struct ResourceFuzzAction {
-    start: ResourceFuzzStartAction,
-    end: ResourceFuzzEndAction,
-}
+struct ResourceFuzzAction(ResourceFuzzStartAction, ResourceFuzzEndAction);
 
 
 #[repr(u8)]
@@ -185,7 +176,7 @@ impl ResourceFuzzTest {
         > = BTreeMap::new();
         for _ in 0..100 {
             let mut builder = ManifestBuilder::new();
-            let start = ResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(1u8)).unwrap();
+            let start = ResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
             let (mut builder, start_trivial) = match start {
                 ResourceFuzzStartAction::Mint => {
                     let amount = self.next_amount();
@@ -197,6 +188,12 @@ impl ResourceFuzzTest {
                                 amount,
                             }
                         );
+                    (builder, amount.is_zero())
+                }
+                ResourceFuzzStartAction::VaultTake => {
+                    let amount = self.next_amount();
+                    let builder = builder
+                        .call_method(self.component_address, "call_vault", manifest_args!(VAULT_TAKE_IDENT, (amount,)));
                     (builder, amount.is_zero())
                 }
             };
@@ -213,7 +210,7 @@ impl ResourceFuzzTest {
                         (builder, amount.is_zero())
                     }
                 }
-                ResourceFuzzEndAction::Deposit => {
+                ResourceFuzzEndAction::VaultPut => {
                     {
                         let amount = self.next_amount();
                         let builder = builder
@@ -248,7 +245,7 @@ impl ResourceFuzzTest {
                 (TransactionOutcome::Failure(..), false) => ConsensusFuzzActionResult::Failure,
             };
 
-            let results = fuzz_results.entry(ResourceFuzzAction { start, end }).or_default();
+            let results = fuzz_results.entry(ResourceFuzzAction(start, end)).or_default();
             results.entry(result).or_default().add_assign(&1);
 
 
