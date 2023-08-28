@@ -21,6 +21,20 @@ jobs:
       matrix:
         os: [k8s-linux-runner]
     steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.70.0
+          components: llvm-tools-preview
+      - name: Download grcov
+        shell: bash
+          run: |
+            mkdir -p "${HOME}/.local/bin"
+            curl -sL https://github.com/mozilla/grcov/releases/download/v0.8.10/grcov-x86_64-unknown-linux-gnu.tar.bz2 | tar jxf - -C "${HOME}/.local/bin"
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
         with:
           tests-dir: sbor
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+        with:
+          tests-dir: sbor-derive-common
