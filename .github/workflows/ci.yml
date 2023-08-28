@@ -259,6 +259,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@feature/rust-coverage
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      with:
         tests-dir: transaction
   
   transaction-scenarios:
@@ -271,7 +272,8 @@ jobs:
     - uses: actions/checkout@v3
     - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@feature/rust-coverage
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
-      tests-dir: transaction-scenarios
+      with:
+        tests-dir: transaction-scenarios
   
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)
