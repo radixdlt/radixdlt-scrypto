@@ -591,7 +591,10 @@ impl AccountBlueprint {
                 Self::create_virtual(public_key_hash, input.address_reservation, api)
             }
             x => Err(RuntimeError::ApplicationError(
-                ApplicationError::ScryptoPanic(format!("Unexpected variant id: {:?}", x)),
+                ApplicationError::ScryptoBlueprintExecutionPanic(format!(
+                    "Unexpected variant id: {:?}",
+                    x
+                )),
             )),
         }
     }

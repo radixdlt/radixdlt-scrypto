@@ -257,6 +257,10 @@ pub enum SystemError {
     TransactionRuntimeModuleNotEnabled,
     InvalidNativeSubstatesForFeature(String),
     ForceWriteEventFlagsNotAllowed,
+
+    /// A panic that's occurred in the system-layer or below. We're calling it system panic since
+    /// we're treating the system as a black-box here.
+    SystemPanic(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -411,9 +415,11 @@ pub enum ApplicationError {
     // TODO: this should never happen because of schema check?
     InputDecodeError(DecodeError),
 
-    ScryptoPanic(String),
+    /// A panic was encountered in Scrypto code.
+    ScryptoBlueprintExecutionPanic(String),
 
-    NativePanic {
+    /// A panic was encountered in Native code.
+    NativeBlueprintExecutionPanic {
         export_name: String,
         input: ScryptoValue,
         error: String,

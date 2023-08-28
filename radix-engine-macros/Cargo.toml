@@ -1,0 +1,12 @@
+[package]
+name = "radix-engine-macros"
+version = "0.12.0"
+edition = "2021"
+
+[dependencies]
+proc-macro2 = "1.0.66"
+quote = "1.0.33"
+syn = { version = "2.0.29", features = ["full"] }
+
+[lib]
+proc-macro = true

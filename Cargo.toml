@@ -26,6 +26,7 @@ members = [
     "transaction-scenarios",
     "native-sdk",
     "radix-engine",
+    "radix-engine-macros",
     "radix-engine-common",
     "radix-engine-interface",
     "radix-engine-derive",

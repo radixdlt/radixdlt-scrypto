@@ -281,7 +281,7 @@ fn cant_move_restricted_proof_to_auth_zone() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::ScryptoPanic(e))
+        RuntimeError::ApplicationError(ApplicationError::ScryptoBlueprintExecutionPanic(e))
             if e.eq("Moving restricted proof downstream") =>
         {
             true
@@ -320,7 +320,7 @@ fn cant_move_restricted_proof_to_scrypto_function_aka_barrier() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::ScryptoPanic(e))
+        RuntimeError::ApplicationError(ApplicationError::ScryptoBlueprintExecutionPanic(e))
             if e.eq("Moving restricted proof downstream") =>
         {
             true
@@ -876,7 +876,7 @@ fn test_proof_check() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::ScryptoPanic(e)) if e.eq("Invalid proof: Expected ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), but got ResourceAddress(5dc78a43cf2b06c67b71f68ab81aa004a8ea8a08ef73ceceba02e33059d7)") => true,
+        RuntimeError::ApplicationError(ApplicationError::ScryptoBlueprintExecutionPanic(e)) if e.eq("Invalid proof: Expected ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), but got ResourceAddress(5dc78a43cf2b06c67b71f68ab81aa004a8ea8a08ef73ceceba02e33059d7)") => true,
         _ => false,
     });
 }
@@ -910,7 +910,7 @@ fn test_proof_check_with_message() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::ScryptoPanic(e))
+        RuntimeError::ApplicationError(ApplicationError::ScryptoBlueprintExecutionPanic(e))
             if e.eq("Not XRD proof") =>
         {
             true
