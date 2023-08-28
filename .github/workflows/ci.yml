@@ -14,38 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sbor-unit-tests:
-    name: Run SBOR unit tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: 1.70.0
-        components: llvm-tools-preview
-    - name: Download grcov
-      run: |
-        mkdir -p "${HOME}/.local/bin"
-        curl -sL https://github.com/mozilla/grcov/releases/download/v0.8.10/grcov-x86_64-unknown-linux-gnu.tar.bz2 | tar jxf - -C "${HOME}/.local/bin"
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - name: Run tests
-      run: CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='cargo-test-%p-%m.profraw' cargo test
-      working-directory: sbor
-    - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc
-      working-directory: sbor
-    - name: Generate coverage
-      run: |
-        ls -la
-        mkdir -p target/coverage/html
-        ls -la target/coverage/html
-        grcov . --binary-path ../target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/coverage/html
-        ls -la
-      working-directory: sbor
-    - uses: actions/upload-artifact@v3
-      with:
-        name: sbor-coverage
-        path: sbor/target/coverage/html
+  run-sbor-unit-tests:
+    uses: radixdlt/iac-resuable-artifacts/.github/workflows/rust-coverage.yml@feat/rust-coverage
+    with:
+      tests-dir: sbor
