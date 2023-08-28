@@ -19,9 +19,10 @@ pub const DIVISIBILITY_MAXIMUM: u8 = 18;
 /// Utility for setting up a new resource.
 ///
 /// * You start the building process with one of the methods starting with `new_`.
-/// * The allowed methods change depending on which methods have already been called.
-///   For example, you can either use `owner_non_fungible_badge` or set access rules individually, but not both.
-/// * You can complete the building process using either `create_with_no_initial_supply()` or `mint_initial_supply(..)`.
+/// * The allowed methods change depending on which methods have already been called. For example,
+///   you can either use `owner_non_fungible_badge` or set access rules individually, but not both.
+/// * You can complete the building process using either `create_with_no_initial_supply()` or
+///   `mint_initial_supply(..)`.
 ///
 /// ### Example
 /// ```no_run
@@ -70,9 +71,10 @@ impl ResourceBuilder {
 /// Utility for setting up a new resource, which has building in progress.
 ///
 /// * You start the building process with one of the methods starting with `ResourceBuilder::new_`.
-/// * The allowed methods change depending on which methods have already been called.
-///   For example, you can either use `owner_non_fungible_badge` or set access rules individually, but not both.
-/// * You can complete the building process using either `create_with_no_initial_supply()` or `mint_initial_supply(..)`.
+/// * The allowed methods change depending on which methods have already been called. For example,
+///   you can either use `owner_non_fungible_badge` or set access rules individually, but not both.
+/// * You can complete the building process using either `create_with_no_initial_supply()` or
+///   `mint_initial_supply(..)`.
 ///
 /// ### Example
 /// ```no_run
@@ -160,7 +162,8 @@ pub trait UpdateAuthBuilder {
     /// Sets the resource to be mintable
     ///
     /// * The first parameter is the access rule which allows minting of the resource.
-    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
+    /// * The second parameter is the mutability / access rule which controls if and how the access
+    ///   rule can be updated.
     ///
     /// ### Examples
     ///
@@ -189,7 +192,8 @@ pub trait UpdateAuthBuilder {
     /// Sets the resource to be burnable.
     ///
     /// * The first parameter is the access rule which allows minting of the resource.
-    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
+    /// * The second parameter is the mutability / access rule which controls if and how the access
+    ///   rule can be updated.
     ///
     /// ### Examples
     ///
@@ -218,7 +222,8 @@ pub trait UpdateAuthBuilder {
     /// Sets the resource to be recallable from vaults.
     ///
     /// * The first parameter is the access rule which allows recalling of the resource.
-    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
+    /// * The second parameter is the mutability / access rule which controls if and how the access
+    ///   rule can be updated.
     ///
     /// ### Examples
     ///
@@ -246,7 +251,8 @@ pub trait UpdateAuthBuilder {
     /// Sets the resource to have vaults be freezable.
     ///
     /// * The first parameter is the access rule which allows freezing of the vault.
-    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
+    /// * The second parameter is the mutability / access rule which controls if and how the access
+    ///   rule can be updated.
     ///
     /// ### Examples
     ///
@@ -275,7 +281,8 @@ pub trait UpdateAuthBuilder {
     /// Sets the role rules of withdrawing from a vault of this resource.
     ///
     /// * The first parameter is the access rule which allows withdrawing from a vault.
-    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
+    /// * The second parameter is the mutability / access rule which controls if and how the access
+    ///   rule can be updated.
     ///
     /// ### Examples
     ///
@@ -304,7 +311,8 @@ pub trait UpdateAuthBuilder {
     /// Sets the roles rules of depositing this resource into a vault.
     ///
     /// * The first parameter is the access rule which allows depositing into a vault.
-    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
+    /// * The second parameter is the mutability / access rule which controls if and how the access
+    ///   rule can be updated.
     ///
     /// ### Examples
     ///
@@ -401,8 +409,10 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData>
 {
     /// Sets how each non-fungible's mutable data can be updated.
     ///
-    /// * The first parameter is the access rule which allows updating the mutable data of each non-fungible.
-    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
+    /// * The first parameter is the access rule which allows updating the mutable data of each
+    ///   non-fungible.
+    /// * The second parameter is the mutability / access rule which controls if and how the access
+    ///   rule can be updated.
     ///
     /// ### Examples
     ///
@@ -445,8 +455,8 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData>
 pub trait SetOwnerBuilder: private::CanAddOwner {
     /// Sets the owner badge to be the given non-fungible.
     ///
-    /// The owner badge is given starting permissions to update the metadata/data associated with the resource,
-    /// and to change any of the access rules after creation.
+    /// The owner badge is given starting permissions to update the metadata/data associated with
+    /// the resource, and to change any of the access rules after creation.
     fn owner_non_fungible_badge(self, owner_badge: NonFungibleGlobalId) -> Self::OutputBuilder {
         self.set_owner(owner_badge)
     }
@@ -521,7 +531,8 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
 impl<B: private::CanCreateWithNoSupply> CreateWithNoSupplyBuilder for B {}
 
 impl InProgressResourceBuilder<FungibleResourceType> {
-    /// Set the resource's divisibility: the number of digits of precision after the decimal point in its balances.
+    /// Set the resource's divisibility: the number of digits of precision after the decimal point
+    /// in its balances.
     ///
     /// * `0` means the resource is not divisible (balances are always whole numbers)
     /// * `18` is the maximum divisibility, and the default.
@@ -599,7 +610,8 @@ impl InProgressResourceBuilder<FungibleResourceType> {
 impl<D: NonFungibleData>
     InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>>
 {
-    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
+    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data
+    /// pair provided.
     ///
     /// ### Example
     /// ```no_run
@@ -657,7 +669,8 @@ impl<D: NonFungibleData>
 impl<D: NonFungibleData>
     InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>>
 {
-    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
+    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data
+    /// pair provided.
     ///
     /// ### Example
     /// ```no_run
@@ -715,7 +728,8 @@ impl<D: NonFungibleData>
 impl<D: NonFungibleData>
     InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>>
 {
-    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
+    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data
+    /// pair provided.
     ///
     /// ### Example
     /// ```no_run
@@ -773,7 +787,8 @@ impl<D: NonFungibleData>
 impl<D: NonFungibleData>
     InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>>
 {
-    /// Creates the RUID non-fungible resource, and mints an individual non-fungible for each piece of data provided.
+    /// Creates the RUID non-fungible resource, and mints an individual non-fungible for each piece
+    /// of data provided.
     ///
     /// The system automatically generates a new RUID `NonFungibleLocalId` for each non-fungible,
     /// and assigns the given data to each.
@@ -903,16 +918,18 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
     }
 }
 
-/// This file was experiencing combinatorial explosion - as part of the clean-up, we've used private traits to keep things simple.
+/// This file was experiencing combinatorial explosion - as part of the clean-up, we've used private
+/// traits to keep things simple.
 ///
-/// Each public method has essentially one implementation, and one Rust doc (where there weren't clashes due to Rust trait issues -
-/// eg with the `mint_initial_supply` methods).
+/// Each public method has essentially one implementation, and one Rust doc (where there weren't
+/// clashes due to Rust trait issues - eg with the `mint_initial_supply` methods).
 ///
-/// Internally, the various builders implement these private traits, and then automatically implement the "nice" public traits.
-/// The methods defined in the private traits are less nice, and so are hidden in order to not pollute the user facing API.
+/// Internally, the various builders implement these private traits, and then automatically
+/// implement the "nice" public traits. The methods defined in the private traits are less nice, and
+/// so are hidden in order to not pollute the user facing API.
 ///
-/// As users will nearly always use `scrypto_test::prelude::*`, as long as we make sure that the public traits are exported, this will
-/// be seamless for the user.
+/// As users will nearly always use `scrypto_test::prelude::*`, as long as we make sure that the
+/// public traits are exported, this will be seamless for the user.
 ///
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {

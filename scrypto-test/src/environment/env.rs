@@ -708,7 +708,7 @@ impl TestEnvironment {
     ///
     /// This function pushes a new call-frame onto the stack with the actor information we desire,
     /// performs the call-back, and then pops the call-frame off.
-    fn as_method_actor<N, F, O>(
+    pub(crate) fn as_method_actor<N, F, O>(
         &mut self,
         node_id: N,
         module_id: ObjectModuleId,
@@ -718,6 +718,7 @@ impl TestEnvironment {
     where
         N: Into<NodeId> + Copy,
         F: FnOnce(&mut Self) -> O,
+        O: ScryptoEncode,
     {
         let object_info = self.0.with_kernel_mut(|kernel: &mut TestKernel<'_>| {
             SystemService {
@@ -757,16 +758,18 @@ impl TestEnvironment {
     ///
     /// This function pushes a new call-frame onto the stack with the actor information we desire,
     /// performs the call-back, and then pops the call-frame off.
-    fn as_actor<F, O>(&mut self, actor: Actor, callback: F) -> Result<O, RuntimeError>
+    pub(crate) fn as_actor<F, O>(&mut self, actor: Actor, callback: F) -> Result<O, RuntimeError>
     where
         F: FnOnce(&mut Self) -> O,
+        O: ScryptoEncode,
     {
         // Creating the next frame.
         let message = CallFrameMessage::from_input(&IndexedScryptoValue::from_typed(&()), &actor);
         self.0.with_kernel_mut(|kernel| {
             let current_frame = kernel.kernel_current_frame_mut();
-            let new_frame =
+            let mut new_frame =
                 CallFrame::new_child_from_parent(current_frame, actor, message).unwrap();
+            *new_frame.stable_references_mut() = current_frame.stable_references_mut().clone();
             let old = core::mem::replace(current_frame, new_frame);
             kernel.kernel_prev_frame_stack_mut().push(old);
         });
@@ -774,10 +777,29 @@ impl TestEnvironment {
         // Executing the callback
         let rtn = callback(self);
 
+        // Constructing the message from the returns
+        let message = {
+            let indexed_scrypto_value = IndexedScryptoValue::from_typed(&rtn);
+            CallFrameMessage {
+                move_nodes: indexed_scrypto_value.owned_nodes().clone(),
+                copy_global_references: indexed_scrypto_value.references().clone(),
+                ..Default::default()
+            }
+        };
+
         // Popping the last frame & Passing message
         self.0
             .with_kernel_mut(|kernel| -> Result<(), RuntimeError> {
-                let previous_frame = kernel.kernel_prev_frame_stack_mut().pop().unwrap();
+                let mut previous_frame = kernel.kernel_prev_frame_stack_mut().pop().unwrap();
+
+                CallFrame::pass_message(
+                    kernel.kernel_current_frame_mut(),
+                    &mut previous_frame,
+                    message.clone(),
+                )
+                .map_err(CallFrameError::PassMessageError)
+                .map_err(KernelError::CallFrameError)?;
+
                 *kernel.kernel_current_frame_mut() = previous_frame;
                 Ok(())
             })?;

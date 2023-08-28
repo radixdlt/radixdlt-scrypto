@@ -5,6 +5,7 @@
 pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::identity::*;
+pub use radix_engine::blueprints::models::*;
 pub use radix_engine::blueprints::native_schema::*;
 pub use radix_engine::blueprints::package::*;
 pub use radix_engine::blueprints::pool::multi_resource_pool::*;

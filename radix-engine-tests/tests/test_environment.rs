@@ -230,3 +230,54 @@ fn can_get_and_set_timestamp() {
     // Assert
     assert_eq!(env.get_current_time(), Instant::new(1692951060))
 }
+
+#[test]
+fn creation_of_mock_fungible_buckets_succeeds() -> Result<(), RuntimeError> {
+    // Arrange
+    let mut env = TestEnvironment::new();
+
+    // Act
+    let bucket = BucketFactory::create_fungible_bucket(XRD, 10.into(), Mock, &mut env)?;
+
+    // Assert
+    let amount = bucket.amount(&mut env)?;
+    assert_eq!(amount, dec!("10"));
+
+    Ok(())
+}
+
+#[test]
+fn creation_of_mock_non_fungible_buckets_succeeds() -> Result<(), RuntimeError> {
+    // Arrange
+    let mut env = TestEnvironment::new();
+
+    // Act
+    let bucket = BucketFactory::create_non_fungible_bucket(
+        ACCOUNT_OWNER_BADGE,
+        btreemap!(NonFungibleLocalId::bytes(vec![0x00]).unwrap() => ("Hello", GENESIS_HELPER)),
+        Mock,
+        &mut env,
+    )?;
+
+    // Assert
+    let amount = bucket.amount(&mut env)?;
+    assert_eq!(amount, dec!("1"));
+
+    Ok(())
+}
+
+#[test]
+fn creation_of_disable_auth_and_mint_fungible_buckets_succeeds() -> Result<(), RuntimeError> {
+    // Arrange
+    let mut env = TestEnvironment::new();
+
+    // Act
+    let bucket =
+        BucketFactory::create_fungible_bucket(XRD, 10.into(), DisableAuthAndMint, &mut env)?;
+
+    // Assert
+    let amount = bucket.amount(&mut env)?;
+    assert_eq!(amount, dec!("10"));
+
+    Ok(())
+}
