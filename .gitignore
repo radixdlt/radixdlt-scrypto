@@ -73,3 +73,6 @@ perf.data
 
 #Rusty-tags
 *.vi
+
+# Coverage 
+*.profraw
