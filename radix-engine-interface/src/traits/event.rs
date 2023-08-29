@@ -5,6 +5,4 @@ where
     Self: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
 {
     const EVENT_NAME: &'static str;
-
-    fn event_name() -> &'static str;
 }

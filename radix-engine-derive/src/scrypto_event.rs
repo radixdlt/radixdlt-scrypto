@@ -20,10 +20,6 @@ pub fn handle_scrypto_event(input: TokenStream) -> Result<TokenStream> {
     let derive = quote! {
         impl ScryptoEvent for #ident {
             const EVENT_NAME: &'static str = #ident_string;
-
-            fn event_name() -> &'static str {
-                #ident_string
-            }
         }
     };
     Ok(derive)

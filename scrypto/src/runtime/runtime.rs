@@ -71,7 +71,7 @@ impl Runtime {
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent>(event: T) {
         ScryptoVmV1Api::actor_emit_event(
-            T::event_name().to_owned(),
+            T::EVENT_NAME.to_owned(),
             scrypto_encode(&event).unwrap(),
             EventFlags::empty(),
         );
