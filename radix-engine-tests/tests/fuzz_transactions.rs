@@ -37,7 +37,7 @@ impl TransactionFuzzer {
         let vm = Vm::new(&scrypto_vm, native_vm.clone());
 
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::new(&mut substate_db, vm, false)
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
             .bootstrap_test_default()
             .unwrap();
 

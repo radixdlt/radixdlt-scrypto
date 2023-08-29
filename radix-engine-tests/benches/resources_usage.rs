@@ -153,7 +153,7 @@ fn transfer_test(c: &mut Criterion) {
                 &mut substate_db,
                 &mut scrypto_interpreter,
                 &CostingParameters::default(),
-                &ExecutionConfig::for_notarized_transaction(),
+                &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
                     .unwrap()
@@ -171,7 +171,7 @@ fn transfer_test(c: &mut Criterion) {
                 &mut substate_db,
                 &mut scrypto_interpreter,
                 &CostingParameters::default(),
-                &ExecutionConfig::for_notarized_transaction(),
+                &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
                     .unwrap()
@@ -198,7 +198,7 @@ fn transfer_test(c: &mut Criterion) {
             &mut substate_db,
             &mut scrypto_interpreter,
             &CostingParameters::default(),
-            &ExecutionConfig::for_notarized_transaction(),
+            &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
             &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                 .prepare()
                 .unwrap()
@@ -222,7 +222,7 @@ fn transfer_test(c: &mut Criterion) {
                 &mut substate_db,
                 &mut scrypto_interpreter,
                 &CostingParameters::default(),
-                &ExecutionConfig::for_notarized_transaction(),
+                &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                     .prepare()
                     .unwrap()
