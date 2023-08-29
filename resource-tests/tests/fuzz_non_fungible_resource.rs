@@ -1,6 +1,6 @@
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::resource::{NativeVault, ResourceManager};
+use native_sdk::resource::NativeVault;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -21,6 +21,8 @@ use radix_engine_interface::prelude::node_modules::ModuleConfig;
 
 #[test]
 fn fuzz_non_fungible_resource() {
+    let mut summed_results: BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>> = BTreeMap::new();
+
     let results: Vec<BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>>> =
         (1u64..64u64)
             .into_par_iter()
@@ -30,7 +32,15 @@ fn fuzz_non_fungible_resource() {
             })
             .collect();
 
-    println!("{:#?}", results);
+    for run_result in results {
+        for (txn, txn_results) in run_result {
+            for (txn_result, count) in txn_results {
+                summed_results.entry(txn).or_default().entry(txn_result).or_default().add_assign(&count);
+            }
+        }
+    }
+
+    println!("{:#?}", summed_results);
 
     panic!("oops");
 }
