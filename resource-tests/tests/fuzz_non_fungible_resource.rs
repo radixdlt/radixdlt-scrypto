@@ -51,8 +51,8 @@ enum NonFungibleResourceFuzzStartAction {
     Mint,
     VaultTake,
     VaultTakeNonFungibles,
-    /*
     VaultTakeAdvanced,
+    /*
     VaultRecall,
      */
 }
@@ -227,7 +227,7 @@ impl ResourceFuzzTest {
         > = BTreeMap::new();
         for _ in 0..500 {
             let mut builder = ManifestBuilder::new();
-            let start = NonFungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(3u8)).unwrap();
+            let start = NonFungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(4u8)).unwrap();
             let (mut builder, mut trivial) = match start {
                 NonFungibleResourceFuzzStartAction::Mint => {
                     let entries: BTreeMap<NonFungibleLocalId, (ManifestValue, )> = self.fuzzer.next_non_fungible_id_set()
@@ -265,7 +265,6 @@ impl ResourceFuzzTest {
                     );
                     (builder, trivial)
                 }
-                /*
                 NonFungibleResourceFuzzStartAction::VaultTakeAdvanced => {
                     let amount = self.next_amount();
                     let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
@@ -276,6 +275,7 @@ impl ResourceFuzzTest {
                     );
                     (builder, amount.is_zero())
                 }
+                /*
                 NonFungibleResourceFuzzStartAction::VaultRecall => {
                     let amount = self.next_amount();
                     let builder = builder.recall(self.vault_id, amount);
