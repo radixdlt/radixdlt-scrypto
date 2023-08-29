@@ -104,8 +104,8 @@ impl Default for BlueprintType {
 pub struct BlueprintDefinitionInit {
     pub blueprint_type: BlueprintType,
     pub is_transient: bool,
-    pub feature_set: BTreeSet<String>,
-    pub dependencies: BTreeSet<GlobalAddress>,
+    pub feature_set: IndexSet<String>,
+    pub dependencies: IndexSet<GlobalAddress>,
     pub schema: BlueprintSchemaInit,
     pub royalty_config: PackageRoyaltyConfig,
     pub auth_config: AuthConfig,
@@ -116,8 +116,8 @@ impl Default for BlueprintDefinitionInit {
         Self {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
-            feature_set: BTreeSet::default(),
-            dependencies: BTreeSet::default(),
+            feature_set: IndexSet::default(),
+            dependencies: IndexSet::default(),
             schema: BlueprintSchemaInit::default(),
             royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig::default(),

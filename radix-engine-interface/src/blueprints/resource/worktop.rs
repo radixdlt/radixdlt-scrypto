@@ -71,7 +71,7 @@ pub const WORKTOP_TAKE_NON_FUNGIBLES_IDENT: &str = "Worktop_take_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct WorktopTakeNonFungiblesInput {
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 
@@ -111,7 +111,7 @@ pub const WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT: &str =
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct WorktopAssertContainsNonFungiblesInput {
     pub resource_address: ResourceAddress,
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
 }
 
 pub type WorktopAssertContainsNonFungiblesOutput = ();

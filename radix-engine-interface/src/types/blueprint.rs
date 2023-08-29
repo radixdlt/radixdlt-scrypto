@@ -38,7 +38,7 @@ pub struct BlueprintInfo {
     pub blueprint_id: BlueprintId,
     pub blueprint_version: BlueprintVersion,
     pub outer_obj_info: OuterObjectInfo,
-    pub features: BTreeSet<String>,
+    pub features: IndexSet<String>,
     pub generic_substitutions: Vec<GenericSubstitution>,
 }
 
@@ -74,7 +74,7 @@ impl ObjectInfo {
         }
     }
 
-    pub fn get_features(&self) -> BTreeSet<String> {
+    pub fn get_features(&self) -> IndexSet<String> {
         self.blueprint_info.features.clone()
     }
 

@@ -102,7 +102,7 @@ impl BlueprintVersionKey {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct BlueprintDependencies {
-    pub dependencies: BTreeSet<GlobalAddress>,
+    pub dependencies: IndexSet<GlobalAddress>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -159,7 +159,7 @@ pub struct BlueprintInterface {
     pub blueprint_type: BlueprintType,
     pub is_transient: bool,
     pub generics: Vec<GenericBound>,
-    pub feature_set: BTreeSet<String>,
+    pub feature_set: IndexSet<String>,
     pub state: IndexedStateSchema,
     pub functions: IndexMap<String, FunctionSchema>,
     pub events: IndexMap<String, BlueprintPayloadDef>,

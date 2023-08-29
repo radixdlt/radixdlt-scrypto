@@ -6,7 +6,7 @@ use arbitrary::Arbitrary;
 use radix_engine_common::prelude::{ManifestAddressReservation, ManifestBucket};
 use radix_engine_common::types::*;
 use radix_engine_interface::math::Decimal;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 
@@ -164,7 +164,7 @@ pub const ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT: &str = "withdraw_non_fungibles";
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountWithdrawNonFungiblesInput {
     pub resource_address: ResourceAddress,
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
 }
 
 pub type AccountWithdrawNonFungiblesOutput = Bucket;
@@ -195,7 +195,7 @@ pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT: &str =
 pub struct AccountLockFeeAndWithdrawNonFungiblesInput {
     pub amount_to_lock: Decimal,
     pub resource_address: ResourceAddress,
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
 }
 
 pub type AccountLockFeeAndWithdrawNonFungiblesOutput = Bucket;
@@ -223,7 +223,7 @@ pub const ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str = "create_proof_of_n
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateProofOfNonFungiblesInput {
     pub resource_address: ResourceAddress,
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
 }
 
 pub type AccountCreateProofOfNonFungiblesOutput = Proof;
@@ -371,7 +371,7 @@ pub const ACCOUNT_BURN_NON_FUNGIBLES_IDENT: &str = "burn_non_fungibles";
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountBurnNonFungiblesInput {
     pub resource_address: ResourceAddress,
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
 }
 
 pub type AccountBurnNonFungiblesOutput = ();

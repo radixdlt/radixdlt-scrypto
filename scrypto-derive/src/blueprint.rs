@@ -613,7 +613,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     }
                 };
 
-                let mut dependencies = BTreeSet::new();
+                let mut dependencies = IndexSet::new();
                 #({
                     dependencies.insert(#dependency_exprs.into());
                 })*
@@ -630,7 +630,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                     blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
                     is_transient: false,
-                    feature_set: BTreeSet::default(),
+                    feature_set: IndexSet::default(),
                     dependencies,
                     schema,
                     auth_config,
@@ -1505,7 +1505,7 @@ mod tests {
                             }
                         };
 
-                        let mut dependencies = BTreeSet::new();
+                        let mut dependencies = IndexSet::new();
 
                         let auth_config = {
                             scrypto::blueprints::package::AuthConfig {
@@ -1519,7 +1519,7 @@ mod tests {
                         let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                             blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
                             is_transient: false,
-                            feature_set: BTreeSet::default(),
+                            feature_set: IndexSet::default(),
                             dependencies,
                             schema,
                             auth_config,

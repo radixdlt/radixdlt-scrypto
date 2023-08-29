@@ -74,23 +74,23 @@ impl LiquidFungibleResource {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleResource {
     /// The total non-fungible ids.
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
 }
 
 impl LiquidNonFungibleResource {
-    pub fn new(ids: BTreeSet<NonFungibleLocalId>) -> Self {
+    pub fn new(ids: IndexSet<NonFungibleLocalId>) -> Self {
         Self { ids }
     }
 
     pub fn default() -> Self {
-        Self::new(BTreeSet::new())
+        Self::new(IndexSet::new())
     }
 
-    pub fn ids(&self) -> &BTreeSet<NonFungibleLocalId> {
+    pub fn ids(&self) -> &IndexSet<NonFungibleLocalId> {
         &self.ids
     }
 
-    pub fn into_ids(self) -> BTreeSet<NonFungibleLocalId> {
+    pub fn into_ids(self) -> IndexSet<NonFungibleLocalId> {
         self.ids
     }
 
@@ -111,16 +111,16 @@ impl LiquidNonFungibleResource {
         if self.ids.len() < n as usize {
             return Err(ResourceError::InsufficientBalance);
         }
-        let ids: BTreeSet<NonFungibleLocalId> = self.ids.iter().take(n as usize).cloned().collect();
+        let ids: IndexSet<NonFungibleLocalId> = self.ids.iter().take(n as usize).cloned().collect();
         self.take_by_ids(&ids)
     }
 
     pub fn take_by_ids(
         &mut self,
-        ids_to_take: &BTreeSet<NonFungibleLocalId>,
+        ids_to_take: &IndexSet<NonFungibleLocalId>,
     ) -> Result<LiquidNonFungibleResource, ResourceError> {
         for id in ids_to_take {
-            if !self.ids.remove(&id) {
+            if !self.ids.remove(id) {
                 return Err(ResourceError::InsufficientBalance);
             }
         }
@@ -129,7 +129,7 @@ impl LiquidNonFungibleResource {
 
     pub fn take_all(&mut self) -> LiquidNonFungibleResource {
         LiquidNonFungibleResource {
-            ids: core::mem::replace(&mut self.ids, btreeset!()),
+            ids: core::mem::replace(&mut self.ids, indexset!()),
         }
     }
 }
@@ -183,7 +183,7 @@ impl LockedNonFungibleResource {
         self.ids.len().into()
     }
 
-    pub fn ids(&self) -> BTreeSet<NonFungibleLocalId> {
+    pub fn ids(&self) -> IndexSet<NonFungibleLocalId> {
         self.ids.keys().cloned().collect()
     }
 }

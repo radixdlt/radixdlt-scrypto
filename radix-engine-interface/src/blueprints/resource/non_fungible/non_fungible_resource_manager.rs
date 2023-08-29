@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::types::NonFungibleData;
-use sbor::rust::collections::{BTreeSet, IndexMap};
+use sbor::rust::collections::{IndexMap, IndexSet};
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -249,7 +249,7 @@ pub type NonFungibleResourceManagerMintSingleRuidOutput = (Bucket, NonFungibleLo
 pub struct NonFungibleDataSchema {
     pub schema: VersionedScryptoSchema,
     pub non_fungible: LocalTypeIndex,
-    pub mutable_fields: BTreeSet<String>,
+    pub mutable_fields: IndexSet<String>,
 }
 
 impl NonFungibleData for () {

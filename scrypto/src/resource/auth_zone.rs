@@ -4,7 +4,7 @@ use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::IndexSet;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 pub trait ScryptoAuthZone {
@@ -20,7 +20,7 @@ pub trait ScryptoAuthZone {
 
     fn create_proof_of_non_fungibles(
         &self,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> Proof;
 
@@ -71,7 +71,7 @@ impl ScryptoAuthZone for AuthZoneRef {
 
     fn create_proof_of_non_fungibles(
         &self,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> Proof {
         let rtn = ScryptoVmV1Api::object_call(
