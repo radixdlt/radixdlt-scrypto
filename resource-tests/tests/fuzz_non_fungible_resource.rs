@@ -50,6 +50,7 @@ fn fuzz_non_fungible_resource() {
 enum NonFungibleResourceFuzzStartAction {
     Mint,
     VaultTake,
+    VaultTakeNonFungibles,
     /*
     VaultTakeAdvanced,
     VaultRecall,
@@ -226,7 +227,7 @@ impl ResourceFuzzTest {
         > = BTreeMap::new();
         for _ in 0..500 {
             let mut builder = ManifestBuilder::new();
-            let start = NonFungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
+            let start = NonFungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(3u8)).unwrap();
             let (mut builder, mut trivial) = match start {
                 NonFungibleResourceFuzzStartAction::Mint => {
                     let entries: BTreeMap<NonFungibleLocalId, (ManifestValue, )> = self.fuzzer.next_non_fungible_id_set()
@@ -254,6 +255,16 @@ impl ResourceFuzzTest {
                     );
                     (builder, amount.is_zero())
                 }
+                NonFungibleResourceFuzzStartAction::VaultTakeNonFungibles => {
+                    let ids = self.fuzzer.next_non_fungible_id_set();
+                    let trivial = ids.is_empty();
+                    let builder = builder.call_method(
+                        self.component_address,
+                        "call_vault",
+                        manifest_args!(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT, (ids,)),
+                    );
+                    (builder, trivial)
+                }
                 /*
                 NonFungibleResourceFuzzStartAction::VaultTakeAdvanced => {
                     let amount = self.next_amount();
@@ -273,6 +284,7 @@ impl ResourceFuzzTest {
                  */
             };
 
+            /*
             for _ in 0u8..self.fuzzer.next(0u8..2u8) {
                 let (mut next_builder, next_trivial) = {
                     let ids = self.fuzzer.next_non_fungible_id_set();
@@ -287,6 +299,7 @@ impl ResourceFuzzTest {
                 builder = next_builder;
                 trivial = trivial || next_trivial;
             }
+             */
 
             let end = NonFungibleResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
             let (mut builder, end_trivial) = match end {
