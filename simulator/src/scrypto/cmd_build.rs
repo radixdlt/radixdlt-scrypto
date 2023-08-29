@@ -15,6 +15,10 @@ pub struct Build {
     /// Turn on tracing
     #[clap(short, long)]
     trace: bool,
+
+    /// When passed, this argument disables wasm-opt from running on the built wasm.
+    #[clap(long)]
+    disable_wasm_opt: bool,
 }
 
 impl Build {
@@ -23,6 +27,7 @@ impl Build {
             self.path.clone().unwrap_or(current_dir().unwrap()),
             self.trace,
             false,
+            self.disable_wasm_opt,
         )
         .map(|_| ())
         .map_err(Error::BuildError)
