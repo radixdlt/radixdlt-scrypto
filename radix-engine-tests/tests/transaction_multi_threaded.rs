@@ -31,9 +31,14 @@ mod multi_threaded_test {
             native_vm,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::new(&mut substate_db, vm.clone(), false)
-            .bootstrap_test_default()
-            .unwrap();
+        Bootstrapper::new(
+            NetworkDefinition::simulator(),
+            &mut substate_db,
+            vm.clone(),
+            false,
+        )
+        .bootstrap_test_default()
+        .unwrap();
 
         // Create a key pair
         let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();

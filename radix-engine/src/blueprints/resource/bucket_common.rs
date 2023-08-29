@@ -12,6 +12,13 @@ pub enum BucketError {
     Locked(NodeId),
     MismatchingResource,
     InvalidAmount,
+    DecimalOverflow,
+}
+
+impl From<BucketError> for RuntimeError {
+    fn from(bucket_error: BucketError) -> Self {
+        RuntimeError::ApplicationError(ApplicationError::BucketError(bucket_error))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
