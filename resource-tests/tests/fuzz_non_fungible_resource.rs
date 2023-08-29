@@ -39,8 +39,8 @@ fn fuzz_non_fungible_resource() {
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
 enum NonFungibleResourceFuzzStartAction {
     Mint,
-    /*
     VaultTake,
+    /*
     VaultTakeAdvanced,
     VaultRecall,
      */
@@ -50,9 +50,7 @@ enum NonFungibleResourceFuzzStartAction {
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
 enum NonFungibleResourceFuzzEndAction {
     Burn,
-    /*
     VaultPut,
-     */
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -218,7 +216,7 @@ impl ResourceFuzzTest {
         > = BTreeMap::new();
         for _ in 0..500 {
             let mut builder = ManifestBuilder::new();
-            let start = NonFungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(1u8)).unwrap();
+            let start = NonFungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
             let (mut builder, mut trivial) = match start {
                 NonFungibleResourceFuzzStartAction::Mint => {
                     let entries: BTreeMap<NonFungibleLocalId, (ManifestValue, )> = self.fuzzer.next_non_fungible_id_set()
@@ -237,7 +235,6 @@ impl ResourceFuzzTest {
 
                     (builder, false)
                 }
-                /*
                 NonFungibleResourceFuzzStartAction::VaultTake => {
                     let amount = self.next_amount();
                     let builder = builder.call_method(
@@ -247,6 +244,7 @@ impl ResourceFuzzTest {
                     );
                     (builder, amount.is_zero())
                 }
+                /*
                 NonFungibleResourceFuzzStartAction::VaultTakeAdvanced => {
                     let amount = self.next_amount();
                     let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
@@ -280,7 +278,7 @@ impl ResourceFuzzTest {
                 trivial = trivial || next_trivial;
             }
 
-            let end = NonFungibleResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(1u8)).unwrap();
+            let end = NonFungibleResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
             let (mut builder, end_trivial) = match end {
                 NonFungibleResourceFuzzEndAction::Burn => {
                     let amount = self.next_amount();
@@ -289,7 +287,6 @@ impl ResourceFuzzTest {
                         .burn_resource("bucket");
                     (builder, amount.is_zero())
                 }
-                /*
                 NonFungibleResourceFuzzEndAction::VaultPut => {
                     let amount = self.next_amount();
                     let builder = builder
@@ -303,7 +300,6 @@ impl ResourceFuzzTest {
                         });
                     (builder, amount.is_zero())
                 }
-                 */
             };
             trivial = trivial || end_trivial;
 
