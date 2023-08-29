@@ -215,7 +215,7 @@ impl ResourceFuzzTest {
         for _ in 0..500 {
             let mut builder = ManifestBuilder::new();
             let start = FungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(4u8)).unwrap();
-            let (mut builder, start_trivial) = match start {
+            let (mut builder, mut trivial) = match start {
                 FungibleResourceFuzzStartAction::Mint => {
                     let amount = self.next_amount();
                     let builder = builder.call_method(
@@ -251,8 +251,8 @@ impl ResourceFuzzTest {
                 }
             };
 
-            for _ in 0u8..self.fuzzer.next(0u8..1u8) {
-                let (mut next_builder, trivial) = {
+            for _ in 0u8..self.fuzzer.next(0u8..2u8) {
+                let (mut next_builder, next_trivial) = {
                     let amount = self.next_amount();
                     let builder = builder.call_method(
                         self.component_address,
@@ -263,6 +263,7 @@ impl ResourceFuzzTest {
                 };
 
                 builder = next_builder;
+                trivial = trivial || next_trivial;
             }
 
             let end = FungibleResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
@@ -288,6 +289,7 @@ impl ResourceFuzzTest {
                     (builder, amount.is_zero())
                 }
             };
+            trivial = trivial || end_trivial;
 
             let manifest = builder
                 .deposit_batch(self.account_component_address)
@@ -300,7 +302,7 @@ impl ResourceFuzzTest {
             );
 
             let result = receipt.expect_commit_ignore_outcome();
-            let result = match (&result.outcome, start_trivial || end_trivial) {
+            let result = match (&result.outcome, trivial) {
                 (TransactionOutcome::Success(..), true) => {
                     ConsensusFuzzActionResult::TrivialSuccess
                 }
