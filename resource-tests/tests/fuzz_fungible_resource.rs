@@ -20,7 +20,7 @@ use radix_engine::prelude::node_modules::auth::RoleDefinition;
 use radix_engine_interface::prelude::node_modules::ModuleConfig;
 
 #[test]
-fn fuzz_resource() {
+fn fuzz_fungible_resource() {
     let results: Vec<BTreeMap<ResourceFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>>> =
         (1u64..64u64)
             .into_par_iter()
@@ -37,7 +37,7 @@ fn fuzz_resource() {
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-enum ResourceFuzzStartAction {
+enum FungibleResourceFuzzStartAction {
     Mint,
     VaultTake,
     VaultTakeAdvanced,
@@ -46,13 +46,13 @@ enum ResourceFuzzStartAction {
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-enum ResourceFuzzEndAction {
+enum FungibleResourceFuzzEndAction {
     Burn,
     VaultPut,
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
-struct ResourceFuzzAction(ResourceFuzzStartAction, ResourceFuzzEndAction);
+struct ResourceFuzzAction(FungibleResourceFuzzStartAction, FungibleResourceFuzzEndAction);
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
@@ -214,9 +214,9 @@ impl ResourceFuzzTest {
         > = BTreeMap::new();
         for _ in 0..500 {
             let mut builder = ManifestBuilder::new();
-            let start = ResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(4u8)).unwrap();
+            let start = FungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(4u8)).unwrap();
             let (mut builder, start_trivial) = match start {
-                ResourceFuzzStartAction::Mint => {
+                FungibleResourceFuzzStartAction::Mint => {
                     let amount = self.next_amount();
                     let builder = builder.call_method(
                         self.resource_address,
@@ -225,7 +225,7 @@ impl ResourceFuzzTest {
                     );
                     (builder, amount.is_zero())
                 }
-                ResourceFuzzStartAction::VaultTake => {
+                FungibleResourceFuzzStartAction::VaultTake => {
                     let amount = self.next_amount();
                     let builder = builder.call_method(
                         self.component_address,
@@ -234,7 +234,7 @@ impl ResourceFuzzTest {
                     );
                     (builder, amount.is_zero())
                 }
-                ResourceFuzzStartAction::VaultTakeAdvanced => {
+                FungibleResourceFuzzStartAction::VaultTakeAdvanced => {
                     let amount = self.next_amount();
                     let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
                     let builder = builder.call_method(
@@ -244,23 +244,37 @@ impl ResourceFuzzTest {
                     );
                     (builder, amount.is_zero())
                 }
-                ResourceFuzzStartAction::VaultRecall => {
+                FungibleResourceFuzzStartAction::VaultRecall => {
                     let amount = self.next_amount();
                     let builder = builder.recall(self.vault_id, amount);
                     (builder, amount.is_zero())
                 }
             };
 
-            let end = ResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
+            for _ in 0u8..self.fuzzer.next(0u8..1u8) {
+                let (mut next_builder, trivial) = {
+                    let amount = self.next_amount();
+                    let builder = builder.call_method(
+                        self.component_address,
+                        "call_vault",
+                        manifest_args!(FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT, (amount,)),
+                    );
+                    (builder, amount.is_zero())
+                };
+
+                builder = next_builder;
+            }
+
+            let end = FungibleResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
             let (mut builder, end_trivial) = match end {
-                ResourceFuzzEndAction::Burn => {
+                FungibleResourceFuzzEndAction::Burn => {
                     let amount = self.next_amount();
                     let builder = builder
                         .take_from_worktop(self.resource_address, amount, "bucket")
                         .burn_resource("bucket");
                     (builder, amount.is_zero())
                 }
-                ResourceFuzzEndAction::VaultPut => {
+                FungibleResourceFuzzEndAction::VaultPut => {
                     let amount = self.next_amount();
                     let builder = builder
                         .take_from_worktop(self.resource_address, amount, "bucket")
