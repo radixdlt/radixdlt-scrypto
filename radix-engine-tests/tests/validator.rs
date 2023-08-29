@@ -227,7 +227,7 @@ fn calling_get_redemption_value_on_staked_validator_with_zero_amount_should_not_
             .call_method(
                 validator_address,
                 VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
-                manifest_args!(Decimal::MIN),
+                manifest_args!(Decimal::ZERO),
             )
             .build(),
         vec![],
