@@ -1613,12 +1613,7 @@ impl ValidatorBlueprint {
         } else {
             amount_of_stake_units
                 .safe_mul(active_stake_amount)
-                .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::ValidatorError(
-                        ValidatorError::UnexpectedDecimalComputationError,
-                    ),
-                ))?
-                .safe_div(total_stake_unit_supply)
+                .and_then(|amount| amount.safe_div(total_stake_unit_supply))
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(
                         ValidatorError::UnexpectedDecimalComputationError,
@@ -1640,12 +1635,7 @@ impl ValidatorBlueprint {
         } else {
             xrd_amount
                 .safe_mul(total_stake_unit_supply)
-                .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::ValidatorError(
-                        ValidatorError::UnexpectedDecimalComputationError,
-                    ),
-                ))?
-                .safe_div(total_stake_xrd_amount)
+                .and_then(|amount| amount.safe_div(total_stake_xrd_amount))
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(
                         ValidatorError::UnexpectedDecimalComputationError,
@@ -1675,16 +1665,15 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> Result<[u8; 2], RuntimeError
         .ok_or(RuntimeError::ApplicationError(
             ApplicationError::ValidatorError(ValidatorError::UnexpectedDecimalComputationError),
         ))?;
-    let stake_100k_whole_units = stake_100k
-        .safe_div(Decimal::from(10).safe_powi(Decimal::SCALE.into()).ok_or(
-            RuntimeError::ApplicationError(ApplicationError::ValidatorError(
-                ValidatorError::UnexpectedDecimalComputationError,
-            )),
-        )?)
+
+    let stake_100k_whole_units = Decimal::from(10)
+        .safe_powi(Decimal::SCALE.into())
+        .and_then(|power| stake_100k.safe_div(power))
         .ok_or(RuntimeError::ApplicationError(
             ApplicationError::ValidatorError(ValidatorError::UnexpectedDecimalComputationError),
         ))?
         .0;
+
     let stake_u16 = if stake_100k_whole_units > I192::from(u16::MAX) {
         u16::MAX
     } else {

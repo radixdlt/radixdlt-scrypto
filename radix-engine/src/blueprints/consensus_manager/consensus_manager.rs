@@ -1324,38 +1324,30 @@ impl ConsensusManagerBlueprint {
             sum
         };
 
-        let reward_per_staked_xrd = (validator_rewards
+        let reward_per_staked_xrd = validator_rewards
             .rewards_vault
             .amount(api)?
             .safe_sub(total_individual_amount)
-            .unwrap())
-        .safe_div(stake_sum_xrd)
-        .ok_or(RuntimeError::ApplicationError(
-            ApplicationError::ConsensusManagerError(
-                ConsensusManagerError::UnexpectedDecimalComputationError,
-            ),
-        ))?;
+            .and_then(|amount| amount.safe_div(stake_sum_xrd))
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::UnexpectedDecimalComputationError,
+                ),
+            ))?;
         for (index, validator_info) in validator_infos {
             let from_self = validator_rewards
                 .proposer_rewards
                 .remove(&index)
                 .unwrap_or_default();
-            let from_pool = validator_info
+            let reward_amount = validator_info
                 .effective_stake_xrd
                 .safe_mul(reward_per_staked_xrd)
+                .and_then(|from_pool| from_self.safe_add(from_pool))
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::ConsensusManagerError(
                         ConsensusManagerError::UnexpectedDecimalComputationError,
                     ),
                 ))?;
-            let reward_amount =
-                from_self
-                    .safe_add(from_pool)
-                    .ok_or(RuntimeError::ApplicationError(
-                        ApplicationError::ConsensusManagerError(
-                            ConsensusManagerError::UnexpectedDecimalComputationError,
-                        ),
-                    ))?;
             if reward_amount.is_zero() {
                 continue;
             }
