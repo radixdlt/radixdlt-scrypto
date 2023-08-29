@@ -4,7 +4,7 @@ use crate::blueprints::resource::{
     NonFungibleResourceManagerTotalSupplyFieldPayload, NonFungibleVaultBalanceFieldPayload,
     NonFungibleVaultCollection, NonFungibleVaultField,
 };
-use crate::system::system_db_checker::ApplicationChecker;
+use crate::system::checkers::ApplicationChecker;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::{scrypto_decode, RESOURCE_PACKAGE};
 use radix_engine_common::types::{NodeId, ResourceAddress};
@@ -26,18 +26,21 @@ pub struct ResourceCounter {
 }
 
 #[derive(Debug, Default)]
-pub struct ResourceChecker {
+pub struct ResourceDatabaseChecker {
     resources: BTreeMap<ResourceAddress, ResourceCounter>,
     non_fungible_vaults: BTreeMap<NodeId, ResourceCounter>,
+    fungible_vaults: BTreeMap<NodeId, Decimal>,
 }
 
 #[derive(Debug, Default)]
-pub struct ResourceCheckerResults {
+pub struct ResourceDatabaseCheckerResults {
     pub num_resources: usize,
+    pub total_supply: BTreeMap<ResourceAddress, Decimal>,
+    pub vaults: BTreeMap<NodeId, Decimal>,
 }
 
-impl ApplicationChecker for ResourceChecker {
-    type ApplicationCheckerResults = ResourceCheckerResults;
+impl ApplicationChecker for ResourceDatabaseChecker {
+    type ApplicationCheckerResults = ResourceDatabaseCheckerResults;
 
     fn on_field(
         &mut self,
@@ -73,11 +76,11 @@ impl ApplicationChecker for ResourceChecker {
                         let address = ResourceAddress::new_or_panic(
                             info.outer_obj_info.expect().into_node_id().0,
                         );
+                        let amount = vault_balance.into_latest().amount();
                         let tracker = self.resources.entry(address).or_default();
-                        tracker.tracking_supply = tracker
-                            .tracking_supply
-                            .safe_add(vault_balance.into_latest().amount())
-                            .unwrap();
+                        tracker.tracking_supply = tracker.tracking_supply.safe_add(amount).unwrap();
+
+                        self.fungible_vaults.insert(node_id, amount);
                     }
                     _ => {}
                 }
@@ -166,6 +169,15 @@ impl ApplicationChecker for ResourceChecker {
             }
         }
 
+        let mut vaults: BTreeMap<NodeId, Decimal> = self
+            .non_fungible_vaults
+            .iter()
+            .map(|(vault_id, counter)| (*vault_id, counter.tracking_supply))
+            .collect();
+        vaults.extend(self.fungible_vaults.clone());
+
+        let mut total_supply = BTreeMap::new();
+
         for (address, tracker) in &self.resources {
             if let Some(total_supply) = tracker.expected {
                 if !total_supply.eq(&tracker.tracking_supply) {
@@ -175,10 +187,14 @@ impl ApplicationChecker for ResourceChecker {
                     );
                 }
             }
+
+            total_supply.insert(*address, tracker.tracking_supply);
         }
 
-        ResourceCheckerResults {
+        ResourceDatabaseCheckerResults {
             num_resources: self.resources.len(),
+            total_supply,
+            vaults,
         }
     }
 }

@@ -7,11 +7,7 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::resource_checker::ResourceChecker;
-use radix_engine::system::system_db_checker::{
-    ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker,
-    SystemDatabaseCheckerResults,
-};
+use radix_engine::system::checkers::*;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
@@ -237,7 +233,6 @@ pub struct TestRunnerBuilder<E, D> {
     custom_database: D,
     trace: bool,
     state_hashing: bool,
-    collect_events: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -248,7 +243,6 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_database: InMemorySubstateDatabase::standard(),
             trace: true,
             state_hashing: false,
-            collect_events: false,
         }
     }
 }
@@ -261,11 +255,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
 
     pub fn with_state_hashing(mut self) -> Self {
         self.state_hashing = true;
-        self
-    }
-
-    pub fn collect_events(mut self) -> Self {
-        self.collect_events = true;
         self
     }
 
@@ -284,7 +273,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: self.custom_database,
             trace: self.trace,
             state_hashing: self.state_hashing,
-            collect_events: self.collect_events,
         }
     }
 
@@ -295,7 +283,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: database,
             trace: self.trace,
             state_hashing: self.state_hashing,
-            collect_events: self.collect_events,
         }
     }
 
@@ -340,28 +327,23 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             None => bootstrapper.bootstrap_test_default().unwrap(),
         };
 
-        let collected_events = if self.collect_events {
-            let mut events = Vec::new();
+        let mut events = Vec::new();
 
-            events.push(
-                system_bootstrap_receipt
-                    .expect_commit_success()
-                    .application_events
-                    .clone(),
-            );
-            for receipt in data_ingestion_receipts {
-                events.push(receipt.expect_commit_success().application_events.clone());
-            }
-            events.push(
-                wrap_up_receipt
-                    .expect_commit_success()
-                    .application_events
-                    .clone(),
-            );
-            Some(events)
-        } else {
-            None
-        };
+        events.push(
+            system_bootstrap_receipt
+                .expect_commit_success()
+                .application_events
+                .clone(),
+        );
+        for receipt in data_ingestion_receipts {
+            events.push(receipt.expect_commit_success().application_events.clone());
+        }
+        events.push(
+            wrap_up_receipt
+                .expect_commit_success()
+                .application_events
+                .clone(),
+        );
 
         // Note that 0 is not a valid private key
         let next_private_key = 100;
@@ -379,7 +361,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             next_private_key,
             next_transaction_nonce,
             trace,
-            collected_events,
+            collected_events: events,
+            xrd_free_credits_used: false,
         };
 
         let next_epoch = wrap_up_receipt
@@ -402,16 +385,29 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     next_transaction_nonce: u32,
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
-    collected_events: Option<Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>>,
+    collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    xrd_free_credits_used: bool,
 }
 
 #[cfg(feature = "post_run_db_check")]
 impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
     fn drop(&mut self) {
-        let results = self
-            .check_db::<ResourceChecker>()
+        let db_results = self
+            .check_db::<ResourceDatabaseChecker>()
             .expect("Database should be consistent after running test");
-        println!("{:?}", results);
+        println!("{:#?}", db_results);
+
+        let event_results = SystemEventChecker::<ResourceEventChecker>::new()
+            .check_all_events(&self.database, &self.collected_events)
+            .expect("Events should be consistent");
+        println!("{:#?}", event_results);
+
+        // If free credits (xrd from thin air) have been used then reconciliation will fail
+        // due to missing mint events
+        if !self.xrd_free_credits_used {
+            ResourceReconciler::reconcile(&db_results.1, &event_results)
+                .expect("Resource reconciliation failed");
+        }
     }
 }
 
@@ -455,9 +451,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn collected_events(&self) -> &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>> {
-        self.collected_events
-            .as_ref()
-            .expect("Event collection not enabled")
+        self.collected_events.as_ref()
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -1297,6 +1291,14 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.trace);
 
+        if executable
+            .costing_parameters()
+            .free_credit_in_xrd
+            .is_positive()
+        {
+            self.xrd_free_credits_used = true;
+        }
+
         let vm = Vm {
             scrypto_vm: &self.scrypto_vm,
             native_vm: self.native_vm.clone(),
@@ -1314,9 +1316,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates.database_updates);
             }
-            if let Some(events) = &mut self.collected_events {
-                events.push(commit.application_events.clone());
-            }
+
+            self.collected_events
+                .push(commit.application_events.clone());
 
             assert_receipt_substate_changes_can_be_typed(commit);
         }
@@ -2197,6 +2199,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     > {
         let mut checker = SystemDatabaseChecker::<A>::new();
         checker.check_db(&self.database)
+    }
+
+    pub fn check_events<A: ApplicationEventChecker>(
+        &self,
+    ) -> Result<A::ApplicationEventCheckerResults, SystemEventCheckerError> {
+        let mut event_checker = SystemEventChecker::<A>::new();
+        event_checker.check_all_events(&self.database, self.collected_events())
     }
 }
 

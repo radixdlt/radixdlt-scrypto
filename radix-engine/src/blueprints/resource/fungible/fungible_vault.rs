@@ -371,7 +371,7 @@ impl FungibleVaultBlueprint {
 
         Runtime::emit_event(
             api,
-            events::fungible_vault::WithdrawEvent {
+            fungible_vault::WithdrawEvent {
                 amount: taken.amount(),
             },
         )?;

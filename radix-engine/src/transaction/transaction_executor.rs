@@ -734,7 +734,7 @@ where
             events.push((
                 EventTypeIdentifier(
                     Emitter::Method(node_id, ObjectModuleId::Main),
-                    DepositEvent::event_name().to_string(),
+                    DepositEvent::EVENT_NAME.to_string(),
                 ),
                 scrypto_encode(&DepositEvent { amount }).unwrap(),
             ));
@@ -795,7 +795,7 @@ where
             events.push((
                 EventTypeIdentifier(
                     Emitter::Method(vault_id, ObjectModuleId::Main),
-                    PayFeeEvent::event_name().to_string(),
+                    PayFeeEvent::EVENT_NAME.to_string(),
                 ),
                 scrypto_encode(&PayFeeEvent { amount }).unwrap(),
             ));
@@ -912,7 +912,7 @@ where
             events.push((
                 EventTypeIdentifier(
                     Emitter::Method(vault_node_id, ObjectModuleId::Main),
-                    DepositEvent::event_name().to_string(),
+                    DepositEvent::EVENT_NAME.to_string(),
                 ),
                 scrypto_encode(&DepositEvent {
                     amount: total_amount,
