@@ -1,7 +1,7 @@
 use crate::system::checkers::{ResourceDatabaseCheckerResults, ResourceEventCheckerResults};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::{NodeId, ResourceAddress};
-use std::collections::BTreeMap;
+use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug)]
 pub enum ResourceReconciliationError {
