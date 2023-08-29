@@ -177,14 +177,14 @@ pub trait ClientObjectApi<E> {
     fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
-        fields: BTreeMap<FieldIndex, FieldValue>,
+        fields: IndexMap<FieldIndex, FieldValue>,
     ) -> Result<NodeId, E> {
         self.new_object(
             blueprint_ident,
             vec![],
             GenericArgs::default(),
             fields,
-            btreemap![],
+            indexmap![],
         )
     }
 
@@ -194,8 +194,8 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         features: Vec<&str>,
         generic_args: GenericArgs,
-        fields: BTreeMap<FieldIndex, FieldValue>,
-        kv_entries: BTreeMap<CollectionIndex, BTreeMap<Vec<u8>, KVEntry>>,
+        fields: IndexMap<FieldIndex, FieldValue>,
+        kv_entries: IndexMap<CollectionIndex, IndexMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;
 
     /// Drops an owned object, returns the fields of the object
@@ -226,17 +226,17 @@ pub trait ClientObjectApi<E> {
     fn globalize(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<ModuleId, NodeId>,
+        modules: IndexMap<ModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, E>;
 
     fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<ModuleId, NodeId>,
+        modules: IndexMap<ModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
-        inner_object_fields: BTreeMap<u8, FieldValue>,
+        inner_object_fields: IndexMap<u8, FieldValue>,
         event_name: String,
         event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), E>;

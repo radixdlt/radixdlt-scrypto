@@ -32,8 +32,8 @@ extern_blueprint_internal! {
     },
     {
         fn contribute(&mut self, buckets: Vec<Bucket>) -> (Bucket, Vec<Bucket>);
-        fn get_redemption_value(&self, amount_of_pool_units: Decimal) -> BTreeMap<ResourceAddress, Decimal>;
-        fn get_vault_amounts(&self) -> BTreeMap<ResourceAddress, Decimal>;
+        fn get_redemption_value(&self, amount_of_pool_units: Decimal) -> IndexMap<ResourceAddress, Decimal>;
+        fn get_vault_amounts(&self) -> IndexMap<ResourceAddress, Decimal>;
         fn protected_deposit(&mut self, bucket: Bucket);
 
         /// # Warning
@@ -106,8 +106,8 @@ extern_blueprint_internal! {
     },
     {
         fn contribute(&mut self, buckets: (Bucket, Bucket)) -> (Bucket, Option<Bucket>);
-        fn get_redemption_value(&self, amount_of_pool_units: Decimal) -> BTreeMap<ResourceAddress, Decimal>;
-        fn get_vault_amounts(&self) -> BTreeMap<ResourceAddress, Decimal>;
+        fn get_redemption_value(&self, amount_of_pool_units: Decimal) -> IndexMap<ResourceAddress, Decimal>;
+        fn get_vault_amounts(&self) -> IndexMap<ResourceAddress, Decimal>;
         fn protected_deposit(&mut self, bucket: Bucket);
 
         /// # Warning

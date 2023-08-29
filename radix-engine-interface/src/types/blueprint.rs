@@ -45,7 +45,7 @@ pub struct BlueprintInfo {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ObjectType {
     Global {
-        modules: BTreeMap<ModuleId, BlueprintVersion>,
+        modules: IndexMap<ModuleId, BlueprintVersion>,
     },
     Owned,
 }

@@ -121,8 +121,8 @@ pub struct BlueprintDefinition {
     // There is an implicit variant that must be maintained in that the key set in `function_exports`
     // matches that of the `functions` under `interface`. This is currently maintained since the
     // `publish` interface uses `BlueprintDefinitionInit` rather than `BlueprintDefinition`.
-    pub function_exports: BTreeMap<String, PackageExport>,
-    pub hook_exports: BTreeMap<BlueprintHook, PackageExport>,
+    pub function_exports: IndexMap<String, PackageExport>,
+    pub hook_exports: IndexMap<BlueprintHook, PackageExport>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -161,8 +161,8 @@ pub struct BlueprintInterface {
     pub generics: Vec<GenericBound>,
     pub feature_set: BTreeSet<String>,
     pub state: IndexedStateSchema,
-    pub functions: BTreeMap<String, FunctionSchema>,
-    pub events: BTreeMap<String, BlueprintPayloadDef>,
+    pub functions: IndexMap<String, FunctionSchema>,
+    pub events: IndexMap<String, BlueprintPayloadDef>,
 }
 
 impl BlueprintInterface {
@@ -288,7 +288,7 @@ impl IndexedStateSchema {
     pub fn from_schema(
         schema_hash: SchemaHash,
         schema: BlueprintStateSchemaInit,
-        system_mappings: BTreeMap<usize, PartitionNumber>,
+        system_mappings: IndexMap<usize, PartitionNumber>,
     ) -> Self {
         let mut partition_offset = 0u8;
 

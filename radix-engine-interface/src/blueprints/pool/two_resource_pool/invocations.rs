@@ -81,7 +81,7 @@ define_invocation! {
     input: struct {
         amount_of_pool_units: Decimal
     },
-    output: type BTreeMap<ResourceAddress, Decimal>,
+    output: type IndexMap<ResourceAddress, Decimal>,
     manifest_input: struct {
         amount_of_pool_units: Decimal
     }
@@ -91,6 +91,6 @@ define_invocation! {
     blueprint_name: TwoResourcePool,
     function_name: get_vault_amounts,
     input: struct {},
-    output: type BTreeMap<ResourceAddress, Decimal>,
+    output: type IndexMap<ResourceAddress, Decimal>,
     manifest_input: struct {}
 }

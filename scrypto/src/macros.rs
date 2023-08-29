@@ -451,14 +451,14 @@ macro_rules! enable_method_auth {
         };
 
         fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
-            let mut methods: BTreeMap<MethodKey, MethodAccessibility> = BTreeMap::new();
+            let mut methods: IndexMap<MethodKey, MethodAccessibility> = index_map_new();
             main_accessibility!(
                 methods,
                 Methods,
                 $($method => $accessibility $(: [$($allow_role),+])?;)*
             );
 
-            let mut roles: BTreeMap<RoleKey, RoleList> = BTreeMap::new();
+            let mut roles: IndexMap<RoleKey, RoleList> = index_map_new();
             $(
                 internal_add_role!(roles, $role => updatable_by: [$($updaters),*]);
             )*
@@ -478,7 +478,7 @@ macro_rules! enable_method_auth {
         }
     ) => (
         fn method_auth_template() -> scrypto::blueprints::package::MethodAuthTemplate {
-            let mut methods: BTreeMap<MethodKey, MethodAccessibility> = BTreeMap::new();
+            let mut methods: IndexMap<MethodKey, MethodAccessibility> = index_map_new();
             main_accessibility!(
                 methods,
                 Methods,
@@ -487,7 +487,7 @@ macro_rules! enable_method_auth {
 
             let roles = scrypto::blueprints::package::StaticRoleDefinition {
                 methods,
-                roles: scrypto::blueprints::package::RoleSpecification::Normal(BTreeMap::new()),
+                roles: scrypto::blueprints::package::RoleSpecification::Normal(index_map_new()),
             };
 
             scrypto::blueprints::package::MethodAuthTemplate::StaticRoleDefinition(roles)

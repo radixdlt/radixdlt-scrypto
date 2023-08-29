@@ -84,7 +84,7 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
     fn instantiate(self) -> Owned<Self> {
         let node_id = ScryptoVmV1Api::object_new(
             Self::BLUEPRINT_NAME,
-            btreemap![0u8 => FieldValue::new(&self)],
+            indexmap![0u8 => FieldValue::new(&self)],
         );
 
         let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
@@ -269,7 +269,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         mut self,
         royalties: (C::Royalties, RoleAssignmentInit),
     ) -> Self {
-        let mut royalty_amounts = BTreeMap::new();
+        let mut royalty_amounts = index_map_new();
         for (method, (royalty, updatable)) in royalties.0.to_mapping() {
             royalty_amounts.insert(method, (royalty, !updatable));
         }
@@ -290,8 +290,8 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     pub fn globalize(mut self) -> Global<C> {
-        let mut modules = BTreeMap::new();
-        let mut roles = BTreeMap::new();
+        let mut modules = index_map_new();
+        let mut roles = index_map_new();
 
         // Main
         {

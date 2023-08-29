@@ -1,6 +1,7 @@
 use crate::modules::HasRoleAssignment;
 use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
+use core::ops::Deref;
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
 };
@@ -13,10 +14,7 @@ use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, Scry
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::ops::Deref;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use sbor::*;
 use scrypto::component::HasStub;
 
@@ -209,7 +207,7 @@ impl ResourceManagerStub {
         id: &NonFungibleLocalId,
         data: T,
     ) -> Bucket {
-        let mut entries = BTreeMap::new();
+        let mut entries = index_map_new();
         let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
         entries.insert(id.clone(), (value,));
         self.call(
