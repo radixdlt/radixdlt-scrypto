@@ -12,6 +12,7 @@ use radix_engine_common::types::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_store_interface::db_key_mapper::*;
 
+#[cfg(feature = "std")]
 #[test]
 fn panics_at_the_system_layer_or_below_can_be_caught() {
     // Arrange
