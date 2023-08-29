@@ -4,22 +4,22 @@ use radix_engine_common::{ScryptoEvent, ScryptoSbor};
 use radix_engine_interface::blueprints::account::*;
 use sbor::rust::prelude::*;
 
-#[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq)]
 pub enum WithdrawEvent {
     Fungible(ResourceAddress, Decimal),
-    NonFungible(ResourceAddress, BTreeSet<NonFungibleLocalId>),
+    NonFungible(ResourceAddress, IndexSet<NonFungibleLocalId>),
 }
 
-#[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq)]
 pub enum DepositEvent {
     Fungible(ResourceAddress, Decimal),
-    NonFungible(ResourceAddress, BTreeSet<NonFungibleLocalId>),
+    NonFungible(ResourceAddress, IndexSet<NonFungibleLocalId>),
 }
 
-#[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq)]
 pub enum RejectedDepositEvent {
     Fungible(ResourceAddress, Decimal),
-    NonFungible(ResourceAddress, BTreeSet<NonFungibleLocalId>),
+    NonFungible(ResourceAddress, IndexSet<NonFungibleLocalId>),
 }
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

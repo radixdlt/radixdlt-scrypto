@@ -76,7 +76,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    &indexset!(NonFungibleLocalId::integer(1)),
                 )
                 .update_role(
                     token_address,
@@ -104,7 +104,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    &indexset!(NonFungibleLocalId::integer(1)),
                 )
                 .update_role(
                     token_address,
@@ -132,7 +132,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                     .create_proof_from_account_of_non_fungibles(
                         account,
                         admin_auth,
-                        &btreeset!(NonFungibleLocalId::integer(1)),
+                        &indexset!(NonFungibleLocalId::integer(1)),
                     )
                     .update_role(
                         token_address,
@@ -154,7 +154,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    &indexset!(NonFungibleLocalId::integer(1)),
                 )
                 .update_role(
                     token_address,
@@ -174,7 +174,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    &indexset!(NonFungibleLocalId::integer(1)),
                 )
                 .update_role(
                     token_address,

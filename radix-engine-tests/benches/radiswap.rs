@@ -82,13 +82,13 @@ fn bench_radiswap(c: &mut Criterion) {
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     btc_mint_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    &indexset!(NonFungibleLocalId::integer(1)),
                 )
                 .mint_fungible(btc, btc_init_amount)
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     eth_mint_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    &indexset!(NonFungibleLocalId::integer(1)),
                 )
                 .mint_fungible(eth, eth_init_amount)
                 .take_all_from_worktop(btc, "liquidity_part_1")
@@ -121,13 +121,13 @@ fn bench_radiswap(c: &mut Criterion) {
                     .create_proof_from_account_of_non_fungibles(
                         account,
                         btc_mint_auth,
-                        &btreeset!(NonFungibleLocalId::integer(1)),
+                        &indexset!(NonFungibleLocalId::integer(1)),
                     )
                     .mint_fungible(btc, dec!("100"))
                     .create_proof_from_account_of_non_fungibles(
                         account,
                         eth_mint_auth,
-                        &btreeset!(NonFungibleLocalId::integer(1)),
+                        &indexset!(NonFungibleLocalId::integer(1)),
                     )
                     .mint_fungible(eth, dec!("100"))
                     .try_deposit_batch_or_abort(account2, None)

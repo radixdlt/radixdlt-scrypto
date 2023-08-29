@@ -25,7 +25,7 @@ impl TransactionProcessorNativePackage {
 
         let fields = Vec::new();
 
-        let mut functions = BTreeMap::new();
+        let mut functions = IndexMap::new();
         functions.insert(
             TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
             FunctionSchemaInit {
@@ -41,12 +41,12 @@ impl TransactionProcessorNativePackage {
         );
 
         let schema = generate_full_schema(aggregator);
-        let blueprints = btreemap!(
+        let blueprints = indexmap!(
             TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 is_transient: true,
-                feature_set: btreeset!(),
-                dependencies: btreeset!(),
+                feature_set: indexset!(),
+                dependencies: indexset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,

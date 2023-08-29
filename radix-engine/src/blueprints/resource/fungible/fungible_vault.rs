@@ -54,7 +54,7 @@ impl FungibleVaultBlueprint {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let state = FungibleVaultStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = BTreeMap::new();
+        let mut functions = IndexMap::new();
         functions.insert(
             VAULT_TAKE_IDENT.to_string(),
             FunctionSchemaInit {
@@ -246,7 +246,7 @@ impl FungibleVaultBlueprint {
                 outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             },
             is_transient: false,
-            dependencies: btreeset!(),
+            dependencies: indexset!(),
             feature_set: FungibleVaultFeatureSet::all_features(),
             schema: BlueprintSchemaInit {
                 generics: vec![],
@@ -562,7 +562,7 @@ impl FungibleVaultBlueprint {
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof_evidence = FungibleProofSubstate::new(
             amount,
-            btreemap!(
+            indexmap!(
                 LocalRef::Vault(Reference(receiver.clone().into())) => amount
             ),
         )
@@ -572,7 +572,7 @@ impl FungibleVaultBlueprint {
 
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
-            btreemap! {
+            indexmap! {
                 0u8 => FieldValue::new(&proof_info),
                 1u8 => FieldValue::new(&proof_evidence),
             },

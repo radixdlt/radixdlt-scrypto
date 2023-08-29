@@ -223,7 +223,7 @@ fn can_mint_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &btreeset!(NonFungibleLocalId::integer(1)),
+            &indexset!(NonFungibleLocalId::integer(1)),
         )
         .mint_fungible(resource, 1)
         .try_deposit_batch_or_abort(account, None)
@@ -257,7 +257,7 @@ fn cannot_mint_in_component_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &btreeset!(NonFungibleLocalId::integer(1)),
+            &indexset!(NonFungibleLocalId::integer(1)),
         )
         .call_method(component, "mint", manifest_args!(resource))
         .try_deposit_batch_or_abort(account, None)
@@ -298,7 +298,7 @@ fn can_burn_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &btreeset!(NonFungibleLocalId::integer(1)),
+            &indexset!(NonFungibleLocalId::integer(1)),
         )
         .mint_fungible(resource, 1)
         .burn_all_from_worktop(resource)
@@ -332,7 +332,7 @@ fn cannot_burn_in_component_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &btreeset!(NonFungibleLocalId::integer(1)),
+            &indexset!(NonFungibleLocalId::integer(1)),
         )
         .mint_fungible(resource, 1)
         .take_all_from_worktop(resource, "to_burn")

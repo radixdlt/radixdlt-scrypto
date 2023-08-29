@@ -64,7 +64,7 @@ pub enum WorktopChange {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceSpecifier {
     Amount(ResourceAddress, Decimal),
-    Ids(ResourceAddress, BTreeSet<NonFungibleLocalId>),
+    Ids(ResourceAddress, IndexSet<NonFungibleLocalId>),
 }
 
 impl From<&BucketSnapshot> for ResourceSpecifier {
@@ -100,7 +100,7 @@ pub enum BucketSnapshot {
     },
     NonFungible {
         resource_address: ResourceAddress,
-        liquid: BTreeSet<NonFungibleLocalId>,
+        liquid: IndexSet<NonFungibleLocalId>,
     },
 }
 
@@ -131,7 +131,7 @@ pub enum ProofSnapshot {
     },
     NonFungible {
         resource_address: ResourceAddress,
-        total_locked: BTreeSet<NonFungibleLocalId>,
+        total_locked: IndexSet<NonFungibleLocalId>,
     },
 }
 

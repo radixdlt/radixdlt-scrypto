@@ -39,8 +39,8 @@ mod vault_proof {
 
         pub fn create_clone_drop_vault_proof_by_ids(
             &self,
-            non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
-            proof_non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+            non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
+            proof_non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
         ) {
             let proof = self
                 .vault
@@ -124,7 +124,7 @@ mod vault_proof {
         pub fn compose_vault_and_bucket_proof_by_ids(
             &mut self,
             bucket: Bucket,
-            ids: BTreeSet<NonFungibleLocalId>,
+            ids: IndexSet<NonFungibleLocalId>,
         ) {
             let vault_fungible_ids = self.vault.as_non_fungible().non_fungible_local_ids(100);
             self.vault

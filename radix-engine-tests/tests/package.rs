@@ -148,14 +148,14 @@ fn test_basic_package() {
 fn test_basic_package_missing_export() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let mut blueprints = BTreeMap::new();
+    let mut blueprints = IndexMap::new();
     blueprints.insert(
         "Test".to_string(),
         BlueprintDefinitionInit {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
-            feature_set: btreeset!(),
-            dependencies: btreeset!(),
+            feature_set: indexset!(),
+            dependencies: indexset!(),
 
             schema: BlueprintSchemaInit {
                 generics: vec![],
@@ -172,7 +172,7 @@ fn test_basic_package_missing_export() {
                 },
                 events: BlueprintEventSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit {
-                    functions: btreemap!(
+                    functions: indexmap!(
                         "f".to_string() => FunctionSchemaInit {
                             receiver: Option::None,
                             input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
@@ -367,13 +367,13 @@ fn name_validation_blueprint() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
 
-    definition.blueprints = BTreeMap::from([(
+    definition.blueprints = IndexMap::from([(
         String::from("wrong_bluepint_name_*"),
         definition
             .blueprints
-            .first_entry()
+            .values_mut()
+            .next()
             .unwrap()
-            .get()
             .to_owned(),
     )]);
 
@@ -404,9 +404,9 @@ fn name_validation_feature_set() {
 
     definition
         .blueprints
-        .first_entry()
+        .values_mut()
+        .next()
         .unwrap()
-        .get_mut()
         .feature_set
         .insert(String::from("wrong-feature"));
 
@@ -438,9 +438,9 @@ fn name_validation_function() {
 
     definition
         .blueprints
-        .first_entry()
+        .values_mut()
+        .next()
         .unwrap()
-        .get_mut()
         .schema
         .functions
         .functions
@@ -480,9 +480,11 @@ fn well_known_types_in_schema_are_validated() {
 
     let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
 
-    let mut blueprint = definition.blueprints.first_entry().unwrap();
-    let method_definition = blueprint
-        .get_mut()
+    let method_definition = definition
+        .blueprints
+        .values_mut()
+        .next()
+        .unwrap()
         .schema
         .functions
         .functions

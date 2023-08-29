@@ -22,7 +22,7 @@ pub fn globalize_resource_manager<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let roles = btreemap!(
+    let roles = indexmap!(
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,
     );
@@ -33,7 +33,7 @@ where
 
     let address = api.globalize(
         object_id,
-        btreemap!(
+        indexmap!(
             ModuleId::RoleAssignment => role_assignment.0,
             ModuleId::Metadata => metadata.0,
         ),
@@ -55,14 +55,14 @@ pub fn globalize_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let roles = btreemap!(
+    let roles = indexmap!(
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,
     );
     let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
-    let modules = btreemap!(
+    let modules = indexmap!(
         ModuleId::RoleAssignment => role_assignment.0,
         ModuleId::Metadata => metadata.0,
     );
@@ -72,7 +72,7 @@ where
         modules,
         resource_address_reservation,
         FUNGIBLE_BUCKET_BLUEPRINT,
-        btreemap! {
+        indexmap! {
             0u8 => FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
             1u8 => FieldValue::new(&LockedFungibleResource::default()),
         },
@@ -95,13 +95,13 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
     resource_address_reservation: GlobalAddressReservation,
     main_roles: RoleAssignmentInit,
     metadata: ModuleConfig<MetadataInit>,
-    ids: BTreeSet<NonFungibleLocalId>,
+    ids: IndexSet<NonFungibleLocalId>,
     api: &mut Y,
 ) -> Result<(ResourceAddress, Bucket), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
-    let roles = btreemap!(
+    let roles = indexmap!(
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,
     );
@@ -111,13 +111,13 @@ where
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
         object_id,
-        btreemap!(
+        indexmap!(
             ModuleId::RoleAssignment => role_assignment.0,
             ModuleId::Metadata => metadata.0,
         ),
         resource_address_reservation,
         NON_FUNGIBLE_BUCKET_BLUEPRINT,
-        btreemap! {
+        indexmap! {
             0u8 => FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
             1u8 => FieldValue::new(&LockedNonFungibleResource::default()),
         },

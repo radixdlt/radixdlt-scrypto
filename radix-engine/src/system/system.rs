@@ -113,11 +113,11 @@ where
         blueprint_id: &BlueprintId,
         blueprint_interface: &BlueprintInterface,
         outer_obj_info: OuterObjectInfo,
-        features: BTreeSet<String>,
-        outer_blueprint_features: &BTreeSet<String>,
+        features: IndexSet<String>,
+        outer_blueprint_features: &IndexSet<String>,
         generic_args: GenericArgs,
-        fields: BTreeMap<u8, FieldValue>,
-        mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+        fields: IndexMap<u8, FieldValue>,
+        mut kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>,
     ) -> Result<(BlueprintInfo, NodeSubstates), RuntimeError> {
         // Validate generic arguments
         let (generic_substitutions, additional_schemas) = {
@@ -271,7 +271,7 @@ where
             for (collection_index, ..) in blueprint_interface.state.collections.iter().enumerate() {
                 let index = collection_index as u8;
                 if !kv_entries.contains_key(&index) {
-                    kv_entries.insert(index, BTreeMap::new());
+                    kv_entries.insert(index, IndexMap::new());
                 }
             }
         }
@@ -423,13 +423,13 @@ where
         features: Vec<&str>,
         instance_context: Option<InstanceContext>,
         generic_args: GenericArgs,
-        fields: BTreeMap<u8, FieldValue>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+        fields: IndexMap<u8, FieldValue>,
+        kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let blueprint_interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
         let expected_outer_blueprint = blueprint_interface.blueprint_type.clone();
 
-        let object_features: BTreeSet<String> =
+        let object_features: IndexSet<String> =
             features.into_iter().map(|s| s.to_string()).collect();
 
         let (outer_obj_info, outer_object_features) =
@@ -472,7 +472,7 @@ where
                     }
                 }
 
-                (OuterObjectInfo::None, BTreeSet::new())
+                (OuterObjectInfo::None, IndexSet::new())
             };
 
         let (blueprint_info, mut node_substates) = self.validate_new_object(
@@ -634,7 +634,7 @@ where
                 blueprint_id: module_id.static_blueprint(),
                 blueprint_version: BlueprintVersion::default(),
                 outer_obj_info: OuterObjectInfo::None,
-                features: BTreeSet::default(),
+                features: indexset!(),
                 generic_substitutions: vec![],
             },
         };
@@ -651,7 +651,7 @@ where
                     blueprint_id: actor.blueprint_id.clone(),
                     blueprint_version: BlueprintVersion::default(),
                     outer_obj_info: OuterObjectInfo::None,
-                    features: btreeset!(),
+                    features: indexset!(),
                     generic_substitutions: vec![],
                 },
                 meta: SchemaValidationMeta::Blueprint,
@@ -661,7 +661,7 @@ where
                     blueprint_id: actor.blueprint_id.clone(),
                     blueprint_version: BlueprintVersion::default(),
                     outer_obj_info: OuterObjectInfo::None,
-                    features: btreeset!(),
+                    features: indexset!(),
                     generic_substitutions: vec![],
                 },
                 meta: SchemaValidationMeta::Blueprint,
@@ -840,7 +840,7 @@ where
     fn globalize_with_address_internal(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<ModuleId, NodeId>,
+        modules: IndexMap<ModuleId, NodeId>,
         global_address_reservation: GlobalAddressReservation,
     ) -> Result<GlobalAddress, RuntimeError> {
         // Check global address reservation
@@ -939,7 +939,7 @@ where
 
         // Update Object Info
         {
-            let mut module_versions = BTreeMap::new();
+            let mut module_versions = IndexMap::new();
             for module_id in modules.keys() {
                 module_versions.insert(module_id.clone(), BlueprintVersion::default());
             }
@@ -1174,8 +1174,8 @@ where
         blueprint_ident: &str,
         features: Vec<&str>,
         generic_args: GenericArgs,
-        fields: BTreeMap<u8, FieldValue>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+        fields: IndexMap<u8, FieldValue>,
+        kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.current_actor();
         let package_address = actor
@@ -1239,7 +1239,7 @@ where
     fn globalize(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<ModuleId, NodeId>,
+        modules: IndexMap<ModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, RuntimeError> {
         // TODO: optimize by skipping address allocation
@@ -1262,10 +1262,10 @@ where
     fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         node_id: NodeId,
-        modules: BTreeMap<ModuleId, NodeId>,
+        modules: IndexMap<ModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
-        inner_object_fields: BTreeMap<u8, FieldValue>,
+        inner_object_fields: IndexMap<u8, FieldValue>,
         event_name: String,
         event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
@@ -1285,7 +1285,7 @@ where
             }),
             GenericArgs::default(),
             inner_object_fields,
-            btreemap!(),
+            indexmap!(),
         )?;
 
         self.emit_event_internal(

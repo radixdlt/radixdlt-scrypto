@@ -221,11 +221,11 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                 .withdraw_non_fungibles_from_account(
                                     config.main_account.address,
                                     state.integer_non_fungible_resource.unwrap(),
-                                    &btreeset!(NonFungibleLocalId::integer(110)),
+                                    &indexset!(NonFungibleLocalId::integer(110)),
                                 )
                                 .take_non_fungibles_from_worktop(
                                     state.integer_non_fungible_resource.unwrap(),
-                                    &btreeset!(NonFungibleLocalId::integer(110)),
+                                    &indexset!(NonFungibleLocalId::integer(110)),
                                     "non_fungibles_to_burn",
                                 )
                                 .burn_resource("non_fungibles_to_burn")
@@ -283,7 +283,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         builder
                             .recall_non_fungibles(
                                 state.vault1.unwrap(),
-                                &btreeset!(NonFungibleLocalId::integer(120)),
+                                &indexset!(NonFungibleLocalId::integer(120)),
                             )
                             .try_deposit_batch_or_abort(config.occasional_recipient_account.address, None)
                     },
@@ -328,7 +328,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                             builder
                                 .recall_non_fungibles(
                                     state.vault1.unwrap(),
-                                    &btreeset!(NonFungibleLocalId::integer(130)),
+                                    &indexset!(NonFungibleLocalId::integer(130)),
                                 )
                                 .try_deposit_batch_or_abort(config.main_account.address, None)
                         },
@@ -445,7 +445,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                 .withdraw_non_fungibles_from_account(
                                     config.main_account.address,
                                     state.integer_non_fungible_resource_with_metadata_standard_data.unwrap(),
-                                    &btreeset!(
+                                    &indexset!(
                                         NonFungibleLocalId::integer(4),
                                         NonFungibleLocalId::integer(8),
                                     )

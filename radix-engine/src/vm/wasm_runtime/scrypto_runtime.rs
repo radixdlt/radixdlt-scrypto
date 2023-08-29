@@ -16,7 +16,7 @@ where
     Y: ClientApi<RuntimeError>,
 {
     api: &'y mut Y,
-    buffers: BTreeMap<BufferId, Vec<u8>>,
+    buffers: IndexMap<BufferId, Vec<u8>>,
     next_buffer_id: BufferId,
     package_address: PackageAddress,
     export_name: String,
@@ -30,7 +30,7 @@ where
     pub fn new(api: &'y mut Y, package_address: PackageAddress, export_name: String) -> Self {
         ScryptoRuntime {
             api,
-            buffers: BTreeMap::new(),
+            buffers: IndexMap::new(),
             next_buffer_id: 0,
             package_address,
             export_name,
@@ -155,7 +155,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
-        let object_states = scrypto_decode::<BTreeMap<u8, FieldValue>>(&object_states)
+        let object_states = scrypto_decode::<IndexMap<u8, FieldValue>>(&object_states)
             .map_err(WasmRuntimeError::InvalidObjectStates)?;
 
         let component_id = self
@@ -206,7 +206,7 @@ where
             TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let modules = scrypto_decode::<BTreeMap<ModuleId, NodeId>>(&modules)
+        let modules = scrypto_decode::<IndexMap<ModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
         let address_reservation =
             scrypto_decode::<Option<GlobalAddressReservation>>(&address_reservation)

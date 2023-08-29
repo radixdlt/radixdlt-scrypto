@@ -430,7 +430,7 @@ mod resource_types {
                     ])
                     .as_non_fungible();
             let proof =
-                bucket.create_proof_of_non_fungibles(&btreeset!(NonFungibleLocalId::integer(0)));
+                bucket.create_proof_of_non_fungibles(&indexset!(NonFungibleLocalId::integer(0)));
             let vault = NonFungibleVault::with_bucket(bucket.take(1));
 
             (bucket, proof, vault)

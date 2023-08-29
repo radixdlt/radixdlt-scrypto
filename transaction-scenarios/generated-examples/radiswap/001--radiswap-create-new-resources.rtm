@@ -27,30 +27,6 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     )
     Tuple(
         Map<String, Tuple>(
-            "description" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "A peer to peer decentralized proof of work network."
-                    )
-                ),
-                true
-            ),
-            "icon_url" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "https://www.example.com/"
-                    )
-                ),
-                true
-            ),
-            "info_url" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "https://www.example.com/"
-                    )
-                ),
-                true
-            ),
             "name" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
@@ -67,6 +43,14 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 ),
                 true
             ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "A peer to peer decentralized proof of work network."
+                    )
+                ),
+                true
+            ),
             "tags" => Tuple(
                 Enum<1u8>(
                     Enum<128u8>(
@@ -74,6 +58,22 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                             "p2p",
                             "blockchain"
                         )
+                    )
+                ),
+                true
+            ),
+            "icon_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
+                    )
+                ),
+                true
+            ),
+            "info_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
                     )
                 ),
                 true
@@ -107,30 +107,6 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     )
     Tuple(
         Map<String, Tuple>(
-            "description" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "The native token of the Ethereum blockchain"
-                    )
-                ),
-                true
-            ),
-            "icon_url" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "https://www.example.com/"
-                    )
-                ),
-                true
-            ),
-            "info_url" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "https://www.example.com/"
-                    )
-                ),
-                true
-            ),
             "name" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
@@ -147,6 +123,14 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 ),
                 true
             ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "The native token of the Ethereum blockchain"
+                    )
+                ),
+                true
+            ),
             "tags" => Tuple(
                 Enum<1u8>(
                     Enum<128u8>(
@@ -155,6 +139,22 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                             "blockchain",
                             "gas"
                         )
+                    )
+                ),
+                true
+            ),
+            "icon_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
+                    )
+                ),
+                true
+            ),
+            "info_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
                     )
                 ),
                 true
@@ -188,30 +188,6 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     )
     Tuple(
         Map<String, Tuple>(
-            "description" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "The native token of the Ethereum Classic blockchain"
-                    )
-                ),
-                true
-            ),
-            "icon_url" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "https://www.example.com/"
-                    )
-                ),
-                true
-            ),
-            "info_url" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "https://www.example.com/"
-                    )
-                ),
-                true
-            ),
             "name" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
@@ -228,6 +204,14 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 ),
                 true
             ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "The native token of the Ethereum Classic blockchain"
+                    )
+                ),
+                true
+            ),
             "tags" => Tuple(
                 Enum<1u8>(
                     Enum<128u8>(
@@ -236,6 +220,22 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                             "blockchain",
                             "gas"
                         )
+                    )
+                ),
+                true
+            ),
+            "icon_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
+                    )
+                ),
+                true
+            ),
+            "info_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
                     )
                 ),
                 true

@@ -96,7 +96,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
 pub fn compose_proof_by_ids<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
-    ids: Option<BTreeSet<NonFungibleLocalId>>,
+    ids: Option<IndexSet<NonFungibleLocalId>>,
     api: &mut Y,
 ) -> Result<ComposedProof, RuntimeError> {
     let resource_type = ResourceManager(resource_address).resource_type(api)?;
@@ -132,9 +132,9 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
     proofs: &[Proof],
     resource_address: ResourceAddress,
     api: &mut Y,
-) -> Result<(Decimal, BTreeMap<LocalRef, Decimal>), RuntimeError> {
+) -> Result<(Decimal, IndexMap<LocalRef, Decimal>), RuntimeError> {
     // calculate the max locked amount of each container
-    let mut max = BTreeMap::<LocalRef, Decimal>::new();
+    let mut max = IndexMap::<LocalRef, Decimal>::new();
     for proof in proofs {
         let blueprint_id = api.get_blueprint_id(proof.0.as_node_id())?;
 
@@ -177,14 +177,14 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
     api: &mut Y,
 ) -> Result<
     (
-        BTreeSet<NonFungibleLocalId>,
-        NonIterMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
+        IndexSet<NonFungibleLocalId>,
+        NonIterMap<LocalRef, IndexSet<NonFungibleLocalId>>,
     ),
     RuntimeError,
 > {
-    let mut total = BTreeSet::<NonFungibleLocalId>::new();
+    let mut total = IndexSet::<NonFungibleLocalId>::new();
     // calculate the max locked non-fungibles of each container
-    let mut per_container = NonIterMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
+    let mut per_container = NonIterMap::<LocalRef, IndexSet<NonFungibleLocalId>>::new();
     for proof in proofs {
         let blueprint_id = api.get_blueprint_id(proof.0.as_node_id())?;
         if blueprint_id.blueprint_name.eq(NON_FUNGIBLE_PROOF_BLUEPRINT) {
@@ -232,7 +232,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
         ));
     }
 
-    let mut evidence = BTreeMap::new();
+    let mut evidence = IndexMap::new();
     let mut remaining = amount.clone();
     let mut lock_handles = Vec::new();
     'outer: for proof in proofs {
@@ -278,7 +278,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
 enum NonFungiblesSpecification {
     All,
     Some(usize),
-    Exact(BTreeSet<NonFungibleLocalId>),
+    Exact(IndexSet<NonFungibleLocalId>),
 }
 
 fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
@@ -291,7 +291,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
     let ids = match ids {
         NonFungiblesSpecification::All => max_locked.clone(),
         NonFungiblesSpecification::Some(n) => {
-            let ids: BTreeSet<NonFungibleLocalId> = max_locked.iter().cloned().take(n).collect();
+            let ids: IndexSet<NonFungibleLocalId> = max_locked.iter().cloned().take(n).collect();
             if ids.len() != n {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::AuthZoneError(AuthZoneError::ComposeProofError(
@@ -321,7 +321,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
         ));
     }
 
-    let mut evidence = BTreeMap::new();
+    let mut evidence = IndexMap::new();
     let mut remaining = ids.clone();
     let mut lock_handles = Vec::new();
     'outer: for proof in proofs {

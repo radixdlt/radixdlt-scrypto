@@ -545,7 +545,7 @@ fn test_mint_update_and_withdraw() {
         .create_proof_from_account_of_non_fungibles(
             account,
             nft_resource_address,
-            &btreeset!(NonFungibleLocalId::integer(0)),
+            &indexset!(NonFungibleLocalId::integer(0)),
         )
         .take_all_from_worktop(badge_resource_address, "badge")
         .pop_from_auth_zone("proof")
@@ -563,7 +563,7 @@ fn test_mint_update_and_withdraw() {
     );
     receipt.expect_commit_success();
 
-    let mut nfid_list = BTreeSet::new();
+    let mut nfid_list = IndexSet::new();
     nfid_list.insert(NonFungibleLocalId::integer(0)); // ID from NonFungibleTest::create_non_fungible_mutable
 
     // transfer

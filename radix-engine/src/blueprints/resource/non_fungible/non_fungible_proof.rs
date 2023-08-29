@@ -8,15 +8,15 @@ use radix_engine_interface::blueprints::resource::*;
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct NonFungibleProofSubstate {
     /// The total locked amount or non-fungible ids.
-    pub total_locked: BTreeSet<NonFungibleLocalId>,
+    pub total_locked: IndexSet<NonFungibleLocalId>,
     /// The supporting containers.
-    pub evidence: BTreeMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
+    pub evidence: IndexMap<LocalRef, IndexSet<NonFungibleLocalId>>,
 }
 
 impl NonFungibleProofSubstate {
     pub fn new(
-        total_locked: BTreeSet<NonFungibleLocalId>,
-        evidence: BTreeMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
+        total_locked: IndexSet<NonFungibleLocalId>,
+        evidence: IndexMap<LocalRef, IndexSet<NonFungibleLocalId>>,
     ) -> Result<NonFungibleProofSubstate, ProofError> {
         if total_locked.is_empty() {
             return Err(ProofError::EmptyProofNotAllowed);
@@ -66,7 +66,7 @@ impl NonFungibleProofSubstate {
         self.non_fungible_local_ids().len().into()
     }
 
-    pub fn non_fungible_local_ids(&self) -> &BTreeSet<NonFungibleLocalId> {
+    pub fn non_fungible_local_ids(&self) -> &IndexSet<NonFungibleLocalId> {
         &self.total_locked
     }
 }
@@ -100,7 +100,7 @@ impl NonFungibleProofBlueprint {
 
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
-            btreemap! {
+            indexmap! {
                 0u8 => FieldValue::new(&moveable),
                 1u8 => FieldValue::new(&clone),
             },
@@ -129,7 +129,7 @@ impl NonFungibleProofBlueprint {
 
     pub(crate) fn get_local_ids<Y>(
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

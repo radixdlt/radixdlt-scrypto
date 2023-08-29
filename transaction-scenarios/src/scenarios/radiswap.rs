@@ -453,7 +453,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 .create_proof_from_account_of_non_fungibles(
                                     config.radiswap_dapp_definition_account.address,
                                     state.owner_badge.get()?.resource_address(),
-                                    &btreeset!(
+                                    &indexset!(
                                         state.owner_badge.get()?.local_id().clone()
                                     ),
                                 )

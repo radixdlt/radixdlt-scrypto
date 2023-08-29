@@ -54,7 +54,7 @@ impl OneResourcePoolBlueprint {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let feature_set = OneResourcePoolFeatureSet::all_features();
         let state = OneResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
-        let mut functions = BTreeMap::new();
+        let mut functions = IndexMap::new();
 
         functions.insert(
             ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
@@ -178,7 +178,7 @@ impl OneResourcePoolBlueprint {
         BlueprintDefinitionInit {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
-            dependencies: btreeset!(),
+            dependencies: indexset!(),
             feature_set,
 
             schema: BlueprintSchemaInit {
@@ -270,7 +270,7 @@ impl OneResourcePoolBlueprint {
 
         let role_assignment = RoleAssignment::create(
             owner_role,
-            btreemap! {
+            indexmap! {
                 ObjectModuleId::Main => roles_init! {
                     RoleKey { key: POOL_MANAGER_ROLE.to_owned() } => pool_manager_rule;
                 }
@@ -295,7 +295,7 @@ impl OneResourcePoolBlueprint {
             };
             api.new_simple_object(
                 ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
-                btreemap! {
+                indexmap! {
                     OneResourcePoolField::State.field_index() => FieldValue::immutable(&OneResourcePoolStateFieldPayload::from_content_source(substate)),
                 },
             )?
@@ -303,7 +303,7 @@ impl OneResourcePoolBlueprint {
 
         api.globalize(
             object_id,
-            btreemap!(
+            indexmap!(
                 ModuleId::RoleAssignment => role_assignment.0,
                 ModuleId::Metadata => metadata.0,
                 ModuleId::Royalty => royalty.0,

@@ -119,14 +119,14 @@ pub enum InvalidNonFungibleSchema {
 fn create_non_fungibles<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
-    entries: BTreeMap<NonFungibleLocalId, ScryptoValue>,
+    entries: IndexMap<NonFungibleLocalId, ScryptoValue>,
     check_non_existence: bool,
     api: &mut Y,
 ) -> Result<(), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
-    let mut ids = BTreeSet::new();
+    let mut ids = IndexSet::new();
     for (non_fungible_local_id, value) in entries {
         if non_fungible_local_id.id_type() != id_type {
             return Err(RuntimeError::ApplicationError(
@@ -182,7 +182,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let state = NonFungibleResourceManagerStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = BTreeMap::new();
+        let mut functions = IndexMap::new();
         functions.insert(
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {
@@ -439,7 +439,7 @@ impl NonFungibleResourceManagerBlueprint {
             blueprint_type: BlueprintType::Outer,
             is_transient: false,
             feature_set: NonFungibleResourceManagerFeatureSet::all_features(),
-            dependencies: btreeset!(),
+            dependencies: indexset!(),
             schema: BlueprintSchemaInit {
                 generics: vec![GenericBound::Any],
                 schema,
@@ -621,7 +621,7 @@ impl NonFungibleResourceManagerBlueprint {
         let (mut features, roles) = to_features_and_roles(resource_roles);
         features.track_total_supply = track_total_supply;
 
-        let mut fields = btreemap! {
+        let mut fields = indexmap! {
             NonFungibleResourceManagerField::IdType.into() => FieldValue::immutable(
                     &NonFungibleResourceManagerIdTypeFieldPayload::from_content_source(id_type),
                 ),
@@ -658,7 +658,7 @@ impl NonFungibleResourceManagerBlueprint {
             features.feature_names_str(),
             generic_args,
             fields,
-            btreemap!(),
+            indexmap!(),
         )?;
 
         globalize_resource_manager(
@@ -676,7 +676,7 @@ impl NonFungibleResourceManagerBlueprint {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
+        entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
         resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
@@ -715,7 +715,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let ids = entries.keys().cloned().collect();
 
-        let mut non_fungibles = BTreeMap::new();
+        let mut non_fungibles = IndexMap::new();
         for (id, (value,)) in entries {
             if id.id_type() != id_type {
                 return Err(RuntimeError::ApplicationError(
@@ -748,7 +748,7 @@ impl NonFungibleResourceManagerBlueprint {
         let (mut features, roles) = to_features_and_roles(resource_roles);
         features.track_total_supply = track_total_supply;
 
-        let mut fields = btreemap! {
+        let mut fields = indexmap! {
             NonFungibleResourceManagerField::IdType.into() => FieldValue::immutable(&NonFungibleResourceManagerIdTypeFieldPayload::from_content_source(id_type)),
             NonFungibleResourceManagerField::MutableFields.into() => FieldValue::immutable(&NonFungibleResourceManagerMutableFieldsFieldPayload::from_content_source(mutable_fields)),
         };
@@ -775,7 +775,7 @@ impl NonFungibleResourceManagerBlueprint {
             features.feature_names_str(),
             generic_args,
             fields,
-            btreemap!(NonFungibleResourceManagerCollection::DataKeyValue.collection_index() => non_fungibles),
+            indexmap!(NonFungibleResourceManagerCollection::DataKeyValue.collection_index() => non_fungibles),
         )?;
         let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             owner_role,
@@ -816,8 +816,8 @@ impl NonFungibleResourceManagerBlueprint {
             }
         };
 
-        let mut ids = BTreeSet::new();
-        let mut non_fungibles = BTreeMap::new();
+        let mut ids = IndexSet::new();
+        let mut non_fungibles = IndexMap::new();
         let supply = Decimal::from(entries.len());
         for (entry,) in entries {
             let ruid = Runtime::generate_ruid(api)?;
@@ -846,7 +846,7 @@ impl NonFungibleResourceManagerBlueprint {
         let (mut features, roles) = to_features_and_roles(resource_roles);
         features.track_total_supply = track_total_supply;
 
-        let mut fields = btreemap! {
+        let mut fields = indexmap! {
             NonFungibleResourceManagerField::IdType.into() => FieldValue::immutable(&NonFungibleResourceManagerIdTypeFieldPayload::from_content_source(NonFungibleIdType::RUID)),
             NonFungibleResourceManagerField::MutableFields.into() => FieldValue::immutable(&NonFungibleResourceManagerMutableFieldsFieldPayload::from_content_source(mutable_fields)),
         };
@@ -873,7 +873,7 @@ impl NonFungibleResourceManagerBlueprint {
             features.feature_names_str(),
             generic_args,
             fields,
-            btreemap!(NonFungibleResourceManagerCollection::DataKeyValue.collection_index() => non_fungibles),
+            indexmap!(NonFungibleResourceManagerCollection::DataKeyValue.collection_index() => non_fungibles),
         )?;
         let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
             owner_role,
@@ -889,7 +889,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_non_fungible<Y>(
-        entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
+        entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
@@ -945,7 +945,7 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let ids = {
-            let ids: BTreeSet<NonFungibleLocalId> = entries.keys().cloned().collect();
+            let ids: IndexSet<NonFungibleLocalId> = entries.keys().cloned().collect();
             let non_fungibles = entries.into_iter().map(|(k, v)| (k, v.0)).collect();
             create_non_fungibles(resource_address, id_type, non_fungibles, true, api)?;
 
@@ -1020,14 +1020,14 @@ impl NonFungibleResourceManagerBlueprint {
 
         let id = {
             let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
-            let non_fungibles = btreemap!(id.clone() => value);
+            let non_fungibles = indexmap!(id.clone() => value);
 
             create_non_fungibles(resource_address, id_type, non_fungibles, false, api)?;
 
             id
         };
 
-        let ids = btreeset!(id.clone());
+        let ids = indexset!(id.clone());
         let bucket = Self::create_bucket(ids.clone(), api)?;
         Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
@@ -1095,8 +1095,8 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update data
         let ids = {
-            let mut ids = BTreeSet::new();
-            let mut non_fungibles = BTreeMap::new();
+            let mut ids = IndexSet::new();
+            let mut non_fungibles = IndexMap::new();
             for value in entries {
                 let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
                 ids.insert(id.clone());
@@ -1239,11 +1239,11 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        Self::create_bucket(BTreeSet::new(), api)
+        Self::create_bucket(IndexSet::new(), api)
     }
 
     pub(crate) fn create_bucket<Y>(
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
@@ -1251,7 +1251,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let bucket_id = api.new_simple_object(
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
-            btreemap! {
+            indexmap! {
                 NonFungibleBucketField::Liquid.into() => FieldValue::new(&LiquidNonFungibleResource::new(ids)),
                 NonFungibleBucketField::Locked.into() => FieldValue::new(&LockedNonFungibleResource::default()),
             },
@@ -1361,7 +1361,7 @@ impl NonFungibleResourceManagerBlueprint {
         let balance = LiquidNonFungibleVault {
             amount: Decimal::zero(),
         };
-        let mut fields = btreemap! {
+        let mut fields = indexmap! {
             NonFungibleVaultField::Balance.into() => FieldValue::new(&NonFungibleVaultBalanceFieldPayload::from_content_source(
                     balance,
                 )),

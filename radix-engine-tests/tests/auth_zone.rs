@@ -112,7 +112,7 @@ fn test_auth_zone_create_proof_of_all_for_non_fungible() {
         .create_proof_from_account_of_non_fungibles(
             account,
             resource_address,
-            &btreeset!(
+            &indexset!(
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(2)
             ),

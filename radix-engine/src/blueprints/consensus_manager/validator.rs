@@ -201,7 +201,7 @@ impl ValidatorBlueprint {
         let feature_set = ValidatorFeatureSet::all_features();
         let state = ValidatorStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = BTreeMap::new();
+        let mut functions = IndexMap::new();
         functions.insert(
             VALIDATOR_REGISTER_IDENT.to_string(),
             FunctionSchemaInit {
@@ -485,7 +485,7 @@ impl ValidatorBlueprint {
             },
             is_transient: false,
             feature_set,
-            dependencies: btreeset!(),
+            dependencies: indexset!(),
             schema: BlueprintSchemaInit {
                 generics: vec![],
                 schema,
@@ -1785,7 +1785,7 @@ impl ValidatorCreator {
 
         let validator_id = api.new_simple_object(
             VALIDATOR_BLUEPRINT,
-            btreemap! {
+            indexmap! {
                 ValidatorField::State.field_index() => FieldValue::new(&ValidatorStateFieldPayload::from_content_source(substate)),
                 ValidatorField::ProtocolUpdateReadinessSignal.field_index() => FieldValue::new(&ValidatorProtocolUpdateReadinessSignalFieldPayload::from_content_source(protocol_update_readiness_signal)),
             },
@@ -1815,7 +1815,7 @@ impl ValidatorCreator {
 
         api.globalize(
             validator_id,
-            btreemap!(
+            indexmap!(
                 ModuleId::RoleAssignment => role_assignment.0.0,
                 ModuleId::Metadata => metadata.0,
             ),

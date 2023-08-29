@@ -19,7 +19,7 @@ PUBLISH_PACKAGE_ADVANCED
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ntyz0z6xtksc7uuu3xxhkr9zd246c5d7kscy5zudyn9l54j0rz8wd8:#1#")
+                        NonFungibleGlobalId("resource_sim1n2g6wz8kh4nkr8vx0cpvnfp97mp98n824ske0tks2z7ttu6pgq5a2z:#1#")
                     )
                 )
             )
@@ -651,20 +651,20 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("056914cbd48659c89674af30ae2c9d46a78a5e70839b6038e3b500aa73cf1bc8")
+    Blob("1813bbd115746de541cf68472fc93240d2fcd790eee83a01aa28e7b421b6de5c")
     Map<String, Tuple>(
-        "description" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "[EXAMPLE] A package of the logic of a Uniswap v2 style DEX."
-                )
-            ),
-            true
-        ),
         "name" => Tuple(
             Enum<1u8>(
                 Enum<0u8>(
                     "Radiswap Package"
+                )
+            ),
+            true
+        ),
+        "description" => Tuple(
+            Enum<1u8>(
+                Enum<0u8>(
+                    "[EXAMPLE] A package of the logic of a Uniswap v2 style DEX."
                 )
             ),
             true
@@ -695,14 +695,14 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ntyz0z6xtksc7uuu3xxhkr9zd246c5d7kscy5zudyn9l54j0rz8wd8:#1#")
+                        NonFungibleGlobalId("resource_sim1n2g6wz8kh4nkr8vx0cpvnfp97mp98n824ske0tks2z7ttu6pgq5a2z:#1#")
                     )
                 )
             )
         )
     )
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Address("resource_sim1thaq3da2vuvtulmaqddqgdu4u924arvn6dz9l8flukt2wm6zhqkcts")
+    Address("resource_sim1t5pj98uqzu7k6w68wcme5hz59udcmh07qwxar36032mftdwna85mn2")
 ;
 CALL_FUNCTION
     NamedAddress("radiswap_package")
@@ -713,14 +713,14 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ntyz0z6xtksc7uuu3xxhkr9zd246c5d7kscy5zudyn9l54j0rz8wd8:#1#")
+                        NonFungibleGlobalId("resource_sim1n2g6wz8kh4nkr8vx0cpvnfp97mp98n824ske0tks2z7ttu6pgq5a2z:#1#")
                     )
                 )
             )
         )
     )
-    Address("resource_sim1tk63m2mhewtk2npkgj8xdnpkcrundmv8za8n8asj56aru9h0qr2kx3")
-    Address("resource_sim1tk2wrhezcsnyqmcsymzwlzs0km9ccxzjjq62ytpehjwzc09w89m3gh")
+    Address("resource_sim1thfpe3dlszf5ahpxaj46f9ndwk7mx42jnn23wsj4zrzdhwwekt25g0")
+    Address("resource_sim1tkqte60nkrw896whyqc4lk36gluedk229uky0eax2axa3ul02kak5n")
 ;
 CALL_METHOD
     Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")

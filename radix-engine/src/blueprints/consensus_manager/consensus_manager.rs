@@ -326,7 +326,7 @@ impl ConsensusManagerBlueprint {
         let feature_set = ConsensusManagerFeatureSet::all_features();
         let state = ConsensusManagerStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = BTreeMap::new();
+        let mut functions = IndexMap::new();
         functions.insert(
             CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {
@@ -443,7 +443,7 @@ impl ConsensusManagerBlueprint {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
             feature_set,
-            dependencies: btreeset!(
+            dependencies: indexset!(
                 XRD.into(),
                 PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                 SYSTEM_TRANSACTION_BADGE.into(),
@@ -460,7 +460,7 @@ impl ConsensusManagerBlueprint {
 
             royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig {
-                function_auth: FunctionAuth::AccessRules(btreemap!(
+                function_auth: FunctionAuth::AccessRules(indexmap!(
                     CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                 )),
                 method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template!(
@@ -555,7 +555,7 @@ impl ConsensusManagerBlueprint {
 
             api.new_simple_object(
                 CONSENSUS_MANAGER_BLUEPRINT,
-                btreemap! {
+                indexmap! {
                     ConsensusManagerField::Configuration.field_index() => FieldValue::immutable(&ConsensusManagerConfigurationFieldPayload::from_content_source(config)),
                     ConsensusManagerField::State.field_index() => FieldValue::new(&ConsensusManagerStateFieldPayload::from_content_source(consensus_manager)),
                     ConsensusManagerField::ValidatorRewards.field_index() => FieldValue::new(&ConsensusManagerValidatorRewardsFieldPayload::from_content_source(validator_rewards)),
@@ -571,7 +571,7 @@ impl ConsensusManagerBlueprint {
             VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
         };
 
-        let roles = btreemap!(ObjectModuleId::Main => role_definitions);
+        let roles = indexmap!(ObjectModuleId::Main => role_definitions);
         let role_assignment = RoleAssignment::create(OwnerRole::None, roles, api)?.0;
         let metadata = Metadata::create_with_data(
             metadata_init! {
@@ -583,7 +583,7 @@ impl ConsensusManagerBlueprint {
 
         api.globalize(
             consensus_manager_id,
-            btreemap!(
+            indexmap!(
                 ModuleId::RoleAssignment => role_assignment.0,
                 ModuleId::Metadata => metadata.0,
             ),

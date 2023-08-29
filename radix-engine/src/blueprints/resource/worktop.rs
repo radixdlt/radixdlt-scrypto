@@ -11,13 +11,13 @@ use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, ScryptoSbor)]
 pub struct WorktopSubstate {
-    pub resources: BTreeMap<ResourceAddress, Own>,
+    pub resources: IndexMap<ResourceAddress, Own>,
 }
 
 impl WorktopSubstate {
     pub fn new() -> Self {
         Self {
-            resources: BTreeMap::new(),
+            resources: IndexMap::new(),
         }
     }
 }
@@ -61,7 +61,7 @@ impl WorktopBlueprint {
             .as_typed::<FieldSubstate<WorktopSubstate>>()
             .unwrap()
             .into_payload();
-        let resources = core::mem::replace(&mut worktop.resources, BTreeMap::new());
+        let resources = core::mem::replace(&mut worktop.resources, IndexMap::new());
         api.kernel_write_substate(
             handle,
             IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(worktop)),
@@ -326,7 +326,7 @@ impl WorktopBlueprint {
             let bucket = Bucket(bucket.clone());
             bucket.non_fungible_local_ids(api)?
         } else {
-            BTreeSet::new()
+            IndexSet::new()
         };
         if !ids.is_superset(&input.ids) {
             return Err(RuntimeError::ApplicationError(

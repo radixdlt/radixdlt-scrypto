@@ -579,7 +579,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                     // Aggregate functions
                     let functions = {
-                        let mut functions: BTreeMap<String, FunctionSchemaInit> = BTreeMap::new();
+                        let mut functions: IndexMap<String, FunctionSchemaInit> = IndexMap::new();
                         #(
                             functions.insert(#fn_names.to_string(), #fn_schemas);
                         )*
@@ -591,7 +591,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                     // Aggregate event schemas
                     let events = {
-                        let mut event_schema = BTreeMap::new();
+                        let mut event_schema = IndexMap::new();
                         #({
                             let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
                             event_schema.insert(#event_type_names.to_owned(), TypeRef::Static(local_type_index));
@@ -1461,7 +1461,7 @@ mod tests {
                             };
 
                             let functions = {
-                                let mut functions: BTreeMap<String, FunctionSchemaInit> = BTreeMap::new();
+                                let mut functions: IndexMap<String, FunctionSchemaInit> = IndexMap::new();
                                 functions.insert(
                                     "x".to_string(),
                                     FunctionSchemaInit {
@@ -1487,7 +1487,7 @@ mod tests {
                             };
 
                             let events = {
-                                let mut event_schema = BTreeMap::new();
+                                let mut event_schema = IndexMap::new();
                                 BlueprintEventSchemaInit {
                                     event_schema,
                                 }

@@ -326,7 +326,7 @@ impl AuthModule {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                         blueprint_version: BlueprintVersion::default(),
                         outer_obj_info: OuterObjectInfo::default(),
-                        features: btreeset!(),
+                        features: indexset!(),
                         generic_substitutions: vec![],
                     },
                     object_type: ObjectType::Owned,

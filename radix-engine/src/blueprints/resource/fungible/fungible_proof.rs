@@ -9,13 +9,13 @@ use radix_engine_interface::blueprints::resource::*;
 pub struct FungibleProofSubstate {
     pub total_locked: Decimal,
     /// The supporting containers.
-    pub evidence: BTreeMap<LocalRef, Decimal>,
+    pub evidence: IndexMap<LocalRef, Decimal>,
 }
 
 impl FungibleProofSubstate {
     pub fn new(
         total_locked: Decimal,
-        evidence: BTreeMap<LocalRef, Decimal>,
+        evidence: IndexMap<LocalRef, Decimal>,
     ) -> Result<FungibleProofSubstate, ProofError> {
         if total_locked.is_zero() {
             return Err(ProofError::EmptyProofNotAllowed);
@@ -96,7 +96,7 @@ impl FungibleProofBlueprint {
 
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
-            btreemap! {
+            indexmap! {
                 0u8 => FieldValue::new(&moveable),
                 1u8 => FieldValue::new(&clone),
             },

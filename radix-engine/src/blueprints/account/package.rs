@@ -14,7 +14,7 @@ pub struct AccountNativePackage;
 
 impl AccountNativePackage {
     pub fn definition() -> PackageDefinition {
-        let blueprints = btreemap!(
+        let blueprints = indexmap!(
             ACCOUNT_BLUEPRINT.to_string() => AccountBlueprint::get_definition()
         );
 

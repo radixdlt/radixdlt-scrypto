@@ -359,7 +359,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 let export =
                     definition
                         .hook_exports
-                        .get(&hook)
+                        .get(hook)
                         .ok_or(RuntimeError::SystemUpstreamError(
                             SystemUpstreamError::HookNotFound(hook.clone()),
                         ))?;

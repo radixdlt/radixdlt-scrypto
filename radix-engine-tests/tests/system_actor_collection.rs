@@ -39,11 +39,11 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
                 }
                 "new" => {
                     let metadata = Metadata::create(api)?;
-                    let access_rules = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
-                    let node_id = api.new_simple_object(BLUEPRINT_NAME, btreemap![])?;
+                    let access_rules = RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
+                    let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap![])?;
                     api.globalize(
                         node_id,
-                        btreemap!(
+                        indexmap!(
                             ModuleId::Metadata => metadata.0,
                             ModuleId::RoleAssignment => access_rules.0.0,
                         ),

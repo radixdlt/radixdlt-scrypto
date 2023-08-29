@@ -7,7 +7,7 @@ use radix_engine_interface::data::scrypto::{
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 
 pub trait NativeProof {
@@ -43,7 +43,7 @@ pub trait NativeNonFungibleProof {
     fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
         Y: ClientObjectApi<E>;
 }
@@ -114,7 +114,7 @@ impl NativeNonFungibleProof for Proof {
     fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
         Y: ClientObjectApi<E>,
     {

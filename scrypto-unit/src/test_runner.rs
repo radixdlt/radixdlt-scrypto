@@ -1040,7 +1040,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     .create_proof_from_account_of_non_fungibles(
                         account,
                         VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
+                        &indexset!(
                             NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
                         ),
                     )

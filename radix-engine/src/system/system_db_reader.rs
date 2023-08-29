@@ -470,7 +470,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             }
         };
 
-        let module_id = module_id.into();
+        let module_id: Option<ModuleId> = module_id.into();
         if let Some(module_id) = module_id {
             match object_info.object_type {
                 ObjectType::Global { modules } => {

@@ -183,7 +183,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
             ));
 
-            let mut functions = BTreeMap::new();
+            let mut functions = IndexMap::new();
             functions.insert(
                 BUCKET_PUT_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -317,8 +317,8 @@ impl ResourceNativePackage {
                     outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 is_transient: true,
-                dependencies: btreeset!(),
-                feature_set: btreeset!(),
+                dependencies: indexset!(),
+                feature_set: indexset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -367,7 +367,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
             ));
 
-            let mut functions = BTreeMap::new();
+            let mut functions = IndexMap::new();
             functions.insert(
                 BUCKET_PUT_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -531,8 +531,8 @@ impl ResourceNativePackage {
                     outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 is_transient: true,
-                dependencies: btreeset!(),
-                feature_set: btreeset!(),
+                dependencies: indexset!(),
+                feature_set: indexset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -582,7 +582,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<FungibleProofSubstate>(),
             ));
 
-            let mut functions = BTreeMap::new();
+            let mut functions = IndexMap::new();
             functions.insert(
                 PROOF_DROP_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -644,8 +644,8 @@ impl ResourceNativePackage {
                     outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 is_transient: true,
-                dependencies: btreeset!(),
-                feature_set: btreeset!(),
+                dependencies: indexset!(),
+                feature_set: indexset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -657,7 +657,7 @@ impl ResourceNativePackage {
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
                     hooks: BlueprintHooksInit {
-                        hooks: btreemap!(
+                        hooks: indexmap!(
                             BlueprintHook::OnDrop => FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME.to_string(),
                             BlueprintHook::OnMove => FUNGIBLE_PROOF_ON_MOVE_EXPORT_NAME.to_string(),
                         ),
@@ -683,7 +683,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>(),
             ));
 
-            let mut functions = BTreeMap::new();
+            let mut functions = IndexMap::new();
             functions.insert(
                 PROOF_DROP_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -761,8 +761,8 @@ impl ResourceNativePackage {
                     outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 is_transient: true,
-                dependencies: btreeset!(),
-                feature_set: btreeset!(),
+                dependencies: indexset!(),
+                feature_set: indexset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -774,7 +774,7 @@ impl ResourceNativePackage {
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
                     hooks: BlueprintHooksInit {
-                        hooks: btreemap!(
+                        hooks: indexmap!(
                             BlueprintHook::OnDrop => NON_FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME.to_string(),
                             BlueprintHook::OnMove => NON_FUNGIBLE_PROOF_ON_MOVE_EXPORT_NAME.to_string()
                         ),
@@ -797,7 +797,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<WorktopSubstate>(),
             ));
 
-            let mut functions = BTreeMap::new();
+            let mut functions = IndexMap::new();
             functions.insert(
                 WORKTOP_DROP_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -922,8 +922,8 @@ impl ResourceNativePackage {
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 is_transient: true,
-                dependencies: btreeset!(),
-                feature_set: btreeset!(),
+                dependencies: indexset!(),
+                feature_set: indexset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -953,7 +953,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<AuthZone>(),
             ));
 
-            let mut functions = BTreeMap::new();
+            let mut functions = IndexMap::new();
             functions.insert(
                 AUTH_ZONE_POP_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -1103,8 +1103,8 @@ impl ResourceNativePackage {
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 is_transient: true,
-                dependencies: btreeset!(),
-                feature_set: btreeset!(),
+                dependencies: indexset!(),
+                feature_set: indexset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1123,7 +1123,7 @@ impl ResourceNativePackage {
             }
         };
 
-        let blueprints = btreemap!(
+        let blueprints = indexmap!(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_blueprint,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => non_fungible_resource_manager_blueprint,
             FUNGIBLE_VAULT_BLUEPRINT.to_string() => fungible_vault_blueprint,

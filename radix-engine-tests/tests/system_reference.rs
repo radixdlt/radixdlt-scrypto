@@ -34,7 +34,7 @@ fn cannot_store_reference_in_non_transient_blueprint() {
                     let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
                     let node_id = api.new_simple_object(
                         BLUEPRINT_NAME,
-                        btreemap![0u8 => FieldValue::new(Reference(auth_zone))],
+                        indexmap![0u8 => FieldValue::new(Reference(auth_zone))],
                     )?;
                     api.drop_object(&node_id)?;
                 }
@@ -93,7 +93,7 @@ fn cannot_write_reference_in_non_transient_blueprint() {
             match export_name {
                 "new" => {
                     let node_id = api
-                        .new_simple_object(BLUEPRINT_NAME, btreemap!(0u8 =>FieldValue::new(())))?;
+                        .new_simple_object(BLUEPRINT_NAME, indexmap!(0u8 =>FieldValue::new(())))?;
                     api.call_method(&node_id, "test", scrypto_encode(&()).unwrap())?;
                     api.drop_object(&node_id)?;
                 }

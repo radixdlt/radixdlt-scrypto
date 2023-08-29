@@ -6,7 +6,7 @@ use radix_engine_interface::data::scrypto::{
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
@@ -57,7 +57,7 @@ pub trait NativeAuthZone {
 
     fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: &IndexSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<Proof, E>
@@ -182,7 +182,7 @@ impl NativeAuthZone for AuthZoneRef {
 
     fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: &IndexSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<Proof, E>

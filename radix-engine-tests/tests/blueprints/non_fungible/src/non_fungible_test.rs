@@ -306,7 +306,7 @@ mod non_fungible_test {
             let mut bucket = Self::create_non_fungible_fixed();
             assert_eq!(bucket.amount(), 3.into());
 
-            let mut non_fungibles = BTreeSet::new();
+            let mut non_fungibles = IndexSet::new();
             non_fungibles.insert(NonFungibleLocalId::integer(1));
 
             let non_fungible = bucket.as_non_fungible().take_non_fungibles(&non_fungibles);
@@ -340,11 +340,11 @@ mod non_fungible_test {
                 non_fungible_bucket
                     .as_non_fungible()
                     .non_fungible_local_ids(),
-                BTreeSet::from([NonFungibleLocalId::integer(1)])
+                IndexSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
                 bucket.as_non_fungible().non_fungible_local_ids(),
-                BTreeSet::from([
+                IndexSet::from([
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3)
                 ])
@@ -375,11 +375,11 @@ mod non_fungible_test {
                 non_fungible_bucket
                     .as_non_fungible()
                     .non_fungible_local_ids(),
-                BTreeSet::from([NonFungibleLocalId::integer(1)])
+                IndexSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
                 vault.as_non_fungible().non_fungible_local_ids(100),
-                BTreeSet::from([
+                IndexSet::from([
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3)
                 ])
@@ -462,7 +462,7 @@ mod non_fungible_test {
             // read singleton proof
             let proof = vault
                 .as_non_fungible()
-                .create_proof_of_non_fungibles(&btreeset!(NonFungibleLocalId::integer(1)))
+                .create_proof_of_non_fungibles(&indexset!(NonFungibleLocalId::integer(1)))
                 .skip_checking();
             assert_eq!(proof.resource_address(), vault.resource_address());
             let _: Sandwich = proof.as_non_fungible().non_fungible().data();
@@ -477,7 +477,7 @@ mod non_fungible_test {
         }
 
         pub fn create_wrong_non_fungible_local_id_type() -> Bucket {
-            let mut entries = BTreeMap::new();
+            let mut entries = IndexMap::new();
             entries.insert(
                 NonFungibleLocalId::integer(0),
                 (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),

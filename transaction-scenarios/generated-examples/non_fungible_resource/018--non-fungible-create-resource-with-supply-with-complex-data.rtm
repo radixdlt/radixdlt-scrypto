@@ -188,15 +188,15 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             0u64
         ),
         Array<String>(
-            "mutable_inner_enum",
-            "mutable_long_name_for_data_to_try_and_stretch_the_bounds_of_what_is_possible_in_user_interfaces"
+            "mutable_long_name_for_data_to_try_and_stretch_the_bounds_of_what_is_possible_in_user_interfaces",
+            "mutable_inner_enum"
         )
     )
     Map<NonFungibleLocalId, Tuple>(
         NonFungibleLocalId("#1#") => Tuple(
             Tuple(
                 100u64,
-                NonFungibleGlobalId("resource_sim1n2jzarmvf4cq5gfhugld6t2v0sc627uad2g7g48plta4znp88v6xx5:#8#"),
+                NonFungibleGlobalId("resource_sim1ng0vqwrngp6864t726q3pmh6x55qatqt5287ne9d6sa6usjg85c3rn:#8#"),
                 "Some string which could be made long for test cases",
                 Tuple(
                     42u8,

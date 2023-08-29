@@ -35,7 +35,7 @@ impl IdentityNativePackage {
 
         let fields = Vec::new();
 
-        let mut functions = BTreeMap::new();
+        let mut functions = IndexMap::new();
         functions.insert(
             IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             FunctionSchemaInit {
@@ -79,12 +79,12 @@ impl IdentityNativePackage {
         );
 
         let schema = generate_full_schema(aggregator);
-        let blueprints = btreemap!(
+        let blueprints = indexmap!(
             IDENTITY_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 is_transient: false,
-                feature_set: btreeset!(),
-                dependencies: btreeset!(
+                feature_set: indexset!(),
+                dependencies: indexset!(
                     SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                     ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
                     IDENTITY_OWNER_BADGE.into(),
@@ -102,7 +102,7 @@ impl IdentityNativePackage {
                         functions,
                     },
                     hooks: BlueprintHooksInit {
-                        hooks: btreemap!(BlueprintHook::OnVirtualize => IDENTITY_ON_VIRTUALIZE_EXPORT_NAME.to_string())
+                        hooks: indexmap!(BlueprintHook::OnVirtualize => IDENTITY_ON_VIRTUALIZE_EXPORT_NAME.to_string())
                     }
                 },
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -330,16 +330,16 @@ impl IdentityBlueprint {
         role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
-    ) -> Result<(NodeId, BTreeMap<ModuleId, Own>), RuntimeError>
+    ) -> Result<(NodeId, IndexMap<ModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let metadata = Metadata::create_with_data(metadata_init, api)?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
-        let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, btreemap!())?;
+        let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, indexmap!())?;
 
-        let modules = btreemap!(
+        let modules = indexmap!(
             ModuleId::RoleAssignment => role_assignment.0,
             ModuleId::Metadata => metadata,
             ModuleId::Royalty => royalty,

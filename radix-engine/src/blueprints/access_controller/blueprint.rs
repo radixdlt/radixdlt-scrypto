@@ -189,7 +189,7 @@ impl AccessControllerBlueprint {
         let feature_set = AccessControllerFeatureSet::all_features();
         let state = AccessControllerStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = BTreeMap::new();
+        let mut functions = IndexMap::new();
         functions.insert(
             ACCESS_CONTROLLER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {
@@ -446,7 +446,7 @@ impl AccessControllerBlueprint {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
             feature_set,
-            dependencies: btreeset!(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),),
+            dependencies: indexset!(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),),
 
             schema: BlueprintSchemaInit {
                 generics: vec![],
@@ -600,13 +600,13 @@ impl AccessControllerBlueprint {
         );
         let object_id = api.new_simple_object(
             ACCESS_CONTROLLER_BLUEPRINT,
-            btreemap! {
+            indexmap! {
                 AccessControllerField::State.field_index() => FieldValue::new(&AccessControllerStateFieldPayload::from_content_source(substate)),
             },
         )?;
 
         let roles = init_roles_from_rule_set(input.rule_set);
-        let roles = btreemap!(ObjectModuleId::Main => roles);
+        let roles = indexmap!(ObjectModuleId::Main => roles);
         let role_assignment = RoleAssignment::create(OwnerRole::None, roles, api)?.0;
 
         let metadata = Metadata::create_with_data(
@@ -620,7 +620,7 @@ impl AccessControllerBlueprint {
         // Creating a global component address for the access controller RENode
         api.globalize(
             object_id,
-            btreemap!(
+            indexmap!(
                 ModuleId::RoleAssignment => role_assignment.0,
                 ModuleId::Metadata => metadata.0,
                 ModuleId::Royalty => royalty.0,
@@ -1123,7 +1123,7 @@ impl AccessControllerBlueprint {
             access_controller.recovery_badge
         };
 
-        let non_fungibles: BTreeMap<NonFungibleLocalId, (ScryptoValue,)> = non_fungible_local_ids
+        let non_fungibles: IndexMap<NonFungibleLocalId, (ScryptoValue,)> = non_fungible_local_ids
             .into_iter()
             .map(|local_id| {
                 (
