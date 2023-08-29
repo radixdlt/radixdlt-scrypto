@@ -1,14 +1,16 @@
+pub mod validator;
+
 use radix_engine::types::*;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
-pub struct ResourceTestFuzzer {
+pub struct TestFuzzer {
     rng: ChaCha8Rng,
 }
 
-impl ResourceTestFuzzer {
+impl TestFuzzer {
     pub fn new(seed: u64) -> Self {
         let rng = ChaCha8Rng::seed_from_u64(seed);
         Self { rng }

@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use resource_tests::ResourceTestFuzzer;
+use resource_tests::TestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -17,7 +17,7 @@ fn fuzz_two_pool() {
 }
 
 struct TwoPoolFuzzTest {
-    fuzzer: ResourceTestFuzzer,
+    fuzzer: TestFuzzer,
     test_runner: DefaultTestRunner,
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
@@ -29,7 +29,7 @@ struct TwoPoolFuzzTest {
 
 impl TwoPoolFuzzTest {
     pub fn new(seed: u64) -> Self {
-        let mut fuzzer = ResourceTestFuzzer::new(seed);
+        let mut fuzzer = TestFuzzer::new(seed);
         let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);

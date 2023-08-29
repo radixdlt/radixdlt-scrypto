@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use resource_tests::ResourceTestFuzzer;
+use resource_tests::TestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -52,7 +52,7 @@ enum ConsensusFuzzActionResult {
 }
 
 struct ConsensusFuzzTest {
-    fuzzer: ResourceTestFuzzer,
+    fuzzer: TestFuzzer,
     test_runner: DefaultTestRunner,
     validator_address: ComponentAddress,
     stake_unit_resource: ResourceAddress,
@@ -64,7 +64,7 @@ struct ConsensusFuzzTest {
 
 impl ConsensusFuzzTest {
     fn new(seed: u64) -> Self {
-        let fuzzer = ResourceTestFuzzer::new(seed);
+        let fuzzer = TestFuzzer::new(seed);
         let initial_epoch = Epoch::of(5);
         let genesis = CustomGenesis::default_with_xrd_amount(
             Decimal::from(24_000_000_000u64),

@@ -12,7 +12,7 @@ use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use resource_tests::ResourceTestFuzzer;
+use resource_tests::TestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
@@ -121,7 +121,7 @@ impl VmInvoke for TestInvoke {
 }
 
 struct ResourceFuzzTest {
-    fuzzer: ResourceTestFuzzer,
+    fuzzer: TestFuzzer,
     test_runner: TestRunner<OverridePackageCode<TestInvoke>, InMemorySubstateDatabase>,
     resource_address: ResourceAddress,
     component_address: ComponentAddress,
@@ -132,7 +132,7 @@ struct ResourceFuzzTest {
 
 impl ResourceFuzzTest {
     fn new(seed: u64) -> Self {
-        let fuzzer = ResourceTestFuzzer::new(seed);
+        let fuzzer = TestFuzzer::new(seed);
         let mut test_runner = TestRunnerBuilder::new()
             .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
             .build();
