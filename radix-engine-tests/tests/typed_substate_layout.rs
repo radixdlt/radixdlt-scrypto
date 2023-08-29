@@ -37,7 +37,8 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, true);
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -123,6 +124,7 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
     ];
 
     let mut bootstrapper = Bootstrapper::new(
+        NetworkDefinition::simulator(),
         &mut substate_db,
         Vm {
             scrypto_vm: &scrypto_vm,

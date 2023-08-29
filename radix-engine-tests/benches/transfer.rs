@@ -22,9 +22,14 @@ fn bench_transfer(c: &mut Criterion) {
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::new(&mut substate_db, vm.clone(), false)
-        .bootstrap_test_default()
-        .unwrap();
+    Bootstrapper::new(
+        NetworkDefinition::simulator(),
+        &mut substate_db,
+        vm.clone(),
+        false,
+    )
+    .bootstrap_test_default()
+    .unwrap();
 
     // Create a key pair
     let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
@@ -44,7 +49,7 @@ fn bench_transfer(c: &mut Criterion) {
                 &mut substate_db,
                 vm.clone(),
                 &CostingParameters::default(),
-                &ExecutionConfig::for_notarized_transaction(),
+                &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
                     .unwrap()
@@ -71,7 +76,7 @@ fn bench_transfer(c: &mut Criterion) {
             &mut substate_db,
             vm.clone(),
             &CostingParameters::default(),
-            &ExecutionConfig::for_notarized_transaction(),
+            &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
             &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                 .prepare()
                 .unwrap()
@@ -95,7 +100,7 @@ fn bench_transfer(c: &mut Criterion) {
                 &mut substate_db,
                 vm.clone(),
                 &CostingParameters::default(),
-                &ExecutionConfig::for_notarized_transaction(),
+                &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                     .prepare()
                     .unwrap()

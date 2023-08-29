@@ -259,6 +259,7 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
     V: SystemCallbackObject + Clone,
 {
+    network_definition: NetworkDefinition,
     substate_db: &'s mut S,
     vm: V,
     trace: bool,
@@ -269,8 +270,14 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
     V: SystemCallbackObject + Clone,
 {
-    pub fn new(substate_db: &'s mut S, vm: V, trace: bool) -> Bootstrapper<'s, S, V> {
+    pub fn new(
+        network_definition: NetworkDefinition,
+        substate_db: &'s mut S,
+        vm: V,
+        trace: bool,
+    ) -> Bootstrapper<'s, S, V> {
         Bootstrapper {
+            network_definition,
             substate_db,
             vm,
             trace,
@@ -372,7 +379,8 @@ where
             self.substate_db,
             self.vm.clone(),
             &CostingParameters::default(),
-            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
+            &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
+                .with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected system bootstrap transaction to be preparable")
@@ -398,7 +406,8 @@ where
             self.substate_db,
             self.vm.clone(),
             &CostingParameters::default(),
-            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
+            &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
+                .with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected genesis data chunk transaction to be preparable")
@@ -419,7 +428,8 @@ where
             self.substate_db,
             self.vm.clone(),
             &CostingParameters::default(),
-            &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
+            &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
+                .with_kernel_trace(self.trace),
             &transaction
                 .prepare()
                 .expect("Expected genesis wrap up transaction to be preparable")

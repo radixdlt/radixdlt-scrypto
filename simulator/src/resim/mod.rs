@@ -172,7 +172,13 @@ pub fn handle_system_transaction<O: std::io::Write>(
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, vm.clone(), false).bootstrap_test_default();
+    Bootstrapper::new(
+        NetworkDefinition::simulator(),
+        &mut substate_db,
+        vm.clone(),
+        false,
+    )
+    .bootstrap_test_default();
 
     let nonce = get_nonce()?;
     let transaction = SystemTransactionV1 {
@@ -188,7 +194,8 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &mut substate_db,
         vm,
         &CostingParameters::default(),
-        &ExecutionConfig::for_system_transaction().with_kernel_trace(trace),
+        &ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
+            .with_kernel_trace(trace),
         &transaction
             .prepare()
             .map_err(Error::TransactionPrepareError)?
@@ -246,7 +253,13 @@ pub fn handle_manifest<O: std::io::Write>(
             let native_vm = DefaultNativeVm::new();
             let vm = Vm::new(&scrypto_vm, native_vm);
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            Bootstrapper::new(&mut substate_db, vm.clone(), false).bootstrap_test_default();
+            Bootstrapper::new(
+                NetworkDefinition::simulator(),
+                &mut substate_db,
+                vm.clone(),
+                false,
+            )
+            .bootstrap_test_default();
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -331,7 +344,8 @@ pub fn export_package_schema(
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
+    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
+        .bootstrap_test_default();
 
     let system_reader = SystemDatabaseReader::new(&substate_db);
     let package_definition = system_reader.get_package_definition(package_address);
@@ -343,7 +357,8 @@ pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectI
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
+    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
+        .bootstrap_test_default();
 
     let system_reader = SystemDatabaseReader::new(&substate_db);
     system_reader
@@ -359,7 +374,8 @@ pub fn export_schema(
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
+    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
+        .bootstrap_test_default();
 
     let system_reader = SystemDatabaseReader::new(&substate_db);
     let schema = system_reader
@@ -389,7 +405,8 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
+    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
+        .bootstrap_test_default();
 
     let system_reader = SystemDatabaseReader::new(&substate_db);
     let object_info = system_reader
@@ -460,7 +477,8 @@ pub fn db_upsert_timestamps(
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
+    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
+        .bootstrap_test_default();
 
     let mut writer = SystemDatabaseWriter::new(&mut substate_db);
 
@@ -494,7 +512,8 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
+    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
+        .bootstrap_test_default();
 
     let reader = SystemDatabaseReader::new(&substate_db);
 

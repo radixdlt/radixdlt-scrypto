@@ -38,7 +38,7 @@ fn test_transaction_preview_cost_estimate() {
     let actual_receipt = test_runner.execute_transaction(
         validate(&network, &notarized_transaction).get_executable(),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction()
+        ExecutionConfig::for_notarized_transaction(network.clone())
             .with_kernel_trace(true)
             .with_cost_breakdown(true),
     );
