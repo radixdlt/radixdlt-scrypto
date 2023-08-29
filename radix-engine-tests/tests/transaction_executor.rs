@@ -102,9 +102,14 @@ fn test_normal_transaction_flow() {
     let vm = Vm::new(&scrypto_vm, native_vm);
 
     let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::new(&mut substate_db, vm.clone(), true)
-        .bootstrap_test_default()
-        .unwrap();
+    Bootstrapper::new(
+        NetworkDefinition::simulator(),
+        &mut substate_db,
+        vm.clone(),
+        true,
+    )
+    .bootstrap_test_default()
+    .unwrap();
 
     let costing_parameters = CostingParameters::default();
     let execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);

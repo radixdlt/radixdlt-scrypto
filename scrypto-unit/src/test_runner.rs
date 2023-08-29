@@ -68,6 +68,7 @@ impl Compile {
     pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
         // Build
         let status = Command::new("cargo")
+            .env("RUSTFLAGS", "")
             .current_dir(package_dir.as_ref())
             .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
             .status()
@@ -307,7 +308,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         let native_vm = NativeVm::new_with_extension(self.custom_extension);
         let vm = Vm::new(&scrypto_vm, native_vm.clone());
         let mut substate_db = self.custom_database;
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, bootstrap_trace);
+        let mut bootstrapper = Bootstrapper::new(
+            NetworkDefinition::simulator(),
+            &mut substate_db,
+            vm,
+            bootstrap_trace,
+        );
         let GenesisReceipts {
             system_bootstrap_receipt,
             data_ingestion_receipts,
@@ -1114,7 +1120,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .expect("expected transaction to be preparable")
             .get_executable(btreeset!(AuthAddresses::system_role())),
             CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         );
 
         receipt.expect_commit_success();
@@ -1222,7 +1228,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         self.execute_transaction(
             validated.get_executable(),
             CostingParameters::default(),
-            ExecutionConfig::for_notarized_transaction(),
+            ExecutionConfig::for_notarized_transaction(network.clone()),
         )
     }
 
@@ -1966,7 +1972,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
             CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 
@@ -1996,7 +2002,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
             CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 
@@ -2018,7 +2024,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
             CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 

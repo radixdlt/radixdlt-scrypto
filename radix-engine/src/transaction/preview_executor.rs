@@ -32,7 +32,7 @@ pub fn execute_preview<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
         substate_db,
         vm,
         &CostingParameters::default(),
-        &ExecutionConfig::for_preview().with_kernel_trace(with_kernel_trace),
+        &ExecutionConfig::for_preview(network.clone()).with_kernel_trace(with_kernel_trace),
         &validated.get_executable(),
     ))
 }

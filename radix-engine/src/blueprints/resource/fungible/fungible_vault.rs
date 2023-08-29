@@ -313,6 +313,37 @@ impl FungibleVaultBlueprint {
     {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            FungibleVaultField::Balance.into(),
+            LockFlags::MUTABLE,
+        )?;
+
+        let mut vault_balance = api
+            .field_read_typed::<FungibleVaultBalanceFieldPayload>(handle)?
+            .into_latest();
+
+        // Early exit if input amount is obviously wrong
+        // This is to prevent for_withdrawal from overflowing in case a bad amount is sent in
+        {
+            if amount.is_negative() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::InvalidAmount),
+                ));
+            }
+            let vault_amount_plus_one = vault_balance
+                .amount()
+                .safe_add(Decimal::ONE)
+                .ok_or_else(|| VaultError::DecimalOverflow)?;
+            if amount > &vault_amount_plus_one {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::ResourceError(
+                        ResourceError::InsufficientBalance,
+                    )),
+                ));
+            }
+        }
+
         // Apply withdraw strategy
         let divisibility = Self::get_divisibility(api)?;
         let amount = amount.for_withdrawal(divisibility, withdraw_strategy);
@@ -324,8 +355,16 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        // Take
-        let taken = Self::internal_take(amount, api)?;
+        let taken = vault_balance.take_by_amount(amount).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
+                e,
+            )))
+        })?;
+        api.field_write_typed(
+            handle,
+            &FungibleVaultBalanceFieldPayload::from_content_source(vault_balance),
+        )?;
+        api.field_close(handle)?;
 
         // Create node
         let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;

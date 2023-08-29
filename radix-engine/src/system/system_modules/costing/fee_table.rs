@@ -213,8 +213,7 @@ impl FeeTable {
 
     #[inline]
     pub fn pin_node_cost(&self, _node_id: &NodeId) -> u32 {
-        // TODO: Add correct cost
-        100u32
+        2577u32
     }
 
     #[inline]
@@ -322,8 +321,7 @@ impl FeeTable {
         _partition_number: &PartitionNumber,
         _substate_key: &SubstateKey,
     ) -> u32 {
-        // TODO: Add correct costing
-        100u32
+        2416u32
     }
 
     #[inline]

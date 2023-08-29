@@ -34,7 +34,7 @@ fn test_transaction_replay_protection() {
     let receipt = test_runner.execute_transaction(
         validated.get_executable(),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();
 
@@ -46,7 +46,7 @@ fn test_transaction_replay_protection() {
     let receipt = test_runner.execute_transaction(
         validated.get_executable(),
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_specific_rejection(|e| match e {
         RejectionReason::IntentHashPreviouslyCommitted => true,
@@ -71,7 +71,7 @@ fn test_transaction_replay_protection() {
     let receipt = test_runner.execute_transaction(
         executable,
         CostingParameters::default(),
-        ExecutionConfig::for_notarized_transaction(),
+        ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();
 }
