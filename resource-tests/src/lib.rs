@@ -57,11 +57,11 @@ impl ResourceTestFuzzer {
     }
 
     pub fn next_integer_non_fungible_id(&mut self) -> NonFungibleLocalId {
-        NonFungibleLocalId::integer(self.rng.gen_range(0u64..8u64))
+        NonFungibleLocalId::integer(self.rng.gen_range(0u64..4u64))
     }
 
     pub fn next_non_fungible_id_set(&mut self) -> BTreeSet<NonFungibleLocalId> {
-        (0u64..self.rng.gen_range(0u64..8u64))
+        (0u64..self.rng.gen_range(0u64..4u64))
             .into_iter()
             .map(|_| {
                 self.next_integer_non_fungible_id()

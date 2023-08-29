@@ -1,11 +1,10 @@
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::NativeVault;
-use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::transaction::{TransactionOutcome, TransactionReceipt};
+use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::blueprints::package::PackageDefinition;
@@ -53,6 +52,7 @@ enum NonFungibleResourceFuzzStartAction {
     VaultTakeNonFungibles,
     VaultTakeAdvanced,
     VaultRecall,
+    VaultRecallNonFungibles,
 }
 
 #[repr(u8)]
@@ -223,10 +223,10 @@ impl ResourceFuzzTest {
             NonFungibleResourceFuzzTxn,
             BTreeMap<FuzzTxnResult, u64>,
         > = BTreeMap::new();
-        for _ in 0..500 {
-            let mut builder = ManifestBuilder::new();
-            let start = NonFungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(5u8)).unwrap();
-            let (mut builder, mut trivial) = match start {
+        for _ in 0..700 {
+            let builder = ManifestBuilder::new();
+            let start = NonFungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(6u8)).unwrap();
+            let (builder, mut trivial) = match start {
                 NonFungibleResourceFuzzStartAction::Mint => {
                     let entries: BTreeMap<NonFungibleLocalId, (ManifestValue, )> = self.fuzzer.next_non_fungible_id_set()
                         .into_iter().map(|id| {
@@ -278,25 +278,16 @@ impl ResourceFuzzTest {
                     let builder = builder.recall(self.vault_id, amount);
                     (builder, amount.is_zero())
                 }
+                NonFungibleResourceFuzzStartAction::VaultRecallNonFungibles => {
+                    let ids = self.fuzzer.next_non_fungible_id_set();
+                    let trivial = ids.is_empty();
+                    let builder = builder.recall_non_fungibles(self.vault_id, &ids);
+                    (builder, trivial)
+                }
             };
 
-            for _ in 0u8..self.fuzzer.next(0u8..2u8) {
-                let (mut next_builder, next_trivial) = {
-                    let ids = self.fuzzer.next_non_fungible_id_set();
-                    let builder = builder.call_method(
-                        self.component_address,
-                        "call_vault",
-                        manifest_args!(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT, (ids,)),
-                    );
-                    (builder, false)
-                };
-
-                builder = next_builder;
-                trivial = trivial || next_trivial;
-            }
-
             let end = NonFungibleResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
-            let (mut builder, end_trivial) = match end {
+            let (builder, end_trivial) = match end {
                 NonFungibleResourceFuzzEndAction::Burn => {
                     let amount = self.next_amount();
                     let builder = builder
