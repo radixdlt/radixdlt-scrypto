@@ -51,7 +51,11 @@ impl Accounting {
         resource: &LiquidFungibleResource,
     ) {
         let entry = self.balances.entry(*address).or_default();
-        *entry = entry.safe_add(resource.amount()).unwrap()
+        // NOTE: Decimal arithmetic operation safe unwrap.
+        //       Resources have a mint limit below the Decimal max
+        *entry = entry
+            .safe_add(resource.amount())
+            .expect("Resource overflow despite mint limit")
     }
 
     pub fn add_non_fungible_vault(

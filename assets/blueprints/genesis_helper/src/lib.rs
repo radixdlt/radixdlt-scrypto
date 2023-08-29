@@ -152,7 +152,9 @@ mod genesis_helper {
                 for v in allocations.iter().flat_map(|(_, allocations)| {
                     allocations.iter().map(|alloc| alloc.xrd_amount.clone())
                 }) {
-                    sum = sum.safe_add(v).unwrap();
+                    sum = sum
+                        .safe_add(v)
+                        .expect("Overflow because resource limit exceeded");
                 }
                 sum
             };
@@ -254,7 +256,9 @@ mod genesis_helper {
                 let amount_needed = {
                     let mut sum = Decimal::ZERO;
                     for v in allocations.iter().map(|alloc| alloc.amount.clone()) {
-                        sum = sum.safe_add(v).unwrap();
+                        sum = sum
+                            .safe_add(v)
+                            .expect("Overflow because resource limit exceeded");
                     }
                     sum
                 };
@@ -277,7 +281,9 @@ mod genesis_helper {
             let xrd_needed = {
                 let mut sum = Decimal::ZERO;
                 for v in allocations.iter().map(|(_, amount)| amount.clone()) {
-                    sum = sum.safe_add(v).unwrap();
+                    sum = sum
+                        .safe_add(v)
+                        .expect("Overflow because resource limit exceeded");
                 }
                 sum
             };
