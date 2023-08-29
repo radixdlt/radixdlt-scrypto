@@ -262,7 +262,7 @@ f.close()
 # Write results output table
 f = open("/tmp/_out_table.txt", "w")
 min_ins = sys.maxsize
-if len(output_tab) > 0 and len(output_tab[0]) > 2:
+if len(output_tab) > 0 and len(output_tab[0]) > 2 and output_tab[0][2] > 0:
     min_ins = output_tab[0][2]
 for row in output_tab:
     if row[2] < min_ins and row[2] > 0:
