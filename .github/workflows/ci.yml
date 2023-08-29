@@ -41,15 +41,15 @@ jobs:
         os: [k8s-linux-runner]
     steps:
       - uses: actions/checkout@v3
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@feature/rust-coverage
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           tests-dir: sbor
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           tests-dir: sbor
           flags: --no-default-features --features alloc
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           tests-dir: sbor-derive-common
 
@@ -61,11 +61,11 @@ jobs:
         os: [k8s-linux-runner]
     steps:
       - uses: actions/checkout@v3
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@feature/rust-coverage
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           tests-dir: sbor-tests
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           tests-dir: sbor-tests
           flags: --no-default-features --features alloc
@@ -81,18 +81,18 @@ jobs:
         os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@feature/rust-coverage
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto
         flags: --no-default-features --features alloc
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto-schema
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto-derive
   
@@ -104,11 +104,11 @@ jobs:
         os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@feature/rust-coverage
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto-tests
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto-tests
         flags: --no-default-features --features alloc
@@ -262,8 +262,8 @@ jobs:
         os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@feature/rust-coverage
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: transaction
   
@@ -275,8 +275,8 @@ jobs:
         os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@feature/rust-coverage
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@feature/rust-coverage
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: transaction-scenarios
   
