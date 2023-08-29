@@ -92,6 +92,7 @@ pub trait Decoder<X: CustomValueKind>: Sized {
         ValueKind::from_u8(id).ok_or(DecodeError::UnknownValueKind(id))
     }
 
+    #[inline]
     fn read_discriminator(&mut self) -> Result<u8, DecodeError> {
         self.read_byte()
     }
@@ -137,6 +138,7 @@ pub trait Decoder<X: CustomValueKind>: Sized {
         }
     }
 
+    #[inline]
     fn read_expected_discriminator(
         &mut self,
         expected_discriminator: u8,
@@ -235,6 +237,7 @@ impl<'de, X: CustomValueKind> VecDecoder<'de, X> {
         }
     }
 
+    #[inline]
     pub fn get_input_slice(&self) -> &'de [u8] {
         &self.input
     }
