@@ -854,7 +854,7 @@ impl<const N: usize> TestEnvironment<N> {
                     MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
                     MultiResourcePoolInstantiateManifestInput {
-                        resource_addresses: indexset!(resource_addresses.clone()),
+                        resource_addresses: resource_addresses.into_iter().collect(),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                         owner_role,
                         address_reservation: None,
