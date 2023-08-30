@@ -291,7 +291,6 @@ fn to_typed_object_substate_key_internal(
         ),
         EntityType::GlobalVirtualSecp256k1Account
         | EntityType::GlobalVirtualEd25519Account
-        | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
             TypedMainModuleSubstateKey::Account(AccountTypedSubstateKey::for_key_in_partition(
                 &AccountPartitionOffset::try_from(partition_offset)?,

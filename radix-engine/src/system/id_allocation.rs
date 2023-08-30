@@ -62,7 +62,6 @@ pub fn get_internal_entity_type(blueprint_id: &BlueprintId) -> EntityType {
     ) {
         (RESOURCE_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => EntityType::InternalFungibleVault,
         (RESOURCE_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => EntityType::InternalNonFungibleVault,
-        (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
         _ => EntityType::InternalGenericComponent,
     }
 }
