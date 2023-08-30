@@ -18,7 +18,7 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .call_function_raw(package_address, "BucketTest", method_name, args)
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -51,6 +51,11 @@ fn test_bucket_drop_not_empty() {
 #[test]
 fn test_bucket_combine() {
     test_bucket_internal("combine", manifest_args!().into(), true);
+}
+
+#[test]
+fn test_bucket_combine_invalid() {
+    test_bucket_internal("combine_invalid", manifest_args!().into(), false);
 }
 
 #[test]
@@ -113,7 +118,7 @@ fn test_bucket_of_badges() {
         .call_function(package_address, "BadgeTest", "split", manifest_args!())
         .call_function(package_address, "BadgeTest", "borrow", manifest_args!())
         .call_function(package_address, "BadgeTest", "query", manifest_args!())
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -213,7 +218,7 @@ fn create_empty_bucket() {
         .return_to_worktop("bucket1")
         .take_from_worktop(XRD, Decimal::zero(), "bucket2")
         .return_to_worktop("bucket2")
-        .take_non_fungibles_from_worktop(non_fungible_resource, &BTreeSet::new(), "bucket3")
+        .take_non_fungibles_from_worktop(non_fungible_resource, [], "bucket3")
         .return_to_worktop("bucket3")
         .build();
     let receipt = test_runner.execute_manifest(
@@ -245,7 +250,7 @@ fn test_drop_locked_fungible_bucket() {
             "drop_locked_fungible_bucket",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -280,7 +285,7 @@ fn test_drop_locked_non_fungible_bucket() {
             "drop_locked_non_fungible_bucket",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

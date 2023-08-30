@@ -398,7 +398,7 @@ fn vault_fungible_recall_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1)
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -474,7 +474,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 metadata!(),
                 Some([(id.clone(), EmptyStruct {})]),
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         (receipt.expect_commit(true).new_resource_addresses()[0], id)
@@ -484,7 +484,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1)
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -564,7 +564,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             metadata!(),
             Some(1.into()),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -653,7 +653,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
                 metadata!(),
                 None,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -746,7 +746,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                 metadata!(),
                 None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -861,9 +861,9 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             resource_address,
             [(id.clone(), EmptyStruct {}), (id2.clone(), EmptyStruct {})],
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .withdraw_from_account(account, resource_address, dec!("2"))
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -1154,7 +1154,7 @@ fn validator_registration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1216,7 +1216,7 @@ fn validator_unregistration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1232,7 +1232,7 @@ fn validator_unregistration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .unregister_validator(validator_address)
         .build();
@@ -1294,7 +1294,7 @@ fn validator_staking_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1310,12 +1310,12 @@ fn validator_staking_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(account, XRD, 100)
         .take_all_from_worktop(XRD, "stake")
         .stake_validator_as_owner(validator_address, "stake")
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1457,7 +1457,7 @@ fn validator_unstake_emits_correct_events() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su, None)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1618,7 +1618,7 @@ fn validator_claim_xrd_emits_correct_events() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su, None)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1633,7 +1633,7 @@ fn validator_claim_xrd_emits_correct_events() {
         .withdraw_from_account(account_with_su, validator_substate.claim_nft, 1)
         .take_all_from_worktop(validator_substate.claim_nft, "unstake_nft")
         .claim_xrd(validator_address, "unstake_nft")
-        .try_deposit_batch_or_abort(account_with_su, None)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1750,7 +1750,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1766,7 +1766,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2077,7 +2077,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
         .withdraw_non_fungibles_from_account(
             account,
             resource_address,
-            &btreeset!(NonFungibleLocalId::integer(4)),
+            [NonFungibleLocalId::integer(4)],
         )
         .burn_all_from_worktop(resource_address)
         .build();
@@ -2151,7 +2151,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     // Act
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(account, XRD, 1)
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.preview_manifest(
         manifest,
@@ -2234,7 +2234,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     // Act
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(account, resource_address, 2)
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.preview_manifest(
         manifest,
@@ -2686,7 +2686,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
         )
         .withdraw_from_account(account, XRD, 1)
         .withdraw_from_account(account, resource_address, 3)
-        .try_deposit_batch_or_refund(account, None)
+        .try_deposit_entire_worktop_or_refund(account, None)
         .deposit_batch(account)
         .build();
     let receipt = test_runner.preview_manifest(

@@ -16,6 +16,7 @@ pub enum ComposeProofError {
     NonFungibleOperationNotSupported,
     InsufficientBaseProofs,
     InvalidAmount,
+    UnexpectedDecimalComputationError,
 }
 
 pub enum ComposedProof {
@@ -162,11 +163,15 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
             }
         }
     }
-    let total = max
-        .values()
-        .cloned()
-        .reduce(|a, b| a.safe_add(b).unwrap())
-        .unwrap_or_default();
+
+    let mut total = Decimal::ZERO;
+    for v in max.values().cloned() {
+        total = total.safe_add(v).ok_or(RuntimeError::ApplicationError(
+            ApplicationError::AuthZoneError(AuthZoneError::ComposeProofError(
+                ComposeProofError::UnexpectedDecimalComputationError,
+            )),
+        ))?;
+    }
     let per_container = max.into_iter().collect();
     Ok((total, per_container))
 }
@@ -261,7 +266,13 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
                     },
                     scrypto_args!(amount),
                 )?;
-                remaining = remaining.safe_sub(amount).unwrap();
+                remaining = remaining
+                    .safe_sub(amount)
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::AuthZoneError(AuthZoneError::ComposeProofError(
+                            ComposeProofError::UnexpectedDecimalComputationError,
+                        )),
+                    ))?;
                 evidence.insert(container.clone(), amount);
             }
         }

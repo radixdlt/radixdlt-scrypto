@@ -65,7 +65,7 @@ fn bench_radiswap(c: &mut Criterion) {
                     "new",
                     manifest_args!(OwnerRole::None, btc, eth),
                 )
-                .try_deposit_batch_or_abort(account, None)
+                .try_deposit_entire_worktop_or_abort(account, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk)],
         )
@@ -82,13 +82,13 @@ fn bench_radiswap(c: &mut Criterion) {
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     btc_mint_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    [NonFungibleLocalId::integer(1)],
                 )
                 .mint_fungible(btc, btc_init_amount)
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     eth_mint_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    [NonFungibleLocalId::integer(1)],
                 )
                 .mint_fungible(eth, eth_init_amount)
                 .take_all_from_worktop(btc, "liquidity_part_1")
@@ -102,7 +102,7 @@ fn bench_radiswap(c: &mut Criterion) {
                         manifest_args!(bucket1, bucket2),
                     )
                 })
-                .try_deposit_batch_or_abort(account, None)
+                .try_deposit_entire_worktop_or_abort(account, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk)],
         )
@@ -121,16 +121,16 @@ fn bench_radiswap(c: &mut Criterion) {
                     .create_proof_from_account_of_non_fungibles(
                         account,
                         btc_mint_auth,
-                        &btreeset!(NonFungibleLocalId::integer(1)),
+                        [NonFungibleLocalId::integer(1)],
                     )
                     .mint_fungible(btc, dec!("100"))
                     .create_proof_from_account_of_non_fungibles(
                         account,
                         eth_mint_auth,
-                        &btreeset!(NonFungibleLocalId::integer(1)),
+                        [NonFungibleLocalId::integer(1)],
                     )
                     .mint_fungible(eth, dec!("100"))
-                    .try_deposit_batch_or_abort(account2, None)
+                    .try_deposit_entire_worktop_or_abort(account2, None)
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(&pk)],
             )
@@ -182,7 +182,7 @@ fn do_swap(
             let to_trade_bucket = lookup.bucket("to_trade");
             builder.call_method(component_address, "swap", manifest_args!(to_trade_bucket))
         })
-        .try_deposit_batch_or_abort(account.1, None)
+        .try_deposit_entire_worktop_or_abort(account.1, None)
         .build();
 
     test_runner

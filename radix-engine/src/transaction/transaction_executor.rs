@@ -769,6 +769,9 @@ where
                 Decimal::min(locked.amount(), required)
             };
 
+            // NOTE: Decimal arithmetic operation safe unwrap.
+            // No chance to overflow considering current costing parameters
+
             // Take fees
             collected_fees.put(locked.take_by_amount(amount).unwrap());
             required = required.safe_sub(amount).unwrap();

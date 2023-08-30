@@ -126,14 +126,16 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        Ok(Self::liquid_amount(api)?
+        Self::liquid_amount(api)?
             .safe_add(Self::locked_amount(api)?)
-            .unwrap())
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::DecimalOverflow),
+            ))
     }
 
     pub fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());
@@ -206,7 +208,11 @@ impl FungibleBucketBlueprint {
 
         // Take from liquid if needed
         if amount > max_locked {
-            let delta = amount.safe_sub(max_locked).unwrap();
+            let delta = amount
+                .safe_sub(max_locked)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::BucketError(BucketError::DecimalOverflow),
+                ))?;
             Self::internal_take(delta, api)?;
         }
 
@@ -241,7 +247,11 @@ impl FungibleBucketBlueprint {
 
         api.field_write_typed(handle, &locked)?;
 
-        let delta = max_locked.safe_sub(locked.amount()).unwrap();
+        let delta = max_locked
+            .safe_sub(locked.amount())
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::DecimalOverflow),
+            ))?;
         Self::internal_put(LiquidFungibleResource::new(delta), api)
     }
 

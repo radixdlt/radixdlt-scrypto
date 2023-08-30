@@ -56,7 +56,7 @@ fn can_set_package_metadata_with_owner() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package(code, single_function_package_definition("Test", "f"))
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let package_address = receipt.expect_commit(true).new_package_addresses()[0];
@@ -67,7 +67,7 @@ fn can_set_package_metadata_with_owner() {
         .create_proof_from_account_of_non_fungibles(
             account,
             PACKAGE_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(package_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(package_address.as_node_id().0).unwrap()],
         )
         .set_metadata(
             package_address,

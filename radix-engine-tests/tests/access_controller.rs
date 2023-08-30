@@ -1973,7 +1973,7 @@ impl AccessControllerTestRunner {
                     non_fungible_local_ids,
                 },
             )
-            .try_deposit_batch_or_abort(self.account.0, None)
+            .try_deposit_entire_worktop_or_abort(self.account.0, None)
             .build();
         self.execute_manifest(manifest)
     }
