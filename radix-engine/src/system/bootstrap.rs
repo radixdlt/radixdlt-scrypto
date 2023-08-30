@@ -8,6 +8,7 @@ use crate::blueprints::package::{
 };
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceNativePackage;
+use crate::blueprints::test_utils::TestUtilsNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
@@ -510,6 +511,16 @@ pub fn create_system_bootstrap_flash(
             metadata_init! {
                 "name" => "Royalty Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the royalty module used by components.".to_owned(), locked;
+            },
+            btreemap!(),
+        ),
+        (
+            TEST_UTILS_PACKAGE,
+            TestUtilsNativePackage::definition(),
+            TEST_UTILS_CODE_ID,
+            metadata_init! {
+                "name" => "Test Utils Package".to_owned(), locked;
+                "description" => "A native package that contains a set of useful functions to use in testing.".to_owned(), locked;
             },
             btreemap!(),
         ),

@@ -5,6 +5,7 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceNativePackage;
+use crate::blueprints::test_utils::TestUtilsNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
@@ -131,6 +132,9 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     POOL_CODE_ID => PoolNativePackage::invoke_export(export_name, input, api),
                     TRANSACTION_TRACKER_CODE_ID => {
                         TransactionTrackerNativePackage::invoke_export(export_name, input, api)
+                    }
+                    TEST_UTILS_CODE_ID => {
+                        TestUtilsNativePackage::invoke_export(export_name, input, api)
                     }
                     _ => {
                         return Err(RuntimeError::VmError(VmError::Native(
