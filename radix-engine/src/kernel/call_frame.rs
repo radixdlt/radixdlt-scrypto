@@ -1510,11 +1510,6 @@ impl<C, L: Clone> CallFrame<C, L> {
     }
 
     #[cfg(feature = "radix_engine_tests")]
-    pub fn transient_references_mut(&mut self) -> &mut NonIterMap<NodeId, TransientReference> {
-        &mut self.transient_references
-    }
-
-    #[cfg(feature = "radix_engine_tests")]
     pub fn stable_references_mut(&mut self) -> &mut NonIterMap<NodeId, StableReferenceType> {
         &mut self.stable_references
     }

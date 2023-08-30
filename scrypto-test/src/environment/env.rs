@@ -737,30 +737,9 @@ impl TestEnvironment {
                     v.as_typed().unwrap();
                 scrypto_encode(&payload).unwrap()
             })?;
-            // kernel.kernel_close_substate(handle)?;
 
-            // Add all of the references in the state to the current call-frame
-            let indexed_state = IndexedScryptoValue::from_slice(&state).unwrap();
-            for reference in indexed_state.references() {
-                kernel
-                    .kernel_current_frame_mut()
-                    .add_global_reference(GlobalAddress::new_or_panic(reference.0))
-            }
-
-            // Add all of the owned nodes from the state as transient nodes to the test call frame
-            // for own in indexed_state.owned_nodes() {
-            //     let device = Self::get_node_device(kernel, own);
-            //     kernel
-            //         .kernel_current_frame_mut()
-            //         .transient_references_mut()
-            //         .entry(*own)
-            //         .or_insert(TransientReference {
-            //             ref_count: 0,
-            //             ref_origin: ReferenceOrigin::SubstateNonGlobalReference(device),
-            //         })
-            //         .ref_count
-            //         .add_assign(1);
-            // }
+            // We do not close the substate lock. This is intentional. Closing the lock will mean
+            // that we will lose all of the references provided to us by this substate.
 
             // Decode and return
             Ok(scrypto_decode::<S>(&state).unwrap())
