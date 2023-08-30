@@ -394,7 +394,7 @@ pub struct CallFrame<C, L> {
     /// Stable references points to nodes in track, which can't moved/deleted.
     /// Current two types: `GLOBAL` (root, stored) and `DirectAccess`.
     /// These references MAY be passed between call frames
-    stable_references: NonIterMap<NodeId, StableReferenceType>,
+    stable_references: BTreeMap<NodeId, StableReferenceType>,
 
     next_handle: SubstateHandle,
     open_substates: IndexMap<SubstateHandle, OpenedSubstate<L>>,
@@ -569,7 +569,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         Self {
             depth: 0,
             call_frame_data,
-            stable_references: NonIterMap::new(),
+            stable_references: Default::default(),
             transient_references: NonIterMap::new(),
             owned_root_nodes: index_set_new(),
             next_handle: 0u32,
@@ -585,7 +585,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         let mut frame = Self {
             depth: parent.depth + 1,
             call_frame_data,
-            stable_references: NonIterMap::new(),
+            stable_references: Default::default(),
             transient_references: NonIterMap::new(),
             owned_root_nodes: index_set_new(),
             next_handle: 0u32,
@@ -1510,8 +1510,8 @@ impl<C, L: Clone> CallFrame<C, L> {
     }
 
     #[cfg(feature = "radix_engine_tests")]
-    pub fn stable_references_mut(&mut self) -> &mut NonIterMap<NodeId, StableReferenceType> {
-        &mut self.stable_references
+    pub fn stable_references(&self) -> &BTreeMap<NodeId, StableReferenceType> {
+        &self.stable_references
     }
 }
 

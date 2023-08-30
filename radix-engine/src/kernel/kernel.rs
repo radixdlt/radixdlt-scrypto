@@ -1167,12 +1167,12 @@ where
 }
 
 #[cfg(feature = "radix_engine_tests")]
-impl<'g, M, S> KernelTestingApi<'g, M, S> for Kernel<'g, M, S>
+impl<'g, M, S> Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: CommitableSubstateStore,
 {
-    fn kernel_create_kernel_for_testing(
+    pub fn kernel_create_kernel_for_testing(
         substate_io: SubstateIO<'g, S>,
         id_allocator: &'g mut IdAllocator,
         current_frame: CallFrame<M::CallFrameData, M::LockData>,
@@ -1188,14 +1188,14 @@ where
         }
     }
 
-    fn kernel_current_frame(
+    pub fn kernel_current_frame(
         &self,
     ) -> &CallFrame<<M as KernelCallbackObject>::CallFrameData, <M as KernelCallbackObject>::LockData>
     {
         &self.current_frame
     }
 
-    fn kernel_current_frame_mut(
+    pub fn kernel_current_frame_mut(
         &mut self,
     ) -> &mut CallFrame<
         <M as KernelCallbackObject>::CallFrameData,
@@ -1204,7 +1204,7 @@ where
         &mut self.current_frame
     }
 
-    fn kernel_prev_frame_stack(
+    pub fn kernel_prev_frame_stack(
         &self,
     ) -> &Vec<
         CallFrame<
@@ -1215,7 +1215,7 @@ where
         &self.prev_frame_stack
     }
 
-    fn kernel_prev_frame_stack_mut(
+    pub fn kernel_prev_frame_stack_mut(
         &mut self,
     ) -> &mut Vec<
         CallFrame<
@@ -1226,27 +1226,27 @@ where
         &mut self.prev_frame_stack
     }
 
-    fn kernel_substate_io(&self) -> &SubstateIO<'g, S> {
+    pub fn kernel_substate_io(&self) -> &SubstateIO<'g, S> {
         &self.substate_io
     }
 
-    fn kernel_substate_io_mut(&mut self) -> &mut SubstateIO<'g, S> {
+    pub fn kernel_substate_io_mut(&mut self) -> &mut SubstateIO<'g, S> {
         &mut self.substate_io
     }
 
-    fn kernel_id_allocator(&self) -> &IdAllocator {
+    pub fn kernel_id_allocator(&self) -> &IdAllocator {
         &self.id_allocator
     }
 
-    fn kernel_id_allocator_mut(&mut self) -> &mut &'g mut IdAllocator {
+    pub fn kernel_id_allocator_mut(&mut self) -> &mut &'g mut IdAllocator {
         &mut self.id_allocator
     }
 
-    fn kernel_callback(&self) -> &M {
+    pub fn kernel_callback(&self) -> &M {
         &self.callback
     }
 
-    fn kernel_callback_mut(&mut self) -> &mut M {
+    pub fn kernel_callback_mut(&mut self) -> &mut M {
         &mut self.callback
     }
 }

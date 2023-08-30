@@ -900,12 +900,15 @@ impl TestEnvironment {
         O: ScryptoEncode,
     {
         // Creating the next frame.
-        let message = CallFrameMessage::from_input(&IndexedScryptoValue::from_typed(&()), &actor);
+        let mut message =
+            CallFrameMessage::from_input(&IndexedScryptoValue::from_typed(&()), &actor);
         self.0.with_kernel_mut(|kernel| {
             let current_frame = kernel.kernel_current_frame_mut();
-            let mut new_frame =
+            message
+                .copy_global_references
+                .extend(current_frame.stable_references().keys());
+            let new_frame =
                 CallFrame::new_child_from_parent(current_frame, actor, message).unwrap();
-            *new_frame.stable_references_mut() = current_frame.stable_references_mut().clone();
             let old = core::mem::replace(current_frame, new_frame);
             kernel.kernel_prev_frame_stack_mut().push(old);
         });
