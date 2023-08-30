@@ -1663,7 +1663,17 @@ impl ManifestBuilder {
         })
     }
 
-    /// Withdraws resource from an account.
+    /// Withdraws a single non-fungible from an account.
+    pub fn withdraw_non_fungible_from_account(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        non_fungible_global_id: NonFungibleGlobalId,
+    ) -> Self {
+        let (resource_address, local_id) = non_fungible_global_id.into_parts();
+        self.withdraw_non_fungibles_from_account(account_address, resource_address, [local_id])
+    }
+
+    /// Withdraws non-fungibles from an account.
     pub fn withdraw_non_fungibles_from_account(
         self,
         account_address: impl ResolvableComponentAddress,
@@ -1707,6 +1717,36 @@ impl ManifestBuilder {
         })
     }
 
+    /// Burns a single non-fungible from an account.
+    pub fn burn_non_fungible_in_account(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        non_fungible_global_id: NonFungibleGlobalId,
+    ) -> Self {
+        let (resource_address, local_id) = non_fungible_global_id.into_parts();
+        self.burn_non_fungibles_in_account(account_address, resource_address, [local_id])
+    }
+
+    /// Burns non-fungibles from an account.
+    pub fn burn_non_fungibles_in_account(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        resource_address: impl ResolvableResourceAddress,
+        local_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+    ) -> Self {
+        let account_address = account_address.resolve(&self.registrar);
+        let resource_address = resource_address.resolve_static(&self.registrar);
+
+        self.call_method(
+            account_address,
+            ACCOUNT_BURN_NON_FUNGIBLES_IDENT,
+            AccountBurnNonFungiblesInput {
+                resource_address,
+                ids: local_ids.into_iter().collect(),
+            },
+        )
+    }
+
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_of_amount(
         self,
@@ -1748,14 +1788,14 @@ impl ManifestBuilder {
         self,
         account_address: impl ResolvableComponentAddress,
         resource_address: impl ResolvableResourceAddress,
-        ids: impl IntoIterator<Item = NonFungibleLocalId>,
+        local_ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let resource_address = resource_address.resolve_static(&self.registrar);
 
         let args = to_manifest_value_and_unwrap!(&AccountCreateProofOfNonFungiblesInput {
             resource_address,
-            ids: ids.into_iter().collect(),
+            ids: local_ids.into_iter().collect(),
         });
 
         self.add_instruction(InstructionV1::CallMethod {
