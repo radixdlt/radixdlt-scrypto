@@ -34,6 +34,9 @@ impl FeeReserveFinalizationSummary {
         self.total_bad_debt_in_xrd == 0.into()
     }
 
+    // NOTE: Decimal arithmetic operation safe unwrap.
+    // No chance to overflow considering current costing parameters
+
     pub fn total_cost(&self) -> Decimal {
         self.total_execution_cost_in_xrd
             .safe_add(self.total_finalization_cost_in_xrd)

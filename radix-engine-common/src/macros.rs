@@ -2,10 +2,12 @@
 ///
 #[macro_export]
 macro_rules! dec {
+    // NOTE: Decimal arithmetic operation safe unwrap.
+    // In general, it is assumed that reasonable literals are provided.
+    // If not then something is definitely wrong and panic is fine.
     ($x:literal) => {
         $crate::math::Decimal::try_from($x).unwrap()
     };
-
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a Decimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
@@ -49,6 +51,9 @@ macro_rules! i {
 ///
 #[macro_export]
 macro_rules! pdec {
+    // NOTE: PreciseDecimal arithmetic operation safe unwrap.
+    // In general, it is assumed that reasonable literals are provided.
+    // If not then something is definitely wrong and panic is fine.
     ($x:literal) => {
         $crate::math::PreciseDecimal::try_from($x).unwrap()
     };

@@ -63,7 +63,9 @@ lazy_static! {
     pub static ref DEFAULT_VALIDATOR_USD_COST: Decimal = dec!("100");
     pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal = DEFAULT_VALIDATOR_USD_COST
         .safe_mul(Decimal::try_from(USD_PRICE_IN_XRD).unwrap())
-        .unwrap();
+        .unwrap();  // NOTE: Decimal arithmetic operation safe unwrap.
+                    // No chance to overflow.
+                    // The chance to overflow will be decreasing over time since USD price in XRD will only get lower ;)
 }
 
 //==========================================================================================
