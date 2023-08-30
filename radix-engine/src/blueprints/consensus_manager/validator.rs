@@ -1611,9 +1611,9 @@ impl ValidatorBlueprint {
         let xrd_amount = if total_stake_unit_supply.is_zero() {
             Decimal::zero()
         } else {
-            amount_of_stake_units
-                .safe_mul(active_stake_amount)
-                .and_then(|amount| amount.safe_div(total_stake_unit_supply))
+            active_stake_amount
+                .safe_div(total_stake_unit_supply)
+                .and_then(|amount| amount_of_stake_units.safe_mul(amount))
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(
                         ValidatorError::UnexpectedDecimalComputationError,
@@ -1633,9 +1633,9 @@ impl ValidatorBlueprint {
         if total_stake_xrd_amount.is_zero() {
             Ok(xrd_amount)
         } else {
-            xrd_amount
-                .safe_mul(total_stake_unit_supply)
-                .and_then(|amount| amount.safe_div(total_stake_xrd_amount))
+            total_stake_unit_supply
+                .safe_div(total_stake_xrd_amount)
+                .and_then(|amount| xrd_amount.safe_mul(amount))
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(
                         ValidatorError::UnexpectedDecimalComputationError,
