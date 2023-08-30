@@ -1,6 +1,6 @@
 use radix_engine::blueprints::pool::two_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
-use radix_engine::transaction::{BalanceChange, TransactionReceipt};
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ObjectModuleId;
@@ -162,27 +162,30 @@ pub fn contribution_provides_expected_pool_unit_resources1() {
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_unit_resource_address)
+            .map(|balance| balance.fungible_change())
             .cloned(),
-        Some(BalanceChange::Fungible(expected_pool_units.into()))
+        Some(expected_pool_units.into())
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource1)
+            .map(|balance| balance.fungible_change())
             .cloned(),
         if expected_change1 == 0 {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change1.into()))
+            Some(expected_change1.into())
         }
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource2)
+            .map(|balance| balance.fungible_change())
             .cloned(),
         if expected_change2 == 0 {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change2.into()))
+            Some(expected_change2.into())
         }
     );
 }
@@ -220,27 +223,30 @@ pub fn contribution_provides_expected_pool_unit_resources2() {
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_unit_resource_address)
+            .map(|balance| balance.fungible_change())
             .cloned(),
-        Some(BalanceChange::Fungible(expected_pool_units.into()))
+        Some(expected_pool_units.into())
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource1)
+            .map(|balance| balance.fungible_change())
             .cloned(),
         if expected_change1 == 0 {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change1.into()))
+            Some(expected_change1.into())
         }
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource2)
+            .map(|balance| balance.fungible_change())
             .cloned(),
         if expected_change2 == 0 {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change2.into()))
+            Some(expected_change2.into())
         }
     );
 }
@@ -277,27 +283,30 @@ pub fn contribution_provides_expected_pool_unit_resources3() {
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_unit_resource_address)
+            .map(|balance| balance.fungible_change())
             .cloned(),
-        Some(BalanceChange::Fungible(expected_pool_units.into()))
+        Some(expected_pool_units.into())
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource1)
+            .map(|balance| balance.fungible_change())
             .cloned(),
         if expected_change1 == 0 {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change1.into()))
+            Some(expected_change1.into())
         }
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource2)
+            .map(|balance| balance.fungible_change())
             .cloned(),
         if expected_change2 == 0 {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change2.into()))
+            Some(expected_change2.into())
         }
     );
 }
@@ -334,27 +343,30 @@ pub fn contribution_provides_expected_pool_unit_resources4() {
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_unit_resource_address)
+            .map(|balance| balance.fungible_change())
             .cloned(),
-        Some(BalanceChange::Fungible(expected_pool_units.into()))
+        Some(expected_pool_units.into())
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource1)
+            .map(|balance| balance.fungible_change())
             .cloned(),
         if expected_change1 == 0 {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change1.into()))
+            Some(expected_change1.into())
         }
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource2)
+            .map(|balance| balance.fungible_change())
             .cloned(),
         if expected_change2 == Decimal::ZERO {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change2.into()))
+            Some(expected_change2.into())
         }
     );
 }
@@ -394,27 +406,30 @@ pub fn contribution_provides_expected_pool_unit_resources5() {
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_unit_resource_address)
+            .map(|balance| balance.fungible_change())
             .cloned(),
-        Some(BalanceChange::Fungible(expected_pool_units.into()))
+        Some(expected_pool_units.into())
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource1)
+            .map(|balance| balance.fungible_change())
             .cloned(),
         if expected_change1 == 0 {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change1.into()))
+            Some(expected_change1.into())
         }
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource2)
+            .map(|balance| balance.fungible_change())
             .cloned(),
         if expected_change2 == 0 {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change2.into()))
+            Some(expected_change2.into())
         }
     );
 }
@@ -505,14 +520,16 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource1)
+            .map(|balance| balance.fungible_change())
             .cloned(),
-        Some(BalanceChange::Fungible(dec!("1.11111111111111")))
+        Some(dec!("1.11111111111111"))
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource2)
+            .map(|balance| balance.fungible_change())
             .cloned(),
-        Some(BalanceChange::Fungible(dec!("1.11")))
+        Some(dec!("1.11"))
     );
 }
 
@@ -542,14 +559,16 @@ fn contribution_calculations_work_for_resources_with_divisibility_not_18() {
     assert_eq!(
         pool_balance_changes
             .get(&test_runner.pool_resource1)
+            .map(|balance| balance.fungible_change())
             .cloned(),
-        Some(BalanceChange::Fungible(dec!("1.1111111111111")))
+        Some(dec!("1.1111111111111"))
     );
     assert_eq!(
         pool_balance_changes
             .get(&test_runner.pool_resource2)
+            .map(|balance| balance.fungible_change())
             .cloned(),
-        Some(BalanceChange::Fungible(dec!("1.11")))
+        Some(dec!("1.11"))
     );
 }
 
@@ -769,14 +788,16 @@ fn redemption_after_protected_deposit_redeems_expected_amount() {
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource1)
+            .map(|balance| balance.fungible_change())
             .cloned(),
-        Some(BalanceChange::Fungible(600.into()))
+        Some(600.into())
     );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource2)
+            .map(|balance| balance.fungible_change())
             .cloned(),
-        Some(BalanceChange::Fungible(100.into()))
+        Some(100.into())
     );
 }
 
@@ -800,20 +821,21 @@ pub fn test_complete_interactions() {
         assert_eq!(
             account_balance_changes
                 .get(&test_runner.pool_unit_resource_address)
+                .map(|balance| balance.fungible_change())
                 .cloned(),
-            Some(BalanceChange::Fungible(
-                (dec!("500").safe_mul(dec!("200")).unwrap()).sqrt().unwrap()
-            ))
+            Some((dec!("500").safe_mul(dec!("200")).unwrap()).sqrt().unwrap())
         );
         assert_eq!(
             account_balance_changes
                 .get(&test_runner.pool_resource1)
+                .map(|balance| balance.fungible_change())
                 .cloned(),
             None
         );
         assert_eq!(
             account_balance_changes
                 .get(&test_runner.pool_resource2)
+                .map(|balance| balance.fungible_change())
                 .cloned(),
             None
         );
@@ -835,20 +857,23 @@ pub fn test_complete_interactions() {
         assert_eq!(
             account_balance_changes
                 .get(&test_runner.pool_unit_resource_address)
+                .map(|balance| balance.fungible_change())
                 .cloned(),
-            Some(BalanceChange::Fungible(dec!("442.718872423573106478")))
+            Some(dec!("442.718872423573106478"))
         );
         assert_eq!(
             account_balance_changes
                 .get(&test_runner.pool_resource1)
+                .map(|balance| balance.fungible_change())
                 .cloned(),
             None
         );
         assert_eq!(
             account_balance_changes
                 .get(&test_runner.pool_resource2)
+                .map(|balance| balance.fungible_change())
                 .cloned(),
-            Some(BalanceChange::Fungible(420.into()))
+            Some(420.into())
         );
     }
 }

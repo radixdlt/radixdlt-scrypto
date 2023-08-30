@@ -98,12 +98,17 @@ where
     let other_account_balance: Decimal = test_runner.get_component_balance(other_account, XRD);
     let transfer_amount = other_account_balance.safe_sub(10000).unwrap() /* initial balance */;
 
-    let balance_change = test_runner
-        .sum_descendant_balance_changes(receipt.expect_commit_success(), other_account.as_node_id())
-        .get(&XRD)
-        .unwrap()
-        .clone();
-    assert_eq!(balance_change, BalanceChange::Fungible(transfer_amount));
+    assert_eq!(
+        test_runner
+            .sum_descendant_balance_changes(
+                receipt.expect_commit_success(),
+                other_account.as_node_id()
+            )
+            .remove(&XRD)
+            .unwrap()
+            .fungible_change(),
+        &transfer_amount
+    );
 }
 
 fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
@@ -203,14 +208,13 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     );
 
     // Assert
-    let balance_change = test_runner
-        .sum_descendant_balance_changes(receipt.expect_commit_success(), account.as_node_id())
-        .get(&XRD)
-        .unwrap()
-        .clone();
     assert_eq!(
-        balance_change,
-        BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap())
+        test_runner
+            .sum_descendant_balance_changes(receipt.expect_commit_success(), account.as_node_id())
+            .remove(&XRD)
+            .unwrap()
+            .fungible_change(),
+        &receipt.fee_summary.total_cost().safe_neg().unwrap()
     );
 }
 

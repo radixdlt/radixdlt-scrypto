@@ -282,7 +282,13 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
                 .vault_balance_changes
                 .get(owner_badge_vault.as_node_id())
                 .unwrap(),
-            &(created_owner_badge, BalanceChange::Fungible(1.into()))
+            &(
+                created_owner_badge,
+                BalanceChange::Fungible {
+                    change: 1.into(),
+                    resultant_balance: 1.into()
+                }
+            )
         );
     }
 
@@ -296,7 +302,13 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
             .vault_balance_changes
             .get(created_vault.as_node_id())
             .unwrap(),
-        &(created_resource, BalanceChange::Fungible(allocation_amount))
+        &(
+            created_resource,
+            BalanceChange::Fungible {
+                change: allocation_amount,
+                resultant_balance: allocation_amount
+            }
+        )
     );
 }
 
@@ -386,10 +398,12 @@ fn test_genesis_stake_allocation() {
         assert_eq!(balances.len(), 2);
         assert!(balances
             .values()
-            .any(|bal| *bal == BalanceChange::Fungible(dec!(1))));
+            .map(|balance| balance.fungible_change())
+            .any(|change| *change == dec!(1)));
         assert!(balances
             .values()
-            .any(|bal| *bal == BalanceChange::Fungible(dec!("50000"))));
+            .map(|balance| balance.fungible_change())
+            .any(|change| *change == dec!("50000")));
     }
 
     let create_validators_receipt = data_ingestion_receipts.pop().unwrap();

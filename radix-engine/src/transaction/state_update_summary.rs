@@ -64,7 +64,10 @@ impl StateUpdateSummary {
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum BalanceChange {
-    Fungible(Decimal),
+    Fungible {
+        change: Decimal,
+        resultant_balance: Decimal,
+    },
     NonFungible {
         added: BTreeSet<NonFungibleLocalId>,
         removed: BTreeSet<NonFungibleLocalId>,
@@ -76,11 +79,16 @@ impl Add for BalanceChange {
 
     fn add(mut self, rhs: Self) -> Self::Output {
         match &mut self {
-            BalanceChange::Fungible(self_value) => {
-                let BalanceChange::Fungible(value) = rhs else {
+            BalanceChange::Fungible {
+                change: self_change,
+                resultant_balance: self_resultant_balance,
+            } => {
+                let BalanceChange::Fungible{ change, resultant_balance } = rhs else {
                     panic!("cannot {:?} + {:?}", self, rhs);
                 };
-                *self_value = self_value.safe_add(value).unwrap();
+                *self_change = self_change.safe_add(change).unwrap();
+                *self_resultant_balance =
+                    self_resultant_balance.safe_add(resultant_balance).unwrap();
             }
             BalanceChange::NonFungible {
                 added: self_added,
@@ -98,21 +106,29 @@ impl Add for BalanceChange {
 }
 
 impl BalanceChange {
-    pub fn fungible(&mut self) -> &mut Decimal {
+    pub fn fungible_change(&self) -> &Decimal {
         match self {
-            BalanceChange::Fungible(x) => x,
+            BalanceChange::Fungible { change, .. } => change,
             BalanceChange::NonFungible { .. } => panic!("Not fungible"),
         }
     }
-    pub fn added_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
+    pub fn fungible_resultant_balance(&self) -> &Decimal {
         match self {
-            BalanceChange::Fungible(..) => panic!("Not non fungible"),
+            BalanceChange::Fungible {
+                resultant_balance, ..
+            } => resultant_balance,
+            BalanceChange::NonFungible { .. } => panic!("Not fungible"),
+        }
+    }
+    pub fn added_non_fungibles(&self) -> &BTreeSet<NonFungibleLocalId> {
+        match self {
+            BalanceChange::Fungible { .. } => panic!("Not non fungible"),
             BalanceChange::NonFungible { added, .. } => added,
         }
     }
-    pub fn removed_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
+    pub fn removed_non_fungibles(&self) -> &BTreeSet<NonFungibleLocalId> {
         match self {
-            BalanceChange::Fungible(..) => panic!("Not non fungible"),
+            BalanceChange::Fungible { .. } => panic!("Not non fungible"),
             BalanceChange::NonFungible { removed, .. } => removed,
         }
     }
@@ -197,10 +213,10 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                     .map(|old_balance| old_balance.into_payload().into_latest().amount())
                     .unwrap_or(Decimal::ZERO);
 
-                new_balance.safe_sub(old_balance).unwrap()
+                (new_balance.safe_sub(old_balance).unwrap(), new_balance)
             })
-            .filter(|change| change != &Decimal::ZERO) // prune
-            .map(|change| BalanceChange::Fungible(change))
+            .filter(|(change, _)| change != &Decimal::ZERO) // prune
+            .map(|(change, resultant_balance)| BalanceChange::Fungible { change, resultant_balance })
     }
 
     fn calculate_non_fungible_vault_balance_change(

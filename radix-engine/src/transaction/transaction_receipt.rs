@@ -727,7 +727,12 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                     vault_id.display(address_display_context),
                     resource.display(address_display_context),
                     match delta {
-                        BalanceChange::Fungible(d) => format!("{}", d),
+                        BalanceChange::Fungible {
+                            change,
+                            resultant_balance,
+                        } => {
+                            format!("{} (resultant balance: {})", change, resultant_balance)
+                        }
                         BalanceChange::NonFungible { added, removed } => {
                             format!("+{:?}, -{:?}", added, removed)
                         }
