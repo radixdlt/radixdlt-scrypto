@@ -32,7 +32,7 @@ pub fn run_all_in_memory_and_dump_examples(
         native_vm,
     };
 
-    let receipts = Bootstrapper::new(&mut substate_db, vm, false)
+    let receipts = Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
         .bootstrap_test_default()
         .unwrap();
     let epoch = receipts

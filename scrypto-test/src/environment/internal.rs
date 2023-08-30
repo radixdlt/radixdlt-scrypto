@@ -42,7 +42,8 @@ impl SelfContainedRadixEngine {
         let vm = Vm::new(&scrypto_vm, native_vm.clone());
 
         // Run genesis against the substate store.
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
+        let mut bootstrapper =
+            Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
         bootstrapper.bootstrap_test_default().unwrap();
 
         // Create the Id allocator we will be using throughout this test

@@ -1050,13 +1050,21 @@ mod tests {
         fn from_sort_key_and_content(sort_key: u16, content: BlueprintVersion) -> Self {
             ExampleSortedIndexKey(sort_key, content)
         }
+
+        fn as_content(&self) -> &BlueprintVersion {
+            &self.1
+        }
     }
 
     impl SortedIndexKeyContentSource<TestBlueprintMyCoolSortedIndexKeyPayload>
         for ExampleSortedIndexKey
     {
-        fn into_sort_key_and_content(self) -> (u16, BlueprintVersion) {
-            (self.0, self.1)
+        fn sort_key(&self) -> u16 {
+            self.0
+        }
+
+        fn into_content(self) -> BlueprintVersion {
+            self.1
         }
     }
 }

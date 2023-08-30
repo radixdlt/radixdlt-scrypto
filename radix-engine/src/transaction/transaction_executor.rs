@@ -103,9 +103,9 @@ pub struct ExecutionConfig {
 impl ExecutionConfig {
     /// Creates an `ExecutionConfig` using default configurations.
     /// This is internal. Clients should use `for_xxx` constructors instead.
-    fn default() -> Self {
+    fn default(network_definition: NetworkDefinition) -> Self {
         Self {
-            network_definition: NetworkDefinition::simulator(),
+            network_definition,
             enabled_modules: EnabledModules::for_notarized_transaction(),
             abort_when_loan_repaid: false,
             enable_cost_breakdown: false,
@@ -126,27 +126,27 @@ impl ExecutionConfig {
         }
     }
 
-    pub fn for_genesis_transaction() -> Self {
+    pub fn for_genesis_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
             enabled_modules: EnabledModules::for_genesis_transaction(),
             max_heap_substate_total_bytes: 512 * 1024 * 1024,
             max_track_substate_total_bytes: 512 * 1024 * 1024,
             max_number_of_events: 1024 * 1024,
-            ..Self::default()
+            ..Self::default(network_definition)
         }
     }
 
-    pub fn for_system_transaction() -> Self {
+    pub fn for_system_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
             enabled_modules: EnabledModules::for_system_transaction(),
-            ..Self::default()
+            ..Self::default(network_definition)
         }
     }
 
-    pub fn for_notarized_transaction() -> Self {
+    pub fn for_notarized_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
             enabled_modules: EnabledModules::for_notarized_transaction(),
-            ..Self::default()
+            ..Self::default(network_definition)
         }
     }
 
@@ -154,15 +154,15 @@ impl ExecutionConfig {
         Self {
             enabled_modules: EnabledModules::for_test_transaction(),
             enable_cost_breakdown: true,
-            ..Self::default()
+            ..Self::default(NetworkDefinition::simulator())
         }
     }
 
-    pub fn for_preview() -> Self {
+    pub fn for_preview(network_definition: NetworkDefinition) -> Self {
         Self {
             enabled_modules: EnabledModules::for_preview(),
             enable_cost_breakdown: true,
-            ..Self::default()
+            ..Self::default(network_definition)
         }
     }
 
@@ -302,6 +302,17 @@ where
                 } else {
                     None
                 };
+
+                // Abort the process if an error has occurred in the system layer or below. The
+                // following code is only enabled when compiling with the standard library. It's
+                // impossible for us to come across a `SystemError::SystemPanic` in no_std since
+                // we can't catch those panics in no_std.
+                #[cfg(feature = "std")]
+                if let Err(RuntimeError::SystemError(SystemError::SystemPanic(..))) =
+                    interpretation_result
+                {
+                    std::process::abort()
+                }
 
                 let result_type = Self::determine_result_type(
                     interpretation_result,

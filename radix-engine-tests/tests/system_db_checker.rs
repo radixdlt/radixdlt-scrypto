@@ -18,7 +18,8 @@ fn system_database_checker_should_report_missing_owner_error_on_broken_db() {
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, true);
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
     bootstrapper.bootstrap_test_default().unwrap();
     let remove_owner_update = {
         let mut remove_owner_update = DatabaseUpdates::default();
