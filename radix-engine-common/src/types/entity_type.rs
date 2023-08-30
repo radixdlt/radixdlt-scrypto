@@ -97,9 +97,6 @@ pub enum EntityType {
     /// An internal generic (eg scrypto) component entity (248 in decimal). Gives Bech32 prefix: `l` followed by one of `q`, `p`, `z` or `r`.
     InternalGenericComponent = 0b11111000, //-------- 11111 => l, 000xx => qpzr (000 = generic component)
 
-    /// An internal non-virtual native account component entity (249 in decimal). Gives Bech32 prefix: `l` followed by one of `y`, `9`, `x` or `8`.
-    InternalAccount = 0b11111001, //----------------- 11111 => l, 001xx => y9x8 (001 = account)
-
     //=========================================================================
     // Internal key-value-store-like entities (start with k for key-value)
     //=========================================================================
@@ -132,7 +129,6 @@ impl EntityType {
             | EntityType::GlobalTransactionTracker => true,
             EntityType::InternalFungibleVault
             | EntityType::InternalNonFungibleVault
-            | EntityType::InternalAccount
             | EntityType::InternalGenericComponent
             | EntityType::InternalKeyValueStore => false,
         }
@@ -163,7 +159,6 @@ impl EntityType {
             | EntityType::GlobalNonFungibleResourceManager
             | EntityType::InternalFungibleVault
             | EntityType::InternalNonFungibleVault
-            | EntityType::InternalAccount
             | EntityType::InternalGenericComponent
             | EntityType::InternalKeyValueStore => false,
         }

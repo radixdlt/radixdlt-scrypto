@@ -65,10 +65,9 @@ impl InternalAddress {
 impl<'a> Arbitrary<'a> for InternalAddress {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
         use core::cmp::min;
-        let internal_entities: [u8; 5] = [
+        let internal_entities: [u8; 4] = [
             EntityType::InternalFungibleVault as u8,
             EntityType::InternalNonFungibleVault as u8,
-            EntityType::InternalAccount as u8,
             EntityType::InternalGenericComponent as u8,
             EntityType::InternalKeyValueStore as u8,
         ];
