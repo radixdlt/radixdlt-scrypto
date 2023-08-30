@@ -422,8 +422,8 @@ pub enum ApplicationError {
     // TODO: this should never happen because of schema check?
     InputDecodeError(DecodeError),
 
-    /// A panic was encountered in Scrypto code.
-    Panic(String),
+    /// A panic.
+    PanicMessage(String),
 
     //===================
     // Node module errors

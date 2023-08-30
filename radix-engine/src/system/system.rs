@@ -2688,9 +2688,9 @@ where
             .modules
             .set_panic_message(message.clone())?;
 
-        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
-            message,
-        )))
+        Err(RuntimeError::ApplicationError(
+            ApplicationError::PanicMessage(message),
+        ))
     }
 }
 
