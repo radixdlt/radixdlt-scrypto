@@ -25,6 +25,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let mut substate_db = InMemorySubstateDatabase::standard();
 
     let _ = Bootstrapper::new(
+        NetworkDefinition::simulator(),
         &mut substate_db,
         Vm::new(&ScryptoVm::<DefaultWasmEngine>::default(), NativeVm::new()),
         false,
@@ -56,7 +57,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             FeeTable::new(),
             0,
             1,
-            &ExecutionConfig::for_notarized_transaction(),
+            &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
         ),
     };
 
