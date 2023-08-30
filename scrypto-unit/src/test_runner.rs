@@ -717,16 +717,14 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         vault_id: NodeId,
     ) -> Option<(Decimal, Box<dyn Iterator<Item = NonFungibleLocalId> + '_>)> {
         let reader = SystemDatabaseReader::new(self.substate_db());
-        let vault: Option<VersionedNonFungibleVaultBalance> = reader
+        let vault_balance: NonFungibleVaultBalanceFieldPayload = reader
             .read_typed_object_field(
                 &vault_id,
                 ObjectModuleId::Main,
                 NonFungibleVaultField::Balance.into(),
             )
-            .ok();
-        let amount = match vault? {
-            VersionedNonFungibleVaultBalance::V1(amount) => amount,
-        };
+            .ok()?;
+        let amount = vault_balance.into_latest().amount;
 
         // TODO: Remove .collect() by using SystemDatabaseReader in test_runner
         let iter: Vec<NonFungibleLocalId> = reader
@@ -743,7 +741,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             })
             .collect();
 
-        Some((amount.amount, Box::new(iter.into_iter())))
+        Some((amount, Box::new(iter.into_iter())))
     }
 
     pub fn get_component_resources(
@@ -1190,6 +1188,51 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     ) -> PackageAddress {
         let (code, definition) = Compile::compile(package_dir);
         self.publish_package_with_owner(code, definition, owner_badge)
+    }
+
+    pub fn execute_unsigned_built_manifest_with_faucet_lock_fee(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+    ) -> TransactionReceipt {
+        self.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .then(create_manifest)
+                .build(),
+            [],
+        )
+    }
+
+    pub fn execute_unsigned_built_manifest(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+    ) -> TransactionReceipt {
+        self.execute_manifest(ManifestBuilder::new().then(create_manifest).build(), [])
+    }
+
+    pub fn execute_built_manifest_with_faucet_lock_fee(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+        signatures: impl ResolvableTransactionSignatures,
+    ) -> TransactionReceipt {
+        self.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .then(create_manifest)
+                .build(),
+            signatures.resolve(),
+        )
+    }
+
+    pub fn execute_built_manifest(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+        signatures: impl ResolvableTransactionSignatures,
+    ) -> TransactionReceipt {
+        self.execute_manifest(
+            ManifestBuilder::new().then(create_manifest).build(),
+            signatures.resolve(),
+        )
     }
 
     pub fn execute_manifest_ignoring_fee<T>(
