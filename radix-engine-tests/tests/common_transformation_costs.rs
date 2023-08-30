@@ -4,8 +4,6 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
 use scrypto_unit::*;
 use transaction::prelude::*;
-use transaction::validation::NotarizedTransactionValidator;
-use transaction::validation::{TransactionValidator, ValidationConfig};
 
 // We run tests in this file to produce common manifest transformation costs for Core Apps, such as
 // - Adding a lock_fee instruction, with account protected by single signature/badge, whichever is worse
@@ -21,7 +19,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
     let (_pk, sk, account) = test_runner.new_ed25519_virtual_account();
 
     let manifest1 = ManifestBuilder::new().build();
-    let tx1 = create_notarized_transaction(
+    let tx1 = create_notarized_transaction_advanced(
         &mut test_runner,
         &network,
         manifest1,
@@ -39,7 +37,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
     println!("\n{:?}", receipt1);
 
     let manifest2 = ManifestBuilder::new().lock_fee(account, dec!(100)).build();
-    let tx2 = create_notarized_transaction(
+    let tx2 = create_notarized_transaction_advanced(
         &mut test_runner,
         &network,
         manifest2,
@@ -72,10 +70,10 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let (_pk1, sk1, _pk2, _sk2, _pk3, _sk3, _pk4, _sk4, account, access_controller) =
-        test_runner.new_ed25519_virtual_account_with_access_controller();
+        test_runner.new_ed25519_virtual_account_with_access_controller(1);
 
     let manifest1 = ManifestBuilder::new().build();
-    let tx1 = create_notarized_transaction(
+    let tx1 = create_notarized_transaction_advanced(
         &mut test_runner,
         &network,
         manifest1,
@@ -100,7 +98,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         )
         .lock_fee(account, dec!(100))
         .build();
-    let tx2 = create_notarized_transaction(
+    let tx2 = create_notarized_transaction_advanced(
         &mut test_runner,
         &network,
         manifest2,
@@ -142,7 +140,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         .withdraw_from_account(account, resource_address, AMOUNT)
         .deposit_batch(account)
         .build();
-    let tx1 = create_notarized_transaction(
+    let tx1 = create_notarized_transaction_advanced(
         &mut test_runner,
         &network,
         manifest1,
@@ -165,7 +163,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         .assert_worktop_contains(resource_address, AMOUNT)
         .deposit_batch(account)
         .build();
-    let tx2 = create_notarized_transaction(
+    let tx2 = create_notarized_transaction_advanced(
         &mut test_runner,
         &network,
         manifest2,
@@ -211,7 +209,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         .withdraw_from_account(account, resource_address, AMOUNT)
         .deposit_batch(account)
         .build();
-    let tx1 = create_notarized_transaction(
+    let tx1 = create_notarized_transaction_advanced(
         &mut test_runner,
         &network,
         manifest1,
@@ -234,7 +232,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         .assert_worktop_contains(resource_address, AMOUNT)
         .deposit_batch(account)
         .build();
-    let tx2 = create_notarized_transaction(
+    let tx2 = create_notarized_transaction_advanced(
         &mut test_runner,
         &network,
         manifest2,
@@ -285,7 +283,7 @@ fn estimate_adding_signature() {
             builder
         })
         .build();
-    let tx1 = create_notarized_transaction(
+    let tx1 = create_notarized_transaction_advanced(
         &mut test_runner,
         &network,
         manifest.clone(),
@@ -302,7 +300,7 @@ fn estimate_adding_signature() {
     receipt1.expect_commit_success();
     println!("\n{:?}", receipt1);
 
-    let tx2 = create_notarized_transaction(
+    let tx2 = create_notarized_transaction_advanced(
         &mut test_runner,
         &network,
         manifest,
@@ -363,7 +361,7 @@ fn estimate_notarizing(notary_is_signatory: bool) {
     receipt1.expect_commit_success();
     println!("\n{:?}", receipt1);
 
-    let tx2 = create_notarized_transaction(
+    let tx2 = create_notarized_transaction_advanced(
         &mut test_runner,
         &network,
         manifest,
@@ -399,38 +397,4 @@ fn estimate_notarizing_notary_is_not_signatory() {
 #[test]
 fn estimate_notarizing_notary_is_signatory() {
     estimate_notarizing(true);
-}
-
-fn create_notarized_transaction<S: Signer>(
-    test_runner: &mut DefaultTestRunner,
-    network: &NetworkDefinition,
-    manifest: TransactionManifestV1,
-    signers: Vec<&S>,
-    notary: &S,
-    notary_is_signatory: bool,
-) -> NotarizedTransactionV1 {
-    let notarized_transaction = TransactionBuilder::new()
-        .header(TransactionHeaderV1 {
-            network_id: network.id,
-            start_epoch_inclusive: Epoch::zero(),
-            end_epoch_exclusive: Epoch::of(99),
-            nonce: test_runner.next_transaction_nonce(),
-            notary_public_key: notary.public_key().into(),
-            notary_is_signatory: notary_is_signatory,
-            tip_percentage: DEFAULT_TIP_PERCENTAGE,
-        })
-        .manifest(manifest)
-        .multi_sign(&signers)
-        .notarize(notary)
-        .build();
-    notarized_transaction
-}
-
-fn validate_notarized_transaction<'a>(
-    network: &'a NetworkDefinition,
-    transaction: &'a NotarizedTransactionV1,
-) -> ValidatedNotarizedTransactionV1 {
-    NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
-        .validate(transaction.prepare().unwrap())
-        .unwrap()
 }

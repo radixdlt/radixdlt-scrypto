@@ -1,5 +1,5 @@
 /// The execution cost units loaned from system
-pub const EXECUTION_COST_UNIT_LOAN: u32 = 10_000_000;
+pub const EXECUTION_COST_UNIT_LOAN: u32 = 4_000_000;
 
 /// The execution cost unit limit.
 pub const EXECUTION_COST_UNIT_LIMIT: u32 = 100_000_000;
@@ -61,7 +61,13 @@ pub const MAX_NUMBER_OF_LOGS: usize = 256;
 pub const MAX_METADATA_KEY_STRING_LEN: usize = 100;
 
 /// The max SBOR size of metadata value
-pub const MAX_METADATA_VALUE_SBOR_LEN: usize = 512;
+pub const MAX_METADATA_VALUE_SBOR_LEN: usize = 4096;
+
+/// The max length of a URL in metadata
+pub const MAX_URL_LENGTH: usize = 1024;
+
+/// The max length of an Origin in metadata
+pub const MAX_ORIGIN_LENGTH: usize = 1024;
 
 /// The max depth of an access rule, to protect unbounded native stack useage
 pub const MAX_ACCESS_RULE_DEPTH: usize = 8;
