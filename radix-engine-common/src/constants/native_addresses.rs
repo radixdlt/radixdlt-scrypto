@@ -167,6 +167,12 @@ pub const ROLE_ASSIGNMENT_MODULE_PACKAGE: PackageAddress = PackageAddress::new_o
     116, 162, 158, 38, 49, 140, 99, 24, 198,
 ]);
 
+/// The native package for test utils.
+pub const TEST_UTILS_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
+    13, 249, 211, 192, 59, 233, 186, 23, 2, 154, 130, 219, 206, 96, 108, 18, 236, 85, 32, 194, 145,
+    11, 130, 158, 239, 6, 118, 153, 103, 15,
+]);
+
 /// The scrypto package for the genesis helper.
 pub const GENESIS_HELPER_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
     13, 144, 99, 24, 198, 49, 140, 100, 102, 112, 129, 140, 99, 24, 198, 49, 140, 247, 214, 62, 86,
