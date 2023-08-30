@@ -416,7 +416,10 @@ impl NonFungibleVaultBlueprint {
         })?;
 
         // Take
-        balance.amount = balance.amount.safe_sub(n).unwrap();
+        balance.amount = balance
+            .amount
+            .safe_sub(n)
+            .ok_or_else(|| VaultError::DecimalOverflow)?;
         let taken = {
             let ids: Vec<(NonFungibleLocalId, NonFungibleVaultNonFungibleEntryPayload)> = api
                 .actor_index_drain_typed(
