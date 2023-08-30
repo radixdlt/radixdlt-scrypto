@@ -13,6 +13,7 @@ fee_reserve_states = { path = "../fee_reserve_states" }
 bucket = { path = "../bucket" }
 address = { path = "../address" }
 allocated_address = { path = "../allocated_address" }
+package = { path = "../package" }
 
 [dev-dependencies]
 radix-engine = { path = "../../../../radix-engine" }
