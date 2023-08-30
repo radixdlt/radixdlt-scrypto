@@ -66,7 +66,7 @@ impl CallMethod {
                 self.arguments.clone(),
                 Some(default_account),
             )?
-            .try_deposit_batch_or_refund(default_account, None)
+            .try_deposit_entire_worktop_or_refund(default_account, None)
             .build();
         handle_manifest(
             manifest,

@@ -87,7 +87,7 @@ pub fn create_proof_from_account<'a>(
             .create_proof_from_account_of_non_fungibles(
                 account,
                 resource_address,
-                &non_fungible_local_ids,
+                non_fungible_local_ids,
             ),
     };
     Ok(builder)
@@ -273,10 +273,10 @@ fn build_call_argument<'a>(
                         builder = builder.withdraw_non_fungibles_from_account(
                             account,
                             resource_address,
-                            &ids,
+                            ids.clone(),
                         );
                     }
-                    builder.take_non_fungibles_from_worktop(resource_address, &ids, &bucket_name)
+                    builder.take_non_fungibles_from_worktop(resource_address, ids, &bucket_name)
                 }
             };
             let bucket = builder.bucket(bucket_name);
@@ -312,7 +312,7 @@ fn build_call_argument<'a>(
                             .create_proof_from_account_of_non_fungibles(
                                 account,
                                 resource_address,
-                                &ids,
+                                ids,
                             )
                             .pop_from_auth_zone(&proof_name)
                     } else {
