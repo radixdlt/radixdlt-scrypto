@@ -133,7 +133,7 @@ impl FungibleBucketBlueprint {
 
     pub fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());

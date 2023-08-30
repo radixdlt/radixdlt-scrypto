@@ -41,6 +41,14 @@ mod bucket_test {
             bucket.drop_empty();
         }
 
+        pub fn combine_invalid() -> Bucket {
+            let mut bucket1 = Self::create_test_token(100);
+            let bucket2 = Self::create_test_token(100);
+
+            bucket1.put(bucket2);
+            bucket1
+        }
+
         pub fn combine() -> Bucket {
             let mut bucket1 = Self::create_test_token(100);
             let bucket2 = bucket1.take(50);
