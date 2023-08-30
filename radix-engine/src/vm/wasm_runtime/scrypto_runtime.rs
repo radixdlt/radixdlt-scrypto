@@ -21,6 +21,7 @@ where
     package_address: PackageAddress,
     export_name: String,
     wasm_execution_units_buffer: u32,
+    max_number_of_buffers: usize,
 }
 
 impl<'y, Y> ScryptoRuntime<'y, Y>
@@ -35,6 +36,7 @@ where
             package_address,
             export_name,
             wasm_execution_units_buffer: 0,
+            max_number_of_buffers: MAX_NUMBER_OF_BUFFERS,
         }
     }
 }
@@ -48,6 +50,10 @@ where
         buffer: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         assert!(buffer.len() <= 0xffffffff);
+
+        if self.buffers.len() >= self.max_number_of_buffers {
+            return Err(InvokeError::SelfError(WasmRuntimeError::TooManyBuffers));
+        }
 
         let id = self.next_buffer_id;
         let len = buffer.len();

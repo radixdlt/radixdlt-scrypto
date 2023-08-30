@@ -149,6 +149,8 @@ pub enum WasmRuntimeError {
     FeeReserveError(FeeReserveError),
 
     InvalidEventFlags(u32),
+
+    TooManyBuffers,
 }
 
 impl SelfError for WasmRuntimeError {
