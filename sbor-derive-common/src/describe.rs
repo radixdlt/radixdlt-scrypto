@@ -288,7 +288,7 @@ fn handle_normal_describe(
                         use ::sbor::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
                             stringify!(#ident),
-                            ::sbor::rust::collections::btree_map::btreemap![
+                            ::sbor::rust::prelude::indexmap![
                                 #(#variant_discriminators => #variant_type_data,)*
                             ],
                         )
@@ -502,7 +502,7 @@ mod tests {
                         use ::sbor::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
                             stringify!(Test),
-                            ::sbor::rust::collections::btree_map::btreemap![
+                            ::sbor::rust::prelude::indexmap![
                                 0u8 => ::sbor::TypeData::struct_with_unit_fields("A"),
                                 1u8 => ::sbor::TypeData::struct_with_unnamed_fields(
                                     "B",

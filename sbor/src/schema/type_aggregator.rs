@@ -114,14 +114,14 @@ fn resolve_index(type_indices: &IndexSet<TypeHash>, type_hash: &TypeHash) -> usi
 }
 
 pub struct TypeAggregator<C: CustomTypeKind<GlobalTypeId>> {
-    already_read_dependencies: BTreeSet<TypeHash>,
+    already_read_dependencies: IndexSet<TypeHash>,
     types: IndexMap<TypeHash, TypeData<C, GlobalTypeId>>,
 }
 
 impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     pub fn new() -> Self {
         Self {
-            already_read_dependencies: BTreeSet::new(),
+            already_read_dependencies: index_set_new(),
             types: IndexMap::default(),
         }
     }
