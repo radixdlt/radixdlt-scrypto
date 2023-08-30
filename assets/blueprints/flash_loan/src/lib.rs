@@ -55,7 +55,7 @@ mod basic_flash_loan {
 
             let global_component = Self {
                 loan_vault: Vault::with_bucket(initial_liquidity),
-                auth_vault: Vault::with_bucket(auth_token),
+                auth_vault: Vault::with_bucket(auth_token.into()),
                 transient_resource_manager,
             }
             .instantiate()
@@ -80,7 +80,7 @@ mod basic_flash_loan {
             );
 
             // Calculate how much we must be repaid
-            let amount_due = loan_amount * dec!("1.001");
+            let amount_due = loan_amount.safe_mul(dec!("1.001")).unwrap();
 
             // Mint an NFT with the loan terms.  Remember that this resource previously had rules defined which
             // forbid it from ever being deposited in any vault.  Thus, once it is present in the transaction

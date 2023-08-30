@@ -62,11 +62,14 @@ fn create_unit_struct_schema_works_correctly() {
     let (type_index, schema) =
         generate_full_schema_from_single_type::<UnitStruct, NoCustomSchema>(); // The original type should be the first type in the schema
     assert!(matches!(type_index, LocalTypeIndex::SchemaLocalIndex(0)));
-    assert_eq!(schema.type_kinds.len(), 1);
-    assert_eq!(schema.type_metadata.len(), 1);
-    assert_eq!(schema.type_metadata[0].get_name().unwrap(), "UnitStruct");
-    assert!(matches!(&schema.type_metadata[0].child_names, None));
-    assert!(schema.validate().is_ok());
+    assert_eq!(schema.v1().type_kinds.len(), 1);
+    assert_eq!(schema.v1().type_metadata.len(), 1);
+    assert_eq!(
+        schema.v1().type_metadata[0].get_name().unwrap(),
+        "UnitStruct"
+    );
+    assert!(matches!(&schema.v1().type_metadata[0].child_names, None));
+    assert!(schema.v1().validate().is_ok());
 }
 
 #[test]
@@ -78,14 +81,16 @@ fn create_basic_sample_schema_works_correctly() {
         root_type_index,
         LocalTypeIndex::SchemaLocalIndex(0)
     ));
-    assert_eq!(schema.type_kinds.len(), 2);
-    assert_eq!(schema.type_metadata.len(), 2);
+    assert_eq!(schema.v1().type_kinds.len(), 2);
+    assert_eq!(schema.v1().type_metadata.len(), 2);
 
     // Test Root Type
     let kind = schema
+        .v1()
         .resolve_type_kind(LocalTypeIndex::SchemaLocalIndex(0))
         .unwrap();
     let metadata = schema
+        .v1()
         .resolve_type_metadata(LocalTypeIndex::SchemaLocalIndex(0))
         .unwrap();
     assert_eq!(metadata.get_name().unwrap(), "BasicSample");
@@ -97,22 +102,24 @@ fn create_basic_sample_schema_works_correctly() {
     );
     assert!(
         matches!(kind, TypeKind::Tuple { field_types } if matches!(field_types[..], [
-            LocalTypeIndex::WellKnown(basic_well_known_types::UNIT_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::UNIT_TYPE),
             LocalTypeIndex::SchemaLocalIndex(1),
         ]))
     );
 
     // Test Further Types
     let kind = schema
+        .v1()
         .resolve_type_kind(LocalTypeIndex::SchemaLocalIndex(1))
         .unwrap();
     let metadata = schema
+        .v1()
         .resolve_type_metadata(LocalTypeIndex::SchemaLocalIndex(1))
         .unwrap();
     assert_eq!(metadata.get_name().unwrap(), "UnitStruct");
     assert!(matches!(metadata.child_names, None));
     assert!(matches!(kind, TypeKind::Tuple { field_types } if matches!(field_types[..], [])));
-    assert!(schema.validate().is_ok());
+    assert!(schema.v1().validate().is_ok());
 }
 
 #[test]
@@ -125,9 +132,11 @@ fn create_advanced_sample_schema_works_correctly() {
 
     // We then check each type in turn is what we expect
     let kind = schema
+        .v1()
         .resolve_type_kind(LocalTypeIndex::SchemaLocalIndex(0))
         .unwrap();
     let metadata = schema
+        .v1()
         .resolve_type_metadata(LocalTypeIndex::SchemaLocalIndex(0))
         .unwrap();
     assert_eq!(metadata.get_name().unwrap(), "AdvancedSample");
@@ -146,26 +155,26 @@ fn create_advanced_sample_schema_works_correctly() {
             Cow::Borrowed("k")
         ]))
     );
-    let TypeKind::Tuple { field_types } =  kind else {
+    let TypeKind::Tuple { field_types } = kind else {
         panic!("Type was not a Tuple");
     };
     assert!(matches!(
         field_types[..],
         [
-            LocalTypeIndex::WellKnown(basic_well_known_types::UNIT_ID),
-            LocalTypeIndex::WellKnown(basic_well_known_types::U32_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::UNIT_TYPE),
+            LocalTypeIndex::WellKnown(basic_well_known_types::U32_TYPE),
             LocalTypeIndex::SchemaLocalIndex(1), // Registers (u8, Vec<T>) which also registers SchemaLocal(2) as Vec<T>
-            LocalTypeIndex::WellKnown(basic_well_known_types::STRING_ID),
-            LocalTypeIndex::WellKnown(basic_well_known_types::U128_ID),
-            LocalTypeIndex::WellKnown(basic_well_known_types::U128_ID), // S resolves to U128
-            LocalTypeIndex::SchemaLocalIndex(3),                        // T resolves to UnitStruct
-            LocalTypeIndex::WellKnown(basic_well_known_types::BYTES_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::STRING_TYPE),
+            LocalTypeIndex::WellKnown(basic_well_known_types::U128_TYPE),
+            LocalTypeIndex::WellKnown(basic_well_known_types::U128_TYPE), // S resolves to U128
+            LocalTypeIndex::SchemaLocalIndex(3), // T resolves to UnitStruct
+            LocalTypeIndex::WellKnown(basic_well_known_types::BYTES_TYPE),
             LocalTypeIndex::SchemaLocalIndex(4), // Vec<S> = Vec<u128>, a non-well-known type
             LocalTypeIndex::SchemaLocalIndex(3), // T resolves to UnitStruct - at the same schema index as before
             LocalTypeIndex::SchemaLocalIndex(5), // HashMap<[u8; 3], BTreeMap<i64, BTreeSet<i32>>>
         ]
     ));
-    assert!(schema.validate().is_ok());
+    assert!(schema.v1().validate().is_ok());
 }
 
 #[test]
@@ -188,7 +197,7 @@ fn creating_schema_from_multiple_types_works_correctly() {
     ));
     assert!(matches!(
         i64_type_index,
-        LocalTypeIndex::WellKnown(basic_well_known_types::I64_ID)
+        LocalTypeIndex::WellKnown(basic_well_known_types::I64_TYPE)
     ));
     assert!(matches!(
         unit_struct_type_index_2,
@@ -199,13 +208,14 @@ fn creating_schema_from_multiple_types_works_correctly() {
 
     // Check that the AdvancedSample references UnitStruct at the correct index
     let kind = schema
+        .v1()
         .resolve_type_kind(advanced_sample_type_index)
         .unwrap();
-    let TypeKind::Tuple { field_types } =  kind else {
+    let TypeKind::Tuple { field_types } = kind else {
         panic!("Type was not a Tuple");
     };
     assert_eq!(field_types[6], unit_struct_type_index); // T = UnitStruct is the 7th field in AdvancedSample<UnitStruct, u128>
-    assert!(schema.validate().is_ok());
+    assert!(schema.v1().validate().is_ok());
 }
 
 #[test]
@@ -217,8 +227,9 @@ fn create_recursive_schema_works_correctly() {
     // The original type should be the first type in the schema
     assert!(matches!(type_index, LocalTypeIndex::SchemaLocalIndex(0)));
     let metadata = schema
+        .v1()
         .resolve_type_metadata(LocalTypeIndex::SchemaLocalIndex(0))
         .unwrap();
     assert_eq!(metadata.get_name().unwrap(), "IndirectRecursive1");
-    assert!(schema.validate().is_ok());
+    assert!(schema.v1().validate().is_ok());
 }

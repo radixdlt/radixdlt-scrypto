@@ -32,7 +32,7 @@ use radix_engine_interface::blueprints::resource::*;
 ///     .lock_fee_from_faucet()
 ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
 ///     .take_from_worktop(XRD, dec!(1), "xrd")
-///     .try_deposit_or_abort(to_account_address, "xrd")
+///     .try_deposit_or_abort(to_account_address, None, "xrd")
 ///     .build();
 /// ```
 ///
@@ -76,7 +76,7 @@ use radix_engine_interface::blueprints::resource::*;
 ///     let bucket_name = builder.generate_bucket_name("transfer");
 ///     builder = builder
 ///         .take_from_worktop(XRD, "0.001", &bucket_name)
-///         .try_deposit_or_abort(to_account_address, bucket_name);
+///         .try_deposit_or_abort(to_account_address, None, bucket_name);
 /// }
 /// let manifest = builder.build();
 /// ```
@@ -366,11 +366,6 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::PushToAuthZone { proof_id: proof })
     }
 
-    /// Clears the auth zone.
-    pub fn clear_auth_zone(self) -> Self {
-        self.add_instruction(InstructionV1::ClearAuthZone)
-    }
-
     /// Creates proof from the auth zone by amount.
     pub fn create_proof_from_auth_zone_of_amount(
         self,
@@ -501,9 +496,25 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::DropAllProofs)
     }
 
-    /// Drops all virtual proofs.
-    pub fn clear_signature_proofs(self) -> Self {
-        self.add_instruction(InstructionV1::ClearSignatureProofs)
+    /// Drops named proofs.
+    pub fn drop_named_proofs(self) -> Self {
+        self.registrar.consume_all_proofs();
+        self.add_instruction(InstructionV1::DropNamedProofs)
+    }
+
+    /// Drops auth zone signature proofs.
+    pub fn drop_auth_zone_signature_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneSignatureProofs)
+    }
+
+    /// Drops auth zone regular proofs.
+    pub fn drop_auth_zone_regular_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneRegularProofs)
+    }
+
+    /// Drop auth zone proofs.
+    pub fn drop_auth_zone_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneProofs)
     }
 
     /// Creates a fungible resource
@@ -667,6 +678,26 @@ impl ManifestBuilder {
         };
 
         self.add_instruction(instruction)
+    }
+
+    pub fn update_non_fungible_data(
+        self,
+        resource_address: impl ResolvableResourceAddress,
+        id: NonFungibleLocalId,
+        field_name: impl Into<String>,
+        data: impl ManifestEncode,
+    ) -> Self {
+        let address = resource_address.resolve(&self.registrar);
+        let data = manifest_decode(&manifest_encode(&data).unwrap()).unwrap();
+        self.call_method(
+            address,
+            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
+            NonFungibleResourceManagerUpdateDataManifestInput {
+                id,
+                field_name: field_name.into(),
+                data,
+            },
+        )
     }
 
     pub fn create_identity_advanced(self, owner_role: OwnerRole) -> Self {
@@ -880,12 +911,41 @@ impl ManifestBuilder {
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
+        self.call_module_method(address, ObjectModuleId::Main, method_name, arguments)
+    }
+
+    pub fn call_module_method(
+        self,
+        address: impl ResolvableGlobalAddress,
+        module_id: ObjectModuleId,
+        method_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallMethod {
-            address,
-            method_name: method_name.into(),
-            args: arguments.resolve(),
-        })
+        match module_id {
+            ObjectModuleId::Main => self.add_instruction(InstructionV1::CallMethod {
+                address,
+                method_name: method_name.into(),
+                args: arguments.resolve(),
+            }),
+            ObjectModuleId::Metadata => self.add_instruction(InstructionV1::CallMetadataMethod {
+                address,
+                method_name: method_name.into(),
+                args: arguments.resolve(),
+            }),
+            ObjectModuleId::Royalty => self.add_instruction(InstructionV1::CallRoyaltyMethod {
+                address,
+                method_name: method_name.into(),
+                args: arguments.resolve(),
+            }),
+            ObjectModuleId::RoleAssignment => {
+                self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
+                    address,
+                    method_name: method_name.into(),
+                    args: arguments.resolve(),
+                })
+            }
+        }
     }
 
     /// Calls a scrypto method where the arguments are a raw ManifestValue.
@@ -975,7 +1035,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: address.into(),
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ComponentSetRoyaltyInput {
+            args: to_manifest_value_and_unwrap!(&ComponentRoyaltySetInput {
                 method: method.into(),
                 amount,
             }),
@@ -991,7 +1051,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: address.into(),
             method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ComponentLockRoyaltyInput {
+            args: to_manifest_value_and_unwrap!(&ComponentRoyaltyLockInput {
                 method: method.into(),
             }),
         })
@@ -1011,10 +1071,10 @@ impl ManifestBuilder {
 
     pub fn set_owner_role(self, address: impl ResolvableGlobalAddress, rule: AccessRule) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesSetOwnerRoleInput { rule }),
+            method_name: ROLE_ASSIGNMENT_SET_OWNER_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentSetOwnerInput { rule }),
         })
     }
 
@@ -1026,10 +1086,10 @@ impl ManifestBuilder {
         rule: AccessRule,
     ) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesSetRoleInput {
+            method_name: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentSetInput {
                 module,
                 role_key,
                 rule,
@@ -1039,10 +1099,10 @@ impl ManifestBuilder {
 
     pub fn lock_owner_role(self, address: impl ResolvableGlobalAddress) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesLockOwnerRoleInput {}),
+            method_name: ROLE_ASSIGNMENT_LOCK_OWNER_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentLockOwnerInput {}),
         })
     }
 
@@ -1053,10 +1113,10 @@ impl ManifestBuilder {
         role_key: RoleKey,
     ) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_GET_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesGetRoleInput { module, role_key }),
+            method_name: ROLE_ASSIGNMENT_GET_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentGetInput { module, role_key }),
         })
     }
 
@@ -1451,12 +1511,27 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account_advanced(self, owner_role: OwnerRole) -> Self {
+    pub fn new_account_advanced(
+        self,
+        owner_role: OwnerRole,
+        address_reservation: Option<String>,
+    ) -> Self {
+        let address_reservation = if let Some(reservation_name) = address_reservation {
+            let reservation = self.name_lookup().address_reservation(reservation_name);
+            self.registrar.consume_address_reservation(reservation);
+            Some(reservation)
+        } else {
+            None
+        };
+
         self.add_instruction(InstructionV1::CallFunction {
             package_address: ACCOUNT_PACKAGE.into(),
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccountCreateAdvancedInput { owner_role }),
+            args: to_manifest_value_and_unwrap!(&AccountCreateAdvancedManifestInput {
+                owner_role,
+                address_reservation
+            }),
         })
     }
 
@@ -1704,6 +1779,7 @@ impl ManifestBuilder {
     pub fn try_deposit_or_abort(
         self,
         account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
@@ -1713,13 +1789,14 @@ impl ManifestBuilder {
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-            manifest_args!(bucket),
+            manifest_args!(bucket, authorized_depositor_badge),
         )
     }
 
     pub fn try_deposit_batch_or_abort(
         self,
         account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
 
@@ -1728,13 +1805,17 @@ impl ManifestBuilder {
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
+            manifest_args!(
+                ManifestExpression::EntireWorktop,
+                authorized_depositor_badge
+            ),
         )
     }
 
     pub fn try_deposit_or_refund(
         self,
         account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
@@ -1744,13 +1825,14 @@ impl ManifestBuilder {
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
-            manifest_args!(bucket),
+            manifest_args!(bucket, authorized_depositor_badge),
         )
     }
 
     pub fn try_deposit_batch_or_refund(
         self,
         account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
 
@@ -1759,7 +1841,10 @@ impl ManifestBuilder {
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
+            manifest_args!(
+                ManifestExpression::EntireWorktop,
+                authorized_depositor_badge
+            ),
         )
     }
 
@@ -1775,7 +1860,7 @@ impl ManifestBuilder {
         self.call_function(
             ACCESS_CONTROLLER_PACKAGE,
             ACCESS_CONTROLLER_BLUEPRINT,
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+            ACCESS_CONTROLLER_CREATE_IDENT,
             (
                 controlled_asset,
                 RuleSet {
@@ -1784,6 +1869,7 @@ impl ManifestBuilder {
                     confirmation_role,
                 },
                 timed_recovery_delay_in_minutes,
+                Option::<()>::None,
             ),
         )
     }
@@ -1810,5 +1896,11 @@ impl ManifestBuilder {
         network_definition: &NetworkDefinition,
     ) -> Result<String, DecompileError> {
         decompile_with_known_naming(&self.instructions, network_definition, self.object_names())
+    }
+}
+
+impl Default for ManifestBuilder {
+    fn default() -> Self {
+        ManifestBuilder::new()
     }
 }

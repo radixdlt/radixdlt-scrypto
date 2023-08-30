@@ -131,7 +131,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for B
 
 impl Describe<ScryptoCustomTypeKind> for Bucket {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_BUCKET_ID);
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_BUCKET_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_bucket_type_data()
@@ -140,7 +140,7 @@ impl Describe<ScryptoCustomTypeKind> for Bucket {
 
 impl Describe<ScryptoCustomTypeKind> for FungibleBucket {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_FUNGIBLE_BUCKET_ID);
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_FUNGIBLE_BUCKET_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_fungible_bucket_type_data()
@@ -149,7 +149,7 @@ impl Describe<ScryptoCustomTypeKind> for FungibleBucket {
 
 impl Describe<ScryptoCustomTypeKind> for NonFungibleBucket {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_NON_FUNGIBLE_BUCKET_ID);
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_NON_FUNGIBLE_BUCKET_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_non_fungible_bucket_type_data()

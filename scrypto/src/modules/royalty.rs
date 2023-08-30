@@ -1,19 +1,18 @@
-use crate::engine::scrypto_env::ScryptoEnv;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::types::RoyaltyAmount;
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentRoyaltyCreateInput,
-    ComponentSetRoyaltyInput, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIMER_ROLE,
+    ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentRoyaltyLockInput,
+    ComponentRoyaltySetInput, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIMER_ROLE,
     COMPONENT_ROYALTY_CLAIMER_UPDATER_ROLE, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
     COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_LOCKER_ROLE,
     COMPONENT_ROYALTY_LOCKER_UPDATER_ROLE, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
     COMPONENT_ROYALTY_SETTER_ROLE, COMPONENT_ROYALTY_SETTER_UPDATER_ROLE,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientBlueprintApi;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -33,7 +32,7 @@ pub trait HasComponentRoyalties {
 pub struct Royalty(pub ModuleHandle);
 
 impl Attachable for Royalty {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::Royalty;
+    const MODULE_ID: ModuleId = ModuleId::Royalty;
 
     fn new(handle: ModuleHandle) -> Self {
         Royalty(handle)
@@ -52,14 +51,12 @@ impl Default for Royalty {
 
 impl Royalty {
     pub fn new(royalty_config: ComponentRoyaltyConfig) -> Self {
-        let rtn = ScryptoEnv
-            .call_function(
-                ROYALTY_MODULE_PACKAGE,
-                COMPONENT_ROYALTY_BLUEPRINT,
-                COMPONENT_ROYALTY_CREATE_IDENT,
-                scrypto_encode(&ComponentRoyaltyCreateInput { royalty_config }).unwrap(),
-            )
-            .unwrap();
+        let rtn = ScryptoVmV1Api::blueprint_call(
+            ROYALTY_MODULE_PACKAGE,
+            COMPONENT_ROYALTY_BLUEPRINT,
+            COMPONENT_ROYALTY_CREATE_IDENT,
+            scrypto_encode(&ComponentRoyaltyCreateInput { royalty_config }).unwrap(),
+        );
 
         let royalty: Own = scrypto_decode(&rtn).unwrap();
         Self(ModuleHandle::Own(royalty))
@@ -68,7 +65,7 @@ impl Royalty {
     pub fn set_royalty<M: ToString>(&self, method: M, amount: RoyaltyAmount) {
         self.call_ignore_rtn(
             COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-            &ComponentSetRoyaltyInput {
+            &ComponentRoyaltySetInput {
                 method: method.to_string(),
                 amount,
             },
@@ -78,7 +75,7 @@ impl Royalty {
     pub fn lock_royalty<M: ToString>(&self, method: M) {
         self.call_ignore_rtn(
             COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
-            &ComponentLockRoyaltyInput {
+            &ComponentRoyaltyLockInput {
                 method: method.to_string(),
             },
         );

@@ -6,66 +6,50 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 use bitflags::bitflags;
-use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
-use radix_engine_common::prelude::replace_self_package_address;
-use radix_engine_common::types::PackageAddress;
-use radix_engine_common::{ManifestSbor, ScryptoSbor};
-use sbor::rust::prelude::*;
-use sbor::*;
+use radix_engine_common::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct KeyValueStoreSchema {
-    pub schema: ScryptoSchema,
-    pub key: LocalTypeIndex,
-    pub value: LocalTypeIndex,
-    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
-}
-
-impl KeyValueStoreSchema {
-    pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let key_type_index = aggregator.add_child_type_and_descendents::<K>();
-        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
-        let schema = generate_full_schema(aggregator);
-        Self {
-            schema,
-            key: key_type_index,
-            value: value_type_index,
-            can_own,
-        }
-    }
-
-    pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
-        replace_self_package_address(&mut self.schema, package_address);
-    }
+pub struct KeyValueStoreGenericSubstitutions {
+    pub key_generic_substitutions: GenericSubstitution,
+    pub value_generic_substitutions: GenericSubstitution,
+    pub allow_ownership: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum Generic {
+pub enum GenericBound {
     Any,
+}
+
+#[derive(Copy, Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum BlueprintHook {
+    OnVirtualize,
+    OnMove,
+    OnDrop,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchemaInit {
-    pub generics: Vec<Generic>,
-    pub schema: ScryptoSchema,
+    pub generics: Vec<GenericBound>,
+    pub schema: VersionedScryptoSchema,
     pub state: BlueprintStateSchemaInit,
     pub events: BlueprintEventSchemaInit,
     pub functions: BlueprintFunctionsSchemaInit,
+    pub hooks: BlueprintHooksInit,
 }
 
 impl Default for BlueprintSchemaInit {
     fn default() -> Self {
         Self {
             generics: Vec::new(),
-            schema: ScryptoSchema {
+            schema: VersionedScryptoSchema::V1(SchemaV1 {
                 type_kinds: Vec::new(),
                 type_metadata: Vec::new(),
                 type_validations: Vec::new(),
-            },
+            }),
             state: BlueprintStateSchemaInit::default(),
             events: BlueprintEventSchemaInit::default(),
             functions: BlueprintFunctionsSchemaInit::default(),
+            hooks: BlueprintHooksInit::default(),
         }
     }
 }
@@ -93,67 +77,74 @@ pub struct FunctionSchemaInit {
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintFunctionsSchemaInit {
     pub functions: BTreeMap<String, FunctionSchemaInit>,
-    pub virtual_lazy_load_functions: BTreeMap<u8, String>,
 }
 
-impl BlueprintFunctionsSchemaInit {
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintHooksInit {
+    // TODO: allow registration of variant count if we make virtualizable entity type fully dynamic
+    pub hooks: BTreeMap<BlueprintHook, String>,
+}
+
+impl BlueprintSchemaInit {
     pub fn exports(&self) -> Vec<String> {
-        let mut exports: Vec<String> = self.functions.values().map(|t| t.export.clone()).collect();
-        for export in self.virtual_lazy_load_functions.values() {
-            exports.push(export.clone());
-        }
-        exports
+        self.functions
+            .functions
+            .values()
+            .map(|t| t.export.clone())
+            .chain(self.hooks.hooks.values().cloned())
+            .collect()
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum TypeRef<T> {
-    Static(T),   // Type is defined by blueprint
-    Generic(u8), // Type bounds is defined by blueprint, the type itself is defined by the instance
+    Static(T), // Fully Resolved type is defined in package
+    Generic(u8), // Fully Resolved type is mapped directly to a generic
+               // TODO: How to represent a structure containing a generic?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintKeyValueStoreSchema<T> {
+pub struct BlueprintKeyValueSchema<T> {
     pub key: T,
     pub value: T,
-    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
+    pub allow_ownership: bool,
 }
 
-impl<T> BlueprintKeyValueStoreSchema<T> {
-    pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintKeyValueStoreSchema<U> {
-        BlueprintKeyValueStoreSchema {
+impl<T> BlueprintKeyValueSchema<T> {
+    pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintKeyValueSchema<U> {
+        BlueprintKeyValueSchema {
             key: f(self.key),
             value: f(self.value),
-            can_own: self.can_own,
+            allow_ownership: self.allow_ownership,
         }
     }
 }
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintIndexSchema {}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct BlueprintSortedIndexSchema {}
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum BlueprintCollectionSchema<T> {
-    KeyValueStore(BlueprintKeyValueStoreSchema<T>),
-    Index(BlueprintIndexSchema),
-    SortedIndex(BlueprintSortedIndexSchema),
+    KeyValueStore(BlueprintKeyValueSchema<T>),
+    Index(BlueprintKeyValueSchema<T>),
+    SortedIndex(BlueprintKeyValueSchema<T>),
 }
 
 impl<T> BlueprintCollectionSchema<T> {
     pub fn map<U, F: Fn(T) -> U + Copy>(self, f: F) -> BlueprintCollectionSchema<U> {
         match self {
-            BlueprintCollectionSchema::Index(schema) => BlueprintCollectionSchema::Index(schema),
+            BlueprintCollectionSchema::Index(schema) => {
+                BlueprintCollectionSchema::Index(schema.map(f))
+            }
             BlueprintCollectionSchema::SortedIndex(schema) => {
-                BlueprintCollectionSchema::SortedIndex(schema)
+                BlueprintCollectionSchema::SortedIndex(schema.map(f))
             }
             BlueprintCollectionSchema::KeyValueStore(schema) => {
                 BlueprintCollectionSchema::KeyValueStore(schema.map(f))
             }
         }
     }
+}
+
+pub trait BlueprintFeature {
+    fn feature_name(&self) -> &'static str;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -163,10 +154,31 @@ pub enum Condition {
     IfOuterFeature(String),
 }
 
+impl Condition {
+    pub fn if_feature(feature: impl BlueprintFeature) -> Self {
+        Self::IfFeature(feature.feature_name().into())
+    }
+
+    pub fn if_outer_feature(feature: impl BlueprintFeature) -> Self {
+        Self::IfOuterFeature(feature.feature_name().into())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum FieldTransience {
+    NotTransient,
+    // TODO: Will need to change this Vec<u8> to ScryptoValue to support default values with global references
+    TransientStatic {
+        /// The default value a transient substate will have on first read
+        default_value: Vec<u8>,
+    },
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct FieldSchema<V> {
     pub field: V,
     pub condition: Condition,
+    pub transience: FieldTransience,
 }
 
 impl FieldSchema<TypeRef<LocalTypeIndex>> {
@@ -174,6 +186,7 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::IfFeature(feature.to_string()),
+            transience: FieldTransience::NotTransient,
         }
     }
 
@@ -181,6 +194,7 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::IfOuterFeature(feature.to_string()),
+            transience: FieldTransience::NotTransient,
         }
     }
 
@@ -188,6 +202,20 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::Always,
+            transience: FieldTransience::NotTransient,
+        }
+    }
+
+    pub fn transient_field<I: Into<LocalTypeIndex>, E: ScryptoEncode>(
+        value: I,
+        default_value: E,
+    ) -> Self {
+        FieldSchema {
+            field: TypeRef::Static(value.into()),
+            condition: Condition::Always,
+            transience: FieldTransience::TransientStatic {
+                default_value: scrypto_encode(&default_value).unwrap(),
+            },
         }
     }
 }
@@ -226,10 +254,4 @@ impl ReceiverInfo {
 pub enum Receiver {
     SelfRef,
     SelfRefMut,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InstanceSchema {
-    pub schema: ScryptoSchema,
-    pub type_index: Vec<LocalTypeIndex>,
 }

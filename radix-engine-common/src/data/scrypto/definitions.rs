@@ -1,13 +1,15 @@
 use crate::internal_prelude::*;
 
-pub use radix_engine_constants::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
-pub const SCRYPTO_SBOR_V1_MAX_DEPTH: usize = 64;
+pub use crate::constants::SCRYPTO_SBOR_V1_MAX_DEPTH;
+pub use crate::constants::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
 
 pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind>;
 pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind>;
 pub type ScryptoTraverser<'a> = VecTraverser<'a, ScryptoCustomTraversal>;
 pub type ScryptoValueKind = ValueKind<ScryptoCustomValueKind>;
 pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
+pub type RawScryptoValue<'a> = RawValue<'a, ScryptoCustomExtension>;
+pub type RawScryptoPayload<'a> = RawPayload<'a, ScryptoCustomExtension>;
 
 // The following trait "aliases" are to be used in parameters.
 //
@@ -43,14 +45,27 @@ impl<T: ScryptoCategorize + ScryptoDecode + ScryptoEncode + ScryptoDescribe> Scr
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
+    scrypto_encode_with_depth_limit(value, SCRYPTO_SBOR_V1_MAX_DEPTH)
+}
+
+pub fn scrypto_encode_with_depth_limit<T: ScryptoEncode + ?Sized>(
+    value: &T,
+    depth_limit: usize,
+) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
-    let encoder = ScryptoEncoder::new(&mut buf, SCRYPTO_SBOR_V1_MAX_DEPTH);
+    let encoder = ScryptoEncoder::new(&mut buf, depth_limit);
     encoder.encode_payload(value, SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
     Ok(buf)
 }
 
 /// Decodes a data structure from a byte array.
 pub fn scrypto_decode<T: ScryptoDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    ScryptoDecoder::new(buf, SCRYPTO_SBOR_V1_MAX_DEPTH)
-        .decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+    scrypto_decode_with_depth_limit(buf, SCRYPTO_SBOR_V1_MAX_DEPTH)
+}
+
+pub fn scrypto_decode_with_depth_limit<T: ScryptoDecode>(
+    buf: &[u8],
+    depth_limit: usize,
+) -> Result<T, DecodeError> {
+    ScryptoDecoder::new(buf, depth_limit).decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
 }

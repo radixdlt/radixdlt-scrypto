@@ -1,13 +1,12 @@
 [package]
 name = "transaction"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
 utils = { path = "../utils", default-features = false }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
-radix-engine-constants = { path = "../radix-engine-constants", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
 
 hex = { version = "0.4.3", default-features = false }
@@ -15,8 +14,7 @@ ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_
 secp256k1 = { version = "0.24.0", default-features = false, features = ["global-context", "recovery"]}
 serde = { version = "1.0.144", default-features = false, optional = true }
 lazy_static = "1.4.0"
-strum = { version = "0.24.1", default-features = false, features = ["derive"], optional = true }
-strum_macros = { version = "0.24.3", default-features = false, optional = true }
+strum = { version = "0.24", default-features = false, features = ["derive"] }
 bech32 = { version = "0.9.0", default-features = false }
 
 [dev-dependencies]
@@ -32,9 +30,8 @@ serde = ["serde/derive"]
 
 dump_manifest_to_file = []
 
-# This flag is set by fuzz-tests framework and it controls some features required by fuzzer
-# eg. use 'strum' crate to get the number of enum variants
-radix_engine_fuzzing = ["strum", "strum_macros"]
+# This flag is set by fuzz-tests framework
+radix_engine_fuzzing = []
 
 [lib]
 bench = false

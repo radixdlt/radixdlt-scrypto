@@ -11,23 +11,27 @@ pub enum PrepareError {
     DeserializationError,
     /// Failed to validate
     /// See <https://webassembly.github.io/spec/core/valid/index.html>
-    ValidationError,
+    ValidationError(String),
     /// Failed to serialize.
     SerializationError,
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
-    /// The wasm module uses float points.
-    FloatingPointNotAllowed,
     /// Invalid import section
     InvalidImport(InvalidImport),
     /// Invalid memory section
     InvalidMemory(InvalidMemory),
     /// Invalid table section
     InvalidTable(InvalidTable),
+    /// Invalid export symbol name
+    InvalidExportName(String),
     /// Too many targets in the `br_table` instruction
     TooManyTargetsInBrTable,
     /// Too many functions
     TooManyFunctions,
+    /// Too many function parameters
+    TooManyFunctionParams,
+    /// Too many function local variables
+    TooManyFunctionLocals,
     /// Too many globals
     TooManyGlobals,
     /// No export section
@@ -39,19 +43,25 @@ pub enum PrepareError {
     /// The wasm module does not have the `scrypto_free` export.
     NoScryptoFreeExport,
     /// Failed to inject instruction metering
-    RejectedByInstructionMetering,
+    RejectedByInstructionMetering { reason: String },
     /// Failed to inject stack metering
-    RejectedByStackMetering,
+    RejectedByStackMetering { reason: String },
     /// Not instantiatable
     NotInstantiatable { reason: String },
     /// Not compilable
     NotCompilable,
+    /// Wrap errors returned by WasmInstrument::ModuleInfoError
+    /// It is wrapped to String, because it's members cannot derive: Sbor, Eq and PartialEq
+    ModuleInfoError(String),
+    /// Wrap errors returned by wasmparser
+    /// It is wrapped to String, because wasmparser error (BinaryReaderError) members cannot derive: Sbor, Eq and PartialEq
+    WasmParserError(String),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Sbor)]
 pub enum InvalidImport {
     /// The import is not allowed
-    ImportNotAllowed,
+    ImportNotAllowed(String),
     InvalidFunctionType(String),
 }
 
@@ -98,8 +108,7 @@ pub enum WasmRuntimeError {
     /// Buffer not found
     BufferNotFound(BufferId),
 
-    /// Invalid package address
-    InvalidPackageAddress(DecodeError),
+    InvalidAddress(DecodeError),
 
     InvalidBlueprintId(DecodeError),
 
@@ -121,7 +130,7 @@ pub enum WasmRuntimeError {
     InvalidObjectStates(DecodeError),
 
     /// Invalid access rules
-    InvalidAccessRules(DecodeError),
+    InvalidAccessRule(DecodeError),
 
     /// Invalid modules
     InvalidModules(DecodeError),
@@ -138,6 +147,8 @@ pub enum WasmRuntimeError {
 
     /// Costing error (no-op runtime only!)
     FeeReserveError(FeeReserveError),
+
+    InvalidEventFlags(u32),
 }
 
 impl SelfError for WasmRuntimeError {

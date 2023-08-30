@@ -1,18 +1,29 @@
 use super::call_frame::NodeVisibility;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
-use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::kernel::kernel_callback_api::{CallFrameReferences, KernelCallbackObject};
 use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
 
 /// API for managing nodes
 pub trait KernelNodeApi {
+    /// Pin a node to it's current device.
+    fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError>;
+
+    /// Marks a substate as transient, or a substate which was never and will never be persisted
+    fn kernel_mark_substate_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        key: SubstateKey,
+    ) -> Result<(), RuntimeError>;
+
     /// Allocates a new node id useable for create_node
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError>;
 
@@ -34,7 +45,7 @@ pub trait KernelNodeApi {
     /// The source node must be in heap and lock-free; otherwise a runtime error is returned.
     ///
     /// Note that implementation will not check if the destination already exists.
-    fn kernel_move_module(
+    fn kernel_move_partition(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
@@ -43,27 +54,18 @@ pub trait KernelNodeApi {
     ) -> Result<(), RuntimeError>;
 }
 
-/// Info regarding the substate locked as well as what type of lock
-pub struct LockInfo<L> {
-    pub node_id: NodeId,
-    pub partition_num: PartitionNumber,
-    pub substate_key: SubstateKey,
-    pub flags: LockFlags,
-    pub data: L,
-}
-
 /// API for managing substates within nodes
 pub trait KernelSubstateApi<L> {
     /// Locks a substate to make available for reading and/or writing
-    fn kernel_open_substate_with_default(
+    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        default: Option<fn() -> IndexedScryptoValue>,
+        default: Option<F>,
         lock_data: L,
-    ) -> Result<LockHandle, RuntimeError>;
+    ) -> Result<SubstateHandle, RuntimeError>;
 
     fn kernel_open_substate(
         &mut self,
@@ -72,37 +74,34 @@ pub trait KernelSubstateApi<L> {
         substate_key: &SubstateKey,
         flags: LockFlags,
         lock_data: L,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<SubstateHandle, RuntimeError> {
         self.kernel_open_substate_with_default(
             node_id,
             partition_num,
             substate_key,
             flags,
-            None,
+            None::<fn() -> IndexedScryptoValue>,
             lock_data,
         )
     }
 
     /// Retrieves info related to a lock
-    fn kernel_get_lock_info(
-        &mut self,
-        lock_handle: LockHandle,
-    ) -> Result<LockInfo<L>, RuntimeError>;
+    fn kernel_get_lock_data(&mut self, lock_handle: SubstateHandle) -> Result<L, RuntimeError>;
 
     /// Drops a lock on some substate, if the lock is writable, updates are flushed to
     /// the store at this point.
-    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
+    fn kernel_close_substate(&mut self, lock_handle: SubstateHandle) -> Result<(), RuntimeError>;
 
     /// Reads the value of the substate locked by the given lock handle
     fn kernel_read_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: SubstateHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError>;
 
     /// Writes a value to the substate locked by the given lock handle
     fn kernel_write_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: SubstateHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
 
@@ -138,50 +137,48 @@ pub trait KernelSubstateApi<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
+    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError>;
 
-    fn kernel_scan_substates(
+    fn kernel_scan_keys<K: SubstateKeyContent + 'static>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
+    ) -> Result<Vec<SubstateKey>, RuntimeError>;
 
-    fn kernel_take_substates(
+    fn kernel_drain_substates<K: SubstateKeyContent + 'static>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
 }
 
 #[derive(Debug)]
-pub struct KernelInvocation {
-    /// FIXME: redo actor generification
-    /// Temporarily restored as there's a large conflict with `develop` branch
-    pub actor: Actor,
+pub struct KernelInvocation<C> {
+    pub call_frame_data: C,
     pub args: IndexedScryptoValue,
 }
 
-impl KernelInvocation {
+impl<C: CallFrameReferences> KernelInvocation<C> {
     pub fn len(&self) -> usize {
-        self.actor.len() + self.args.len()
+        self.call_frame_data.len() + self.args.len()
     }
 }
 
 /// API for invoking a function creating a new call frame and passing
 /// control to the callee
-pub trait KernelInvokeApi {
+pub trait KernelInvokeApi<C> {
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation>,
+        invocation: Box<KernelInvocation<C>>,
     ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
 pub struct SystemState<'a, M: KernelCallbackObject> {
     pub system: &'a mut M,
-    pub current: &'a Actor,
-    pub caller: &'a Actor,
+    pub current_call_frame: &'a M::CallFrameData,
+    pub caller_call_frame: &'a M::CallFrameData,
 }
 
 /// Internal API for kernel modules.
@@ -197,7 +194,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
 
-    // TODO: Cleanup
+    /// Returns the visibility of a node
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
@@ -206,6 +203,9 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi + KernelSubstateApi<M::LockData> + KernelInvokeApi + KernelInternalApi<M>
+    KernelNodeApi
+    + KernelSubstateApi<M::LockData>
+    + KernelInvokeApi<M::CallFrameData>
+    + KernelInternalApi<M>
 {
 }

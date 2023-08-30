@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::data::scrypto::ScryptoCustomTypeKind;
-use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
@@ -105,7 +104,8 @@ pub type VaultBurnOutput = ();
 // Stub
 //========
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+#[sbor(transparent)]
 #[must_use]
 pub struct Vault(pub Own);
 
@@ -135,37 +135,9 @@ impl From<NonFungibleVault> for Vault {
 // binary
 //========
 
-impl Categorize<ScryptoCustomValueKind> for Vault {
-    #[inline]
-    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        Own::value_kind()
-    }
-}
-
-impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Vault {
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.0.encode_body(encoder)
-    }
-}
-
-impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Vault {
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<ScryptoCustomValueKind>,
-    ) -> Result<Self, DecodeError> {
-        Own::decode_body_with_value_kind(decoder, value_kind).map(|o| Self(o))
-    }
-}
-
 impl Describe<ScryptoCustomTypeKind> for Vault {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_VAULT_ID);
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_VAULT_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_vault_type_data()
@@ -174,7 +146,7 @@ impl Describe<ScryptoCustomTypeKind> for Vault {
 
 impl Describe<ScryptoCustomTypeKind> for FungibleVault {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_FUNGIBLE_VAULT_ID);
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_FUNGIBLE_VAULT_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_fungible_vault_type_data()
@@ -183,7 +155,7 @@ impl Describe<ScryptoCustomTypeKind> for FungibleVault {
 
 impl Describe<ScryptoCustomTypeKind> for NonFungibleVault {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_NON_FUNGIBLE_VAULT_ID);
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_NON_FUNGIBLE_VAULT_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_non_fungible_vault_type_data()

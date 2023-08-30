@@ -22,7 +22,7 @@ pub trait CustomSchema: Debug + Clone + Copy + PartialEq + Eq + 'static {
 
     // Note - each custom type extension should have its own cache
     fn resolve_well_known_type(
-        well_known_index: u8,
+        well_known_index: WellKnownTypeIndex,
     ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>;
 
     /// Used when validating schemas are self-consistent.
@@ -57,11 +57,12 @@ pub trait CustomSchema: Debug + Clone + Copy + PartialEq + Eq + 'static {
 }
 
 pub trait CustomExtension: Debug + Clone + PartialEq + Eq + 'static {
-    const MAX_DEPTH: usize;
     const PAYLOAD_PREFIX: u8;
+
     type CustomValueKind: CustomValueKind;
 
     type CustomTraversal: CustomTraversal<CustomValueKind = Self::CustomValueKind>;
+
     type CustomSchema: CustomSchema;
 
     /// Used in the typed traverser

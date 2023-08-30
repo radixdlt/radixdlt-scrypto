@@ -1,91 +1,84 @@
 //=================
-// WASM Shim
+// Blueprint
 //=================
-pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
+pub const BLUEPRINT_CALL_FUNCTION_NAME: &str = "blueprint_call";
 
 //=================
-// Costing
+// Address
 //=================
-pub const CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME: &str = "gas";
-pub const COST_UNIT_LIMIT_FUNCTION_NAME: &str = "cost_unit_limit";
-pub const COST_UNIT_PRICE_FUNCTION_NAME: &str = "cost_unit_price";
-pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
-pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
+pub const ADDRESS_ALLOCATE_FUNCTION_NAME: &str = "address_allocate";
+pub const ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME: &str = "address_get_reservation_address";
 
 //=================
-// Blueprint/Object
+// Object
 //=================
-pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "allocate_global_address";
-pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
-pub const GLOBALIZE_FUNCTION_NAME: &str = "globalize";
-pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
-pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
-pub const GET_OBJECT_INFO_FUNCTION_NAME: &str = "get_object_info";
-pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
+pub const OBJECT_NEW_FUNCTION_NAME: &str = "object_new";
+pub const OBJECT_GLOBALIZE_FUNCTION_NAME: &str = "object_globalize";
+pub const OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "object_get_blueprint_id";
+pub const OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME: &str = "object_get_outer_object";
+pub const OBJECT_CALL_FUNCTION_NAME: &str = "object_call";
+pub const OBJECT_CALL_DIRECT_FUNCTION_NAME: &str = "object_call_direct";
+pub const OBJECT_CALL_MODULE_FUNCTION_NAME: &str = "object_call_module";
+
+//=================
+// Actor
+//=================
+pub const ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "actor_get_blueprint_id";
+pub const ACTOR_OPEN_FIELD_FUNCTION_NAME: &str = "actor_open_field";
+pub const ACTOR_GET_OBJECT_ID_FUNCTION_NAME: &str = "actor_get_object_id";
+pub const ACTOR_EMIT_EVENT_FUNCTION_NAME: &str = "actor_emit_event";
 
 //=================
 // Key Value Store
 //=================
 pub const KEY_VALUE_STORE_NEW_FUNCTION_NAME: &str = "kv_store_new";
-pub const KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME: &str = "kv_store_get_info";
 pub const KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME: &str = "kv_store_open_entry";
 pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME: &str = "kv_store_remove_entry";
 
 //=================
-// KV Entry Handle
+// KV Entry
 //=================
-pub const KEY_VALUE_ENTRY_GET_FUNCTION_NAME: &str = "kv_entry_get";
-pub const KEY_VALUE_ENTRY_SET_FUNCTION_NAME: &str = "kv_entry_set";
-pub const KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME: &str = "kv_entry_release";
+pub const KEY_VALUE_ENTRY_READ_FUNCTION_NAME: &str = "kv_entry_read";
+pub const KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME: &str = "kv_entry_write";
+pub const KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME: &str = "kv_entry_remove";
+pub const KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME: &str = "kv_entry_close";
 
 //=================
-// Field Handle
+// Field Entry
 //=================
-pub const FIELD_LOCK_READ_FUNCTION_NAME: &str = "field_lock_read";
-pub const FIELD_LOCK_WRITE_FUNCTION_NAME: &str = "field_lock_write";
-pub const FIELD_LOCK_RELEASE_FUNCTION_NAME: &str = "field_lock_release";
+pub const FIELD_ENTRY_READ_FUNCTION_NAME: &str = "field_entry_read";
+pub const FIELD_ENTRY_WRITE_FUNCTION_NAME: &str = "field_entry_write";
+pub const FIELD_ENTRY_CLOSE_FUNCTION_NAME: &str = "field_entry_close";
 
 //=================
-// Actor
+// Costing
 //=================
-pub const ACTOR_OPEN_FIELD_FUNCTION_NAME: &str = "actor_open_field";
-pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "actor_call_module_method";
-pub const GET_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "get_global_address";
-pub const GET_BLUEPRINT_FUNCTION_NAME: &str = "get_blueprint";
-pub const GET_AUTH_ZONE_FUNCTION_NAME: &str = "get_auth_zone";
-pub const ASSERT_ACCESS_RULE_FUNCTION_NAME: &str = "assert_access_rule";
-pub const GET_NODE_ID_FUNCTION_NAME: &str = "get_node_id";
+pub const COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME: &str = "gas";
+pub const COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME: &str =
+    "costing_get_execution_cost_unit_limit";
+pub const COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME: &str =
+    "costing_get_execution_cost_unit_price";
+pub const COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME: &str =
+    "costing_get_finalization_cost_unit_limit";
+pub const COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME: &str =
+    "costing_get_finalization_cost_unit_price";
+pub const COSTING_GET_USD_PRICE_FUNCTION_NAME: &str = "costing_get_usd_price";
+pub const COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME: &str = "costing_get_tip_percentage";
+pub const COSTING_GET_FEE_BALANCE_FUNCTION_NAME: &str = "costing_get_fee_balance";
 
 //=================
-// Environment
+// System
 //=================
-pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
-pub const EMIT_LOG_FUNCTION_NAME: &str = "emit_log";
-pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
-pub const GENERATE_RUID_FUNCTION_NAME: &str = "generate_ruid";
-pub const PANIC_FUNCTION_NAME: &str = "panic";
+pub const SYS_LOG_FUNCTION_NAME: &str = "sys_log";
+pub const SYS_BECH32_ENCODE_ADDRESS_FUNCTION_NAME: &str = "sys_bech32_encode_address";
+pub const SYS_GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "sys_get_transaction_hash";
+pub const SYS_GENERATE_RUID_FUNCTION_NAME: &str = "sys_generate_ruid";
+pub const SYS_PANIC_FUNCTION_NAME: &str = "sys_panic";
+
+//=================
+// WASM Shim
+//=================
+pub const BUFFER_CONSUME_FUNCTION_NAME: &str = "buffer_consume";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";
-
-//=================
-// LIMITS
-//=================
-
-/// The maximum memory size (per call frame): 64 * 64KiB = 4MiB
-pub const DEFAULT_MAX_MEMORY_SIZE_IN_PAGES: u32 = 64;
-
-/// The maximum initial table size
-pub const DEFAULT_MAX_INITIAL_TABLE_SIZE: u32 = 1024;
-
-/// The max number of labels of a table jump, excluding the default
-pub const DEFAULT_MAX_NUMBER_OF_BR_TABLE_TARGETS: u32 = 256;
-
-/// The max number of global variables
-pub const DEFAULT_MAX_NUMBER_OF_GLOBALS: u32 = 512;
-
-/// The max number of functions
-pub const DEFAULT_MAX_NUMBER_OF_FUNCTIONS: u32 = 64 * 1024;
-
-/// The default number of entries in the engine cache
-pub const DEFAULT_WASM_ENGINE_CACHE_SIZE: usize = 1000;

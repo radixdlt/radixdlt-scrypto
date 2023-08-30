@@ -53,7 +53,7 @@ impl Mint {
         }
         let manifest = builder
             .mint_fungible(self.resource_address.0, self.amount)
-            .try_deposit_batch_or_refund(default_account)
+            .try_deposit_batch_or_refund(default_account, None)
             .build();
         handle_manifest(
             manifest,

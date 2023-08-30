@@ -48,3 +48,9 @@ impl PackageStub {
         )
     }
 }
+
+impl From<PackageAddress> for Package {
+    fn from(value: PackageAddress) -> Self {
+        Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
+    }
+}

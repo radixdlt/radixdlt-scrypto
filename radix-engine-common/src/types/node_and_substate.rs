@@ -219,7 +219,7 @@ pub struct PartitionOffset(pub u8);
 pub enum SubstateKey {
     Field(FieldKey),
     Map(MapKey),
-    Sorted(SortedU16Key),
+    Sorted(SortedKey),
 }
 
 impl SubstateKey {
@@ -237,7 +237,14 @@ impl SubstateKey {
         }
     }
 
-    pub fn for_sorted(&self) -> Option<&SortedU16Key> {
+    pub fn into_map(self) -> MapKey {
+        match self {
+            SubstateKey::Map(key) => key,
+            _ => panic!("Not a Map Key"),
+        }
+    }
+
+    pub fn for_sorted(&self) -> Option<&SortedKey> {
         match self {
             SubstateKey::Sorted(key) => Some(key),
             _ => None,
@@ -247,4 +254,4 @@ impl SubstateKey {
 
 pub type FieldKey = u8;
 pub type MapKey = Vec<u8>;
-pub type SortedU16Key = (u16, Vec<u8>);
+pub type SortedKey = ([u8; 2], Vec<u8>);

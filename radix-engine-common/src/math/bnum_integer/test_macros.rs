@@ -89,25 +89,25 @@ macro_rules! test_impl {
                 #[test]
                 #[should_panic]
                 fn  [<test_shl_overflow_$i:lower>]() {
-                    let _ = <$i>::MAX << (<$i>::try_from(<$i>::BITS).unwrap() + <$i>::one());  // panics because of overflow
+                    let _ = <$i>::MAX << (<$i>::BITS + 1);  // panics because of overflow
                 }
 
                 #[test]
                 #[should_panic]
                 fn  [<test_shr_overflow_$i:lower>]() {
-                    let _ = <$i>::MAX >> (<$i>::try_from(<$i>::BITS).unwrap() + <$i>::one());  // panics because of overflow
+                    let _ = <$i>::MAX >> (<$i>::BITS + 1);  // panics because of overflow
                 }
 
                 #[test]
                 #[should_panic]
                 fn  [<test_shl_overflow_neg_$i:lower>]() {
-                    let _ = <$i>::MIN << (<$i>::try_from(<$i>::BITS).unwrap() + <$i>::one());  // panics because of overflow
+                    let _ = <$i>::MIN << (<$i>::BITS + 1);  // panics because of overflow
                 }
 
                 #[test]
                 #[should_panic]
                 fn  [<test_shr_overflow_neg_$i:lower>]() {
-                    let _ = <$i>::MIN >> (<$i>::try_from(<$i>::BITS).unwrap() + <$i>::one());  // panics because of overflow
+                    let _ = <$i>::MIN >> (<$i>::BITS + 1);  // panics because of overflow
                 }
 
                 #[test]

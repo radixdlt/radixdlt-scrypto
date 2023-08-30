@@ -1,4 +1,3 @@
-use crate::api::actor_sorted_index_api::SortedKey;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
@@ -6,7 +5,7 @@ use radix_engine_common::prelude::ManifestBucket;
 use radix_engine_common::time::{Instant, TimeComparisonOperator};
 use radix_engine_common::types::*;
 use radix_engine_interface::crypto::Secp256k1PublicKey;
-use radix_engine_interface::math::Decimal;
+use radix_engine_interface::math::{traits::*, Decimal};
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -162,8 +161,10 @@ impl EpochChangeCondition {
             return false;
         }
         let proportion_difference = (Decimal::from(actual_duration_millis)
-            - Decimal::from(self.target_duration_millis))
-            / Decimal::from(self.target_duration_millis);
+            .safe_sub(self.target_duration_millis)
+            .expect("Overflow"))
+        .safe_div(self.target_duration_millis)
+        .expect("Overflow");
         proportion_difference <= dec!("0.1")
     }
 
@@ -311,7 +312,6 @@ pub const CONSENSUS_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 pub enum UpdateSecondaryIndex {
     Create {
         index_key: SortedKey,
-        primary: ComponentAddress,
         key: Secp256k1PublicKey,
         stake: Decimal,
     },
@@ -415,6 +415,29 @@ pub struct ValidatorAcceptsDelegatedStakeInput {}
 
 pub type ValidatorAcceptsDelegatedStakeOutput = bool;
 
+pub const VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT: &str = "total_stake_xrd_amount";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ValidatorTotalStakeXrdAmountInput {}
+
+pub type ValidatorTotalStakeXrdAmountOutput = Decimal;
+
+pub const VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT: &str = "total_stake_unit_supply";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ValidatorTotalStakeUnitSupplyInput {}
+
+pub type ValidatorTotalStakeUnitSupplyOutput = Decimal;
+
+pub const VALIDATOR_GET_REDEMPTION_VALUE_IDENT: &str = "get_redemption_value";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorGetRedemptionValueInput {
+    pub amount_of_stake_units: Decimal,
+}
+
+pub type ValidatorGetRedemptionValueOutput = Decimal;
+
 pub const VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS: &str = "signal_protocol_update_readiness";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -423,6 +446,13 @@ pub struct ValidatorSignalProtocolUpdateReadinessInput {
 }
 
 pub type ValidatorSignalProtocolUpdateReadinessOutput = ();
+
+pub const VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT: &str = "get_protocol_update_readiness";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ValidatorGetProtocolUpdateReadinessInput {}
+
+pub type ValidatorGetProtocolUpdateReadinessOutput = Option<String>;
 
 pub const VALIDATOR_APPLY_EMISSION_IDENT: &str = "apply_emission";
 

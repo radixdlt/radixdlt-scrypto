@@ -1,3 +1,5 @@
+use radix_engine::system::system_callback_api::SystemCallbackObject;
+use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, Vm};
 use radix_engine::{
     system::bootstrap::Bootstrapper,
     vm::{
@@ -24,8 +26,13 @@ pub fn run_all_in_memory_and_dump_examples(
 ) -> Result<(), FullScenarioError> {
     let mut substate_db = InMemorySubstateDatabase::standard();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm {
+        scrypto_vm: &scrypto_vm,
+        native_vm,
+    };
 
-    let receipts = Bootstrapper::new(&mut substate_db, &scrypto_vm, false)
+    let receipts = Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
         .bootstrap_test_default()
         .unwrap();
     let epoch = receipts
@@ -68,34 +75,36 @@ pub fn run_scenario_with_default_config<S>(
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
 {
-    let fee_reserve_config = FeeReserveConfig::default();
+    let costing_parameters = CostingParameters::default();
     let execution_config = ExecutionConfig::for_test_transaction();
-    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
 
     run_scenario(
         context,
         &validator,
         substate_db,
-        &scrypto_interpreter,
-        &fee_reserve_config,
+        vm,
+        &costing_parameters,
         &execution_config,
         scenario,
     )
 }
 
-pub fn run_scenario<S, W>(
+pub fn run_scenario<S, V>(
     context: &RunnerContext,
     validator: &NotarizedTransactionValidator,
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoVm<W>,
-    fee_reserve_config: &FeeReserveConfig,
+    vm: V,
+    costing_parameters: &CostingParameters,
     execution_config: &ExecutionConfig,
     scenario: &mut Box<dyn ScenarioInstance>,
 ) -> Result<EndState, FullScenarioError>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 {
     let mut previous = None;
     loop {
@@ -111,8 +120,8 @@ where
                 next.dump_manifest(&context.dump_manifest_root, &context.network);
                 previous = Some(execute_and_commit_transaction(
                     substate_db,
-                    scrypto_interpreter,
-                    fee_reserve_config,
+                    vm.clone(),
+                    costing_parameters,
                     execution_config,
                     &transaction.get_executable(),
                 ));
@@ -130,7 +139,7 @@ mod test {
     use super::*;
 
     #[test]
-    pub fn regenerate_all() {
+    pub fn update_expected_scenario_output() {
         let network_definition = NetworkDefinition::simulator();
         let scenarios_dir =
             std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("generated-examples");

@@ -1,9 +1,7 @@
 use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
-use radix_engine::errors::{RejectionError, RuntimeError};
+use radix_engine::errors::{RejectionReason, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
-use radix_engine::kernel::heap::HeapOpenSubstateError;
-use radix_engine::track::interface::AcquireLockError;
 use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -23,9 +21,9 @@ where
     test_runner.execute_manifest(manifest, vec![])
 }
 
-fn setup_test_runner() -> (TestRunner, ComponentAddress) {
+fn setup_test_runner() -> (DefaultTestRunner, ComponentAddress) {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component
@@ -150,9 +148,9 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
     });
 
     receipt.expect_specific_rejection(|e| match e {
-        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+        RejectionReason::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::OpenSubstateError(
-                OpenSubstateError::HeapError(HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode),
+                OpenSubstateError::LockUnmodifiedBaseOnHeapNode,
             )),
         )) => true,
         _ => false,
@@ -187,17 +185,11 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
     });
 
     receipt.expect_specific_rejection(|e| match e {
-        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+        RejectionReason::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::OpenSubstateError(
-                OpenSubstateError::TrackError(err),
+                OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(..),
             )),
-        )) => {
-            if let AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
-                return true;
-            } else {
-                return false;
-            }
-        }
+        )) => true,
         _ => false,
     });
 }
@@ -220,7 +212,7 @@ fn should_succeed_when_lock_fee_and_query_vault() {
 #[test]
 fn test_fee_accounting_success() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -238,7 +230,7 @@ fn test_fee_accounting_success() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 500)
         .withdraw_from_account(account1, XRD, 66)
-        .try_deposit_batch_or_abort(account2)
+        .try_deposit_batch_or_abort(account2, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -246,7 +238,7 @@ fn test_fee_accounting_success() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -257,22 +249,21 @@ fn test_fee_accounting_success() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - 66
-            - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
-                * summary.execution_cost_sum
-            - summary.total_state_expansion_cost_xrd
+            .safe_sub(Decimal::from(66))
+            .unwrap()
+            .safe_sub(receipt.fee_summary.total_cost())
+            .unwrap()
     );
-    assert_eq!(account2_new_balance, account2_balance + 66);
+    assert_eq!(account2_new_balance, account2_balance.safe_add(66).unwrap());
 }
 
 #[test]
 fn test_fee_accounting_failure() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -290,7 +281,7 @@ fn test_fee_accounting_failure() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 500)
         .withdraw_from_account(account1, XRD, 66)
-        .try_deposit_batch_or_abort(account2)
+        .try_deposit_batch_or_abort(account2, None)
         .assert_worktop_contains(XRD, 1)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -307,7 +298,7 @@ fn test_fee_accounting_failure() {
             ))
         )
     });
-    let commit_result = receipt.expect_commit(false);
+    receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -318,12 +309,11 @@ fn test_fee_accounting_failure() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
-                * summary.execution_cost_sum
+            .safe_sub(receipt.fee_summary.total_cost())
+            .unwrap()
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
@@ -331,7 +321,7 @@ fn test_fee_accounting_failure() {
 #[test]
 fn test_fee_accounting_rejection() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let account1_balance = test_runner
         .get_component_resources(account1)
@@ -361,7 +351,7 @@ fn test_fee_accounting_rejection() {
 #[test]
 fn test_contingent_fee_accounting_success() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -389,7 +379,7 @@ fn test_contingent_fee_accounting_success() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -400,24 +390,39 @@ fn test_contingent_fee_accounting_success() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
-    let effective_price =
-        summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
     let contingent_fee = dec!("0.001");
     assert_eq!(
         account1_new_balance,
         account1_balance
-            - effective_price * summary.execution_cost_sum
-            - summary.total_state_expansion_cost_xrd
-            + contingent_fee
+            .safe_sub(
+                receipt
+                    .effective_execution_cost_unit_price()
+                    .safe_mul(receipt.fee_summary.total_execution_cost_units_consumed)
+                    .unwrap()
+            )
+            .unwrap()
+            .safe_sub(
+                receipt
+                    .effective_finalization_cost_unit_price()
+                    .safe_mul(receipt.fee_summary.total_finalization_cost_units_consumed)
+                    .unwrap()
+            )
+            .unwrap()
+            .safe_sub(receipt.fee_summary.total_storage_cost_in_xrd)
+            .unwrap()
+            .safe_add(contingent_fee)
+            .unwrap()
     );
-    assert_eq!(account2_new_balance, account2_balance - contingent_fee);
+    assert_eq!(
+        account2_new_balance,
+        account2_balance.safe_sub(contingent_fee).unwrap()
+    );
 }
 
 #[test]
 fn test_contingent_fee_accounting_failure() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -454,7 +459,7 @@ fn test_contingent_fee_accounting_failure() {
             ))
         )
     });
-    let commit_result = receipt.expect_commit(false);
+    receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -465,12 +470,17 @@ fn test_contingent_fee_accounting_failure() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &commit_result.fee_summary;
-    let effective_price =
-        summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
+    let summary = &receipt.fee_summary;
     assert_eq!(
         account1_new_balance,
-        account1_balance - effective_price * summary.execution_cost_sum
+        account1_balance
+            .safe_sub(
+                receipt
+                    .effective_execution_cost_unit_price()
+                    .safe_mul(summary.total_execution_cost_units_consumed)
+                    .unwrap()
+            )
+            .unwrap()
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
@@ -478,7 +488,7 @@ fn test_contingent_fee_accounting_failure() {
 #[test]
 fn locked_fees_are_correct_in_execution_trace() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_account(false);
 
     // Act
@@ -495,7 +505,7 @@ fn locked_fees_are_correct_in_execution_trace() {
     // Assert
     let commit = receipt.expect_commit_success();
     assert_eq!(
-        commit.execution_trace.fee_locks,
+        commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("104.676"),
             contingent_lock: Decimal::ZERO
@@ -506,7 +516,7 @@ fn locked_fees_are_correct_in_execution_trace() {
 #[test]
 fn multiple_locked_fees_are_correct_in_execution_trace() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_account(false);
     let (public_key2, _, account2) = test_runner.new_account(false);
 
@@ -525,7 +535,7 @@ fn multiple_locked_fees_are_correct_in_execution_trace() {
     // Assert
     let commit = receipt.expect_commit_success();
     assert_eq!(
-        commit.execution_trace.fee_locks,
+        commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("206.856"),
             contingent_lock: Decimal::ZERO
@@ -536,7 +546,7 @@ fn multiple_locked_fees_are_correct_in_execution_trace() {
 #[test]
 fn regular_and_contingent_fee_locks_are_correct_in_execution_trace() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_account(false);
     let (public_key2, _, account2) = test_runner.new_account(false);
 
@@ -555,7 +565,7 @@ fn regular_and_contingent_fee_locks_are_correct_in_execution_trace() {
     // Assert
     let commit = receipt.expect_commit_success();
     assert_eq!(
-        commit.execution_trace.fee_locks,
+        commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("104.676"),
             contingent_lock: dec!("102.180")

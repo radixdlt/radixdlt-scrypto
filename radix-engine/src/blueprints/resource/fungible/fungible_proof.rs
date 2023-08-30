@@ -1,11 +1,8 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
-use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::system::FieldSubstate;
-use crate::system::system_callback::SystemLockData;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -50,7 +47,7 @@ impl FungibleProofSubstate {
         })
     }
 
-    pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
+    pub fn teardown<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
         for (container, locked_amount) in &self.evidence {
             api.call_method(
                 container.as_node_id(),
@@ -78,7 +75,7 @@ impl FungibleProofBlueprint {
     {
         let moveable = {
             let handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 FungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
@@ -89,7 +86,7 @@ impl FungibleProofBlueprint {
         };
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -99,7 +96,10 @@ impl FungibleProofBlueprint {
 
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
-            vec![FieldValue::new(&moveable), FieldValue::new(&clone)],
+            btreemap! {
+                0u8 => FieldValue::new(&moveable),
+                1u8 => FieldValue::new(&clone),
+            },
         )?;
 
         // Drop after object creation to keep the reference alive
@@ -113,7 +113,7 @@ impl FungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -127,33 +127,83 @@ impl FungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address =
-            ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
+        let address = ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());
         Ok(address)
     }
 
     pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
-
-        // Notify underlying buckets/vaults
-        let handle = api.kernel_open_substate(
-            proof.0.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &NonFungibleProofField::ProofRefs.into(),
-            LockFlags::read_only(),
-            SystemLockData::Default,
-        )?;
-        let proof_substate: FieldSubstate<FungibleProofSubstate> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        proof_substate.value.0.drop_proof(api)?;
-        api.kernel_close_substate(handle)?;
-
-        // Drop self
         api.drop_object(proof.0.as_node_id())?;
 
         Ok(())
+    }
+
+    pub(crate) fn on_drop<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            FungibleProofField::ProofRefs.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let proof_substate: FungibleProofSubstate = api.field_read_typed(handle)?;
+        proof_substate.teardown(api)?;
+        api.field_close(handle)?;
+
+        Ok(())
+    }
+
+    pub(crate) fn on_move<Y>(
+        is_moving_down: bool,
+        is_to_barrier: bool,
+        destination_blueprint_id: Option<BlueprintId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if is_moving_down {
+            let is_to_self = destination_blueprint_id.eq(&Some(BlueprintId::new(
+                &RESOURCE_PACKAGE,
+                FUNGIBLE_PROOF_BLUEPRINT,
+            )));
+            let is_to_auth_zone = destination_blueprint_id.eq(&Some(BlueprintId::new(
+                &RESOURCE_PACKAGE,
+                AUTH_ZONE_BLUEPRINT,
+            )));
+            if !is_to_self && (is_to_barrier || is_to_auth_zone) {
+                let handle = api.actor_open_field(
+                    ACTOR_STATE_SELF,
+                    FungibleProofField::Moveable.into(),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut proof: ProofMoveableSubstate = api.field_read_typed(handle)?;
+
+                // Check if the proof is restricted
+                if proof.restricted {
+                    return Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+                        "Moving restricted proof downstream".to_owned(),
+                    )));
+                }
+
+                // Update restricted flag
+                if is_to_barrier {
+                    proof.change_to_restricted();
+                }
+
+                api.field_write_typed(handle, &proof)?;
+                api.field_close(handle)?;
+                Ok(())
+            } else {
+                // Proofs can move freely as long as it's not to a barrier or auth zone.
+                Ok(())
+            }
+        } else {
+            // No restriction for moving up
+            Ok(())
+        }
     }
 }

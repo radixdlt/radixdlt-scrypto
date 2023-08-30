@@ -2,10 +2,10 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::kernel::vm::ScryptoInterpreter;
 use radix_engine::ledger::*;
 use radix_engine::transaction::execute_and_commit_transaction;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig, ResourcesUsage};
+use radix_engine::transaction::{CostingParameters, ExecutionConfig, ResourcesUsage};
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmValidatorConfig};
-use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
+use radix_engine_common::constants::EXECUTION_COST_UNIT_LIMIT;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
@@ -144,15 +144,16 @@ fn transfer_test(c: &mut Criterion) {
         .map(|_| {
             let manifest = ManifestBuilder::new()
                 .lock_fee_from_faucet()
-                .new_account_advanced(rule!(require(NonFungibleGlobalId::from_public_key(
-                    &public_key
-                ))))
+                .new_account_advanced(
+                    rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
+                    None,
+                )
                 .build();
             let account = execute_and_commit_transaction(
                 &mut substate_db,
                 &mut scrypto_interpreter,
-                &FeeReserveConfig::default(),
-                &ExecutionConfig::for_notarized_transaction(),
+                &CostingParameters::default(),
+                &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
                     .unwrap()
@@ -164,13 +165,13 @@ fn transfer_test(c: &mut Criterion) {
             let manifest = ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .try_deposit_batch_or_abort(account)
+                .try_deposit_batch_or_abort(account, None)
                 .build();
             execute_and_commit_transaction(
                 &mut substate_db,
                 &mut scrypto_interpreter,
-                &FeeReserveConfig::default(),
-                &ExecutionConfig::for_notarized_transaction(),
+                &CostingParameters::default(),
+                &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
                     .unwrap()
@@ -189,15 +190,15 @@ fn transfer_test(c: &mut Criterion) {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .try_deposit_batch_or_abort(account1)
+        .try_deposit_batch_or_abort(account1, None)
         .build();
 
     for nonce in 0..1000 {
         execute_and_commit_transaction(
             &mut substate_db,
             &mut scrypto_interpreter,
-            &FeeReserveConfig::default(),
-            &ExecutionConfig::for_notarized_transaction(),
+            &CostingParameters::default(),
+            &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
             &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                 .prepare()
                 .unwrap()
@@ -210,18 +211,18 @@ fn transfer_test(c: &mut Criterion) {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account1, XRD, dec!("0.000001"))
-        .try_deposit_batch_or_abort(account2)
+        .try_deposit_batch_or_abort(account2, None)
         .build();
 
     // Loop
     let mut nonce = 3;
-    c.bench_function("Transfer", |b| {
+    c.bench_function("resources_usage::transfer", |b| {
         b.iter(|| {
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,
                 &mut scrypto_interpreter,
-                &FeeReserveConfig::default(),
-                &ExecutionConfig::for_notarized_transaction(),
+                &CostingParameters::default(),
+                &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                     .prepare()
                     .unwrap()

@@ -1,5 +1,5 @@
 use crate::api::ObjectModuleId;
-use crate::blueprints::package::TypePointer;
+use crate::types::BlueprintId;
 use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;
 use radix_engine_common::types::NodeId;
@@ -15,14 +15,12 @@ use utils::ContextualDisplay;
 ///
 /// It is important to note that application events are always emitted by an RENode, meaning that
 /// there is always an emitter of some [`NodeId`].
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct EventTypeIdentifier(pub Emitter, pub TypePointer);
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
+pub struct EventTypeIdentifier(pub Emitter, pub String);
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum Emitter {
-    // (Node id, module id, blueprint name)
-    Function(NodeId, ObjectModuleId, String),
-    // (Node id, module id)
+    Function(BlueprintId),
     Method(NodeId, ObjectModuleId),
 }
 
@@ -35,13 +33,11 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         match self {
-            Self::Function(node_id, module_id, blueprint_name) => {
+            Self::Function(blueprint_id) => {
                 write!(
                     f,
-                    "Function {{ node: {}, module_id: {:?}, blueprint_name: {} }}",
-                    node_id.display(*context),
-                    module_id,
-                    blueprint_name
+                    "Function {{ blueprint_id: {} }}",
+                    blueprint_id.display(*context),
                 )
             }
             Self::Method(node_id, module_id) => {

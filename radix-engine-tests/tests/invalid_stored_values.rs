@@ -1,5 +1,5 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::{MoveModuleError, PersistNodeError};
+use radix_engine::kernel::call_frame::{MovePartitionError, PersistNodeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -7,7 +7,7 @@ use transaction::prelude::*;
 #[test]
 fn stored_bucket_in_committed_component_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/stored_values");
 
     // Act
@@ -27,8 +27,8 @@ fn stored_bucket_in_committed_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(
-                    PersistNodeError::CantBeStored(_)
+                CallFrameError::MovePartitionError(MovePartitionError::PersistNodeError(
+                    PersistNodeError::CannotPersistPinnedNode(..)
                 ))
             ))
         )
@@ -38,7 +38,7 @@ fn stored_bucket_in_committed_component_should_fail() {
 #[test]
 fn stored_bucket_in_owned_component_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/stored_values");
 
     // Act
@@ -58,8 +58,8 @@ fn stored_bucket_in_owned_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(
-                    PersistNodeError::CantBeStored(_)
+                CallFrameError::MovePartitionError(MovePartitionError::PersistNodeError(
+                    PersistNodeError::CannotPersistPinnedNode(..)
                 ))
             ))
         )

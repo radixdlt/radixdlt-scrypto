@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomTypeKind, L>;
-pub type ScryptoSchema = Schema<ScryptoCustomSchema>;
+pub type VersionedScryptoSchema = VersionedSchema<ScryptoCustomSchema>;
 pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 
 /// A schema for the values that a codec can decode / views as valid
@@ -125,7 +125,7 @@ impl CustomSchema for ScryptoCustomSchema {
     }
 
     fn resolve_well_known_type(
-        well_known_index: u8,
+        well_known_index: WellKnownTypeIndex,
     ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
         resolve_scrypto_well_known_type(well_known_index)
     }
@@ -201,11 +201,20 @@ impl CustomSchema for ScryptoCustomSchema {
     }
 }
 
+pub trait HasSchemaHash {
+    fn generate_schema_hash(&self) -> SchemaHash;
+}
+
+impl HasSchemaHash for VersionedScryptoSchema {
+    fn generate_schema_hash(&self) -> SchemaHash {
+        SchemaHash::from(hash(scrypto_encode(self).unwrap()))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct ScryptoCustomExtension {}
 
 impl CustomExtension for ScryptoCustomExtension {
-    const MAX_DEPTH: usize = SCRYPTO_SBOR_V1_MAX_DEPTH;
     const PAYLOAD_PREFIX: u8 = SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
 
     type CustomValueKind = ScryptoCustomValueKind;
@@ -252,8 +261,11 @@ impl CustomExtension for ScryptoCustomExtension {
     }
 }
 
-pub fn replace_self_package_address(schema: &mut ScryptoSchema, package_address: PackageAddress) {
-    for type_validation in &mut schema.type_validations {
+pub fn replace_self_package_address(
+    schema: &mut VersionedScryptoSchema,
+    package_address: PackageAddress,
+) {
+    for type_validation in &mut schema.v1_mut().type_validations {
         match type_validation {
             TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
                 OwnValidation::IsTypedObject(package, _),

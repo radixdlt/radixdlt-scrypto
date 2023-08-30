@@ -43,6 +43,16 @@ impl TransactionBuilder {
         self
     }
 
+    pub fn multi_sign<S: Signer>(mut self, signers: &[&S]) -> Self {
+        let intent = self.transaction_intent();
+        let prepared = intent.prepare().expect("Intent could be prepared");
+        for signer in signers {
+            self.intent_signatures
+                .push(signer.sign_with_public_key(&prepared.intent_hash()));
+        }
+        self
+    }
+
     pub fn signer_signatures(mut self, sigs: Vec<SignatureWithPublicKeyV1>) -> Self {
         self.intent_signatures.extend(sigs);
         self
@@ -128,7 +138,7 @@ mod tests {
                 notary_is_signatory: true,
                 tip_percentage: 5,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build())
+            .manifest(ManifestBuilder::new().drop_auth_zone_proofs().build())
             .notarize(&private_key)
             .build();
 

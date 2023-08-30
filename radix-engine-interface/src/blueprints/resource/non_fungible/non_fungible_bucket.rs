@@ -25,6 +25,15 @@ pub struct BucketTakeNonFungiblesInput {
 
 pub type BucketTakeNonFungiblesOutput = Bucket;
 
+pub const NON_FUNGIBLE_BUCKET_CONTAINS_NON_FUNGIBLE_IDENT: &str = "contains_non_fungible";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleBucketContainsNonFungibleInput {
+    pub id: NonFungibleLocalId,
+}
+
+pub type NonFungibleBucketContainsNonFungibleOutput = bool;
+
 pub const NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "get_non_fungible_local_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

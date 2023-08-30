@@ -32,7 +32,7 @@ impl ResourceManager {
     {
         let metadata = ModuleConfig {
             init: metadata.into(),
-            roles: RolesInit::default(),
+            roles: RoleAssignmentInit::default(),
         };
 
         let result = api.call_function(
@@ -69,7 +69,7 @@ impl ResourceManager {
     {
         let metadata = ModuleConfig {
             init: metadata.into(),
-            roles: RolesInit::default(),
+            roles: RoleAssignmentInit::default(),
         };
 
         let result = api.call_function(
@@ -111,7 +111,7 @@ impl ResourceManager {
     {
         let metadata = ModuleConfig {
             init: metadata.into(),
-            roles: RolesInit::default(),
+            roles: RoleAssignmentInit::default(),
         };
 
         let non_fungible_schema = NonFungibleDataSchema::new_schema::<N>();

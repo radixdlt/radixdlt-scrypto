@@ -135,7 +135,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 },
                                 Some(100_000_000_000u64.into()),
                             )
-                            .try_deposit_batch_or_abort(config.storing_account.address)
+                            .try_deposit_batch_or_abort(config.storing_account.address, None)
                             .done()
                         },
                         vec![],
@@ -169,23 +169,23 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                             "name" => "Radiswap - dApp Owner Badge", updatable;
                                             "description" => "[EXAMPLE] The owner badge for the Radiswap dApp and associated entities", updatable;
                                             "tags" => ["badge", "dex", "pool", "radiswap"], updatable;
-                                            "info_url" => Url::of("https://radiswap.radixdlt.com/"), updatable;
+                                            "info_url" => UncheckedUrl::of("https://radiswap.radixdlt.com/"), updatable;
                                         }
                                     },
                                     Some([
                                         (NonFungibleLocalId::integer(1), ())
                                     ]),
                                 )
-                                .try_deposit_batch_or_abort(definition_account)
+                                .try_deposit_batch_or_abort(definition_account, None)
                                 .set_metadata(definition_account, "account_type", "dapp definition")
                                 .set_metadata(definition_account, "name", "Radiswap dApp Definition")
                                 .set_metadata(definition_account, "description", "[EXAMPLE] The Radiswap dApp definition account")
                                 .set_metadata(definition_account, "tags", ["dex", "pool", "radiswap"])
-                                .set_metadata(definition_account, "info_url", Url::of("https://radiswap.radixdlt.com/"))
+                                .set_metadata(definition_account, "info_url", UncheckedUrl::of("https://radiswap.radixdlt.com/"))
                                 .set_metadata(
                                     definition_account,
                                     "claimed_websites",
-                                    [Origin::of("https://radiswap.radixdlt.com")]
+                                    [UncheckedOrigin::of("https://radiswap.radixdlt.com")]
                                 )
                         },
                         vec![&config.radiswap_dapp_definition_account.key]
@@ -252,7 +252,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                     state.pool_2.resource_2.get()?,
                                 )
                             )
-                            .try_deposit_batch_or_abort(config.radiswap_dapp_definition_account.address)
+                            .try_deposit_batch_or_abort(config.radiswap_dapp_definition_account.address, None)
                             .done()
                         },
                         vec![],
@@ -329,7 +329,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                         lookup.bucket("pool_2_resource_2"),
                                     ),
                                 )
-                                .try_deposit_batch_or_abort(config.storing_account.address)
+                                .try_deposit_batch_or_abort(config.storing_account.address, None)
                                 .done()
                         },
                         vec![&config.storing_account.key],
@@ -342,7 +342,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                         "radiswap-distribute-tokens",
                         |mut builder| {
                             builder = builder.get_free_xrd_from_faucet()
-                                .try_deposit_batch_or_abort(config.storing_account.address);
+                                .try_deposit_batch_or_abort(config.storing_account.address, None);
                             for destination_account in [&config.user_account_1, &config.user_account_2, &config.user_account_3]
                             {
                                 for resource_address in [
@@ -359,7 +359,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                         333,
                                     );
                                 }
-                                builder = builder.try_deposit_batch_or_abort(destination_account.address);
+                                builder = builder.try_deposit_batch_or_abort(destination_account.address, None);
                             }
                             builder.done()
                         },
@@ -388,7 +388,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                         lookup.bucket("input"),
                                     )
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_batch_or_abort(config.user_account_1.address, None)
                                 .done()
                         },
                         vec![&config.user_account_1.key],
@@ -418,7 +418,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                         manifest_args!(bucket),
                                     )
                                 })
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_batch_or_abort(config.user_account_1.address, None)
                                 .done()
                         },
                         vec![&config.user_account_1.key],
@@ -444,7 +444,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                             .set_metadata(address, "name", name)
                             .set_metadata(address, "description", description)
                             .set_metadata(address, "tags", ["badge", "dex", "pool", "radiswap"])
-                            .set_metadata(address, "info_url", Url::of("https://radiswap.radixdlt.com/"))
+                            .set_metadata(address, "info_url", UncheckedUrl::of("https://radiswap.radixdlt.com/"))
                     }
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-set-two-way-linking",

@@ -2,9 +2,13 @@ use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
 };
-use radix_engine::kernel::call_frame::{CloseSubstateError, CreateNodeError, TakeNodeError};
+use radix_engine::kernel::call_frame::{
+    CreateNodeError, ProcessSubstateError, SubstateDiffError, WriteSubstateError,
+};
+use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::blueprints::package::KeyOrValue;
 use radix_engine_interface::{metadata, metadata_init};
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
@@ -12,9 +16,42 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
+fn test_deposit_event_when_creating_vault_with_bucket() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, _) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ComponentWithVault",
+            "create_vault_with_bucket",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    println!("{:?}", receipt);
+
+    receipt
+        .expect_commit_ignore_outcome()
+        .application_events
+        .iter()
+        .map(|event| test_runner.event_name(&event.0))
+        .filter(|name| name.eq("DepositEvent"))
+        .next()
+        .expect("Missing deposit event");
+}
+
+#[test]
 fn non_existent_vault_in_component_creation_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -33,7 +70,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
+            RuntimeError::SystemError(SystemError::TypeCheckError(..))
         )
     });
 }
@@ -41,7 +78,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
 #[test]
 fn non_existent_vault_in_committed_component_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -65,7 +102,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
+            RuntimeError::SystemError(SystemError::TypeCheckError(..))
         )
     });
 }
@@ -73,7 +110,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
 #[test]
 fn non_existent_vault_in_kv_store_creation_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -92,7 +129,9 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::InvalidSubstateWrite(_))
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::KeyValueStorePayloadValidationError(KeyOrValue::Value, _)
+            ))
         )
     });
 }
@@ -100,7 +139,7 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
 #[test]
 fn non_existent_vault_in_committed_kv_store_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -124,7 +163,9 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::InvalidSubstateWrite(_))
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::KeyValueStorePayloadValidationError(KeyOrValue::Value, _)
+            ))
         )
     });
 }
@@ -132,7 +173,7 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
 #[test]
 fn create_mutable_vault_into_map() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -154,7 +195,7 @@ fn create_mutable_vault_into_map() {
 #[test]
 fn invalid_double_ownership_of_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -174,8 +215,8 @@ fn invalid_double_ownership_of_vault() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CreateNodeError(CreateNodeError::TakeNodeError(
-                    TakeNodeError::OwnNotFound(_)
+                CallFrameError::CreateNodeError(CreateNodeError::SubstateDiffError(
+                    SubstateDiffError::ContainsDuplicateOwns
                 ))
             ))
         )
@@ -185,7 +226,7 @@ fn invalid_double_ownership_of_vault() {
 #[test]
 fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -207,7 +248,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 #[test]
 fn cannot_overwrite_vault_in_map() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -237,7 +278,9 @@ fn cannot_overwrite_vault_in_map() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
+                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
+                    ProcessSubstateError::CantDropNodeInStore(..)
+                ))
             ))
         )
     });
@@ -246,7 +289,7 @@ fn cannot_overwrite_vault_in_map() {
 #[test]
 fn create_mutable_vault_into_vector() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -268,7 +311,7 @@ fn create_mutable_vault_into_vector() {
 #[test]
 fn cannot_remove_vaults() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -294,7 +337,9 @@ fn cannot_remove_vaults() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
+                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
+                    ProcessSubstateError::CantDropNodeInStore(..)
+                ))
             ))
         )
     });
@@ -303,7 +348,7 @@ fn cannot_remove_vaults() {
 #[test]
 fn can_push_vault_into_vector() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -335,7 +380,7 @@ fn can_push_vault_into_vector() {
 #[test]
 fn create_fungible_vault_with_take() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -357,7 +402,7 @@ fn create_fungible_vault_with_take() {
 #[test]
 fn create_non_fungible_vault_with_take() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -379,7 +424,7 @@ fn create_non_fungible_vault_with_take() {
 #[test]
 fn create_non_fungible_vault_with_take_twice() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -401,7 +446,7 @@ fn create_non_fungible_vault_with_take_twice() {
 #[test]
 fn create_non_fungible_vault_with_take_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -423,7 +468,7 @@ fn create_non_fungible_vault_with_take_non_fungible() {
 #[test]
 fn create_mutable_vault_with_get_nonfungible_ids() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -445,7 +490,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
 #[test]
 fn create_mutable_vault_with_get_nonfungible_id() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -467,7 +512,7 @@ fn create_mutable_vault_with_get_nonfungible_id() {
 #[test]
 fn create_mutable_vault_with_get_amount() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -489,7 +534,7 @@ fn create_mutable_vault_with_get_amount() {
 #[test]
 fn create_mutable_vault_with_get_resource_manager() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -511,7 +556,7 @@ fn create_mutable_vault_with_get_resource_manager() {
 #[test]
 fn take_on_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -539,7 +584,7 @@ fn take_on_non_fungible_vault() {
 #[test]
 fn take_twice_on_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -567,7 +612,7 @@ fn take_twice_on_non_fungible_vault() {
 #[test]
 fn withdraw_with_over_specified_divisibility_should_result_in_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100u32.into(), 4, account);
 
@@ -575,7 +620,7 @@ fn withdraw_with_over_specified_divisibility_should_result_in_error() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, dec!("5.55555"))
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -592,7 +637,7 @@ fn withdraw_with_over_specified_divisibility_should_result_in_error() {
 #[test]
 fn create_proof_with_over_specified_divisibility_should_result_in_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100u32.into(), 4, account);
 
@@ -616,7 +661,7 @@ fn create_proof_with_over_specified_divisibility_should_result_in_error() {
 #[test]
 fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
@@ -633,10 +678,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -661,10 +703,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -675,7 +714,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
             "take_ids",
             manifest_args!(btreeset![NonFungibleLocalId::integer(1)]),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
@@ -687,7 +726,10 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     );
 }
 
-fn get_vault_id(test_runner: &mut TestRunner, component_address: ComponentAddress) -> NodeId {
+fn get_vault_id(
+    test_runner: &mut DefaultTestRunner,
+    component_address: ComponentAddress,
+) -> NodeId {
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();

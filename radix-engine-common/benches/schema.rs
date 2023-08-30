@@ -2,6 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine_common::data::scrypto::{
     scrypto_encode, ScryptoCustomExtension, ScryptoCustomSchema,
 };
+use radix_engine_common::prelude::SCRYPTO_SBOR_V1_MAX_DEPTH;
 use radix_engine_common::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -53,13 +54,14 @@ fn bench_schema_new(b: &mut Criterion) {
     let bytes = scrypto_encode(&get_simple_dataset(REPEAT)).unwrap();
     let (type_index, schema) =
         generate_full_schema_from_single_type::<SimpleStruct, ScryptoCustomSchema>();
-    b.bench_function("Schema::validate_payload", |b| {
+    b.bench_function("schema::validate_payload", |b| {
         b.iter(|| {
             let result = validate_payload_against_schema::<ScryptoCustomExtension, _>(
                 &bytes,
-                &schema,
+                schema.v1(),
                 type_index,
                 &(),
+                SCRYPTO_SBOR_V1_MAX_DEPTH,
             );
             assert!(result.is_ok())
         })

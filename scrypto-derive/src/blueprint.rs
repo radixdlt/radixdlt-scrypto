@@ -135,18 +135,31 @@ pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Resu
                 };
             } else if macro_ident.eq(&Ident::new("resource_manager", Span::call_site())) {
                 let address: Expr = m.mac.clone().parse_body()?;
-                let lit_str: LitStr = parse_quote!( #address );
+                match address {
+                    Expr::Lit(..) => {
+                        let lit_str: LitStr = parse_quote!( #address );
+                        let (_hrp, _entity_type, address) =
+                            AddressBech32Decoder::validate_and_decode_ignore_hrp(
+                                lit_str.value().as_str(),
+                            )
+                            .unwrap();
+                        dependency_exprs.push(parse_quote! {
+                            GlobalAddress :: new_or_panic([ #(#address),* ])
+                        });
 
-                let (_hrp, _entity_type, address) =
-                    AddressBech32Decoder::validate_and_decode_ignore_hrp(lit_str.value().as_str())
-                        .unwrap();
+                        *expr = parse_quote! {
+                            ResourceManager::from_address(ResourceAddress :: new_or_panic([ #(#address),* ]))
+                        };
+                    }
+                    _ => {
+                        dependency_exprs.push(parse_quote! {
+                            #address
+                        });
 
-                dependency_exprs.push(parse_quote! {
-                    GlobalAddress :: new_or_panic([ #(#address),* ])
-                });
-
-                *expr = parse_quote! {
-                    ResourceManager::from_address(ResourceAddress :: new_or_panic([ #(#address),* ]))
+                        *expr = parse_quote! {
+                            ResourceManager::from_address(#address)
+                        };
+                    }
                 };
             } else if macro_ident.eq(&Ident::new("package", Span::call_site())) {
                 let address: Expr = m.mac.clone().parse_body()?;
@@ -523,6 +536,15 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         }
                     }
                 }
+                // None of the attributes to apply at the top-level of blueprint macros matched. So,
+                // we provide an error to the user that they're using an incorrect attribute macro
+                // that has no effect.
+                else {
+                    return Err(Error::new(
+                        attribute.path.span(),
+                        format!("Attribute is invalid for blueprints."),
+                    ));
+                }
             }
             (
                 paths.keys().into_iter().cloned().collect::<Vec<_>>(),
@@ -564,7 +586,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                         BlueprintFunctionsSchemaInit {
                             functions,
-                            virtual_lazy_load_functions: BTreeMap::default(),
                         }
                     };
 
@@ -588,6 +609,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         state,
                         events,
                         functions,
+                        hooks: BlueprintHooksInit::default(),
                     }
                 };
 
@@ -607,6 +629,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                     blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+                    is_transient: false,
                     feature_set: BTreeSet::default(),
                     dependencies,
                     schema,
@@ -1460,7 +1483,6 @@ mod tests {
 
                                 BlueprintFunctionsSchemaInit {
                                     functions,
-                                    virtual_lazy_load_functions: BTreeMap::default(),
                                 }
                             };
 
@@ -1479,6 +1501,7 @@ mod tests {
                                 state,
                                 events,
                                 functions,
+                                hooks: BlueprintHooksInit::default(),
                             }
                         };
 
@@ -1495,6 +1518,7 @@ mod tests {
 
                         let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                             blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+                            is_transient: false,
                             feature_set: BTreeSet::default(),
                             dependencies,
                             schema,

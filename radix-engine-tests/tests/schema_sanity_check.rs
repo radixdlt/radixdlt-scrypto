@@ -7,14 +7,14 @@ use radix_engine::{
 };
 use radix_engine_common::prelude::well_known_scrypto_custom_types::*;
 use radix_engine_interface::schema::TypeRef;
-use radix_engine_queries::typed_substate_layout::TypePointer;
+use radix_engine_queries::typed_substate_layout::BlueprintPayloadDef;
 use sbor::basic_well_known_types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
 fn check_native_function_base_costs() {
-    let test_runner = TestRunner::builder().build();
+    let test_runner = TestRunnerBuilder::new().build();
     let mut lookup: IndexMap<PackageAddress, IndexSet<String>> = index_map_new();
     let package_addresses = test_runner.find_all_packages();
     for package_address in package_addresses {
@@ -89,7 +89,7 @@ fn check_native_function_base_costs() {
 
 #[test]
 fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
-    let test_runner = TestRunner::builder().build();
+    let test_runner = TestRunnerBuilder::new().build();
     let bech32 = AddressBech32Encoder::for_simulator();
 
     let package_addresses = test_runner.find_all_packages();
@@ -104,7 +104,7 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             println!("Checking blueprint {:?}", key.blueprint);
             if let Some(fields) = definition.interface.state.fields {
                 for (i, f) in fields.1.iter().enumerate() {
-                    let result = check_type_pointer(&schemas_by_hash, &f.field);
+                    let result = check_payload_def(&schemas_by_hash, &f.field);
                     if result.is_not_safe() {
                         println!("Field {:?} is {:?}", i, result);
                     }
@@ -114,9 +114,9 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             for (partition, collection_schema) in collections {
                 match collection_schema {
                     BlueprintCollectionSchema::KeyValueStore(kv) => {
-                        let result = check_type_pointers(&schemas_by_hash, &[kv.key, kv.value]);
+                        let result = check_payload_defs(&schemas_by_hash, &[kv.key, kv.value]);
                         if result.is_not_safe() {
-                            println!("Partition {:?} is {:?}", partition.0, result);
+                            println!("Partition {:?} is {:?}", partition, result);
                         }
                     }
                     BlueprintCollectionSchema::Index(_) => {
@@ -129,14 +129,14 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
             }
             let functions = definition.interface.functions;
             for (name, func) in functions {
-                let result = check_type_pointers(&schemas_by_hash, &[func.input, func.output]);
+                let result = check_payload_defs(&schemas_by_hash, &[func.input, func.output]);
                 if result.is_not_safe() {
                     println!("Function {:?} is {:?}", name, result);
                 }
             }
             let events = definition.interface.events;
             for (name, ty) in events {
-                let result = check_type_pointer(&schemas_by_hash, &ty);
+                let result = check_payload_def(&schemas_by_hash, &ty);
                 if result.is_not_safe() {
                     println!("Event {:?} is {:?}", name, result);
                 }
@@ -145,12 +145,12 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
     }
 }
 
-fn check_type_pointers(
-    schemas_by_hash: &IndexMap<Hash, ScryptoSchema>,
-    type_pointers: &[TypePointer],
+fn check_payload_defs(
+    schemas_by_hash: &IndexMap<SchemaHash, VersionedScryptoSchema>,
+    type_pointers: &[BlueprintPayloadDef],
 ) -> CheckResult {
     for ty in type_pointers {
-        let result = check_type_pointer(schemas_by_hash, ty);
+        let result = check_payload_def(schemas_by_hash, ty);
         if result.is_not_safe() {
             return result;
         }
@@ -158,23 +158,26 @@ fn check_type_pointers(
     return CheckResult::Safe;
 }
 
-fn check_type_pointer(
-    schemas_by_hash: &IndexMap<Hash, ScryptoSchema>,
-    type_pointer: &TypePointer,
+fn check_payload_def(
+    schemas_by_hash: &IndexMap<SchemaHash, VersionedScryptoSchema>,
+    type_pointer: &BlueprintPayloadDef,
 ) -> CheckResult {
     match type_pointer {
-        TypePointer::Package(hash, index) => check_type(schemas_by_hash.get(hash).unwrap(), *index),
-        TypePointer::Instance(_) => CheckResult::Safe,
+        BlueprintPayloadDef::Static(type_identifier) => check_type(
+            schemas_by_hash.get(&type_identifier.0).unwrap(),
+            type_identifier.1,
+        ),
+        BlueprintPayloadDef::Generic(_) => CheckResult::Safe,
     }
 }
 
-fn check_type(schema: &ScryptoSchema, index: LocalTypeIndex) -> CheckResult {
+fn check_type(schema: &VersionedScryptoSchema, index: LocalTypeIndex) -> CheckResult {
     let mut visited_indices = index_set_new();
     check_type_internal(schema, index, &mut visited_indices)
 }
 
 fn check_types_internal(
-    schema: &ScryptoSchema,
+    schema: &VersionedScryptoSchema,
     indices: &[LocalTypeIndex],
     visited_indices: &mut IndexSet<LocalTypeIndex>,
 ) -> CheckResult {
@@ -188,7 +191,7 @@ fn check_types_internal(
 }
 
 fn check_type_internal(
-    schema: &ScryptoSchema,
+    schema: &VersionedScryptoSchema,
     index: LocalTypeIndex,
     visited_indices: &mut IndexSet<LocalTypeIndex>,
 ) -> CheckResult {
@@ -199,7 +202,7 @@ fn check_type_internal(
     match index {
         LocalTypeIndex::WellKnown(x) => return is_safe_well_known_type(schema, x),
         LocalTypeIndex::SchemaLocalIndex(i) => {
-            let type_kind = &schema.type_kinds[i];
+            let type_kind = &schema.v1().type_kinds[i];
             match type_kind {
                 ScryptoTypeKind::Array { element_type } => {
                     return check_type_internal(schema, *element_type, visited_indices);
@@ -227,7 +230,7 @@ fn check_type_internal(
                     );
                 }
                 ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own) => {
-                    match &schema.type_validations[i] {
+                    match &schema.v1().type_validations[i] {
                         TypeValidation::Custom(ScryptoCustomTypeValidation::Own(x)) => match x {
                             OwnValidation::IsTypedObject(_, _) => {
                                 return CheckResult::Safe;
@@ -243,7 +246,7 @@ fn check_type_internal(
                             _ => {
                                 return CheckResult::PossiblyUnsafe {
                                     type_kind: type_kind.clone(),
-                                    type_validation: schema.type_validations[i].clone(),
+                                    type_validation: schema.v1().type_validations[i].clone(),
                                 };
                             }
                         },
@@ -251,7 +254,7 @@ fn check_type_internal(
                     }
                 }
                 ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference) => {
-                    match &schema.type_validations[i] {
+                    match &schema.v1().type_validations[i] {
                         TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(x)) => {
                             match x {
                                 ReferenceValidation::IsGlobalTyped(_, _)
@@ -264,7 +267,7 @@ fn check_type_internal(
                                 _ => {
                                     return CheckResult::PossiblyUnsafe {
                                         type_kind: type_kind.clone(),
-                                        type_validation: schema.type_validations[i].clone(),
+                                        type_validation: schema.v1().type_validations[i].clone(),
                                     };
                                 }
                             }
@@ -280,48 +283,51 @@ fn check_type_internal(
     };
 }
 
-fn is_safe_well_known_type(schema: &ScryptoSchema, type_id: u8) -> CheckResult {
+fn is_safe_well_known_type(
+    schema: &VersionedScryptoSchema,
+    type_id: WellKnownTypeIndex,
+) -> CheckResult {
     let is_safe = match type_id {
         // Basic SBOR
-        BOOL_ID => true,
-        I8_ID => true,
-        I16_ID => true,
-        I32_ID => true,
-        I64_ID => true,
-        I128_ID => true,
-        U8_ID => true,
-        U16_ID => true,
-        U32_ID => true,
-        U64_ID => true,
-        U128_ID => true,
-        STRING_ID => true,
-        ANY_ID => false,
-        BYTES_ID => true,
-        UNIT_ID => true,
+        BOOL_TYPE => true,
+        I8_TYPE => true,
+        I16_TYPE => true,
+        I32_TYPE => true,
+        I64_TYPE => true,
+        I128_TYPE => true,
+        U8_TYPE => true,
+        U16_TYPE => true,
+        U32_TYPE => true,
+        U64_TYPE => true,
+        U128_TYPE => true,
+        STRING_TYPE => true,
+        ANY_TYPE => false,
+        BYTES_TYPE => true,
+        UNIT_TYPE => true,
 
         // Scrypto SBOR
-        REFERENCE_ID => false,
-        GLOBAL_ADDRESS_ID => true, // TODO: maybe unsafe
-        INTERNAL_ADDRESS_ID => false,
-        PACKAGE_ADDRESS_ID => true,
-        COMPONENT_ADDRESS_ID => true,
-        RESOURCE_ADDRESS_ID => true,
-        OWN_ID => false,
-        OWN_BUCKET_ID => true, // TODO: maybe unsafe?
-        OWN_FUNGIBLE_BUCKET_ID => true,
-        OWN_NON_FUNGIBLE_BUCKET_ID => true,
-        OWN_PROOF_ID => true, // TODO: maybe unsafe?
-        OWN_FUNGIBLE_PROOF_ID => true,
-        OWN_NON_FUNGIBLE_PROOF_ID => true,
-        OWN_VAULT_ID => false,
-        OWN_FUNGIBLE_VAULT_ID => true,
-        OWN_NON_FUNGIBLE_VAULT_ID => true,
-        OWN_KEY_VALUE_STORE_ID => true, // TODO: maybe unsafe?
-        OWN_GLOBAL_ADDRESS_RESERVATION_ID => true,
-        DECIMAL_ID => true,
-        PRECISE_DECIMAL_ID => true,
-        NON_FUNGIBLE_LOCAL_ID_ID => true,
-        t => panic!("Unexpected well-known type id: {}", t),
+        REFERENCE_TYPE => false,
+        GLOBAL_ADDRESS_TYPE => true, // TODO: maybe unsafe
+        INTERNAL_ADDRESS_TYPE => false,
+        PACKAGE_ADDRESS_TYPE => true,
+        COMPONENT_ADDRESS_TYPE => true,
+        RESOURCE_ADDRESS_TYPE => true,
+        OWN_TYPE => false,
+        OWN_BUCKET_TYPE => true, // TODO: maybe unsafe?
+        OWN_FUNGIBLE_BUCKET_TYPE => true,
+        OWN_NON_FUNGIBLE_BUCKET_TYPE => true,
+        OWN_PROOF_TYPE => true, // TODO: maybe unsafe?
+        OWN_FUNGIBLE_PROOF_TYPE => true,
+        OWN_NON_FUNGIBLE_PROOF_TYPE => true,
+        OWN_VAULT_TYPE => false,
+        OWN_FUNGIBLE_VAULT_TYPE => true,
+        OWN_NON_FUNGIBLE_VAULT_TYPE => true,
+        OWN_KEY_VALUE_STORE_TYPE => true, // TODO: maybe unsafe?
+        OWN_GLOBAL_ADDRESS_RESERVATION_TYPE => true,
+        DECIMAL_TYPE => true,
+        PRECISE_DECIMAL_TYPE => true,
+        NON_FUNGIBLE_LOCAL_ID_TYPE => true,
+        t => panic!("Unexpected well-known type id: {:?}", t),
     };
 
     if is_safe {
@@ -329,10 +335,12 @@ fn is_safe_well_known_type(schema: &ScryptoSchema, type_id: u8) -> CheckResult {
     } else {
         CheckResult::PossiblyUnsafe {
             type_kind: schema
+                .v1()
                 .resolve_type_kind(LocalTypeIndex::WellKnown(type_id))
                 .unwrap()
                 .clone(),
             type_validation: schema
+                .v1()
                 .resolve_type_validation(LocalTypeIndex::WellKnown(type_id))
                 .unwrap()
                 .clone(),
@@ -361,7 +369,7 @@ impl CheckResult {
 #[test]
 pub fn test_fake_bucket() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -373,7 +381,7 @@ pub fn test_fake_bucket() {
         .schema
         .state
         .fields[0]
-        .field = TypeRef::Static(LocalTypeIndex::WellKnown(DECIMAL_ID));
+        .field = TypeRef::Static(LocalTypeIndex::WellKnown(DECIMAL_TYPE));
     let package_address =
         test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 
@@ -395,7 +403,7 @@ pub fn test_fake_bucket() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(e))
+        RuntimeError::SystemError(SystemError::TypeCheckError(e))
             if format!("{:?}", e).contains("Expected = Own<IsBucket>") =>
         {
             true

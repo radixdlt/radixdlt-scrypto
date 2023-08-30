@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Run this script from main radixdlt-scrypto repo folder
+
 qemu_app=/home/ubuntu/qemu/qemu-x86_64
 qemu_plugin=/home/ubuntu/qemu/libscrypto-qemu-plugin.so
 qemu_cpu="Westmere-v1"
@@ -21,5 +23,5 @@ for i in $list; do
     fi
 done
 
-echo -e "\nPreparing table\n"
-./convert.py /tmp/scrypto-resources-usage > /tmp/scrypto-resources-usage/_out_table.txt
+# To generete results run command:
+#  ./radix-engine-profiling/resources-tracker-macro/scripts/convert.py /tmp/scrypto-resources-usage

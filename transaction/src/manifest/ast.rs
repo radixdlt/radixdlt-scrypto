@@ -1,9 +1,8 @@
 use radix_engine_interface::data::manifest::{ManifestCustomValueKind, ManifestValueKind};
-#[cfg(feature = "radix_engine_fuzzing")]
-use strum_macros::EnumCount;
+use strum::{EnumCount, EnumDiscriminants, FromRepr};
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(EnumCount))]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumDiscriminants, EnumCount)]
+#[strum_discriminants(derive(FromRepr))]
 pub enum Instruction {
     TakeFromWorktop {
         resource_address: Value,
@@ -48,8 +47,6 @@ pub enum Instruction {
         proof: Value,
     },
 
-    ClearAuthZone,
-
     CreateProofFromAuthZoneOfAmount {
         resource_address: Value,
         amount: Value,
@@ -67,7 +64,11 @@ pub enum Instruction {
         new_proof: Value,
     },
 
-    ClearSignatureProofs,
+    DropAuthZoneSignatureProofs,
+
+    DropAuthZoneRegularProofs,
+
+    DropAuthZoneProofs,
 
     CreateProofFromBucketOfAmount {
         bucket: Value,
@@ -124,11 +125,13 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
-    CallAccessRulesMethod {
+    CallRoleAssignmentMethod {
         address: Value,
         method_name: Value,
         args: Vec<Value>,
     },
+
+    DropNamedProofs,
 
     DropAllProofs,
 

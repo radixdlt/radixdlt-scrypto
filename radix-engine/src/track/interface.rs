@@ -1,53 +1,116 @@
+use crate::errors::RuntimeError;
 use crate::types::*;
-use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::*;
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
-/// Error when acquiring a lock.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum AcquireLockError {
-    NotFound(NodeId, PartitionNumber, SubstateKey),
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
-    LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
-    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey),
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CallbackError<E, C> {
+    Error(E),
+    CallbackError(C),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SetSubstateError {
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
+impl<E> CallbackError<E, RuntimeError> {
+    pub fn to_runtime_error<F: FnOnce(E) -> RuntimeError>(self, f: F) -> RuntimeError {
+        match self {
+            CallbackError::Error(e) => f(e),
+            CallbackError::CallbackError(c) => c,
+        }
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum TakeSubstateError {
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
+impl<E, C> CallbackError<E, C> {
+    pub fn map<N, F: FnOnce(E) -> N>(self, f: F) -> CallbackError<N, C> {
+        match self {
+            CallbackError::Error(e) => CallbackError::Error(f(e)),
+            CallbackError::CallbackError(c) => CallbackError::CallbackError(c),
+        }
+    }
 }
 
 pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
+
+pub enum TrackedSubstateInfo {
+    New,
+    Updated,
+    Unmodified,
+}
 
 /// Represents the interface between Radix Engine and Track.
 ///
 /// In practice, we will likely end up with only one implementation.
 ///
 /// The trait here is for formalizing the interface and intended user flow.
-pub trait SubstateStore {
+pub trait CommitableSubstateStore {
+    /// Marks a substate as transient, or a substate which was never and will never be persisted
+    fn mark_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        substate_key: SubstateKey,
+    );
+
     /// Inserts a node into the substate store.
     ///
     /// Clients must ensure the `node_id` is new and unique; otherwise, the behavior is undefined.
     ///
     /// # Panics
     /// - If the partition is invalid
-    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) -> StoreAccessInfo;
+    fn create_node<E, F: FnMut(IOAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: NodeId,
+        node_substates: NodeSubstates,
+        on_io_access: &mut F,
+    ) -> Result<(), E>;
+
+    fn get_tracked_substate_info(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> TrackedSubstateInfo;
+
+    fn read_substate(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
+        self.get_substate(node_id, partition_num, substate_key, &mut |_| -> Result<
+            (),
+            (),
+        > {
+            Ok(())
+        })
+        .unwrap()
+    }
+
+    fn get_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+        on_io_access: &mut F,
+    ) -> Result<Option<&IndexedScryptoValue>, E>;
 
     /// Inserts a substate into the substate store.
     ///
     /// Clients must ensure the `node_id`/`partition_num` is a node which has been created; otherwise, the behavior
     /// is undefined.
-    fn set_substate(
+    fn set_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-    ) -> Result<StoreAccessInfo, SetSubstateError>;
+        on_io_access: &mut F,
+    ) -> Result<(), E>;
+
+    fn force_write(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: &PartitionNumber,
+        substate_key: &SubstateKey,
+    );
 
     /// Deletes a substate from the substate store.
     ///
@@ -56,81 +119,54 @@ pub trait SubstateStore {
     /// Otherwise, the behavior is undefined.
     ///
     /// Returns tuple of substate and boolean which is true for the first database access.
-    fn take_substate(
+    fn remove_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), TakeSubstateError>;
+        on_io_access: &mut F,
+    ) -> Result<Option<IndexedScryptoValue>, E>;
 
-    /// Returns tuple of substate vector and boolean which is true for the first database access.
-    fn scan_substates(
+    /// Returns Substate Keys of maximum count for a given partition.
+    ///
+    /// Clients must ensure that the SubstateKeyContent which the partition is
+    /// associated with is passed in. The returned SubstateKeys are guaranteed to be of
+    /// this type.
+    /// Otherwise, behavior is undefined.
+    ///
+    /// Returns list of substate keys and database access info
+    fn scan_keys<K: SubstateKeyContent + 'static, E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo);
+        on_io_access: &mut F,
+    ) -> Result<Vec<SubstateKey>, E>;
 
-    /// Returns tuple of substate vector and boolean which is true for the first database access.
-    fn take_substates(
+    /// Removes substates of maximum count for a given partition.
+    ///
+    /// Clients must ensure that the SubstateKeyContent which the partition is
+    /// associated with is passed in. The returned SubstateKeys are guaranteed to be of
+    /// this type.
+    /// Otherwise, behavior is undefined.
+    ///
+    /// Returns list of removed substates with their associated keys and values, as well as database access info
+    fn drain_substates<K: SubstateKeyContent + 'static, E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo);
+        on_io_access: &mut F,
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E>;
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
-    fn scan_sorted_substates(
+    fn scan_sorted_substates<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo);
-
-    /// Acquires a lock over a substate.
-    /// Returns tuple of lock handle id and information if particular substate
-    /// is locked for the first time during transaction execution.
-    fn acquire_lock(
-        &mut self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-        flags: LockFlags,
-    ) -> Result<(u32, StoreAccessInfo), AcquireLockError> {
-        self.acquire_lock_virtualize(node_id, partition_num, substate_key, flags, || None)
-    }
-
-    fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
-        &mut self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-        flags: LockFlags,
-        virtualize: F,
-    ) -> Result<(u32, StoreAccessInfo), AcquireLockError>;
-
-    /// Releases a lock.
-    ///
-    /// # Panics
-    /// - If the lock handle is invalid.
-    fn close_substate(&mut self, handle: u32) -> StoreAccessInfo;
-
-    /// Reads a substate of the given node partition.
-    ///
-    /// # Panics
-    /// - If the lock handle is invalid
-    fn read_substate(&mut self, handle: u32) -> (&IndexedScryptoValue, StoreAccessInfo);
-
-    /// Updates a substate.
-    ///
-    /// # Panics
-    /// - If the lock handle is invalid;
-    /// - If the lock handle is not associated with WRITE permission
-    fn update_substate(
-        &mut self,
-        handle: u32,
-        substate_value: IndexedScryptoValue,
-    ) -> StoreAccessInfo;
+        on_io_access: &mut F,
+    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, E>;
 
     /// Note: unstable interface, for intent transaction tracker only
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);
@@ -139,17 +175,98 @@ pub trait SubstateStore {
     fn get_commit_info(&mut self) -> StoreCommitInfo;
 }
 
-pub type StoreAccessInfo = Vec<StoreAccess>;
-
 #[derive(Debug, Clone, Copy)]
-pub enum StoreAccess {
+pub struct CanonicalPartition {
+    pub node_id: NodeId,
+    pub partition_number: PartitionNumber,
+}
+
+#[derive(Debug, Clone)]
+pub struct CanonicalSubstateKey {
+    pub node_id: NodeId,
+    pub partition_number: PartitionNumber,
+    pub substate_key: SubstateKey, // TODO: use reference if this turns out to be costly
+}
+
+impl CanonicalSubstateKey {
+    pub fn new(
+        node_id: &NodeId,
+        partition_number: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Self {
+        Self {
+            node_id: *node_id,
+            partition_number: *partition_number,
+            substate_key: substate_key.clone(),
+        }
+    }
+
+    pub fn of(partition: CanonicalPartition, substate_key: SubstateKey) -> Self {
+        Self {
+            node_id: partition.node_id,
+            partition_number: partition.partition_number,
+            substate_key,
+        }
+    }
+}
+
+impl CanonicalSubstateKey {
+    pub fn logical_size(&self) -> usize {
+        self.node_id.as_bytes().len()
+            + 1
+            + match &self.substate_key {
+                SubstateKey::Field(_) => 1,
+                SubstateKey::Map(k) => k.len(),
+                SubstateKey::Sorted(k) => 2 + k.1.len(),
+            }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum IOAccess {
     /// Some substate was read from database.
-    ReadFromDb(usize),
+    ReadFromDb(CanonicalSubstateKey, usize),
     /// Non-existent substate was read from database.
-    ReadFromDbNotFound,
-    /// A new entry has been added to track
-    /// System limits how many items that can be tracked.
-    NewEntryInTrack,
+    ReadFromDbNotFound(CanonicalSubstateKey),
+
+    /// A substate in track has been updated
+    TrackSubstateUpdated {
+        /// The canonical substate key
+        canonical_substate_key: CanonicalSubstateKey,
+        /// Previous size of the substate, or `None` if it's a new entry.
+        /// The current size before the update rather than the size in the underlying store.
+        old_size: Option<usize>,
+        /// The new substate size, or `None` if it's removed
+        new_size: Option<usize>,
+    },
+
+    /// A substate in track has been updated
+    HeapSubstateUpdated {
+        /// The canonical substate key
+        canonical_substate_key: CanonicalSubstateKey,
+        /// Previous size of the substate, or `None` if it's a new entry.
+        /// The current size before the update rather than the size in the underlying store.
+        old_size: Option<usize>,
+        /// The new substate size, or `None` if it's removed
+        new_size: Option<usize>,
+    },
+}
+
+impl IOAccess {
+    pub fn node_id(&self) -> NodeId {
+        match self {
+            IOAccess::ReadFromDb(key, _)
+            | IOAccess::ReadFromDbNotFound(key)
+            | IOAccess::TrackSubstateUpdated {
+                canonical_substate_key: key,
+                ..
+            }
+            | IOAccess::HeapSubstateUpdated {
+                canonical_substate_key: key,
+                ..
+            } => key.node_id,
+        }
+    }
 }
 
 pub type StoreCommitInfo = Vec<StoreCommit>;
@@ -157,26 +274,53 @@ pub type StoreCommitInfo = Vec<StoreCommit>;
 #[derive(Debug, Clone)]
 pub enum StoreCommit {
     Insert {
-        node_id: NodeId,
+        canonical_substate_key: CanonicalSubstateKey,
         size: usize,
     },
     Update {
-        node_id: NodeId,
+        canonical_substate_key: CanonicalSubstateKey,
         size: usize,
         old_size: usize,
     },
     Delete {
-        node_id: NodeId,
+        canonical_substate_key: CanonicalSubstateKey,
         old_size: usize,
     },
 }
 
 impl StoreCommit {
-    pub fn node_id(&self) -> &NodeId {
+    pub fn node_id(&self) -> NodeId {
         match self {
-            StoreCommit::Insert { node_id, .. }
-            | StoreCommit::Update { node_id, .. }
-            | StoreCommit::Delete { node_id, .. } => node_id,
+            StoreCommit::Insert {
+                canonical_substate_key,
+                ..
+            }
+            | StoreCommit::Update {
+                canonical_substate_key,
+                ..
+            }
+            | StoreCommit::Delete {
+                canonical_substate_key,
+                ..
+            } => canonical_substate_key.node_id,
+        }
+    }
+
+    pub fn logical_size_increase(&self) -> usize {
+        match self {
+            StoreCommit::Insert {
+                canonical_substate_key,
+                size,
+                ..
+            } => canonical_substate_key.logical_size() + *size,
+            StoreCommit::Update { size, old_size, .. } => {
+                if *size > *old_size {
+                    *size - *old_size
+                } else {
+                    0
+                }
+            }
+            StoreCommit::Delete { .. } => 0, // TODO: refund?
         }
     }
 }

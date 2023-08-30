@@ -1,24 +1,26 @@
 use crate::blueprints::consensus_manager::*;
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::SecurifiedRoleAssignment;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::types::*;
+use crate::{event_schema, roles_template};
 use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine_interface::api::node_modules::metadata::Url;
-use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::node_modules::metadata::UncheckedUrl;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+    ClientApi, FieldValue, ModuleId, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::consensus_manager::*;
+use radix_engine_interface::blueprints::package::{
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{burn_roles, metadata_init, mint_roles, rule};
 use sbor::rust::mem;
@@ -80,7 +82,7 @@ pub struct ValidatorSubstate {
     /// Unstaking burns the SUs and inactivates the staked XRDs (i.e. moves it from the regular
     /// [`stake_xrd_vault_id`] to the [`pending_xrd_withdraw_vault_id`]), and then requires to claim
     /// the XRDs using this NFT after a delay (see [`UnstakeData.claim_epoch`]).
-    pub unstake_nft: ResourceAddress,
+    pub claim_nft: ResourceAddress,
 
     /// A vault holding the XRDs that were unstaked (see the [`unstake_nft`]) but not yet claimed.
     pub pending_xrd_withdraw_vault_id: Own,
@@ -153,6 +155,8 @@ impl NonFungibleData for UnstakeData {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ValidatorError {
     InvalidClaimResource,
+    InvalidGetRedemptionAmount,
+    UnexpectedDecimalComputationError,
     EpochUnlockHasNotOccurredYet,
     PendingOwnerStakeWithdrawalLimitReached,
     InvalidValidatorFeeFactor,
@@ -160,9 +164,367 @@ pub enum ValidatorError {
     InvalidProtocolVersionNameLength { expected: usize, actual: usize },
 }
 
+declare_native_blueprint_state! {
+    blueprint_ident: Validator,
+    blueprint_snake_case: validator,
+    features: {
+    },
+    fields: {
+        state: {
+            ident: State,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        },
+        protocol_update_readiness_signal: {
+            ident: ProtocolUpdateReadinessSignal,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        },
+    },
+    collections: {
+    }
+}
+
+pub type ValidatorStateV1 = ValidatorSubstate;
+pub type ValidatorProtocolUpdateReadinessSignalV1 = ValidatorProtocolUpdateReadinessSignalSubstate;
+
 pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
+    pub fn definition() -> BlueprintDefinitionInit {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let feature_set = ValidatorFeatureSet::all_features();
+        let state = ValidatorStateSchemaInit::create_schema_init(&mut aggregator);
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            VALIDATOR_REGISTER_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorRegisterInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorRegisterOutput>(),
+                ),
+                export: VALIDATOR_REGISTER_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_UNREGISTER_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUnregisterInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUnregisterOutput>(),
+                ),
+                export: VALIDATOR_UNREGISTER_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_STAKE_AS_OWNER_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorStakeAsOwnerInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorStakeAsOwnerOutput>(),
+                ),
+                export: VALIDATOR_STAKE_AS_OWNER_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_STAKE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorStakeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorStakeOutput>(),
+                ),
+                export: VALIDATOR_STAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_UNSTAKE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUnstakeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUnstakeOutput>(),
+                ),
+                export: VALIDATOR_UNSTAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_CLAIM_XRD_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorClaimXrdInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorClaimXrdOutput>(),
+                ),
+                export: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_UPDATE_KEY_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyOutput>(),
+                ),
+                export: VALIDATOR_UPDATE_KEY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_UPDATE_FEE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeOutput>(),
+                ),
+                export: VALIDATOR_UPDATE_FEE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeOutput>()),
+                export: VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeOutput>(),
+                ),
+                export: VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorTotalStakeXrdAmountInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorTotalStakeXrdAmountOutput>(),
+                ),
+                export: VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorTotalStakeUnitSupplyInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorTotalStakeUnitSupplyOutput>(),
+                ),
+                export: VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_GET_REDEMPTION_VALUE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorGetRedemptionValueInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorGetRedemptionValueOutput>(),
+                ),
+                export: VALIDATOR_GET_REDEMPTION_VALUE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorSignalProtocolUpdateReadinessInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorSignalProtocolUpdateReadinessOutput>()),
+                export: VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorGetProtocolUpdateReadinessInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorGetProtocolUpdateReadinessOutput>()),
+                export: VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsOutput>(),
+                ),
+                export: VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsOutput>()),
+                export: VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsOutput>()),
+                export: VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
+                ),
+                export: VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_APPLY_REWARD_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorApplyRewardInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ValidatorApplyRewardOutput>(),
+                ),
+                export: VALIDATOR_APPLY_REWARD_IDENT.to_string(),
+            },
+        );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                RegisterValidatorEvent,
+                UnregisterValidatorEvent,
+                StakeEvent,
+                UnstakeEvent,
+                ClaimXrdEvent,
+                ProtocolUpdateReadinessSignalEvent,
+                UpdateAcceptingStakeDelegationStateEvent,
+                ValidatorEmissionAppliedEvent,
+                ValidatorRewardAppliedEvent
+            ]
+        };
+
+        let schema = generate_full_schema(aggregator);
+
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::Inner {
+                outer_blueprint: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
+            },
+            is_transient: false,
+            feature_set,
+            dependencies: btreeset!(),
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema,
+                state,
+                events: event_schema,
+                functions: BlueprintFunctionsSchemaInit { functions },
+                hooks: BlueprintHooksInit::default(),
+            },
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AllowAll,
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
+                    methods {
+                        VALIDATOR_UNSTAKE_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_CLAIM_XRD_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_STAKE_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_STAKE_AS_OWNER_IDENT => [OWNER_ROLE];
+                        VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_KEY_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_FEE_IDENT => [OWNER_ROLE];
+                        VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                        VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
+                        VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS => [OWNER_ROLE];
+                        VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT => MethodAccessibility::OuterObjectOnly;
+                        VALIDATOR_APPLY_EMISSION_IDENT => MethodAccessibility::OuterObjectOnly;
+                        VALIDATOR_APPLY_REWARD_IDENT => MethodAccessibility::OuterObjectOnly;
+                    }
+                }),
+            },
+        }
+    }
+
     pub fn register<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -181,45 +543,48 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        Self::stake_internal(xrd_bucket, api)
+        Self::stake_internal(xrd_bucket, true, api)
     }
 
     pub fn stake<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
-            LockFlags::read_only(),
-        )?;
-        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
-        api.field_close(handle)?;
-        if !substate.accepts_delegated_stake {
-            // TODO: Should this be an Option returned instead similar to Account?
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::ValidatorError(
-                    ValidatorError::ValidatorIsNotAcceptingDelegatedStake,
-                ),
-            ));
-        }
-
-        Self::stake_internal(xrd_bucket, api)
+        Self::stake_internal(xrd_bucket, false, api)
     }
 
-    fn stake_internal<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
+    fn stake_internal<Y>(
+        xrd_bucket: Bucket,
+        is_owner: bool,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let xrd_bucket_amount = xrd_bucket.amount(api)?;
-
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.field_index(),
             LockFlags::MUTABLE,
         )?;
 
-        let mut validator: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut validator = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
+
+        if !is_owner {
+            if !validator.accepts_delegated_stake {
+                api.field_close(handle)?;
+
+                // TODO: Should this be an Option returned instead similar to Account?
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ValidatorError(
+                        ValidatorError::ValidatorIsNotAcceptingDelegatedStake,
+                    ),
+                ));
+            }
+        }
+
+        let xrd_bucket_amount = xrd_bucket.amount(api)?;
 
         // Stake
         let (stake_unit_bucket, new_stake_amount) = {
@@ -242,7 +607,10 @@ impl ValidatorBlueprint {
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
         validator.sorted_key = new_index_key;
-        api.field_write_typed(handle, &validator)?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(validator),
+        )?;
 
         Runtime::emit_event(
             api,
@@ -261,46 +629,48 @@ impl ValidatorBlueprint {
         let stake_unit_bucket_amount = stake_unit_bucket.amount(api)?;
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.field_index(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator_substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut validator_substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // Unstake
         let (unstake_bucket, new_stake_amount) = {
+            let xrd_amount = Self::calculate_redemption_value(
+                stake_unit_bucket_amount,
+                &validator_substate,
+                api,
+            )?;
+
             let mut stake_vault = Vault(validator_substate.stake_xrd_vault_id);
             let mut unstake_vault = Vault(validator_substate.pending_xrd_withdraw_vault_id);
-            let nft_resman = ResourceManager(validator_substate.unstake_nft);
+            let nft_resman = ResourceManager(validator_substate.claim_nft);
             let mut stake_unit_resman = ResourceManager(validator_substate.stake_unit_resource);
-
-            let active_stake_amount = stake_vault.amount(api)?;
-            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
-            let xrd_amount = if total_stake_unit_supply.is_zero() {
-                Decimal::zero()
-            } else {
-                stake_unit_bucket_amount * active_stake_amount / total_stake_unit_supply
-            };
 
             stake_unit_resman.burn(stake_unit_bucket, api)?;
 
             let manager_handle = api.actor_open_field(
-                OBJECT_HANDLE_OUTER_OBJECT,
-                ConsensusManagerField::ConsensusManager.into(),
+                ACTOR_STATE_OUTER_OBJECT,
+                ConsensusManagerField::State.into(),
                 LockFlags::read_only(),
             )?;
-            let manager_substate: ConsensusManagerSubstate =
-                api.field_read_typed(manager_handle)?;
+            let manager_substate = api
+                .field_read_typed::<ConsensusManagerStateFieldPayload>(manager_handle)?
+                .into_latest();
             let current_epoch = manager_substate.epoch;
             api.field_close(manager_handle)?;
 
             let config_handle = api.actor_open_field(
-                OBJECT_HANDLE_OUTER_OBJECT,
-                ConsensusManagerField::Config.into(),
+                ACTOR_STATE_OUTER_OBJECT,
+                ConsensusManagerField::Configuration.into(),
                 LockFlags::read_only(),
             )?;
-            let config_substate: ConsensusManagerConfigSubstate =
-                api.field_read_typed(config_handle)?;
+            let config_substate = api
+                .field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?
+                .into_latest();
             api.field_close(config_handle)?;
 
             let claim_epoch = current_epoch.after(config_substate.config.num_unstake_epochs);
@@ -328,7 +698,10 @@ impl ValidatorBlueprint {
         )?;
 
         validator_substate.sorted_key = new_index_key;
-        api.field_write_typed(handle, &validator_substate)?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(validator_substate),
+        )?;
 
         Runtime::emit_event(
             api,
@@ -359,14 +732,18 @@ impl ValidatorBlueprint {
         }
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             ValidatorField::ProtocolUpdateReadinessSignal.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut signal: ValidatorProtocolUpdateReadinessSignalSubstate =
-            api.field_read_typed(handle)?;
+        let mut signal = api
+            .field_read_typed::<ValidatorProtocolUpdateReadinessSignalFieldPayload>(handle)?
+            .into_latest();
         signal.protocol_version_name = Some(protocol_version_name.clone());
-        api.field_write_typed(handle, signal)?;
+        api.field_write_typed(
+            handle,
+            &ValidatorProtocolUpdateReadinessSignalFieldPayload::from_content_source(signal),
+        )?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -379,14 +756,36 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
+    pub fn get_protocol_update_readiness<Y>(api: &mut Y) -> Result<Option<String>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            ValidatorField::ProtocolUpdateReadinessSignal.into(),
+            LockFlags::read_only(),
+        )?;
+        let signal = api
+            .field_read_typed::<ValidatorProtocolUpdateReadinessSignalFieldPayload>(handle)?
+            .into_latest();
+        api.field_close(handle)?;
+
+        Ok(signal.protocol_version_name)
+    }
+
     fn register_update<Y>(new_registered: bool, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = ValidatorField::Validator.into();
-        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            ValidatorField::State.field_index(),
+            LockFlags::MUTABLE,
+        )?;
 
-        let mut validator: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut validator = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
         // No update
         if validator.is_registered == new_registered {
             return Ok(());
@@ -401,7 +800,10 @@ impl ValidatorBlueprint {
 
         validator.is_registered = new_registered;
         validator.sorted_key = index_key;
-        api.field_write_typed(handle, &validator)?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(validator),
+        )?;
 
         if new_registered {
             Runtime::emit_event(api, RegisterValidatorEvent)?;
@@ -422,7 +824,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let validator_address: ComponentAddress =
-            ComponentAddress::new_or_panic(api.actor_get_global_address()?.into());
+            ComponentAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
         let new_sorted_key =
             Self::to_sorted_key(new_registered, new_stake_amount, validator_address);
 
@@ -443,7 +845,6 @@ impl ValidatorBlueprint {
                 Some(UpdateSecondaryIndex::Create {
                     index_key: new_index_key.clone(),
                     stake: new_stake_amount,
-                    primary: validator_address,
                     key: validator.key,
                 })
             } else {
@@ -463,13 +864,15 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.field_index(),
             LockFlags::read_only(),
         )?;
-        let validator: ValidatorSubstate = api.field_read_typed(handle)?;
-        let mut nft_resman = ResourceManager(validator.unstake_nft);
-        let resource_address = validator.unstake_nft;
+        let validator = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
+        let mut nft_resman = ResourceManager(validator.claim_nft);
+        let resource_address = validator.claim_nft;
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
         if !resource_address.eq(&bucket.resource_address(api)?) {
@@ -480,11 +883,13 @@ impl ValidatorBlueprint {
 
         let current_epoch = {
             let mgr_handle = api.actor_open_field(
-                OBJECT_HANDLE_OUTER_OBJECT,
-                ConsensusManagerField::ConsensusManager.into(),
+                ACTOR_STATE_OUTER_OBJECT,
+                ConsensusManagerField::State.field_index(),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate: ConsensusManagerSubstate = api.field_read_typed(mgr_handle)?;
+            let mgr_substate = api
+                .field_read_typed::<ConsensusManagerStateFieldPayload>(mgr_handle)?
+                .into_latest();
             let epoch = mgr_substate.epoch;
             api.field_close(mgr_handle)?;
             epoch
@@ -499,7 +904,7 @@ impl ValidatorBlueprint {
                     ApplicationError::ValidatorError(ValidatorError::EpochUnlockHasNotOccurredYet),
                 ));
             }
-            unstake_amount += data.claim_amount;
+            unstake_amount = unstake_amount.safe_add(data.claim_amount).unwrap();
         }
         nft_resman.burn(bucket, api)?;
 
@@ -521,11 +926,13 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut validator = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // Update Consensus Manager
         {
@@ -540,7 +947,10 @@ impl ValidatorBlueprint {
         }
 
         validator.key = key;
-        api.field_write_typed(handle, &validator)?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(validator),
+        )?;
 
         Ok(())
     }
@@ -554,32 +964,36 @@ impl ValidatorBlueprint {
 
         // read the current epoch
         let consensus_manager_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
-            ConsensusManagerField::ConsensusManager.into(),
+            ACTOR_STATE_OUTER_OBJECT,
+            ConsensusManagerField::State.into(),
             LockFlags::read_only(),
         )?;
-        let consensus_manager: ConsensusManagerSubstate =
-            api.field_read_typed(consensus_manager_handle)?;
+        let consensus_manager = api
+            .field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?
+            .into_latest();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
         // read the configured fee increase epochs delay
         let config_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
-            ConsensusManagerField::Config.into(),
+            ACTOR_STATE_OUTER_OBJECT,
+            ConsensusManagerField::Configuration.into(),
             LockFlags::read_only(),
         )?;
-        let config_substate: ConsensusManagerConfigSubstate =
-            api.field_read_typed(config_handle)?;
+        let config_substate = api
+            .field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?
+            .into_latest();
         api.field_close(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // - promote any currently pending change if it became effective already
         if let Some(previous_request) = substate.validator_fee_change_request {
@@ -600,7 +1014,10 @@ impl ValidatorBlueprint {
             epoch_effective,
             new_fee_factor,
         });
-        api.field_write_typed(handle, &substate)?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
         api.field_close(handle)?;
 
         Ok(())
@@ -611,15 +1028,96 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
             LockFlags::read_only(),
         )?;
 
-        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
         api.field_close(handle)?;
 
         Ok(substate.accepts_delegated_stake)
+    }
+
+    pub fn total_stake_xrd_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
+            LockFlags::read_only(),
+        )?;
+
+        let substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
+        let stake_vault = Vault(substate.stake_xrd_vault_id);
+        let stake_amount = stake_vault.amount(api)?;
+        api.field_close(handle)?;
+
+        Ok(stake_amount)
+    }
+
+    pub fn total_stake_unit_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
+            LockFlags::read_only(),
+        )?;
+
+        let substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
+        let stake_resource = ResourceManager(substate.stake_unit_resource);
+        let total_stake_unit_supply = stake_resource.total_supply(api)?.unwrap();
+        api.field_close(handle)?;
+
+        Ok(total_stake_unit_supply)
+    }
+
+    pub fn get_redemption_value<Y>(
+        amount_of_stake_units: Decimal,
+        api: &mut Y,
+    ) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if amount_of_stake_units.is_negative() || amount_of_stake_units.is_zero() {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(ValidatorError::InvalidGetRedemptionAmount),
+            ));
+        }
+
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
+            LockFlags::read_only(),
+        )?;
+        let validator = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
+
+        {
+            let stake_unit_resman = ResourceManager(validator.stake_unit_resource);
+            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
+            if amount_of_stake_units > total_stake_unit_supply {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ValidatorError(ValidatorError::InvalidGetRedemptionAmount),
+                ));
+            }
+        }
+
+        let redemption_value =
+            Self::calculate_redemption_value(amount_of_stake_units, &validator, api)?;
+        api.field_close(handle)?;
+
+        Ok(redemption_value)
     }
 
     pub fn update_accept_delegated_stake<Y>(
@@ -630,13 +1128,18 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
         substate.accepts_delegated_stake = accept_delegated_stake;
-        api.field_write_typed(handle, substate)?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -660,11 +1163,13 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
             LockFlags::read_only(),
         )?;
-        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         Vault(substate.locked_owner_stake_unit_vault_id).put(stake_unit_bucket, api)?;
 
@@ -685,32 +1190,36 @@ impl ValidatorBlueprint {
     {
         // read the current epoch (needed for a drive-by "finish unlocking" of available withdrawals)
         let consensus_manager_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
-            ConsensusManagerField::ConsensusManager.into(),
+            ACTOR_STATE_OUTER_OBJECT,
+            ConsensusManagerField::State.into(),
             LockFlags::read_only(),
         )?;
-        let consensus_manager: ConsensusManagerSubstate =
-            api.field_read_typed(consensus_manager_handle)?;
+        let consensus_manager = api
+            .field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?
+            .into_latest();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
         // read the configured unlock epochs delay
         let config_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
-            ConsensusManagerField::Config.into(),
+            ACTOR_STATE_OUTER_OBJECT,
+            ConsensusManagerField::Configuration.into(),
             LockFlags::read_only(),
         )?;
-        let config_substate: ConsensusManagerConfigSubstate =
-            api.field_read_typed(config_handle)?;
+        let config_substate = api
+            .field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?
+            .into_latest();
         api.field_close(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // - move the already-available withdrawals to a dedicated field
         Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
@@ -719,14 +1228,21 @@ impl ValidatorBlueprint {
         substate
             .pending_owner_stake_unit_withdrawals
             .entry(current_epoch.after(config_substate.config.num_owner_stake_units_unlock_epochs))
-            .and_modify(|pending_amount| pending_amount.add_assign(requested_stake_unit_amount))
+            .and_modify(|pending_amount| {
+                *pending_amount = pending_amount
+                    .safe_add(requested_stake_unit_amount)
+                    .unwrap_or(Decimal::MAX)
+            })
             .or_insert(requested_stake_unit_amount);
 
         // ...end the read+modify+write of the validator substate
         let mut locked_owner_stake_unit_vault = Vault(substate.locked_owner_stake_unit_vault_id);
         let mut pending_owner_stake_unit_unlock_vault =
             Vault(substate.pending_owner_stake_unit_unlock_vault_id);
-        api.field_write_typed(handle, substate)?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
 
         // move the requested stake units from the "locked vault" to the "pending withdrawal vault"
         let pending_unlock_stake_unit_bucket =
@@ -746,22 +1262,25 @@ impl ValidatorBlueprint {
     {
         // read the current epoch
         let consensus_manager_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
-            ConsensusManagerField::ConsensusManager.into(),
+            ACTOR_STATE_OUTER_OBJECT,
+            ConsensusManagerField::State.into(),
             LockFlags::read_only(),
         )?;
-        let consensus_manager: ConsensusManagerSubstate =
-            api.field_read_typed(consensus_manager_handle)?;
+        let consensus_manager = api
+            .field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?
+            .into_latest();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
         // drain the already-available withdrawals
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
         let total_already_available_amount = mem::replace(
@@ -771,7 +1290,10 @@ impl ValidatorBlueprint {
 
         let mut pending_owner_stake_unit_unlock_vault =
             Vault(substate.pending_owner_stake_unit_unlock_vault_id);
-        api.field_write_typed(handle, substate)?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
 
         // return the already-available withdrawals
         let already_available_stake_unit_bucket =
@@ -801,9 +1323,13 @@ impl ValidatorBlueprint {
                 .pending_owner_stake_unit_withdrawals
                 .remove(&available_withdrawal_epoch)
                 .expect("key was just returned by the iterator");
-            substate.already_unlocked_owner_stake_unit_amount += available_amount;
+            substate.already_unlocked_owner_stake_unit_amount = substate
+                .already_unlocked_owner_stake_unit_amount
+                .safe_add(available_amount)
+                .unwrap();
         }
     }
+
     /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
     /// value of all its stake units.
     /// Note: the validator's proposal statistics passed to this method are used only for creating
@@ -820,11 +1346,13 @@ impl ValidatorBlueprint {
     {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // - resolve the effective validator fee factor
         let effective_validator_fee_factor = match &substate.validator_fee_change_request {
@@ -834,7 +1362,9 @@ impl ValidatorBlueprint {
 
         // - calculate the validator fee and subtract it from the emission bucket
         let total_emission_xrd = xrd_bucket.amount(api)?;
-        let validator_fee_xrd = effective_validator_fee_factor * total_emission_xrd;
+        let validator_fee_xrd = effective_validator_fee_factor
+            .safe_mul(total_emission_xrd)
+            .unwrap();
         let fee_xrd_bucket = xrd_bucket.take(validator_fee_xrd, api)?;
 
         // - put the net emission XRDs into the stake pool
@@ -844,8 +1374,10 @@ impl ValidatorBlueprint {
 
         // - stake the validator fee XRDs (effectively same as regular staking)
         let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
-        let stake_pool_added_xrd = total_emission_xrd - validator_fee_xrd;
-        let post_emission_stake_pool_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
+        let stake_pool_added_xrd = total_emission_xrd.safe_sub(validator_fee_xrd).unwrap();
+        let post_emission_stake_pool_xrd = starting_stake_pool_xrd
+            .safe_add(stake_pool_added_xrd)
+            .unwrap();
         let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
         let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
             validator_fee_xrd,
@@ -859,13 +1391,18 @@ impl ValidatorBlueprint {
         Vault(substate.locked_owner_stake_unit_vault_id).put(fee_stake_unit_bucket, api)?;
 
         // - update the index, since the stake increased (because of net emission + staking of the validator fee)
-        let new_stake_xrd = starting_stake_pool_xrd + total_emission_xrd;
+        let new_stake_xrd = starting_stake_pool_xrd
+            .safe_add(total_emission_xrd)
+            .unwrap();
         let new_index_key =
             Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
 
         // ...end the read+modify+write of the validator substate (event can be emitted afterwards)
         substate.sorted_key = new_index_key;
-        api.field_write_typed(handle, &substate)?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -894,11 +1431,13 @@ impl ValidatorBlueprint {
     {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            ValidatorField::Validator.into(),
+            ACTOR_STATE_SELF,
+            ValidatorField::State.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        let mut substate = api
+            .field_read_typed::<ValidatorStateFieldPayload>(handle)?
+            .into_latest();
 
         // Get the total reward amount
         let total_reward_xrd = xrd_bucket.amount(api)?;
@@ -920,13 +1459,16 @@ impl ValidatorBlueprint {
         Vault(substate.locked_owner_stake_unit_vault_id).put(new_stake_unit_bucket, api)?;
 
         // Update the index, since the stake increased (because of staking of the reward)
-        let new_stake_xrd = starting_stake_pool_xrd + total_reward_xrd;
+        let new_stake_xrd = starting_stake_pool_xrd.safe_add(total_reward_xrd).unwrap();
         let new_index_key =
             Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
 
         // Flush validator substate changes
         substate.sorted_key = new_index_key;
-        api.field_write_typed(handle, &substate)?;
+        api.field_write_typed(
+            handle,
+            &ValidatorStateFieldPayload::from_content_source(substate),
+        )?;
         api.field_close(handle)?;
 
         Runtime::emit_event(
@@ -948,7 +1490,7 @@ impl ValidatorBlueprint {
         if !registered || stake.is_zero() {
             None
         } else {
-            Some(SortedKey::new(
+            Some((
                 create_sort_prefix_from_stake(stake),
                 scrypto_encode(&address).unwrap(),
             ))
@@ -965,37 +1507,36 @@ impl ValidatorBlueprint {
         match update {
             UpdateSecondaryIndex::Create {
                 index_key,
-                primary: address,
                 key,
                 stake,
             } => {
                 api.actor_sorted_index_insert_typed(
-                    OBJECT_HANDLE_OUTER_OBJECT,
-                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    ACTOR_STATE_OUTER_OBJECT,
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex
+                        .collection_index(),
                     index_key,
-                    EpochRegisteredValidatorByStakeEntry {
-                        component_address: address,
-                        validator: Validator { key, stake },
-                    },
+                    ConsensusManagerRegisteredValidatorByStakeEntryPayload::from_content_source(
+                        Validator { key, stake },
+                    ),
                 )?;
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
-                let (address, mut validator) = api
-                    .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
-                        OBJECT_HANDLE_OUTER_OBJECT,
-                        CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                let mut validator = api
+                    .actor_sorted_index_remove_typed::<ConsensusManagerRegisteredValidatorByStakeEntryPayload>(
+                        ACTOR_STATE_OUTER_OBJECT,
+                        ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
                         &index_key,
                     )?
-                    .unwrap();
+                    .unwrap().into_latest();
                 validator.key = key;
                 api.actor_sorted_index_insert_typed(
-                    OBJECT_HANDLE_OUTER_OBJECT,
-                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    ACTOR_STATE_OUTER_OBJECT,
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex
+                        .collection_index(),
                     index_key,
-                    EpochRegisteredValidatorByStakeEntry {
-                        component_address: address,
+                    ConsensusManagerRegisteredValidatorByStakeEntryPayload::from_content_source(
                         validator,
-                    },
+                    ),
                 )?;
             }
             UpdateSecondaryIndex::UpdateStake {
@@ -1003,34 +1544,66 @@ impl ValidatorBlueprint {
                 new_index_key,
                 new_stake_amount,
             } => {
-                let (address, mut validator) = api
-                    .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
-                        OBJECT_HANDLE_OUTER_OBJECT,
-                        CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                let mut validator = api
+                    .actor_sorted_index_remove_typed::<ConsensusManagerRegisteredValidatorByStakeEntryPayload>(
+                        ACTOR_STATE_OUTER_OBJECT,
+                        ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
                         &index_key,
                     )?
-                    .unwrap();
+                    .unwrap().into_latest();
                 validator.stake = new_stake_amount;
                 api.actor_sorted_index_insert_typed(
-                    OBJECT_HANDLE_OUTER_OBJECT,
-                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    ACTOR_STATE_OUTER_OBJECT,
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex
+                        .collection_index(),
                     new_index_key,
-                    EpochRegisteredValidatorByStakeEntry {
-                        component_address: address,
+                    ConsensusManagerRegisteredValidatorByStakeEntryPayload::from_content_source(
                         validator,
-                    },
+                    ),
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
                 api.actor_sorted_index_remove(
-                    OBJECT_HANDLE_OUTER_OBJECT,
-                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    ACTOR_STATE_OUTER_OBJECT,
+                    ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex
+                        .collection_index(),
                     &index_key,
                 )?;
             }
         }
 
         Ok(())
+    }
+
+    fn calculate_redemption_value<Y: ClientApi<RuntimeError>>(
+        amount_of_stake_units: Decimal,
+        validator_substate: &ValidatorSubstate,
+        api: &mut Y,
+    ) -> Result<Decimal, RuntimeError> {
+        let stake_vault = Vault(validator_substate.stake_xrd_vault_id);
+        let stake_unit_resman = ResourceManager(validator_substate.stake_unit_resource);
+
+        let active_stake_amount = stake_vault.amount(api)?;
+        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
+        let xrd_amount = if total_stake_unit_supply.is_zero() {
+            Decimal::zero()
+        } else {
+            amount_of_stake_units
+                .safe_mul(active_stake_amount)
+                .ok_or_else(|| {
+                    RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                        ValidatorError::UnexpectedDecimalComputationError,
+                    ))
+                })?
+                .safe_div(total_stake_unit_supply)
+                .ok_or_else(|| {
+                    RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                        ValidatorError::UnexpectedDecimalComputationError,
+                    ))
+                })?
+        };
+
+        Ok(xrd_amount)
     }
 
     /// Returns an amount of stake units to be minted when [`xrd_amount`] of XRDs is being staked.
@@ -1042,7 +1615,11 @@ impl ValidatorBlueprint {
         if total_stake_xrd_amount.is_zero() {
             xrd_amount
         } else {
-            xrd_amount * total_stake_unit_supply / total_stake_xrd_amount
+            xrd_amount
+                .safe_mul(total_stake_unit_supply)
+                .unwrap()
+                .safe_div(total_stake_xrd_amount)
+                .unwrap()
         }
     }
 }
@@ -1057,25 +1634,28 @@ fn check_validator_fee_factor(fee_factor: Decimal) -> Result<(), RuntimeError> {
     Ok(())
 }
 
-fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
+fn create_sort_prefix_from_stake(stake: Decimal) -> [u8; 2] {
     // Note: XRD max supply is 24bn
     // 24bn / MAX::16 = 366210.9375 - so 100k as a divisor here is sensible.
     // If all available XRD was staked to one validator, they'd have 3.6 * u16::MAX * 100k stake
     // In reality, validators will have far less than u16::MAX * 100k stake, but let's handle that case just in case
-    let stake_100k = stake / Decimal::from(100000);
-    let stake_100k_whole_units = (stake_100k / Decimal::from(10).powi(Decimal::SCALE.into())).0;
-    let stake_u16 = if stake_100k_whole_units > BnumI256::from(u16::MAX) {
+    let stake_100k: Decimal = stake.safe_div(100000).unwrap();
+    let stake_100k_whole_units = stake_100k
+        .safe_div(Decimal::from(10).safe_powi(Decimal::SCALE.into()).unwrap())
+        .unwrap()
+        .0;
+    let stake_u16 = if stake_100k_whole_units > I192::from(u16::MAX) {
         u16::MAX
     } else {
         stake_100k_whole_units.try_into().unwrap()
     };
     // We invert the key because we need high stake to appear first and it's ordered ASC
-    u16::MAX - stake_u16
+    (u16::MAX - stake_u16).to_be_bytes()
 }
 
 struct SecurifiedValidator;
 
-impl SecurifiedAccessRules for SecurifiedValidator {
+impl SecurifiedRoleAssignment for SecurifiedValidator {
     type OwnerBadgeNonFungibleData = ValidatorOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = None;
@@ -1109,7 +1689,7 @@ impl ValidatorCreator {
             metadata_init! {
                 "name" => "Liquid Stake Units".to_owned(), locked;
                 "description" => "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.".to_owned(), locked;
-                "icon_url" => Url("https://assets.radixdlt.com/icons/icon-liquid_stake_units.png".to_owned()), locked;
+                "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-liquid_stake_units.png".to_owned()), locked;
                 "validator" => GlobalAddress::from(validator_address), locked;
                 "tags" => Vec::<String>::new(), locked;
             },
@@ -1120,7 +1700,7 @@ impl ValidatorCreator {
         Ok(stake_unit_resman.0)
     }
 
-    fn create_unstake_nft<Y>(
+    fn create_claim_nft<Y>(
         validator_address: GlobalAddress,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
@@ -1145,7 +1725,7 @@ impl ValidatorCreator {
             metadata_init! {
                 "name" => "Stake Claims NFTs".to_owned(), locked;
                 "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;
-                "icon_url" => Url("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png".to_owned()), locked;
+                "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png".to_owned()), locked;
                 "validator" => GlobalAddress::from(validator_address), locked;
                 "tags" => Vec::<String>::new(), locked;
             },
@@ -1176,7 +1756,7 @@ impl ValidatorCreator {
 
         let stake_xrd_vault = Vault::create(XRD, api)?;
         let pending_xrd_withdraw_vault = Vault::create(XRD, api)?;
-        let unstake_nft = Self::create_unstake_nft(validator_address, api)?;
+        let claim_nft = Self::create_claim_nft(validator_address, api)?;
         let stake_unit_resource = Self::create_stake_unit_resource(validator_address, api)?;
         let locked_owner_stake_unit_vault = Vault::create(stake_unit_resource, api)?;
         let pending_owner_stake_unit_unlock_vault = Vault::create(stake_unit_resource, api)?;
@@ -1190,7 +1770,7 @@ impl ValidatorCreator {
             validator_fee_factor: fee_factor,
             validator_fee_change_request: None,
             stake_unit_resource,
-            unstake_nft,
+            claim_nft: claim_nft,
             stake_xrd_vault_id: stake_xrd_vault.0,
             pending_xrd_withdraw_vault_id: pending_xrd_withdraw_vault.0,
             locked_owner_stake_unit_vault_id: locked_owner_stake_unit_vault.0,
@@ -1205,13 +1785,13 @@ impl ValidatorCreator {
 
         let validator_id = api.new_simple_object(
             VALIDATOR_BLUEPRINT,
-            vec![
-                FieldValue::new(&substate),
-                FieldValue::new(&protocol_update_readiness_signal),
-            ],
+            btreemap! {
+                ValidatorField::State.field_index() => FieldValue::new(&ValidatorStateFieldPayload::from_content_source(substate)),
+                ValidatorField::ProtocolUpdateReadinessSignal.field_index() => FieldValue::new(&ValidatorProtocolUpdateReadinessSignalFieldPayload::from_content_source(protocol_update_readiness_signal)),
+            },
         )?;
 
-        let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(
+        let (role_assignment, owner_token_bucket) = SecurifiedValidator::create_securified(
             ValidatorOwnerBadgeData {
                 name: "Validator Owner Badge".to_owned(),
                 validator: validator_address.try_into().expect("Impossible Case!"),
@@ -1228,17 +1808,16 @@ impl ValidatorCreator {
             metadata_init! {
                 "owner_badge" => owner_badge_local_id, locked;
                 "pool_unit" => GlobalAddress::from(stake_unit_resource), locked;
+                "claim_nft" => GlobalAddress::from(claim_nft), locked;
             },
             api,
         )?;
-        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(
+            validator_id,
             btreemap!(
-                ObjectModuleId::Main => validator_id,
-                ObjectModuleId::AccessRules => access_rules.0.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
+                ModuleId::RoleAssignment => role_assignment.0.0,
+                ModuleId::Metadata => metadata.0,
             ),
             Some(address_reservation),
         )?;
@@ -1256,14 +1835,32 @@ mod tests {
 
     #[test]
     fn sort_key_is_calculated_correctly() {
-        assert_eq!(create_sort_prefix_from_stake(Decimal::ZERO), u16::MAX);
-        assert_eq!(create_sort_prefix_from_stake(dec!(99_999)), u16::MAX);
-        assert_eq!(create_sort_prefix_from_stake(dec!(100_000)), u16::MAX - 1);
-        assert_eq!(create_sort_prefix_from_stake(dec!(199_999)), u16::MAX - 1);
-        assert_eq!(create_sort_prefix_from_stake(dec!(200_000)), u16::MAX - 2);
+        assert_eq!(
+            create_sort_prefix_from_stake(Decimal::ZERO),
+            u16::MAX.to_be_bytes()
+        );
+        assert_eq!(
+            create_sort_prefix_from_stake(dec!(99_999)),
+            u16::MAX.to_be_bytes()
+        );
+        assert_eq!(
+            create_sort_prefix_from_stake(dec!(100_000)),
+            (u16::MAX - 1).to_be_bytes()
+        );
+        assert_eq!(
+            create_sort_prefix_from_stake(dec!(199_999)),
+            (u16::MAX - 1).to_be_bytes()
+        );
+        assert_eq!(
+            create_sort_prefix_from_stake(dec!(200_000)),
+            (u16::MAX - 2).to_be_bytes()
+        );
         // https://learn.radixdlt.com/article/start-here-radix-tokens-and-tokenomics
-        let max_xrd_supply = dec!(24) * dec!(10).powi(12);
-        assert_eq!(create_sort_prefix_from_stake(max_xrd_supply), 0);
+        let max_xrd_supply = dec!(24).safe_mul(dec!(10).safe_powi(12).unwrap()).unwrap();
+        assert_eq!(
+            create_sort_prefix_from_stake(max_xrd_supply),
+            0u16.to_be_bytes()
+        );
     }
 }
 

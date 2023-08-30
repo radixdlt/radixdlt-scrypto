@@ -181,10 +181,12 @@ mod tests {
                 value: ManifestCustomValue::Proof(ManifestProof(0)),
             },
             ManifestValue::Custom {
-                value: ManifestCustomValue::Decimal(ManifestDecimal([0; 32])),
+                value: ManifestCustomValue::Decimal(ManifestDecimal([0; DECIMAL_SIZE])),
             },
             ManifestValue::Custom {
-                value: ManifestCustomValue::PreciseDecimal(ManifestPreciseDecimal([0; 64])),
+                value: ManifestCustomValue::PreciseDecimal(ManifestPreciseDecimal(
+                    [0; PRECISE_DECIMAL_SIZE],
+                )),
             },
             ManifestValue::Custom {
                 value: ManifestCustomValue::NonFungibleLocalId(ManifestNonFungibleLocalId::String(
@@ -299,6 +301,7 @@ mod tests {
                 SerializationParameters::Schemaless {
                     mode: SerializationMode::Natural,
                     custom_context: context.into(),
+                    depth_limit: MANIFEST_SBOR_V1_MAX_DEPTH,
                 },
             ),
             expected,
@@ -321,6 +324,7 @@ mod tests {
                 SerializationParameters::Schemaless {
                     mode: SerializationMode::Programmatic,
                     custom_context: context.into(),
+                    depth_limit: MANIFEST_SBOR_V1_MAX_DEPTH,
                 },
             ),
             expected,

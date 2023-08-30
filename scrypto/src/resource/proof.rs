@@ -1,8 +1,6 @@
 use crate::resource::*;
 use crate::runtime::Runtime;
 use crate::*;
-use radix_engine_interface::api::ClientBlueprintApi;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -13,7 +11,7 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use runtime::LocalAuthZone;
 use sbor::rust::prelude::*;
-use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 // Different from the native SDK, in Scrypto we use `CheckedProof`, `CheckedFungibleProof`
 // and `CheckedNonFungibleProof` (instead of `Proof`/`FungibleProof`/`NonFungibleProof`)
@@ -167,14 +165,11 @@ impl ScryptoUncheckedProof for Proof {
     }
 
     fn resource_address(&self) -> ResourceAddress {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                PROOF_GET_RESOURCE_ADDRESS_IDENT,
-                scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
-            )
-            .unwrap();
+        let rtn = ScryptoVmV1Api::object_call(
+            self.0.as_node_id(),
+            PROOF_GET_RESOURCE_ADDRESS_IDENT,
+            scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -183,36 +178,33 @@ impl ScryptoUncheckedProof for Proof {
     }
 
     fn drop(self) {
-        let mut env = ScryptoEnv;
-        let info = env.get_object_info(self.0.as_node_id()).unwrap();
-        env.call_function(
+        let blueprint_id = ScryptoVmV1Api::object_get_blueprint_id(self.0.as_node_id());
+        ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
-            info.blueprint_id.blueprint_name.as_str(),
+            blueprint_id.blueprint_name.as_str(),
             PROOF_DROP_IDENT,
             scrypto_encode(&ProofDropInput {
                 proof: Proof(self.0),
             })
             .unwrap(),
-        )
-        .unwrap();
+        );
     }
 
     fn clone(&self) -> Self {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                PROOF_CLONE_IDENT,
-                scrypto_encode(&ProofCloneInput {}).unwrap(),
-            )
-            .unwrap();
+        let rtn = ScryptoVmV1Api::object_call(
+            self.0.as_node_id(),
+            PROOF_CLONE_IDENT,
+            scrypto_encode(&ProofCloneInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         LocalAuthZone::push(self.clone());
         let output = f();
-        LocalAuthZone::pop().drop();
+        LocalAuthZone::pop()
+            .expect("Authorized closure changed auth zone proof stack")
+            .drop();
         output
     }
 }
@@ -307,14 +299,11 @@ impl ScryptoProof for CheckedProof {
     }
 
     fn amount(&self) -> Decimal {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                PROOF_GET_AMOUNT_IDENT,
-                scrypto_encode(&ProofGetAmountInput {}).unwrap(),
-            )
-            .unwrap();
+        let rtn = ScryptoVmV1Api::object_call(
+            self.0 .0.as_node_id(),
+            PROOF_GET_AMOUNT_IDENT,
+            scrypto_encode(&ProofGetAmountInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -491,14 +480,11 @@ impl ScryptoNonFungibleProof for CheckedNonFungibleProof {
     }
 
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0 .0 .0.as_node_id(),
-                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
-                scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
-            )
-            .unwrap();
+        let rtn = ScryptoVmV1Api::object_call(
+            self.0 .0 .0.as_node_id(),
+            NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
+            scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 }

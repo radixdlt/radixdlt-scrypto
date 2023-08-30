@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 pub struct NonFungibleBucketBlueprint;
@@ -25,6 +25,35 @@ impl NonFungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            NonFungibleBucketField::Liquid.into(),
+            LockFlags::MUTABLE,
+        )?;
+
+        let mut liquid: LiquidNonFungibleResource = api.field_read_typed(handle)?;
+
+        // Early exit if input amount is obviously wrong
+        // This is to prevent for_withdrawal from overflowing in case a bad amount is sent in
+        {
+            if amount.is_negative() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::BucketError(BucketError::InvalidAmount),
+                ));
+            }
+            let bucket_amount_plus_one = liquid
+                .amount()
+                .safe_add(Decimal::ONE)
+                .ok_or_else(|| BucketError::DecimalOverflow)?;
+            if amount > &bucket_amount_plus_one {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::BucketError(BucketError::ResourceError(
+                        ResourceError::InsufficientBalance,
+                    )),
+                ));
+            }
+        }
+
         // Apply withdraw strategy
         let amount = amount.for_withdrawal(0, withdraw_strategy);
 
@@ -36,7 +65,12 @@ impl NonFungibleBucketBlueprint {
         })?;
 
         // Take
-        let taken = Self::internal_take_by_amount(n, api)?;
+        let taken = liquid
+            .take_by_amount(n)
+            .map_err(BucketError::ResourceError)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
+        api.field_write_typed(handle, &liquid)?;
+        api.field_close(handle)?;
 
         // Create node
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
@@ -82,11 +116,33 @@ impl NonFungibleBucketBlueprint {
         Ok(ids)
     }
 
+    pub fn contains_non_fungible<Y>(
+        id: NonFungibleLocalId,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let ids = Self::liquid_non_fungible_local_ids(api)?;
+        if ids.contains(&id) {
+            return Ok(true);
+        }
+
+        let ids = Self::locked_non_fungible_local_ids(api)?;
+        if ids.contains(&id) {
+            return Ok(true);
+        }
+
+        Ok(false)
+    }
+
     pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let amount = Self::liquid_amount(api)? + Self::locked_amount(api)?;
+        let amount = Self::liquid_amount(api)?
+            .safe_add(Self::locked_amount(api)?)
+            .unwrap();
 
         Ok(amount)
     }
@@ -96,7 +152,7 @@ impl NonFungibleBucketBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
+            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());
 
         Ok(resource_address)
     }
@@ -125,10 +181,10 @@ impl NonFungibleBucketBlueprint {
         })?;
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&proof_info),
-                FieldValue::new(&proof_evidence),
-            ],
+            btreemap! {
+                0u8 => FieldValue::new(&proof_info),
+                1u8 => FieldValue::new(&proof_evidence),
+            },
         )?;
         Ok(Proof(Own(proof_id)))
     }
@@ -152,7 +208,7 @@ impl NonFungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
@@ -185,7 +241,7 @@ impl NonFungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
@@ -218,7 +274,7 @@ impl NonFungibleBucketBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleBucketField::Liquid.into(),
             LockFlags::read_only(),
         )?;
@@ -233,7 +289,7 @@ impl NonFungibleBucketBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleBucketField::Locked.into(),
             LockFlags::read_only(),
         )?;
@@ -250,7 +306,7 @@ impl NonFungibleBucketBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleBucketField::Liquid.into(),
             LockFlags::read_only(),
         )?;
@@ -267,7 +323,7 @@ impl NonFungibleBucketBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleBucketField::Locked.into(),
             LockFlags::read_only(),
         )?;
@@ -285,35 +341,13 @@ impl NonFungibleBucketBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate: LiquidNonFungibleResource = api.field_read_typed(handle)?;
         let taken = substate
             .take_by_ids(ids)
-            .map_err(BucketError::ResourceError)
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
-        api.field_write_typed(handle, &substate)?;
-        api.field_close(handle)?;
-        Ok(taken)
-    }
-
-    fn internal_take_by_amount<Y>(
-        n: u32,
-        api: &mut Y,
-    ) -> Result<LiquidNonFungibleResource, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleBucketField::Liquid.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let mut substate: LiquidNonFungibleResource = api.field_read_typed(handle)?;
-        let taken = substate
-            .take_by_amount(n)
             .map_err(BucketError::ResourceError)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
         api.field_write_typed(handle, &substate)?;
@@ -330,7 +364,7 @@ impl NonFungibleBucketBlueprint {
         }
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             NonFungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;

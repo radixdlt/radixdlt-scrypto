@@ -11,19 +11,22 @@ DFLT_TARGET=transaction
 DFLT_AFL_TIMEOUT=1000
 
 function usage() {
-    echo "$0 [COMMAND] [COMMAND-ARGS]"
+    echo "$0 [COMMAND] [FUZZ-TARGET] [COMMAND-ARGS]"
+    echo "Available targets:"
+    echo "    transaction"
+    echo "    wasm_instrument"
     echo "Commands:"
-    echo "    run <duration> <instances> [timeout]"
+    echo "    run <target ><duration> <instances> [timeout]"
     echo "            Run given number of AFL instances (default: $DFLT_CPUS) in screen sessions"
     echo "            for a given number of seconds."
     echo "            For 'instances' one can specify"
     echo "              all      - to run as many instances as CPU cores available"
     echo "              <number> - to run <number> of instances"
     echo "            'timeout' is an AFL timeout in ms"
-    echo "    watch <interval>"
+    echo "    watch <target> <interval>"
     echo "            Monitor AFL instances until they are finished."
     echo "            One can specify interval (default: $DFLT_INTERVAL) to output the status"
-    echo "    quit    Quit all AFL instances"
+    echo "    quit <target>   Quit all AFL instances"
 }
 
 function error() {
@@ -60,9 +63,16 @@ function humanize_seconds()
    fi
 }
 
+cmd=watch
+if [ $# -ge 1 ] ; then
+    cmd=$1
+    shift
+fi
 target=$DFLT_TARGET
-cmd=${1:-watch}
-shift
+if [ $# -ge 1 ] ; then
+    target=$1
+    shift
+fi
 
 # Trying different power schedules, but keeping in mind that "fast" and "explore" are most effective ones,
 # thus they are duplicated.
@@ -102,18 +112,18 @@ if [ $cmd = "run" ] ; then
 
     for (( i=0; i<$cpus; i++ )) ; do
         power_schedule=${SCHEDULES_ARR[$(( i % SCHEDULES_LEN))]}
+        name=${target}_${i}_${power_schedule}
+        id=${i}_${power_schedule}
         if [ $i -eq 0 ] ; then
-            name=${target}_${i}_${power_schedule}
             # main fuzzer
-            fuzz_args="-M $name "
+            fuzz_args="-M $id "
         else
-            name=${target}_${i}_${power_schedule}
             # secondary fuzzer
-            fuzz_args="-S $name "
+            fuzz_args="-S $id "
         fi
         fuzz_args+="-p $power_schedule "
         # TODO: use different fuzzing variants per instance
-        fuzz_cmd="./fuzz.sh afl run -V $duration $fuzz_args -T $name -t $timeout"
+        fuzz_cmd="./fuzz.sh afl run $target -V $duration $fuzz_args -T $name -t $timeout"
         echo -e "Starting screen session with:\n  $fuzz_cmd"
         screen -dmS afl_$name \
             bash -c "{ $fuzz_cmd >afl/$name.log 2>afl/$name.err ; echo \$? > afl/$name.status; }"
@@ -163,7 +173,9 @@ elif [ $cmd = "watch" ] ; then
     echo "AFL sessions info:" | tee afl/sessions_info
     for f in $list ; do
         name=$(basename ${f%.status})
-        stats_file=afl/${target}/${name}/fuzzer_stats
+        # fuzzing session id does include target name
+        id=${name#${target}_}
+        stats_file=afl/${target}/${id}/fuzzer_stats
         stability="n/a"
         coverage="n/a"
         crashes="n/a"

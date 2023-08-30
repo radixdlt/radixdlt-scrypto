@@ -1,4 +1,4 @@
-use crate::modules::HasAccessRules;
+use crate::modules::HasRoleAssignment;
 use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
 use radix_engine_interface::api::node_modules::metadata::{
@@ -7,7 +7,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::resource_address_type_data;
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::RESOURCE_ADDRESS_ID;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::RESOURCE_ADDRESS_TYPE;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
 use radix_engine_interface::math::Decimal;
@@ -20,18 +20,16 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::component::HasStub;
 
-#[derive(Debug, Clone, Copy, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
 pub struct ResourceManager(Global<ResourceManagerStub>);
 
 impl Describe<ScryptoCustomTypeKind> for ResourceManager {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([RESOURCE_ADDRESS_ID]);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(RESOURCE_ADDRESS_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         resource_address_type_data()
     }
-
-    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }
 
 impl From<ResourceAddress> for ResourceManager {
@@ -135,7 +133,7 @@ impl HasStub for ResourceManagerStub {
     type Stub = Self;
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct ResourceManagerStub(pub ObjectStubHandle);
 
 impl ObjectStub for ResourceManagerStub {
@@ -186,10 +184,12 @@ impl ResourceManagerStub {
         )
     }
 
-    pub fn burn(&self, bucket: Bucket) {
+    pub fn burn<B: Into<Bucket>>(&self, bucket: B) {
         self.call(
             RESOURCE_MANAGER_BURN_IDENT,
-            &ResourceManagerBurnInput { bucket },
+            &ResourceManagerBurnInput {
+                bucket: bucket.into(),
+            },
         )
     }
 

@@ -10,7 +10,7 @@ use transaction::prelude::*;
 fn test_component_royalty() {
     // Arrange
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -33,7 +33,7 @@ fn test_component_royalty() {
 
     // Act
     // Call the paid method
-    let account_pre_balance = test_runner.account_balance(account, XRD).unwrap();
+    let account_pre_balance = test_runner.get_component_balance(account, XRD);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -43,24 +43,28 @@ fn test_component_royalty() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit(true);
-    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("3"));
-    let account_post_balance = test_runner.account_balance(account, XRD).unwrap();
+    receipt.expect_commit(true);
+    assert_eq!(receipt.fee_summary.total_royalty_cost_in_xrd, dec!("3"));
+    let account_post_balance = test_runner.get_component_balance(account, XRD);
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
-        account_pre_balance - account_post_balance,
-        commit_result.fee_summary.total_cost()
+        account_pre_balance.safe_sub(account_post_balance).unwrap(),
+        receipt.fee_summary.total_cost()
     );
     assert_eq!(
         component_royalty,
-        commit_result.fee_summary.total_royalty_cost_xrd - dec!("2"),
+        receipt
+            .fee_summary
+            .total_royalty_cost_in_xrd
+            .safe_sub(2)
+            .unwrap()
     );
 }
 
 #[test]
 fn test_component_royalty_in_usd() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -82,7 +86,7 @@ fn test_component_royalty_in_usd() {
     let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
     // Call the paid method
-    let account_pre_balance = test_runner.account_balance(account, XRD).unwrap();
+    let account_pre_balance = test_runner.get_component_balance(account, XRD);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -91,20 +95,23 @@ fn test_component_royalty_in_usd() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
     assert_eq!(
-        commit_result.fee_summary.total_royalty_cost_xrd,
-        dec!(1) * Decimal::try_from(DEFAULT_USD_PRICE_IN_XRD).unwrap()
+        receipt.fee_summary.total_royalty_cost_in_xrd,
+        Decimal::try_from(USD_PRICE_IN_XRD)
+            .unwrap()
+            .safe_mul(Decimal::ONE)
+            .unwrap()
     );
-    let account_post_balance = test_runner.account_balance(account, XRD).unwrap();
+    let account_post_balance = test_runner.get_component_balance(account, XRD);
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
-        account_pre_balance - account_post_balance,
-        commit_result.fee_summary.total_cost()
+        account_pre_balance.safe_sub(account_post_balance).unwrap(),
+        receipt.fee_summary.total_cost()
     );
     assert_eq!(
         component_royalty,
-        commit_result.fee_summary.total_royalty_cost_xrd
+        receipt.fee_summary.total_royalty_cost_in_xrd
     );
 }
 
@@ -119,7 +126,7 @@ fn test_package_royalty() {
         _owner_badge_resource,
     ) = set_up_package_and_component();
 
-    let account_pre_balance = test_runner.account_balance(account, XRD).unwrap();
+    let account_pre_balance = test_runner.get_component_balance(account, XRD);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -128,19 +135,19 @@ fn test_package_royalty() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
     assert_eq!(
-        commit_result.fee_summary.total_royalty_cost_xrd,
-        dec!(1) + dec!("2")
+        receipt.fee_summary.total_royalty_cost_in_xrd,
+        dec!(1).safe_add(dec!("2")).unwrap()
     );
-    let account_post_balance = test_runner.account_balance(account, XRD).unwrap();
+    let account_post_balance = test_runner.get_component_balance(account, XRD);
     let package_royalty = test_runner
         .inspect_package_royalty(package_address)
         .unwrap();
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
-        account_pre_balance - account_post_balance,
-        commit_result.fee_summary.total_cost()
+        account_pre_balance.safe_sub(account_post_balance).unwrap(),
+        receipt.fee_summary.total_cost()
     );
     assert_eq!(package_royalty, dec!("2"));
     assert_eq!(component_royalty, dec!(1));
@@ -245,7 +252,7 @@ fn test_claim_royalty() {
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .claim_package_royalties(package_address)
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -256,7 +263,7 @@ fn test_claim_royalty() {
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .claim_component_royalties(component_address)
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -275,7 +282,7 @@ fn test_claim_royalty() {
 
 fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: RoyaltyAmount) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_public_key, _, account) = test_runner.new_allocated_account();
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr =
@@ -311,26 +318,25 @@ fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: Roy
 
 #[test]
 fn cannot_initialize_package_royalty_if_greater_xrd_than_allowed() {
-    let max_royalty_allowed_in_xrd =
-        Decimal::try_from(DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
-    let royalty_amount = RoyaltyAmount::Xrd(max_royalty_allowed_in_xrd + dec!(1));
+    let max_royalty_allowed_in_xrd = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
+    let royalty_amount = RoyaltyAmount::Xrd(max_royalty_allowed_in_xrd.safe_add(dec!(1)).unwrap());
     cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount);
 }
 
 #[test]
 fn cannot_initialize_package_royalty_if_greater_usd_than_allowed() {
-    let max_royalty_allowed_in_xrd =
-        Decimal::try_from(DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
-    let max_royalty_allowed_in_usd =
-        max_royalty_allowed_in_xrd / Decimal::try_from(DEFAULT_USD_PRICE_IN_XRD).unwrap();
-    let royalty_amount = RoyaltyAmount::Usd(max_royalty_allowed_in_usd + dec!(1));
+    let max_royalty_allowed_in_xrd = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
+    let max_royalty_allowed_in_usd = max_royalty_allowed_in_xrd
+        .safe_div(Decimal::try_from(USD_PRICE_IN_XRD).unwrap())
+        .unwrap();
+    let royalty_amount = RoyaltyAmount::Usd(max_royalty_allowed_in_usd.safe_add(dec!(1)).unwrap());
     cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount);
 }
 
 #[test]
 fn cannot_initialize_component_royalty_if_greater_than_allowed() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr =
@@ -339,7 +345,7 @@ fn cannot_initialize_component_royalty_if_greater_than_allowed() {
         test_runner.compile_and_publish_with_owner("./tests/blueprints/royalty", owner_badge_addr);
 
     // Act
-    let max_royalty_allowed = Decimal::try_from(DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
+    let max_royalty_allowed = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -347,7 +353,7 @@ fn cannot_initialize_component_royalty_if_greater_than_allowed() {
                 package_address,
                 "RoyaltyTest",
                 "create_component_with_royalty",
-                manifest_args!(max_royalty_allowed + dec!(1)),
+                manifest_args!(max_royalty_allowed.safe_add(dec!(1)).unwrap()),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -375,7 +381,7 @@ fn cannot_set_component_royalty_if_greater_than_allowed() {
         component_address,
         owner_badge_resource,
     ) = set_up_package_and_component();
-    let max_royalty_allowed = Decimal::try_from(DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
+    let max_royalty_allowed = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
 
     // Act
     let receipt = test_runner.execute_manifest(
@@ -389,7 +395,7 @@ fn cannot_set_component_royalty_if_greater_than_allowed() {
             .set_component_royalty(
                 component_address,
                 "paid_method",
-                RoyaltyAmount::Xrd(max_royalty_allowed + dec!(1)),
+                RoyaltyAmount::Xrd(max_royalty_allowed.safe_add(dec!(1)).unwrap()),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -459,7 +465,7 @@ fn cannot_set_royalty_after_locking() {
 }
 
 fn set_up_package_and_component() -> (
-    TestRunner,
+    DefaultTestRunner,
     ComponentAddress,
     Secp256k1PublicKey,
     PackageAddress,
@@ -467,7 +473,7 @@ fn set_up_package_and_component() -> (
     ResourceAddress,
 ) {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package

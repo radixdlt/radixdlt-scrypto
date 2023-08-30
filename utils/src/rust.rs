@@ -142,6 +142,11 @@ pub mod collections {
     #[cfg(feature = "alloc")]
     extern crate alloc;
 
+    #[cfg(feature = "alloc")]
+    pub use alloc::collections::LinkedList;
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::LinkedList;
+
     pub mod btree_map {
         #[cfg(feature = "alloc")]
         extern crate alloc;
@@ -587,6 +592,11 @@ pub mod collections {
             /// Returns the number of elements in the map.
             pub fn len(&self) -> usize {
                 self.0.len()
+            }
+
+            /// Returns whether the map is empty
+            pub fn is_empty(&self) -> bool {
+                self.0.is_empty()
             }
         }
 

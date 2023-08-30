@@ -21,6 +21,7 @@ mod vault_test {
                     }
                 })
                 .mint_initial_supply(1)
+                .into()
         }
 
         pub fn new_vault_into_map() -> Global<VaultTest> {

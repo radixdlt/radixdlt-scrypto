@@ -11,7 +11,9 @@ mod data_validation {
 
     impl DataValidation {
         pub fn new() -> Global<DataValidation> {
-            let resource = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
+            let resource: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .mint_initial_supply(100)
+                .into();
 
             Self {
                 vault: Vault::with_bucket(resource),
@@ -87,6 +89,53 @@ impl Describe<ScryptoCustomTypeKind> for CustomReference {
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 ),
             )),
+        }
+    }
+}
+
+#[blueprint]
+mod vec_of_u8_underflow {
+    struct VecOfU8Underflow {
+        kv_store: KeyValueStore<u32, Vec<u8>>,
+    }
+
+    impl VecOfU8Underflow {
+        pub fn write_vec_u8_underflow_to_key_value_store() -> Global<VecOfU8Underflow> {
+            // Construct large SBOR payload
+            let mut vec = Vec::<u8>::with_capacity(1 * 1024 * 1024);
+            unsafe {
+                vec.set_len(1 * 1024 * 1024);
+            }
+            (&mut vec[0..7]).copy_from_slice(&[
+                // 92 = Scrypto SBOR
+                92, // 32 = VALUE_KIND_ARRAY
+                32, // 7 = U8 in the array
+                7,
+                // Length of 99999993 expressed as VLQ.
+                // NOTE: This is longer than the buffer length of 1048576
+                // Essentially to the engine this looks like this SBOR payload has been truncated, ie underflow
+                249, 193, 215, 47,
+            ]);
+
+            // Create a KVStore
+            let kv_store = KeyValueStore::<u32, Vec<u8>>::new();
+
+            // Insert into store
+            let key_payload = scrypto_encode(&1u32).unwrap();
+            let value_payload = vec;
+            let handle = ScryptoVmV1Api::kv_store_open_entry(
+                kv_store.id.as_node_id(),
+                &key_payload,
+                LockFlags::MUTABLE,
+            );
+            ScryptoVmV1Api::kv_entry_write(handle, value_payload);
+            ScryptoVmV1Api::kv_entry_close(handle);
+
+            // Put the kv store into a component
+            VecOfU8Underflow { kv_store }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
     }
 }

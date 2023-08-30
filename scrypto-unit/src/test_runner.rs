@@ -4,49 +4,48 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::blueprints::consensus_manager::*;
+use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::checkers::*;
+use radix_engine::system::system_db_reader::{
+    ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
+};
+use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
-    PreviewError, TransactionReceipt, TransactionResult,
+    execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
+    ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
 use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
     ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+    VALIDATOR_STAKE_AS_OWNER_IDENT,
 };
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
-    PackageRoyaltyAccumulatorSubstate, TypePointer, PACKAGE_BLUEPRINT,
-    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
-};
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
-use radix_engine_queries::typed_substate_layout::{
-    BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-};
+use radix_engine_queries::typed_native_events::to_typed_native_event;
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::interface::{ListableSubstateDatabase, SubstateDatabase};
-use radix_engine_store_interface::{
-    db_key_mapper::{
-        MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
-    },
-    interface::{CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates},
+use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, ListableSubstateDatabase,
+    SubstateDatabase,
 };
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
@@ -64,6 +63,7 @@ impl Compile {
     pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
         // Build
         let status = Command::new("cargo")
+            .env("RUSTFLAGS", "")
             .current_dir(package_dir.as_ref())
             .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
             .status()
@@ -167,60 +167,42 @@ impl CustomGenesis {
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
-        let genesis_validator: GenesisValidator = validator_public_key.clone().into();
-        let genesis_data_chunks = vec![
-            GenesisDataChunk::Validators(vec![genesis_validator]),
-            GenesisDataChunk::Stakes {
-                accounts: vec![staker_account],
-                allocations: vec![(
-                    validator_public_key,
-                    vec![GenesisStakeAllocation {
-                        account_index: 0,
-                        xrd_amount: stake_xrd_amount,
-                    }],
-                )],
-            },
-        ];
-        CustomGenesis {
-            genesis_data_chunks,
+        Self::validators_and_single_staker(
+            vec![(validator_public_key, stake_xrd_amount)],
+            staker_account,
             genesis_epoch,
             initial_config,
-            initial_time_ms: 0,
-            initial_current_leader: Some(0),
-            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
-        }
+        )
     }
 
-    pub fn two_validators_and_single_staker(
-        validator1_public_key: Secp256k1PublicKey,
-        validator2_public_key: Secp256k1PublicKey,
-        stake_xrd_amount: (Decimal, Decimal),
+    pub fn validators_and_single_staker(
+        validators_and_stakes: Vec<(Secp256k1PublicKey, Decimal)>,
         staker_account: ComponentAddress,
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
-        let genesis_validator1: GenesisValidator = validator1_public_key.clone().into();
-        let genesis_validator2: GenesisValidator = validator2_public_key.clone().into();
+        let genesis_validators: Vec<GenesisValidator> = validators_and_stakes
+            .iter()
+            .map(|(key, _)| key.clone().into())
+            .collect();
+        let stake_allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)> =
+            validators_and_stakes
+                .into_iter()
+                .map(|(key, stake_xrd_amount)| {
+                    (
+                        key,
+                        vec![GenesisStakeAllocation {
+                            account_index: 0,
+                            xrd_amount: stake_xrd_amount,
+                        }],
+                    )
+                })
+                .collect();
         let genesis_data_chunks = vec![
-            GenesisDataChunk::Validators(vec![genesis_validator1, genesis_validator2]),
+            GenesisDataChunk::Validators(genesis_validators),
             GenesisDataChunk::Stakes {
                 accounts: vec![staker_account],
-                allocations: vec![
-                    (
-                        validator1_public_key,
-                        vec![GenesisStakeAllocation {
-                            account_index: 0,
-                            xrd_amount: stake_xrd_amount.0,
-                        }],
-                    ),
-                    (
-                        validator2_public_key,
-                        vec![GenesisStakeAllocation {
-                            account_index: 0,
-                            xrd_amount: stake_xrd_amount.1,
-                        }],
-                    ),
-                ],
+                allocations: stake_allocations,
             },
         ];
         CustomGenesis {
@@ -234,13 +216,38 @@ impl CustomGenesis {
     }
 }
 
-pub struct TestRunnerBuilder {
+pub trait TestDatabase:
+    SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase
+{
+}
+impl<T: SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase> TestDatabase
+    for T
+{
+}
+
+pub type DefaultTestRunner = TestRunner<NoExtension, InMemorySubstateDatabase>;
+
+pub struct TestRunnerBuilder<E, D> {
     custom_genesis: Option<CustomGenesis>,
+    custom_extension: E,
+    custom_database: D,
     trace: bool,
     state_hashing: bool,
 }
 
-impl TestRunnerBuilder {
+impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
+    pub fn new() -> Self {
+        TestRunnerBuilder {
+            custom_genesis: None,
+            custom_extension: NoExtension,
+            custom_database: InMemorySubstateDatabase::standard(),
+            trace: true,
+            state_hashing: false,
+        }
+    }
+}
+
+impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
     pub fn without_trace(mut self) -> Self {
         self.trace = false;
         self
@@ -256,16 +263,56 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner, ActiveValidatorSet) {
-        let scrypto_interpreter = ScryptoVm {
+    pub fn with_custom_extension<NE: NativeVmExtension>(
+        self,
+        extension: NE,
+    ) -> TestRunnerBuilder<NE, D> {
+        TestRunnerBuilder::<NE, D> {
+            custom_genesis: self.custom_genesis,
+            custom_extension: extension,
+            custom_database: self.custom_database,
+            trace: self.trace,
+            state_hashing: self.state_hashing,
+        }
+    }
+
+    pub fn with_custom_database<ND: TestDatabase>(self, database: ND) -> TestRunnerBuilder<E, ND> {
+        TestRunnerBuilder::<E, ND> {
+            custom_genesis: self.custom_genesis,
+            custom_extension: self.custom_extension,
+            custom_database: database,
+            trace: self.trace,
+            state_hashing: self.state_hashing,
+        }
+    }
+
+    pub fn build_and_get_epoch(self) -> (TestRunner<E, D>, ActiveValidatorSet) {
+        //---------- Override configs for resource tracker ---------------
+        let bootstrap_trace = false;
+
+        #[cfg(not(feature = "resource_tracker"))]
+        let trace = self.trace;
+        #[cfg(feature = "resource_tracker")]
+        let trace = false;
+        //----------------------------------------------------------------
+
+        let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
-        let mut substate_db = InMemorySubstateDatabase::standard();
-
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false);
+        let native_vm = NativeVm::new_with_extension(self.custom_extension);
+        let vm = Vm::new(&scrypto_vm, native_vm.clone());
+        let mut substate_db = self.custom_database;
+        let mut bootstrapper = Bootstrapper::new(
+            NetworkDefinition::simulator(),
+            &mut substate_db,
+            vm,
+            bootstrap_trace,
+        );
         let GenesisReceipts {
-            wrap_up_receipt, ..
+            system_bootstrap_receipt,
+            data_ingestion_receipts,
+            wrap_up_receipt,
         } = match self.custom_genesis {
             Some(custom_genesis) => bootstrapper
                 .bootstrap_with_genesis_data(
@@ -280,6 +327,24 @@ impl TestRunnerBuilder {
             None => bootstrapper.bootstrap_test_default().unwrap(),
         };
 
+        let mut events = Vec::new();
+
+        events.push(
+            system_bootstrap_receipt
+                .expect_commit_success()
+                .application_events
+                .clone(),
+        );
+        for receipt in data_ingestion_receipts {
+            events.push(receipt.expect_commit_success().application_events.clone());
+        }
+        events.push(
+            wrap_up_receipt
+                .expect_commit_success()
+                .application_events
+                .clone(),
+        );
+
         // Note that 0 is not a valid private key
         let next_private_key = 100;
 
@@ -287,14 +352,17 @@ impl TestRunnerBuilder {
         let next_transaction_nonce = 100;
 
         let runner = TestRunner {
-            scrypto_interpreter,
-            substate_db,
+            scrypto_vm,
+            native_vm,
+            database: substate_db,
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
                 .map(|_| StateHashSupport::new()),
             next_private_key,
             next_transaction_nonce,
-            trace: self.trace,
+            trace,
+            collected_events: events,
+            xrd_free_credits_used: false,
         };
 
         let next_epoch = wrap_up_receipt
@@ -304,43 +372,57 @@ impl TestRunnerBuilder {
         (runner, next_epoch.validator_set)
     }
 
-    pub fn build(self) -> TestRunner {
+    pub fn build(self) -> TestRunner<E, D> {
         self.build_and_get_epoch().0
     }
 }
 
-pub struct TestRunner {
-    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
-    substate_db: InMemorySubstateDatabase,
+pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
+    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    native_vm: NativeVm<E>,
+    database: D,
     next_private_key: u64,
     next_transaction_nonce: u32,
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
+    collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    xrd_free_credits_used: bool,
+}
+
+#[cfg(feature = "post_run_db_check")]
+impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
+    fn drop(&mut self) {
+        let db_results = self
+            .check_db::<ResourceDatabaseChecker>()
+            .expect("Database should be consistent after running test");
+        println!("{:#?}", db_results);
+
+        let event_results = SystemEventChecker::<ResourceEventChecker>::new()
+            .check_all_events(&self.database, &self.collected_events)
+            .expect("Events should be consistent");
+        println!("{:#?}", event_results);
+
+        // If free credits (xrd from thin air) have been used then reconciliation will fail
+        // due to missing mint events
+        if !self.xrd_free_credits_used {
+            ResourceReconciler::reconcile(&db_results.1, &event_results)
+                .expect("Resource reconciliation failed");
+        }
+    }
 }
 
 #[derive(Clone)]
 pub struct TestRunnerSnapshot {
-    substate_db: InMemorySubstateDatabase,
+    database: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
     state_hash_support: Option<StateHashSupport>,
 }
 
-impl TestRunner {
-    pub fn builder() -> TestRunnerBuilder {
-        TestRunnerBuilder {
-            custom_genesis: None,
-            #[cfg(not(feature = "resource_tracker"))]
-            trace: true,
-            #[cfg(feature = "resource_tracker")]
-            trace: false,
-            state_hashing: false,
-        }
-    }
-
+impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
     pub fn create_snapshot(&self) -> TestRunnerSnapshot {
         TestRunnerSnapshot {
-            substate_db: self.substate_db.clone(),
+            database: self.database.clone(),
             next_private_key: self.next_private_key,
             next_transaction_nonce: self.next_transaction_nonce,
             state_hash_support: self.state_hash_support.clone(),
@@ -348,22 +430,28 @@ impl TestRunner {
     }
 
     pub fn restore_snapshot(&mut self, snapshot: TestRunnerSnapshot) {
-        self.substate_db = snapshot.substate_db;
+        self.database = snapshot.database;
         self.next_private_key = snapshot.next_private_key;
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
         self.state_hash_support = snapshot.state_hash_support;
     }
+}
 
+impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn faucet_component(&self) -> GlobalAddress {
         FAUCET.clone().into()
     }
 
-    pub fn substate_db(&self) -> &InMemorySubstateDatabase {
-        &self.substate_db
+    pub fn substate_db(&self) -> &D {
+        &self.database
     }
 
-    pub fn substate_db_mut(&mut self) -> &mut InMemorySubstateDatabase {
-        &mut self.substate_db
+    pub fn substate_db_mut(&mut self) -> &mut D {
+        &mut self.database
+    }
+
+    pub fn collected_events(&self) -> &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>> {
+        self.collected_events.as_ref()
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -378,6 +466,13 @@ impl TestRunner {
 
     pub fn new_key_pair(&mut self) -> (Secp256k1PublicKey, Secp256k1PrivateKey) {
         let private_key = Secp256k1PrivateKey::from_u64(self.next_private_key()).unwrap();
+        let public_key = private_key.public_key();
+
+        (public_key, private_key)
+    }
+
+    pub fn new_ed25519_key_pair(&mut self) -> (Ed25519PublicKey, Ed25519PrivateKey) {
+        let private_key = Ed25519PrivateKey::from_u64(self.next_private_key()).unwrap();
         let public_key = private_key.public_key();
 
         (public_key, private_key)
@@ -415,84 +510,69 @@ impl TestRunner {
     }
 
     pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataValue> {
-        // TODO: Move this to system wrapper around substate_store
-        let key = scrypto_encode(key).unwrap();
-
-        let metadata_value = self
-            .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader
+            .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
                 address.as_node_id(),
-                METADATA_KV_STORE_PARTITION,
-                &SubstateKey::Map(key),
-            )?
-            .value;
-
-        metadata_value
+                ObjectModuleId::Metadata,
+                ObjectCollectionKey::KeyValue(
+                    MetadataCollection::EntryKeyValue.collection_index(),
+                    &key.to_string(),
+                ),
+            )
+            .unwrap()
+            .map(|v| v.into_latest())
     }
 
     pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
-        let accumulator = self
-            .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ComponentRoyaltySubstate>>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let accumulator = reader
+            .read_typed_object_field::<ComponentRoyaltyAccumulatorFieldPayload>(
                 component_address.as_node_id(),
-                ROYALTY_FIELDS_PARTITION,
-                &RoyaltyField::RoyaltyAccumulator.into(),
+                ObjectModuleId::Royalty,
+                ComponentRoyaltyField::Accumulator.field_index(),
             )
             .unwrap()
-            .value
-            .0;
-        self.substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
+            .into_latest();
+
+        let balance = reader
+            .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
                 accumulator.royalty_vault.0.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &FungibleVaultField::LiquidFungible.into(),
+                ObjectModuleId::Main,
+                FungibleVaultField::Balance.field_index(),
             )
             .unwrap()
-            .value
-            .0
-            .amount()
+            .into_latest();
+
+        balance.amount()
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        let output = self
-            .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<PackageRoyaltyAccumulatorSubstate>>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let accumulator = reader
+            .read_typed_object_field::<PackageRoyaltyAccumulatorFieldPayload>(
                 package_address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &PackageField::Royalty.into(),
-            )?
-            .value
-            .0;
-
-        self.substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
-                output.royalty_vault.0.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &FungibleVaultField::LiquidFungible.into(),
+                ObjectModuleId::Main,
+                PackageField::RoyaltyAccumulator.field_index(),
             )
-            .map(|r| r.value.0.amount())
-    }
+            .ok()?
+            .into_latest();
 
-    pub fn account_balance(
-        &mut self,
-        account_address: ComponentAddress,
-        resource_address: ResourceAddress,
-    ) -> Option<Decimal> {
-        let vaults = self.get_component_vaults(account_address, resource_address);
-        let index = if resource_address.eq(&XRD) {
-            // To account for royalty vault
-            1usize
-        } else {
-            0usize
-        };
-        vaults
-            .get(index)
-            .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
+        let balance = reader
+            .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
+                accumulator.royalty_vault.0.as_node_id(),
+                ObjectModuleId::Main,
+                FungibleVaultField::Balance.field_index(),
+            )
+            .unwrap()
+            .into_latest();
+
+        Some(balance.amount())
     }
 
     pub fn find_all_nodes(&self) -> IndexSet<NodeId> {
         let mut node_ids = index_set_new();
-        for pk in self.substate_db.list_partition_keys() {
+        for pk in self.database.list_partition_keys() {
             let (node_id, _) = SpreadPrefixKeyMapper::from_db_partition_key(&pk);
             node_ids.insert(node_id);
         }
@@ -500,81 +580,85 @@ impl TestRunner {
     }
 
     pub fn find_all_components(&self) -> Vec<ComponentAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<ComponentAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| ComponentAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn find_all_packages(&self) -> Vec<PackageAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<PackageAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| PackageAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn find_all_resources(&self) -> Vec<ResourceAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<ResourceAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| ResourceAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn get_package_scrypto_schemas(
         &self,
         package_address: &PackageAddress,
-    ) -> IndexMap<Hash, ScryptoSchema> {
-        let mut schemas = index_map_new();
-        for entry in self
-            .substate_db()
-            .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
+    ) -> IndexMap<SchemaHash, VersionedScryptoSchema> {
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader
+            .collection_iter(
                 package_address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                    .unwrap(),
-            ))
-        {
-            let hash: Hash =
-                scrypto_decode(&SpreadPrefixKeyMapper::map_from_db_sort_key(&entry.0)).unwrap();
-            let value: KeyValueEntrySubstate<ScryptoSchema> = scrypto_decode(&entry.1).unwrap();
-            match value.value {
-                Some(schema) => {
-                    schemas.insert(hash, schema);
-                }
-                None => {}
-            }
-        }
-
-        schemas
+                ObjectModuleId::Main,
+                PackageCollection::SchemaKeyValue.collection_index(),
+            )
+            .unwrap()
+            .map(|(key, value)| {
+                let key = key.into_map();
+                let hash: SchemaHash = scrypto_decode(&key).unwrap();
+                let schema: PackageSchemaEntryPayload = scrypto_decode(&value).unwrap();
+                (hash, schema.content)
+            })
+            .collect()
     }
 
     pub fn get_package_blueprint_definitions(
         &self,
         package_address: &PackageAddress,
     ) -> IndexMap<BlueprintVersionKey, BlueprintDefinition> {
-        let mut definitions = index_map_new();
-        for entry in self
-            .substate_db()
-            .list_entries(&SpreadPrefixKeyMapper::to_db_partition_key(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader
+            .collection_iter(
                 package_address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                    .unwrap(),
-            ))
-        {
-            let key: BlueprintVersionKey =
-                scrypto_decode(&SpreadPrefixKeyMapper::map_from_db_sort_key(&entry.0)).unwrap();
-            let value: KeyValueEntrySubstate<BlueprintDefinition> =
-                scrypto_decode(&entry.1).unwrap();
-            match value.value {
-                Some(definition) => {
-                    definitions.insert(key, definition);
-                }
-                None => {}
-            }
-        }
+                ObjectModuleId::Main,
+                PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+            )
+            .unwrap()
+            .map(|(key, value)| {
+                let map_key = key.into_map();
+                let key: BlueprintVersionKey = scrypto_decode(&map_key).unwrap();
+                let definition: PackageBlueprintVersionDefinitionEntryPayload =
+                    scrypto_decode(&value).unwrap();
+                (key, definition.into_latest())
+            })
+            .collect()
+    }
 
-        definitions
+    pub fn sum_descendant_balance_changes(
+        &mut self,
+        commit: &CommitResult,
+        node_id: &NodeId,
+    ) -> IndexMap<ResourceAddress, BalanceChange> {
+        SubtreeVaults::new(&self.database)
+            .sum_balance_changes(node_id, commit.vault_balance_changes())
     }
 
     pub fn get_component_vaults(
@@ -582,11 +666,25 @@ impl TestRunner {
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Vec<NodeId> {
-        let node_id = component_address.as_node_id();
-        let mut vault_finder = VaultFinder::new(resource_address);
-        let mut traverser = StateTreeTraverser::new(&self.substate_db, &mut vault_finder, 100);
-        traverser.traverse_all_descendents(None, *node_id);
-        vault_finder.to_vaults()
+        SubtreeVaults::new(&self.database)
+            .get_all(component_address.as_node_id())
+            .remove(&resource_address)
+            .unwrap_or_else(|| Vec::new())
+    }
+
+    pub fn get_component_balance(
+        &mut self,
+        account_address: ComponentAddress,
+        resource_address: ResourceAddress,
+    ) -> Decimal {
+        let vaults = self.get_component_vaults(account_address, resource_address);
+        let mut sum = Decimal::ZERO;
+        for vault in vaults {
+            sum = sum
+                .safe_add(self.inspect_vault_balance(vault).unwrap())
+                .unwrap();
+        }
+        sum
     }
 
     pub fn inspect_vault_balance(&mut self, vault_id: NodeId) -> Option<Decimal> {
@@ -599,37 +697,50 @@ impl TestRunner {
     }
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let vault: Option<FungibleVaultBalanceFieldPayload> = reader
+            .read_typed_object_field(
                 &vault_id,
-                MAIN_BASE_PARTITION,
-                &FungibleVaultField::LiquidFungible.into(),
+                ObjectModuleId::Main,
+                FungibleVaultField::Balance.into(),
             )
-            .map(|output| output.value.0.amount())
+            .ok();
+
+        vault.map(|v| v.into_latest().amount())
     }
 
     pub fn inspect_non_fungible_vault(
         &mut self,
         vault_id: NodeId,
-    ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
-        let amount = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidNonFungibleVault>>(
+    ) -> Option<(Decimal, Box<dyn Iterator<Item = NonFungibleLocalId> + '_>)> {
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let vault: Option<VersionedNonFungibleVaultBalance> = reader
+            .read_typed_object_field(
                 &vault_id,
-                MAIN_BASE_PARTITION,
-                &NonFungibleVaultField::LiquidNonFungible.into(),
+                ObjectModuleId::Main,
+                NonFungibleVaultField::Balance.into(),
             )
-            .map(|vault| vault.value.0.amount);
+            .ok();
+        let amount = match vault? {
+            VersionedNonFungibleVaultBalance::V1(amount) => amount,
+        };
 
-        let mut substate_iter = self
-            .substate_db()
-            .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
+        // TODO: Remove .collect() by using SystemDatabaseReader in test_runner
+        let iter: Vec<NonFungibleLocalId> = reader
+            .collection_iter(
                 &vault_id,
-                MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
-            );
-        let id = substate_iter.next().map(|(_key, id)| id);
+                ObjectModuleId::Main,
+                NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
+            )
+            .unwrap()
+            .map(|(key, _)| {
+                let map_key = key.into_map();
+                let id: NonFungibleLocalId = scrypto_decode(&map_key).unwrap();
+                id
+            })
+            .collect();
 
-        amount.map(|amount| (amount, id))
+        Some((amount.amount, Box::new(iter.into_iter())))
     }
 
     pub fn get_component_resources(
@@ -637,9 +748,39 @@ impl TestRunner {
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
         let node_id = component_address.as_node_id();
-        let mut accounter = ResourceAccounter::new(&self.substate_db);
+        let mut accounter = ResourceAccounter::new(&self.database);
         accounter.traverse(node_id.clone());
         accounter.close().balances
+    }
+
+    pub fn get_non_fungible_data<T: NonFungibleData>(
+        &self,
+        resource: ResourceAddress,
+        non_fungible_id: NonFungibleLocalId,
+    ) -> T {
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        let payload = reader
+            .read_object_collection_entry::<_, NonFungibleResourceManagerDataEntryPayload>(
+                resource.as_node_id(),
+                ObjectModuleId::Main,
+                ObjectCollectionKey::KeyValue(
+                    NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
+                    &non_fungible_id,
+                ),
+            )
+            .unwrap()
+            .unwrap();
+
+        scrypto_decode(&scrypto_encode(&payload.content).unwrap()).unwrap()
+    }
+
+    pub fn get_kv_store_entry<K: ScryptoEncode, V: ScryptoEncode + ScryptoDecode>(
+        &self,
+        kv_store_id: Own,
+        key: &K,
+    ) -> Option<V> {
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader.read_typed_kv_entry(kv_store_id.as_node_id(), key)
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
@@ -647,7 +788,7 @@ impl TestRunner {
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "free_xrd")
-            .try_deposit_or_abort(account_address, "free_xrd")
+            .try_deposit_or_abort(account_address, None, "free_xrd")
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -656,7 +797,7 @@ impl TestRunner {
 
     pub fn new_account_advanced(&mut self, owner_role: OwnerRole) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .new_account_advanced(owner_role)
+            .new_account_advanced(owner_role, None)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -665,7 +806,7 @@ impl TestRunner {
 
         let manifest = ManifestBuilder::new()
             .get_free_xrd_from_faucet()
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -684,35 +825,45 @@ impl TestRunner {
         (pub_key, priv_key, account)
     }
 
+    pub fn new_ed25519_virtual_account(
+        &mut self,
+    ) -> (Ed25519PublicKey, Ed25519PrivateKey, ComponentAddress) {
+        let (pub_key, priv_key) = self.new_ed25519_key_pair();
+        let account =
+            ComponentAddress::virtual_account_from_public_key(&PublicKey::Ed25519(pub_key.clone()));
+        self.load_account_from_faucet(account);
+        (pub_key, priv_key, account)
+    }
+
     pub fn get_active_validator_info_by_key(&self, key: &Secp256k1PublicKey) -> ValidatorSubstate {
         let address = self.get_active_validator_with_key(key);
         self.get_validator_info(address)
     }
 
     pub fn get_validator_info(&self, address: ComponentAddress) -> ValidatorSubstate {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ValidatorSubstate>>(
+        let reader = SystemDatabaseReader::new(&self.database);
+        let substate = reader
+            .read_typed_object_field::<ValidatorStateFieldPayload>(
                 address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ValidatorField::Validator.into(),
+                ObjectModuleId::Main,
+                ValidatorField::State.field_index(),
             )
             .unwrap()
-            .value
-            .0
+            .into_latest();
+
+        substate
     }
 
     pub fn get_active_validator_with_key(&self, key: &Secp256k1PublicKey) -> ComponentAddress {
-        let substate = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<CurrentValidatorSetSubstate>>(
+        let reader = SystemDatabaseReader::new(&self.database);
+        let substate = reader
+            .read_typed_object_field::<ConsensusManagerCurrentValidatorSetFieldPayload>(
                 CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::CurrentValidatorSet.into(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::CurrentValidatorSet.field_index(),
             )
             .unwrap()
-            .value
-            .0;
-
+            .into_latest();
         substate
             .validator_set
             .get_by_public_key(key)
@@ -728,6 +879,79 @@ impl TestRunner {
         let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
         let account = self.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
         (key_pair.0, key_pair.1, account)
+    }
+
+    pub fn new_ed25519_virtual_account_with_access_controller(
+        &mut self,
+    ) -> (
+        Ed25519PublicKey,
+        Ed25519PrivateKey,
+        Ed25519PublicKey,
+        Ed25519PrivateKey,
+        Ed25519PublicKey,
+        Ed25519PrivateKey,
+        Ed25519PublicKey,
+        Ed25519PrivateKey,
+        ComponentAddress,
+        ComponentAddress,
+    ) {
+        let (pk1, sk1, account) = self.new_ed25519_virtual_account();
+        let (pk2, sk2) = self.new_ed25519_key_pair();
+        let (pk3, sk3) = self.new_ed25519_key_pair();
+        let (pk4, sk4) = self.new_ed25519_key_pair();
+
+        let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(
+            1,
+            vec![
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk3)),
+                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk4)),
+            ],
+        )));
+
+        let access_controller = self
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .call_method(account, ACCOUNT_SECURIFY_IDENT, manifest_args!())
+                    .take_all_from_worktop(ACCOUNT_OWNER_BADGE, "owner_badge")
+                    .call_function_with_name_lookup(
+                        ACCESS_CONTROLLER_PACKAGE,
+                        ACCESS_CONTROLLER_BLUEPRINT,
+                        ACCESS_CONTROLLER_CREATE_IDENT,
+                        |lookup| {
+                            (
+                                lookup.bucket("owner_badge"),
+                                RuleSet {
+                                    primary_role: access_rule.clone(),
+                                    recovery_role: access_rule.clone(),
+                                    confirmation_role: access_rule.clone(),
+                                },
+                                Some(1000u32),
+                                None::<()>,
+                            )
+                        },
+                    )
+                    .build(),
+                vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            )
+            .expect_commit_success()
+            .new_component_addresses()[0]
+            .clone();
+
+        (
+            pk1,
+            sk1,
+            pk2,
+            sk2,
+            pk3,
+            sk3,
+            pk4,
+            sk4,
+            account,
+            access_controller,
+        )
     }
 
     pub fn new_account(
@@ -762,7 +986,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_identity()
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -781,11 +1005,78 @@ impl TestRunner {
             .get_free_xrd_from_faucet()
             .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
             .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let address = receipt.expect_commit(true).new_component_addresses()[0];
         address
+    }
+
+    pub fn new_staked_validator_with_pub_key(
+        &mut self,
+        pub_key: Secp256k1PublicKey,
+        account: ComponentAddress,
+    ) -> ComponentAddress {
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
+            .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
+            .try_deposit_batch_or_abort(account, None)
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        let validator_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+        let receipt =
+            self.execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .get_free_xrd_from_faucet()
+                    .create_proof_from_account_of_non_fungibles(
+                        account,
+                        VALIDATOR_OWNER_BADGE,
+                        &btreeset!(
+                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
+                        ),
+                    )
+                    .take_all_from_worktop(XRD, "bucket")
+                    .with_bucket("bucket", |builder, bucket| {
+                        builder.call_method(
+                            validator_address,
+                            VALIDATOR_STAKE_AS_OWNER_IDENT,
+                            manifest_args!(bucket),
+                        )
+                    })
+                    .deposit_batch(account)
+                    .build(),
+                vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+            );
+        receipt.expect_commit_success();
+
+        validator_address
+    }
+
+    pub fn publish_native_package(
+        &mut self,
+        native_package_code_id: u64,
+        definition: PackageDefinition,
+    ) -> PackageAddress {
+        let receipt = self.execute_system_transaction(
+            vec![InstructionV1::CallFunction {
+                package_address: DynamicPackageAddress::Static(PACKAGE_PACKAGE),
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+                args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+                    definition,
+                    native_package_code_id,
+                    metadata: MetadataInit::default(),
+                    package_address: None,
+                }),
+            }],
+            btreeset!(AuthAddresses::system_role()),
+        );
+        let package_address: PackageAddress = receipt.expect_commit(true).output(0);
+        package_address
     }
 
     pub fn publish_package_at_address(
@@ -823,8 +1114,8 @@ impl TestRunner {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(btreeset!(AuthAddresses::system_role())),
-            FeeReserveConfig::default(),
-            ExecutionConfig::for_system_transaction(),
+            CostingParameters::default(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         );
 
         receipt.expect_commit_success();
@@ -931,8 +1222,8 @@ impl TestRunner {
             .expect("Expected raw transaction to be valid");
         self.execute_transaction(
             validated.get_executable(),
-            FeeReserveConfig::default(),
-            ExecutionConfig::for_notarized_transaction(),
+            CostingParameters::default(),
+            ExecutionConfig::for_notarized_transaction(network.clone()),
         )
     }
 
@@ -944,22 +1235,18 @@ impl TestRunner {
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
-        let nonce = self.next_transaction_nonce();
-        self.execute_transaction(
-            TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(initial_proofs.into_iter().collect()),
-            FeeReserveConfig::default(),
-            ExecutionConfig::for_test_transaction(),
+        self.execute_manifest_with_costing_params(
+            manifest,
+            initial_proofs,
+            CostingParameters::default(),
         )
     }
 
-    pub fn execute_manifest_with_cost_unit_limit<T>(
+    pub fn execute_manifest_with_costing_params<T>(
         &mut self,
         manifest: TransactionManifestV1,
         initial_proofs: T,
-        cost_unit_limit: u32,
+        costing_parameters: CostingParameters,
     ) -> TransactionReceipt
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
@@ -970,33 +1257,70 @@ impl TestRunner {
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            FeeReserveConfig::default(),
-            ExecutionConfig::for_test_transaction().with_cost_unit_limit(cost_unit_limit),
+            costing_parameters,
+            ExecutionConfig::for_test_transaction(),
+        )
+    }
+
+    pub fn execute_manifest_with_execution_cost_unit_limit<T>(
+        &mut self,
+        manifest: TransactionManifestV1,
+        initial_proofs: T,
+        execution_cost_unit_limit: u32,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            CostingParameters::default().with_execution_cost_unit_limit(execution_cost_unit_limit),
+            ExecutionConfig::for_test_transaction(),
         )
     }
 
     pub fn execute_transaction(
         &mut self,
         executable: Executable,
-        fee_reserve_config: FeeReserveConfig,
+        costing_parameters: CostingParameters,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.trace);
 
+        if executable
+            .costing_parameters()
+            .free_credit_in_xrd
+            .is_positive()
+        {
+            self.xrd_free_credits_used = true;
+        }
+
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        };
+
         let transaction_receipt = execute_transaction(
-            &mut self.substate_db,
-            &self.scrypto_interpreter,
-            &fee_reserve_config,
+            &mut self.database,
+            vm,
+            &costing_parameters,
             &execution_config,
             &executable,
         );
-        if let TransactionResult::Commit(commit) = &transaction_receipt.transaction_result {
-            self.substate_db
-                .commit(&commit.state_updates.database_updates);
+        if let TransactionResult::Commit(commit) = &transaction_receipt.result {
+            self.database.commit(&commit.state_updates.database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates.database_updates);
             }
+
+            self.collected_events
+                .push(commit.application_events.clone());
+
+            assert_receipt_substate_changes_can_be_typed(commit);
         }
         transaction_receipt
     }
@@ -1006,13 +1330,12 @@ impl TestRunner {
         preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
     ) -> Result<TransactionReceipt, PreviewError> {
-        execute_preview(
-            &self.substate_db,
-            &mut self.scrypto_interpreter,
-            network,
-            preview_intent,
-            self.trace,
-        )
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        };
+
+        execute_preview(&self.database, vm, network, preview_intent, self.trace)
     }
 
     pub fn preview_manifest(
@@ -1023,9 +1346,13 @@ impl TestRunner {
         flags: PreviewFlags,
     ) -> TransactionReceipt {
         let epoch = self.get_current_epoch();
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        };
         execute_preview(
-            &mut self.substate_db,
-            &self.scrypto_interpreter,
+            &mut self.database,
+            vm,
             &NetworkDefinition::simulator(),
             PreviewIntentV1 {
                 intent: IntentV1 {
@@ -1148,7 +1475,7 @@ impl TestRunner {
                 metadata!(),
                 Some(5.into()),
             )
-            .try_deposit_batch_or_abort(to)
+            .try_deposit_batch_or_abort(to, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1290,7 +1617,7 @@ impl TestRunner {
     }
 
     pub fn create_freezeable_non_fungible(&mut self, account: ComponentAddress) -> ResourceAddress {
-        self.create_non_fungible_resource_with_access_rules(
+        self.create_non_fungible_resource_with_roles(
             NonFungibleResourceRoles {
                 burn_roles: burn_roles! {
                     burner => rule!(allow_all);
@@ -1367,21 +1694,29 @@ impl TestRunner {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        self.create_non_fungible_resource_with_access_rules(
-            NonFungibleResourceRoles::default(),
-            account,
-        )
+        self.create_non_fungible_resource_advanced(NonFungibleResourceRoles::default(), account, 3)
     }
-
-    pub fn create_non_fungible_resource_with_access_rules(
+    pub fn create_non_fungible_resource_with_roles(
         &mut self,
         resource_roles: NonFungibleResourceRoles,
         account: ComponentAddress,
     ) -> ResourceAddress {
+        self.create_non_fungible_resource_advanced(resource_roles, account, 3)
+    }
+
+    pub fn create_non_fungible_resource_advanced(
+        &mut self,
+        resource_roles: NonFungibleResourceRoles,
+        account: ComponentAddress,
+        n: usize,
+    ) -> ResourceAddress {
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleLocalId::integer(1), EmptyNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(2), EmptyNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
+        for i in 1..n + 1 {
+            entries.insert(
+                NonFungibleLocalId::integer(i as u64),
+                EmptyNonFungibleData {},
+            );
+        }
 
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -1393,7 +1728,7 @@ impl TestRunner {
                 metadata!(),
                 Some(entries),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1415,7 +1750,7 @@ impl TestRunner {
                 metadata!(),
                 Some(amount),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1447,7 +1782,7 @@ impl TestRunner {
                 metadata!(),
                 None,
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
@@ -1477,7 +1812,7 @@ impl TestRunner {
                 metadata!(),
                 amount,
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1510,7 +1845,44 @@ impl TestRunner {
                 metadata!(),
                 amount,
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit(true).new_resource_addresses()[0]
+    }
+
+    pub fn create_freely_mintable_and_burnable_non_fungible_resource<T, V>(
+        &mut self,
+        owner_role: OwnerRole,
+        id_type: NonFungibleIdType,
+        initial_supply: Option<T>,
+        account: ComponentAddress,
+    ) -> ResourceAddress
+    where
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
+        V: ManifestEncode + NonFungibleData,
+    {
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_non_fungible_resource(
+                owner_role,
+                id_type,
+                true,
+                NonFungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(deny_all);
+                    },
+                    burn_roles: burn_roles! {
+                        burner => rule!(allow_all);
+                        burner_updater => rule!(deny_all);
+                    },
+                    ..Default::default()
+                },
+                metadata!(),
+                initial_supply,
+            )
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1534,21 +1906,27 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: Epoch) {
-        let mut substate = self
-            .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
-                &CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::ConsensusManager.into(),
+        let reader = SystemDatabaseReader::new(&self.database);
+        let mut substate = reader
+            .read_typed_object_field::<ConsensusManagerStateFieldPayload>(
+                CONSENSUS_MANAGER.as_node_id(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::State.field_index(),
+            )
+            .unwrap()
+            .into_latest();
+
+        substate.epoch = epoch;
+
+        let mut writer = SystemDatabaseWriter::new(&mut self.database);
+        writer
+            .write_typed_object_field(
+                CONSENSUS_MANAGER.as_node_id(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::State.field_index(),
+                ConsensusManagerStateFieldPayload::from_content_source(substate),
             )
             .unwrap();
-        substate.value.0.epoch = epoch;
-        self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
-            &CONSENSUS_MANAGER.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &ConsensusManagerField::ConsensusManager.into(),
-            &substate,
-        );
     }
 
     pub fn get_current_epoch(&mut self) -> Epoch {
@@ -1588,8 +1966,8 @@ impl TestRunner {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            FeeReserveConfig::default(),
-            ExecutionConfig::for_system_transaction(),
+            CostingParameters::default(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 
@@ -1618,8 +1996,8 @@ impl TestRunner {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            FeeReserveConfig::default(),
-            ExecutionConfig::for_system_transaction(),
+            CostingParameters::default(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 
@@ -1640,8 +2018,8 @@ impl TestRunner {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            FeeReserveConfig::default(),
-            ExecutionConfig::for_system_transaction(),
+            CostingParameters::default(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 
@@ -1683,28 +2061,28 @@ impl TestRunner {
     /// Reads out the substate holding the "epoch milli" timestamp reported by the proposer on the
     /// most recent round change.
     pub fn get_current_proposer_timestamp_ms(&mut self) -> i64 {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ProposerMilliTimestampSubstate>>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader
+            .read_typed_object_field::<ConsensusManagerProposerMilliTimestampFieldPayload>(
                 CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::CurrentTime.into(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::ProposerMilliTimestamp.field_index(),
             )
             .unwrap()
-            .value
-            .0
+            .into_latest()
             .epoch_milli
     }
 
     pub fn get_consensus_manager_state(&mut self) -> ConsensusManagerSubstate {
-        self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader
+            .read_typed_object_field::<ConsensusManagerStateFieldPayload>(
                 CONSENSUS_MANAGER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &ConsensusManagerField::ConsensusManager.into(),
+                ObjectModuleId::Main,
+                ConsensusManagerField::State.field_index(),
             )
             .unwrap()
-            .value
-            .0
+            .into_latest()
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
@@ -1724,61 +2102,53 @@ impl TestRunner {
     pub fn event_schema(
         &self,
         event_type_identifier: &EventTypeIdentifier,
-    ) -> (LocalTypeIndex, ScryptoSchema) {
-        let (package_address, schema_pointer) = match event_type_identifier {
-            EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
-                match node_module {
-                    ObjectModuleId::AccessRules => {
-                        (ACCESS_RULES_MODULE_PACKAGE, schema_pointer.clone())
-                    }
-                    ObjectModuleId::Royalty => (ROYALTY_MODULE_PACKAGE, schema_pointer.clone()),
-                    ObjectModuleId::Metadata => (METADATA_MODULE_PACKAGE, schema_pointer.clone()),
+    ) -> (LocalTypeIndex, VersionedScryptoSchema) {
+        let (blueprint_id, name) = match event_type_identifier {
+            EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
+                let blueprint_id = match node_module {
                     ObjectModuleId::Main => {
-                        let type_info = self
-                            .substate_db()
-                            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                                node_id,
-                                TYPE_INFO_FIELD_PARTITION,
-                                &TypeInfoField::TypeInfo.into(),
-                            )
-                            .unwrap();
-
+                        let reader = SystemDatabaseReader::new(self.substate_db());
+                        let type_info = reader.get_type_info(node_id).unwrap();
                         match type_info {
                             TypeInfoSubstate::Object(ObjectInfo {
-                                blueprint_id: blueprint,
+                                blueprint_info: BlueprintInfo { blueprint_id, .. },
                                 ..
-                            }) => (blueprint.package_address, *schema_pointer),
+                            }) => blueprint_id,
                             _ => {
                                 panic!("No event schema.")
                             }
                         }
                     }
-                }
+                    module @ _ => module.static_blueprint().unwrap(),
+                };
+                (blueprint_id, event_name.clone())
             }
-            EventTypeIdentifier(Emitter::Function(node_id, ..), schema_pointer) => (
-                PackageAddress::new_or_panic(node_id.0),
-                schema_pointer.clone(),
-            ),
+            EventTypeIdentifier(Emitter::Function(blueprint_id), event_name) => {
+                (blueprint_id.clone(), event_name.clone())
+            }
         };
 
-        match schema_pointer {
-            TypePointer::Package(schema_hash, index) => {
-                let schema = self
-                    .substate_db()
-                    .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
-                        package_address.as_node_id(),
-                        MAIN_BASE_PARTITION
-                            .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
-                            .unwrap(),
-                        &SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()),
-                    )
-                    .unwrap()
-                    .value
-                    .unwrap();
+        let system_reader = SystemDatabaseReader::new(self.substate_db());
+        let definition = system_reader
+            .get_blueprint_definition(&blueprint_id)
+            .unwrap();
+        let schema_pointer = definition
+            .interface
+            .get_event_payload_def(name.as_str())
+            .unwrap();
 
-                (index, schema)
+        match schema_pointer {
+            BlueprintPayloadDef::Static(type_identifier) => {
+                let reader = SystemDatabaseReader::new(self.substate_db());
+                let schema = reader
+                    .get_schema(
+                        blueprint_id.package_address.as_node_id(),
+                        &type_identifier.0,
+                    )
+                    .unwrap();
+                (type_identifier.1, schema)
             }
-            TypePointer::Instance(_instance_index) => {
+            BlueprintPayloadDef::Generic(_instance_index) => {
                 todo!()
             }
         }
@@ -1787,6 +2157,7 @@ impl TestRunner {
     pub fn event_name(&self, event_type_identifier: &EventTypeIdentifier) -> String {
         let (local_type_index, schema) = self.event_schema(event_type_identifier);
         schema
+            .v1()
             .resolve_type_metadata(local_type_index)
             .unwrap()
             .get_name_string()
@@ -1801,6 +2172,7 @@ impl TestRunner {
             let (local_type_index, schema) =
                 sbor::generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
             schema
+                .v1()
                 .resolve_type_metadata(local_type_index)
                 .unwrap()
                 .get_name_string()
@@ -1817,6 +2189,61 @@ impl TestRunner {
             .filter(|(id, _data)| self.is_event_name_equal::<T>(id))
             .map(|(_id, data)| scrypto_decode::<T>(data).unwrap())
             .collect::<Vec<_>>()
+    }
+
+    pub fn check_db<A: ApplicationChecker>(
+        &self,
+    ) -> Result<
+        (SystemDatabaseCheckerResults, A::ApplicationCheckerResults),
+        SystemDatabaseCheckError,
+    > {
+        let mut checker = SystemDatabaseChecker::<A>::new();
+        checker.check_db(&self.database)
+    }
+
+    pub fn check_events<A: ApplicationEventChecker>(
+        &self,
+    ) -> Result<A::ApplicationEventCheckerResults, SystemEventCheckerError> {
+        let mut event_checker = SystemEventChecker::<A>::new();
+        event_checker.check_all_events(&self.database, self.collected_events())
+    }
+}
+
+pub struct SubtreeVaults<'d, D> {
+    database: &'d D,
+}
+
+impl<'d, D: SubstateDatabase> SubtreeVaults<'d, D> {
+    pub fn new(database: &'d D) -> Self {
+        Self { database }
+    }
+
+    pub fn get_all(&self, node_id: &NodeId) -> IndexMap<ResourceAddress, Vec<NodeId>> {
+        let mut vault_finder = VaultFinder::new();
+        let mut traverser = StateTreeTraverser::new(self.database, &mut vault_finder, 100);
+        traverser.traverse_subtree(None, *node_id);
+        vault_finder.to_vaults()
+    }
+
+    pub fn sum_balance_changes(
+        &self,
+        node_id: &NodeId,
+        vault_balance_changes: &IndexMap<NodeId, (ResourceAddress, BalanceChange)>,
+    ) -> IndexMap<ResourceAddress, BalanceChange> {
+        self.get_all(node_id)
+            .into_iter()
+            .filter_map(|(traversed_resource, vault_ids)| {
+                vault_ids
+                    .into_iter()
+                    .filter_map(|vault_id| vault_balance_changes.get(&vault_id).cloned())
+                    .map(|(reported_resource, change)| {
+                        assert_eq!(reported_resource, traversed_resource);
+                        change
+                    })
+                    .reduce(|left, right| left + right)
+                    .map(|change| (traversed_resource, change))
+            })
+            .collect()
     }
 }
 
@@ -1924,11 +2351,11 @@ pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
 ) -> PackageDefinition {
-    PackageDefinition::single_test_function(blueprint_name, function_name)
+    PackageDefinition::new_single_function_test_definition(blueprint_name, function_name)
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
-struct EmptyNonFungibleData {}
+pub struct EmptyNonFungibleData {}
 
 pub struct TransactionParams {
     pub start_epoch_inclusive: Epoch,
@@ -1959,4 +2386,32 @@ pub fn create_notarized_transaction(
         .sign(&sk2)
         .notarize(&sk_notary)
         .build()
+}
+
+pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
+    let system_updates = &commit_result.state_updates.system_updates;
+    for ((node_id, partition_num), partition_updates) in system_updates.into_iter() {
+        for (substate_key, database_update) in partition_updates.into_iter() {
+            let typed_substate_key =
+                to_typed_substate_key(node_id.entity_type().unwrap(), *partition_num, substate_key)
+                    .expect("Substate key should be typeable");
+            if !typed_substate_key.value_is_mappable() {
+                continue;
+            }
+            match database_update {
+                DatabaseUpdate::Set(raw_value) => {
+                    // Check that typed value mapping works
+                    to_typed_substate_value(&typed_substate_key, raw_value)
+                        .expect("Substate value should be typeable");
+                }
+                DatabaseUpdate::Delete => {}
+            }
+        }
+    }
+}
+
+pub fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
+    for (event_type_identifier, event_data) in &commit_result.application_events {
+        let _ = to_typed_native_event(event_type_identifier, event_data).unwrap();
+    }
 }

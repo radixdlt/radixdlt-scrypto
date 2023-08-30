@@ -1,4 +1,3 @@
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerCompareCurrentTimeInput, ConsensusManagerGetCurrentTimeInput, TimePrecision,
     CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
@@ -7,7 +6,7 @@ use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::time::*;
 use sbor::rust::fmt::Debug;
-use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 /// The system clock
 #[derive(Debug)]
@@ -21,14 +20,11 @@ impl Clock {
 
     /// Returns the current timestamp (in seconds), rounded down to the specified precision
     pub fn current_time(precision: TimePrecision) -> Instant {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                CONSENSUS_MANAGER.as_node_id(),
-                CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
-                scrypto_encode(&ConsensusManagerGetCurrentTimeInput { precision }).unwrap(),
-            )
-            .unwrap();
+        let rtn = ScryptoVmV1Api::object_call(
+            CONSENSUS_MANAGER.as_node_id(),
+            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
+            scrypto_encode(&ConsensusManagerGetCurrentTimeInput { precision }).unwrap(),
+        );
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -64,19 +60,16 @@ impl Clock {
         precision: TimePrecision,
         operator: TimeComparisonOperator,
     ) -> bool {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                CONSENSUS_MANAGER.as_node_id(),
-                CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
-                scrypto_encode(&ConsensusManagerCompareCurrentTimeInput {
-                    instant,
-                    precision,
-                    operator,
-                })
-                .unwrap(),
-            )
-            .unwrap();
+        let rtn = ScryptoVmV1Api::object_call(
+            CONSENSUS_MANAGER.as_node_id(),
+            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
+            scrypto_encode(&ConsensusManagerCompareCurrentTimeInput {
+                instant,
+                precision,
+                operator,
+            })
+            .unwrap(),
+        );
 
         scrypto_decode(&rtn).unwrap()
     }

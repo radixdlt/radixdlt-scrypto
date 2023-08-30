@@ -87,6 +87,7 @@ pub trait NativeFungibleVault {
 pub trait NativeNonFungibleVault {
     fn non_fungible_local_ids<Y, E: Debug + ScryptoDecode>(
         &self,
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
@@ -222,8 +223,8 @@ impl NativeVault for Vault {
     where
         Y: ClientApi<E>,
     {
-        let info = api.get_object_info(self.0.as_node_id())?;
-        Ok(ResourceAddress::try_from(info.get_outer_object().as_ref()).unwrap())
+        let address = api.get_outer_object(self.0.as_node_id())?;
+        Ok(ResourceAddress::try_from(address.into_node_id().0).unwrap())
     }
 
     fn burn<Y, E: Debug + ScryptoDecode>(&mut self, amount: Decimal, api: &mut Y) -> Result<(), E>
@@ -359,6 +360,7 @@ impl NativeNonFungibleVault for Vault {
 
     fn non_fungible_local_ids<Y, E: Debug + ScryptoDecode>(
         &self,
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
@@ -367,7 +369,7 @@ impl NativeNonFungibleVault for Vault {
         let rtn = api.call_method(
             self.0.as_node_id(),
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput {}).unwrap(),
+            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

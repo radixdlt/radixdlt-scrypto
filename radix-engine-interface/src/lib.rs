@@ -9,6 +9,7 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 pub mod api;
 pub mod blueprints;
 pub mod constants;
+pub mod hooks;
 pub mod traits;
 pub mod types;
 
@@ -47,7 +48,9 @@ pub mod prelude {
     pub use radix_engine_common::prelude::*;
 
     // Exports from this crate
+    pub use crate::api::field_api::*;
     pub use crate::api::node_modules::metadata::*;
+    pub use crate::api::*;
     pub use crate::blueprints::resource::NonFungibleGlobalId;
     pub use crate::macros::*;
     pub use crate::schema::*;
@@ -58,4 +61,8 @@ pub mod prelude {
         metadata, metadata_init, metadata_init_set_entry, metadata_roles, mint_roles,
         non_fungible_data_update_roles, recall_roles, role_entry, roles2, rule, withdraw_roles,
     };
+}
+
+pub(crate) mod internal_prelude {
+    pub use crate::prelude::*;
 }

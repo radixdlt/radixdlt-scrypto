@@ -21,14 +21,15 @@ mod leaks {
         }
 
         pub fn dangling_vault() {
-            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(1);
+                .mint_initial_supply(1)
+                .into();
             let _vault = Vault::with_bucket(bucket);
         }
 
@@ -40,7 +41,8 @@ mod leaks {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(1);
+                .mint_initial_supply(1)
+                .into();
             bucket
         }
 
@@ -51,14 +53,15 @@ mod leaks {
         }
 
         pub fn dangling_bucket_with_proof() -> Proof {
-            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .mint_initial_supply(1);
+                .mint_initial_supply(1)
+                .into();
 
             bucket.create_proof_of_all()
         }

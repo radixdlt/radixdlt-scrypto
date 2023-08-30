@@ -10,7 +10,7 @@ use transaction::prelude::*;
 #[test]
 fn package_burn_is_only_callable_within_resource_package() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .create_fungible_resource(
@@ -25,10 +25,7 @@ fn package_burn_is_only_callable_within_resource_package() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     // Act
@@ -52,7 +49,7 @@ fn package_burn_is_only_callable_within_resource_package() {
 #[test]
 fn can_burn_by_amount_from_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -68,10 +65,7 @@ fn can_burn_by_amount_from_fungible_vault() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -90,10 +84,7 @@ fn can_burn_by_amount_from_fungible_vault() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -114,7 +105,7 @@ fn can_burn_by_amount_from_fungible_vault() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -130,10 +121,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -158,10 +146,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -173,16 +158,14 @@ fn can_burn_by_amount_from_non_fungible_vault() {
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!(1)
-    )
+    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    assert_eq!(amount, dec!(1))
 }
 
 #[test]
 fn can_burn_by_ids_from_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -198,10 +181,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -226,10 +206,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -254,7 +231,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
 #[test]
 fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -273,10 +250,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -295,10 +269,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -320,7 +291,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -339,10 +310,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -367,10 +335,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -383,16 +348,14 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!(1)
-    )
+    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    assert_eq!(amount, dec!(1))
 }
 
 #[test]
 fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -411,10 +374,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -439,10 +399,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -468,7 +425,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
 #[test]
 fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -487,10 +444,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -509,10 +463,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -533,7 +484,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
 #[test]
 fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -552,10 +503,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -580,10 +528,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -595,16 +540,14 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
 
     // Assert
     receipt.expect_specific_failure(is_auth_unauthorized_error);
-    assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("2")
-    )
+    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    assert_eq!(amount, dec!("2"))
 }
 
 #[test]
 fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -623,10 +566,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -651,10 +591,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -679,7 +616,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
 #[test]
 fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -695,10 +632,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -717,10 +651,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -741,7 +672,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -757,10 +688,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -785,10 +713,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -800,16 +725,14 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!(1)
-    )
+    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    assert_eq!(amount, dec!(1))
 }
 
 #[test]
 fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -825,10 +748,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     let component_address = {
@@ -853,10 +773,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
@@ -881,7 +798,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
 #[test]
 fn can_burn_by_amount_from_fungible_account_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -895,15 +812,12 @@ fn can_burn_by_amount_from_fungible_account_vault() {
                 metadata!(),
                 Some(100.into()),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     // Act
@@ -920,9 +834,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner
-            .account_balance(account, resource_address)
-            .unwrap(),
+        test_runner.get_component_balance(account, resource_address),
         dec!("50")
     )
 }
@@ -930,7 +842,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_account_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -947,15 +859,12 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 )),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     // Act
@@ -968,9 +877,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner
-            .account_balance(account, resource_address)
-            .unwrap(),
+        test_runner.get_component_balance(account, resource_address),
         dec!(1)
     )
 }
@@ -978,7 +885,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
 #[test]
 fn can_burn_by_ids_from_non_fungible_account_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -995,15 +902,12 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 )),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
-            .new_resource_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_resource_addresses()[0]
     };
 
     // Act
@@ -1020,14 +924,15 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner
-            .account_balance(account, resource_address)
-            .unwrap(),
+        test_runner.get_component_balance(account, resource_address),
         dec!(1)
     )
 }
 
-fn get_vault_id(test_runner: &mut TestRunner, component_address: ComponentAddress) -> NodeId {
+fn get_vault_id(
+    test_runner: &mut DefaultTestRunner,
+    component_address: ComponentAddress,
+) -> NodeId {
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();

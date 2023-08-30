@@ -5,7 +5,7 @@ use transaction::prelude::*;
 #[test]
 fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
@@ -27,7 +27,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
 #[test]
 fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
@@ -49,7 +49,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
 #[test]
 fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -78,7 +78,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
 #[test]
 fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -112,7 +112,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
 #[test]
 fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
@@ -134,7 +134,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
 #[test]
 fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
@@ -156,7 +156,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
 #[test]
 fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -185,7 +185,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
 #[test]
 fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()

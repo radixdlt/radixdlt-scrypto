@@ -1,12 +1,14 @@
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::kernel::kernel_callback_api::KernelCallbackObject;
-use crate::track::interface::{NodeSubstates, StoreAccessInfo};
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
+    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::types::*;
-use radix_engine_interface::api::field_api::LockFlags;
 
 pub trait SystemModule<M: KernelCallbackObject> {
     //======================
@@ -26,27 +28,15 @@ pub trait SystemModule<M: KernelCallbackObject> {
     // Invocation events
     //
     // -> BeforeInvoke
-    // -> BeforePushFrame
     //        -> ExecutionStart
     //        -> ExecutionFinish
-    // -> AfterPopFrame
     // -> AfterInvoke
     //======================
 
     #[inline(always)]
     fn before_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
-        _invocation: &KernelInvocation,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn before_push_frame<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _callee: &Actor,
-        _message: &mut Message,
-        _args: &IndexedScryptoValue,
+        _invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -59,15 +49,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_execution_finish<Y: KernelApi<M>>(
         _api: &mut Y,
-        _up_movement: &Message,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn after_pop_frame<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _dropped_actor: &Actor,
+        _message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -75,7 +57,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn after_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
-        _output_size: usize,
+        _output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -83,6 +65,11 @@ pub trait SystemModule<M: KernelCallbackObject> {
     //======================
     // RENode events
     //======================
+
+    #[inline(always)]
+    fn on_pin_node(_system: &mut M, _node_id: &NodeId) -> Result<(), RuntimeError> {
+        Ok(())
+    }
 
     #[inline(always)]
     fn on_allocate_node_id<Y: KernelApi<M>>(
@@ -93,46 +80,25 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn before_create_node<Y: KernelApi<M>>(
+    fn on_create_node<Y: KernelInternalApi<M>>(
         _api: &mut Y,
-        _node_id: &NodeId,
-        _node_substates: &NodeSubstates,
+        _event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn after_create_node<Y: KernelApi<M>>(
+    fn on_move_module<Y: KernelInternalApi<M>>(
         _api: &mut Y,
-        _node_id: &NodeId,
-        _total_substate_size: usize,
-        _store_access: &StoreAccessInfo,
+        _event: &MoveModuleEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn after_move_modules<Y: KernelApi<M>>(
+    fn on_drop_node<Y: KernelInternalApi<M>>(
         _api: &mut Y,
-        _src_node_id: &NodeId,
-        _dest_node_id: &NodeId,
-        _store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn before_drop_node<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _node_id: &NodeId,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn after_drop_node<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _total_substate_size: usize,
+        _event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -140,79 +106,78 @@ pub trait SystemModule<M: KernelCallbackObject> {
     //======================
     // Substate events
     //======================
-
     #[inline(always)]
-    fn before_open_substate<Y: KernelApi<M>>(
-        _api: &mut Y,
+    fn on_mark_substate_as_transient(
+        _system: &mut M,
         _node_id: &NodeId,
-        _partition_num: &PartitionNumber,
-        _offset: &SubstateKey,
-        _flags: &LockFlags,
+        _partition_number: &PartitionNumber,
+        _substate_key: &SubstateKey,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn after_open_substate<Y: KernelApi<M>>(
+    fn on_open_substate<Y: KernelInternalApi<M>>(
         _api: &mut Y,
-        _lock_handle: LockHandle,
-        _node_id: &NodeId,
-        _store_access: &StoreAccessInfo,
-        _size: usize,
+        _event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_read_substate<Y: KernelApi<M>>(
+    fn on_read_substate<Y: KernelInternalApi<M>>(
         _api: &mut Y,
-        _lock_handle: LockHandle,
-        _value_size: usize,
-        _store_access: &StoreAccessInfo,
+        _event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_write_substate<Y: KernelApi<M>>(
+    fn on_write_substate<Y: KernelInternalApi<M>>(
         _api: &mut Y,
-        _lock_handle: LockHandle,
-        _value_size: usize,
-        _store_access: &StoreAccessInfo,
+        _event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_close_substate<Y: KernelApi<M>>(
+    fn on_close_substate<Y: KernelInternalApi<M>>(
         _api: &mut Y,
-        _lock_handle: LockHandle,
-        _store_access: &StoreAccessInfo,
+        _event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_scan_substate<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _store_access: &StoreAccessInfo,
+    fn on_set_substate(_system: &mut M, _event: &SetSubstateEvent) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn on_remove_substate(
+        _system: &mut M,
+        _event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_set_substate<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _value_size: usize,
-        _store_access: &StoreAccessInfo,
+    fn on_scan_keys(_system: &mut M, _event: &ScanKeysEvent) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn on_drain_substates(
+        _system: &mut M,
+        _event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_take_substates<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _store_access: &StoreAccessInfo,
+    fn on_scan_sorted_substates(
+        _system: &mut M,
+        _event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

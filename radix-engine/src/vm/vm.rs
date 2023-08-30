@@ -1,21 +1,39 @@
-use crate::blueprints::package::{PackageError, VmType};
+use crate::blueprints::package::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
-use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::types::*;
 use crate::vm::wasm::{WasmEngine, WasmValidator};
-use crate::vm::{NativeVm, ScryptoVm};
+use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::*;
 
-pub struct Vm<'g, W: WasmEngine> {
+pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,
+    pub native_vm: NativeVm<E>,
 }
 
-impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
+impl<'g, W: WasmEngine, E: NativeVmExtension> Vm<'g, W, E> {
+    pub fn new(scrypto_vm: &'g ScryptoVm<W>, native_vm: NativeVm<E>) -> Self {
+        Self {
+            scrypto_vm,
+            native_vm,
+        }
+    }
+}
+
+impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
+    fn clone(&self) -> Self {
+        Self {
+            scrypto_vm: self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        }
+    }
+}
+
+impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
     fn invoke<Y>(
         address: &PackageAddress,
         export: PackageExport,
@@ -44,14 +62,14 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                 SystemLockData::default(),
             )?;
             let vm_type = api.kernel_read_substate(handle)?;
-            let vm_type: KeyValueEntrySubstate<PackageVmTypeSubstate> = vm_type.as_typed().unwrap();
+            let vm_type: PackageCodeVmTypeEntrySubstate = vm_type.as_typed().unwrap();
             api.kernel_close_substate(handle)?;
             vm_type
-                .value
+                .into_value()
                 .expect(&format!("Vm type not found: {:?}", export))
         };
 
-        let output = match vm_type.vm_type {
+        let output = match vm_type.into_latest().vm_type {
             VmType::Native => {
                 let original_code = {
                     let handle = api.kernel_open_substate_with_default(
@@ -68,15 +86,19 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         SystemLockData::default(),
                     )?;
                     let original_code = api.kernel_read_substate(handle)?;
-                    let original_code: KeyValueEntrySubstate<PackageOriginalCodeSubstate> =
+                    let original_code: PackageCodeOriginalCodeEntrySubstate =
                         original_code.as_typed().unwrap();
                     api.kernel_close_substate(handle)?;
                     original_code
-                        .value
+                        .into_value()
                         .expect(&format!("Original code not found: {:?}", export))
                 };
 
-                let mut vm_instance = { NativeVm::create_instance(address, &original_code.code)? };
+                let mut vm_instance = api
+                    .kernel_get_system()
+                    .callback_obj
+                    .native_vm
+                    .create_instance(address, &original_code.into_latest().code)?;
                 let output = { vm_instance.invoke(export.export_name.as_str(), input, api)? };
 
                 output
@@ -97,23 +119,28 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         SystemLockData::default(),
                     )?;
                     let instrumented_code = api.kernel_read_substate(handle)?;
-                    let instrumented_code: KeyValueEntrySubstate<PackageInstrumentedCodeSubstate> =
+                    let instrumented_code: PackageCodeInstrumentedCodeEntrySubstate =
                         instrumented_code.as_typed().unwrap();
                     api.kernel_close_substate(handle)?;
                     instrumented_code
-                        .value
+                        .into_value()
                         .expect(&format!("Instrumented code not found: {:?}", export))
+                        .into_latest()
                 };
 
                 let mut scrypto_vm_instance = {
                     api.kernel_get_system()
                         .callback_obj
                         .scrypto_vm
-                        .create_instance(address, export.code_hash, &instrumented_code.code)
+                        .create_instance(
+                            address,
+                            export.code_hash,
+                            &instrumented_code.instrumented_code,
+                        )
                 };
 
                 api.consume_cost_units(ClientCostingEntry::PrepareWasmCode {
-                    size: instrumented_code.code.len(),
+                    size: instrumented_code.instrumented_code.len(),
                 })?;
 
                 let output =
@@ -166,8 +193,13 @@ impl VmPackageValidation {
                     schema:
                         BlueprintSchemaInit {
                             generics,
-                            state: BlueprintStateSchemaInit { collections, .. },
+                            state:
+                                BlueprintStateSchemaInit {
+                                    collections,
+                                    fields,
+                                },
                             functions,
+                            hooks,
                             ..
                         },
                     ..
@@ -200,10 +232,42 @@ impl VmPackageValidation {
                         ));
                     }
 
-                    if !functions.virtual_lazy_load_functions.is_empty() {
+                    if fields.len() > 1 {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::PackageError(PackageError::WasmUnsupported(
-                                "Lazy load functions not supported".to_string(),
+                                "More than 1 substate field not supported".to_string(),
+                            )),
+                        ));
+                    }
+
+                    for field in fields {
+                        match &field.condition {
+                            Condition::Always => {}
+                            _ => {
+                                return Err(RuntimeError::ApplicationError(
+                                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                        "Conditional fields are not supported".to_string(),
+                                    )),
+                                ));
+                            }
+                        }
+
+                        match field.transience {
+                            FieldTransience::NotTransient => {}
+                            _ => {
+                                return Err(RuntimeError::ApplicationError(
+                                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                        "Transient fields are not supported".to_string(),
+                                    )),
+                                ));
+                            }
+                        }
+                    }
+
+                    if !hooks.hooks.is_empty() {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                "Hooks not supported".to_string(),
                             )),
                         ));
                     }

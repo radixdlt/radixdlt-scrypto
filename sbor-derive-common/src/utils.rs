@@ -125,7 +125,10 @@ pub fn extract_typed_attributes(
                 format!("Attribute content is not valid"),
             ));
         };
-        let Meta::List(MetaList { nested: options, .. }) = meta else {
+        let Meta::List(MetaList {
+            nested: options, ..
+        }) = meta
+        else {
             return Err(Error::new(
                 attribute.span(),
                 format!("Expected list-based attribute as #[{name}(..)]"),
@@ -187,7 +190,6 @@ pub fn extract_typed_attributes(
                 }
             }
         }
-        return Ok(fields);
     }
 
     Ok(fields)
@@ -361,7 +363,8 @@ pub fn parse_comma_separated_types(source_string: &str) -> syn::Result<Vec<Type>
 }
 
 fn get_child_types(attributes: &[Attribute], existing_generics: &Generics) -> Result<Vec<Type>> {
-    let Some(comma_separated_types) = get_sbor_attribute_string_value(attributes, "child_types")? else {
+    let Some(comma_separated_types) = get_sbor_attribute_string_value(attributes, "child_types")?
+    else {
         // If no explicit child_types list is set, we use all pre-existing generic type parameters.
         // This means (eg) that they all have to implement the relevant trait (Encode/Decode/Describe)
         // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
@@ -372,13 +375,20 @@ fn get_child_types(attributes: &[Attribute], existing_generics: &Generics) -> Re
     parse_comma_separated_types(&comma_separated_types)
 }
 
-fn get_types_requiring_categorize_bound(
+fn get_types_requiring_categorize_bound_for_encode_and_decode(
     attributes: &[Attribute],
     child_types: &[Type],
 ) -> Result<Vec<Type>> {
-    let Some(comma_separated_types) = get_sbor_attribute_string_value(attributes, "categorize_types")? else {
+    let Some(comma_separated_types) =
+        get_sbor_attribute_string_value(attributes, "categorize_types")?
+    else {
         // A categorize bound is only needed for child types when you have a collection, eg Vec<T>
         // But if no explicit "categorize_types" is set, we assume all are needed.
+        // > Note as of Aug 2023:
+        //   This is perhaps the wrong call.
+        //   In future, I'd suggest:
+        //   - Change this to assume none, and add categorize_child_types_for_encode if needed.
+        //   - Add separate categorize_child_types_for_categorize - and also default to not needed.
         // These can be removed / overriden with the "categorize_types" field
         return Ok(child_types.to_owned());
     };
@@ -573,7 +583,8 @@ pub fn build_decode_generics<'a>(
     let decoder_generic: Path = parse_str(&decoder_label)?;
 
     let child_types = get_child_types(&attributes, &impl_generics)?;
-    let categorize_types = get_types_requiring_categorize_bound(&attributes, &child_types)?;
+    let categorize_types =
+        get_types_requiring_categorize_bound_for_encode_and_decode(&attributes, &child_types)?;
 
     let mut where_clause = where_clause.cloned();
     if child_types.len() > 0 || categorize_types.len() > 0 {
@@ -638,7 +649,8 @@ pub fn build_encode_generics<'a>(
     let encoder_generic: Path = parse_str(&encoder_label)?;
 
     let child_types = get_child_types(&attributes, &impl_generics)?;
-    let categorize_types = get_types_requiring_categorize_bound(&attributes, &child_types)?;
+    let categorize_types =
+        get_types_requiring_categorize_bound_for_encode_and_decode(&attributes, &child_types)?;
 
     let mut where_clause = where_clause.cloned();
     if child_types.len() > 0 || categorize_types.len() > 0 {
@@ -827,9 +839,13 @@ mod tests {
         let attr: Attribute = parse_quote! {
             #[sbor(skip, custom_value_kind = "NoCustomValueKind")]
         };
-        let extracted = extract_typed_attributes(&[attr], "sbor").unwrap();
+        let attr2: Attribute = parse_quote! {
+            #[sbor(skip3)]
+        };
+        let extracted = extract_typed_attributes(&[attr, attr2], "sbor").unwrap();
         assert_eq!(extracted.get_bool_value("skip").unwrap(), true);
         assert_eq!(extracted.get_bool_value("skip2").unwrap(), false);
+        assert_eq!(extracted.get_bool_value("skip3").unwrap(), true);
         assert!(matches!(
             extracted.get_bool_value("custom_value_kind"),
             Err(_)

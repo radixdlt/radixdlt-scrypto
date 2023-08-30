@@ -23,7 +23,12 @@ extern_blueprint_internal! {
     "GlobalMultiResourcePool",
     MultiResourcePoolFunctions
     {
-        fn instantiate(owner_role: OwnerRole, pool_manager_rule: AccessRule, resource_addresses: Vec<ResourceAddress>) -> Global<MultiResourcePool>;
+        fn instantiate(
+            owner_role: OwnerRole,
+            pool_manager_rule: AccessRule,
+            resource_addresses: Vec<ResourceAddress>,
+            address_reservation: Option<GlobalAddressReservation>
+        ) -> Global<MultiResourcePool>;
     },
     {
         fn contribute(&mut self, buckets: Vec<Bucket>) -> (Bucket, Vec<Bucket>);
@@ -55,7 +60,12 @@ extern_blueprint_internal! {
     "GlobalOneResourcePool",
     OneResourcePoolFunctions
     {
-        fn instantiate(owner_role: OwnerRole, pool_manager_rule: AccessRule, resource_address: ResourceAddress) -> Global<OneResourcePool>;
+        fn instantiate(
+            owner_role: OwnerRole,
+            pool_manager_rule: AccessRule,
+            resource_address: ResourceAddress,
+            address_reservation: Option<GlobalAddressReservation>
+        ) -> Global<OneResourcePool>;
     },
     {
         fn contribute(&mut self, bucket: Bucket) -> Bucket;
@@ -87,7 +97,12 @@ extern_blueprint_internal! {
     "GlobalTwoResourcePool",
     TwoResourcePoolFunctions
     {
-        fn instantiate(owner_role: OwnerRole, pool_manager_rule: AccessRule, resource_addresses: (ResourceAddress, ResourceAddress)) -> Global<TwoResourcePool>;
+        fn instantiate(
+            owner_role: OwnerRole,
+            pool_manager_rule: AccessRule,
+            resource_addresses: (ResourceAddress, ResourceAddress),
+            address_reservation: Option<GlobalAddressReservation>
+        ) -> Global<TwoResourcePool>;
     },
     {
         fn contribute(&mut self, buckets: (Bucket, Bucket)) -> (Bucket, Option<Bucket>);
@@ -125,8 +140,9 @@ extern_blueprint_internal! {
     {
         fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal);
         fn burn_non_fungibles(&mut self, resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>);
-        fn change_account_default_deposit_rule(&self, default_deposit_rule: AccountDefaultDepositRule);
-        fn configure_resource_deposit_rule(&self, resource_address: ResourceAddress, resource_deposit_configuration: ResourceDepositRule);
+        fn set_default_deposit_rule(&self, default: DefaultDepositRule);
+        fn set_resource_preference(&self, resource_address: ResourceAddress, resource_preference: ResourcePreference);
+        fn remove_resource_preference(&self, resource_address: ResourceAddress);
         fn create_proof(&self, resource_address: ResourceAddress) -> Proof;
         fn create_proof_of_amount(&self, resource_address: ResourceAddress, amount: Decimal) -> Proof;
         fn create_proof_of_non_fungibles(&self, resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>) -> Proof;
@@ -137,12 +153,14 @@ extern_blueprint_internal! {
         fn lock_fee_and_withdraw(&mut self, amount_to_lock: Decimal, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
         fn lock_fee_and_withdraw_non_fungibles(&mut self, amount_to_lock: Decimal, resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>) -> Bucket;
         fn securify(&mut self) -> Bucket;
-        fn try_deposit_batch_or_abort(&mut self, buckets: Vec<Bucket>);
-        fn try_deposit_batch_or_refund(&mut self, buckets: Vec<Bucket>) -> Vec<Bucket>;
-        fn try_deposit_or_abort(&mut self, bucket: Bucket);
-        fn try_deposit_or_refund(&mut self, bucket: Bucket) -> Option<Bucket>;
+        fn try_deposit_batch_or_abort(&mut self, buckets: Vec<Bucket>, authorized_depositor_badge: Option<ResourceOrNonFungible>);
+        fn try_deposit_batch_or_refund(&mut self, buckets: Vec<Bucket>, authorized_depositor_badge: Option<ResourceOrNonFungible>) -> Option<Vec<Bucket>>;
+        fn try_deposit_or_abort(&mut self, bucket: Bucket, authorized_depositor_badge: Option<ResourceOrNonFungible>);
+        fn try_deposit_or_refund(&mut self, bucket: Bucket, authorized_depositor_badge: Option<ResourceOrNonFungible>) -> Option<Bucket>;
         fn withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
         fn withdraw_non_fungibles(&mut self, resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>) -> Bucket;
+        fn add_authorized_depositor(&mut self, badge: ResourceOrNonFungible);
+        fn remove_authorized_depositor(&mut self, badge: ResourceOrNonFungible);
     }
 }
 
@@ -170,7 +188,7 @@ extern_blueprint_internal! {
     "GlobalAccessController",
     AccessControllerFunctions
     {
-        fn create_global(controlled_asset: Bucket, rule_set: RuleSet, timed_recovery_delay_in_minutes: Option<u32>) -> Global<AccessController>;
+        fn create(controlled_asset: Bucket, rule_set: RuleSet, timed_recovery_delay_in_minutes: Option<u32>) -> Global<AccessController>;
     },
     {
         fn cancel_primary_role_badge_withdraw_attempt(&mut self);
@@ -206,7 +224,7 @@ extern_blueprint_internal! {
     },
     {
         fn compare_current_time(&self, instant: Instant, precision: TimePrecision, operator: TimeComparisonOperator) -> bool;
-        fn create_validator(&mut self, key: Secp256k1PublicKey, fee_factor: Decimal) -> (Global<Validator>, Bucket);
+        fn create_validator(&mut self, key: Secp256k1PublicKey, fee_factor: Decimal, xrd_payment: Bucket) -> (Global<Validator>, Bucket, Bucket);
         fn get_current_epoch(&self) -> Epoch;
         fn get_current_time(&self, precision: TimePrecision) -> Instant;
         fn next_round(&mut self, round: Round, proposer_timestamp_ms: i64, leader_proposal_history: LeaderProposalHistory);
@@ -223,15 +241,19 @@ extern_blueprint_internal! {
     ValidatorFunctions
     {},
     {
+        fn accepts_delegated_stake(&self) -> bool;
         fn apply_emission(&mut self, xrd_bucket: Bucket, epoch: Epoch, proposals_made: u64, proposals_missed: u64);
         fn apply_reward(&mut self, xrd_bucket: Bucket, epoch: Epoch);
         fn claim_xrd(&mut self, bucket: Bucket) -> Bucket;
         fn finish_unlock_owner_stake_units(&mut self) -> Bucket;
+        fn get_redemption_value(&self, amount_of_stake_units: Decimal) -> Decimal;
         fn lock_owner_stake_units(&mut self, stake_unit_bucket: Bucket);
         fn register(&mut self);
         fn stake(&mut self, stake: Bucket) -> Bucket;
         fn stake_as_owner(&mut self, stake: Bucket) -> Bucket;
         fn start_unlock_owner_stake_units(&mut self, requested_stake_unit_amount: Decimal);
+        fn total_stake_unit_supply(&self) -> Decimal;
+        fn total_stake_xrd_amount(&self) -> Decimal;
         fn unregister(&mut self);
         fn unstake(&mut self, stake_unit_bucket: Bucket) -> Bucket;
         fn update_accept_delegated_stake(&mut self, accept_delegated_stake: bool);

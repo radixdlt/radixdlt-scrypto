@@ -1,7 +1,7 @@
 use crate::resim::*;
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::api::node_modules::ModuleConfig;
 
 /// Create a fungible token with mutable supply
@@ -63,15 +63,21 @@ impl NewTokenMutable {
             );
         }
         if let Some(info_url) = self.info_url.clone() {
-            metadata.insert("info_url".to_string(), MetadataValue::Url(Url(info_url)));
+            metadata.insert(
+                "info_url".to_string(),
+                MetadataValue::Url(UncheckedUrl::of(info_url)),
+            );
         }
         if let Some(icon_url) = self.icon_url.clone() {
-            metadata.insert("icon_url".to_string(), MetadataValue::Url(Url(icon_url)));
+            metadata.insert(
+                "icon_url".to_string(),
+                MetadataValue::Url(UncheckedUrl::of(icon_url)),
+            );
         };
 
         let metadata = ModuleConfig {
             init: metadata.into(),
-            roles: RolesInit::default(),
+            roles: RoleAssignmentInit::default(),
         };
 
         let manifest = ManifestBuilder::new()

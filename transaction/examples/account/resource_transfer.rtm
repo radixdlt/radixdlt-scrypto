@@ -23,4 +23,5 @@ CALL_METHOD
 CALL_METHOD
     Address("${other_account_address}") 
     "try_deposit_batch_or_abort"
-    Expression("ENTIRE_WORKTOP");
+    Expression("ENTIRE_WORKTOP")
+    None;

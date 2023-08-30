@@ -39,6 +39,7 @@ pub enum ValueDisplayParameters<'s, 'a, E: FormattableCustomExtension> {
         display_mode: DisplayMode,
         print_mode: PrintMode,
         custom_context: E::CustomDisplayContext<'a>,
+        depth_limit: usize,
     },
     Annotated {
         display_mode: DisplayMode,
@@ -46,12 +47,13 @@ pub enum ValueDisplayParameters<'s, 'a, E: FormattableCustomExtension> {
         custom_context: E::CustomDisplayContext<'a>,
         schema: &'s Schema<E::CustomSchema>,
         type_index: LocalTypeIndex,
+        depth_limit: usize,
     },
 }
 
 enum Context<'s, 'a, E: FormattableCustomExtension> {
-    Nested(NestedStringDisplayContext<'s, 'a, E>, LocalTypeIndex),
-    RustLike(RustLikeDisplayContext<'s, 'a, E>, LocalTypeIndex),
+    Nested(NestedStringDisplayContext<'s, 'a, E>, LocalTypeIndex, usize),
+    RustLike(RustLikeDisplayContext<'s, 'a, E>, LocalTypeIndex, usize),
 }
 
 impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
@@ -61,6 +63,7 @@ impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
                 display_mode: DisplayMode::NestedString,
                 print_mode,
                 custom_context,
+                depth_limit,
             } => Context::Nested(
                 NestedStringDisplayContext {
                     schema: E::CustomSchema::empty_schema(),
@@ -68,6 +71,7 @@ impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
                     custom_context: *custom_context,
                 },
                 LocalTypeIndex::any(),
+                *depth_limit,
             ),
             Self::Annotated {
                 display_mode: DisplayMode::NestedString,
@@ -75,6 +79,7 @@ impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
                 custom_context,
                 schema,
                 type_index,
+                depth_limit,
             } => Context::Nested(
                 NestedStringDisplayContext {
                     schema: *schema,
@@ -82,11 +87,13 @@ impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
                     custom_context: *custom_context,
                 },
                 *type_index,
+                *depth_limit,
             ),
             Self::Schemaless {
                 display_mode: DisplayMode::RustLike,
                 print_mode,
                 custom_context,
+                depth_limit,
             } => Context::RustLike(
                 RustLikeDisplayContext {
                     schema: E::CustomSchema::empty_schema(),
@@ -94,6 +101,7 @@ impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
                     custom_context: *custom_context,
                 },
                 LocalTypeIndex::any(),
+                *depth_limit,
             ),
             Self::Annotated {
                 display_mode: DisplayMode::RustLike,
@@ -101,6 +109,7 @@ impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
                 custom_context,
                 schema,
                 type_index,
+                depth_limit,
             } => Context::RustLike(
                 RustLikeDisplayContext {
                     schema: *schema,
@@ -108,6 +117,7 @@ impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
                     custom_context: *custom_context,
                 },
                 *type_index,
+                *depth_limit,
             ),
         }
     }
@@ -131,11 +141,21 @@ impl<'s, 'a, 'b, E: FormattableCustomExtension> ContextualDisplay<ValueDisplayPa
     ) -> Result<(), Self::Error> {
         let context = options.get_context_and_type_index();
         match context {
-            Context::Nested(context, type_index) => {
-                format_payload_as_nested_string(f, &context, self.payload_bytes(), type_index)
-            }
-            Context::RustLike(context, type_index) => {
-                format_payload_as_rustlike_value(f, &context, self.payload_bytes(), type_index)
+            Context::Nested(context, type_index, depth_limit) => format_payload_as_nested_string(
+                f,
+                &context,
+                self.payload_bytes(),
+                type_index,
+                depth_limit,
+            ),
+            Context::RustLike(context, type_index, depth_limit) => {
+                format_payload_as_rustlike_value(
+                    f,
+                    &context,
+                    self.payload_bytes(),
+                    type_index,
+                    depth_limit,
+                )
             }
         }
     }
@@ -153,24 +173,30 @@ impl<'s, 'a, 'b, E: FormattableCustomExtension> ContextualDisplay<ValueDisplayPa
     ) -> Result<(), Self::Error> {
         let context = options.get_context_and_type_index();
         match context {
-            Context::Nested(context, type_index) => format_partial_payload_as_nested_string(
-                f,
-                self.value_body_bytes(),
-                ExpectedStart::ValueBody(self.value_kind()),
-                true,
-                0,
-                &context,
-                type_index,
-            ),
-            Context::RustLike(context, type_index) => format_partial_payload_as_rustlike_value(
-                f,
-                self.value_body_bytes(),
-                ExpectedStart::ValueBody(self.value_kind()),
-                true,
-                0,
-                &context,
-                type_index,
-            ),
+            Context::Nested(context, type_index, depth_limit) => {
+                format_partial_payload_as_nested_string(
+                    f,
+                    self.value_body_bytes(),
+                    ExpectedStart::ValueBody(self.value_kind()),
+                    true,
+                    0,
+                    &context,
+                    type_index,
+                    depth_limit,
+                )
+            }
+            Context::RustLike(context, type_index, depth_limit) => {
+                format_partial_payload_as_rustlike_value(
+                    f,
+                    self.value_body_bytes(),
+                    ExpectedStart::ValueBody(self.value_kind()),
+                    true,
+                    0,
+                    &context,
+                    type_index,
+                    depth_limit,
+                )
+            }
         }
     }
 }

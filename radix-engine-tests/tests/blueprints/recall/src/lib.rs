@@ -1,5 +1,3 @@
-use scrypto::api::*;
-use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
 #[blueprint]
@@ -9,7 +7,7 @@ mod recall {
     }
 
     impl RecallTest {
-        pub fn new() -> Global<RecallTest> {
+        pub fn new() -> (Global<RecallTest>, ResourceAddress) {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .mint_roles(mint_roles! {
                     minter => rule!(allow_all);
@@ -30,41 +28,42 @@ mod recall {
                 })
                 .mint_initial_supply(500);
 
-            Self {
-                vault: Vault::with_bucket(bucket),
+            let address = bucket.resource_address();
+
+            let global = Self {
+                vault: Vault::with_bucket(bucket.into()),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
-            .globalize()
+            .globalize();
+
+            (global, address)
         }
 
         pub fn recall_on_internal_vault(&self) -> Bucket {
-            scrypto_decode(
-                &ScryptoEnv
-                    .call_method_advanced(
-                        self.vault.0.as_node_id(),
-                        true,
-                        ObjectModuleId::Main,
-                        VAULT_RECALL_IDENT,
-                        scrypto_args!(Decimal::ONE),
-                    )
-                    .unwrap(),
-            )
+            scrypto_decode(&ScryptoVmV1Api::object_call_direct(
+                self.vault.0.as_node_id(),
+                VAULT_RECALL_IDENT,
+                scrypto_args!(Decimal::ONE),
+            ))
             .unwrap()
         }
 
         pub fn recall_on_direct_access_ref(reference: InternalAddress) -> Bucket {
-            scrypto_decode(
-                &ScryptoEnv
-                    .call_method_advanced(
-                        reference.as_node_id(),
-                        true,
-                        ObjectModuleId::Main,
-                        VAULT_RECALL_IDENT,
-                        scrypto_args!(Decimal::ONE),
-                    )
-                    .unwrap(),
-            )
+            scrypto_decode(&ScryptoVmV1Api::object_call_direct(
+                reference.as_node_id(),
+                VAULT_RECALL_IDENT,
+                scrypto_args!(Decimal::ONE),
+            ))
+            .unwrap()
+        }
+
+        pub fn recall_on_direct_access_ref_method(&self, reference: InternalAddress) -> Bucket {
+            scrypto_decode(&ScryptoVmV1Api::object_call_direct(
+                reference.as_node_id(),
+                VAULT_RECALL_IDENT,
+                scrypto_args!(Decimal::ONE),
+            ))
             .unwrap()
         }
     }

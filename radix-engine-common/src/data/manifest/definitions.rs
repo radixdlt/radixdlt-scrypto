@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 
-pub use radix_engine_constants::MANIFEST_SBOR_V1_PAYLOAD_PREFIX;
-pub const MANIFEST_SBOR_V1_MAX_DEPTH: usize = 24;
+pub use crate::constants::MANIFEST_SBOR_V1_MAX_DEPTH;
+pub use crate::constants::MANIFEST_SBOR_V1_PAYLOAD_PREFIX;
 
 pub type ManifestEncoder<'a> = VecEncoder<'a, ManifestCustomValueKind>;
 pub type ManifestDecoder<'a> = VecDecoder<'a, ManifestCustomValueKind>;

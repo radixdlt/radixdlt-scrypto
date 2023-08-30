@@ -2,7 +2,7 @@
 mod multi_threaded_test {
     use radix_engine::system::bootstrap::Bootstrapper;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
-    use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
+    use radix_engine::transaction::{CostingParameters, ExecutionConfig};
     use radix_engine::types::*;
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
     use radix_engine_interface::dec;
@@ -15,20 +15,30 @@ mod multi_threaded_test {
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
     use crossbeam::thread;
-    use radix_engine::vm::ScryptoVm;
+    use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 
     // this test was inspired by radix_engine "Transfer" benchmark
     #[test]
     fn test_multithread_transfer() {
         // Set up environment.
-        let mut scrypto_interpreter = ScryptoVm {
+        let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
+        let native_vm = DefaultNativeVm::new();
+        let vm = Vm {
+            scrypto_vm: &scrypto_vm,
+            native_vm,
+        };
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
-            .bootstrap_test_default()
-            .unwrap();
+        Bootstrapper::new(
+            NetworkDefinition::simulator(),
+            &mut substate_db,
+            vm.clone(),
+            false,
+        )
+        .bootstrap_test_default()
+        .unwrap();
 
         // Create a key pair
         let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
@@ -39,14 +49,17 @@ mod multi_threaded_test {
             .map(|i| {
                 let manifest = ManifestBuilder::new()
                     .lock_fee_from_faucet()
-                    .new_account_advanced(OwnerRole::Fixed(rule!(require(
-                        NonFungibleGlobalId::from_public_key(&public_key)
-                    ))))
+                    .new_account_advanced(
+                        OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(
+                            &public_key
+                        )))),
+                        None,
+                    )
                     .build();
                 let account = execute_and_commit_transaction(
                     &mut substate_db,
-                    &mut scrypto_interpreter,
-                    &FeeReserveConfig::default(),
+                    vm.clone(),
+                    &CostingParameters::default(),
                     &ExecutionConfig::for_test_transaction(),
                     &TestTransaction::new(manifest.clone(), hash(format!("Account creation: {i}")))
                         .prepare()
@@ -68,13 +81,13 @@ mod multi_threaded_test {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .try_deposit_batch_or_abort(account1)
+            .try_deposit_batch_or_abort(account1, None)
             .build();
         for nonce in 0..10 {
             execute_and_commit_transaction(
                 &mut substate_db,
-                &mut scrypto_interpreter,
-                &FeeReserveConfig::default(),
+                vm.clone(),
+                &CostingParameters::default(),
                 &ExecutionConfig::for_test_transaction(),
                 &TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
                     .prepare()
@@ -88,7 +101,7 @@ mod multi_threaded_test {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .withdraw_from_account(account1, XRD, dec!("0.000001"))
-            .try_deposit_batch_or_abort(account2)
+            .try_deposit_batch_or_abort(account2, None)
             .build();
 
         // Spawning threads that will attempt to withdraw some XRD amount from account1 and deposit to
@@ -99,8 +112,8 @@ mod multi_threaded_test {
                 s.spawn(|_| {
                     let receipt = execute_transaction(
                         &substate_db,
-                        &scrypto_interpreter,
-                        &FeeReserveConfig::default(),
+                        vm.clone(),
+                        &CostingParameters::default(),
                         &ExecutionConfig::for_test_transaction(),
                         &TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
                             .prepare()

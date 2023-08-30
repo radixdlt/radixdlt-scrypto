@@ -22,7 +22,7 @@ mod fee {
             Self {
                 xrd: Vault::with_bucket(xrd),
                 xrd_empty: Vault::new(XRD),
-                doge: Vault::with_bucket(doge_tokens),
+                doge: Vault::with_bucket(doge_tokens.into()),
                 garbage_vaults: Vec::new(),
             }
             .instantiate()

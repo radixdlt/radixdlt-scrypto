@@ -13,7 +13,7 @@ use transaction::prelude::*;
 #[test]
 fn cannot_securify_in_advanced_mode() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
     let component_address = test_runner.new_identity(pk.clone(), false);
 
@@ -25,7 +25,7 @@ fn cannot_securify_in_advanced_mode() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -44,7 +44,7 @@ fn cannot_securify_in_advanced_mode() {
 #[test]
 fn can_securify_from_virtual_identity() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
     let component_address = test_runner.new_identity(pk.clone(), true);
 
@@ -56,7 +56,7 @@ fn can_securify_from_virtual_identity() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -68,7 +68,7 @@ fn can_securify_from_virtual_identity() {
 #[test]
 fn cannot_securify_twice() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
     let component_address = test_runner.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
@@ -78,7 +78,7 @@ fn cannot_securify_twice() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -92,7 +92,7 @@ fn cannot_securify_twice() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -111,7 +111,7 @@ fn cannot_securify_twice() {
 #[test]
 fn can_set_metadata_after_securify() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
     let identity_address = test_runner.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
@@ -121,7 +121,7 @@ fn can_set_metadata_after_securify() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -158,7 +158,7 @@ fn can_set_metadata_after_securify() {
 #[test]
 fn can_set_metadata_on_securified_identity() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
     let identity_address = test_runner.new_securified_identity(account);
 
@@ -193,7 +193,7 @@ fn can_set_metadata_on_securified_identity() {
 #[test]
 fn securified_identity_is_owned_by_correct_owner_badge() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let pk = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let identity = test_runner.new_identity(pk, true);
     let (_, _, account) = test_runner.new_account(true);
@@ -206,16 +206,14 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
             IDENTITY_SECURIFY_IDENT,
             IdentitySecurifyToSingleBadgeInput {},
         )
-        .try_deposit_batch_or_refund(account)
+        .try_deposit_batch_or_refund(account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
-    let balance_changes = receipt.expect_commit_success().balance_changes();
-    let balance_change = balance_changes
-        .get(&GlobalAddress::from(account))
-        .unwrap()
+    let balance_change = test_runner
+        .sum_descendant_balance_changes(receipt.expect_commit_success(), account.as_node_id())
         .get(&IDENTITY_OWNER_BADGE)
         .unwrap()
         .clone();
@@ -231,7 +229,7 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
 #[test]
 fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let identity = {
         let manifest = ManifestBuilder::new()
             .call_function(
@@ -246,10 +244,7 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
             .expect_commit_success()
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone()
+            .new_component_addresses()[0]
     };
 
     // Act

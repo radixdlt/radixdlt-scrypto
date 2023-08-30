@@ -1,7 +1,5 @@
 use radix_engine::blueprints::package::PackageError;
-use radix_engine::errors::{
-    ApplicationError, RuntimeError, SystemError, SystemModuleError, VmError,
-};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError, VmError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::PrepareError;
@@ -15,14 +13,14 @@ use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit, TypeRef,
 };
-use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
+use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let code = wat2wasm(
@@ -62,7 +60,7 @@ fn missing_memory_should_cause_error() {
 #[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -85,7 +83,7 @@ fn large_return_len_should_cause_memory_access_error() {
 #[test]
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -108,7 +106,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 #[test]
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -126,7 +124,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 #[test]
 fn test_basic_package() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
@@ -149,25 +147,26 @@ fn test_basic_package() {
 #[test]
 fn test_basic_package_missing_export() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let mut blueprints = BTreeMap::new();
     blueprints.insert(
         "Test".to_string(),
         BlueprintDefinitionInit {
             blueprint_type: BlueprintType::default(),
+            is_transient: false,
             feature_set: btreeset!(),
             dependencies: btreeset!(),
 
             schema: BlueprintSchemaInit {
                 generics: vec![],
-                schema: ScryptoSchema {
+                schema: VersionedScryptoSchema::V1(SchemaV1 {
                     type_kinds: vec![],
                     type_metadata: vec![],
                     type_validations: vec![],
-                },
+                }),
                 state: BlueprintStateSchemaInit {
                     fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
-                        UNIT_ID,
+                        UNIT_TYPE,
                     ))],
                     collections: vec![],
                 },
@@ -176,13 +175,13 @@ fn test_basic_package_missing_export() {
                     functions: btreemap!(
                         "f".to_string() => FunctionSchemaInit {
                             receiver: Option::None,
-                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
                             export: "not_exist".to_string(),
                         }
                     ),
-                    virtual_lazy_load_functions: btreemap!(),
                 },
+                hooks: BlueprintHooksInit::default(),
             },
 
             royalty_config: PackageRoyaltyConfig::default(),
@@ -214,17 +213,16 @@ fn test_basic_package_missing_export() {
     });
 }
 
-// FIXME: Change test to check that schema type_index is viable
 #[test]
 fn bad_function_schema_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/package");
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
+    let (code, definition) = Compile::compile("./tests/blueprints/package_invalid");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_function(package, "BadFunctionSchema", "f", manifest_args!())
+        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -233,7 +231,9 @@ fn bad_function_schema_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(..))
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidLocalTypeIndex(_)
+            ))
         )
     });
 }
@@ -241,7 +241,7 @@ fn bad_function_schema_should_fail() {
 #[test]
 fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
 
     // Act
@@ -271,7 +271,7 @@ fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor()
 #[test]
 fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_processor() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
 
     // Act
@@ -301,7 +301,7 @@ fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_pr
 #[test]
 fn should_not_be_able_to_publish_native_packages() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -334,7 +334,7 @@ fn should_not_be_able_to_publish_native_packages() {
 #[test]
 fn should_not_be_able_to_publish_native_packages_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
 
     // Act
@@ -357,6 +357,156 @@ fn should_not_be_able_to_publish_native_packages_in_scrypto() {
             RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
                 ..
             )))
+        )
+    });
+}
+
+#[test]
+fn name_validation_blueprint() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
+
+    definition.blueprints = BTreeMap::from([(
+        String::from("wrong_bluepint_name_*"),
+        definition
+            .blueprints
+            .first_entry()
+            .unwrap()
+            .get()
+            .to_owned(),
+    )]);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidName(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn name_validation_feature_set() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
+
+    definition
+        .blueprints
+        .first_entry()
+        .unwrap()
+        .get_mut()
+        .feature_set
+        .insert(String::from("wrong-feature"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidName(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn name_validation_function() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
+
+    definition
+        .blueprints
+        .first_entry()
+        .unwrap()
+        .get_mut()
+        .schema
+        .functions
+        .functions
+        .insert(
+            String::from("self"),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                export: String::from("self"),
+            },
+        );
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidName(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn well_known_types_in_schema_are_validated() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
+
+    let mut blueprint = definition.blueprints.first_entry().unwrap();
+    let method_definition = blueprint
+        .get_mut()
+        .schema
+        .functions
+        .functions
+        .get_mut("some_method".into())
+        .unwrap();
+
+    // Invalid well known type
+    method_definition.input = TypeRef::Static(LocalTypeIndex::WellKnown(WellKnownTypeIndex::of(0)));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidLocalTypeIndex(..)
+            ))
         )
     });
 }

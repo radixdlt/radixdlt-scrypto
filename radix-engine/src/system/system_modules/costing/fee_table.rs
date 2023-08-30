@@ -1,10 +1,23 @@
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
+    OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+};
+use crate::kernel::substate_io::SubstateDevice;
+use crate::system::system_modules::transaction_runtime::Event;
 use crate::{
     blueprints::package::*,
     kernel::actor::Actor,
-    track::interface::{StoreAccess, StoreAccessInfo, StoreCommit},
+    track::interface::{IOAccess, StoreCommit},
     types::*,
 };
 use lazy_static::lazy_static;
+
+// Reference EC2 instance c5.4xlarge has CPU clock 3.4 GHz which means in 1 µs it executes 3400 instructions
+// (1 core, single-threaded operation, skipping CPU cache influence).
+// Basing on above assumptions converting CPU instructions count to cost units requires divistion CPU instructions
+// by 3400 and multiplication by 100 (1 µs = 100 cost units), so it is enough to divide by 34.
+const CPU_INSTRUCTIONS_TO_COST_UNIT: u32 = 34;
 
 lazy_static! {
     pub static ref NATIVE_FUNCTION_BASE_COSTS: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = {
@@ -28,30 +41,28 @@ lazy_static! {
     pub static ref NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT: IndexMap<PackageAddress, IndexMap<&'static str, (u32, u32)>> = {
         let mut costs: IndexMap<PackageAddress, IndexMap<&'static str, (u32, u32)>> =
             index_map_new();
-        // FIXME: investigate the coefficients more, as it's blocking package publishing within 100M cost units
         costs
             .entry(PACKAGE_PACKAGE)
             .or_default()
-            .insert(PACKAGE_PUBLISH_NATIVE_IDENT, (1 /*1001*/, 7424624));
+            .insert(PACKAGE_PUBLISH_NATIVE_IDENT, (794, 9121128));
         costs
             .entry(PACKAGE_PACKAGE)
             .or_default()
-            .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (1 /*1055*/, 14305886));
-        costs
+            // TODO: publish_wasm_advanced is too expensinve, dividing by 3 to let large package (1MiB) to be published
+            .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (3273 / 3, 10224507));
+    costs
     };
 }
 
 /// Fee table specifies how each costing entry should be costed.
 ///
 /// ## High Level Guideline
-/// - Max cost unit limit: 100,000,000
-/// - Cost unit price: 0.000001 XRD per cost unit
-/// - Max execution costing: 100 XRD + tipping + state expansion + royalty
+/// - Max execution cost unit limit: 100,000,000
+/// - Max execution cost unit limit: 50,000,000
+/// - Transaction fee = Network Execution + Network Finalization + Tip + Network Storage + Royalties
 /// - Execution time for 100,000,000 cost units' worth of computation: <= 1 second
 /// - Baseline: 1 microsecond = 100 cost units
-/// - Non-time based costing will make the actual execution time less than anticipated
 ///
-/// FIXME: fee table is actively adjusted at this point of time!
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct FeeTable;
 
@@ -60,15 +71,11 @@ impl FeeTable {
         Self
     }
 
-    fn transient_data_cost(size: usize) -> u32 {
-        // Rationality:
-        // To limit transient data to 64 MB, the cost for a byte should be 100,000,000 / 64,000,000 = 1.56.
-        mul(cast(size), 2)
-    }
+    //======================
+    // Execution costs
+    //======================
 
     fn data_processing_cost(size: usize) -> u32 {
-        // FIXME: add payload against schema validation costs
-
         // Based on benchmark `bench_decode_sbor`
         // Time for processing a byte: 10.244 µs / 1068 = 0.00959176029
 
@@ -78,78 +85,44 @@ impl FeeTable {
         mul(cast(size), 2)
     }
 
-    fn store_access_cost(store_access: &StoreAccessInfo) -> u32 {
-        let mut sum = 0;
-        for info in store_access {
-            let cost = match info {
-                StoreAccess::ReadFromDb(size) => {
-                    // Execution time (µs): 0.0009622109 * size + 389.5155
-                    // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
-                    // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                    add(cast(*size) / 10, 40_000)
-                }
-                StoreAccess::ReadFromDbNotFound => {
-                    // Execution time (µs): varies, using max 1,600
-                    // Execution cost: 1,600 * 100
-                    // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                    160_000
-                }
-                StoreAccess::NewEntryInTrack => {
-                    // The max number of entries is limited by limits module.
-                    0
-                }
-            };
-            sum = add(sum, cost);
-        }
-        sum
-    }
-
-    //======================
-    // Commit costs
-    //======================
-
-    #[inline]
-    pub fn store_commit_cost(&self, store_commit: &StoreCommit) -> u32 {
-        // Execution time (µs): 0.0025 * size + 1000
-        // Execution cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000
-        // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-        match store_commit {
-            StoreCommit::Insert { size, .. } => add(cast(*size) / 4, 100_000),
-            StoreCommit::Update { size, .. } => add(cast(*size) / 4, 100_000),
-            StoreCommit::Delete { .. } => 100_000,
+    fn io_access_cost(&self, io_access: &IOAccess) -> u32 {
+        match io_access {
+            IOAccess::ReadFromDb(_, size) => {
+                // Execution time (µs): 0.0009622109 * size + 389.5155
+                // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                add(cast(*size) / 10, 40_000)
+            }
+            IOAccess::ReadFromDbNotFound(_) => {
+                // Execution time (µs): varies, using max 1,600
+                // Execution cost: 1,600 * 100
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                160_000
+            }
+            IOAccess::HeapSubstateUpdated { .. } | IOAccess::TrackSubstateUpdated { .. } => {
+                // Heap/track substate total size is limited by limits module.
+                0
+            }
         }
     }
 
-    //======================
-    // Transaction costs
-    //======================
-
     #[inline]
-    pub fn tx_base_cost(&self) -> u32 {
-        50_000
-    }
-
-    #[inline]
-    pub fn tx_payload_cost(&self, size: usize) -> u32 {
-        // Rational:
-        // Transaction payload is propagated over a P2P network.
-        // Larger size may slows down the network performance.
-        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 50 = 20,000 cost units
-        // The max size of a transaction is 1 MiB, and the cost will be 1,000,000 * 50 = 50,000,000 cost units
-        // This is roughly 1/20 of storing data in substate store per current setup.
-        mul(cast(size), 50)
-    }
-
-    #[inline]
-    pub fn tx_signature_verification_cost(&self, n: usize) -> u32 {
+    pub fn verify_tx_signatures_cost(&self, n: usize) -> u32 {
         // Based on benchmark `bench_validate_secp256k1`
         // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7,000 cost units
         mul(cast(n), 7_000)
     }
 
-    //======================
-    // VM execution costs
-    //======================
+    #[inline]
+    pub fn validate_tx_payload_cost(&self, size: usize) -> u32 {
+        // Rational:
+        // Transaction payload is propagated over a P2P network.
+        // Larger size may slows down the network performance.
+        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 40 = 16,000 cost units
+        // The max size of a transaction is 1 MiB, and the cost will be 1,048,576 * 40 = 41,943,040 cost units
+        // This is roughly 1/24 of storing data in substate store per current setup.
+        mul(cast(size), 40)
+    }
 
     #[inline]
     pub fn run_native_code_cost(
@@ -172,10 +145,7 @@ impl FeeTable {
                     ))
             });
 
-        // Reference EC2 instance c5.4xlarge has CPU clock 3.4 GHz which means in 1 µs it executes 3400 instructions
-        // (1 core, single-threaded operation, skipping CPU cache influence).
-        // Basing on above assumptions return native function execution time in µs: native_execution_units / 3400
-        native_execution_units / 34
+        native_execution_units / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
 
     #[inline]
@@ -199,115 +169,187 @@ impl FeeTable {
         mul(cast(size), 2)
     }
 
-    //======================
-    // Kernel costs
-    //======================
-
-    // FIXME: adjust base cost for following ops
-
     #[inline]
     pub fn before_invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {
-        add(500, Self::data_processing_cost(input_size))
+        // used max cpu instruction counts
+        add(
+            1041 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            Self::data_processing_cost(input_size),
+        )
     }
 
     #[inline]
     pub fn after_invoke_cost(&self, input_size: usize) -> u32 {
-        Self::data_processing_cost(input_size)
+        // used max cpu instruction counts
+        add(
+            4321 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            Self::data_processing_cost(input_size),
+        )
     }
 
     #[inline]
     pub fn allocate_node_id_cost(&self) -> u32 {
-        500
+        3560u32 / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
 
     #[inline]
-    pub fn create_node_cost(
+    pub fn create_node_cost(&self, event: &CreateNodeEvent) -> u32 {
+        match event {
+            CreateNodeEvent::Start(_, node_substates) => {
+                let base_cost: u32 = 5000;
+                let total_substate_size = node_substates
+                    .values()
+                    .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+                    .sum::<usize>();
+                add(
+                    base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                    Self::data_processing_cost(total_substate_size),
+                )
+            }
+            CreateNodeEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+            CreateNodeEvent::End(..) => 0,
+        }
+    }
+
+    #[inline]
+    pub fn pin_node_cost(&self, _node_id: &NodeId) -> u32 {
+        2577u32
+    }
+
+    #[inline]
+    pub fn drop_node_cost(&self, event: &DropNodeEvent) -> u32 {
+        match event {
+            DropNodeEvent::Start(..) => 0,
+            DropNodeEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+            DropNodeEvent::End(_node_id, node_substates) => {
+                let total_substate_size = node_substates
+                    .values()
+                    .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+                    .sum::<usize>();
+                add(
+                    30526u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                    Self::data_processing_cost(total_substate_size),
+                )
+            }
+        }
+    }
+
+    #[inline]
+    pub fn move_module_cost(&self, event: &MoveModuleEvent) -> u32 {
+        match event {
+            MoveModuleEvent::IOAccess(io_access) => add(
+                2853u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                self.io_access_cost(io_access),
+            ),
+        }
+    }
+
+    #[inline]
+    pub fn open_substate_cost(&self, event: &OpenSubstateEvent) -> u32 {
+        match event {
+            OpenSubstateEvent::Start { .. } => 0,
+            OpenSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+            OpenSubstateEvent::End { size, .. } => {
+                let base_cost: u32 = 8000;
+                add(
+                    base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                    Self::data_processing_cost(*size),
+                )
+            }
+        }
+    }
+
+    #[inline]
+    pub fn read_substate_cost(&self, event: &ReadSubstateEvent) -> u32 {
+        match event {
+            ReadSubstateEvent::OnRead { value, device, .. } => {
+                let base_cost: u32 = match device {
+                    SubstateDevice::Heap => 2127,
+                    SubstateDevice::Store => 3345,
+                };
+
+                add(
+                    base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                    Self::data_processing_cost(value.len()),
+                )
+            }
+            ReadSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+        }
+    }
+
+    #[inline]
+    pub fn write_substate_cost(&self, event: &WriteSubstateEvent) -> u32 {
+        match event {
+            WriteSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+            WriteSubstateEvent::Start { value, .. } => add(
+                2003u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                Self::data_processing_cost(value.len()),
+            ),
+        }
+    }
+
+    #[inline]
+    pub fn close_substate_cost(&self, event: &CloseSubstateEvent) -> u32 {
+        match event {
+            CloseSubstateEvent::End(..) => 3596u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+        }
+    }
+
+    #[inline]
+    pub fn set_substate_cost(&self, event: &SetSubstateEvent) -> u32 {
+        match event {
+            SetSubstateEvent::Start(.., value) => add(
+                8026u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                Self::data_processing_cost(value.len()),
+            ),
+            SetSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+        }
+    }
+
+    #[inline]
+    pub fn remove_substate_cost(&self, event: &RemoveSubstateEvent) -> u32 {
+        match event {
+            RemoveSubstateEvent::Start(..) => 16440u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            RemoveSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+        }
+    }
+
+    #[inline]
+    pub fn mark_substate_as_transient_cost(
         &self,
         _node_id: &NodeId,
-        total_substate_size: usize,
-        store_access: &StoreAccessInfo,
+        _partition_number: &PartitionNumber,
+        _substate_key: &SubstateKey,
     ) -> u32 {
-        add3(
-            500,
-            Self::data_processing_cost(total_substate_size),
-            Self::store_access_cost(store_access),
-        )
+        2416u32
     }
 
     #[inline]
-    pub fn drop_node_cost(&self, size: usize) -> u32 {
-        add(500, Self::data_processing_cost(size))
+    pub fn scan_keys_cost(&self, event: &ScanKeysEvent) -> u32 {
+        match event {
+            ScanKeysEvent::Start => 14285u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            ScanKeysEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+        }
     }
 
     #[inline]
-    pub fn move_modules_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
+    pub fn drain_substates_cost(&self, event: &DrainSubstatesEvent) -> u32 {
+        match event {
+            DrainSubstatesEvent::Start(count) => {
+                let cpu_instructions = add(3140u32, mul(14227u32, *count));
+                cpu_instructions / CPU_INSTRUCTIONS_TO_COST_UNIT
+            }
+            DrainSubstatesEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+        }
     }
 
     #[inline]
-    pub fn open_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
-            500,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
+    pub fn scan_sorted_substates_cost(&self, event: &ScanSortedSubstatesEvent) -> u32 {
+        match event {
+            ScanSortedSubstatesEvent::Start => 6388u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            ScanSortedSubstatesEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+        }
     }
-
-    #[inline]
-    pub fn read_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
-            500,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
-    }
-
-    #[inline]
-    pub fn write_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
-            500,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
-    }
-
-    #[inline]
-    pub fn close_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
-    }
-
-    #[inline]
-    pub fn set_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
-            500,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
-    }
-
-    #[inline]
-    pub fn remove_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
-    }
-
-    #[inline]
-    pub fn scan_sorted_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
-    }
-
-    #[inline]
-    pub fn scan_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
-    }
-
-    #[inline]
-    pub fn take_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
-    }
-
-    //======================
-    // System costs
-    //======================
 
     #[inline]
     pub fn lock_fee_cost(&self) -> u32 {
@@ -325,16 +367,6 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn query_auth_zone_cost(&self) -> u32 {
-        500
-    }
-
-    #[inline]
-    pub fn assert_access_rule_cost(&self) -> u32 {
-        500
-    }
-
-    #[inline]
     pub fn query_transaction_hash_cost(&self) -> u32 {
         500
     }
@@ -346,24 +378,58 @@ impl FeeTable {
 
     #[inline]
     pub fn emit_event_cost(&self, size: usize) -> u32 {
-        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        500 + Self::data_processing_cost(size)
     }
 
     #[inline]
     pub fn emit_log_cost(&self, size: usize) -> u32 {
-        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        500 + Self::data_processing_cost(size)
     }
 
     #[inline]
     pub fn panic_cost(&self, size: usize) -> u32 {
-        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        500 + Self::data_processing_cost(size)
     }
 
     //======================
-    // System module costs
+    // Finalization costs
+    // This is primarily to account for the additional work on the Node side
     //======================
-    // FIXME: add more costing rules
-    // We should account for running system modules, such as auth and royalty.
+
+    #[inline]
+    pub fn base_cost(&self) -> u32 {
+        50_000
+    }
+
+    #[inline]
+    pub fn commit_state_updates_cost(&self, store_commit: &StoreCommit) -> u32 {
+        // Committing state time (µs): 0.0025 * size + 1000
+        // Finalization cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000
+        // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+        match store_commit {
+            StoreCommit::Insert { size, .. } => add(cast(*size) / 4, 100_000),
+            StoreCommit::Update { size, .. } => add(cast(*size) / 4, 100_000),
+            StoreCommit::Delete { .. } => 100_000,
+        }
+    }
+
+    #[inline]
+    pub fn commit_events_cost(&self, events: &Vec<Event>) -> u32 {
+        let mut sum = 0;
+        for event in events {
+            sum += add(cast(event.payload.len()) / 4, 5_000)
+        }
+        sum
+    }
+
+    #[inline]
+    pub fn commit_logs_cost(&self, logs: &Vec<(Level, String)>) -> u32 {
+        let mut sum = 0;
+        for log in logs {
+            sum += add(cast(log.1.len()) / 4, 1_000)
+        }
+        sum
+    }
 }
 
 #[inline]
@@ -374,11 +440,6 @@ fn cast(a: usize) -> u32 {
 #[inline]
 fn add(a: u32, b: u32) -> u32 {
     a.checked_add(b).unwrap_or(u32::MAX)
-}
-
-#[inline]
-fn add3(a: u32, b: u32, c: u32) -> u32 {
-    add(add(a, b), c)
 }
 
 #[inline]

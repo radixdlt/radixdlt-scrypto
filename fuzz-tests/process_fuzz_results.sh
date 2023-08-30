@@ -4,9 +4,11 @@
 set -e
 set -u
 
+#TARGET=transaction
+TARGET=wasm_instrument
 CRASH_INVENTORY_FILE=crash_inventory.txt
 CRASH_SUMMARY=crash_summary.txt
-ARTIFACT_NAME=fuzz_transaction.tgz
+ARTIFACT_NAME=fuzz_${TARGET}.tgz
 INSPECT_TIMEOUT=20000
 url_or_dir=$1
 inspect_timeout=${2:-$INSPECT_TIMEOUT}
@@ -105,7 +107,7 @@ function inspect_crashes() {
         fi
         pushd $repo_dir > /dev/null
         echo "Building simple fuzzer"
-        ./fuzz.sh simple build
+        ./fuzz.sh simple build $TARGET
         popd > /dev/null
         echo "Checking crash/hangs files"
         for f in $files ; do
@@ -117,8 +119,8 @@ function inspect_crashes() {
             fi
 
             # calling target directly to get rid of unnecessary debugs
-            #./fuzz.sh simple run ../../$f >/dev/null || true
-            cmd="${repo_dir}/target/release/transaction $f"
+            #./fuzz.sh simple run $TARGET ../../$f >/dev/null || true
+            cmd="${repo_dir}/target/release/${TARGET} $f"
             echo
             echo "file    : $f"
             echo "command : $cmd"
@@ -134,7 +136,7 @@ function inspect_crashes() {
 
         cat <<EOF >> $CRASH_INVENTORY_FILE
 Crash/hang info
-command : radixdlt-scrypto/fuzz-tests/target/release/transaction <file>
+command : radixdlt-scrypto/fuzz-tests/target/release/${TARGET} <file>
 EOF
         for f in *.panic ; do
             echo
@@ -150,7 +152,7 @@ EOF
 
     popd > /dev/null
 
-    ./group_crashes.sh $work_dir/$CRASH_INVENTORY_FILE | tee $work_dir/$CRASH_SUMMARY
+    ./process_crash_inventory.sh $work_dir/$CRASH_INVENTORY_FILE | tee $work_dir/$CRASH_SUMMARY
 
 cat <<EOF
 
@@ -187,7 +189,7 @@ if [ -d $url_or_dir ] ; then
 else
     gh_run_id=${url_or_dir##*/}
     work_dir=run_${gh_run_id}
-    afl_dir="afl/transaction"
+    afl_dir="afl/${TARGET}"
 fi
 
 

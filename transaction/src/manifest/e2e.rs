@@ -8,7 +8,7 @@ pub mod tests {
     use crate::manifest::*;
     use crate::signing::ed25519::Ed25519PrivateKey;
     use radix_engine_interface::api::node_modules::ModuleConfig;
-    use radix_engine_interface::blueprints::resource::RolesInit;
+    use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
     use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
     use radix_engine_interface::{metadata, metadata_init};
     use scrypto_derive::NonFungibleData;
@@ -187,7 +187,7 @@ DROP_PROOF
 DROP_PROOF
     Proof("proof3")
 ;
-CLEAR_AUTH_ZONE;
+DROP_AUTH_ZONE_PROOFS;
 CALL_METHOD
     Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
     "create_proof_of_amount"
@@ -222,8 +222,10 @@ CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
     Address("resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha")
     Proof("proof8")
 ;
-CLEAR_AUTH_ZONE;
-CLEAR_SIGNATURE_PROOFS;
+DROP_AUTH_ZONE_SIGNATURE_PROOFS;
+DROP_AUTH_ZONE_REGULAR_PROOFS;
+DROP_AUTH_ZONE_PROOFS;
+DROP_NAMED_PROOFS;
 DROP_ALL_PROOFS;
 CALL_METHOD
     Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
@@ -383,9 +385,9 @@ CALL_METADATA_METHOD
     "get"
     "HelloWorld"
 ;
-CALL_ACCESS_RULES_METHOD
+CALL_ROLE_ASSIGNMENT_METHOD
     Address("${component_address}")
-    "get_role"
+    "get"
     Enum<0u8>()
     "hello"
 ;
@@ -914,10 +916,12 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<1u8>()
     true
     Tuple(
-        Tuple(
-            Array<Enum>(),
-            Array<Tuple>(),
-            Array<Enum>()
+        Enum<0u8>(
+            Tuple(
+                Array<Enum>(),
+                Array<Tuple>(),
+                Array<Enum>()
+            )
         ),
         Enum<0u8>(
             66u8
@@ -1005,10 +1009,12 @@ CREATE_NON_FUNGIBLE_RESOURCE
     Enum<1u8>()
     true
     Tuple(
-        Tuple(
-            Array<Enum>(),
-            Array<Tuple>(),
-            Array<Enum>()
+        Enum<0u8>(
+            Tuple(
+                Array<Enum>(),
+                Array<Tuple>(),
+                Array<Enum>()
+            )
         ),
         Enum<0u8>(
             66u8
@@ -1272,6 +1278,40 @@ CALL_METHOD
     }
 
     #[test]
+    fn test_simple_transfer_new_format() {
+        // Note - this test is intended for demonstration for the ledger
+        // app - but might be better moved to being a transaction scenario
+        let canonical_manifest = apply_address_replacements(
+            r##"
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee_and_withdraw"
+    Decimal("25")
+    Address("${xrd_resource_address}")
+    Decimal("123")
+;
+TAKE_FROM_WORKTOP
+    Address("${xrd_resource_address}")
+    Decimal("123")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${other_account_address}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+;
+        "##,
+        );
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_new_format",
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
+    #[test]
     fn test_simple_transfer_with_multiple_locked_fees() {
         // Note - this test is intended for demonstration for the ledger
         // app - but might be better moved to being a transaction scenario
@@ -1356,6 +1396,43 @@ CALL_METHOD
     }
 
     #[test]
+    fn test_simple_transfer_nft_new_format() {
+        // Note - this test is intended for demonstration for the ledger
+        // app - but might be better moved to being a transaction scenario
+        let canonical_manifest = apply_address_replacements(
+            r##"
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee_and_withdraw_non_fungibles"
+    Decimal("500")
+    Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#"),
+        NonFungibleLocalId("#2#")
+    )
+;
+TAKE_FROM_WORKTOP
+    Address("${non_fungible_resource_address}")
+    Decimal("2")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${other_account_address}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+;
+"##,
+        );
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_nft_new_format",
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
+    #[test]
     fn test_simple_transfer_nft_by_id() {
         // Note - this test is intended for demonstration for the ledger
         // app - but might be better moved to being a transaction scenario
@@ -1394,6 +1471,48 @@ CALL_METHOD
         );
         compile_and_decompile_with_inversion_test(
             "simple_transfer_nft_by_id",
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
+    #[test]
+    fn test_simple_transfer_nft_by_id_new_format() {
+        // Note - this test is intended for demonstration for the ledger
+        // app - but might be better moved to being a transaction scenario
+        let canonical_manifest = apply_address_replacements(
+            r##"
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee_and_withdraw_non_fungibles"
+    Decimal("500")
+    Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#"),
+        NonFungibleLocalId("#2#"),
+        NonFungibleLocalId("#3#")
+    )
+;
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#"),
+        NonFungibleLocalId("#2#"),
+        NonFungibleLocalId("#3#")
+    )
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${other_account_address}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+;
+"##,
+        );
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_nft_by_id_new_format",
             &canonical_manifest,
             &NetworkDefinition::simulator(),
             vec![],

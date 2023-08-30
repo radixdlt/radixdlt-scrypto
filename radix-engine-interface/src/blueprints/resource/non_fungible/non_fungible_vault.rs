@@ -19,9 +19,20 @@ pub type NonFungibleVaultTakeNonFungiblesOutput = Bucket;
 pub const NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "get_non_fungible_local_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleVaultGetNonFungibleLocalIdsInput {}
+pub struct NonFungibleVaultGetNonFungibleLocalIdsInput {
+    pub limit: u32,
+}
 
 pub type NonFungibleVaultGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
+
+pub const NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT: &str = "contains_non_fungible";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleVaultContainsNonFungibleInput {
+    pub id: NonFungibleLocalId,
+}
+
+pub type NonFungibleVaultContainsNonFungibleOutput = bool;
 
 pub const NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT: &str = "recall_non_fungibles";
 

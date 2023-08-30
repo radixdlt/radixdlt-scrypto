@@ -1,5 +1,5 @@
 use super::*;
-use crate::basic_well_known_types::ANY_ID;
+use crate::basic_well_known_types::ANY_TYPE;
 use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
@@ -8,12 +8,13 @@ pub fn traverse_payload_with_types<'de, 's, E: CustomExtension>(
     payload: &'de [u8],
     schema: &'s Schema<E::CustomSchema>,
     index: LocalTypeIndex,
+    depth_limit: usize,
 ) -> TypedTraverser<'de, 's, E> {
     TypedTraverser::new(
         payload,
         schema,
         index,
-        E::MAX_DEPTH,
+        depth_limit,
         ExpectedStart::PayloadPrefix(E::PAYLOAD_PREFIX),
         true,
     )
@@ -26,12 +27,13 @@ pub fn traverse_partial_payload_with_types<'de, 's, E: CustomExtension>(
     current_depth: usize,
     schema: &'s Schema<E::CustomSchema>,
     index: LocalTypeIndex,
+    depth_limit: usize,
 ) -> TypedTraverser<'de, 's, E> {
     TypedTraverser::new(
         partial_payload,
         schema,
         index,
-        E::MAX_DEPTH - current_depth,
+        depth_limit - current_depth,
         expected_start,
         check_exact_end,
     )
@@ -71,7 +73,7 @@ impl<'s> ContainerType<'s> {
             Self::Tuple(_, types) => (*types).get(index).copied(),
             Self::EnumVariant(_, types) => (*types).get(index).copied(),
             Self::Array(_, child_type) => Some(*child_type),
-            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_ID)),
+            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_TYPE)),
             _ => None,
         }
     }
@@ -79,7 +81,7 @@ impl<'s> ContainerType<'s> {
     pub fn get_child_type_for_map_key(&self) -> Option<LocalTypeIndex> {
         match self {
             Self::Map(_, key_type, _) => Some(*key_type),
-            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_ID)),
+            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_TYPE)),
             _ => None,
         }
     }
@@ -87,7 +89,7 @@ impl<'s> ContainerType<'s> {
     pub fn get_child_type_for_map_value(&self) -> Option<LocalTypeIndex> {
         match self {
             Self::Map(_, _, value_type) => Some(*value_type),
-            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_ID)),
+            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_TYPE)),
             _ => None,
         }
     }
@@ -493,16 +495,16 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
 
     fn get_type_index(&self, location: &Location<E::CustomTraversal>) -> LocalTypeIndex {
         match location.ancestor_path.last() {
-            Some(container_child) => {
-                let current_child_index = container_child.next_child_index - 1;
-                match container_child.container_header {
+            Some(container_state) => {
+                let child_index = container_state.current_child_index.expect("Callers should ensure `current_child_index.is_some()`");
+                match container_state.container_header {
                     ContainerHeader::Tuple(_)
                     | ContainerHeader::EnumVariant(_)
                     | ContainerHeader::Array(_) =>  {
-                        self.container_stack.last().unwrap().get_child_type_for_element(current_child_index)
+                        self.container_stack.last().unwrap().get_child_type_for_element(child_index)
                     }
                     ContainerHeader::Map(_) =>  {
-                        if current_child_index % 2 == 0 {
+                        if child_index % 2 == 0 {
                             self.container_stack.last().unwrap().get_child_type_for_map_key()
                         } else {
                             self.container_stack.last().unwrap().get_child_type_for_map_value()

@@ -9,6 +9,7 @@ use std::process::ExitStatus;
 use cargo_toml::Manifest;
 use radix_engine::types::*;
 use radix_engine::utils::*;
+use wasm_opt::OptimizationError;
 
 #[derive(Debug)]
 pub enum BuildError {
@@ -29,6 +30,8 @@ pub enum BuildError {
     SchemaEncodeError(sbor::EncodeError),
 
     InvalidManifestFile(PathBuf),
+
+    OptimizationError(OptimizationError),
 }
 
 #[derive(Debug)]
@@ -120,6 +123,7 @@ pub fn build_package<P: AsRef<Path>>(
     base_path: P,
     trace: bool,
     force_local_target: bool,
+    disable_wasm_opt: bool,
 ) -> Result<(PathBuf, PathBuf), BuildError> {
     let base_path = base_path.as_ref().to_owned();
 
@@ -179,6 +183,18 @@ pub fn build_package<P: AsRef<Path>>(
     // Build without SCHEMA
     run_cargo_build(&manifest_path, &target_path, trace, true)?;
 
+    // Optimizes the built wasm using Binaryen's wasm-opt tool. The code that follows is equivalent
+    // to running the following commands in the CLI:
+    // wasm-opt -0z --strip-debug --strip-dwarf --strip-procedures $some_path $some_path
+    if !disable_wasm_opt {
+        wasm_opt::OptimizationOptions::new_optimize_for_size_aggressively()
+            .add_pass(wasm_opt::Pass::StripDebug)
+            .add_pass(wasm_opt::Pass::StripDwarf)
+            .add_pass(wasm_opt::Pass::StripProducers)
+            .run(&wasm_path, &wasm_path)
+            .map_err(BuildError::OptimizationError)?;
+    }
+
     Ok((wasm_path, definition_path))
 }
 
@@ -188,7 +204,7 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    build_package(&path, false, false).map_err(TestError::BuildError)?;
+    build_package(&path, false, false, false).map_err(TestError::BuildError)?;
 
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");

@@ -1,10 +1,12 @@
-use crate::hash_tree::tree_store::PartitionPayload;
-use crate::hash_tree::types::LeafKey;
+use crate::hash_tree::types::{LeafKey, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use jellyfish::JellyfishMerkleTree;
 use radix_engine_common::crypto::Hash;
-use radix_engine_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateKey};
-use tree_store::{Payload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
+use radix_engine_store_interface::interface::{
+    DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey, DbSubstateKey,
+};
+use tree_store::{ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
 use types::{NibblePath, NodeKey, Version};
+use utils::prelude::vec;
 use utils::rust::collections::{index_map_new, IndexMap};
 use utils::rust::vec::Vec;
 
@@ -22,153 +24,155 @@ mod test;
 #[allow(dead_code)]
 mod types;
 
-/// A change of value associated with some ID.
+/// A change of a hash of value associated with some ID.
 /// External API only uses it for hashes of substates (see `SubstateHashChange`), but internally we
-/// split into "change of ReNode layer's leaf" and "change of substate offset's value in the nested
-/// tree".
+/// also use it for lower-level hashes of JMT nodes of different tiers.
 #[derive(Debug)]
-pub struct IdChange<I, V> {
+pub struct IdHashChange<I> {
     /// ID.
     id: I,
-    /// A value after change, or `None` if this change denotes a delete.
-    changed: Option<V>,
+    /// A hash after the change, or `None` if this change denotes a delete.
+    hash_change: Option<Hash>,
 }
 
-impl<I, V> IdChange<I, V> {
-    pub fn new(id: I, changed: Option<V>) -> Self {
-        Self { id, changed }
+impl<I> IdHashChange<I> {
+    pub fn new(id: I, hash_change: Option<Hash>) -> Self {
+        Self { id, hash_change }
     }
 }
 
-/// A top-level `IdChange`, representing an actual change of a specific substate's hashed value.
-pub type SubstateHashChange = IdChange<DbSubstateKey, Hash>;
+/// A top-level `IdHashChange`, representing an actual change of a specific substate's hash.
+pub type SubstateHashChange = IdHashChange<DbSubstateKey>;
 
-/// Inserts a new set of nodes at version `current_version` + 1 into the "nested JMT" persisted
-/// within the given `store`.
+/// Inserts a new set of nodes at version `node_root_version` + 1 into the "3-Tier JMT" persisted
+/// within the given `TreeStore`.
 /// In a traditional JMT, this inserts a new leaf node for each given "change", together with an
 /// entire new "parent chain" leading from that leaf to a new root node (common for all of them).
-/// In our instantiation of the JMT, we first update all nested per-`ReNodeModule` trees (i.e. of
-/// each {`NodeId`, `ModuleId`} pair encountered in the `changes`), and then we update the
-/// single upper-layer tree (representing all `ReNodeModule`).
+/// In our instantiation of the JMT, we first update all touched Substate-Tier JMTs, then we update
+/// all touched Partition-Tier JMTs and then we update the single ReNode-Tier tree.
 /// All nodes that became stale precisely due to this (i.e. not any previous) operation will be
 /// reported before the function returns (see `WriteableTreeStore::record_stale_node`).
 /// Returns the hash of the newly-created root (i.e. representing state at version
-/// `current_version` + 1).
+/// `node_root_version` + 1).
 ///
 /// # Panics
-/// Panics if a root node for `current_version` does not exist. The caller should use `None` to
+/// Panics if a root node for `node_root_version` does not exist. The caller should use `None` to
 /// denote an empty, initial state of the tree (i.e. inserting at version 1).
-pub fn put_at_next_version<S: TreeStore<PartitionPayload> + TreeStore<()>>(
-    store: &mut S,
-    current_version: Option<Version>,
+pub fn put_at_next_version<S: TreeStore>(
+    node_tier_store: &mut S,
+    node_root_version: Option<Version>,
     changes: Vec<SubstateHashChange>,
 ) -> Hash {
-    let changes_by_db_partition_key = index_by_db_partition_key(changes);
-    let mut nested_root_changes = Vec::new();
-    for (db_partition_key, substate_changes) in changes_by_db_partition_key {
-        let nested_root =
-            put_substate_changes(store, current_version, &db_partition_key, substate_changes);
-        nested_root_changes.push(IdChange::new(db_partition_key, nested_root));
-    }
-    put_partition_changes(store, current_version, nested_root_changes)
+    let next_version = node_root_version.unwrap_or(0) + 1;
+    let node_changes = index_by_node_key_and_partition_num(changes)
+        .into_iter()
+        .map(|(node_key, substate_changes_by_partition)| {
+            let mut partition_tier_store = NestedTreeStore::new(node_tier_store, node_key.clone());
+            let partition_root_version = partition_tier_store.get_root_version(node_root_version);
+            let partition_changes = substate_changes_by_partition
+                .into_iter()
+                .map(|(partition_num, substate_changes)| {
+                    let partition_key = vec![partition_num];
+                    let mut substate_tier_store =
+                        NestedTreeStore::new(&mut partition_tier_store, partition_key);
+                    let substate_root_version =
+                        substate_tier_store.get_root_version(partition_root_version);
+                    let partition_hash = put_id_hash_changes(
+                        &mut substate_tier_store,
+                        substate_root_version,
+                        next_version,
+                        substate_changes
+                            .into_iter()
+                            .map(|change| IdHashChange::new(change.id.0, change.hash_change))
+                            .collect(),
+                    );
+                    IdHashChange::new(partition_num, partition_hash)
+                })
+                .collect::<Vec<_>>();
+            let node_hash_change = put_id_hash_changes(
+                &mut partition_tier_store,
+                partition_root_version,
+                next_version,
+                partition_changes
+                    .into_iter()
+                    .map(|change| IdHashChange::new(vec![change.id], change.hash_change))
+                    .collect(),
+            );
+            IdHashChange::new(node_key, node_hash_change)
+        })
+        .collect::<Vec<_>>();
+    put_id_hash_changes(
+        node_tier_store,
+        node_root_version,
+        next_version,
+        node_changes,
+    )
+    .unwrap_or(SPARSE_MERKLE_PLACEHOLDER_HASH)
 }
 
 // only internals below
 
-fn index_by_db_partition_key(
+fn index_by_node_key_and_partition_num(
     changes: Vec<SubstateHashChange>,
-) -> IndexMap<DbPartitionKey, Vec<IdChange<DbSortKey, Hash>>> {
-    let mut by_db_partition_key = index_map_new();
-    for change in changes {
-        let db_substate_key = change.id;
-        by_db_partition_key
-            .entry(db_substate_key.0)
+) -> IndexMap<DbNodeKey, IndexMap<DbPartitionNum, Vec<IdHashChange<DbSortKey>>>> {
+    let mut by_db_node_key = index_map_new();
+    for IdHashChange { id, hash_change } in changes {
+        let (
+            DbPartitionKey {
+                node_key,
+                partition_num,
+            },
+            sort_key,
+        ) = id;
+        by_db_node_key
+            .entry(node_key)
+            .or_insert_with(|| index_map_new())
+            .entry(partition_num)
             .or_insert_with(|| Vec::new())
-            .push(IdChange::new(db_substate_key.1, change.changed));
+            .push(IdHashChange::new(sort_key, hash_change));
     }
-    by_db_partition_key
+    by_db_node_key
 }
 
-#[derive(Debug)]
-struct TreeRoot<P> {
-    hash: Hash,
-    node: TreeNode<P>,
-}
-
-fn put_substate_changes<S: TreeStore<PartitionPayload> + TreeStore<()>>(
-    store: &mut S,
-    current_version: Option<Version>,
-    db_partition_key: &DbPartitionKey,
-    changes: Vec<IdChange<DbSortKey, Hash>>,
-) -> Option<TreeRoot<()>> {
-    let (subtree_last_update_state_version, subtree_root) =
-        get_partition_leaf_entry(store, current_version, db_partition_key);
-    let mut subtree_store = NestedTreeStore::new(store, db_partition_key, subtree_root);
-    let substate_root_hash = put_changes(
-        &mut subtree_store,
-        subtree_last_update_state_version,
-        current_version.unwrap_or(0) + 1,
-        changes
-            .into_iter()
-            .map(|change| to_substate_change(change))
-            .collect(),
-    );
-    let substate_root_node = subtree_store.extract_new_root();
-    if matches!(substate_root_node, TreeNode::Null) {
-        None
-    } else {
-        Some(TreeRoot {
-            hash: substate_root_hash,
-            node: substate_root_node,
-        })
-    }
-}
-
-fn put_partition_changes<S: TreeStore<PartitionPayload>>(
-    store: &mut S,
-    current_version: Option<Version>,
-    changes: Vec<IdChange<DbPartitionKey, TreeRoot<()>>>,
-) -> Hash {
-    put_changes(
-        store,
-        current_version,
-        current_version.unwrap_or(0) + 1,
-        changes
-            .into_iter()
-            .map(|change| to_partition_change(change))
-            .collect(),
-    )
-}
-
-fn get_partition_leaf_entry<S: ReadableTreeStore<PartitionPayload>>(
-    store: &S,
-    current_version: Option<Version>,
-    db_partition_key: &DbPartitionKey,
-) -> (Option<Version>, Option<TreeNode<()>>) {
-    let Some(current_version) = current_version else {
-        return (None, None);
-    };
-    let (node_option, _proof) = JellyfishMerkleTree::new(store)
-        .get_with_proof(&LeafKey::new(&db_partition_key.0), current_version)
-        .unwrap();
-
-    let Some((_hash, payload, version)) = node_option else {
-        return (None, None);
-    };
-
-    (Some(version), Some(payload))
-}
-
-struct LeafChange<P> {
-    key: LeafKey,
-    new_payload: Option<(Hash, P)>,
-}
-
-fn put_changes<S: TreeStore<P>, P: Payload>(
+fn put_id_hash_changes<S: TreeStore>(
     store: &mut S,
     current_version: Option<Version>,
     next_version: Version,
-    changes: Vec<LeafChange<P>>,
+    changes: Vec<IdHashChange<Vec<u8>>>,
+) -> Option<Hash> {
+    let root_hash = put_leaf_changes(
+        store,
+        current_version,
+        next_version,
+        changes
+            .into_iter()
+            .map(|change| to_leaf_change(change))
+            .collect(),
+    );
+    if root_hash == SPARSE_MERKLE_PLACEHOLDER_HASH {
+        None
+    } else {
+        Some(root_hash)
+    }
+}
+
+fn to_leaf_change(change: IdHashChange<Vec<u8>>) -> LeafChange {
+    LeafChange {
+        key: LeafKey { bytes: change.id },
+        new_payload: change.hash_change.map(|value_hash| (value_hash, ())),
+    }
+}
+
+struct LeafChange {
+    key: LeafKey,
+    new_payload: Option<(Hash, ())>,
+}
+
+fn put_leaf_changes<S: TreeStore>(
+    store: &mut S,
+    current_version: Option<Version>,
+    next_version: Version,
+    changes: Vec<LeafChange>,
 ) -> Hash {
     let (root_hash, update_result) = JellyfishMerkleTree::new(store)
         .batch_put_value_set(
@@ -191,54 +195,28 @@ fn put_changes<S: TreeStore<P>, P: Payload>(
     root_hash
 }
 
-fn to_partition_change(
-    change: IdChange<DbPartitionKey, TreeRoot<()>>,
-) -> LeafChange<PartitionPayload> {
-    LeafChange {
-        key: LeafKey { bytes: change.id.0 },
-        new_payload: change.changed.map(|root| (root.hash, root.node)),
-    }
-}
-
-fn to_substate_change(change: IdChange<DbSortKey, Hash>) -> LeafChange<()> {
-    LeafChange {
-        key: LeafKey { bytes: change.id.0 },
-        new_payload: change.changed.map(|value_hash| (value_hash, ())),
-    }
-}
-
 struct NestedTreeStore<'s, S> {
     underlying: &'s mut S,
-    parent_key: LeafKey,
-    current_root: Option<TreeNode<()>>,
-    new_root: Option<TreeNode<()>>,
+    key_prefix_bytes: Vec<u8>,
 }
 
 impl<'s, S> NestedTreeStore<'s, S> {
-    pub fn new(
-        underlying: &'s mut S,
-        db_partition_key: &DbPartitionKey,
-        root: Option<TreeNode<()>>,
-    ) -> NestedTreeStore<'s, S> {
+    const TIER_SEPARATOR: u8 = b'_';
+
+    pub fn new(underlying: &'s mut S, parent_tier_key_bytes: Vec<u8>) -> NestedTreeStore<'s, S> {
+        let mut key_prefix_bytes = parent_tier_key_bytes;
+        key_prefix_bytes.push(Self::TIER_SEPARATOR);
         NestedTreeStore {
             underlying,
-            parent_key: LeafKey::new(&db_partition_key.0),
-            current_root: root,
-            new_root: None,
+            key_prefix_bytes,
         }
-    }
-
-    pub fn extract_new_root(&mut self) -> TreeNode<()> {
-        self.new_root
-            .take()
-            .expect("no new root stored into the nested tree")
     }
 
     fn prefixed(&self, key: &NodeKey) -> NodeKey {
         NodeKey::new(
             key.version(),
             NibblePath::from_iter(
-                NibblePath::new_even(self.parent_key.bytes.clone())
+                NibblePath::new_even(self.key_prefix_bytes.clone())
                     .nibbles()
                     .chain(key.nibble_path().nibbles()),
             ),
@@ -246,30 +224,33 @@ impl<'s, S> NestedTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore<()>> ReadableTreeStore<()> for NestedTreeStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<()>> {
-        if key.nibble_path().is_empty() {
-            self.current_root.clone()
-        } else {
-            self.underlying.get_node(&self.prefixed(key))
-        }
+impl<'s, S: ReadableTreeStore> NestedTreeStore<'s, S> {
+    pub fn get_root_version(&self, higher_tier_root_version: Option<Version>) -> Option<Version> {
+        higher_tier_root_version.and_then(|higher_tier_root_version| {
+            JellyfishMerkleTree::new(self.underlying)
+                .get_with_proof(
+                    &LeafKey::new(&self.key_prefix_bytes),
+                    higher_tier_root_version,
+                )
+                .unwrap()
+                .0
+                .map(|(_hash, _payload, version)| version)
+        })
     }
 }
 
-impl<'s, S: WriteableTreeStore<()>> WriteableTreeStore<()> for NestedTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<()>) {
-        if key.nibble_path().is_empty() {
-            self.new_root = Some(node);
-        } else {
-            self.underlying.insert_node(self.prefixed(&key), node);
-        }
+impl<'s, S: ReadableTreeStore> ReadableTreeStore for NestedTreeStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+        self.underlying.get_node(&self.prefixed(key))
+    }
+}
+
+impl<'s, S: WriteableTreeStore> WriteableTreeStore for NestedTreeStore<'s, S> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+        self.underlying.insert_node(self.prefixed(&key), node);
     }
 
     fn record_stale_node(&mut self, key: NodeKey) {
-        if key.nibble_path().is_empty() {
-            self.current_root = None;
-        } else {
-            self.underlying.record_stale_node(self.prefixed(&key));
-        }
+        self.underlying.record_stale_node(self.prefixed(&key));
     }
 }

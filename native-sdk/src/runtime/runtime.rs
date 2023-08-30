@@ -1,7 +1,10 @@
 use radix_engine_common::types::NodeId;
+use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::resource::AccessRule;
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AuthZoneAssertAccessRuleInput, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
@@ -13,16 +16,34 @@ use sbor::rust::prelude::*;
 pub struct Runtime {}
 
 impl Runtime {
-    /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
         api: &mut Y,
         event: T,
     ) -> Result<(), E>
     where
-        Y: ClientTransactionRuntimeApi<E>,
+        Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
+        api.actor_emit_event(
+            T::EVENT_NAME.to_string(),
+            scrypto_encode(&event).unwrap(),
+            EventFlags::empty(),
+        )
+    }
+
+    pub fn emit_event_no_revert<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
+        api: &mut Y,
+        event: T,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+        E: Debug + ScryptoCategorize + ScryptoDecode,
+    {
+        api.actor_emit_event(
+            T::EVENT_NAME.to_string(),
+            scrypto_encode(&event).unwrap(),
+            EventFlags::FORCE_WRITE,
+        )
     }
 
     pub fn current_epoch<Y, E>(api: &mut Y) -> Result<Epoch, E>
@@ -85,12 +106,19 @@ impl Runtime {
         api.generate_ruid()
     }
 
-    pub fn assert_access_rule<Y, E>(access_rule: AccessRule, api: &mut Y) -> Result<(), E>
+    pub fn assert_access_rule<Y, E>(rule: AccessRule, api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.assert_access_rule(access_rule)
+        let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
+        let _rtn = api.call_method(
+            &auth_zone,
+            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+            scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
+        )?;
+
+        Ok(())
     }
 
     pub fn get_node_id<Y, E>(api: &mut Y) -> Result<NodeId, E>
@@ -98,6 +126,6 @@ impl Runtime {
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.actor_get_node_id()
+        api.actor_get_node_id(ACTOR_REF_SELF)
     }
 }

@@ -1,5 +1,3 @@
-use scrypto::api::*;
-use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, NonFungibleData)]
@@ -23,9 +21,10 @@ mod non_fungible_test {
     impl NonFungibleTest {
         pub fn create_non_fungible_mutable() -> (Bucket, ResourceManager, Bucket) {
             // Create a mint badge
-            let mint_badge = ResourceBuilder::new_fungible(OwnerRole::None)
+            let mint_badge: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
-                .mint_initial_supply(1);
+                .mint_initial_supply(1)
+                .into();
 
             // Create non-fungible resource with mutable supply
             let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>(
@@ -108,6 +107,7 @@ mod non_fungible_test {
                         own: None,
                     },
                 ])
+                .into()
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {
@@ -149,6 +149,7 @@ mod non_fungible_test {
                         },
                     ),
                 ])
+                .into()
         }
 
         pub fn verify_does_not_exist(non_fungible_global_id: NonFungibleGlobalId) {
@@ -179,7 +180,7 @@ mod non_fungible_test {
             let address = data.reference.unwrap();
 
             let some_component: Global<AnyComponent> = address.into();
-            some_component.get_metadata("test_key").unwrap()
+            some_component.get_metadata("test_key").unwrap().unwrap()
         }
 
         pub fn update_non_fungible_with_ownership() -> Bucket {
@@ -377,7 +378,7 @@ mod non_fungible_test {
                 BTreeSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
-                vault.as_non_fungible().non_fungible_local_ids(),
+                vault.as_non_fungible().non_fungible_local_ids(100),
                 BTreeSet::from([
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3)
@@ -390,6 +391,38 @@ mod non_fungible_test {
                 .globalize();
 
             non_fungible_bucket
+        }
+
+        pub fn contains_non_fungible_vault() {
+            let vault = Vault::with_bucket(Self::create_non_fungible_fixed());
+            let vault = vault.as_non_fungible();
+            assert!(vault.contains_non_fungible(&NonFungibleLocalId::integer(1)));
+            assert!(vault.contains_non_fungible(&NonFungibleLocalId::integer(2)));
+            assert!(vault.contains_non_fungible(&NonFungibleLocalId::integer(3)));
+            assert!(!vault.contains_non_fungible(&NonFungibleLocalId::integer(4)));
+
+            NonFungibleTest {
+                vault: vault.into(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+
+        pub fn contains_non_fungible_bucket() {
+            let bucket = Self::create_non_fungible_fixed();
+            let bucket = bucket.as_non_fungible();
+            assert!(bucket.contains_non_fungible(&NonFungibleLocalId::integer(1)));
+            assert!(bucket.contains_non_fungible(&NonFungibleLocalId::integer(2)));
+            assert!(bucket.contains_non_fungible(&NonFungibleLocalId::integer(3)));
+            assert!(!bucket.contains_non_fungible(&NonFungibleLocalId::integer(4)));
+
+            NonFungibleTest {
+                vault: Vault::with_bucket(bucket.into()),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
         }
 
         pub fn get_non_fungible_local_id_vault() -> Bucket {
@@ -451,24 +484,22 @@ mod non_fungible_test {
             );
 
             // creating non-fungible id with id type set to default (RUID)
-            let rtn = ScryptoEnv
-                .call_function(
-                    RESOURCE_PACKAGE,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                    scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                        owner_role: OwnerRole::None,
-                        id_type: NonFungibleIdType::RUID,
-                        track_total_supply: false,
-                        resource_roles: NonFungibleResourceRoles::default(),
-                        metadata: metadata! {},
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        entries,
-                        address_reservation: None,
-                    })
-                    .unwrap(),
-                )
-                .unwrap();
+            let rtn = ScryptoVmV1Api::blueprint_call(
+                RESOURCE_PACKAGE,
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                    owner_role: OwnerRole::None,
+                    id_type: NonFungibleIdType::RUID,
+                    track_total_supply: false,
+                    resource_roles: NonFungibleResourceRoles::default(),
+                    metadata: metadata! {},
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    entries,
+                    address_reservation: None,
+                })
+                .unwrap(),
+            );
             let (_resource_address, bucket): (ResourceAddress, Bucket) =
                 scrypto_decode(&rtn).unwrap();
 
@@ -500,6 +531,7 @@ mod non_fungible_test {
                         },
                     ),
                 ])
+                .into()
         }
 
         pub fn create_bytes_non_fungible() -> Bucket {
@@ -526,18 +558,19 @@ mod non_fungible_test {
                         },
                     ),
                 ])
+                .into()
         }
 
         pub fn create_ruid_non_fungible() -> Bucket {
-            ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None).mint_initial_supply(
-                [Sandwich {
+            ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
+                .mint_initial_supply([Sandwich {
                     name: "Zero".to_owned(),
                     available: true,
                     tastes_great: true,
                     reference: None,
                     own: None,
-                }],
-            )
+                }])
+                .into()
         }
 
         pub fn create_mintable_ruid_non_fungible() -> ResourceManager {

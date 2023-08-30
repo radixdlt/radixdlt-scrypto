@@ -69,15 +69,29 @@ impl<T: BasicCategorize + BasicDecode + BasicEncode + BasicDescribe> BasicSbor f
 
 /// Encode a `T` into byte array.
 pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> Result<Vec<u8>, EncodeError> {
+    basic_encode_with_depth_limit(v, BASIC_SBOR_V1_MAX_DEPTH)
+}
+
+pub fn basic_encode_with_depth_limit<T: BasicEncode + ?Sized>(
+    v: &T,
+    depth_limit: usize,
+) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
-    let encoder = BasicEncoder::new(&mut buf, BASIC_SBOR_V1_MAX_DEPTH);
+    let encoder = BasicEncoder::new(&mut buf, depth_limit);
     encoder.encode_payload(v, BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
     Ok(buf)
 }
 
 /// Decode an instance of `T` from a slice.
 pub fn basic_decode<T: BasicDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    BasicDecoder::new(buf, BASIC_SBOR_V1_MAX_DEPTH).decode_payload(BASIC_SBOR_V1_PAYLOAD_PREFIX)
+    basic_decode_with_depth_limit(buf, BASIC_SBOR_V1_MAX_DEPTH)
+}
+
+pub fn basic_decode_with_depth_limit<T: BasicDecode>(
+    buf: &[u8],
+    depth_limit: usize,
+) -> Result<T, DecodeError> {
+    BasicDecoder::new(buf, depth_limit).decode_payload(BASIC_SBOR_V1_PAYLOAD_PREFIX)
 }
 
 impl CustomValueKind for NoCustomValueKind {
@@ -86,7 +100,7 @@ impl CustomValueKind for NoCustomValueKind {
     }
 
     fn from_u8(_id: u8) -> Option<Self> {
-        panic!("No custom type")
+        None
     }
 }
 
@@ -181,14 +195,11 @@ impl CustomSchema for NoCustomSchema {
     }
 
     fn resolve_well_known_type(
-        well_known_index: u8,
+        well_known_index: WellKnownTypeIndex,
     ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
-        // We know that WELL_KNOWN_LOOKUP has 256 elements, so can use `get_unchecked` for fast look-ups
-        unsafe {
-            WELL_KNOWN_LOOKUP
-                .get_unchecked(well_known_index as usize)
-                .as_ref()
-        }
+        WELL_KNOWN_LOOKUP
+            .get(well_known_index.as_index())
+            .and_then(|x| x.as_ref())
     }
 
     fn validate_custom_type_validation(
@@ -230,7 +241,6 @@ create_well_known_lookup!(
 );
 
 impl CustomExtension for NoCustomExtension {
-    const MAX_DEPTH: usize = BASIC_SBOR_V1_MAX_DEPTH;
     const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
     type CustomValueKind = NoCustomValueKind;
     type CustomTraversal = NoCustomTraversal;
@@ -262,6 +272,7 @@ pub type BasicRawValue<'a> = RawValue<'a, NoCustomExtension>;
 pub type BasicOwnedRawValue = RawValue<'static, NoCustomExtension>;
 pub type BasicTypeKind<L> = TypeKind<NoCustomTypeKind, L>;
 pub type BasicSchema = Schema<NoCustomSchema>;
+pub type BasicVersionedSchema = VersionedSchema<NoCustomSchema>;
 pub type BasicTypeData<L> = TypeData<NoCustomTypeKind, L>;
 
 impl<'a> CustomDisplayContext<'a> for () {
@@ -315,5 +326,51 @@ mod serde_serialization {
         ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
             unreachable!("No custom values exist")
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::rust::prelude::*;
+    use crate::{
+        basic_decode_with_depth_limit, basic_encode_with_depth_limit, BasicValue, BasicValueKind,
+    };
+
+    #[test]
+    fn depth_counting() {
+        // DEPTH(vec![]) = 1
+        // * 1 => Vec
+        //
+        // DEPTH(vec![1u32]) = 2
+        // * 1 => Vec
+        // * 2 => u32
+
+        let depth1 = BasicValue::Array {
+            element_value_kind: BasicValueKind::U32,
+            elements: vec![],
+        };
+        let depth2 = BasicValue::Array {
+            element_value_kind: BasicValueKind::U32,
+            elements: vec![BasicValue::U32 { value: 1 }],
+        };
+
+        // encode
+        assert!(basic_encode_with_depth_limit(&depth1, 0).is_err());
+        assert!(basic_encode_with_depth_limit(&depth1, 1).is_ok());
+        assert!(basic_encode_with_depth_limit(&depth1, 2).is_ok());
+        assert!(basic_encode_with_depth_limit(&depth2, 0).is_err());
+        assert!(basic_encode_with_depth_limit(&depth2, 1).is_err());
+        assert!(basic_encode_with_depth_limit(&depth2, 2).is_ok());
+
+        let buffer1 = basic_encode_with_depth_limit(&depth1, 128).unwrap();
+        let buffer2 = basic_encode_with_depth_limit(&depth2, 128).unwrap();
+
+        // decode
+        assert!(basic_decode_with_depth_limit::<Vec<u32>>(&buffer1, 0).is_err());
+        assert!(basic_decode_with_depth_limit::<Vec<u32>>(&buffer1, 1).is_ok());
+        assert!(basic_decode_with_depth_limit::<Vec<u32>>(&buffer1, 2).is_ok());
+        assert!(basic_decode_with_depth_limit::<Vec<u32>>(&buffer2, 0).is_err());
+        assert!(basic_decode_with_depth_limit::<Vec<u32>>(&buffer2, 1).is_err());
+        assert!(basic_decode_with_depth_limit::<Vec<u32>>(&buffer2, 2).is_ok());
     }
 }

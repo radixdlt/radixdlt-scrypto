@@ -4,7 +4,9 @@ use crate::*;
 use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::ManifestValue;
-use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
+use radix_engine_common::data::scrypto::{
+    ScryptoCustomTypeKind, ScryptoValue, VersionedScryptoSchema,
+};
 use radix_engine_common::prelude::replace_self_package_address;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
@@ -63,54 +65,6 @@ impl NonFungibleResourceRoles {
                 depositor_updater => rule!(deny_all);
             },
         }
-    }
-
-    pub fn to_features_and_roles(self) -> (Vec<&'static str>, RolesInit) {
-        let mut features = Vec::new();
-        let mut roles = RolesInit::new();
-
-        if self.mint_roles.is_some() {
-            features.push(MINT_FEATURE);
-        }
-
-        if self.burn_roles.is_some() {
-            features.push(BURN_FEATURE);
-        }
-
-        if self.freeze_roles.is_some() {
-            features.push(VAULT_FREEZE_FEATURE);
-        }
-
-        if self.recall_roles.is_some() {
-            features.push(VAULT_RECALL_FEATURE);
-        }
-
-        roles
-            .data
-            .extend(self.mint_roles.unwrap_or_default().to_role_init().data);
-        roles
-            .data
-            .extend(self.burn_roles.unwrap_or_default().to_role_init().data);
-        roles
-            .data
-            .extend(self.recall_roles.unwrap_or_default().to_role_init().data);
-        roles
-            .data
-            .extend(self.freeze_roles.unwrap_or_default().to_role_init().data);
-        roles
-            .data
-            .extend(self.deposit_roles.unwrap_or_default().to_role_init().data);
-        roles
-            .data
-            .extend(self.withdraw_roles.unwrap_or_default().to_role_init().data);
-        roles.data.extend(
-            self.non_fungible_data_update_roles
-                .unwrap_or_default()
-                .to_role_init()
-                .data,
-        );
-
-        (features, roles)
     }
 }
 
@@ -188,6 +142,20 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
+impl Default for NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
+    fn default() -> Self {
+        Self {
+            owner_role: Default::default(),
+            track_total_supply: true,
+            non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+            entries: Default::default(),
+            resource_roles: Default::default(),
+            metadata: Default::default(),
+            address_reservation: Default::default(),
+        }
+    }
+}
+
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
@@ -209,6 +177,14 @@ pub struct NonFungibleResourceManagerUpdateDataInput {
     pub id: NonFungibleLocalId,
     pub field_name: String,
     pub data: ScryptoValue,
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct NonFungibleResourceManagerUpdateDataManifestInput {
+    pub id: NonFungibleLocalId,
+    pub field_name: String,
+    pub data: ManifestValue,
 }
 
 pub type NonFungibleResourceManagerUpdateDataOutput = ();
@@ -271,7 +247,7 @@ pub type NonFungibleResourceManagerMintSingleRuidOutput = (Bucket, NonFungibleLo
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleDataSchema {
-    pub schema: ScryptoSchema,
+    pub schema: VersionedScryptoSchema,
     pub non_fungible: LocalTypeIndex,
     pub mutable_fields: BTreeSet<String>,
 }

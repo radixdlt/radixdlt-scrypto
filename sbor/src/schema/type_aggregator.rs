@@ -4,7 +4,7 @@ use sbor::rust::prelude::*;
 pub fn generate_full_schema_from_single_type<
     T: Describe<S::CustomTypeKind<GlobalTypeId>>,
     S: CustomSchema,
->() -> (LocalTypeIndex, Schema<S>) {
+>() -> (LocalTypeIndex, VersionedSchema<S>) {
     let mut aggregator = TypeAggregator::new();
     let type_index = aggregator.add_child_type_and_descendents::<T>();
     (type_index, generate_full_schema(aggregator))
@@ -12,7 +12,7 @@ pub fn generate_full_schema_from_single_type<
 
 pub fn generate_full_schema<S: CustomSchema>(
     aggregator: TypeAggregator<S::CustomTypeKind<GlobalTypeId>>,
-) -> Schema<S> {
+) -> VersionedSchema<S> {
     let type_count = aggregator.types.len();
     let type_indices = IndexSet::from_iter(aggregator.types.keys().map(|k| k.clone()));
 
@@ -25,11 +25,11 @@ pub fn generate_full_schema<S: CustomSchema>(
         type_validations.push(type_data.validation);
     }
 
-    Schema {
+    VersionedSchema::V1(Schema {
         type_kinds,
         type_metadata,
         type_validations,
-    }
+    })
 }
 
 pub fn localize_well_known<S: CustomSchema>(
@@ -95,7 +95,9 @@ pub fn resolve_local_type_index(
     type_index: &GlobalTypeId,
 ) -> LocalTypeIndex {
     match type_index {
-        GlobalTypeId::WellKnown([well_known_index]) => LocalTypeIndex::WellKnown(*well_known_index),
+        GlobalTypeId::WellKnown(well_known_type_index) => {
+            LocalTypeIndex::WellKnown(*well_known_type_index)
+        }
         GlobalTypeId::Novel(type_hash) => {
             LocalTypeIndex::SchemaLocalIndex(resolve_index(type_indices, type_hash))
         }
@@ -148,7 +150,7 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
         get_type_data: impl FnOnce() -> TypeData<C, GlobalTypeId>,
     ) -> LocalTypeIndex {
         let complex_type_hash = match type_index {
-            GlobalTypeId::WellKnown([well_known_type_index]) => {
+            GlobalTypeId::WellKnown(well_known_type_index) => {
                 return LocalTypeIndex::WellKnown(well_known_type_index);
             }
             GlobalTypeId::Novel(complex_type_hash) => complex_type_hash,

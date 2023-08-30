@@ -4,6 +4,7 @@ use crate::vm::vm::VmInvoke;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::ScryptoRuntime;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::package::CodeHash;
 use resources_tracker_macro::trace_resources;
 
 pub struct ScryptoVm<W: WasmEngine> {
@@ -24,7 +25,7 @@ impl<W: WasmEngine> ScryptoVm<W> {
     pub fn create_instance(
         &self,
         package_address: &PackageAddress,
-        code_hash: Hash,
+        code_hash: CodeHash,
         instrumented_code: &[u8],
     ) -> ScryptoVmInstance<W::WasmInstance> {
         ScryptoVmInstance {
@@ -40,7 +41,7 @@ pub struct ScryptoVmInstance<I: WasmInstance> {
 }
 
 impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
-    #[trace_resources(log=self.package_address.is_native_address(), log=self.package_address.to_hex(), log=export_name)]
+    #[trace_resources(log=self.package_address.is_native_package(), log=self.package_address.to_hex(), log=export_name)]
     fn invoke<Y>(
         &mut self,
         export_name: &str,

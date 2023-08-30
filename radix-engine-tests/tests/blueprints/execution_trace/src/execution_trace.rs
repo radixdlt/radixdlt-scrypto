@@ -21,7 +21,7 @@ mod execution_trace_test {
             let resource_address = bucket.resource_address();
 
             let source_component = ExecutionTraceTest {
-                vault: Vault::with_bucket(bucket),
+                vault: Vault::with_bucket(bucket.into()),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

@@ -6,7 +6,7 @@ use transaction::prelude::*;
 #[test]
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
     let (_, token_resource_address) = test_runner.create_restricted_transfer_token(account);
@@ -14,7 +14,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 500, token_resource_address, 1)
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_batch_or_abort(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -28,7 +28,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 #[test]
 fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
     let (auth_resource_address, token_resource_address) =
@@ -53,7 +53,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .pop_from_auth_zone("proof2")
         .drop_proof("proof2")
         .return_to_worktop("bucket")
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_batch_or_abort(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

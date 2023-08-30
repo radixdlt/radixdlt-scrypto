@@ -19,9 +19,12 @@ pub struct ShowLedger {}
 
 impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+        let native_vm = DefaultNativeVm::new();
+        let vm = Vm::new(&scrypto_vm, native_vm);
         let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-        Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
+            .bootstrap_test_default();
 
         Self::list_entries(out, &substate_db)?;
 
@@ -46,8 +49,6 @@ impl ShowLedger {
             date_time.to_string()
         )
         .map_err(Error::IOError)?;
-
-        writeln!(out, "").map_err(Error::IOError)?;
 
         Ok(())
     }

@@ -102,10 +102,12 @@ mod tests {
                 value: ManifestCustomValue::Proof(ManifestProof(0)),
             },
             ManifestValue::Custom {
-                value: ManifestCustomValue::Decimal(ManifestDecimal([0; 32])),
+                value: ManifestCustomValue::Decimal(ManifestDecimal([0; DECIMAL_SIZE])),
             },
             ManifestValue::Custom {
-                value: ManifestCustomValue::PreciseDecimal(ManifestPreciseDecimal([0; 64])),
+                value: ManifestCustomValue::PreciseDecimal(ManifestPreciseDecimal(
+                    [0; PRECISE_DECIMAL_SIZE],
+                )),
             },
             ManifestValue::Custom {
                 value: ManifestCustomValue::NonFungibleLocalId(ManifestNonFungibleLocalId::String(
@@ -131,11 +133,13 @@ mod tests {
             display_mode: DisplayMode::RustLike,
             print_mode: PrintMode::SingleLine,
             custom_context: context,
+            depth_limit: MANIFEST_SBOR_V1_MAX_DEPTH,
         });
         let actual_nested = payload.to_string(ValueDisplayParameters::Schemaless {
             display_mode: DisplayMode::RustLike,
             print_mode: PrintMode::SingleLine,
             custom_context: context,
+            depth_limit: MANIFEST_SBOR_V1_MAX_DEPTH,
         });
 
         // They're both the same

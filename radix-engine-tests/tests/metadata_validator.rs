@@ -8,7 +8,7 @@ use transaction::prelude::*;
 #[test]
 fn can_set_validator_metadata_with_owner() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pub_key, _, account) = test_runner.new_account(false);
     let validator = test_runner.new_validator_with_pub_key(pub_key, account);
 
@@ -45,7 +45,7 @@ fn can_set_validator_metadata_with_owner() {
 #[test]
 fn cannot_set_validator_metadata_without_owner() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pub_key, _, account) = test_runner.new_account(false);
     let validator = test_runner.new_validator_with_pub_key(pub_key, account);
 

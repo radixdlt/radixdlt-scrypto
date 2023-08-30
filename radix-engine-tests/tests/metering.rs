@@ -1,4 +1,5 @@
-use radix_engine::system::system_modules::costing::FeeSummary;
+use radix_engine::transaction::TransactionFeeDetails;
+use radix_engine::transaction::TransactionFeeSummary;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
@@ -29,8 +30,8 @@ fn update_expected_costs() {
     run_publish_large_package(Mode::OutputCosting(
         "./assets/cost_publish_large_package.csv".to_string(),
     ));
-    run_mint_mid_size_nfts_from_manifest(Mode::OutputCosting(
-        "./assets/cost_mint_mid_size_nfts_from_manifest.csv".to_string(),
+    run_mint_large_size_nfts_from_manifest(Mode::OutputCosting(
+        "./assets/cost_mint_large_size_nfts_from_manifest.csv".to_string(),
     ));
     run_mint_small_size_nfts_from_manifest(Mode::OutputCosting(
         "./assets/cost_mint_small_size_nfts_from_manifest.csv".to_string(),
@@ -43,6 +44,7 @@ fn test_basic_transfer() {
         "../assets/cost_transfer.csv"
     ))));
 }
+
 #[test]
 fn test_transfer_to_virtual_account() {
     run_basic_transfer_to_virtual_account(Mode::AssertCosting(load_cost_breakdown(include_str!(
@@ -72,9 +74,9 @@ fn test_publish_large_package() {
 }
 
 #[test]
-fn test_mint_mid_size_nfts_from_manifest() {
-    run_mint_mid_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_str!(
-        "../assets/cost_mint_mid_size_nfts_from_manifest.csv"
+fn test_mint_large_size_nfts_from_manifest() {
+    run_mint_large_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_mint_large_size_nfts_from_manifest.csv"
     ))));
 }
 
@@ -87,7 +89,7 @@ fn test_mint_small_size_nfts_from_manifest() {
 
 #[cfg(feature = "std")]
 fn execute_with_time_logging(
-    test_runner: &mut TestRunner,
+    test_runner: &mut DefaultTestRunner,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
@@ -103,7 +105,7 @@ fn execute_with_time_logging(
 
 #[cfg(feature = "alloc")]
 fn execute_with_time_logging(
-    test_runner: &mut TestRunner,
+    test_runner: &mut DefaultTestRunner,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
@@ -111,26 +113,43 @@ fn execute_with_time_logging(
     (receipt, 0)
 }
 
-pub fn load_cost_breakdown(content: &str) -> BTreeMap<String, u32> {
-    let mut breakdown = BTreeMap::<String, u32>::new();
-    content
-        .split("\n")
-        .filter(|x| x.len() > 0)
-        .skip(6)
-        .for_each(|x| {
-            let mut tokens = x.split(",");
-            let entry = tokens.next().unwrap().trim();
+pub fn load_cost_breakdown(content: &str) -> (BTreeMap<String, u32>, BTreeMap<String, u32>) {
+    let mut execution_breakdown = BTreeMap::<String, u32>::new();
+    let mut finalization_breakdown = BTreeMap::<String, u32>::new();
+    let lines: Vec<String> = content.split("\n").map(String::from).collect();
+    let mut is_execution = true;
+    for i in 8..lines.len() {
+        if lines[i].starts_with("-") {
+            let mut tokens = lines[i].split(",");
+            let entry = tokens.next().unwrap().trim()[2..].to_string();
             let cost = tokens.next().unwrap().trim();
-            breakdown.insert(entry.to_string(), u32::from_str(cost).unwrap());
-        });
-    breakdown
+            if is_execution {
+                &mut execution_breakdown
+            } else {
+                &mut finalization_breakdown
+            }
+            .insert(entry, u32::from_str(cost).unwrap());
+        } else {
+            is_execution = false;
+        }
+    }
+    (execution_breakdown, finalization_breakdown)
 }
 
 #[cfg(feature = "alloc")]
-pub fn write_cost_breakdown(_fee_summary: &FeeSummary, _file: &str) {}
+pub fn write_cost_breakdown(
+    _fee_summary: &TransactionFeeSummary,
+    _fee_details: &TransactionFeeDetails,
+    _file: &str,
+) {
+}
 
 #[cfg(not(feature = "alloc"))]
-pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
+pub fn write_cost_breakdown(
+    fee_summary: &TransactionFeeSummary,
+    fee_details: &TransactionFeeDetails,
+    file: &str,
+) {
     use std::fs::File;
     use std::io::Write;
 
@@ -141,7 +160,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     let mut buffer = String::new();
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
+            "{:<75},{:>25}, {:8.1}%\n",
             "Total Cost (XRD)",
             fee_summary.total_cost().to_string(),
             100.0
@@ -150,59 +169,154 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
-            "+ Execution Cost (XRD)",
-            fee_summary.total_execution_cost_xrd.to_string(),
-            decimal_to_float(fee_summary.total_execution_cost_xrd / fee_summary.total_cost() * 100)
-        )
-        .as_str(),
-    );
-    buffer.push_str(
-        format!(
-            "{:<75},{:>15}, {:8.1}%\n",
-            "+ Tipping Cost (XRD)",
-            fee_summary.total_tipping_cost_xrd.to_string(),
-            decimal_to_float(fee_summary.total_tipping_cost_xrd / fee_summary.total_cost() * 100)
-        )
-        .as_str(),
-    );
-    buffer.push_str(
-        format!(
-            "{:<75},{:>15}, {:8.1}%\n",
-            "+ State Expansion Cost (XRD)",
-            fee_summary.total_state_expansion_cost_xrd.to_string(),
+            "{:<75},{:>25}, {:8.1}%\n",
+            "- Execution Cost (XRD)",
+            fee_summary.total_execution_cost_in_xrd.to_string(),
             decimal_to_float(
-                fee_summary.total_state_expansion_cost_xrd / fee_summary.total_cost() * 100
+                fee_summary
+                    .total_execution_cost_in_xrd
+                    .safe_div(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
             )
         )
         .as_str(),
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
-            "+ Royalty Cost (XRD)",
-            fee_summary.total_royalty_cost_xrd.to_string(),
-            decimal_to_float(fee_summary.total_royalty_cost_xrd / fee_summary.total_cost() * 100)
+            "{:<75},{:>25}, {:8.1}%\n",
+            "- Finalization Cost (XRD)",
+            fee_summary.total_finalization_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary
+                    .total_finalization_cost_in_xrd
+                    .safe_div(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
+            )
         )
         .as_str(),
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.1}%\n",
-            "Total Cost Units Consumed",
-            fee_summary.execution_cost_breakdown.values().sum::<u32>(),
+            "{:<75},{:>25}, {:8.1}%\n",
+            "- Tipping Cost (XRD)",
+            fee_summary.total_tipping_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary
+                    .total_tipping_cost_in_xrd
+                    .safe_mul(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
+            )
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<75},{:>25}, {:8.1}%\n",
+            "- Storage Cost (XRD)",
+            fee_summary.total_storage_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary
+                    .total_storage_cost_in_xrd
+                    .safe_div(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
+            )
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<75},{:>25}, {:8.1}%\n",
+            "- Tipping Cost (XRD)",
+            fee_summary.total_tipping_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary
+                    .total_tipping_cost_in_xrd
+                    .safe_div(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
+            )
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<75},{:>25}, {:8.1}%\n",
+            "- Royalty Cost (XRD)",
+            fee_summary.total_royalty_cost_in_xrd.to_string(),
+            decimal_to_float(
+                fee_summary
+                    .total_royalty_cost_in_xrd
+                    .safe_div(fee_summary.total_cost())
+                    .unwrap()
+                    .safe_mul(100)
+                    .unwrap()
+            )
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<75},{:>25}, {:8.1}%\n",
+            "Execution Cost Breakdown",
+            fee_details.execution_cost_breakdown.values().sum::<u32>(),
             100.0
         )
         .as_str(),
     );
-    for (k, v) in &fee_summary.execution_cost_breakdown {
+    for (k, v) in &fee_details.execution_cost_breakdown {
         buffer.push_str(
             format!(
-                "{:<75},{:>15}, {:8.1}%\n",
+                "- {:<73},{:>25}, {:8.1}%\n",
                 k,
                 v,
                 decimal_to_float(
-                    Decimal::from(*v) / Decimal::from(fee_summary.execution_cost_sum) * 100
+                    Decimal::from(*v)
+                        .safe_div(Decimal::from(
+                            fee_summary.total_execution_cost_units_consumed
+                        ))
+                        .unwrap()
+                        .safe_mul(100)
+                        .unwrap()
+                )
+            )
+            .as_str(),
+        );
+    }
+    buffer.push_str(
+        format!(
+            "{:<75},{:>25}, {:8.1}%\n",
+            "Finalization Cost Breakdown",
+            fee_details
+                .finalization_cost_breakdown
+                .values()
+                .sum::<u32>(),
+            100.0
+        )
+        .as_str(),
+    );
+    for (k, v) in &fee_details.finalization_cost_breakdown {
+        buffer.push_str(
+            format!(
+                "- {:<73},{:>25}, {:8.1}%\n",
+                k,
+                v,
+                decimal_to_float(
+                    Decimal::from(*v)
+                        .safe_div(Decimal::from(
+                            fee_summary.total_finalization_cost_units_consumed
+                        ))
+                        .unwrap()
+                        .safe_mul(100)
+                        .unwrap()
                 )
             )
             .as_str(),
@@ -215,17 +329,18 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
 
 pub enum Mode {
     OutputCosting(String),
-    AssertCosting(BTreeMap<String, u32>),
+    AssertCosting((BTreeMap<String, u32>, BTreeMap<String, u32>)),
 }
 
 impl Mode {
-    pub fn run(&self, fee_summary: &FeeSummary) {
+    pub fn run(&self, fee_summary: &TransactionFeeSummary, fee_details: &TransactionFeeDetails) {
         match self {
             Mode::OutputCosting(file) => {
-                write_cost_breakdown(fee_summary, file.as_str());
+                write_cost_breakdown(fee_summary, fee_details, file.as_str());
             }
             Mode::AssertCosting(expected) => {
-                assert_eq!(&fee_summary.execution_cost_breakdown, expected);
+                assert_eq!(&fee_details.execution_cost_breakdown, &expected.0);
+                assert_eq!(&fee_details.finalization_cost_breakdown, &expected.1);
             }
         }
     }
@@ -233,7 +348,7 @@ impl Mode {
 
 fn run_basic_transfer(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
 
@@ -241,7 +356,7 @@ fn run_basic_transfer(mode: Mode) {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
         .withdraw_from_account(account1, XRD, 100)
-        .try_deposit_batch_or_abort(account2)
+        .try_deposit_batch_or_abort(account2, None)
         .build();
 
     let (receipt, _) = execute_with_time_logging(
@@ -249,14 +364,14 @@ fn run_basic_transfer(mode: Mode) {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
 
-    mode.run(&commit_result.fee_summary);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_basic_transfer_to_virtual_account(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let account2 = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
         Secp256k1PublicKey([123u8; 33]),
@@ -266,7 +381,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
         .withdraw_from_account(account1, XRD, 100)
-        .try_deposit_batch_or_abort(account2)
+        .try_deposit_batch_or_abort(account2, None)
         .build();
 
     let (receipt, _) = execute_with_time_logging(
@@ -274,13 +389,13 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
 
-    mode.run(&commit_result.fee_summary);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_radiswap(mode: Mode) {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Scrypto developer
     let (pk1, _, _) = test_runner.new_allocated_account();
@@ -310,7 +425,7 @@ fn run_radiswap(mode: Mode) {
                     "new",
                     manifest_args!(OwnerRole::None, btc, eth),
                 )
-                .try_deposit_batch_or_abort(account2)
+                .try_deposit_batch_or_abort(account2, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
@@ -335,7 +450,7 @@ fn run_radiswap(mode: Mode) {
                         manifest_args!(lookup.bucket("btc"), lookup.bucket("eth")),
                     )
                 })
-                .try_deposit_batch_or_abort(account2)
+                .try_deposit_batch_or_abort(account2, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
@@ -348,12 +463,12 @@ fn run_radiswap(mode: Mode) {
             ManifestBuilder::new()
                 .lock_fee(account2, 500)
                 .withdraw_from_account(account2, btc, btc_amount)
-                .try_deposit_batch_or_abort(account3)
+                .try_deposit_batch_or_abort(account3, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
         .expect_commit_success();
-    assert_eq!(test_runner.account_balance(account3, btc), Some(btc_amount));
+    assert_eq!(test_runner.get_component_balance(account3, btc), btc_amount);
 
     // Swap 2,000 BTC into ETH
     let btc_to_swap = Decimal::from(2000);
@@ -366,21 +481,21 @@ fn run_radiswap(mode: Mode) {
                 let bucket = lookup.bucket("to_trade");
                 builder.call_method(component_address, "swap", manifest_args!(bucket))
             })
-            .try_deposit_batch_or_abort(account3)
+            .try_deposit_batch_or_abort(account3, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
-    let remaining_btc = test_runner.account_balance(account3, btc).unwrap();
-    let eth_received = test_runner.account_balance(account3, eth).unwrap();
-    assert_eq!(remaining_btc, btc_amount - btc_to_swap);
+    let remaining_btc = test_runner.get_component_balance(account3, btc);
+    let eth_received = test_runner.get_component_balance(account3, eth);
+    assert_eq!(remaining_btc, btc_amount.safe_sub(btc_to_swap).unwrap());
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
-    let commit_result = receipt.expect_commit(true);
+    receipt.expect_commit(true);
 
-    mode.run(&commit_result.fee_summary);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_flash_loan(mode: Mode) {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Scrypto developer
     let (pk1, _, _) = test_runner.new_allocated_account();
@@ -413,7 +528,7 @@ fn run_flash_loan(mode: Mode) {
                         manifest_args!(lookup.bucket("bucket")),
                     )
                 })
-                .try_deposit_batch_or_abort(account2)
+                .try_deposit_batch_or_abort(account2, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
@@ -422,8 +537,8 @@ fn run_flash_loan(mode: Mode) {
 
     // Take loan
     let loan_amount = Decimal::from(50);
-    let repay_amount = loan_amount * dec!("1.001");
-    let old_balance = test_runner.account_balance(account3, XRD).unwrap();
+    let repay_amount = loan_amount.safe_mul(dec!("1.001")).unwrap();
+    let old_balance = test_runner.get_component_balance(account3, XRD);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account3, 500)
@@ -438,29 +553,31 @@ fn run_flash_loan(mode: Mode) {
                     manifest_args!(lookup.bucket("repayment"), lookup.bucket("promise")),
                 )
             })
-            .try_deposit_batch_or_abort(account3)
+            .try_deposit_batch_or_abort(account3, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
-    let commit_result = receipt.expect_commit(true);
-    let new_balance = test_runner.account_balance(account3, XRD).unwrap();
+    receipt.expect_commit(true);
+    let new_balance = test_runner.get_component_balance(account3, XRD);
     assert!(test_runner
-        .account_balance(account3, promise_token_address)
-        .is_none());
+        .get_component_balance(account3, promise_token_address)
+        .is_zero());
     assert_eq!(
-        old_balance - new_balance,
-        commit_result.fee_summary.total_execution_cost_xrd
-            + commit_result.fee_summary.total_tipping_cost_xrd
-            + commit_result.fee_summary.total_state_expansion_cost_xrd
-            + commit_result.fee_summary.total_royalty_cost_xrd
-            + (repay_amount - loan_amount)
+        old_balance.safe_sub(new_balance).unwrap(),
+        receipt
+            .fee_summary
+            .total_cost()
+            .safe_add(repay_amount)
+            .unwrap()
+            .safe_sub(loan_amount)
+            .unwrap()
     );
-    mode.run(&commit_result.fee_summary);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_publish_large_package(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let code = wat2wasm(&format!(
@@ -487,8 +604,8 @@ fn run_publish_large_package(mode: Mode) {
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
     // Assert
-    let commit_result = receipt.expect_commit_success();
-    mode.run(&commit_result.fee_summary);
+    receipt.expect_commit_success();
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 fn run_mint_small_size_nfts_from_manifest(mode: Mode) {
@@ -500,19 +617,21 @@ fn run_mint_small_size_nfts_from_manifest(mode: Mode) {
     )
 }
 
-fn run_mint_mid_size_nfts_from_manifest(mode: Mode) {
+fn run_mint_large_size_nfts_from_manifest(mode: Mode) {
+    const N: usize = 50;
+
     run_mint_nfts_from_manifest(
         mode,
         TestNonFungibleData {
             metadata: btreemap!(
-                "Name".to_string() => "Type".to_string(),
-                "Abilities".to_string() => "Lightning Rod".to_string(),
-                "Egg Groups".to_string() => "Field and Fairy or No Eggs Discovered".to_string(),
-                "Hatch time".to_string() => "10 cycles".to_string(),
-                "Height".to_string() => "0.4 m".to_string(),
-                "Weight".to_string() => "6.0 kg".to_string(),
-                "Base experience yield".to_string() => "82".to_string(),
-                "Leveling rate".to_string() => "Medium Fast".to_string(),
+                "Name".to_string() => "Type".repeat(N),
+                "Abilities".to_string() => "Lightning Rod".repeat(N),
+                "Egg Groups".to_string() => "Field and Fairy or No Eggs Discovered".repeat(N),
+                "Hatch time".to_string() => "10 cycles".repeat(N),
+                "Height".to_string() => "0.4 m".repeat(N),
+                "Weight".to_string() => "6.0 kg".repeat(N),
+                "Base experience yield".to_string() => "82".repeat(N),
+                "Leveling rate".to_string() => "Medium Fast".repeat(N),
             ),
         },
     )
@@ -520,13 +639,14 @@ fn run_mint_mid_size_nfts_from_manifest(mode: Mode) {
 
 fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_allocated_account();
 
     // Act
     let mut low = 16;
     let mut high = 16 * 1024;
     let mut last_success_receipt = None;
+    let mut last_fail_receipt = None;
     while low <= high {
         let mid = low + (high - low) / 2;
         let mut entries = BTreeMap::new();
@@ -543,7 +663,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
                 metadata! {},
                 Some(entries),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_batch_or_abort(account, None)
             .build();
         let transaction = create_notarized_transaction(
             TransactionParams {
@@ -553,7 +673,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
             manifest.clone(),
         );
         let raw_transaction = transaction.to_raw().unwrap();
-        if raw_transaction.0.len() > DEFAULT_MAX_TRANSACTION_SIZE {
+        if raw_transaction.0.len() > MAX_TRANSACTION_SIZE {
             high = mid - 1;
         } else {
             let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -561,13 +681,18 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
                 last_success_receipt = Some((mid, receipt, raw_transaction));
                 low = mid + 1;
             } else {
+                last_fail_receipt = Some((mid, receipt, raw_transaction));
                 high = mid - 1;
             }
         }
     }
 
     // Assert
-    let (n, receipt, raw_transaction) = last_success_receipt.unwrap();
+    let (n, receipt, raw_transaction) = last_success_receipt.unwrap_or_else(|| {
+        // Print an error message from the failing commit
+        last_fail_receipt.unwrap().1.expect_commit_success();
+        unreachable!()
+    });
     println!(
         "Transaction payload size: {} bytes",
         raw_transaction.0.len()
@@ -577,13 +702,13 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
         scrypto_encode(&nft_data).unwrap().len()
     );
     println!("Managed to mint {} NFTs", n);
-    mode.run(&receipt.expect_commit_success().fee_summary);
+    mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
 #[test]
 fn can_run_large_manifest() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -598,7 +723,7 @@ fn can_run_large_manifest() {
             .take_from_worktop(XRD, 1, &bucket)
             .return_to_worktop(bucket);
     }
-    let manifest = builder.try_deposit_batch_or_abort(account).build();
+    let manifest = builder.try_deposit_batch_or_abort(account, None).build();
 
     let (receipt, _) = execute_with_time_logging(
         &mut test_runner,
@@ -613,7 +738,7 @@ fn can_run_large_manifest() {
 #[test]
 fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
 
@@ -634,9 +759,9 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     receipt.expect_commit(true);
 }
 
-fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAddress) {
+fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, ComponentAddress) {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component
@@ -691,4 +816,26 @@ struct TestNonFungibleData {
 
 impl NonFungibleData for TestNonFungibleData {
     const MUTABLE_FIELDS: &'static [&'static str] = &["metadata"];
+}
+
+/// This test verified that we can publish a large package of size as close as possible to current
+/// limit: 1,048,576 bytes minus SBOR overhead.
+///
+/// If it fails, update `radix-engine-tests/blueprints/large_package/` by adding or removing blueprints
+/// to make sure the size is close to 1MB. This is often needed when the WASM interface or compiler
+/// changes.
+///
+/// List of blueprints and its size can be displayed using command
+/// `ls -lSk ./radix-engine-tests/tests/blueprints/target/wasm32-unknown-unknown/release/*.wasm`
+///
+#[test]
+fn publish_package_1mib() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, definition) = Compile::compile("./tests/blueprints/large_package");
+    println!("Code size: {}", code.len());
+    assert!(code.len() <= 1000 * 1024);
+    assert!(code.len() >= 900 * 1024);
+
+    // internally validates if publish succeeded
+    test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 }

@@ -1,35 +1,20 @@
-use crate::api::ObjectHandle;
+use crate::api::ActorStateHandle;
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
-use radix_engine_derive::{ManifestSbor, ScryptoSbor};
+use radix_engine_common::types::SortedKey;
 use radix_engine_interface::api::CollectionIndex;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct SortedKey(pub u16, pub Vec<u8>);
+pub trait SortedIndexKeyPayloadMarker {}
+pub trait SortedIndexEntryPayloadMarker {}
 
-impl SortedKey {
-    pub fn new(sorted: u16, key: Vec<u8>) -> Self {
-        Self(sorted, key)
-    }
-}
-
-impl Into<Vec<u8>> for SortedKey {
-    fn into(self) -> Vec<u8> {
-        let mut bytes = self.0.to_be_bytes().to_vec();
-        bytes.extend(self.1);
-        bytes
-    }
-}
-
-// TODO: Add locked entry interface
 pub trait ClientActorSortedIndexApi<E> {
     /// Inserts an entry into a sorted index
     fn actor_sorted_index_insert(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: SortedKey,
         buffer: Vec<u8>,
@@ -38,7 +23,7 @@ pub trait ClientActorSortedIndexApi<E> {
     /// Inserts an entry into a sorted index
     fn actor_sorted_index_insert_typed<V: ScryptoEncode>(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: SortedKey,
         value: V,
@@ -54,7 +39,7 @@ pub trait ClientActorSortedIndexApi<E> {
     /// Removes an entry from a sorted index
     fn actor_sorted_index_remove(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, E>;
@@ -62,7 +47,7 @@ pub trait ClientActorSortedIndexApi<E> {
     /// Removes an entry from a sorted index
     fn actor_sorted_index_remove_typed<V: ScryptoDecode>(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         sorted_key: &SortedKey,
     ) -> Result<Option<V>, E> {
@@ -75,24 +60,25 @@ pub trait ClientActorSortedIndexApi<E> {
     /// Scans the first elements of count from a sorted index
     fn actor_sorted_index_scan(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         count: u32,
-    ) -> Result<Vec<Vec<u8>>, E>;
+    ) -> Result<Vec<(SortedKey, Vec<u8>)>, E>;
 
     /// Scans the first elements of count from a sorted index
-    fn actor_sorted_index_scan_typed<S: ScryptoDecode>(
+    fn actor_sorted_index_scan_typed<K: ScryptoDecode, V: ScryptoDecode>(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         count: u32,
-    ) -> Result<Vec<S>, E> {
+    ) -> Result<Vec<(K, V)>, E> {
         let entries = self
             .actor_sorted_index_scan(object_handle, collection_index, count)?
             .into_iter()
-            .map(|buf| {
-                let typed: S = scrypto_decode(&buf).unwrap();
-                typed
+            .map(|(key, buf)| {
+                let typed_key: K = scrypto_decode(&key.1).unwrap();
+                let typed_value: V = scrypto_decode(&buf).unwrap();
+                (typed_key, typed_value)
             })
             .collect();
 

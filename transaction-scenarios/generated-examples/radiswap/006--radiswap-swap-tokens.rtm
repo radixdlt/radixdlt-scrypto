@@ -14,7 +14,7 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("input")
 ;
 CALL_METHOD
-    Address("component_sim1cp6aefdvng27qqqmejh4tpt6lz6gk4ln2mv7cscxshqgdnq8t5xydk")
+    Address("component_sim1cqlfnhdzw4sdwkvtqadkcdj9g9hpg9ggpjp6qq5vy9ks3u3q476uyj")
     "swap"
     Bucket("input")
 ;
@@ -22,4 +22,5 @@ CALL_METHOD
     Address("account_sim168j3paqgngj74yzaljq4n422rtsmupaec3wnqq5425fd85cnd8xmdz")
     "try_deposit_batch_or_abort"
     Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
 ;

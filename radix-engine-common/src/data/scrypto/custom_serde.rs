@@ -132,7 +132,7 @@ mod tests {
                     value: ScryptoCustomValue::Decimal(Decimal::ONE),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::Decimal(Decimal::ONE / 100),
+                    value: ScryptoCustomValue::Decimal(Decimal::ONE.safe_div(100).unwrap()),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),
@@ -252,6 +252,7 @@ mod tests {
                 SerializationParameters::Schemaless {
                     mode: SerializationMode::Natural,
                     custom_context: context.into(),
+                    depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
                 },
             ),
             expected,
@@ -274,6 +275,7 @@ mod tests {
                 SerializationParameters::Schemaless {
                     mode: SerializationMode::Programmatic,
                     custom_context: context.into(),
+                    depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
                 },
             ),
             expected,

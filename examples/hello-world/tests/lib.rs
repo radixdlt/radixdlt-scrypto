@@ -5,7 +5,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_hello() {
     // Setup the environment
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Create an account
     let (public_key, _private_key, account) = test_runner.new_allocated_account();
