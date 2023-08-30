@@ -74,11 +74,8 @@ fn should_be_aborted_when_loan_repaid() {
 
 #[test]
 fn should_succeed_when_fee_is_paid() {
-    let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new()
-            .lock_fee(component_address, 500u32)
-            .build()
-    });
+    let receipt =
+        run_manifest(|_component_address| ManifestBuilder::new().lock_fee_from_faucet().build());
 
     receipt.expect_commit_success();
 }
@@ -139,6 +136,7 @@ fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
 fn should_be_rejected_when_lock_fee_with_temp_vault() {
     let receipt = run_manifest(|component_address| {
         ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 component_address,
                 "lock_fee_with_temp_vault",
@@ -161,6 +159,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
 fn should_be_success_when_query_vault_and_lock_fee() {
     let receipt = run_manifest(|component_address| {
         ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 component_address,
                 "query_vault_and_lock_fee",
@@ -176,6 +175,7 @@ fn should_be_success_when_query_vault_and_lock_fee() {
 fn should_be_rejected_when_mutate_vault_and_lock_fee() {
     let receipt = run_manifest(|component_address| {
         ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 component_address,
                 "update_vault_and_lock_fee",
@@ -198,6 +198,7 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
 fn should_succeed_when_lock_fee_and_query_vault() {
     let receipt = run_manifest(|component_address| {
         ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 component_address,
                 "lock_fee_and_query_vault",
