@@ -224,8 +224,8 @@ pub enum StableReferenceType {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TransientReference {
-    pub ref_count: usize,
-    pub ref_origin: ReferenceOrigin,
+    ref_count: usize,
+    ref_origin: ReferenceOrigin,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
