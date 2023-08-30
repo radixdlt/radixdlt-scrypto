@@ -5,7 +5,9 @@ members = [
     "radiswap",
     "flash_loan",
     "genesis_helper",
+    "test_environment",
 ]
+resolver = "2"
 
 [profile.release]
 opt-level = 'z'        # Optimize for size.
