@@ -91,7 +91,7 @@ impl Decimal {
     /// Returns the absolute value.
     pub fn safe_abs(&self) -> Option<Self> {
         if *self != Self::MIN {
-            Some(Decimal(self.0.abs()))
+            Some(Self(self.0.abs()))
         } else {
             None
         }
@@ -105,6 +105,18 @@ impl Decimal {
     /// Returns the smallest integer that is equal to or greater than this number.
     pub fn safe_ceiling(&self) -> Option<Self> {
         self.safe_round(0, RoundingMode::ToPositiveInfinity)
+    }
+
+    // check if integer part of self equals integer part of MAX
+    #[inline]
+    fn integer_is_not_max(&self) -> Option<bool> {
+        Some(Self::MAX.safe_sub(*self)? > Self::from_str("0.177722232017256447").unwrap())
+    }
+
+    // check if integer part of self equals integer part of MIN
+    #[inline]
+    fn integer_is_not_min(&self) -> Option<bool> {
+        Some(Self::MIN.safe_sub(*self)? < Self::from_str("-0.177722232017256448").unwrap())
     }
 
     /// Rounds this number to the specified decimal places.
@@ -123,9 +135,7 @@ impl Decimal {
                 if self.0 % divisor == I192::ZERO {
                     *self
                 } else if self.is_positive() {
-                    // check if integer part of self equals integer part of MAX
-                    if Self::MAX.safe_sub(*self)? > Self::from_str("0.177722232017256447").unwrap()
-                    {
+                    if self.integer_is_not_max()? {
                         Self((self.0 / divisor + I192::ONE) * divisor)
                     } else {
                         return None;
@@ -138,9 +148,7 @@ impl Decimal {
                 if self.0 % divisor == I192::ZERO {
                     *self
                 } else if self.is_negative() {
-                    // check if integer part of self equals integer part of MIN
-                    if Self::MIN.safe_sub(*self)? < Self::from_str("-0.177722232017256448").unwrap()
-                    {
+                    if self.integer_is_not_min()? {
                         Self((self.0 / divisor - I192::ONE) * divisor)
                     } else {
                         return None;
@@ -160,17 +168,13 @@ impl Decimal {
                 if self.0 % divisor == I192::ZERO {
                     *self
                 } else if self.is_negative() {
-                    // check if integer part of self equals integer part of MIN
-                    if Self::MIN.safe_sub(*self)? < Self::from_str("-0.177722232017256448").unwrap()
-                    {
+                    if self.integer_is_not_min()? {
                         Self((self.0 / divisor - I192::ONE) * divisor)
                     } else {
                         return None;
                     }
                 // check if integer part of self equals integer part of MAX
-                } else if Self::MAX.safe_sub(*self)?
-                    > Self::from_str("0.177722232017256447").unwrap()
-                {
+                } else if self.integer_is_not_max()? {
                     Self((self.0 / divisor + I192::ONE) * divisor)
                 } else {
                     return None;
@@ -184,9 +188,15 @@ impl Decimal {
                     let mid_point = divisor / I192::from(2);
                     if remainder > mid_point {
                         if self.is_negative() {
-                            Self((self.0 / divisor - I192::ONE) * divisor)
-                        } else {
+                            if self.integer_is_not_min()? {
+                                Self((self.0 / divisor - I192::ONE) * divisor)
+                            } else {
+                                return None;
+                            }
+                        } else if self.integer_is_not_max()? {
                             Self((self.0 / divisor + I192::ONE) * divisor)
+                        } else {
+                            return None;
                         }
                     } else {
                         Self(self.0 / divisor * divisor)
@@ -201,23 +211,15 @@ impl Decimal {
                     let mid_point = divisor / I192::from(2);
                     if remainder >= mid_point {
                         if self.is_negative() {
-                            // check if integer part of self equals integer part of MIN
-                            if Self::MIN.safe_sub(*self)?
-                                < Self::from_str("-0.177722232017256448").unwrap()
-                            {
+                            if self.integer_is_not_min()? {
                                 Self((self.0 / divisor - I192::ONE) * divisor)
                             } else {
                                 return None;
                             }
+                        } else if self.integer_is_not_max()? {
+                            Self((self.0 / divisor + I192::ONE) * divisor)
                         } else {
-                            // check if integer part of self equals integer part of MAX
-                            if Self::MAX.safe_sub(*self)?
-                                > Self::from_str("0.177722232017256447").unwrap()
-                            {
-                                Self((self.0 / divisor + I192::ONE) * divisor)
-                            } else {
-                                return None;
-                            }
+                            return None;
                         }
                     } else {
                         Self(self.0 / divisor * divisor)
@@ -233,32 +235,30 @@ impl Decimal {
                     match remainder.cmp(&mid_point) {
                         Ordering::Greater => {
                             if self.is_negative() {
-                                // check if integer part of self equals integer part of MIN
-                                if Self::MIN.safe_sub(*self)?
-                                    < Self::from_str("-0.177722232017256448").unwrap()
-                                {
+                                if self.integer_is_not_min()? {
                                     Self((self.0 / divisor - I192::ONE) * divisor)
                                 } else {
                                     return None;
                                 }
+                            } else if self.integer_is_not_max()? {
+                                Self((self.0 / divisor + I192::ONE) * divisor)
                             } else {
-                                // check if integer part of self equals integer part of MAX
-                                if Self::MAX.safe_sub(*self)?
-                                    > Self::from_str("0.177722232017256447").unwrap()
-                                {
-                                    Self((self.0 / divisor + I192::ONE) * divisor)
-                                } else {
-                                    return None;
-                                }
+                                return None;
                             }
                         }
                         Ordering::Equal => {
                             if self.0 / divisor % I192::from(2) == I192::ZERO {
                                 Self(self.0 / divisor * divisor)
                             } else if self.is_negative() {
-                                Self((self.0 / divisor - I192::ONE) * divisor)
-                            } else {
+                                if self.integer_is_not_min()? {
+                                    Self((self.0 / divisor - I192::ONE) * divisor)
+                                } else {
+                                    return None;
+                                }
+                            } else if self.integer_is_not_max()? {
                                 Self((self.0 / divisor + I192::ONE) * divisor)
+                            } else {
+                                return None;
                             }
                         }
                         Ordering::Less => Self(self.0 / divisor * divisor),
