@@ -86,9 +86,9 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     // Assert
     assert!(matches!(
         rtn,
-        Err(RuntimeError::ApplicationError(
-            ApplicationError::NativeBlueprintExecutionPanic { .. }
-        ))
+        Err(RuntimeError::VmError(VmError::Native(
+            NativeRuntimeError::Panic { .. }
+        )))
     ))
 }
 

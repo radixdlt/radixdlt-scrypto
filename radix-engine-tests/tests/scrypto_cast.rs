@@ -25,7 +25,7 @@ fn should_error_if_trying_to_cast_to_invalid_type() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::ScryptoBlueprintExecutionPanic(..))
+            RuntimeError::ApplicationError(ApplicationError::Panic(..))
         )
     });
 }

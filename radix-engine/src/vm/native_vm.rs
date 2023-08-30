@@ -156,13 +156,13 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         } else {
                             "Unknown panic!".to_string()
                         };
-                        Err(RuntimeError::ApplicationError(
-                            crate::errors::ApplicationError::NativeBlueprintExecutionPanic {
+                        Err(RuntimeError::VmError(VmError::Native(
+                            NativeRuntimeError::Panic {
                                 export_name: export_name.to_owned(),
                                 input: input.as_scrypto_value().clone(),
                                 error: message,
                             },
-                        ))
+                        )))
                     }
                 }
             }

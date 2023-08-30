@@ -184,11 +184,9 @@ impl FungibleProofBlueprint {
 
                 // Check if the proof is restricted
                 if proof.restricted {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ScryptoBlueprintExecutionPanic(
-                            "Moving restricted proof downstream".to_owned(),
-                        ),
-                    ));
+                    return Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+                        "Moving restricted proof downstream".to_owned(),
+                    )));
                 }
 
                 // Update restricted flag

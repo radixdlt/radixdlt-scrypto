@@ -303,6 +303,13 @@ where
                     None
                 };
 
+                // Abort the process if an error has occurred in the system layer or below.
+                if let Err(RuntimeError::SystemError(SystemError::SystemPanic(..))) =
+                    interpretation_result
+                {
+                    std::process::abort()
+                }
+
                 let result_type = Self::determine_result_type(
                     interpretation_result,
                     &mut costing_module.fee_reserve,

@@ -59,7 +59,7 @@ fn test_rust_panic() {
         assert!(logs.is_empty());
 
         receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::ScryptoBlueprintExecutionPanic(e)) => {
+            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => {
                 e.eq("Hey @ logger/src/lib.rs:15:13")
             }
             _ => false,
@@ -82,9 +82,7 @@ fn test_scrypto_panic() {
         assert!(logs.is_empty());
 
         receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::ScryptoBlueprintExecutionPanic(e)) => {
-                e.eq(message)
-            }
+            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq(message),
             _ => false,
         })
     }
@@ -105,7 +103,7 @@ fn test_assert_length_5() {
         assert!(logs.is_empty());
 
         receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::ScryptoBlueprintExecutionPanic(e)) => e.eq("assertion failed: `(left == right)`\n  left: `2`,\n right: `5` @ logger/src/lib.rs:23:13"),
+            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq("assertion failed: `(left == right)`\n  left: `2`,\n right: `5` @ logger/src/lib.rs:23:13"),
             _ => false,
         })
     }

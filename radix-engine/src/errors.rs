@@ -298,6 +298,13 @@ pub enum VmError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NativeRuntimeError {
     InvalidCodeId,
+
+    /// A panic was encountered in Native code.
+    Panic {
+        export_name: String,
+        input: ScryptoValue,
+        error: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -416,14 +423,7 @@ pub enum ApplicationError {
     InputDecodeError(DecodeError),
 
     /// A panic was encountered in Scrypto code.
-    ScryptoBlueprintExecutionPanic(String),
-
-    /// A panic was encountered in Native code.
-    NativeBlueprintExecutionPanic {
-        export_name: String,
-        input: ScryptoValue,
-        error: String,
-    },
+    Panic(String),
 
     //===================
     // Node module errors
