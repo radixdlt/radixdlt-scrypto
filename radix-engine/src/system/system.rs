@@ -1536,8 +1536,8 @@ where
                 }
             }
         } else {
-            // Otherwise, only package may drop object
-            if Some(info.blueprint_info.blueprint_id.package_address) != actor.package_address() {
+            // Otherwise, only blueprint may drop object
+            if Some(info.blueprint_info.blueprint_id.clone()) != actor.blueprint_id() {
                 return Err(RuntimeError::SystemError(SystemError::InvalidDropAccess(
                     Box::new(InvalidDropAccess {
                         node_id: node_id.clone(),
