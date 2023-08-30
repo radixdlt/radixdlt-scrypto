@@ -58,10 +58,10 @@ fn reading_and_asserting_against_radiswap_pool_state() -> Result<(), RuntimeErro
         &mut env,
     )?;
 
+    // Act
     let _ = radiswap.add_liquidity(bucket1, bucket2, &mut env)?;
     let radiswap_state = env.read_component_state::<RadiswapState, _>(radiswap)?;
 
-    // Act
     let VersionedTwoResourcePoolState::V1(TwoResourcePoolSubstate {
         vaults: [(_, vault1), (_, vault2)],
         ..

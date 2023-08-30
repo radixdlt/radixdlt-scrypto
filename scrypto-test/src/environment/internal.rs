@@ -11,7 +11,7 @@ use crate::prelude::*;
 /// one another. As an example: the [`Track`] references the substate database stored in the same
 /// object as it.
 #[ouroboros::self_referencing(no_doc)]
-pub(super) struct SelfContainedRadixEngine {
+pub(super) struct EncapsulatedRadixEngine {
     pub(super) substate_db: InMemorySubstateDatabase,
     pub(super) scrypto_vm: ScryptoVm<DefaultWasmEngine>,
     pub(super) native_vm: NativeVm<NoExtension>,
@@ -30,7 +30,7 @@ pub(super) struct SelfContainedRadixEngine {
     pub(super) kernel: TestKernel<'this>,
 }
 
-impl SelfContainedRadixEngine {
+impl EncapsulatedRadixEngine {
     const DEFAULT_INTENT_HASH: Hash = Hash([0; 32]);
 
     pub(super) fn standard() -> Self {
@@ -50,7 +50,7 @@ impl SelfContainedRadixEngine {
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
 
         // Create a self-contained engine from everything else created above.
-        SelfContainedRadixEngineBuilder {
+        EncapsulatedRadixEngineBuilder {
             substate_db,
             scrypto_vm,
             native_vm: native_vm.clone(),
