@@ -78,13 +78,13 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                     admin_auth,
                     [NonFungibleLocalId::integer(1)],
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     updater_role_key,
@@ -106,13 +106,13 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                     admin_auth,
                     [NonFungibleLocalId::integer(1)],
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     updater_role_key,
@@ -134,7 +134,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                         admin_auth,
                         [NonFungibleLocalId::integer(1)],
                     )
-                    .update_role(
+                    .set_role(
                         token_address,
                         ObjectModuleId::Main,
                         role_key,
@@ -156,7 +156,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                     admin_auth,
                     [NonFungibleLocalId::integer(1)],
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     role_key,
@@ -176,7 +176,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                     admin_auth,
                     [NonFungibleLocalId::integer(1)],
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     role_key,

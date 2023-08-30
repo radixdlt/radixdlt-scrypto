@@ -49,7 +49,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_proof_from_account_of_amount(account, admin_auth, dec!(1))
-            .update_role(
+            .set_role(
                 token_address,
                 module,
                 role_key,

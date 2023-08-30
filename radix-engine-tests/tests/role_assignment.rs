@@ -151,10 +151,9 @@ fn component_role_assignment_can_be_mutated_through_manifest(to_rule: AccessRule
     // Act
     let receipt = test_runner.execute_manifest(
         MutableRolesTestRunner::manifest_builder()
-            .update_role(
+            .set_main_role(
                 test_runner.component_address,
-                ObjectModuleId::Main,
-                RoleKey::new("borrow_funds_auth"),
+                "borrow_funds_auth",
                 to_rule,
             )
             .build(),
@@ -415,7 +414,7 @@ impl MutableRolesTestRunner {
         access_rule: AccessRule,
     ) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .update_role(
+            .set_role(
                 self.component_address,
                 ObjectModuleId::Main,
                 role_key,

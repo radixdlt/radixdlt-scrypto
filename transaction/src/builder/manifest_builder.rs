@@ -914,6 +914,105 @@ impl ManifestBuilder {
         self.call_module_method(address, ObjectModuleId::Main, method_name, arguments)
     }
 
+    pub fn call_metadata_method(
+        self,
+        address: impl ResolvableGlobalAddress,
+        method_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
+        self.call_module_method(address, ObjectModuleId::Metadata, method_name, arguments)
+    }
+
+    pub fn call_royalty_method(
+        self,
+        address: impl ResolvableGlobalAddress,
+        method_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
+        self.call_module_method(address, ObjectModuleId::Royalty, method_name, arguments)
+    }
+
+    pub fn set_owner_role(
+        self,
+        address: impl ResolvableGlobalAddress,
+        rule: impl Into<AccessRule>,
+    ) -> Self {
+        self.call_module_method(
+            address,
+            ObjectModuleId::RoleAssignment,
+            ROLE_ASSIGNMENT_SET_OWNER_IDENT,
+            RoleAssignmentSetOwnerInput { rule: rule.into() },
+        )
+    }
+
+    pub fn lock_owner_role(self, address: impl ResolvableGlobalAddress) -> Self {
+        self.call_module_method(
+            address,
+            ObjectModuleId::RoleAssignment,
+            ROLE_ASSIGNMENT_LOCK_OWNER_IDENT,
+            RoleAssignmentLockOwnerInput {},
+        )
+    }
+
+    pub fn set_main_role(
+        self,
+        address: impl ResolvableGlobalAddress,
+        role_key: impl Into<RoleKey>,
+        rule: impl Into<AccessRule>,
+    ) -> Self {
+        self.set_role(address, ObjectModuleId::Main, role_key, rule)
+    }
+
+    pub fn set_role(
+        self,
+        address: impl ResolvableGlobalAddress,
+        role_module: ObjectModuleId,
+        role_key: impl Into<RoleKey>,
+        rule: impl Into<AccessRule>,
+    ) -> Self {
+        self.call_module_method(
+            address,
+            ObjectModuleId::RoleAssignment,
+            ROLE_ASSIGNMENT_SET_IDENT,
+            RoleAssignmentSetInput {
+                module: role_module,
+                role_key: role_key.into(),
+                rule: rule.into(),
+            },
+        )
+    }
+
+    pub fn get_role(
+        self,
+        address: impl ResolvableGlobalAddress,
+        role_module: ObjectModuleId,
+        role_key: RoleKey,
+    ) -> Self {
+        self.call_module_method(
+            address,
+            ObjectModuleId::RoleAssignment,
+            ROLE_ASSIGNMENT_GET_IDENT,
+            RoleAssignmentGetInput {
+                module: role_module,
+                role_key: role_key.into(),
+            },
+        )
+    }
+
+    pub fn call_role_assignment_method(
+        self,
+        address: impl ResolvableGlobalAddress,
+        method_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
+        self.call_module_method(
+            address,
+            ObjectModuleId::RoleAssignment,
+            method_name,
+            arguments,
+        )
+    }
+
     pub fn call_module_method(
         self,
         address: impl ResolvableGlobalAddress,
@@ -1066,57 +1165,6 @@ impl ManifestBuilder {
             address: address.into(),
             method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&ComponentClaimRoyaltiesInput {}),
-        })
-    }
-
-    pub fn set_owner_role(self, address: impl ResolvableGlobalAddress, rule: AccessRule) -> Self {
-        let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
-            address: address.into(),
-            method_name: ROLE_ASSIGNMENT_SET_OWNER_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&RoleAssignmentSetOwnerInput { rule }),
-        })
-    }
-
-    pub fn update_role(
-        self,
-        address: impl ResolvableGlobalAddress,
-        module: ObjectModuleId,
-        role_key: RoleKey,
-        rule: AccessRule,
-    ) -> Self {
-        let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
-            address: address.into(),
-            method_name: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&RoleAssignmentSetInput {
-                module,
-                role_key,
-                rule,
-            }),
-        })
-    }
-
-    pub fn lock_owner_role(self, address: impl ResolvableGlobalAddress) -> Self {
-        let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
-            address: address.into(),
-            method_name: ROLE_ASSIGNMENT_LOCK_OWNER_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&RoleAssignmentLockOwnerInput {}),
-        })
-    }
-
-    pub fn get_role(
-        self,
-        address: impl ResolvableGlobalAddress,
-        module: ObjectModuleId,
-        role_key: RoleKey,
-    ) -> Self {
-        let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
-            address: address.into(),
-            method_name: ROLE_ASSIGNMENT_GET_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&RoleAssignmentGetInput { module, role_key }),
         })
     }
 
