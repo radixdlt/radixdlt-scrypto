@@ -1030,30 +1030,27 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let receipt = self.execute_manifest(manifest, vec![]);
         let validator_address = receipt.expect_commit(true).new_component_addresses()[0];
 
-        let receipt =
-            self.execute_manifest(
-                ManifestBuilder::new()
-                    .lock_fee_from_faucet()
-                    .get_free_xrd_from_faucet()
-                    .create_proof_from_account_of_non_fungibles(
-                        account,
-                        VALIDATOR_OWNER_BADGE,
-                        [
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ],
+        let receipt = self.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .get_free_xrd_from_faucet()
+                .create_proof_from_account_of_non_fungibles(
+                    account,
+                    VALIDATOR_OWNER_BADGE,
+                    [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
+                )
+                .take_all_from_worktop(XRD, "bucket")
+                .with_bucket("bucket", |builder, bucket| {
+                    builder.call_method(
+                        validator_address,
+                        VALIDATOR_STAKE_AS_OWNER_IDENT,
+                        manifest_args!(bucket),
                     )
-                    .take_all_from_worktop(XRD, "bucket")
-                    .with_bucket("bucket", |builder, bucket| {
-                        builder.call_method(
-                            validator_address,
-                            VALIDATOR_STAKE_AS_OWNER_IDENT,
-                            manifest_args!(bucket),
-                        )
-                    })
-                    .deposit_batch(account)
-                    .build(),
-                vec![NonFungibleGlobalId::from_public_key(&pub_key)],
-            );
+                })
+                .deposit_batch(account)
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        );
         receipt.expect_commit_success();
 
         validator_address

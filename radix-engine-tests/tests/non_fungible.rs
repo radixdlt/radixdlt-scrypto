@@ -570,7 +570,10 @@ fn test_mint_update_and_withdraw() {
         .assert_worktop_contains_any(nft_resource_address)
         .assert_worktop_contains(nft_resource_address, 1)
         // ID from NonFungibleTest::create_non_fungible_mutable
-        .assert_worktop_contains_non_fungibles(nft_resource_address, [NonFungibleLocalId::integer(0)])
+        .assert_worktop_contains_non_fungibles(
+            nft_resource_address,
+            [NonFungibleLocalId::integer(0)],
+        )
         .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(

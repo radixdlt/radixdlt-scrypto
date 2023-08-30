@@ -186,10 +186,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_non_fungible(
-            account,
-            auth_id,
-        )
+        .create_proof_from_account_of_non_fungible(account, auth_id)
         .call_method(
             my_component,
             "cross_component_call",
