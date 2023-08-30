@@ -144,7 +144,7 @@ fn can_make_cross_component_call_with_resource_authorization() {
         .withdraw_non_fungibles_from_account(
             account,
             auth_id.resource_address(),
-            &BTreeSet::from([auth_id.local_id().clone()]),
+            [auth_id.local_id().clone()],
         )
         .call_method(
             my_component,
@@ -186,11 +186,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_non_fungibles(
-            account,
-            auth_id.resource_address(),
-            &btreeset!(auth_id.local_id().clone()),
-        )
+        .create_proof_from_account_of_non_fungible(account, auth_id)
         .call_method(
             my_component,
             "cross_component_call",

@@ -7,6 +7,7 @@ pub mod native_schema;
 pub mod package;
 pub mod pool;
 pub mod resource;
+pub mod test_utils;
 pub mod transaction_processor;
 pub mod transaction_tracker;
 pub mod util;

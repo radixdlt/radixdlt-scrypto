@@ -717,16 +717,14 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         vault_id: NodeId,
     ) -> Option<(Decimal, Box<dyn Iterator<Item = NonFungibleLocalId> + '_>)> {
         let reader = SystemDatabaseReader::new(self.substate_db());
-        let vault: Option<VersionedNonFungibleVaultBalance> = reader
+        let vault_balance: NonFungibleVaultBalanceFieldPayload = reader
             .read_typed_object_field(
                 &vault_id,
                 ObjectModuleId::Main,
                 NonFungibleVaultField::Balance.into(),
             )
-            .ok();
-        let amount = match vault? {
-            VersionedNonFungibleVaultBalance::V1(amount) => amount,
-        };
+            .ok()?;
+        let amount = vault_balance.into_latest().amount;
 
         // TODO: Remove .collect() by using SystemDatabaseReader in test_runner
         let iter: Vec<NonFungibleLocalId> = reader
@@ -743,7 +741,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             })
             .collect();
 
-        Some((amount.amount, Box::new(iter.into_iter())))
+        Some((amount, Box::new(iter.into_iter())))
     }
 
     pub fn get_component_resources(
@@ -809,7 +807,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         let manifest = ManifestBuilder::new()
             .get_free_xrd_from_faucet()
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -886,6 +884,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
     pub fn new_ed25519_virtual_account_with_access_controller(
         &mut self,
+        n_out_of_4: u8,
     ) -> (
         Ed25519PublicKey,
         Ed25519PrivateKey,
@@ -904,7 +903,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let (pk4, sk4) = self.new_ed25519_key_pair();
 
         let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(
-            1,
+            n_out_of_4,
             vec![
                 ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
                 ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
@@ -989,7 +988,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_identity()
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -1008,7 +1007,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .get_free_xrd_from_faucet()
             .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
             .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let address = receipt.expect_commit(true).new_component_addresses()[0];
@@ -1025,35 +1024,32 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .get_free_xrd_from_faucet()
             .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
             .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let validator_address = receipt.expect_commit(true).new_component_addresses()[0];
 
-        let receipt =
-            self.execute_manifest(
-                ManifestBuilder::new()
-                    .lock_fee_from_faucet()
-                    .get_free_xrd_from_faucet()
-                    .create_proof_from_account_of_non_fungibles(
-                        account,
-                        VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+        let receipt = self.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .get_free_xrd_from_faucet()
+                .create_proof_from_account_of_non_fungibles(
+                    account,
+                    VALIDATOR_OWNER_BADGE,
+                    [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
+                )
+                .take_all_from_worktop(XRD, "bucket")
+                .with_bucket("bucket", |builder, bucket| {
+                    builder.call_method(
+                        validator_address,
+                        VALIDATOR_STAKE_AS_OWNER_IDENT,
+                        manifest_args!(bucket),
                     )
-                    .take_all_from_worktop(XRD, "bucket")
-                    .with_bucket("bucket", |builder, bucket| {
-                        builder.call_method(
-                            validator_address,
-                            VALIDATOR_STAKE_AS_OWNER_IDENT,
-                            manifest_args!(bucket),
-                        )
-                    })
-                    .deposit_batch(account)
-                    .build(),
-                vec![NonFungibleGlobalId::from_public_key(&pub_key)],
-            );
+                })
+                .deposit_batch(account)
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        );
         receipt.expect_commit_success();
 
         validator_address
@@ -1193,6 +1189,51 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     ) -> PackageAddress {
         let (code, definition) = Compile::compile(package_dir);
         self.publish_package_with_owner(code, definition, owner_badge)
+    }
+
+    pub fn execute_unsigned_built_manifest_with_faucet_lock_fee(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+    ) -> TransactionReceipt {
+        self.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .then(create_manifest)
+                .build(),
+            [],
+        )
+    }
+
+    pub fn execute_unsigned_built_manifest(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+    ) -> TransactionReceipt {
+        self.execute_manifest(ManifestBuilder::new().then(create_manifest).build(), [])
+    }
+
+    pub fn execute_built_manifest_with_faucet_lock_fee(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+        signatures: impl ResolvableTransactionSignatures,
+    ) -> TransactionReceipt {
+        self.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .then(create_manifest)
+                .build(),
+            signatures.resolve(),
+        )
+    }
+
+    pub fn execute_built_manifest(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+        signatures: impl ResolvableTransactionSignatures,
+    ) -> TransactionReceipt {
+        self.execute_manifest(
+            ManifestBuilder::new().then(create_manifest).build(),
+            signatures.resolve(),
+        )
     }
 
     pub fn execute_manifest_ignoring_fee<T>(
@@ -1470,7 +1511,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 Some(5.into()),
             )
-            .try_deposit_batch_or_abort(to, None)
+            .try_deposit_entire_worktop_or_abort(to, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1723,7 +1764,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 Some(entries),
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1745,7 +1786,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 Some(amount),
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1777,7 +1818,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 None,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
@@ -1807,7 +1848,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 amount,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1840,7 +1881,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 amount,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1877,7 +1918,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 initial_supply,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -2369,6 +2410,40 @@ pub fn create_notarized_transaction(
         .sign(&sk2)
         .notarize(&sk_notary)
         .build()
+}
+
+pub fn create_notarized_transaction_advanced<S: Signer>(
+    test_runner: &mut DefaultTestRunner,
+    network: &NetworkDefinition,
+    manifest: TransactionManifestV1,
+    signers: Vec<&S>,
+    notary: &S,
+    notary_is_signatory: bool,
+) -> NotarizedTransactionV1 {
+    let notarized_transaction = TransactionBuilder::new()
+        .header(TransactionHeaderV1 {
+            network_id: network.id,
+            start_epoch_inclusive: Epoch::zero(),
+            end_epoch_exclusive: Epoch::of(99),
+            nonce: test_runner.next_transaction_nonce(),
+            notary_public_key: notary.public_key().into(),
+            notary_is_signatory: notary_is_signatory,
+            tip_percentage: DEFAULT_TIP_PERCENTAGE,
+        })
+        .manifest(manifest)
+        .multi_sign(&signers)
+        .notarize(notary)
+        .build();
+    notarized_transaction
+}
+
+pub fn validate_notarized_transaction<'a>(
+    network: &'a NetworkDefinition,
+    transaction: &'a NotarizedTransactionV1,
+) -> ValidatedNotarizedTransactionV1 {
+    NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+        .validate(transaction.prepare().unwrap())
+        .unwrap()
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {

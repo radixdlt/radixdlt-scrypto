@@ -82,7 +82,7 @@ fn account_try_deposit_method_is_callable_with_out_owner_signature() {
 }
 
 #[test]
-fn account_try_deposit_batch_or_refund_method_is_callable_with_out_owner_signature() {
+fn account_try_deposit_batch_or_refund_method_is_callable_without_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
@@ -97,7 +97,31 @@ fn account_try_deposit_batch_or_refund_method_is_callable_with_out_owner_signatu
 }
 
 #[test]
-fn account_try_deposit_or_abort_method_is_callable_with_out_owner_signature() {
+fn account_try_deposit_batch_or_refund_method_is_callable_with_array_of_resources() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account_address) = test_runner.new_account(true);
+
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        ManifestBuilder::new()
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "xrd_1a")
+            .take_all_from_worktop(XRD, "xrd_1b")
+            .try_deposit_batch_or_refund(account_address, ["xrd_1a", "xrd_1b"], None)
+            .try_deposit_batch_or_refund(account_address, Vec::<String>::new(), None)
+            .take_all_from_worktop(XRD, "xrd_2a")
+            .take_all_from_worktop(XRD, "xrd_2b")
+            .try_deposit_batch_or_abort(account_address, ["xrd_2a", "xrd_2b"], None)
+            .try_deposit_batch_or_abort(account_address, Vec::<String>::new(), None)
+            .build(),
+        [],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn account_try_deposit_or_abort_method_is_callable_without_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
@@ -112,7 +136,7 @@ fn account_try_deposit_or_abort_method_is_callable_with_out_owner_signature() {
 }
 
 #[test]
-fn account_try_deposit_batch_or_abort_method_is_callable_with_out_owner_signature() {
+fn account_try_deposit_batch_or_abort_method_is_callable_without_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
@@ -573,7 +597,7 @@ impl AccountDepositModesTestRunner {
             .get_component_balance(self.component_address, resource_address);
         let manifest = ManifestBuilder::new()
             .withdraw_from_account(self.component_address, resource_address, balance)
-            .try_deposit_batch_or_refund(virtual_account, None)
+            .try_deposit_entire_worktop_or_refund(virtual_account, None)
             .build();
 
         self.execute_manifest(manifest, true)

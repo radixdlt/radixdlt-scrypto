@@ -22,10 +22,10 @@ fn package_owner_can_claim_royalty() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                &btreeset!(NonFungibleLocalId::integer(1)),
+                [NonFungibleLocalId::integer(1)],
             )
             .claim_package_royalties(package_address)
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -51,7 +51,7 @@ fn non_package_owner_cannot_claim_royalty() {
         ManifestBuilder::new()
             .lock_fee(account, 5000)
             .claim_package_royalties(package_address)
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -79,7 +79,7 @@ fn component_owner_can_set_royalty() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                &btreeset!(NonFungibleLocalId::integer(1)),
+                [NonFungibleLocalId::integer(1)],
             )
             .set_component_royalty(
                 component_address,
@@ -136,10 +136,10 @@ fn component_owner_can_claim_royalty() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                &btreeset!(NonFungibleLocalId::integer(1)),
+                [NonFungibleLocalId::integer(1)],
             )
             .claim_component_royalties(component_address)
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -159,7 +159,7 @@ fn non_component_owner_cannot_claim_royalty() {
         ManifestBuilder::new()
             .lock_fee(account, 5000)
             .claim_component_royalties(component_address)
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -201,7 +201,7 @@ fn set_up_package_and_component() -> (
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                &btreeset!(NonFungibleLocalId::integer(1)),
+                [NonFungibleLocalId::integer(1)],
             )
             .call_function(
                 package_address,
@@ -209,7 +209,7 @@ fn set_up_package_and_component() -> (
                 "create_component_with_royalty_enabled",
                 manifest_args!(owner_badge_addr),
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

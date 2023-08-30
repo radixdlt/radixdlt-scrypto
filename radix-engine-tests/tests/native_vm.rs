@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::*;
 use radix_engine::kernel::kernel::*;
@@ -12,13 +14,39 @@ use radix_engine::transaction::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::test_utils::invocations::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_store_interface::db_key_mapper::*;
 use radix_engine_stores::memory_db::*;
-use scrypto::prelude::*;
+use scrypto_unit::TestRunnerBuilder;
 use transaction::prelude::*;
 
-#[cfg(feature = "std")]
+#[test]
+fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            TEST_UTILS_PACKAGE,
+            TEST_UTILS_BLUEPRINT,
+            TEST_UTILS_PANIC_IDENT,
+            TestUtilsPanicInput("I'm panicking!".to_owned()),
+        )
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|runtime_error| {
+        matches!(
+            runtime_error,
+            RuntimeError::VmError(VmError::Native(NativeRuntimeError::Trap { .. }))
+        )
+    })
+}
+
 #[test]
 fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     // Arrange
