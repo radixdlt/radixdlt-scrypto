@@ -44,13 +44,18 @@ pub struct Publish {
     /// Turn on tracing
     #[clap(short, long)]
     pub trace: bool,
+
+    /// When passed, this argument disables wasm-opt from running on the built wasm.
+    #[clap(long)]
+    disable_wasm_opt: bool,
 }
 
 impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
         let (code_path, definition_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
-            build_package(&self.path, false, false).map_err(Error::BuildError)?
+            build_package(&self.path, false, false, self.disable_wasm_opt)
+                .map_err(Error::BuildError)?
         } else {
             let code_path = self.path.clone();
             let schema_path = code_path.with_extension("schema");

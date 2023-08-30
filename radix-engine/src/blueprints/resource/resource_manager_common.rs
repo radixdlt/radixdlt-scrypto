@@ -76,7 +76,7 @@ where
             0u8 => FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
             1u8 => FieldValue::new(&LockedFungibleResource::default()),
         },
-        MintFungibleResourceEvent::event_name().to_string(),
+        MintFungibleResourceEvent::EVENT_NAME.to_string(),
         scrypto_encode(&MintFungibleResourceEvent {
             amount: initial_supply,
         })
@@ -121,7 +121,7 @@ where
             0u8 => FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
             1u8 => FieldValue::new(&LockedNonFungibleResource::default()),
         },
-        MintNonFungibleResourceEvent::event_name().to_string(),
+        MintNonFungibleResourceEvent::EVENT_NAME.to_string(),
         scrypto_encode(&MintNonFungibleResourceEvent { ids }).unwrap(),
     )?;
 

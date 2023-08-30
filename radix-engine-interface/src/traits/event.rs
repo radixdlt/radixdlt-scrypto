@@ -4,5 +4,5 @@ pub trait ScryptoEvent
 where
     Self: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
 {
-    fn event_name() -> &'static str;
+    const EVENT_NAME: &'static str;
 }

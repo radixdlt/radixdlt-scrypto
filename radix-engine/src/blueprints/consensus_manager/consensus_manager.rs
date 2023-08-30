@@ -277,8 +277,8 @@ declare_native_blueprint_state! {
                 content_type: ComponentAddress,
             },
             full_key_content: {
-                full_content_type: SortedValidator,
-                sort_prefix_property_name: sort_prefix,
+                full_content_type: ValidatorByStakeKey,
+                sort_prefix_property_name: inverse_stake_sort_prefix,
             },
             value_type: {
                 kind: StaticSingleVersioned,
@@ -288,21 +288,39 @@ declare_native_blueprint_state! {
     }
 }
 
-pub struct SortedValidator(u16, ComponentAddress);
-
-impl SortedIndexKeyFullContent<ConsensusManagerRegisteredValidatorByStakeKeyPayload>
-    for SortedValidator
-{
-    fn from_sort_key_and_content(sort_key: u16, address: ComponentAddress) -> Self {
-        SortedValidator(sort_key, address)
-    }
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct ValidatorByStakeKey {
+    pub divided_stake: u16,
+    pub validator_address: ComponentAddress,
 }
 
 impl SortedIndexKeyContentSource<ConsensusManagerRegisteredValidatorByStakeKeyPayload>
-    for SortedValidator
+    for ValidatorByStakeKey
 {
-    fn into_sort_key_and_content(self) -> (u16, ComponentAddress) {
-        (self.0, self.1)
+    fn sort_key(&self) -> u16 {
+        u16::MAX - self.divided_stake
+    }
+
+    fn into_content(
+        self,
+    ) -> <ConsensusManagerRegisteredValidatorByStakeKeyPayload as SortedIndexKeyPayload>::Content
+    {
+        self.validator_address
+    }
+}
+
+impl SortedIndexKeyFullContent<ConsensusManagerRegisteredValidatorByStakeKeyPayload>
+    for ValidatorByStakeKey
+{
+    fn from_sort_key_and_content(sort_key: u16, validator_address: ComponentAddress) -> Self {
+        Self {
+            divided_stake: u16::MAX - sort_key,
+            validator_address,
+        }
+    }
+
+    fn as_content(&self) -> &ComponentAddress {
+        &self.validator_address
     }
 }
 

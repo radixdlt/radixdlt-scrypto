@@ -1,7 +1,9 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::resource_checker::ResourceChecker;
-use radix_engine::system::system_db_checker::SystemDatabaseChecker;
+use radix_engine::system::checkers::SystemDatabaseChecker;
+use radix_engine::system::checkers::{
+    ResourceDatabaseChecker, ResourceEventChecker, ResourceReconciler, SystemEventChecker,
+};
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
@@ -44,8 +46,8 @@ fn test_bootstrap_receipt_should_match_constants() {
 
     let GenesisReceipts {
         system_bootstrap_receipt,
+        data_ingestion_receipts,
         wrap_up_receipt,
-        ..
     } = bootstrapper
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
@@ -89,11 +91,38 @@ fn test_bootstrap_receipt_should_match_constants() {
 
     assert_eq!(wrap_up_epoch_change.epoch, genesis_epoch.next());
 
-    let mut checker = SystemDatabaseChecker::<ResourceChecker>::new();
-    let results = checker
+    let mut checker = SystemDatabaseChecker::<ResourceDatabaseChecker>::new();
+    let db_results = checker
         .check_db(&substate_db)
         .expect("Database should be consistent");
-    println!("{:?}", results);
+    println!("{:#?}", db_results);
+
+    let mut event_checker = SystemEventChecker::<ResourceEventChecker>::new();
+    let mut events = Vec::new();
+    events.push(
+        system_bootstrap_receipt
+            .expect_commit_success()
+            .application_events
+            .clone(),
+    );
+    events.extend(
+        data_ingestion_receipts
+            .into_iter()
+            .map(|r| r.expect_commit_success().application_events.clone()),
+    );
+    events.push(
+        wrap_up_receipt
+            .expect_commit_success()
+            .application_events
+            .clone(),
+    );
+    let event_results = event_checker
+        .check_all_events(&substate_db, &events)
+        .expect("Events should be consistent");
+    println!("{:#?}", event_results);
+
+    ResourceReconciler::reconcile(&db_results.1, &event_results)
+        .expect("Resource reconciliation failed.");
 }
 
 #[test]
@@ -561,7 +590,6 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
 
     // Bootstrap
     let mut test_runner = TestRunnerBuilder::new()
-        .collect_events()
         .with_custom_genesis(CustomGenesis {
             genesis_data_chunks: genesis_data_chunks,
             genesis_epoch: Epoch::of(1),
