@@ -884,6 +884,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
     pub fn new_ed25519_virtual_account_with_access_controller(
         &mut self,
+        n_out_of_4: u8,
     ) -> (
         Ed25519PublicKey,
         Ed25519PrivateKey,
@@ -902,7 +903,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let (pk4, sk4) = self.new_ed25519_key_pair();
 
         let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(
-            1,
+            n_out_of_4,
             vec![
                 ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
                 ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
@@ -2409,6 +2410,40 @@ pub fn create_notarized_transaction(
         .sign(&sk2)
         .notarize(&sk_notary)
         .build()
+}
+
+pub fn create_notarized_transaction_advanced<S: Signer>(
+    test_runner: &mut DefaultTestRunner,
+    network: &NetworkDefinition,
+    manifest: TransactionManifestV1,
+    signers: Vec<&S>,
+    notary: &S,
+    notary_is_signatory: bool,
+) -> NotarizedTransactionV1 {
+    let notarized_transaction = TransactionBuilder::new()
+        .header(TransactionHeaderV1 {
+            network_id: network.id,
+            start_epoch_inclusive: Epoch::zero(),
+            end_epoch_exclusive: Epoch::of(99),
+            nonce: test_runner.next_transaction_nonce(),
+            notary_public_key: notary.public_key().into(),
+            notary_is_signatory: notary_is_signatory,
+            tip_percentage: DEFAULT_TIP_PERCENTAGE,
+        })
+        .manifest(manifest)
+        .multi_sign(&signers)
+        .notarize(notary)
+        .build();
+    notarized_transaction
+}
+
+pub fn validate_notarized_transaction<'a>(
+    network: &'a NetworkDefinition,
+    transaction: &'a NotarizedTransactionV1,
+) -> ValidatedNotarizedTransactionV1 {
+    NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+        .validate(transaction.prepare().unwrap())
+        .unwrap()
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {

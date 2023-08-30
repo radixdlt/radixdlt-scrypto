@@ -1,5 +1,5 @@
 /// The execution cost units loaned from system
-pub const EXECUTION_COST_UNIT_LOAN: u32 = 10_000_000;
+pub const EXECUTION_COST_UNIT_LOAN: u32 = 4_000_000;
 
 /// The execution cost unit limit.
 pub const EXECUTION_COST_UNIT_LIMIT: u32 = 100_000_000;
