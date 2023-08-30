@@ -34,7 +34,7 @@ mod component_module {
                 ROLE_ASSIGNMENT_CREATE_IDENT,
                 scrypto_encode(&RoleAssignmentCreateInput {
                     owner_role: OwnerRole::None.into(),
-                    roles: IndexMap::new(),
+                    roles: index_map_new(),
                 })
                 .unwrap(),
             );

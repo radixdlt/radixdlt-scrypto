@@ -326,7 +326,7 @@ impl ConsensusManagerBlueprint {
         let feature_set = ConsensusManagerFeatureSet::all_features();
         let state = ConsensusManagerStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {

@@ -1382,7 +1382,7 @@ mod tests {
 
     #[test]
     fn test_blueprint_constraints() {
-        let mut blueprints = IndexMap::new();
+        let mut blueprints = index_map_new();
         blueprints.insert(
             "Test".to_string(),
             BlueprintDefinitionInit {

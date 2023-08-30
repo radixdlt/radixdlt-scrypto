@@ -54,7 +54,7 @@ impl OneResourcePoolBlueprint {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let feature_set = OneResourcePoolFeatureSet::all_features();
         let state = OneResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
 
         functions.insert(
             ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),

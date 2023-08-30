@@ -126,7 +126,7 @@ impl AccountBlueprint {
         let feature_set = AccountFeatureSet::all_features();
         let state = AccountStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
 
         functions.insert(
             ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),

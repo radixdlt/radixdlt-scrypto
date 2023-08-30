@@ -51,7 +51,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
         &mut wasm_execution_units_consumed,
     ));
     let mut instance = wasm_engine.instantiate(code_hash, &instrumented_code);
-    let mut blueprints = IndexMap::new();
+    let mut blueprints = index_map_new();
     for function_export in function_exports {
         let rtn = instance
             .invoke_export(&function_export, vec![], &mut runtime)

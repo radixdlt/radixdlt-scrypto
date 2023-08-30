@@ -201,7 +201,7 @@ impl ValidatorBlueprint {
         let feature_set = ValidatorFeatureSet::all_features();
         let state = ValidatorStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             VALIDATOR_REGISTER_IDENT.to_string(),
             FunctionSchemaInit {

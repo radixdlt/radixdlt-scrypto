@@ -30,7 +30,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         aggregator.add_child_type_and_descendents::<()>(),
     ));
 
-    let mut functions = IndexMap::new();
+    let mut functions = index_map_new();
     functions.insert(
         "f".to_string(),
         FunctionSchemaInit {
@@ -80,7 +80,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         aggregator.add_child_type_and_descendents::<()>(),
     ));
 
-    let mut functions = IndexMap::new();
+    let mut functions = index_map_new();
     functions.insert(
         "f".to_string(),
         FunctionSchemaInit {
@@ -130,7 +130,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         aggregator.add_child_type_and_descendents::<()>(),
     ));
 
-    let mut functions = IndexMap::new();
+    let mut functions = index_map_new();
     functions.insert(
         "f".to_string(),
         FunctionSchemaInit {

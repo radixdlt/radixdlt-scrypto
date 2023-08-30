@@ -126,7 +126,7 @@ fn create_non_fungibles<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let mut ids = IndexSet::new();
+    let mut ids = index_set_new();
     for (non_fungible_local_id, value) in entries {
         if non_fungible_local_id.id_type() != id_type {
             return Err(RuntimeError::ApplicationError(
@@ -182,7 +182,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let state = NonFungibleResourceManagerStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {
@@ -715,7 +715,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let ids = entries.keys().cloned().collect();
 
-        let mut non_fungibles = IndexMap::new();
+        let mut non_fungibles = index_map_new();
         for (id, (value,)) in entries {
             if id.id_type() != id_type {
                 return Err(RuntimeError::ApplicationError(
@@ -816,8 +816,8 @@ impl NonFungibleResourceManagerBlueprint {
             }
         };
 
-        let mut ids = IndexSet::new();
-        let mut non_fungibles = IndexMap::new();
+        let mut ids = index_set_new();
+        let mut non_fungibles = index_map_new();
         let supply = Decimal::from(entries.len());
         for (entry,) in entries {
             let ruid = Runtime::generate_ruid(api)?;
@@ -1095,8 +1095,8 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update data
         let ids = {
-            let mut ids = IndexSet::new();
-            let mut non_fungibles = IndexMap::new();
+            let mut ids = index_set_new();
+            let mut non_fungibles = index_map_new();
             for value in entries {
                 let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
                 ids.insert(id.clone());
@@ -1239,7 +1239,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        Self::create_bucket(IndexSet::new(), api)
+        Self::create_bucket(index_set_new(), api)
     }
 
     pub(crate) fn create_bucket<Y>(

@@ -306,7 +306,7 @@ mod non_fungible_test {
             let mut bucket = Self::create_non_fungible_fixed();
             assert_eq!(bucket.amount(), 3.into());
 
-            let mut non_fungibles = IndexSet::new();
+            let mut non_fungibles = index_set_new();
             non_fungibles.insert(NonFungibleLocalId::integer(1));
 
             let non_fungible = bucket.as_non_fungible().take_non_fungibles(&non_fungibles);
@@ -477,7 +477,7 @@ mod non_fungible_test {
         }
 
         pub fn create_wrong_non_fungible_local_id_type() -> Bucket {
-            let mut entries = IndexMap::new();
+            let mut entries = index_map_new();
             entries.insert(
                 NonFungibleLocalId::integer(0),
                 (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),

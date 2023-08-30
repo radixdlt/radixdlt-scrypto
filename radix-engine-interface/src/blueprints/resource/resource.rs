@@ -83,7 +83,7 @@ impl LiquidNonFungibleResource {
     }
 
     pub fn default() -> Self {
-        Self::new(IndexSet::new())
+        Self::new(IndexSet::default())
     }
 
     pub fn ids(&self) -> &IndexSet<NonFungibleLocalId> {

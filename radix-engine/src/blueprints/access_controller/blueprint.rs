@@ -189,7 +189,7 @@ impl AccessControllerBlueprint {
         let feature_set = AccessControllerFeatureSet::all_features();
         let state = AccessControllerStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             ACCESS_CONTROLLER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {

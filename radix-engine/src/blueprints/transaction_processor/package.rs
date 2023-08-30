@@ -25,7 +25,7 @@ impl TransactionProcessorNativePackage {
 
         let fields = Vec::new();
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
             FunctionSchemaInit {

@@ -563,7 +563,7 @@ fn test_mint_update_and_withdraw() {
     );
     receipt.expect_commit_success();
 
-    let mut nfid_list = IndexSet::new();
+    let mut nfid_list = index_set_new();
     nfid_list.insert(NonFungibleLocalId::integer(0)); // ID from NonFungibleTest::create_non_fungible_mutable
 
     // transfer

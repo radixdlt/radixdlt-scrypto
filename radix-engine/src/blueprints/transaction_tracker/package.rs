@@ -61,7 +61,7 @@ impl TransactionTrackerNativePackage {
             aggregator.add_child_type_and_descendents::<TransactionTrackerSubstate>(),
         ));
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             TRANSACTION_TRACKER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {

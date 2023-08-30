@@ -148,7 +148,7 @@ fn test_basic_package() {
 fn test_basic_package_missing_export() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let mut blueprints = IndexMap::new();
+    let mut blueprints = index_map_new();
     blueprints.insert(
         "Test".to_string(),
         BlueprintDefinitionInit {

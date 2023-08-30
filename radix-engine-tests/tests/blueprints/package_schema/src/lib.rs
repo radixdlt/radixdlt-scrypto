@@ -31,7 +31,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         aggregator.add_child_type_and_descendents::<()>(),
     ));
 
-    let mut functions = IndexMap::new();
+    let mut functions = index_map_new();
 
     functions.insert(
         "invalid_output".to_string(),

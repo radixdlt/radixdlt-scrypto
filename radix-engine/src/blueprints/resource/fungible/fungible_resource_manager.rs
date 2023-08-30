@@ -170,7 +170,7 @@ impl FungibleResourceManagerBlueprint {
 
         let state = FungibleResourceManagerStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {

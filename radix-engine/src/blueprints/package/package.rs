@@ -739,7 +739,7 @@ impl PackageNativePackage {
 
         let state = PackageStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             FunctionSchemaInit {
@@ -908,7 +908,7 @@ impl PackageNativePackage {
         IndexMap<u8, FieldValue>,
         IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>,
     ) {
-        let mut fields = IndexMap::new();
+        let mut fields = index_map_new();
         if let Some(vault) = royalty_vault {
             let royalty = PackageRoyaltyAccumulator {
                 royalty_vault: vault,
@@ -917,9 +917,9 @@ impl PackageNativePackage {
             fields.insert(0u8, FieldValue::immutable(&royalty));
         }
 
-        let mut kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>> = IndexMap::new();
+        let mut kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>> = index_map_new();
         {
-            let mut definition_partition = IndexMap::new();
+            let mut definition_partition = index_map_new();
             for (blueprint, definition) in package_structure.definitions {
                 let key = BlueprintVersionKey::new_default(blueprint);
                 let entry = KVEntry {
@@ -935,7 +935,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut dependency_partition = IndexMap::new();
+            let mut dependency_partition = index_map_new();
             for (blueprint, dependencies) in package_structure.dependencies {
                 let key = BlueprintVersionKey::new_default(blueprint);
                 let entry = KVEntry {
@@ -951,7 +951,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut package_royalties_partition = IndexMap::new();
+            let mut package_royalties_partition = index_map_new();
             for (blueprint, package_royalty) in package_structure.package_royalties {
                 let key = BlueprintVersionKey::new_default(blueprint);
                 let entry = KVEntry {
@@ -967,7 +967,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut auth_partition = IndexMap::new();
+            let mut auth_partition = index_map_new();
             for (blueprint, auth_config) in package_structure.auth_configs {
                 let key = BlueprintVersionKey::new_default(blueprint);
                 let entry = KVEntry {
@@ -983,7 +983,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut vm_type_partition = IndexMap::new();
+            let mut vm_type_partition = index_map_new();
             for (hash, code_substate) in package_structure.vm_type {
                 let entry = KVEntry {
                     value: Some(scrypto_encode(&code_substate).unwrap()),
@@ -998,7 +998,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut original_code_partition = IndexMap::new();
+            let mut original_code_partition = index_map_new();
             for (hash, code_substate) in package_structure.original_code {
                 let entry = KVEntry {
                     value: Some(scrypto_encode(&code_substate).unwrap()),
@@ -1013,7 +1013,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut instrumented_code_partition = IndexMap::new();
+            let mut instrumented_code_partition = index_map_new();
             for (hash, code_substate) in package_structure.instrumented_code {
                 let entry = KVEntry {
                     value: Some(scrypto_encode(&code_substate).unwrap()),
@@ -1028,7 +1028,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut schemas_partition = IndexMap::new();
+            let mut schemas_partition = index_map_new();
             for (hash, schema) in package_structure.schemas {
                 let entry = KVEntry {
                     value: Some(scrypto_encode(&schema).unwrap()),
@@ -1066,14 +1066,14 @@ impl PackageNativePackage {
             VmPackageValidation::validate(&definition, vm_type, &original_code)?;
 
         // Build Package structure
-        let mut definitions = IndexMap::new();
-        let mut dependencies = IndexMap::new();
-        let mut schemas = IndexMap::new();
-        let mut package_royalties = IndexMap::new();
-        let mut auth_configs = IndexMap::new();
-        let mut vm_type_substates = IndexMap::new();
-        let mut original_code_substates = IndexMap::new();
-        let mut instrumented_code_substates = IndexMap::new();
+        let mut definitions = index_map_new();
+        let mut dependencies = index_map_new();
+        let mut schemas = index_map_new();
+        let mut package_royalties = index_map_new();
+        let mut auth_configs = index_map_new();
+        let mut vm_type_substates = index_map_new();
+        let mut original_code_substates = index_map_new();
+        let mut instrumented_code_substates = index_map_new();
 
         let code_hash = CodeHash::from_hash(hash(&original_code));
         vm_type_substates.insert(code_hash, PackageCodeVmType { vm_type }.into_payload());
@@ -1102,8 +1102,8 @@ impl PackageNativePackage {
                 let schema_hash = blueprint_schema.generate_schema_hash();
                 schemas.insert(schema_hash, blueprint_schema.into_payload());
 
-                let mut functions = IndexMap::new();
-                let mut function_exports = IndexMap::new();
+                let mut functions = index_map_new();
+                let mut function_exports = index_map_new();
                 for (function, function_schema_init) in definition_init.schema.functions.functions {
                     let input = match function_schema_init.input {
                         TypeRef::Static(input_type_index) => input_type_index,
@@ -1143,7 +1143,7 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
-                let mut events = IndexMap::new();
+                let mut events = index_map_new();
                 for (key, type_ref) in definition_init.schema.events.event_schema {
                     events.insert(
                         key,
@@ -1156,7 +1156,7 @@ impl PackageNativePackage {
                     .cloned()
                     .unwrap_or_default();
 
-                let mut system_mappings = IndexMap::new();
+                let mut system_mappings = index_map_new();
                 for system_instruction in system_instructions {
                     match system_instruction {
                         SystemInstruction::MapCollectionToPhysicalPartition {

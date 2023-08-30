@@ -54,7 +54,7 @@ impl FungibleVaultBlueprint {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let state = FungibleVaultStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             VAULT_TAKE_IDENT.to_string(),
             FunctionSchemaInit {

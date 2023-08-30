@@ -271,7 +271,7 @@ where
             for (collection_index, ..) in blueprint_interface.state.collections.iter().enumerate() {
                 let index = collection_index as u8;
                 if !kv_entries.contains_key(&index) {
-                    kv_entries.insert(index, IndexMap::new());
+                    kv_entries.insert(index, index_map_new());
                 }
             }
         }
@@ -472,7 +472,7 @@ where
                     }
                 }
 
-                (OuterObjectInfo::None, IndexSet::new())
+                (OuterObjectInfo::None, index_set_new())
             };
 
         let (blueprint_info, mut node_substates) = self.validate_new_object(
@@ -939,7 +939,7 @@ where
 
         // Update Object Info
         {
-            let mut module_versions = IndexMap::new();
+            let mut module_versions = index_map_new();
             for module_id in modules.keys() {
                 module_versions.insert(module_id.clone(), BlueprintVersion::default());
             }

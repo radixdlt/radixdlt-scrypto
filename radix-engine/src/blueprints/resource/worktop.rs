@@ -17,7 +17,7 @@ pub struct WorktopSubstate {
 impl WorktopSubstate {
     pub fn new() -> Self {
         Self {
-            resources: IndexMap::new(),
+            resources: index_map_new(),
         }
     }
 }
@@ -61,7 +61,7 @@ impl WorktopBlueprint {
             .as_typed::<FieldSubstate<WorktopSubstate>>()
             .unwrap()
             .into_payload();
-        let resources = core::mem::replace(&mut worktop.resources, IndexMap::new());
+        let resources = core::mem::replace(&mut worktop.resources, index_map_new());
         api.kernel_write_substate(
             handle,
             IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(worktop)),
@@ -326,7 +326,7 @@ impl WorktopBlueprint {
             let bucket = Bucket(bucket.clone());
             bucket.non_fungible_local_ids(api)?
         } else {
-            IndexSet::new()
+            index_set_new()
         };
         if !ids.is_superset(&input.ids) {
             return Err(RuntimeError::ApplicationError(

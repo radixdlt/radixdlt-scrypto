@@ -183,7 +183,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
             ));
 
-            let mut functions = IndexMap::new();
+            let mut functions = index_map_new();
             functions.insert(
                 BUCKET_PUT_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -367,7 +367,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
             ));
 
-            let mut functions = IndexMap::new();
+            let mut functions = index_map_new();
             functions.insert(
                 BUCKET_PUT_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -582,7 +582,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<FungibleProofSubstate>(),
             ));
 
-            let mut functions = IndexMap::new();
+            let mut functions = index_map_new();
             functions.insert(
                 PROOF_DROP_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -683,7 +683,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>(),
             ));
 
-            let mut functions = IndexMap::new();
+            let mut functions = index_map_new();
             functions.insert(
                 PROOF_DROP_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -797,7 +797,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<WorktopSubstate>(),
             ));
 
-            let mut functions = IndexMap::new();
+            let mut functions = index_map_new();
             functions.insert(
                 WORKTOP_DROP_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -953,7 +953,7 @@ impl ResourceNativePackage {
                 aggregator.add_child_type_and_descendents::<AuthZone>(),
             ));
 
-            let mut functions = IndexMap::new();
+            let mut functions = index_map_new();
             functions.insert(
                 AUTH_ZONE_POP_IDENT.to_string(),
                 FunctionSchemaInit {

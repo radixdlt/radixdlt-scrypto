@@ -30,7 +30,7 @@ where
     pub fn new(api: &'y mut Y, package_address: PackageAddress, export_name: String) -> Self {
         ScryptoRuntime {
             api,
-            buffers: IndexMap::new(),
+            buffers: index_map_new(),
             next_buffer_id: 0,
             package_address,
             export_name,

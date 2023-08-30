@@ -8,7 +8,7 @@ pub extern "C" fn BadFunctionSchema_f(_args: u64) -> Slice {
 
 #[no_mangle]
 pub extern "C" fn BadFunctionSchema_schema() -> Slice {
-    let mut functions = IndexMap::new();
+    let mut functions = index_map_new();
     functions.insert(
         "f".to_string(),
         FunctionSchemaInit {

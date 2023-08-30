@@ -160,8 +160,8 @@ impl Publish {
             }
 
             for (blueprint_name, blueprint_definition) in package_definition.blueprints {
-                let mut functions = IndexMap::new();
-                let mut function_exports = IndexMap::new();
+                let mut functions = index_map_new();
+                let mut function_exports = index_map_new();
 
                 let blueprint_version_key = BlueprintVersionKey::new_default(blueprint_name);
                 let blueprint_schema = blueprint_definition.schema.clone();
@@ -221,7 +221,7 @@ impl Publish {
                         state,
                     },
                     function_exports,
-                    hook_exports: IndexMap::new(),
+                    hook_exports: index_map_new(),
                 };
                 blueprint_updates.insert(
                     SpreadPrefixKeyMapper::map_to_db_sort_key(

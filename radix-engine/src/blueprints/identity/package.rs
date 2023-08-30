@@ -35,7 +35,7 @@ impl IdentityNativePackage {
 
         let fields = Vec::new();
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             FunctionSchemaInit {

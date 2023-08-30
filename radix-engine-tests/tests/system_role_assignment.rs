@@ -37,7 +37,7 @@ fn cannot_define_more_than_50_roles() {
     let mut test_runner = TestRunnerBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let mut roles = IndexMap::new();
+    let mut roles = index_map_new();
     for i in 0..(MAX_ROLES + 1) {
         roles.insert(RoleKey::new(format!("role{}", i)), RoleList::none());
     }
@@ -96,7 +96,7 @@ fn cannot_define_role_name_larger_than_max() {
     let mut test_runner = TestRunnerBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let mut roles = IndexMap::new();
+    let mut roles = index_map_new();
     roles.insert(
         RoleKey::new("a".repeat(MAX_ROLE_NAME_LEN + 1)),
         RoleList::none(),

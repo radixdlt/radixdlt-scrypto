@@ -232,7 +232,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
         ));
     }
 
-    let mut evidence = IndexMap::new();
+    let mut evidence = index_map_new();
     let mut remaining = amount.clone();
     let mut lock_handles = Vec::new();
     'outer: for proof in proofs {
@@ -321,7 +321,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
         ));
     }
 
-    let mut evidence = IndexMap::new();
+    let mut evidence = index_map_new();
     let mut remaining = ids.clone();
     let mut lock_handles = Vec::new();
     'outer: for proof in proofs {

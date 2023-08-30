@@ -57,7 +57,7 @@ impl TwoResourcePoolBlueprint {
         let feature_set = TwoResourcePoolFeatureSet::all_features();
         let state = TwoResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
 
         functions.insert(
             TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
@@ -604,7 +604,7 @@ impl TwoResourcePoolBlueprint {
             .pool_unit_resource_manager
             .total_supply(api)?
             .expect("Total supply is always enabled for pool unit resource.");
-        let mut reserves = IndexMap::new();
+        let mut reserves = index_map_new();
         for (resource_address, vault) in substate.vaults.iter() {
             let amount = vault.amount(api)?;
             let divisibility = ResourceManager(*resource_address).resource_type(api)
@@ -729,7 +729,7 @@ impl TwoResourcePoolBlueprint {
             return Err(TwoResourcePoolError::InvalidGetRedemptionAmount.into());
         }
 
-        let mut reserves = IndexMap::new();
+        let mut reserves = index_map_new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;
             let divisibility = ResourceManager(resource_address).resource_type(api)

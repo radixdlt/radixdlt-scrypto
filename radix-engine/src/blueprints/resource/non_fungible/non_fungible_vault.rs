@@ -73,7 +73,7 @@ impl NonFungibleVaultBlueprint {
 
         let state = NonFungibleVaultStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = IndexMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             VAULT_TAKE_IDENT.to_string(),
             FunctionSchemaInit {
