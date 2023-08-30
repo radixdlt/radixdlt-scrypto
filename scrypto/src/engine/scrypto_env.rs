@@ -75,12 +75,19 @@ impl ScryptoVmV1Api {
         scrypto_decode(&bytes).unwrap()
     }
 
-    pub fn object_get_blueprint_id(node_id: &NodeId) -> BlueprintId {
-        let bytes = copy_buffer(unsafe {
-            object::object_get_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
-        });
+    pub fn object_instance_of(node_id: &NodeId, blueprint_id: &BlueprintId) -> bool {
+        let rtn = unsafe {
+            object::object_instance_of(
+                node_id.as_ref().as_ptr(),
+                node_id.as_ref().len(),
+                blueprint_id.package_address.as_ref().as_ptr(),
+                blueprint_id.package_address.as_ref().len(),
+                blueprint_id.blueprint_name.as_ptr(),
+                blueprint_id.blueprint_name.len(),
+            )
+        };
 
-        scrypto_decode(&bytes).unwrap()
+        rtn == 1
     }
 
     pub fn object_get_outer_object(node_id: &NodeId) -> GlobalAddress {

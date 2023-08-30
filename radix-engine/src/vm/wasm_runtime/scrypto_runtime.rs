@@ -393,18 +393,27 @@ where
         Ok(())
     }
 
-    fn get_blueprint_id(
+    fn instance_of(
         &mut self,
-        node_id: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node_id = NodeId(
-            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+        object_id: Vec<u8>,
+        package_node_id: Vec<u8>,
+        blueprint_name: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let object_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(object_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let blueprint_id = self.api.get_blueprint_id(&node_id)?;
+        let (package_address, blueprint_name) =
+            Self::parse_blueprint_id(package_node_id, blueprint_name)?;
+        let blueprint_id = self.api.get_blueprint_id(&object_id)?;
 
-        let buffer = scrypto_encode(&blueprint_id).expect("Failed to encode type_info");
-        self.allocate_buffer(buffer)
+        if blueprint_id.package_address.eq(&package_address)
+            && blueprint_id.blueprint_name.eq(&blueprint_name)
+        {
+            Ok(1)
+        } else {
+            Ok(0)
+        }
     }
 
     fn get_outer_object(

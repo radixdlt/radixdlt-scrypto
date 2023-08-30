@@ -344,18 +344,26 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn object_get_blueprint_id(
+        pub fn object_instance_of(
             env: &WasmerInstanceEnv,
             component_id_ptr: u32,
             component_id_len: u32,
-        ) -> Result<u64, RuntimeError> {
+            package_node_id_ptr: u32,
+            package_node_id_len: u32,
+            blueprint_name_ptr: u32,
+            blueprint_name_len: u32,
+        ) -> Result<u32, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
-                .get_blueprint_id(read_memory(&instance, component_id_ptr, component_id_len)?)
+            let rtn = runtime
+                .instance_of(
+                    read_memory(&instance, component_id_ptr, component_id_len)?,
+                    read_memory(&instance, package_node_id_ptr, package_node_id_len)?,
+                    read_memory(&instance, blueprint_name_ptr, blueprint_name_len)?,
+                )
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            Ok(buffer.0)
+            Ok(rtn)
         }
 
         pub fn object_get_outer_object(
@@ -726,7 +734,7 @@ impl WasmerModule {
                 ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), address_get_reservation_address),
                 OBJECT_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_new),
                 OBJECT_GLOBALIZE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_globalize),
-                OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_get_blueprint_id),
+                OBJECT_INSTANCE_OF_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_instance_of),
                 OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_get_outer_object),
                 OBJECT_CALL_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_call),
                 OBJECT_CALL_MODULE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_call_module),

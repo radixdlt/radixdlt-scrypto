@@ -91,7 +91,14 @@ pub mod object {
         ) -> Buffer;
 
         /// Get the Blueprint Identifier of a given object
-        pub fn object_get_blueprint_id(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
+        pub fn object_instance_of(
+            obj_id_ptr: *const u8,
+            obj_id_len: usize,
+            package_node_id_ptr: *const u8,
+            package_node_id_len: usize,
+            blueprint_name_ptr: *const u8,
+            blueprint_name_len: usize,
+        ) -> u32;
 
         /// Get the address of the outer object of a given object
         pub fn object_get_outer_object(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;

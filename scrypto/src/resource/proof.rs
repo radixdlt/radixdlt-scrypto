@@ -178,10 +178,19 @@ impl ScryptoUncheckedProof for Proof {
     }
 
     fn drop(self) {
-        let blueprint_id = ScryptoVmV1Api::object_get_blueprint_id(self.0.as_node_id());
         ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
-            blueprint_id.blueprint_name.as_str(),
+            if ScryptoVmV1Api::object_instance_of(
+                self.0.as_node_id(),
+                &BlueprintId {
+                    package_address: RESOURCE_PACKAGE,
+                    blueprint_name: FUNGIBLE_PROOF_BLUEPRINT.to_owned(),
+                },
+            ) {
+                FUNGIBLE_PROOF_BLUEPRINT
+            } else {
+                NON_FUNGIBLE_PROOF_BLUEPRINT
+            },
             PROOF_DROP_IDENT,
             scrypto_encode(&ProofDropInput {
                 proof: Proof(self.0),

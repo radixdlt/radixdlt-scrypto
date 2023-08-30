@@ -210,10 +210,12 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::FeeReserveError(e)))
     }
 
-    fn get_blueprint_id(
+    fn instance_of(
         &mut self,
         component_id: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        package_node_id: Vec<u8>,
+        blueprint_name: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

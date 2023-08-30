@@ -106,10 +106,12 @@ pub trait WasmRuntime {
         key: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_blueprint_id(
+    fn instance_of(
         &mut self,
-        component_id: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+        object_id: Vec<u8>,
+        package_node_id: Vec<u8>,
+        blueprint_name: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>>;
 
     fn get_outer_object(
         &mut self,

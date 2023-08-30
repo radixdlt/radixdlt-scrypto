@@ -366,21 +366,37 @@ fn globalize_object(
         .map(|buffer| buffer.0)
 }
 
-fn get_object_info(
+fn instance_of(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
     component_id_len: u32,
-) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    package_node_id_ptr: u32,
+    package_node_id_len: u32,
+    blueprint_name_ptr: u32,
+    blueprint_name_len: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    runtime
-        .get_blueprint_id(read_memory(
+    runtime.instance_of(
+        read_memory(
             caller.as_context_mut(),
             memory,
             component_id_ptr,
             component_id_len,
-        )?)
-        .map(|buffer| buffer.0)
+        )?,
+        read_memory(
+            caller.as_context_mut(),
+            memory,
+            package_node_id_ptr,
+            package_node_id_len,
+        )?,
+        read_memory(
+            caller.as_context_mut(),
+            memory,
+            blueprint_name_ptr,
+            blueprint_name_len,
+        )?,
+    )
 }
 
 fn get_outer_object(
@@ -898,13 +914,26 @@ impl WasmiModule {
             },
         );
 
-        let host_get_object_info = Func::wrap(
+        let host_instance_of = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              object_id_ptr: u32,
-             object_id_len: u32|
-             -> Result<u64, Trap> {
-                get_object_info(caller, object_id_ptr, object_id_len).map_err(|e| e.into())
+             object_id_len: u32,
+             package_node_id_ptr: u32,
+             package_node_id_len: u32,
+             blueprint_name_ptr: u32,
+             blueprint_name_len: u32|
+             -> Result<u32, Trap> {
+                instance_of(
+                    caller,
+                    object_id_ptr,
+                    object_id_len,
+                    package_node_id_ptr,
+                    package_node_id_len,
+                    blueprint_name_ptr,
+                    blueprint_name_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 
@@ -1172,11 +1201,7 @@ impl WasmiModule {
             OBJECT_GLOBALIZE_FUNCTION_NAME,
             host_globalize_object
         );
-        linker_define!(
-            linker,
-            OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME,
-            host_get_object_info
-        );
+        linker_define!(linker, OBJECT_INSTANCE_OF_FUNCTION_NAME, host_instance_of);
         linker_define!(
             linker,
             OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME,

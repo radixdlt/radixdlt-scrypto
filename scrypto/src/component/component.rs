@@ -465,12 +465,10 @@ trait TypeCheckable {
 
 impl<O: HasTypeInfo> TypeCheckable for O {
     fn check(node_id: &NodeId) -> Result<(), ComponentCastError> {
-        let blueprint_id = ScryptoVmV1Api::object_get_blueprint_id(node_id);
-        let to = O::blueprint_id();
-        if !blueprint_id.eq(&to) {
-            return Err(ComponentCastError::CannotCast {
-                actual: blueprint_id,
-                to,
+        if !ScryptoVmV1Api::object_instance_of(node_id, &O::blueprint_id()) {
+            return Err(ComponentCastError::InvalidCast {
+                node_id: *node_id,
+                blueprint_id: O::blueprint_id(),
             });
         }
 
@@ -486,9 +484,9 @@ impl TypeCheckable for AnyComponent {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum ComponentCastError {
-    CannotCast {
-        to: BlueprintId,
-        actual: BlueprintId,
+    InvalidCast {
+        node_id: NodeId,
+        blueprint_id: BlueprintId,
     },
 }
 
