@@ -200,13 +200,17 @@ jobs:
         toolchain: 1.70.0
     - name: reset registry
       run: rm -fr ~/.cargo/registry
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: llvm-tools-preview
+    - uses: taiki-e/install-action@cargo-llvm-cov
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
       run: |
-        cargo nextest run \
+        cargo llvm-cov nextest run \
           --features post_run_db_check serde \
           -p radix-engine-common \
           -p radix-engine-derive \
@@ -214,6 +218,8 @@ jobs:
           -p radix-engine \
           -p radix-engine-tests
         ./check_stack_usage.sh
+
+        ls -la
 
   radix-engine-release:
     # Run tests in release variant.
