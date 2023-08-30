@@ -18,7 +18,6 @@ use radix_engine_interface::blueprints::test_utils::invocations::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_store_interface::db_key_mapper::*;
 use radix_engine_stores::memory_db::*;
-use scrypto::prelude::*;
 use scrypto_unit::TestRunnerBuilder;
 use transaction::prelude::*;
 
