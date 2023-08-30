@@ -54,6 +54,11 @@ fn test_bucket_combine() {
 }
 
 #[test]
+fn test_bucket_combine_invalid() {
+    test_bucket_internal("combine_invalid", manifest_args!().into(), false);
+}
+
+#[test]
 fn test_bucket_split() {
     test_bucket_internal("split", manifest_args!().into(), true);
 }

@@ -194,7 +194,7 @@ impl Actor {
         }
     }
 
-    pub fn get_object_id(self) -> Option<(NodeId, Option<ModuleId>)> {
+    pub fn get_object_id(&self) -> Option<(NodeId, Option<ModuleId>)> {
         match self {
             Actor::Method(method_actor) => Some((
                 method_actor.node_id,
@@ -203,7 +203,7 @@ impl Actor {
             Actor::BlueprintHook(BlueprintHookActor {
                 receiver: Some(node_id),
                 ..
-            }) => Some((node_id, None)),
+            }) => Some((*node_id, None)),
             Actor::BlueprintHook(..) | Actor::Root | Actor::Function(..) => None,
         }
     }

@@ -1501,15 +1501,52 @@ where
         // In the future, we may consider allowing customization at blueprint level.
         let info = self.get_object_info(node_id)?;
         let actor = self.current_actor()?;
-        if Some(info.blueprint_info.blueprint_id.package_address) != actor.package_address() {
-            return Err(RuntimeError::SystemError(SystemError::InvalidDropAccess(
-                Box::new(InvalidDropAccess {
-                    node_id: node_id.clone(),
-                    package_address: info.blueprint_info.blueprint_id.package_address,
-                    blueprint_name: info.blueprint_info.blueprint_id.blueprint_name,
-                    actor_package: actor.package_address(),
-                }),
-            )));
+
+        let instance_context_check = {
+            // Allow proofs to be dropped on their own
+            if info.blueprint_info.blueprint_id.eq(&BlueprintId::new(
+                &RESOURCE_PACKAGE,
+                FUNGIBLE_PROOF_BLUEPRINT,
+            )) || info.blueprint_info.blueprint_id.eq(&BlueprintId::new(
+                &RESOURCE_PACKAGE,
+                NON_FUNGIBLE_PROOF_BLUEPRINT,
+            )) {
+                None
+            } else {
+                match info.blueprint_info.outer_obj_info {
+                    OuterObjectInfo::Some { outer_object } => Some(outer_object),
+                    OuterObjectInfo::None => None,
+                }
+            }
+        };
+
+        // If outer object exists, only outer object may drop object
+        if let Some(outer_object) = instance_context_check {
+            match actor.instance_context() {
+                Some(instance_context) if instance_context.outer_object.eq(&outer_object) => {}
+                _ => {
+                    return Err(RuntimeError::SystemError(SystemError::InvalidDropAccess(
+                        Box::new(InvalidDropAccess {
+                            node_id: node_id.clone(),
+                            package_address: info.blueprint_info.blueprint_id.package_address,
+                            blueprint_name: info.blueprint_info.blueprint_id.blueprint_name,
+                            actor_package: actor.package_address(),
+                        }),
+                    )));
+                }
+            }
+        } else {
+            // Otherwise, only blueprint may drop object
+            if Some(info.blueprint_info.blueprint_id.clone()) != actor.blueprint_id() {
+                return Err(RuntimeError::SystemError(SystemError::InvalidDropAccess(
+                    Box::new(InvalidDropAccess {
+                        node_id: node_id.clone(),
+                        package_address: info.blueprint_info.blueprint_id.package_address,
+                        blueprint_name: info.blueprint_info.blueprint_id.blueprint_name,
+                        actor_package: actor.package_address(),
+                    }),
+                )));
+            }
         }
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
