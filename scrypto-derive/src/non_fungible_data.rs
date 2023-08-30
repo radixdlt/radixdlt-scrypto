@@ -57,8 +57,15 @@ pub fn is_mutable(f: &Field) -> bool {
 pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_non_fungible_data() starts");
 
-    let DeriveInput { ident, data, .. } = parse2(input)?;
+    let DeriveInput {
+        ident,
+        data,
+        generics,
+        ..
+    } = parse2(input)?;
     trace!("Processing: {}", ident.to_string());
+
+    let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
 
     let output = match data {
         Data::Struct(s) => match s.fields {
@@ -70,7 +77,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                     .collect();
 
                 quote! {
-                    impl ::scrypto::prelude::NonFungibleData for #ident {
+                    impl #impl_generics ::scrypto::prelude::NonFungibleData for #ident #type_generics #where_clause {
                         const MUTABLE_FIELDS: &'static [&'static str] = &[#mutable_fields];
                     }
                 }
@@ -126,6 +133,24 @@ mod tests {
             output,
             quote! {
                 impl ::scrypto::prelude::NonFungibleData for MyStruct {
+                    const MUTABLE_FIELDS : & 'static [& 'static str] = & ["field_2"] ;
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_non_fungible_with_generic_parameter() {
+        let input = TokenStream::from_str(
+            "pub struct MyStruct<A> { pub field_1: u32, #[mutable] pub field_2: A, }",
+        )
+        .unwrap();
+        let output = handle_non_fungible_data(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl<A> ::scrypto::prelude::NonFungibleData for MyStruct<A> {
                     const MUTABLE_FIELDS : & 'static [& 'static str] = & ["field_2"] ;
                 }
             },
