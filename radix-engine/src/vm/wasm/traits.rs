@@ -146,7 +146,9 @@ pub trait WasmRuntime {
         actor_ref_handle: ActorRefHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn actor_get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn actor_get_package_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn actor_get_blueprint_name(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn consume_wasm_execution_units(&mut self, n: u32)
         -> Result<(), InvokeError<WasmRuntimeError>>;

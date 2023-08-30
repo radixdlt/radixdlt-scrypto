@@ -65,7 +65,11 @@ impl Runtime {
 
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
-        ScryptoVmV1Api::actor_get_blueprint_id().package_address
+        ScryptoVmV1Api::actor_get_package_address()
+    }
+
+    pub fn blueprint_name() -> String {
+        ScryptoVmV1Api::actor_get_blueprint_name()
     }
 
     pub fn package_token() -> NonFungibleGlobalId {

@@ -191,10 +191,16 @@ impl ScryptoVmV1Api {
         NodeId(node_id.try_into().unwrap())
     }
 
-    pub fn actor_get_blueprint_id() -> BlueprintId {
-        let blueprint_id = copy_buffer(unsafe { actor::actor_get_blueprint_id() });
+    pub fn actor_get_package_address() -> PackageAddress {
+        let package_address = copy_buffer(unsafe { actor::actor_get_package_address() });
 
-        scrypto_decode(&blueprint_id).unwrap()
+        PackageAddress::try_from(package_address.as_slice()).unwrap()
+    }
+
+    pub fn actor_get_blueprint_name() -> String {
+        let blueprint_name = copy_buffer(unsafe { actor::actor_get_blueprint_name() });
+
+        String::from_utf8(blueprint_name).unwrap()
     }
 
     pub fn actor_emit_event(event_name: String, event_data: Vec<u8>, flags: EventFlags) {

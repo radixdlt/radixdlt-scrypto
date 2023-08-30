@@ -542,11 +542,21 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn actor_get_blueprint(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn actor_get_package_address(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .actor_get_blueprint()
+                .actor_get_package_address()
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn actor_get_blueprint_name(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .actor_get_blueprint_name()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -750,7 +760,8 @@ impl WasmerModule {
                 FIELD_ENTRY_CLOSE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_entry_close),
                 ACTOR_OPEN_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_open_field),
                 ACTOR_GET_OBJECT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_get_node_id),
-                ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_get_blueprint),
+                ACTOR_GET_PACKAGE_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_get_package_address),
+                ACTOR_GET_BLUEPRINT_NAME_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_get_blueprint_name),
                 ACTOR_EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_emit_event),
                 COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_wasm_execution_units),
                 COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), costing_get_execution_cost_unit_limit),

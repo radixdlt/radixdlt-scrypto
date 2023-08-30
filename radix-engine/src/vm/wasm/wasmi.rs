@@ -535,10 +535,18 @@ fn actor_get_node_id(
     runtime.actor_get_node_id(handle).map(|buffer| buffer.0)
 }
 
-fn get_actor(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+fn get_package_address(
+    caller: Caller<'_, HostState>,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.actor_get_blueprint().map(|buffer| buffer.0)
+    runtime.actor_get_package_address().map(|buffer| buffer.0)
+}
+
+fn get_blueprint_name(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.actor_get_blueprint_name().map(|buffer| buffer.0)
 }
 
 fn consume_wasm_execution_units(
@@ -1056,10 +1064,17 @@ impl WasmiModule {
             },
         );
 
-        let host_get_blueprint = Func::wrap(
+        let host_get_package_address = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                get_actor(caller).map_err(|e| e.into())
+                get_package_address(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_get_blueprint_name = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                get_blueprint_name(caller).map_err(|e| e.into())
             },
         );
 
@@ -1263,8 +1278,13 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME,
-            host_get_blueprint
+            ACTOR_GET_PACKAGE_ADDRESS_FUNCTION_NAME,
+            host_get_package_address
+        );
+        linker_define!(
+            linker,
+            ACTOR_GET_BLUEPRINT_NAME_FUNCTION_NAME,
+            host_get_blueprint_name
         );
         linker_define!(
             linker,

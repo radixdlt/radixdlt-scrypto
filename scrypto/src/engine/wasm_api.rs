@@ -143,8 +143,11 @@ pub mod actor {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
-        /// Get the blueprint id of the current actor
-        pub fn actor_get_blueprint_id() -> Buffer;
+        /// Get the package address of the current actor
+        pub fn actor_get_package_address() -> Buffer;
+
+        /// Get the blueprint name of the current actor
+        pub fn actor_get_blueprint_name() -> Buffer;
 
         /// Get the object id of a reference of the current actor
         pub fn actor_get_object_id(actor_ref_handle: ActorRefHandle) -> Buffer;

@@ -361,11 +361,16 @@ where
         self.allocate_buffer(node_id.0.to_vec())
     }
 
-    fn actor_get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let actor = self.api.actor_get_blueprint_id()?;
+    fn actor_get_package_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let blueprint_id = self.api.actor_get_blueprint_id()?;
 
-        let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
-        self.allocate_buffer(buffer)
+        self.allocate_buffer(blueprint_id.package_address.to_vec())
+    }
+
+    fn actor_get_blueprint_name(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let blueprint_id = self.api.actor_get_blueprint_id()?;
+
+        self.allocate_buffer(blueprint_id.blueprint_name.into_bytes())
     }
 
     fn consume_wasm_execution_units(

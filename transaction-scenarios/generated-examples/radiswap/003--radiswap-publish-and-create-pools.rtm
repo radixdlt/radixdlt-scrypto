@@ -560,6 +560,20 @@ PUBLISH_PACKAGE_ADVANCED
                     Map<String, Enum>(),
                     Tuple(
                         Map<String, Tuple>(
+                            "new" => Tuple(
+                                Enum<0u8>(),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        2u64
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        11u64
+                                    )
+                                ),
+                                "Radiswap_new"
+                            ),
                             "add_liquidity" => Tuple(
                                 Enum<1u8>(
                                     Tuple(
@@ -580,20 +594,6 @@ PUBLISH_PACKAGE_ADVANCED
                                     )
                                 ),
                                 "Radiswap_add_liquidity"
-                            ),
-                            "new" => Tuple(
-                                Enum<0u8>(),
-                                Enum<0u8>(
-                                    Enum<1u8>(
-                                        2u64
-                                    )
-                                ),
-                                Enum<0u8>(
-                                    Enum<1u8>(
-                                        11u64
-                                    )
-                                ),
-                                "Radiswap_new"
                             ),
                             "remove_liquidity" => Tuple(
                                 Enum<1u8>(
@@ -651,7 +651,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("2dd7a64de8924a4c71939ab928ea16c5adac095b7810ab163f905feb736e5e1a")
+    Blob("ff58aa06b908277a6d90966d5100c5b020c67297e8d5b53659d62ea2fd1f4742")
     Map<String, Tuple>(
         "name" => Tuple(
             Enum<1u8>(
