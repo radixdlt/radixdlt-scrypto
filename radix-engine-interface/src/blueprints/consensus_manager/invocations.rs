@@ -160,6 +160,9 @@ impl EpochChangeCondition {
             // Need to avoid issues with divide by zero etc
             return false;
         }
+        // NOTE: Decimal arithmetic operation safe unwrap.
+        // No realistic chance to overflow.
+        // 100 years in ms is less than 2^35
         let proportion_difference = (Decimal::from(actual_duration_millis)
             .safe_sub(self.target_duration_millis)
             .expect("Overflow"))

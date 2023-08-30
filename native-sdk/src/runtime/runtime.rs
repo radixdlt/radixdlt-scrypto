@@ -25,7 +25,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         api.actor_emit_event(
-            T::event_name().to_string(),
+            T::EVENT_NAME.to_string(),
             scrypto_encode(&event).unwrap(),
             EventFlags::empty(),
         )
@@ -40,7 +40,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         api.actor_emit_event(
-            T::event_name().to_string(),
+            T::EVENT_NAME.to_string(),
             scrypto_encode(&event).unwrap(),
             EventFlags::FORCE_WRITE,
         )

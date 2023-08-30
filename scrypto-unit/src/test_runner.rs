@@ -8,12 +8,7 @@ use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
-#[cfg(feature = "post_run_db_check")]
-use radix_engine::system::resource_checker::ResourceChecker;
-use radix_engine::system::system_db_checker::{
-    ApplicationChecker, SystemDatabaseCheckError, SystemDatabaseChecker,
-    SystemDatabaseCheckerResults,
-};
+use radix_engine::system::checkers::*;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
@@ -206,7 +201,7 @@ impl CustomGenesis {
     pub fn validators_and_single_staker(
         validators_and_stakes: Vec<(Secp256k1PublicKey, Decimal)>,
         staker_account: ComponentAddress,
-        xrd_amount: Decimal,
+        stacker_account_xrd_amount: Decimal,
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
@@ -239,7 +234,7 @@ impl CustomGenesis {
                     XRD,
                     vec![GenesisResourceAllocation {
                         account_index: 0u32,
-                        amount: xrd_amount,
+                        amount: stacker_account_xrd_amount,
                     }],
                 )],
             },
@@ -272,7 +267,6 @@ pub struct TestRunnerBuilder<E, D> {
     custom_database: D,
     trace: bool,
     state_hashing: bool,
-    collect_events: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -283,7 +277,6 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_database: InMemorySubstateDatabase::standard(),
             trace: true,
             state_hashing: false,
-            collect_events: false,
         }
     }
 }
@@ -296,11 +289,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
 
     pub fn with_state_hashing(mut self) -> Self {
         self.state_hashing = true;
-        self
-    }
-
-    pub fn collect_events(mut self) -> Self {
-        self.collect_events = true;
         self
     }
 
@@ -319,7 +307,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: self.custom_database,
             trace: self.trace,
             state_hashing: self.state_hashing,
-            collect_events: self.collect_events,
         }
     }
 
@@ -330,7 +317,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: database,
             trace: self.trace,
             state_hashing: self.state_hashing,
-            collect_events: self.collect_events,
         }
     }
 
@@ -375,28 +361,23 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             None => bootstrapper.bootstrap_test_default().unwrap(),
         };
 
-        let collected_events = if self.collect_events {
-            let mut events = Vec::new();
+        let mut events = Vec::new();
 
-            events.push(
-                system_bootstrap_receipt
-                    .expect_commit_success()
-                    .application_events
-                    .clone(),
-            );
-            for receipt in data_ingestion_receipts {
-                events.push(receipt.expect_commit_success().application_events.clone());
-            }
-            events.push(
-                wrap_up_receipt
-                    .expect_commit_success()
-                    .application_events
-                    .clone(),
-            );
-            Some(events)
-        } else {
-            None
-        };
+        events.push(
+            system_bootstrap_receipt
+                .expect_commit_success()
+                .application_events
+                .clone(),
+        );
+        for receipt in data_ingestion_receipts {
+            events.push(receipt.expect_commit_success().application_events.clone());
+        }
+        events.push(
+            wrap_up_receipt
+                .expect_commit_success()
+                .application_events
+                .clone(),
+        );
 
         // Note that 0 is not a valid private key
         let next_private_key = 100;
@@ -414,7 +395,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             next_private_key,
             next_transaction_nonce,
             trace,
-            collected_events,
+            collected_events: events,
+            xrd_free_credits_used: false,
         };
 
         let next_epoch = wrap_up_receipt
@@ -437,16 +419,29 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     next_transaction_nonce: u32,
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
-    collected_events: Option<Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>>,
+    collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    xrd_free_credits_used: bool,
 }
 
 #[cfg(feature = "post_run_db_check")]
 impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
     fn drop(&mut self) {
-        let results = self
-            .check_db::<ResourceChecker>()
+        let db_results = self
+            .check_db::<ResourceDatabaseChecker>()
             .expect("Database should be consistent after running test");
-        println!("{:?}", results);
+        println!("{:#?}", db_results);
+
+        let event_results = SystemEventChecker::<ResourceEventChecker>::new()
+            .check_all_events(&self.database, &self.collected_events)
+            .expect("Events should be consistent");
+        println!("{:#?}", event_results);
+
+        // If free credits (xrd from thin air) have been used then reconciliation will fail
+        // due to missing mint events
+        if !self.xrd_free_credits_used {
+            ResourceReconciler::reconcile(&db_results.1, &event_results)
+                .expect("Resource reconciliation failed");
+        }
     }
 }
 
@@ -490,9 +485,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn collected_events(&self) -> &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>> {
-        self.collected_events
-            .as_ref()
-            .expect("Event collection not enabled")
+        self.collected_events.as_ref()
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -755,16 +748,14 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         vault_id: NodeId,
     ) -> Option<(Decimal, Box<dyn Iterator<Item = NonFungibleLocalId> + '_>)> {
         let reader = SystemDatabaseReader::new(self.substate_db());
-        let vault: Option<VersionedNonFungibleVaultBalance> = reader
+        let vault_balance: NonFungibleVaultBalanceFieldPayload = reader
             .read_typed_object_field(
                 &vault_id,
                 ObjectModuleId::Main,
                 NonFungibleVaultField::Balance.into(),
             )
-            .ok();
-        let amount = match vault? {
-            VersionedNonFungibleVaultBalance::V1(amount) => amount,
-        };
+            .ok()?;
+        let amount = vault_balance.into_latest().amount;
 
         // TODO: Remove .collect() by using SystemDatabaseReader in test_runner
         let iter: Vec<NonFungibleLocalId> = reader
@@ -781,7 +772,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             })
             .collect();
 
-        Some((amount.amount, Box::new(iter.into_iter())))
+        Some((amount, Box::new(iter.into_iter())))
     }
 
     pub fn get_component_resources(
@@ -847,7 +838,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         let manifest = ManifestBuilder::new()
             .get_free_xrd_from_faucet()
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -924,6 +915,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
     pub fn new_ed25519_virtual_account_with_access_controller(
         &mut self,
+        n_out_of_4: u8,
     ) -> (
         Ed25519PublicKey,
         Ed25519PrivateKey,
@@ -942,7 +934,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let (pk4, sk4) = self.new_ed25519_key_pair();
 
         let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(
-            1,
+            n_out_of_4,
             vec![
                 ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
                 ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
@@ -1027,7 +1019,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_identity()
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -1046,7 +1038,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .get_free_xrd_from_faucet()
             .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
             .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let address = receipt.expect_commit(true).new_component_addresses()[0];
@@ -1063,35 +1055,32 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .get_free_xrd_from_faucet()
             .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
             .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let validator_address = receipt.expect_commit(true).new_component_addresses()[0];
 
-        let receipt =
-            self.execute_manifest(
-                ManifestBuilder::new()
-                    .lock_fee_from_faucet()
-                    .get_free_xrd_from_faucet()
-                    .create_proof_from_account_of_non_fungibles(
-                        account,
-                        VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+        let receipt = self.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .get_free_xrd_from_faucet()
+                .create_proof_from_account_of_non_fungibles(
+                    account,
+                    VALIDATOR_OWNER_BADGE,
+                    [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
+                )
+                .take_all_from_worktop(XRD, "bucket")
+                .with_bucket("bucket", |builder, bucket| {
+                    builder.call_method(
+                        validator_address,
+                        VALIDATOR_STAKE_AS_OWNER_IDENT,
+                        manifest_args!(bucket),
                     )
-                    .take_all_from_worktop(XRD, "bucket")
-                    .with_bucket("bucket", |builder, bucket| {
-                        builder.call_method(
-                            validator_address,
-                            VALIDATOR_STAKE_AS_OWNER_IDENT,
-                            manifest_args!(bucket),
-                        )
-                    })
-                    .deposit_batch(account)
-                    .build(),
-                vec![NonFungibleGlobalId::from_public_key(&pub_key)],
-            );
+                })
+                .deposit_batch(account)
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        );
         receipt.expect_commit_success();
 
         validator_address
@@ -1233,6 +1222,51 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         self.publish_package_with_owner(code, definition, owner_badge)
     }
 
+    pub fn execute_unsigned_built_manifest_with_faucet_lock_fee(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+    ) -> TransactionReceipt {
+        self.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .then(create_manifest)
+                .build(),
+            [],
+        )
+    }
+
+    pub fn execute_unsigned_built_manifest(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+    ) -> TransactionReceipt {
+        self.execute_manifest(ManifestBuilder::new().then(create_manifest).build(), [])
+    }
+
+    pub fn execute_built_manifest_with_faucet_lock_fee(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+        signatures: impl ResolvableTransactionSignatures,
+    ) -> TransactionReceipt {
+        self.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .then(create_manifest)
+                .build(),
+            signatures.resolve(),
+        )
+    }
+
+    pub fn execute_built_manifest(
+        &mut self,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+        signatures: impl ResolvableTransactionSignatures,
+    ) -> TransactionReceipt {
+        self.execute_manifest(
+            ManifestBuilder::new().then(create_manifest).build(),
+            signatures.resolve(),
+        )
+    }
+
     pub fn execute_manifest_ignoring_fee<T>(
         &mut self,
         mut manifest: TransactionManifestV1,
@@ -1332,6 +1366,14 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.trace);
 
+        if executable
+            .costing_parameters()
+            .free_credit_in_xrd
+            .is_positive()
+        {
+            self.xrd_free_credits_used = true;
+        }
+
         let vm = Vm {
             scrypto_vm: &self.scrypto_vm,
             native_vm: self.native_vm.clone(),
@@ -1349,9 +1391,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates.database_updates);
             }
-            if let Some(events) = &mut self.collected_events {
-                events.push(commit.application_events.clone());
-            }
+
+            self.collected_events
+                .push(commit.application_events.clone());
 
             assert_receipt_substate_changes_can_be_typed(commit);
         }
@@ -1508,7 +1550,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 Some(5.into()),
             )
-            .try_deposit_batch_or_abort(to, None)
+            .try_deposit_entire_worktop_or_abort(to, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1761,7 +1803,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 Some(entries),
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1783,7 +1825,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 Some(amount),
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1815,7 +1857,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 None,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
@@ -1845,7 +1887,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 amount,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1878,7 +1920,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 amount,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1915,7 +1957,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 metadata!(),
                 initial_supply,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -2260,6 +2302,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let mut checker = SystemDatabaseChecker::<A>::new();
         checker.check_db(&self.database)
     }
+
+    pub fn check_events<A: ApplicationEventChecker>(
+        &self,
+    ) -> Result<A::ApplicationEventCheckerResults, SystemEventCheckerError> {
+        let mut event_checker = SystemEventChecker::<A>::new();
+        event_checker.check_all_events(&self.database, self.collected_events())
+    }
 }
 
 pub struct SubtreeVaults<'d, D> {
@@ -2439,6 +2488,40 @@ pub fn create_notarized_transaction(
         .sign(&sk2)
         .notarize(&sk_notary)
         .build()
+}
+
+pub fn create_notarized_transaction_advanced<S: Signer>(
+    test_runner: &mut DefaultTestRunner,
+    network: &NetworkDefinition,
+    manifest: TransactionManifestV1,
+    signers: Vec<&S>,
+    notary: &S,
+    notary_is_signatory: bool,
+) -> NotarizedTransactionV1 {
+    let notarized_transaction = TransactionBuilder::new()
+        .header(TransactionHeaderV1 {
+            network_id: network.id,
+            start_epoch_inclusive: Epoch::zero(),
+            end_epoch_exclusive: Epoch::of(99),
+            nonce: test_runner.next_transaction_nonce(),
+            notary_public_key: notary.public_key().into(),
+            notary_is_signatory: notary_is_signatory,
+            tip_percentage: DEFAULT_TIP_PERCENTAGE,
+        })
+        .manifest(manifest)
+        .multi_sign(&signers)
+        .notarize(notary)
+        .build();
+    notarized_transaction
+}
+
+pub fn validate_notarized_transaction<'a>(
+    network: &'a NetworkDefinition,
+    transaction: &'a NotarizedTransactionV1,
+) -> ValidatedNotarizedTransactionV1 {
+    NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+        .validate(transaction.prepare().unwrap())
+        .unwrap()
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {

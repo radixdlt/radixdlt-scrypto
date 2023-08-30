@@ -44,7 +44,7 @@ fn create_manifest_with_middle(
             )
         })
         .return_to_worktop("proof_bucket")
-        .try_deposit_batch_or_abort(sink_account(), None)
+        .try_deposit_entire_worktop_or_abort(sink_account(), None)
         .build()
 }
 

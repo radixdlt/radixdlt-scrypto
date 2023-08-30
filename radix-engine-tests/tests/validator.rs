@@ -22,6 +22,7 @@ where
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
+        Decimal::ZERO,
         validator_account_address,
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
@@ -37,7 +38,7 @@ where
         builder = builder.create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         );
     }
     let manifest = builder
@@ -98,7 +99,7 @@ fn check_if_validator_accepts_delegated_stake() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -227,7 +228,7 @@ fn calling_get_redemption_value_on_staked_validator_with_zero_amount_should_not_
             .call_method(
                 validator_address,
                 VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
-                manifest_args!(Decimal::MIN),
+                manifest_args!(Decimal::ZERO),
             )
             .build(),
         vec![],

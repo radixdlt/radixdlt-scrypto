@@ -3,28 +3,33 @@ use radix_engine::transaction::{TransactionOutcome, TransactionReceipt};
 use radix_engine::types::*;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use resource_tests::TestFuzzer;
 use resource_tests::validator::{ValidatorFuzzAction, ValidatorMeta};
+use resource_tests::TestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
 fn fuzz_validator() {
-    let mut summed_results: BTreeMap<ValidatorFuzzAction, BTreeMap<FuzzTxnResult, u64>> = BTreeMap::new();
+    let mut summed_results: BTreeMap<ValidatorFuzzAction, BTreeMap<FuzzTxnResult, u64>> =
+        BTreeMap::new();
 
-    let results: Vec<BTreeMap<ValidatorFuzzAction, BTreeMap<FuzzTxnResult, u64>>> =
-        (1u64..64u64)
-            .into_par_iter()
-            .map(|seed| {
-                let mut fuzz_test = ValidatorFuzzTest::new(seed);
-                fuzz_test.run_fuzz()
-            })
-            .collect();
+    let results: Vec<BTreeMap<ValidatorFuzzAction, BTreeMap<FuzzTxnResult, u64>>> = (1u64..64u64)
+        .into_par_iter()
+        .map(|seed| {
+            let mut fuzz_test = ValidatorFuzzTest::new(seed);
+            fuzz_test.run_fuzz()
+        })
+        .collect();
 
     for run_result in results {
         for (txn, txn_results) in run_result {
             for (txn_result, count) in txn_results {
-                summed_results.entry(txn).or_default().entry(txn_result).or_default().add_assign(&count);
+                summed_results
+                    .entry(txn)
+                    .or_default()
+                    .entry(txn_result)
+                    .or_default()
+                    .add_assign(&count);
             }
         }
     }
@@ -91,20 +96,18 @@ impl ValidatorFuzzTest {
         }
     }
 
-    fn run_fuzz(
-        &mut self,
-    ) -> BTreeMap<ValidatorFuzzAction, BTreeMap<FuzzTxnResult, u64>> {
-        let mut fuzz_results: BTreeMap<ValidatorFuzzAction, BTreeMap<FuzzTxnResult, u64>> = BTreeMap::new();
+    fn run_fuzz(&mut self) -> BTreeMap<ValidatorFuzzAction, BTreeMap<FuzzTxnResult, u64>> {
+        let mut fuzz_results: BTreeMap<ValidatorFuzzAction, BTreeMap<FuzzTxnResult, u64>> =
+            BTreeMap::new();
 
         for _ in 0..100 {
             let builder = ManifestBuilder::new();
-            let action: ValidatorFuzzAction = ValidatorFuzzAction::from_repr(self.fuzzer.next_u8(7u8)).unwrap();
-            let (builder, trivial) = action.add_to_manifest(
-                builder,
-                &mut self.fuzzer,
-                self.validator_meta,
-            );
-            let manifest = builder.deposit_batch(self.validator_meta.account_address)
+            let action: ValidatorFuzzAction =
+                ValidatorFuzzAction::from_repr(self.fuzzer.next_u8(7u8)).unwrap();
+            let (builder, trivial) =
+                action.add_to_manifest(builder, &mut self.fuzzer, self.validator_meta);
+            let manifest = builder
+                .deposit_batch(self.validator_meta.account_address)
                 .build();
             let receipt = self.test_runner.execute_manifest_ignoring_fee(
                 manifest,
@@ -114,13 +117,9 @@ impl ValidatorFuzzTest {
             );
             let result = receipt.expect_commit_ignore_outcome();
             let result = match (&result.outcome, trivial) {
-                (TransactionOutcome::Success(..), true) => {
-                    FuzzTxnResult::TrivialSuccess
-                }
+                (TransactionOutcome::Success(..), true) => FuzzTxnResult::TrivialSuccess,
                 (TransactionOutcome::Success(..), false) => FuzzTxnResult::Success,
-                (TransactionOutcome::Failure(..), true) => {
-                    FuzzTxnResult::TrivialFailure
-                }
+                (TransactionOutcome::Failure(..), true) => FuzzTxnResult::TrivialFailure,
                 (TransactionOutcome::Failure(..), false) => FuzzTxnResult::Failure,
             };
 

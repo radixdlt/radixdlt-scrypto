@@ -4,28 +4,33 @@ use radix_engine::types::*;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use resource_tests::consensus_manager::ConsensusManagerFuzzAction;
-use resource_tests::TestFuzzer;
 use resource_tests::validator::{ValidatorFuzzAction, ValidatorMeta};
+use resource_tests::TestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
 fn fuzz_consensus() {
-    let mut summed_results: BTreeMap<ConsensusFuzzAction, BTreeMap<FuzzTxnResult, u64>> = BTreeMap::new();
+    let mut summed_results: BTreeMap<ConsensusFuzzAction, BTreeMap<FuzzTxnResult, u64>> =
+        BTreeMap::new();
 
-    let results: Vec<BTreeMap<ConsensusFuzzAction, BTreeMap<FuzzTxnResult, u64>>> =
-        (1u64..=64u64)
-            .into_par_iter()
-            .map(|seed| {
-                let mut fuzz_test = ConsensusFuzzTest::new(seed);
-                fuzz_test.run_fuzz()
-            })
-            .collect();
+    let results: Vec<BTreeMap<ConsensusFuzzAction, BTreeMap<FuzzTxnResult, u64>>> = (1u64..=64u64)
+        .into_par_iter()
+        .map(|seed| {
+            let mut fuzz_test = ConsensusFuzzTest::new(seed);
+            fuzz_test.run_fuzz()
+        })
+        .collect();
 
     for run_result in results {
         for (txn, txn_results) in run_result {
             for (txn_result, count) in txn_results {
-                summed_results.entry(txn).or_default().entry(txn_result).or_default().add_assign(&count);
+                summed_results
+                    .entry(txn)
+                    .or_default()
+                    .entry(txn_result)
+                    .or_default()
+                    .add_assign(&count);
             }
         }
     }
@@ -53,13 +58,9 @@ enum FuzzTxnResult {
 impl FuzzTxnResult {
     pub fn from_outcome(outcome: &TransactionOutcome, trivial: bool) -> Self {
         match (outcome, trivial) {
-            (TransactionOutcome::Success(..), true) => {
-                FuzzTxnResult::TrivialSuccess
-            }
+            (TransactionOutcome::Success(..), true) => FuzzTxnResult::TrivialSuccess,
             (TransactionOutcome::Success(..), false) => FuzzTxnResult::Success,
-            (TransactionOutcome::Failure(..), true) => {
-                FuzzTxnResult::TrivialFailure
-            }
+            (TransactionOutcome::Failure(..), true) => FuzzTxnResult::TrivialFailure,
             (TransactionOutcome::Failure(..), false) => FuzzTxnResult::Failure,
         }
     }
@@ -113,31 +114,33 @@ impl ConsensusFuzzTest {
         }
     }
 
-    fn run_fuzz(
-        &mut self,
-    ) -> BTreeMap<ConsensusFuzzAction, BTreeMap<FuzzTxnResult, u64>> {
-        let mut fuzz_results: BTreeMap<ConsensusFuzzAction, BTreeMap<FuzzTxnResult, u64>> = BTreeMap::new();
+    fn run_fuzz(&mut self) -> BTreeMap<ConsensusFuzzAction, BTreeMap<FuzzTxnResult, u64>> {
+        let mut fuzz_results: BTreeMap<ConsensusFuzzAction, BTreeMap<FuzzTxnResult, u64>> =
+            BTreeMap::new();
 
         for i in 0u8..100u8 {
-
             // Build new transaction
             let (fuzz_action, builder, trivial) = {
                 let builder = ManifestBuilder::new();
 
                 match self.fuzzer.next(0u8..10u8) {
                     0u8 => {
-                        let fuzz_action = ConsensusFuzzAction::ConsensusManager(ConsensusManagerFuzzAction::CreateValidator);
-                        let (builder, trivial) = ConsensusManagerFuzzAction::CreateValidator.add_to_manifest(
-                            i,
-                            builder,
-                            &mut self.fuzzer,
-                            self.validator_meta[0].account_address,
+                        let fuzz_action = ConsensusFuzzAction::ConsensusManager(
+                            ConsensusManagerFuzzAction::CreateValidator,
                         );
+                        let (builder, trivial) = ConsensusManagerFuzzAction::CreateValidator
+                            .add_to_manifest(
+                                i,
+                                builder,
+                                &mut self.fuzzer,
+                                self.validator_meta[0].account_address,
+                            );
                         (fuzz_action, builder, trivial)
                     }
                     _ => {
                         let next_validator = self.fuzzer.next(0usize..self.validator_meta.len());
-                        let action: ValidatorFuzzAction = ValidatorFuzzAction::from_repr(self.fuzzer.next_u8(8u8)).unwrap();
+                        let action: ValidatorFuzzAction =
+                            ValidatorFuzzAction::from_repr(self.fuzzer.next_u8(8u8)).unwrap();
                         let (builder, trivial) = action.add_to_manifest(
                             builder,
                             &mut self.fuzzer,
@@ -150,7 +153,8 @@ impl ConsensusFuzzTest {
 
             // Execute transaction
             let result = {
-                let manifest = builder.deposit_batch(self.validator_meta[0].account_address)
+                let manifest = builder
+                    .deposit_batch(self.validator_meta[0].account_address)
                     .build();
                 let receipt = self.test_runner.execute_manifest_ignoring_fee(
                     manifest,
@@ -161,9 +165,13 @@ impl ConsensusFuzzTest {
                 let result = receipt.expect_commit_ignore_outcome();
                 println!("{:?}", result.outcome);
 
-                result.new_component_addresses().iter().filter(|a| a.as_node_id().is_global_validator())
+                result
+                    .new_component_addresses()
+                    .iter()
+                    .filter(|a| a.as_node_id().is_global_validator())
                     .for_each(|validator_address| {
-                        let validator_substate = self.test_runner.get_validator_info(*validator_address);
+                        let validator_substate =
+                            self.test_runner.get_validator_info(*validator_address);
                         let stake_unit_resource = validator_substate.stake_unit_resource;
                         let claim_resource = validator_substate.claim_nft;
 

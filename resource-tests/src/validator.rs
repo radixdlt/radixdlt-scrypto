@@ -1,13 +1,19 @@
+use crate::TestFuzzer;
 use radix_engine::types::FromRepr;
 use radix_engine_common::constants::XRD;
 use radix_engine_common::manifest_args;
 use radix_engine_common::prelude::{ComponentAddress, NonFungibleLocalId, VALIDATOR_OWNER_BADGE};
 use radix_engine_common::types::ResourceAddress;
-use radix_engine_interface::blueprints::consensus_manager::{VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT, VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT, VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_UNSTAKE_IDENT, VALIDATOR_UPDATE_FEE_IDENT, ValidatorGetRedemptionValueInput};
+use radix_engine_interface::blueprints::consensus_manager::{
+    ValidatorGetRedemptionValueInput, VALIDATOR_CLAIM_XRD_IDENT,
+    VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
+    VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT,
+    VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_UNSTAKE_IDENT,
+    VALIDATOR_UPDATE_FEE_IDENT,
+};
+use radix_engine_interface::data::manifest::ManifestArgs;
 use transaction::builder::ManifestBuilder;
 use utils::btreeset;
-use crate::TestFuzzer;
-use radix_engine_interface::data::manifest::ManifestArgs;
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct ValidatorMeta {
@@ -41,14 +47,13 @@ impl ValidatorFuzzAction {
         match self {
             ValidatorFuzzAction::GetRedemptionValue => {
                 let amount_of_stake_units = fuzzer.next_amount();
-                let builder = builder
-                    .call_method(
-                        meta.validator_address,
-                        VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
-                        ValidatorGetRedemptionValueInput {
-                            amount_of_stake_units,
-                        },
-                    );
+                let builder = builder.call_method(
+                    meta.validator_address,
+                    VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
+                    ValidatorGetRedemptionValueInput {
+                        amount_of_stake_units,
+                    },
+                );
                 (builder, amount_of_stake_units.is_zero())
             }
             ValidatorFuzzAction::Stake => {
@@ -67,11 +72,8 @@ impl ValidatorFuzzAction {
             }
             ValidatorFuzzAction::Unstake => {
                 let amount = fuzzer.next_amount();
-                let builder = builder.withdraw_from_account(
-                    meta.account_address,
-                    meta.stake_unit_resource,
-                    amount,
-                )
+                let builder = builder
+                    .withdraw_from_account(meta.account_address, meta.stake_unit_resource, amount)
                     .take_all_from_worktop(meta.stake_unit_resource, "stake_units")
                     .with_bucket("stake_units", |builder, bucket| {
                         builder.call_method(
@@ -84,7 +86,8 @@ impl ValidatorFuzzAction {
             }
             ValidatorFuzzAction::Claim => {
                 let amount = fuzzer.next_amount();
-                let builder = builder.withdraw_from_account(meta.account_address, meta.claim_resource, amount)
+                let builder = builder
+                    .withdraw_from_account(meta.account_address, meta.claim_resource, amount)
                     .take_all_from_worktop(meta.claim_resource, "claim_resource")
                     .with_bucket("claim_resource", |builder, bucket| {
                         builder.call_method(
@@ -98,13 +101,14 @@ impl ValidatorFuzzAction {
             ValidatorFuzzAction::UpdateFee => {
                 let fee_factor = fuzzer.next_amount();
                 let builder = builder
-                .create_proof_from_account_of_non_fungibles(
-                    meta.account_address,
-                    VALIDATOR_OWNER_BADGE,
-                    &btreeset!(
-                        NonFungibleLocalId::bytes(meta.validator_address.as_node_id().0).unwrap()
-                    ),
-                )
+                    .create_proof_from_account_of_non_fungibles(
+                        meta.account_address,
+                        VALIDATOR_OWNER_BADGE,
+                        btreeset!(
+                            NonFungibleLocalId::bytes(meta.validator_address.as_node_id().0)
+                                .unwrap()
+                        ),
+                    )
                     .call_method(
                         meta.validator_address,
                         VALIDATOR_UPDATE_FEE_IDENT,
@@ -114,17 +118,15 @@ impl ValidatorFuzzAction {
             }
             ValidatorFuzzAction::LockOwnerStake => {
                 let amount = fuzzer.next_amount();
-                let builder = builder.withdraw_from_account(
-                    meta.account_address,
-                    meta.stake_unit_resource,
-                    amount,
-                )
+                let builder = builder
+                    .withdraw_from_account(meta.account_address, meta.stake_unit_resource, amount)
                     .create_proof_from_account_of_non_fungibles(
                         meta.account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                    NonFungibleLocalId::bytes(meta.validator_address.as_node_id().0).unwrap()
-                ),
+                        btreeset!(
+                            NonFungibleLocalId::bytes(meta.validator_address.as_node_id().0)
+                                .unwrap()
+                        ),
                     )
                     .take_all_from_worktop(meta.stake_unit_resource, "stake_units")
                     .with_bucket("stake_units", |builder, bucket| {
@@ -139,13 +141,15 @@ impl ValidatorFuzzAction {
             ValidatorFuzzAction::StartUnlockOwnerStake => {
                 let amount = fuzzer.next_amount();
 
-                let builder = builder.create_proof_from_account_of_non_fungibles(
-                    meta.account_address,
-                    VALIDATOR_OWNER_BADGE,
-                    &btreeset!(
-                    NonFungibleLocalId::bytes(meta.validator_address.as_node_id().0).unwrap()
-                ),
-                )
+                let builder = builder
+                    .create_proof_from_account_of_non_fungibles(
+                        meta.account_address,
+                        VALIDATOR_OWNER_BADGE,
+                        btreeset!(
+                            NonFungibleLocalId::bytes(meta.validator_address.as_node_id().0)
+                                .unwrap()
+                        ),
+                    )
                     .call_method(
                         meta.validator_address,
                         VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -155,12 +159,14 @@ impl ValidatorFuzzAction {
                 (builder, amount.is_zero())
             }
             ValidatorFuzzAction::FinishUnlockOwnerStake => {
-                let builder = builder.create_proof_from_account_of_non_fungibles(
+                let builder = builder
+                    .create_proof_from_account_of_non_fungibles(
                         meta.account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                    NonFungibleLocalId::bytes(meta.validator_address.as_node_id().0).unwrap()
-                ),
+                        btreeset!(
+                            NonFungibleLocalId::bytes(meta.validator_address.as_node_id().0)
+                                .unwrap()
+                        ),
                     )
                     .call_method(
                         meta.validator_address,
@@ -170,13 +176,15 @@ impl ValidatorFuzzAction {
                 (builder, false)
             }
             ValidatorFuzzAction::Register => {
-                let builder = builder.create_proof_from_account_of_non_fungibles(
-                    meta.account_address,
-                    VALIDATOR_OWNER_BADGE,
-                    &btreeset!(
-                    NonFungibleLocalId::bytes(meta.validator_address.as_node_id().0).unwrap()
-                ),
-                )
+                let builder = builder
+                    .create_proof_from_account_of_non_fungibles(
+                        meta.account_address,
+                        VALIDATOR_OWNER_BADGE,
+                        btreeset!(
+                            NonFungibleLocalId::bytes(meta.validator_address.as_node_id().0)
+                                .unwrap()
+                        ),
+                    )
                     .call_method(
                         meta.validator_address,
                         VALIDATOR_REGISTER_IDENT,

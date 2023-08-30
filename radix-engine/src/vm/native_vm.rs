@@ -5,6 +5,7 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceNativePackage;
+use crate::blueprints::test_utils::TestUtilsNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
@@ -90,7 +91,8 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
-        match self {
+        #[allow(unused_mut)]
+        let mut func = || match self {
             NativeVmInstance::Extension(e) => e.invoke(export_name, input, api),
             NativeVmInstance::Native {
                 native_package_code_id,
@@ -131,6 +133,9 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     TRANSACTION_TRACKER_CODE_ID => {
                         TransactionTrackerNativePackage::invoke_export(export_name, input, api)
                     }
+                    TEST_UTILS_CODE_ID => {
+                        TestUtilsNativePackage::invoke_export(export_name, input, api)
+                    }
                     _ => {
                         return Err(RuntimeError::VmError(VmError::Native(
                             NativeRuntimeError::InvalidCodeId,
@@ -138,6 +143,36 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     }
                 }
             }
+        };
+
+        // Note: we can't unwind if we're compiling for no-std. See:
+        // https://github.com/rust-lang/rfcs/issues/2810
+        {
+            #[cfg(feature = "std")]
+            {
+                match std::panic::catch_unwind(std::panic::AssertUnwindSafe(func)) {
+                    Ok(rtn) => rtn,
+                    Err(cause) => {
+                        let message = if let Some(s) = cause.downcast_ref::<&'static str>() {
+                            (*s).to_string()
+                        } else if let Some(s) = cause.downcast_ref::<String>() {
+                            s.clone()
+                        } else {
+                            "Unknown panic!".to_string()
+                        };
+                        Err(RuntimeError::VmError(VmError::Native(
+                            NativeRuntimeError::Trap {
+                                export_name: export_name.to_owned(),
+                                input: input.as_scrypto_value().clone(),
+                                error: message,
+                            },
+                        )))
+                    }
+                }
+            }
+
+            #[cfg(not(feature = "std"))]
+            func()
         }
     }
 }

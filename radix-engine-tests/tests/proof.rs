@@ -27,7 +27,7 @@ fn can_create_clone_and_drop_bucket_proof() {
                 manifest_args!(lookup.bucket("bucket"), dec!(1)),
             )
         })
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -159,7 +159,7 @@ fn can_use_bucket_for_authorization() {
                 manifest_args!(auth_bucket, burnable_bucket),
             )
         })
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -281,7 +281,7 @@ fn cant_move_restricted_proof_to_auth_zone() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::Panic(e))
+        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
             if e.eq("Moving restricted proof downstream") =>
         {
             true
@@ -320,7 +320,7 @@ fn cant_move_restricted_proof_to_scrypto_function_aka_barrier() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::Panic(e))
+        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
             if e.eq("Moving restricted proof downstream") =>
         {
             true
@@ -418,7 +418,7 @@ fn can_move_locked_bucket() {
                 manifest_args!(lookup.bucket("bucket")),
             )
         })
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -490,7 +490,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 .withdraw_non_fungibles_from_account(
                     account,
                     resource_address,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    [NonFungibleLocalId::integer(1)],
                 )
                 .take_all_from_worktop(resource_address, "bucket")
                 .with_name_lookup(|builder, lookup| {
@@ -510,17 +510,17 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         .withdraw_non_fungibles_from_account(
             account,
             resource_address,
-            &BTreeSet::from([
+            [
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
-            ]),
+            ],
         )
         .take_non_fungibles_from_worktop(
             resource_address,
-            &BTreeSet::from([
+            [
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
-            ]),
+            ],
             "bucket",
         )
         .with_name_lookup(|builder, lookup| {
@@ -560,22 +560,22 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
         .create_proof_from_account_of_non_fungibles(
             account,
             resource_address,
-            &BTreeSet::from([
+            [
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(2),
-            ]),
+            ],
         )
         .create_proof_from_account_of_non_fungibles(
             account,
             resource_address,
-            &BTreeSet::from([NonFungibleLocalId::integer(3)]),
+            [NonFungibleLocalId::integer(3)],
         )
         .create_proof_from_auth_zone_of_non_fungibles(
             resource_address,
-            &BTreeSet::from([
+            [
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
-            ]),
+            ],
             "proof",
         )
         .with_name_lookup(|builder, lookup| {
@@ -585,10 +585,10 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 "assert_ids",
                 manifest_args!(
                     lookup.proof("proof"),
-                    BTreeSet::from([
+                    [
                         NonFungibleLocalId::integer(2),
                         NonFungibleLocalId::integer(3)
-                    ]),
+                    ],
                     resource_address
                 ),
             )
@@ -876,7 +876,7 @@ fn test_proof_check() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::Panic(e)) if e.eq("Invalid proof: Expected ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), but got ResourceAddress(5dc78a43cf2b06c67b71f68ab81aa004a8ea8a08ef73ceceba02e33059d7)") => true,
+        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) if e.eq("Invalid proof: Expected ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), but got ResourceAddress(5dc78a43cf2b06c67b71f68ab81aa004a8ea8a08ef73ceceba02e33059d7)") => true,
         _ => false,
     });
 }
@@ -910,7 +910,11 @@ fn test_proof_check_with_message() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::Panic(e)) if e.eq("Not XRD proof") => true,
+        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
+            if e.eq("Not XRD proof") =>
+        {
+            true
+        }
         _ => false,
     });
 }

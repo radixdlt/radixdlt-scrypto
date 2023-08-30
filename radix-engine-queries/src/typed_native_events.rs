@@ -131,7 +131,6 @@ fn resolve_typed_event_key_from_event_type_identifier(
                     .map(TypedNativeEventKey::from)
             }
             EntityType::GlobalAccount
-            | EntityType::InternalAccount
             | EntityType::GlobalVirtualSecp256k1Account
             | EntityType::GlobalVirtualEd25519Account => {
                 TypedAccountBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
@@ -435,7 +434,7 @@ macro_rules! define_structure {
                         fn from_str(s: &str) -> Result<Self, Self::Err> {
                             match s {
                                 $(
-                                    _ if <$event_ty as radix_engine_interface::prelude::ScryptoEvent>::event_name() == s => Ok(Self::$event_ty),
+                                    _ if <$event_ty as radix_engine_interface::prelude::ScryptoEvent>::EVENT_NAME == s => Ok(Self::$event_ty),
                                 )*
                                 _ => Err(Self::Err::BlueprintEventKeyParseError {
                                     blueprint_event_key: stringify!([< Typed $blueprint_ident BlueprintEventKey >]).to_string(),
@@ -468,7 +467,7 @@ macro_rules! define_structure {
                         pub fn registered_events() -> sbor::prelude::HashSet<String> {
                             let mut set = sbor::prelude::HashSet::default();
                             $(
-                                set.insert(<$event_ty as radix_engine_interface::prelude::ScryptoEvent>::event_name().to_owned());
+                                set.insert(<$event_ty as radix_engine_interface::prelude::ScryptoEvent>::EVENT_NAME.to_owned());
                             )*
                             set
                         }

@@ -156,7 +156,11 @@ impl TwoPoolFuzzTest {
                     },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address, None)
+            .try_deposit_batch_or_abort(
+                self.account_component_address,
+                ManifestExpression::EntireWorktop,
+                None,
+            )
             .build();
         self.execute_manifest(manifest)
     }
@@ -177,7 +181,11 @@ impl TwoPoolFuzzTest {
                     TwoResourcePoolRedeemManifestInput { bucket },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address, None)
+            .try_deposit_batch_or_abort(
+                self.account_component_address,
+                ManifestExpression::EntireWorktop,
+                None,
+            )
             .build();
         self.execute_manifest(manifest)
     }
@@ -219,7 +227,11 @@ impl TwoPoolFuzzTest {
                     withdraw_strategy,
                 },
             )
-            .try_deposit_batch_or_abort(self.account_component_address, None)
+            .try_deposit_batch_or_abort(
+                self.account_component_address,
+                ManifestExpression::EntireWorktop,
+                None,
+            )
             .build();
         self.execute_manifest(manifest)
     }

@@ -441,6 +441,7 @@ impl TransactionReceipt {
     pub fn effective_execution_cost_unit_price(&self) -> Decimal {
         let dec_100 = dec!(100);
 
+        // Below unwraps are safe, no chance to overflow considering current costing parameters
         self.costing_parameters
             .execution_cost_unit_price
             .safe_mul(
@@ -459,6 +460,7 @@ impl TransactionReceipt {
     pub fn effective_finalization_cost_unit_price(&self) -> Decimal {
         let dec_100 = dec!(100);
 
+        // Below unwraps are safe, no chance to overflow considering current costing parameters
         self.costing_parameters
             .finalization_cost_unit_price
             .safe_mul(

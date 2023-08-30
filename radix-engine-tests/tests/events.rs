@@ -398,7 +398,7 @@ fn vault_fungible_recall_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1)
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -474,7 +474,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 metadata!(),
                 Some([(id.clone(), EmptyStruct {})]),
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         (receipt.expect_commit(true).new_resource_addresses()[0], id)
@@ -484,7 +484,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1)
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -564,7 +564,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             metadata!(),
             Some(1.into()),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -653,7 +653,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
                 metadata!(),
                 None,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -746,7 +746,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                 metadata!(),
                 None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -861,9 +861,9 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             resource_address,
             [(id.clone(), EmptyStruct {}), (id2.clone(), EmptyStruct {})],
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .withdraw_from_account(account, resource_address, dec!("2"))
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -1089,6 +1089,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         Decimal::one(),
+        Decimal::ZERO,
         ComponentAddress::virtual_account_from_public_key(&validator_key),
         Epoch::of(4),
         CustomGenesis::default_consensus_manager_config()
@@ -1154,7 +1155,7 @@ fn validator_registration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1216,7 +1217,7 @@ fn validator_unregistration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1232,7 +1233,7 @@ fn validator_unregistration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .unregister_validator(validator_address)
         .build();
@@ -1294,7 +1295,7 @@ fn validator_staking_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1310,12 +1311,12 @@ fn validator_staking_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(account, XRD, 100)
         .take_all_from_worktop(XRD, "stake")
         .stake_validator_as_owner(validator_address, "stake")
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1440,6 +1441,7 @@ fn validator_unstake_emits_correct_events() {
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
+        Decimal::ZERO,
         account_with_su,
         initial_epoch,
         CustomGenesis::default_consensus_manager_config()
@@ -1457,7 +1459,7 @@ fn validator_unstake_emits_correct_events() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su, None)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1603,6 +1605,7 @@ fn validator_claim_xrd_emits_correct_events() {
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
+        Decimal::ZERO,
         account_with_su,
         initial_epoch,
         CustomGenesis::default_consensus_manager_config()
@@ -1618,7 +1621,7 @@ fn validator_claim_xrd_emits_correct_events() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su, None)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1633,7 +1636,7 @@ fn validator_claim_xrd_emits_correct_events() {
         .withdraw_from_account(account_with_su, validator_substate.claim_nft, 1)
         .take_all_from_worktop(validator_substate.claim_nft, "unstake_nft")
         .claim_xrd(validator_address, "unstake_nft")
-        .try_deposit_batch_or_abort(account_with_su, None)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1750,7 +1753,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1766,7 +1769,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -1944,10 +1947,7 @@ fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceA
 
 #[test]
 fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
-    let mut test_runner = TestRunnerBuilder::new()
-        .without_trace()
-        .collect_events()
-        .build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (pk, _, account) = test_runner.new_allocated_account();
 
     // Create
@@ -2043,10 +2043,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
 
 #[test]
 fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
-    let mut test_runner = TestRunnerBuilder::new()
-        .without_trace()
-        .collect_events()
-        .build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (pk, _, account) = test_runner.new_allocated_account();
 
     // Create
@@ -2083,7 +2080,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
         .withdraw_non_fungibles_from_account(
             account,
             resource_address,
-            &btreeset!(NonFungibleLocalId::integer(4)),
+            [NonFungibleLocalId::integer(4)],
         )
         .burn_all_from_worktop(resource_address)
         .build();
@@ -2157,7 +2154,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     // Act
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(account, XRD, 1)
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.preview_manifest(
         manifest,
@@ -2191,7 +2188,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&vault_withdraw_event.0),
-            fungible_vault::WithdrawEvent::event_name()
+            fungible_vault::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<fungible_vault::WithdrawEvent>(&vault_withdraw_event.1).unwrap(),
@@ -2201,7 +2198,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&account_withdraw_event.0),
-            account::WithdrawEvent::event_name()
+            account::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::WithdrawEvent>(&account_withdraw_event.1).unwrap(),
@@ -2211,7 +2208,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&vault_deposit_event.0),
-            fungible_vault::DepositEvent::event_name()
+            fungible_vault::DepositEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<fungible_vault::DepositEvent>(&vault_deposit_event.1).unwrap(),
@@ -2221,7 +2218,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&account_deposit_event.0),
-            account::DepositEvent::event_name()
+            account::DepositEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::DepositEvent>(&account_deposit_event.1).unwrap(),
@@ -2240,7 +2237,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     // Act
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(account, resource_address, 2)
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.preview_manifest(
         manifest,
@@ -2278,7 +2275,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&vault_withdraw_event.0),
-            non_fungible_vault::WithdrawEvent::event_name()
+            non_fungible_vault::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<non_fungible_vault::WithdrawEvent>(&vault_withdraw_event.1).unwrap(),
@@ -2288,7 +2285,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&account_withdraw_event.0),
-            account::WithdrawEvent::event_name()
+            account::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::WithdrawEvent>(&account_withdraw_event.1).unwrap(),
@@ -2298,7 +2295,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&vault_deposit_event.0),
-            non_fungible_vault::DepositEvent::event_name()
+            non_fungible_vault::DepositEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<non_fungible_vault::DepositEvent>(&vault_deposit_event.1).unwrap(),
@@ -2308,7 +2305,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&account_deposit_event.0),
-            account::DepositEvent::event_name()
+            account::DepositEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::DepositEvent>(&account_deposit_event.1).unwrap(),
@@ -2433,7 +2430,7 @@ fn account_configuration_emits_expected_events() {
         );
         assert_eq!(
             test_runner.event_name(&set_resource_preference_allowed_event.0),
-            account::SetResourcePreferenceEvent::event_name()
+            account::SetResourcePreferenceEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::SetResourcePreferenceEvent>(
@@ -2453,7 +2450,7 @@ fn account_configuration_emits_expected_events() {
         );
         assert_eq!(
             test_runner.event_name(&set_resource_preference_disallowed_event.0),
-            account::SetResourcePreferenceEvent::event_name()
+            account::SetResourcePreferenceEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::SetResourcePreferenceEvent>(
@@ -2473,7 +2470,7 @@ fn account_configuration_emits_expected_events() {
         );
         assert_eq!(
             test_runner.event_name(&remove_resource_preference_event.0),
-            account::RemoveResourcePreferenceEvent::event_name()
+            account::RemoveResourcePreferenceEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::RemoveResourcePreferenceEvent>(
@@ -2490,7 +2487,7 @@ fn account_configuration_emits_expected_events() {
         );
         assert_eq!(
             test_runner.event_name(&set_default_deposit_rule_accept_event.0),
-            account::SetDefaultDepositRuleEvent::event_name()
+            account::SetDefaultDepositRuleEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::SetDefaultDepositRuleEvent>(
@@ -2509,7 +2506,7 @@ fn account_configuration_emits_expected_events() {
         );
         assert_eq!(
             test_runner.event_name(&set_default_deposit_rule_reject_event.0),
-            account::SetDefaultDepositRuleEvent::event_name()
+            account::SetDefaultDepositRuleEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::SetDefaultDepositRuleEvent>(
@@ -2528,7 +2525,7 @@ fn account_configuration_emits_expected_events() {
         );
         assert_eq!(
             test_runner.event_name(&set_default_deposit_rule_allow_existing_event.0),
-            account::SetDefaultDepositRuleEvent::event_name()
+            account::SetDefaultDepositRuleEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::SetDefaultDepositRuleEvent>(
@@ -2547,7 +2544,7 @@ fn account_configuration_emits_expected_events() {
         );
         assert_eq!(
             test_runner.event_name(&add_authorized_depositor_event.0),
-            account::AddAuthorizedDepositorEvent::event_name()
+            account::AddAuthorizedDepositorEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::AddAuthorizedDepositorEvent>(
@@ -2566,7 +2563,7 @@ fn account_configuration_emits_expected_events() {
         );
         assert_eq!(
             test_runner.event_name(&remove_authorized_depositor_event.0),
-            account::RemoveAuthorizedDepositorEvent::event_name()
+            account::RemoveAuthorizedDepositorEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::RemoveAuthorizedDepositorEvent>(
@@ -2643,7 +2640,7 @@ fn account_deposit_batch_emits_expected_events() {
             );
             assert_eq!(
                 test_runner.event_name(&xrd_deposit_event.0),
-                account::DepositEvent::event_name()
+                account::DepositEvent::EVENT_NAME
             );
             assert_eq!(
                 scrypto_decode::<account::DepositEvent>(&xrd_deposit_event.1).unwrap(),
@@ -2657,7 +2654,7 @@ fn account_deposit_batch_emits_expected_events() {
             );
             assert_eq!(
                 test_runner.event_name(&nfts_deposit_event.0),
-                account::DepositEvent::event_name()
+                account::DepositEvent::EVENT_NAME
             );
             assert_eq!(
                 scrypto_decode::<account::DepositEvent>(&nfts_deposit_event.1).unwrap(),
@@ -2692,7 +2689,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
         )
         .withdraw_from_account(account, XRD, 1)
         .withdraw_from_account(account, resource_address, 3)
-        .try_deposit_batch_or_refund(account, None)
+        .try_deposit_entire_worktop_or_refund(account, None)
         .deposit_batch(account)
         .build();
     let receipt = test_runner.preview_manifest(
@@ -2731,7 +2728,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
         );
         assert_eq!(
             test_runner.event_name(&xrd_rejected_deposit_event.0),
-            account::RejectedDepositEvent::event_name()
+            account::RejectedDepositEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::RejectedDepositEvent>(&xrd_rejected_deposit_event.1).unwrap(),
@@ -2745,7 +2742,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
         );
         assert_eq!(
             test_runner.event_name(&nfts_rejected_deposit_event.0),
-            account::RejectedDepositEvent::event_name()
+            account::RejectedDepositEvent::EVENT_NAME
         );
         assert_eq!(
             scrypto_decode::<account::RejectedDepositEvent>(&nfts_rejected_deposit_event.1)

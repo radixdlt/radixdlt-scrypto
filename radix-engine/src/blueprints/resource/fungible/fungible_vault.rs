@@ -331,8 +331,7 @@ impl FungibleVaultBlueprint {
                     ApplicationError::VaultError(VaultError::InvalidAmount),
                 ));
             }
-            let liquid_amount = vault_balance
-                .amount();
+            let liquid_amount = vault_balance.amount();
             let vault_amount_plus_one = liquid_amount
                 .safe_add(Decimal::ONE)
                 .ok_or_else(|| VaultError::DecimalOverflow)?;
@@ -341,7 +340,7 @@ impl FungibleVaultBlueprint {
                     ApplicationError::VaultError(VaultError::ResourceError(
                         ResourceError::InsufficientBalance {
                             requested: amount.clone(),
-                            actual: liquid_amount
+                            actual: liquid_amount,
                         },
                     )),
                 ));
@@ -375,7 +374,7 @@ impl FungibleVaultBlueprint {
 
         Runtime::emit_event(
             api,
-            events::fungible_vault::WithdrawEvent {
+            fungible_vault::WithdrawEvent {
                 amount: taken.amount(),
             },
         )?;
@@ -405,11 +404,11 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let amount = Self::liquid_amount(api)?
+        Self::liquid_amount(api)?
             .safe_add(Self::locked_amount(api)?)
-            .unwrap();
-
-        Ok(amount)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::DecimalOverflow),
+            ))
     }
 
     pub fn lock_fee<Y>(
@@ -615,7 +614,11 @@ impl FungibleVaultBlueprint {
 
         // Take from liquid if needed
         if amount > max_locked {
-            let delta = amount.safe_sub(max_locked).unwrap();
+            let delta = amount
+                .safe_sub(max_locked)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::DecimalOverflow),
+                ))?;
             Self::internal_take(delta, api)?;
         }
 
@@ -658,7 +661,11 @@ impl FungibleVaultBlueprint {
             &FungibleVaultLockedBalanceFieldPayload::from_content_source(locked),
         )?;
 
-        let delta = max_locked.safe_sub(locked_amount).unwrap();
+        let delta = max_locked
+            .safe_sub(locked_amount)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::DecimalOverflow),
+            ))?;
         Self::internal_put(LiquidFungibleResource::new(delta), api)
     }
 

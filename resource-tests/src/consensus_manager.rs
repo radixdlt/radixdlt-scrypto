@@ -1,10 +1,12 @@
+use crate::TestFuzzer;
 use radix_engine_common::constants::{CONSENSUS_MANAGER, XRD};
-use radix_engine_common::prelude::{ComponentAddress};
-use radix_engine_interface::blueprints::consensus_manager::{CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT, ConsensusManagerCreateValidatorManifestInput};
+use radix_engine_common::prelude::ComponentAddress;
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerCreateValidatorManifestInput, CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
+};
 use radix_engine_interface::types::FromRepr;
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
-use crate::TestFuzzer;
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
@@ -38,7 +40,7 @@ impl ConsensusManagerFuzzAction {
                             ConsensusManagerCreateValidatorManifestInput {
                                 key,
                                 fee_factor,
-                                xrd_payment: bucket
+                                xrd_payment: bucket,
                             },
                         )
                     });

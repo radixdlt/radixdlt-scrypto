@@ -90,7 +90,7 @@ impl NewSimpleBadge {
                     NonFungibleLocalId::integer(1) => (),
                 )),
             )
-            .try_deposit_batch_or_refund(default_account, None)
+            .try_deposit_entire_worktop_or_refund(default_account, None)
             .build();
         let receipt = handle_manifest(
             manifest,

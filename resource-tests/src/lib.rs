@@ -1,5 +1,5 @@
-pub mod validator;
 pub mod consensus_manager;
+pub mod validator;
 
 use radix_engine::types::*;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
@@ -70,9 +70,7 @@ impl TestFuzzer {
     pub fn next_non_fungible_id_set(&mut self) -> BTreeSet<NonFungibleLocalId> {
         (0u64..self.rng.gen_range(0u64..4u64))
             .into_iter()
-            .map(|_| {
-                self.next_integer_non_fungible_id()
-            })
+            .map(|_| self.next_integer_non_fungible_id())
             .collect()
     }
 

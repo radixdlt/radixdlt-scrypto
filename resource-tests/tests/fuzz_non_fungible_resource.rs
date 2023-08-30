@@ -3,38 +3,44 @@ use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::NativeVault;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use radix_engine::prelude::node_modules::auth::RoleDefinition;
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::prelude::node_modules::ModuleConfig;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use resource_tests::TestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine::prelude::node_modules::auth::RoleDefinition;
-use radix_engine_interface::prelude::node_modules::ModuleConfig;
 
 #[test]
 fn fuzz_non_fungible_resource() {
-    let mut summed_results: BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>> = BTreeMap::new();
+    let mut summed_results: BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>> =
+        BTreeMap::new();
 
-    let results: Vec<BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>>> =
-        (1u64..64u64)
-            .into_par_iter()
-            .map(|seed| {
-                let mut resource_fuzz_test = ResourceFuzzTest::new(seed);
-                resource_fuzz_test.run_fuzz()
-            })
-            .collect();
+    let results: Vec<BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>>> = (1u64
+        ..64u64)
+        .into_par_iter()
+        .map(|seed| {
+            let mut resource_fuzz_test = ResourceFuzzTest::new(seed);
+            resource_fuzz_test.run_fuzz()
+        })
+        .collect();
 
     for run_result in results {
         for (txn, txn_results) in run_result {
             for (txn_result, count) in txn_results {
-                summed_results.entry(txn).or_default().entry(txn_result).or_default().add_assign(&count);
+                summed_results
+                    .entry(txn)
+                    .or_default()
+                    .entry(txn_result)
+                    .or_default()
+                    .add_assign(&count);
             }
         }
     }
@@ -63,7 +69,10 @@ enum NonFungibleResourceFuzzEndAction {
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
-struct NonFungibleResourceFuzzTxn(NonFungibleResourceFuzzStartAction, NonFungibleResourceFuzzEndAction);
+struct NonFungibleResourceFuzzTxn(
+    NonFungibleResourceFuzzStartAction,
+    NonFungibleResourceFuzzEndAction,
+);
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
@@ -86,8 +95,8 @@ impl VmInvoke for TestInvoke {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+    where
+        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
         match export_name {
             "call_vault" => {
@@ -216,30 +225,30 @@ impl ResourceFuzzTest {
         self.fuzzer.next_amount()
     }
 
-    fn run_fuzz(
-        &mut self,
-    ) -> BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>> {
-        let mut fuzz_results: BTreeMap<
-            NonFungibleResourceFuzzTxn,
-            BTreeMap<FuzzTxnResult, u64>,
-        > = BTreeMap::new();
+    fn run_fuzz(&mut self) -> BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>> {
+        let mut fuzz_results: BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>> =
+            BTreeMap::new();
         for _ in 0..700 {
             let builder = ManifestBuilder::new();
-            let start = NonFungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(6u8)).unwrap();
+            let start =
+                NonFungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(6u8)).unwrap();
             let (builder, mut trivial) = match start {
                 NonFungibleResourceFuzzStartAction::Mint => {
-                    let entries: BTreeMap<NonFungibleLocalId, (ManifestValue, )> = self.fuzzer.next_non_fungible_id_set()
-                        .into_iter().map(|id| {
-                        let value: ManifestValue = manifest_decode(&manifest_encode(&()).unwrap()).unwrap();
-                        (id, (value, ))
-                    }).collect();
+                    let entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)> = self
+                        .fuzzer
+                        .next_non_fungible_id_set()
+                        .into_iter()
+                        .map(|id| {
+                            let value: ManifestValue =
+                                manifest_decode(&manifest_encode(&()).unwrap()).unwrap();
+                            (id, (value,))
+                        })
+                        .collect();
 
                     let builder = builder.call_method(
                         self.resource_address,
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-                        NonFungibleResourceManagerMintManifestInput {
-                            entries,
-                        }
+                        NonFungibleResourceManagerMintManifestInput { entries },
                     );
 
                     (builder, false)
@@ -281,12 +290,13 @@ impl ResourceFuzzTest {
                 NonFungibleResourceFuzzStartAction::VaultRecallNonFungibles => {
                     let ids = self.fuzzer.next_non_fungible_id_set();
                     let trivial = ids.is_empty();
-                    let builder = builder.recall_non_fungibles(self.vault_id, &ids);
+                    let builder = builder.recall_non_fungibles(self.vault_id, ids);
                     (builder, trivial)
                 }
             };
 
-            let end = NonFungibleResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
+            let end =
+                NonFungibleResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
             let (builder, end_trivial) = match end {
                 NonFungibleResourceFuzzEndAction::Burn => {
                     let amount = self.next_amount();
@@ -323,13 +333,9 @@ impl ResourceFuzzTest {
 
             let result = receipt.expect_commit_ignore_outcome();
             let result = match (&result.outcome, trivial) {
-                (TransactionOutcome::Success(..), true) => {
-                    FuzzTxnResult::TrivialSuccess
-                }
+                (TransactionOutcome::Success(..), true) => FuzzTxnResult::TrivialSuccess,
                 (TransactionOutcome::Success(..), false) => FuzzTxnResult::Success,
-                (TransactionOutcome::Failure(..), true) => {
-                    FuzzTxnResult::TrivialFailure
-                }
+                (TransactionOutcome::Failure(..), true) => FuzzTxnResult::TrivialFailure,
                 (TransactionOutcome::Failure(..), false) => FuzzTxnResult::Failure,
             };
 

@@ -143,11 +143,11 @@ impl NonFungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let amount = Self::liquid_amount(api)?
+        Self::liquid_amount(api)?
             .safe_add(Self::locked_amount(api)?)
-            .unwrap();
-
-        Ok(amount)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::DecimalOverflow),
+            ))
     }
 
     pub fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>

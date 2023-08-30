@@ -5,7 +5,7 @@ macro_rules! event_schema {
             let mut event_schema = sbor::rust::collections::BTreeMap::new();
             $(
                 event_schema.insert(
-                    <$event_type as radix_engine_interface::traits::ScryptoEvent>::event_name().to_string(),
+                    <$event_type as radix_engine_interface::traits::ScryptoEvent>::EVENT_NAME.to_string(),
                     TypeRef::Static($aggregator.add_child_type_and_descendents::<$event_type>()),
                 );
             )*

@@ -1,23 +1,22 @@
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::resource::{NativeVault, ResourceManager};
-use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
+use native_sdk::resource::NativeVault;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use radix_engine::prelude::node_modules::auth::RoleDefinition;
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::transaction::{TransactionOutcome, TransactionReceipt};
+use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::prelude::node_modules::ModuleConfig;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use resource_tests::TestFuzzer;
 use scrypto_unit::*;
 use transaction::prelude::*;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine::prelude::node_modules::auth::RoleDefinition;
-use radix_engine_interface::prelude::node_modules::ModuleConfig;
 
 #[test]
 fn fuzz_fungible_resource() {
@@ -52,7 +51,10 @@ enum FungibleResourceFuzzEndAction {
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
-struct ResourceFuzzAction(FungibleResourceFuzzStartAction, FungibleResourceFuzzEndAction);
+struct ResourceFuzzAction(
+    FungibleResourceFuzzStartAction,
+    FungibleResourceFuzzEndAction,
+);
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
@@ -213,8 +215,9 @@ impl ResourceFuzzTest {
             BTreeMap<ConsensusFuzzActionResult, u64>,
         > = BTreeMap::new();
         for _ in 0..500 {
-            let mut builder = ManifestBuilder::new();
-            let start = FungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(4u8)).unwrap();
+            let builder = ManifestBuilder::new();
+            let start =
+                FungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(4u8)).unwrap();
             let (mut builder, mut trivial) = match start {
                 FungibleResourceFuzzStartAction::Mint => {
                     let amount = self.next_amount();
@@ -252,7 +255,7 @@ impl ResourceFuzzTest {
             };
 
             for _ in 0u8..self.fuzzer.next(0u8..2u8) {
-                let (mut next_builder, next_trivial) = {
+                let (next_builder, next_trivial) = {
                     let amount = self.next_amount();
                     let builder = builder.call_method(
                         self.component_address,
@@ -267,7 +270,7 @@ impl ResourceFuzzTest {
             }
 
             let end = FungibleResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
-            let (mut builder, end_trivial) = match end {
+            let (builder, end_trivial) = match end {
                 FungibleResourceFuzzEndAction::Burn => {
                     let amount = self.next_amount();
                     let builder = builder

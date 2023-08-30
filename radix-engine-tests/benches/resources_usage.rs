@@ -165,7 +165,7 @@ fn transfer_test(c: &mut Criterion) {
             let manifest = ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .try_deposit_batch_or_abort(account, None)
+                .try_deposit_entire_worktop_or_abort(account, None)
                 .build();
             execute_and_commit_transaction(
                 &mut substate_db,
@@ -190,7 +190,7 @@ fn transfer_test(c: &mut Criterion) {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .try_deposit_batch_or_abort(account1, None)
+        .try_deposit_entire_worktop_or_abort(account1, None)
         .build();
 
     for nonce in 0..1000 {
@@ -211,7 +211,7 @@ fn transfer_test(c: &mut Criterion) {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account1, XRD, dec!("0.000001"))
-        .try_deposit_batch_or_abort(account2, None)
+        .try_deposit_entire_worktop_or_abort(account2, None)
         .build();
 
     // Loop
