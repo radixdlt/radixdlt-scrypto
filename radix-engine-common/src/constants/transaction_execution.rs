@@ -43,13 +43,13 @@ pub const NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE: u8 = 25;
 pub const NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 25;
 
 /// The max event size
-pub const MAX_EVENT_SIZE: usize = 64 * 1024;
+pub const MAX_EVENT_SIZE: usize = 32 * 1024;
 
 /// The max log size
-pub const MAX_LOG_SIZE: usize = 64 * 1024;
+pub const MAX_LOG_SIZE: usize = 32 * 1024;
 
 /// The max panic message size
-pub const MAX_PANIC_MESSAGE_SIZE: usize = 64 * 1024;
+pub const MAX_PANIC_MESSAGE_SIZE: usize = 32 * 1024;
 
 /// The max number of events
 pub const MAX_NUMBER_OF_EVENTS: usize = 256;
