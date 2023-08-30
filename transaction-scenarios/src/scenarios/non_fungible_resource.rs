@@ -72,7 +72,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     metadata! {},
                                     Some(entries),
                                 )
-                                .try_deposit_batch_or_abort(config.main_account.address, None)
+                                .try_deposit_entire_worktop_or_abort(config.main_account.address, None)
                         },
                         vec![],
                     )
@@ -106,7 +106,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     metadata! {},
                                     Some(entries),
                                 )
-                                .try_deposit_batch_or_abort(config.main_account.address, None)
+                                .try_deposit_entire_worktop_or_abort(config.main_account.address, None)
                         },
                         vec![],
                     )
@@ -139,7 +139,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     metadata! {},
                                     Some(entries),
                                 )
-                                .try_deposit_batch_or_abort(config.main_account.address, None)
+                                .try_deposit_entire_worktop_or_abort(config.main_account.address, None)
                         },
                         vec![],
                     )
@@ -168,7 +168,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                                     Some(entries),
                                 )
-                                .try_deposit_batch_or_abort(config.main_account.address, None)
+                                .try_deposit_entire_worktop_or_abort(config.main_account.address, None)
                         },
                         vec![],
                     )
@@ -199,7 +199,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     state.integer_non_fungible_resource.unwrap(),
                                     entries,
                                 )
-                                .try_deposit_batch_or_abort(config.main_account.address, None)
+                                .try_deposit_entire_worktop_or_abort(config.main_account.address, None)
                         },
                         vec![],
                     )
@@ -250,7 +250,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     state.integer_non_fungible_resource.unwrap(),
                                     dec!(1),
                                 )
-                                .try_deposit_batch_or_abort(
+                                .try_deposit_entire_worktop_or_abort(
                                     config.occasional_recipient_account.address,
                                     None
                                 )
@@ -291,7 +291,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     NonFungibleLocalId::integer(120)
                                 ],
                             )
-                            .try_deposit_batch_or_abort(config.occasional_recipient_account.address, None)
+                            .try_deposit_entire_worktop_or_abort(config.occasional_recipient_account.address, None)
                     },
                     vec![&config.main_account.key],
                 )
@@ -338,7 +338,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                         NonFungibleLocalId::integer(130)
                                     ],
                                 )
-                                .try_deposit_batch_or_abort(config.main_account.address, None)
+                                .try_deposit_entire_worktop_or_abort(config.main_account.address, None)
                         },
                         vec![&config.main_account.key],
                     )
@@ -363,7 +363,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                         NonFungibleLocalId::integer(3) => (),
                                     )),
                                 )
-                                .try_deposit_batch_or_abort(config.main_account.address, None)
+                                .try_deposit_entire_worktop_or_abort(config.main_account.address, None)
                         },
                         vec![&config.main_account.key],
                     )
@@ -434,7 +434,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                         },
                                     )),
                                 )
-                                .try_deposit_batch_or_abort(config.main_account.address, None)
+                                .try_deposit_entire_worktop_or_abort(config.main_account.address, None)
                         },
                         vec![&config.main_account.key],
                     )
@@ -458,7 +458,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                         NonFungibleLocalId::integer(8),
                                     ]
                                 )
-                                .try_deposit_batch_or_abort(config.occasional_recipient_account.address, None)
+                                .try_deposit_entire_worktop_or_abort(config.occasional_recipient_account.address, None)
                         },
                         vec![&config.main_account.key],
                     )
@@ -499,7 +499,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                         },
                                     )),
                                 )
-                                .try_deposit_batch_or_abort(config.main_account.address, None)
+                                .try_deposit_entire_worktop_or_abort(config.main_account.address, None)
                         },
                         vec![&config.main_account.key],
                     )

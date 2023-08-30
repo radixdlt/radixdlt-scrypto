@@ -646,6 +646,44 @@ pub struct NamedManifestAddress {
 // OTHER RESOLVABLE TRAITS FOR THE MANIFEST BUILDER
 //=================================================
 
+pub trait ResolvableBucketBatch {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue;
+}
+
+impl<B: ExistingManifestBucket> ResolvableBucketBatch for BTreeSet<B> {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self.into_iter().map(|b| b.resolve(registrar)).collect();
+        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+    }
+}
+
+impl<B: ExistingManifestBucket, const N: usize> ResolvableBucketBatch for [B; N] {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self.into_iter().map(|b| b.resolve(registrar)).collect();
+        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+    }
+}
+
+impl<B: ExistingManifestBucket> ResolvableBucketBatch for Vec<B> {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self.into_iter().map(|b| b.resolve(registrar)).collect();
+        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+    }
+}
+
+impl ResolvableBucketBatch for ManifestExpression {
+    fn resolve(self, _: &ManifestNameRegistrar) -> ManifestValue {
+        match &self {
+            ManifestExpression::EntireWorktop => {
+                manifest_decode(&manifest_encode(&self).unwrap()).unwrap()
+            }
+            ManifestExpression::EntireAuthZone => {
+                panic!("Not an allowed expression for a batch of buckets")
+            }
+        }
+    }
+}
+
 pub trait ResolvableComponentAddress {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress;
 }

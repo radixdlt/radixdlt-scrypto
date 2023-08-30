@@ -252,7 +252,7 @@ fn test_claim_royalty() {
                 [NonFungibleLocalId::integer(1)],
             )
             .claim_package_royalties(package_address)
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -263,7 +263,7 @@ fn test_claim_royalty() {
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .claim_component_royalties(component_address)
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

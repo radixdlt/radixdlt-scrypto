@@ -1806,22 +1806,37 @@ impl ManifestBuilder {
         )
     }
 
+    /// Note - the batch should either be:
+    /// * `ManifestExpression::EntireWorktop`,
+    /// * An array, vec, or btreeset of bucket names or ManifestBuckets, eg `["my_bucket_1", "my_bucket_2"]`
+    /// * An empty, explicitly typed array of strings, eg `Vec::<String>::new()`
     pub fn try_deposit_batch_or_abort(
         self,
         account_address: impl ResolvableComponentAddress,
+        batch: impl ResolvableBucketBatch,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
+        let batch = batch.resolve(&self.registrar);
 
         self.registrar.consume_all_buckets();
 
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(
-                ManifestExpression::EntireWorktop,
-                authorized_depositor_badge
-            ),
+            manifest_args!(batch, authorized_depositor_badge),
+        )
+    }
+
+    pub fn try_deposit_entire_worktop_or_abort(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
+    ) -> Self {
+        self.try_deposit_batch_or_abort(
+            account_address,
+            ManifestExpression::EntireWorktop,
+            authorized_depositor_badge,
         )
     }
 
@@ -1842,22 +1857,37 @@ impl ManifestBuilder {
         )
     }
 
+    /// Note - the batch should either be:
+    /// * `ManifestExpression::EntireWorktop`,
+    /// * An array, vec, or btreeset of bucket names or ManifestBuckets, eg `["my_bucket_1", "my_bucket_2"]`
+    /// * An empty, explicitly typed array of strings, eg `Vec::<String>::new()`
     pub fn try_deposit_batch_or_refund(
         self,
         account_address: impl ResolvableComponentAddress,
+        batch: impl ResolvableBucketBatch,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
+        let batch = batch.resolve(&self.registrar);
 
         self.registrar.consume_all_buckets();
 
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(
-                ManifestExpression::EntireWorktop,
-                authorized_depositor_badge
-            ),
+            manifest_args!(batch, authorized_depositor_badge),
+        )
+    }
+
+    pub fn try_deposit_entire_worktop_or_refund(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
+    ) -> Self {
+        self.try_deposit_batch_or_refund(
+            account_address,
+            ManifestExpression::EntireWorktop,
+            authorized_depositor_badge,
         )
     }
 

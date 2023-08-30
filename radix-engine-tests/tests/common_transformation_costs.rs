@@ -280,7 +280,7 @@ fn estimate_adding_signature() {
             for _ in 0..10 {
                 builder = builder
                     .withdraw_from_account(account1, XRD, 1) // require auth
-                    .try_deposit_batch_or_abort(account2, None); // require no auth
+                    .try_deposit_entire_worktop_or_abort(account2, None); // require no auth
             }
             builder
         })
@@ -348,7 +348,7 @@ fn estimate_notarizing(notary_is_signatory: bool) {
             for _ in 0..10 {
                 builder = builder
                     .withdraw_from_account(account1, XRD, 1) // require auth
-                    .try_deposit_batch_or_abort(account2, None); // require no auth
+                    .try_deposit_entire_worktop_or_abort(account2, None); // require no auth
             }
             builder
         })

@@ -65,7 +65,7 @@ impl Transfer {
             }
         };
         let manifest = builder
-            .try_deposit_batch_or_refund(self.recipient.0, None)
+            .try_deposit_entire_worktop_or_refund(self.recipient.0, None)
             .build();
         handle_manifest(
             manifest,
