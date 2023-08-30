@@ -641,7 +641,7 @@ impl WasmModule {
                                     ValType::I32,
                                     ValType::I32,
                                 ],
-                                vec![ValType::I64],
+                                vec![ValType::I32],
                             ) {
                                 continue;
                             }
