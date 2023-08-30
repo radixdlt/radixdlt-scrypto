@@ -68,6 +68,10 @@ macro_rules! declare_key_new_type {
                 (self.sort_prefix(), self.content)
             }
 
+            fn as_sort_key_and_content(&self) -> (u16, &Self::Content) {
+                (self.sort_prefix(), &self.content)
+            }
+
             fn from_sort_key_and_content(sort_prefix: u16, content: Self::Content) -> Self {
                 Self {
                     $sort_prefix_property_name: sort_prefix,
@@ -91,7 +95,7 @@ macro_rules! declare_key_new_type {
 
         // Note - we assume that both:
         // * SortedIndexKeyContentSource<_Payload>
-        // * SortedIndexKeyContentSource<_Payload>
+        // * SortedIndexKeyFullContent<_Payload>
         // are already/manually implemented for $content_type
     };
     (
@@ -279,6 +283,7 @@ pub trait SortedIndexKeyPayload: Sized + AsRef<Self::Content> + AsMut<Self::Cont
 
     fn from_sort_key_and_content(sort_key: u16, content: Self::Content) -> Self;
     fn into_sort_key_and_content(self) -> (u16, Self::Content);
+    fn as_sort_key_and_content(&self) -> (u16, &Self::Content);
 
     fn into_full_content(self) -> Self::FullContent {
         let (sort_key, content) = self.into_sort_key_and_content();
@@ -300,7 +305,12 @@ pub trait SortedIndexKeyPayload: Sized + AsRef<Self::Content> + AsMut<Self::Cont
 /// * This trait uses a generic, because the same type might be usable as a key for multiple
 ///   explicit substates
 pub trait SortedIndexKeyContentSource<Payload: SortedIndexKeyPayload>: Sized {
-    fn into_sort_key_and_content(self) -> (u16, Payload::Content);
+    fn sort_key(&self) -> u16;
+    fn into_content(self) -> Payload::Content;
+
+    fn into_sort_key_and_content(self) -> (u16, Payload::Content) {
+        (self.sort_key(), self.into_content())
+    }
 
     fn into_key(self) -> Payload {
         Payload::from_content_source(self)
@@ -313,4 +323,9 @@ pub trait SortedIndexKeyFullContent<Payload: SortedIndexKeyPayload>:
     SortedIndexKeyContentSource<Payload>
 {
     fn from_sort_key_and_content(sort_key: u16, content: Payload::Content) -> Self;
+    fn as_content(&self) -> &Payload::Content;
+
+    fn as_sort_key_and_content(&self) -> (u16, &Payload::Content) {
+        (self.sort_key(), self.as_content())
+    }
 }

@@ -1,4 +1,4 @@
-use crate::internal_prelude::ScryptoSbor;
+use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(categorize_types = "")]
@@ -8,7 +8,8 @@ pub struct FieldSubstateV1<V> {
 }
 
 // Note - we manually version these instead of using the defined_versioned! macro,
-// to avoid having additional / confusing methods on FieldSubstate<X>
+// to avoid FieldSubstate<X> implementing HasLatestVersion and inheriting
+// potentially confusing methods
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(categorize_types = "")]
 pub enum FieldSubstate<T> {
@@ -69,15 +70,16 @@ pub enum SubstateMutability {
     Immutable,
 }
 
-pub type KeyValueEntrySubstateV1<V> = KVSubstate<Option<V>>;
-
-// NOTE: This type trick seems to fix the generic ScryptoSbor issue
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct KVSubstate<E> {
-    pub value: E,
+#[sbor(categorize_types = "")]
+pub struct KeyValueEntrySubstateV1<V> {
+    pub value: Option<V>,
     pub mutability: SubstateMutability,
 }
 
+// Note - we manually version these instead of using the defined_versioned! macro,
+// to avoid KeyValueEntrySubstate<X> implementing HasLatestVersion and inheriting
+// potentially confusing methods
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(categorize_types = "")]
 pub enum KeyValueEntrySubstate<V> {
@@ -152,6 +154,9 @@ impl<V> Default for KeyValueEntrySubstate<V> {
 
 pub type IndexEntrySubstateV1<V> = V;
 
+// Note - we manually version these instead of using the defined_versioned! macro,
+// to avoid IndexEntrySubstate<X> implementing HasLatestVersion and inheriting
+// potentially confusing methods
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(categorize_types = "")]
 pub enum IndexEntrySubstate<V> {
@@ -178,6 +183,9 @@ impl<V> IndexEntrySubstate<V> {
 
 pub type SortedIndexEntrySubstateV1<V> = V;
 
+// Note - we manually version these instead of using the defined_versioned! macro,
+// to avoid SortedIndexEntrySubstate<X> implementing HasLatestVersion and inheriting
+// potentially confusing methods
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(categorize_types = "")]
 pub enum SortedIndexEntrySubstate<V> {

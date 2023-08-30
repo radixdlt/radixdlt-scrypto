@@ -32,6 +32,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+    VALIDATOR_STAKE_AS_OWNER_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
@@ -312,7 +313,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         let native_vm = NativeVm::new_with_extension(self.custom_extension);
         let vm = Vm::new(&scrypto_vm, native_vm.clone());
         let mut substate_db = self.custom_database;
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, bootstrap_trace);
+        let mut bootstrapper = Bootstrapper::new(
+            NetworkDefinition::simulator(),
+            &mut substate_db,
+            vm,
+            bootstrap_trace,
+        );
         let GenesisReceipts {
             system_bootstrap_receipt,
             data_ingestion_receipts,
@@ -1009,6 +1015,50 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         address
     }
 
+    pub fn new_staked_validator_with_pub_key(
+        &mut self,
+        pub_key: Secp256k1PublicKey,
+        account: ComponentAddress,
+    ) -> ComponentAddress {
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
+            .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
+            .try_deposit_batch_or_abort(account, None)
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        let validator_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+        let receipt =
+            self.execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .get_free_xrd_from_faucet()
+                    .create_proof_from_account_of_non_fungibles(
+                        account,
+                        VALIDATOR_OWNER_BADGE,
+                        &btreeset!(
+                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
+                        ),
+                    )
+                    .take_all_from_worktop(XRD, "bucket")
+                    .with_bucket("bucket", |builder, bucket| {
+                        builder.call_method(
+                            validator_address,
+                            VALIDATOR_STAKE_AS_OWNER_IDENT,
+                            manifest_args!(bucket),
+                        )
+                    })
+                    .deposit_batch(account)
+                    .build(),
+                vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+            );
+        receipt.expect_commit_success();
+
+        validator_address
+    }
+
     pub fn publish_native_package(
         &mut self,
         native_package_code_id: u64,
@@ -1068,7 +1118,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .expect("expected transaction to be preparable")
             .get_executable(btreeset!(AuthAddresses::system_role())),
             CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         );
 
         receipt.expect_commit_success();
@@ -1176,7 +1226,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         self.execute_transaction(
             validated.get_executable(),
             CostingParameters::default(),
-            ExecutionConfig::for_notarized_transaction(),
+            ExecutionConfig::for_notarized_transaction(network.clone()),
         )
     }
 
@@ -1912,7 +1962,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
             CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 
@@ -1942,7 +1992,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
             CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 
@@ -1964,7 +2014,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
             CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 
