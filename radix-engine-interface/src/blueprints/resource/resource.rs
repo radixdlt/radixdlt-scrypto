@@ -8,6 +8,7 @@ use sbor::rust::prelude::*;
 pub enum ResourceError {
     InsufficientBalance,
     InvalidTakeAmount,
+    DecimalOverflow,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -50,6 +51,8 @@ impl LiquidFungibleResource {
 
     pub fn put(&mut self, other: LiquidFungibleResource) {
         // update liquidity
+        // NOTE: Decimal arithmetic operation safe unwrap.
+        // Mint limit should prevent from overflowing
         self.amount = self.amount.safe_add(other.amount()).expect("Overflow");
     }
 
@@ -61,7 +64,10 @@ impl LiquidFungibleResource {
         if self.amount < amount_to_take {
             return Err(ResourceError::InsufficientBalance);
         }
-        self.amount = self.amount.safe_sub(amount_to_take).expect("Overflow");
+        self.amount = self
+            .amount
+            .safe_sub(amount_to_take)
+            .ok_or(ResourceError::DecimalOverflow)?;
         Ok(LiquidFungibleResource::new(amount_to_take))
     }
 
