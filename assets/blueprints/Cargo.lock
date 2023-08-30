@@ -738,6 +738,7 @@ dependencies = [
  "paste",
  "radix-engine-common",
  "radix-engine-interface",
+ "radix-engine-macros",
  "radix-engine-store-interface",
  "resources-tracker-macro",
  "sbor",
@@ -798,6 +799,15 @@ dependencies = [
  "serde_json",
  "strum",
  "utils",
+]
+
+[[package]]
+name = "radix-engine-macros"
+version = "0.12.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.29",
 ]
 
 [[package]]

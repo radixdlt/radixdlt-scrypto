@@ -303,6 +303,17 @@ where
                     None
                 };
 
+                // Abort the process if an error has occurred in the system layer or below. The
+                // following code is only enabled when compiling with the standard library. It's
+                // impossible for us to come across a `SystemError::SystemPanic` in no_std since
+                // we can't catch those panics in no_std.
+                #[cfg(feature = "std")]
+                if let Err(RuntimeError::SystemError(SystemError::SystemPanic(..))) =
+                    interpretation_result
+                {
+                    std::process::abort()
+                }
+
                 let result_type = Self::determine_result_type(
                     interpretation_result,
                     &mut costing_module.fee_reserve,

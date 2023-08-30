@@ -40,6 +40,7 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{Condition, KeyValueStoreGenericSubstitutions};
+use radix_engine_macros::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -107,7 +108,17 @@ where
             phantom: PhantomData::default(),
         }
     }
+}
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
+impl<'a, Y, V> SystemService<'a, Y, V>
+where
+    Y: KernelApi<SystemConfig<V>>,
+    V: SystemCallbackObject,
+{
     fn validate_new_object(
         &mut self,
         blueprint_id: &BlueprintId,
@@ -570,7 +581,7 @@ where
                 Emitter::Method(node_id, module_id.into()),
                 event_name,
             )),
-            EmitterActor::CurrentActor => match self.current_actor() {
+            EmitterActor::CurrentActor => match self.current_actor()? {
                 Actor::Method(MethodActor {
                     method_type,
                     node_id,
@@ -643,7 +654,7 @@ where
     }
 
     pub fn get_actor_type_target(&mut self) -> Result<BlueprintTypeTarget, RuntimeError> {
-        let actor = self.current_actor();
+        let actor = self.current_actor()?;
         match actor {
             Actor::Root => Err(RuntimeError::SystemError(SystemError::RootHasNoType)),
             Actor::BlueprintHook(actor) => Ok(BlueprintTypeTarget {
@@ -683,7 +694,7 @@ where
         &mut self,
         actor_object_type: ActorStateRef,
     ) -> Result<(NodeId, Option<ModuleId>), RuntimeError> {
-        let actor = self.current_actor();
+        let actor = self.current_actor()?;
         let object_id = actor
             .get_object_id()
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAnObject))?;
@@ -884,7 +895,7 @@ where
 
         // For simplicity, a rule is enforced at system layer: only the package can globalize a node
         // In the future, we may consider allowing customization at blueprint level.
-        let actor = self.current_actor();
+        let actor = self.current_actor()?;
         if Some(reserved_blueprint_id.package_address) != actor.package_address() {
             return Err(RuntimeError::SystemError(
                 SystemError::InvalidGlobalizeAccess(Box::new(InvalidGlobalizeAccess {
@@ -1039,11 +1050,12 @@ where
         Ok(global_address)
     }
 
-    pub fn current_actor(&mut self) -> Actor {
-        self.api
+    pub fn current_actor(&mut self) -> Result<Actor, RuntimeError> {
+        Ok(self
+            .api
             .kernel_get_system_state()
             .current_call_frame
-            .clone()
+            .clone())
     }
 
     pub fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
@@ -1073,6 +1085,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientFieldApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -1162,6 +1178,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientObjectApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -1177,7 +1197,7 @@ where
         fields: BTreeMap<u8, FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
-        let actor = self.current_actor();
+        let actor = self.current_actor()?;
         let package_address = actor
             .blueprint_id()
             .map(|b| b.package_address)
@@ -1480,7 +1500,7 @@ where
         // For simplicity, a rule is enforced at system layer: only the package can drop a node
         // In the future, we may consider allowing customization at blueprint level.
         let info = self.get_object_info(node_id)?;
-        let actor = self.current_actor();
+        let actor = self.current_actor()?;
         if Some(info.blueprint_info.blueprint_id.package_address) != actor.package_address() {
             return Err(RuntimeError::SystemError(SystemError::InvalidDropAccess(
                 Box::new(InvalidDropAccess {
@@ -1509,6 +1529,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -1636,6 +1660,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -1771,6 +1799,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientActorIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -1901,6 +1933,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientActorSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -2017,6 +2053,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -2054,6 +2094,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientCostingApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -2226,6 +2270,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -2238,7 +2286,7 @@ where
             .modules
             .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
 
-        self.current_actor()
+        self.current_actor()?
             .blueprint_id()
             .ok_or(RuntimeError::SystemError(SystemError::NoBlueprintId))
     }
@@ -2254,7 +2302,7 @@ where
 
         let node_id = match actor_ref {
             ActorObjectRef::SELF => {
-                self.current_actor()
+                self.current_actor()?
                     .node_id()
                     .ok_or(RuntimeError::SystemError(
                         SystemError::ActorNodeIdDoesNotExist,
@@ -2280,7 +2328,7 @@ where
                 }?
             }
             ActorObjectRef::Global => {
-                let actor = self.current_actor();
+                let actor = self.current_actor()?;
                 if actor.is_direct_access() {
                     return Err(RuntimeError::SystemError(
                         SystemError::GlobalAddressDoesNotExist,
@@ -2305,7 +2353,7 @@ where
                 }
             }
             ActorObjectRef::AuthZone => self
-                .current_actor()
+                .current_actor()?
                 .self_auth_zone()
                 .ok_or_else(|| RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))?,
         };
@@ -2442,6 +2490,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -2533,6 +2585,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -2549,6 +2605,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -2628,12 +2688,16 @@ where
             .modules
             .set_panic_message(message.clone())?;
 
-        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
-            message,
-        )))
+        Err(RuntimeError::ApplicationError(
+            ApplicationError::PanicMessage(message),
+        ))
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -2641,6 +2705,10 @@ where
 {
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> KernelNodeApi for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -2692,6 +2760,10 @@ where
     }
 }
 
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> KernelSubstateApi<SystemLockData> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
