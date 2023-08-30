@@ -1038,9 +1038,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     .create_proof_from_account_of_non_fungibles(
                         account,
                         VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
+                        [
                             NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        ],
                     )
                     .take_all_from_worktop(XRD, "bucket")
                     .with_bucket("bucket", |builder, bucket| {

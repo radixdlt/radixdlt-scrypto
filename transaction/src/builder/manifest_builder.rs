@@ -301,13 +301,13 @@ impl ManifestBuilder {
     pub fn take_non_fungibles_from_worktop(
         self,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
         new_bucket: impl NewManifestBucket,
     ) -> Self {
         let resource_address = resource_address.resolve_static(&self.registrar);
         new_bucket.register(&self.registrar);
         self.add_instruction(InstructionV1::TakeNonFungiblesFromWorktop {
-            ids: ids.iter().cloned().collect(),
+            ids: ids.into_iter().collect(),
             resource_address,
         })
     }
@@ -345,11 +345,11 @@ impl ManifestBuilder {
     pub fn assert_worktop_contains_non_fungibles(
         self,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let resource_address = resource_address.resolve_static(&self.registrar);
         self.add_instruction(InstructionV1::AssertWorktopContainsNonFungibles {
-            ids: ids.clone().into_iter().collect(),
+            ids: ids.into_iter().collect(),
             resource_address,
         })
     }
@@ -386,13 +386,13 @@ impl ManifestBuilder {
     pub fn create_proof_from_auth_zone_of_non_fungibles(
         self,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
         new_proof: impl NewManifestProof,
     ) -> Self {
         let resource_address = resource_address.resolve_static(&self.registrar);
         new_proof.register(&self.registrar);
         self.add_instruction(InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
-            ids: ids.iter().cloned().collect(),
+            ids: ids.into_iter().collect(),
             resource_address,
         })
     }
@@ -428,14 +428,14 @@ impl ManifestBuilder {
     pub fn create_proof_from_bucket_of_non_fungibles(
         self,
         bucket: impl ExistingManifestBucket,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
         new_proof: impl NewManifestProof,
     ) -> Self {
         let bucket = bucket.resolve(&self.registrar);
         new_proof.register(&self.registrar);
         self.add_instruction(InstructionV1::CreateProofFromBucketOfNonFungibles {
             bucket_id: bucket,
-            ids: ids.iter().cloned().collect(),
+            ids: ids.into_iter().collect(),
         })
     }
 
@@ -1361,11 +1361,10 @@ impl ManifestBuilder {
         self,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Self {
-        let ids = btreeset!(non_fungible_global_id.local_id().clone());
-        let resource_address = non_fungible_global_id.resource_address().clone();
+        let (resource_address, local_id) = non_fungible_global_id.into_parts();
         let bucket = self.generate_bucket_name("to_burn");
 
-        self.take_non_fungibles_from_worktop(resource_address, &ids, &bucket)
+        self.take_non_fungibles_from_worktop(resource_address, [local_id], &bucket)
             .burn_resource(bucket)
     }
 
@@ -1437,10 +1436,10 @@ impl ManifestBuilder {
     pub fn recall_non_fungibles(
         self,
         vault_address: InternalAddress,
-        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let args = to_manifest_value_and_unwrap!(&NonFungibleVaultRecallNonFungiblesInput {
-            non_fungible_local_ids: non_fungible_local_ids.clone(),
+            non_fungible_local_ids: non_fungible_local_ids.into_iter().collect(),
         });
 
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
@@ -1574,7 +1573,7 @@ impl ManifestBuilder {
         account_address: impl ResolvableComponentAddress,
         amount_to_lock: impl ResolvableDecimal,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let amount_to_lock = amount_to_lock.resolve();
@@ -1583,7 +1582,7 @@ impl ManifestBuilder {
         let args = to_manifest_value_and_unwrap!(&AccountLockFeeAndWithdrawNonFungiblesInput {
             amount_to_lock,
             resource_address,
-            ids: ids.iter().cloned().collect(),
+            ids: ids.into_iter().collect(),
         });
 
         self.add_instruction(InstructionV1::CallMethod {
@@ -1669,13 +1668,13 @@ impl ManifestBuilder {
         self,
         account_address: impl ResolvableComponentAddress,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let resource_address = resource_address.resolve_static(&self.registrar);
 
         let args = to_manifest_value_and_unwrap!(&AccountWithdrawNonFungiblesInput {
-            ids: ids.clone(),
+            ids: ids.into_iter().collect(),
             resource_address,
         });
 
@@ -1731,18 +1730,32 @@ impl ManifestBuilder {
     }
 
     /// Creates resource proof from an account.
+    pub fn create_proof_from_account_of_non_fungible(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        non_fungible_global_id: NonFungibleGlobalId,
+    ) -> Self {
+        let (resource_address, local_id) = non_fungible_global_id.into_parts();
+        self.create_proof_from_account_of_non_fungibles(
+            account_address,
+            resource_address,
+            [local_id],
+        )
+    }
+
+    /// Creates resource proof from an account.
     pub fn create_proof_from_account_of_non_fungibles(
         self,
         account_address: impl ResolvableComponentAddress,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let resource_address = resource_address.resolve_static(&self.registrar);
 
         let args = to_manifest_value_and_unwrap!(&AccountCreateProofOfNonFungiblesInput {
             resource_address,
-            ids: ids.clone(),
+            ids: ids.into_iter().collect(),
         });
 
         self.add_instruction(InstructionV1::CallMethod {

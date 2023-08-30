@@ -450,12 +450,9 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                         "radiswap-set-two-way-linking",
                         |builder| {
                             builder
-                                .create_proof_from_account_of_non_fungibles(
+                                .create_proof_from_account_of_non_fungible(
                                     config.radiswap_dapp_definition_account.address,
-                                    state.owner_badge.get()?.resource_address(),
-                                    &btreeset!(
-                                        state.owner_badge.get()?.local_id().clone()
-                                    ),
+                                    state.owner_badge.get()?
                                 )
                                 // Set up two-way-linking
                                 .set_metadata(

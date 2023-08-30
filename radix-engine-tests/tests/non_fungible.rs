@@ -545,7 +545,7 @@ fn test_mint_update_and_withdraw() {
         .create_proof_from_account_of_non_fungibles(
             account,
             nft_resource_address,
-            &btreeset!(NonFungibleLocalId::integer(0)),
+            [NonFungibleLocalId::integer(0)],
         )
         .take_all_from_worktop(badge_resource_address, "badge")
         .pop_from_auth_zone("proof")
@@ -563,16 +563,14 @@ fn test_mint_update_and_withdraw() {
     );
     receipt.expect_commit_success();
 
-    let mut nfid_list = BTreeSet::new();
-    nfid_list.insert(NonFungibleLocalId::integer(0)); // ID from NonFungibleTest::create_non_fungible_mutable
-
-    // transfer
+    // Transfer
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, nft_resource_address, 1)
         .assert_worktop_contains_any(nft_resource_address)
         .assert_worktop_contains(nft_resource_address, 1)
-        .assert_worktop_contains_non_fungibles(nft_resource_address, &nfid_list)
+        // ID from NonFungibleTest::create_non_fungible_mutable
+        .assert_worktop_contains_non_fungibles(nft_resource_address, [NonFungibleLocalId::integer(0)])
         .try_deposit_batch_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(

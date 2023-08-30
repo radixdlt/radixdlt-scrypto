@@ -1154,7 +1154,7 @@ fn validator_registration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1216,7 +1216,7 @@ fn validator_unregistration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1232,7 +1232,7 @@ fn validator_unregistration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .unregister_validator(validator_address)
         .build();
@@ -1294,7 +1294,7 @@ fn validator_staking_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1310,7 +1310,7 @@ fn validator_staking_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(account, XRD, 100)
         .take_all_from_worktop(XRD, "stake")
@@ -1750,7 +1750,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1766,7 +1766,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2083,7 +2083,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
         .withdraw_non_fungibles_from_account(
             account,
             resource_address,
-            &btreeset!(NonFungibleLocalId::integer(4)),
+            [NonFungibleLocalId::integer(4)],
         )
         .burn_all_from_worktop(resource_address)
         .build();

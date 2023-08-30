@@ -18,7 +18,7 @@ fn can_set_validator_metadata_with_owner() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator.as_node_id().0).unwrap()],
         )
         .set_metadata(
             validator,

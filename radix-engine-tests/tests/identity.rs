@@ -133,7 +133,7 @@ fn can_set_metadata_after_securify() {
         .create_proof_from_account_of_non_fungibles(
             account,
             IDENTITY_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(identity_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(identity_address.as_node_id().0).unwrap()],
         )
         .set_metadata(
             identity_address,
@@ -168,7 +168,7 @@ fn can_set_metadata_on_securified_identity() {
         .create_proof_from_account_of_non_fungibles(
             account,
             IDENTITY_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(identity_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(identity_address.as_node_id().0).unwrap()],
         )
         .set_metadata(
             identity_address,

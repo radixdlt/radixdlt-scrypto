@@ -39,6 +39,10 @@ impl NonFungibleGlobalId {
         NonFungibleGlobalId::new(GLOBAL_CALLER_VIRTUAL_BADGE, local_id)
     }
 
+    pub fn into_parts(self) -> (ResourceAddress, NonFungibleLocalId) {
+        (self.0, self.1)
+    }
+
     /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
         self.0

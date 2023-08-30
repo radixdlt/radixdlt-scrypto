@@ -61,7 +61,7 @@ impl Transfer {
                 builder.withdraw_from_account(default_account, resource_address, amount)
             }
             ResourceSpecifier::Ids(ids, resource_address) => {
-                builder.withdraw_non_fungibles_from_account(default_account, resource_address, &ids)
+                builder.withdraw_non_fungibles_from_account(default_account, resource_address, ids)
             }
         };
         let manifest = builder

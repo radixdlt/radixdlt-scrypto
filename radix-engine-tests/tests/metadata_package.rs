@@ -67,7 +67,7 @@ fn can_set_package_metadata_with_owner() {
         .create_proof_from_account_of_non_fungibles(
             account,
             PACKAGE_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(package_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(package_address.as_node_id().0).unwrap()],
         )
         .set_metadata(
             package_address,
