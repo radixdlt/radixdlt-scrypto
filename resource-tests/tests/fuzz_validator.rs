@@ -1,13 +1,6 @@
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt};
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ValidatorGetRedemptionValueInput, VALIDATOR_CLAIM_XRD_IDENT,
-    VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
-    VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_STAKE_IDENT,
-    VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT,
-    VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT, VALIDATOR_UNSTAKE_IDENT, VALIDATOR_UPDATE_FEE_IDENT,
-};
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use resource_tests::TestFuzzer;
@@ -23,7 +16,7 @@ fn fuzz_validator() {
         (1u64..64u64)
             .into_par_iter()
             .map(|seed| {
-                let mut fuzz_test = ConsensusFuzzTest::new(seed);
+                let mut fuzz_test = ValidatorFuzzTest::new(seed);
                 fuzz_test.run_fuzz()
             })
             .collect();
@@ -50,7 +43,7 @@ enum FuzzTxnResult {
     Failure,
 }
 
-struct ConsensusFuzzTest {
+struct ValidatorFuzzTest {
     fuzzer: TestFuzzer,
     test_runner: DefaultTestRunner,
     validator_meta: ValidatorMeta,
@@ -58,7 +51,7 @@ struct ConsensusFuzzTest {
     cur_round: Round,
 }
 
-impl ConsensusFuzzTest {
+impl ValidatorFuzzTest {
     fn new(seed: u64) -> Self {
         let fuzzer = TestFuzzer::new(seed);
         let initial_epoch = Epoch::of(5);
@@ -98,46 +91,6 @@ impl ConsensusFuzzTest {
         }
     }
 
-    /*
-    fn next_amount(&mut self) -> Decimal {
-        match self.fuzzer.next(0u64..10u64) {
-            0u64 => {
-                let manifest = ManifestBuilder::new()
-                    .call_method(
-                        self.validator_address,
-                        VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT,
-                        manifest_args!(),
-                    )
-                    .build();
-                let receipt = self
-                    .test_runner
-                    .execute_manifest_ignoring_fee(manifest, vec![]);
-                let total_stake_unit_supply: Decimal = receipt.expect_commit_success().output(1);
-                total_stake_unit_supply
-                    .safe_add(Decimal::from(self.fuzzer.next(-1i8..=1i8)))
-                    .unwrap()
-            }
-            1u64 => {
-                let manifest = ManifestBuilder::new()
-                    .call_method(
-                        self.validator_address,
-                        VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT,
-                        manifest_args!(),
-                    )
-                    .build();
-                let receipt = self
-                    .test_runner
-                    .execute_manifest_ignoring_fee(manifest, vec![]);
-                let total_stake_xrd_amount: Decimal = receipt.expect_commit_success().output(1);
-                total_stake_xrd_amount
-                    .safe_add(Decimal::from(self.fuzzer.next(-1i8..=1i8)))
-                    .unwrap()
-            }
-            _ => self.fuzzer.next_amount(),
-        }
-    }
-     */
-
     fn run_fuzz(
         &mut self,
     ) -> BTreeMap<ValidatorFuzzAction, BTreeMap<FuzzTxnResult, u64>> {
@@ -146,7 +99,7 @@ impl ConsensusFuzzTest {
         for _ in 0..100 {
             let builder = ManifestBuilder::new();
             let action: ValidatorFuzzAction = ValidatorFuzzAction::from_repr(self.fuzzer.next_u8(7u8)).unwrap();
-            let (builder, trivial) = action.add_to_builder(
+            let (builder, trivial) = action.add_to_manifest(
                 builder,
                 &mut self.fuzzer,
                 self.validator_meta,

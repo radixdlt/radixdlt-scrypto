@@ -449,7 +449,7 @@ fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_
             matches!(
                 e,
                 RuntimeError::ApplicationError(ApplicationError::BucketError(
-                    BucketError::ResourceError(ResourceError::InsufficientBalance)
+                    BucketError::ResourceError(ResourceError::InsufficientBalance { .. })
                 ))
             )
         });

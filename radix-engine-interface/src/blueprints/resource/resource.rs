@@ -6,8 +6,12 @@ use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceError {
-    InsufficientBalance,
+    InsufficientBalance {
+        requested: Decimal,
+        actual: Decimal,
+    },
     InvalidTakeAmount,
+    MissingNonFungibleLocalId(NonFungibleLocalId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -59,7 +63,10 @@ impl LiquidFungibleResource {
     ) -> Result<LiquidFungibleResource, ResourceError> {
         // deduct from liquidity pool
         if self.amount < amount_to_take {
-            return Err(ResourceError::InsufficientBalance);
+            return Err(ResourceError::InsufficientBalance {
+                requested: amount_to_take,
+                actual: self.amount,
+            });
         }
         self.amount = self.amount.safe_sub(amount_to_take).expect("Overflow");
         Ok(LiquidFungibleResource::new(amount_to_take))
@@ -109,7 +116,10 @@ impl LiquidNonFungibleResource {
 
     pub fn take_by_amount(&mut self, n: u32) -> Result<LiquidNonFungibleResource, ResourceError> {
         if self.ids.len() < n as usize {
-            return Err(ResourceError::InsufficientBalance);
+            return Err(ResourceError::InsufficientBalance {
+                actual: Decimal::from(self.ids.len()),
+                requested: Decimal::from(n),
+            });
         }
         let ids: BTreeSet<NonFungibleLocalId> = self.ids.iter().take(n as usize).cloned().collect();
         self.take_by_ids(&ids)
@@ -121,7 +131,7 @@ impl LiquidNonFungibleResource {
     ) -> Result<LiquidNonFungibleResource, ResourceError> {
         for id in ids_to_take {
             if !self.ids.remove(&id) {
-                return Err(ResourceError::InsufficientBalance);
+                return Err(ResourceError::MissingNonFungibleLocalId(id.clone()));
             }
         }
         Ok(LiquidNonFungibleResource::new(ids_to_take.clone()))

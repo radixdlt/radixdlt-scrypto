@@ -3,7 +3,7 @@ use radix_engine_common::constants::XRD;
 use radix_engine_common::manifest_args;
 use radix_engine_common::prelude::{ComponentAddress, NonFungibleLocalId, VALIDATOR_OWNER_BADGE};
 use radix_engine_common::types::ResourceAddress;
-use radix_engine_interface::blueprints::consensus_manager::{VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT, VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_STAKE_IDENT, VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_UNSTAKE_IDENT, VALIDATOR_UPDATE_FEE_IDENT, ValidatorGetRedemptionValueInput};
+use radix_engine_interface::blueprints::consensus_manager::{VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT, VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT, VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_UNSTAKE_IDENT, VALIDATOR_UPDATE_FEE_IDENT, ValidatorGetRedemptionValueInput};
 use transaction::builder::ManifestBuilder;
 use utils::btreeset;
 use crate::TestFuzzer;
@@ -28,10 +28,11 @@ pub enum ValidatorFuzzAction {
     LockOwnerStake,
     StartUnlockOwnerStake,
     FinishUnlockOwnerStake,
+    Register,
 }
 
 impl ValidatorFuzzAction {
-    pub fn add_to_builder(
+    pub fn add_to_manifest(
         &self,
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
@@ -164,6 +165,21 @@ impl ValidatorFuzzAction {
                     .call_method(
                         meta.validator_address,
                         VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+                        manifest_args!(),
+                    );
+                (builder, false)
+            }
+            ValidatorFuzzAction::Register => {
+                let builder = builder.create_proof_from_account_of_non_fungibles(
+                    meta.account_address,
+                    VALIDATOR_OWNER_BADGE,
+                    &btreeset!(
+                    NonFungibleLocalId::bytes(meta.validator_address.as_node_id().0).unwrap()
+                ),
+                )
+                    .call_method(
+                        meta.validator_address,
+                        VALIDATOR_REGISTER_IDENT,
                         manifest_args!(),
                     );
                 (builder, false)

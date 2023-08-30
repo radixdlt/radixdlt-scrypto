@@ -70,6 +70,10 @@ impl NodeId {
         matches!(self.entity_type(), Some(t) if t.is_global_consensus_manager())
     }
 
+    pub const fn is_global_validator(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_validator())
+    }
+
     pub const fn is_global_resource_manager(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_global_resource_manager())
     }

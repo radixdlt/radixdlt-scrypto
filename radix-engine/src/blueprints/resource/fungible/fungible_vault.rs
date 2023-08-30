@@ -331,14 +331,18 @@ impl FungibleVaultBlueprint {
                     ApplicationError::VaultError(VaultError::InvalidAmount),
                 ));
             }
-            let vault_amount_plus_one = vault_balance
-                .amount()
+            let liquid_amount = vault_balance
+                .amount();
+            let vault_amount_plus_one = liquid_amount
                 .safe_add(Decimal::ONE)
                 .ok_or_else(|| VaultError::DecimalOverflow)?;
             if amount > &vault_amount_plus_one {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::VaultError(VaultError::ResourceError(
-                        ResourceError::InsufficientBalance,
+                        ResourceError::InsufficientBalance {
+                            requested: amount.clone(),
+                            actual: liquid_amount
+                        },
                     )),
                 ));
             }

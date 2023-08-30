@@ -38,17 +38,20 @@ impl NonFungibleBucketBlueprint {
         {
             if amount.is_negative() {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::BucketError(BucketError::InvalidAmount),
+                    ApplicationError::BucketError(BucketError::InvalidAmount(*amount)),
                 ));
             }
-            let bucket_amount_plus_one = liquid
-                .amount()
+            let liquid_amount = liquid.amount();
+            let bucket_amount_plus_one = liquid_amount
                 .safe_add(Decimal::ONE)
                 .ok_or_else(|| BucketError::DecimalOverflow)?;
             if amount > &bucket_amount_plus_one {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::BucketError(BucketError::ResourceError(
-                        ResourceError::InsufficientBalance,
+                        ResourceError::InsufficientBalance {
+                            requested: *amount,
+                            actual: liquid_amount,
+                        },
                     )),
                 ));
             }
@@ -60,7 +63,7 @@ impl NonFungibleBucketBlueprint {
         // Check amount
         let n = check_non_fungible_amount(&amount).map_err(|_| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::InvalidAmount,
+                BucketError::InvalidAmount(amount),
             ))
         })?;
 

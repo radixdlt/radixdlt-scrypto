@@ -59,17 +59,21 @@ impl FungibleBucketBlueprint {
         {
             if amount.is_negative() {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::BucketError(BucketError::InvalidAmount),
+                    ApplicationError::BucketError(BucketError::InvalidAmount(amount)),
                 ));
             }
-            let bucket_amount_plus_one = liquid
-                .amount()
+            let liquid_amount = liquid.amount();
+            let bucket_amount_plus_one =
+                liquid_amount
                 .safe_add(Decimal::ONE)
                 .ok_or_else(|| BucketError::DecimalOverflow)?;
             if amount > bucket_amount_plus_one {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::BucketError(BucketError::ResourceError(
-                        ResourceError::InsufficientBalance,
+                        ResourceError::InsufficientBalance {
+                            requested: amount,
+                            actual: liquid_amount,
+                        },
                     )),
                 ));
             }
@@ -82,7 +86,7 @@ impl FungibleBucketBlueprint {
         // Check amount
         if !(check_fungible_amount(&amount, divisibility)) {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::InvalidAmount),
+                ApplicationError::BucketError(BucketError::InvalidAmount(amount)),
             ));
         }
 
@@ -152,7 +156,7 @@ impl FungibleBucketBlueprint {
         let divisibility = Self::get_divisibility(api)?;
         if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::InvalidAmount),
+                ApplicationError::BucketError(BucketError::InvalidAmount(amount)),
             ));
         }
 

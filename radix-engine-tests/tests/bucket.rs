@@ -154,7 +154,7 @@ fn test_take_with_invalid_granularity() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::InvalidAmount,
+                BucketError::InvalidAmount(..),
             ))
         )
     });
@@ -193,7 +193,7 @@ fn test_take_with_negative_amount() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::InvalidAmount,
+                BucketError::InvalidAmount(..),
             ))
         )
     });

@@ -1,4 +1,5 @@
 pub mod validator;
+pub mod consensus_manager;
 
 use radix_engine::types::*;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
@@ -17,7 +18,7 @@ impl TestFuzzer {
     }
 
     pub fn next_amount(&mut self) -> Decimal {
-        let next_amount_type = self.rng.gen_range(0u32..=7u32);
+        let next_amount_type = self.rng.gen_range(0u32..=8u32);
         match next_amount_type {
             0 => Decimal::ZERO,
             1 => Decimal::ONE,
@@ -29,6 +30,10 @@ impl TestFuzzer {
                 Decimal::from(amount)
             }
             6 => {
+                let amount = self.rng.gen_range(1000u64..10000u64);
+                Decimal::from(amount)
+            }
+            7 => {
                 let mut bytes = [0u8; 24];
                 let (start, _end) = bytes.split_at_mut(8);
                 self.rng.fill_bytes(start);

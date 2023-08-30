@@ -27,7 +27,7 @@ fn test_lock_fee_and_then_withdraw_failure() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::ResourceError(ResourceError::InsufficientBalance)
+                VaultError::ResourceError(ResourceError::InsufficientBalance { .. })
             ))
         )
     });
