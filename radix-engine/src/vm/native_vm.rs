@@ -157,7 +157,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                             "Unknown panic!".to_string()
                         };
                         Err(RuntimeError::VmError(VmError::Native(
-                            NativeRuntimeError::Panic {
+                            NativeRuntimeError::Trap {
                                 export_name: export_name.to_owned(),
                                 input: input.as_scrypto_value().clone(),
                                 error: message,

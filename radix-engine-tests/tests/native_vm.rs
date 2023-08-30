@@ -88,7 +88,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     assert!(matches!(
         rtn,
         Err(RuntimeError::VmError(VmError::Native(
-            NativeRuntimeError::Panic { .. }
+            NativeRuntimeError::Trap { .. }
         )))
     ))
 }

@@ -300,7 +300,7 @@ pub enum NativeRuntimeError {
     InvalidCodeId,
 
     /// A panic was encountered in Native code.
-    Panic {
+    Trap {
         export_name: String,
         input: ScryptoValue,
         error: String,
