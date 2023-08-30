@@ -134,7 +134,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
     api: &mut Y,
 ) -> Result<(Decimal, IndexMap<LocalRef, Decimal>), RuntimeError> {
     // calculate the max locked amount of each container
-    let mut max = IndexMap::<LocalRef, Decimal>::new();
+    let mut max: IndexMap<LocalRef, Decimal> = index_map_new();
     for proof in proofs {
         let blueprint_id = api.get_blueprint_id(proof.0.as_node_id())?;
 
@@ -182,7 +182,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
     ),
     RuntimeError,
 > {
-    let mut total = IndexSet::<NonFungibleLocalId>::new();
+    let mut total: IndexSet<NonFungibleLocalId> = index_set_new();
     // calculate the max locked non-fungibles of each container
     let mut per_container = NonIterMap::<LocalRef, IndexSet<NonFungibleLocalId>>::new();
     for proof in proofs {

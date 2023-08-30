@@ -461,7 +461,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
         &mut self,
         non_fungible_local_id: &NonFungibleLocalId,
     ) -> NonFungibleBucket {
-        self.take_non_fungibles(&indexset![non_fungible_local_id.clone()])
+        self.take_non_fungibles(&indexset!(non_fungible_local_id.clone()))
     }
 
     fn take_non_fungibles(

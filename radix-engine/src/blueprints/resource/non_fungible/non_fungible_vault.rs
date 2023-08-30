@@ -741,7 +741,7 @@ impl NonFungibleVaultBlueprint {
             .field_read_typed::<NonFungibleVaultLockedResourceFieldPayload>(handle)?
             .into_latest();
 
-        let mut liquid_non_fungibles = IndexSet::<NonFungibleLocalId>::new();
+        let mut liquid_non_fungibles: IndexSet<NonFungibleLocalId> = index_set_new();
         for id in ids {
             let cnt = locked
                 .ids

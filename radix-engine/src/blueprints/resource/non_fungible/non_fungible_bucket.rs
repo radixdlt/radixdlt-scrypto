@@ -247,7 +247,7 @@ impl NonFungibleBucketBlueprint {
         )?;
         let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
 
-        let mut liquid_non_fungibles = IndexSet::<NonFungibleLocalId>::new();
+        let mut liquid_non_fungibles: IndexSet<NonFungibleLocalId> = index_set_new();
         for id in ids {
             let cnt = locked
                 .ids

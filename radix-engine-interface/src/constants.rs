@@ -17,7 +17,7 @@ pub use radix_engine_common::constants::*;
 //
 lazy_static! {
     pub static ref ALWAYS_VISIBLE_GLOBAL_NODES: IndexSet<NodeId> = {
-        indexset![
+        indexset!(
             // resource managers
             XRD.into(),
             SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -46,6 +46,6 @@ lazy_static! {
             TRANSACTION_TRACKER_PACKAGE.into(),
             // components
             CONSENSUS_MANAGER.into(),
-        ]
+        )
     };
 }

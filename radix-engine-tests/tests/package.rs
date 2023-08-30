@@ -367,15 +367,15 @@ fn name_validation_blueprint() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
 
-    definition.blueprints = IndexMap::from([(
-        String::from("wrong_bluepint_name_*"),
-        definition
-            .blueprints
-            .values_mut()
-            .next()
-            .unwrap()
-            .to_owned(),
-    )]);
+    definition.blueprints = indexmap![
+       String::from("wrong_bluepint_name_*") =>
+            definition
+                .blueprints
+                .values_mut()
+                .next()
+                .unwrap()
+                .to_owned(),
+    ];
 
     // Act
     let manifest = ManifestBuilder::new()

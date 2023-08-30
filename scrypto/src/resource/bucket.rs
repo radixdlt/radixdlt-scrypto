@@ -443,7 +443,7 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
     fn take_non_fungible(&mut self, non_fungible_local_id: &NonFungibleLocalId) -> Self {
-        self.take_non_fungibles(&indexset![non_fungible_local_id.clone()])
+        self.take_non_fungibles(&indexset!(non_fungible_local_id.clone()))
     }
 
     fn take_non_fungibles(

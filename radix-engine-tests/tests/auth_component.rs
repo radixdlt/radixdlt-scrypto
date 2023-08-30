@@ -144,7 +144,7 @@ fn can_make_cross_component_call_with_resource_authorization() {
         .withdraw_non_fungibles_from_account(
             account,
             auth_id.resource_address(),
-            &IndexSet::from([auth_id.local_id().clone()]),
+            &indexset!(auth_id.local_id().clone()),
         )
         .call_method(
             my_component,

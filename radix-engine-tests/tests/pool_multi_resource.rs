@@ -416,7 +416,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
             MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
             MultiResourcePoolInstantiateManifestInput {
-                resource_addresses: [non_fungible_resource].into(),
+                resource_addresses: indexset!(non_fungible_resource),
                 pool_manager_rule: rule!(allow_all),
                 owner_role: OwnerRole::None,
                 address_reservation: None,
@@ -854,7 +854,7 @@ impl<const N: usize> TestEnvironment<N> {
                     MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
                     MultiResourcePoolInstantiateManifestInput {
-                        resource_addresses: resource_addresses.clone().into(),
+                        resource_addresses: indexset!(resource_addresses.clone()),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                         owner_role,
                         address_reservation: None,

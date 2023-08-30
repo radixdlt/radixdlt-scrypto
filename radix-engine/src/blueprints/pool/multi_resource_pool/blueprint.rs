@@ -516,7 +516,8 @@ impl MultiResourcePoolBlueprint {
                 }
             }
 
-            let mut vaults_and_buckets = IndexMap::<ResourceAddress, (Vault, Bucket)>::new();
+            let mut vaults_and_buckets: IndexMap<ResourceAddress, (Vault, Bucket)> =
+                index_map_new();
             for bucket in buckets.into_iter() {
                 let bucket_resource_address = bucket.resource_address(api)?;
 
