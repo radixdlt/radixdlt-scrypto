@@ -594,7 +594,7 @@ impl ValidatorBlueprint {
                 xrd_bucket_amount,
                 xrd_vault.amount(api)?,
                 stake_unit_resman.total_supply(api)?.unwrap(),
-            );
+            )?;
 
             let stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
             xrd_vault.put(xrd_bucket, api)?;
@@ -1383,7 +1383,7 @@ impl ValidatorBlueprint {
             validator_fee_xrd,
             post_emission_stake_pool_xrd,
             total_stake_unit_supply,
-        );
+        )?;
         let fee_stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
         stake_xrd_vault.put(fee_xrd_bucket, api)?;
 
@@ -1451,7 +1451,7 @@ impl ValidatorBlueprint {
             total_reward_xrd,
             starting_stake_pool_xrd,
             total_stake_unit_supply,
-        );
+        )?;
         let new_stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
         stake_xrd_vault.put(xrd_bucket, api)?;
 
@@ -1589,13 +1589,8 @@ impl ValidatorBlueprint {
             Decimal::zero()
         } else {
             amount_of_stake_units
-                .safe_mul(active_stake_amount)
-                .ok_or_else(|| {
-                    RuntimeError::ApplicationError(ApplicationError::ValidatorError(
-                        ValidatorError::UnexpectedDecimalComputationError,
-                    ))
-                })?
                 .safe_div(total_stake_unit_supply)
+                .and_then(|d| d.safe_mul(active_stake_amount))
                 .ok_or_else(|| {
                     RuntimeError::ApplicationError(ApplicationError::ValidatorError(
                         ValidatorError::UnexpectedDecimalComputationError,
@@ -1611,16 +1606,21 @@ impl ValidatorBlueprint {
         xrd_amount: Decimal,
         total_stake_xrd_amount: Decimal,
         total_stake_unit_supply: Decimal,
-    ) -> Decimal {
-        if total_stake_xrd_amount.is_zero() {
+    ) -> Result<Decimal, RuntimeError> {
+        let stake_unit_amount = if total_stake_xrd_amount.is_zero() {
             xrd_amount
         } else {
             xrd_amount
-                .safe_mul(total_stake_unit_supply)
-                .unwrap()
                 .safe_div(total_stake_xrd_amount)
-                .unwrap()
-        }
+                .and_then(|d| d.safe_mul(total_stake_unit_supply))
+                .ok_or_else(|| {
+                    RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                        ValidatorError::UnexpectedDecimalComputationError,
+                    ))
+                })?
+        };
+
+        Ok(stake_unit_amount)
     }
 }
 
