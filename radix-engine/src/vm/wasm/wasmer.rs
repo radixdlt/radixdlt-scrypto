@@ -180,8 +180,10 @@ impl WasmerModule {
 
         pub fn blueprint_call(
             env: &WasmerInstanceEnv,
-            blueprint_id_ptr: u32,
-            blueprint_id_len: u32,
+            package_node_id_ptr: u32,
+            package_node_id_len: u32,
+            blueprint_name_ptr: u32,
+            blueprint_name_len: u32,
             ident_ptr: u32,
             ident_len: u32,
             args_ptr: u32,
@@ -189,12 +191,13 @@ impl WasmerModule {
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let blueprint_ident = read_memory(&instance, blueprint_id_ptr, blueprint_id_len)?;
+            let package_node_id = read_memory(&instance, package_node_id_ptr, package_node_id_len)?;
+            let blueprint_name = read_memory(&instance, blueprint_name_ptr, blueprint_name_len)?;
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
             let buffer = runtime
-                .blueprint_call(blueprint_ident, ident, args)
+                .blueprint_call(package_node_id, blueprint_name, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -202,17 +205,18 @@ impl WasmerModule {
 
         pub fn address_allocate(
             env: &WasmerInstanceEnv,
-            blueprint_ident_ptr: u32,
-            blueprint_ident_len: u32,
+            package_node_id_ptr: u32,
+            package_node_id_len: u32,
+            blueprint_name_ptr: u32,
+            blueprint_name_len: u32,
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .address_allocate(read_memory(
-                    &instance,
-                    blueprint_ident_ptr,
-                    blueprint_ident_len,
-                )?)
+                .address_allocate(
+                    read_memory(&instance, package_node_id_ptr, package_node_id_len)?,
+                    read_memory(&instance, blueprint_name_ptr, blueprint_name_len)?,
+                )
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -301,8 +305,8 @@ impl WasmerModule {
 
         pub fn object_new(
             env: &WasmerInstanceEnv,
-            blueprint_ident_ptr: u32,
-            blueprint_ident_len: u32,
+            blueprint_name_ptr: u32,
+            blueprint_name_len: u32,
             object_states_ptr: u32,
             object_states_len: u32,
         ) -> Result<u64, RuntimeError> {
@@ -310,7 +314,7 @@ impl WasmerModule {
 
             let buffer = runtime
                 .object_new(
-                    read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?,
+                    read_memory(&instance, blueprint_name_ptr, blueprint_name_len)?,
                     read_memory(&instance, object_states_ptr, object_states_len)?,
                 )
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;

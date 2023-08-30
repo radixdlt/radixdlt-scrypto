@@ -23,13 +23,12 @@ impl ScryptoVmV1Api {
         function_name: &str,
         args: Vec<u8>,
     ) -> Vec<u8> {
-        let blueprint_id = BlueprintId::new(&package_address, blueprint_name);
-        let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
-
         copy_buffer(unsafe {
             blueprint::blueprint_call(
-                blueprint_id.as_ptr(),
-                blueprint_id.len(),
+                package_address.as_ref().as_ptr(),
+                package_address.as_ref().len(),
+                blueprint_name.as_ptr(),
+                blueprint_name.len(),
                 function_name.as_ptr(),
                 function_name.len(),
                 args.as_ptr(),
@@ -39,15 +38,15 @@ impl ScryptoVmV1Api {
     }
 
     pub fn object_new(
-        blueprint_ident: &str,
+        blueprint_name: &str,
         object_states: IndexMap<FieldIndex, FieldValue>,
     ) -> NodeId {
         let object_states = scrypto_encode(&object_states).unwrap();
 
         let bytes = copy_buffer(unsafe {
             object::object_new(
-                blueprint_ident.as_ptr(),
-                blueprint_ident.len(),
+                blueprint_name.as_ptr(),
+                blueprint_name.len(),
                 object_states.as_ptr(),
                 object_states.len(),
             )

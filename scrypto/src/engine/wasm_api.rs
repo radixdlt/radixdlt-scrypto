@@ -33,8 +33,10 @@ pub mod blueprint {
     super::wasm_extern_c! {
         /// Invokes a blueprint function
         pub fn blueprint_call(
-            blueprint_id_ptr: *const u8,
-            blueprint_id_len: usize,
+            package_node_id_ptr: *const u8,
+            package_node_id_len: usize,
+            blueprint_name_ptr: *const u8,
+            blueprint_name_len: usize,
             ident_ptr: *const u8,
             ident_len: usize,
             args_ptr: *const u8,
@@ -49,7 +51,12 @@ pub mod addr {
 
     super::wasm_extern_c! {
         /// Reserves a global address for a given blueprint
-        pub fn address_allocate(blueprint_id_ptr: *const u8, blueprint_id_len: usize) -> Buffer;
+        pub fn address_allocate(
+            package_node_id_ptr: *const u8,
+            package_node_id_len: usize,
+            blueprint_name_ptr: *const u8,
+            blueprint_name_len: usize,
+        ) -> Buffer;
 
         /// Get the address associated with an address reservation
         pub fn address_get_reservation_address(
@@ -67,8 +74,8 @@ pub mod object {
         /// Creates a new object of a given blueprint defined in the same
         /// package as the current actor
         pub fn object_new(
-            blueprint_id_ptr: *const u8,
-            blueprint_id: usize,
+            blueprint_name_ptr: *const u8,
+            blueprint_name_len: usize,
             obj_fields_ptr: *const u8,
             obj_fields_len: usize,
         ) -> Buffer;

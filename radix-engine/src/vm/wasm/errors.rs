@@ -110,8 +110,6 @@ pub enum WasmRuntimeError {
 
     InvalidAddress(DecodeError),
 
-    InvalidBlueprintId(DecodeError),
-
     /// Invalid method ident
     InvalidString,
 
@@ -149,6 +147,8 @@ pub enum WasmRuntimeError {
     FeeReserveError(FeeReserveError),
 
     InvalidEventFlags(u32),
+
+    InvalidPackageAddress,
 }
 
 impl SelfError for WasmRuntimeError {

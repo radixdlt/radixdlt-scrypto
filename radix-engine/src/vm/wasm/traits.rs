@@ -41,20 +41,22 @@ pub trait WasmRuntime {
 
     fn blueprint_call(
         &mut self,
-        blueprint_ident: Vec<u8>,
+        package_node_id: Vec<u8>,
+        blueprint_name: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn object_new(
         &mut self,
-        blueprint_ident: Vec<u8>,
+        blueprint_name: Vec<u8>,
         object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn address_allocate(
         &mut self,
-        blueprint_id: Vec<u8>,
+        package_node_id: Vec<u8>,
+        blueprint_name: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn address_get_reservation_address(

@@ -174,6 +174,8 @@ impl WasmModule {
                                     ValType::I32,
                                     ValType::I32,
                                     ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
                                 ],
                                 vec![ValType::I64],
                             ) {
@@ -556,7 +558,7 @@ impl WasmModule {
                             if Self::function_type_matches(
                                 &self.module,
                                 type_index,
-                                vec![ValType::I32, ValType::I32],
+                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
                                 vec![ValType::I64],
                             ) {
                                 continue;

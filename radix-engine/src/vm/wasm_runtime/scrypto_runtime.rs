@@ -37,6 +37,17 @@ where
             wasm_execution_units_buffer: 0,
         }
     }
+
+    pub fn parse_blueprint_id(
+        package_node_id: Vec<u8>,
+        blueprint_name: Vec<u8>,
+    ) -> Result<(PackageAddress, String), InvokeError<WasmRuntimeError>> {
+        let package_address = PackageAddress::try_from(package_node_id.as_slice())
+            .map_err(|_| WasmRuntimeError::InvalidPackageAddress)?;
+        let blueprint_name =
+            String::from_utf8(blueprint_name).map_err(|_| WasmRuntimeError::InvalidString)?;
+        Ok((package_address, blueprint_name))
+    }
 }
 
 impl<'y, Y> WasmRuntime for ScryptoRuntime<'y, Y>
@@ -129,18 +140,19 @@ where
 
     fn blueprint_call(
         &mut self,
-        blueprint_id: Vec<u8>,
+        package_node_id: Vec<u8>,
+        blueprint_name: Vec<u8>,
         function_ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let blueprint_id = scrypto_decode::<BlueprintId>(&blueprint_id)
-            .map_err(WasmRuntimeError::InvalidBlueprintId)?;
+        let (package_address, blueprint_name) =
+            Self::parse_blueprint_id(package_node_id, blueprint_name)?;
         let function_ident =
             String::from_utf8(function_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
         let return_data = self.api.call_function(
-            blueprint_id.package_address,
-            blueprint_id.blueprint_name.as_str(),
+            package_address,
+            blueprint_name.as_str(),
             &function_ident,
             args,
         )?;
@@ -150,17 +162,17 @@ where
 
     fn object_new(
         &mut self,
-        blueprint_ident: Vec<u8>,
+        blueprint_name: Vec<u8>,
         object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let blueprint_ident =
-            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
+        let blueprint_name =
+            String::from_utf8(blueprint_name).map_err(|_| WasmRuntimeError::InvalidString)?;
         let object_states = scrypto_decode::<IndexMap<u8, FieldValue>>(&object_states)
             .map_err(WasmRuntimeError::InvalidObjectStates)?;
 
         let component_id = self
             .api
-            .new_simple_object(blueprint_ident.as_ref(), object_states)?;
+            .new_simple_object(blueprint_name.as_ref(), object_states)?;
         let component_id_encoded =
             scrypto_encode(&component_id).expect("Failed to encode component id");
 
@@ -169,12 +181,16 @@ where
 
     fn address_allocate(
         &mut self,
-        blueprint_id: Vec<u8>,
+        package_node_id: Vec<u8>,
+        blueprint_name: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let blueprint_id = scrypto_decode::<BlueprintId>(&blueprint_id)
-            .map_err(WasmRuntimeError::InvalidBlueprintId)?;
+        let (package_address, blueprint_name) =
+            Self::parse_blueprint_id(package_node_id, blueprint_name)?;
 
-        let object_address = self.api.allocate_global_address(blueprint_id)?;
+        let object_address = self.api.allocate_global_address(BlueprintId {
+            package_address,
+            blueprint_name,
+        })?;
         let object_address_encoded =
             scrypto_encode(&object_address).expect("Failed to encode object address");
 
