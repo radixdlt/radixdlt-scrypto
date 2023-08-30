@@ -878,7 +878,7 @@ fn system_loan_should_cover_intended_use_case() {
         &mut test_runner,
         &network,
         manifest1,
-        vec![&sk1, &sk2, &sk3], // no sign
+        vec![&sk1, &sk2, &sk3], // sign
         &sk4,                   // notarize
         false,
     );
