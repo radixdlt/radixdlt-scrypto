@@ -358,8 +358,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_id = self.api.actor_get_node_id(actor_ref_handle)?;
 
-        let buffer = scrypto_encode(&node_id).expect("Failed to encode node id");
-        self.allocate_buffer(buffer)
+        self.allocate_buffer(node_id.0.to_vec())
     }
 
     fn actor_get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {

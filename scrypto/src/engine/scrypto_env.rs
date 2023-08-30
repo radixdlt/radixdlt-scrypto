@@ -188,7 +188,7 @@ impl ScryptoVmV1Api {
     pub fn actor_get_object_id(actor_ref_handle: ActorRefHandle) -> NodeId {
         let node_id = copy_buffer(unsafe { actor::actor_get_object_id(actor_ref_handle) });
 
-        scrypto_decode(&node_id).unwrap()
+        NodeId(node_id.try_into().unwrap())
     }
 
     pub fn actor_get_blueprint_id() -> BlueprintId {
