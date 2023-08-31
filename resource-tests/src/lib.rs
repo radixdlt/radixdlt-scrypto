@@ -1,6 +1,8 @@
 pub mod consensus_manager;
+pub mod one_pool;
 pub mod validator;
 
+use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
@@ -92,6 +94,26 @@ impl TestFuzzer {
             5u32 => WithdrawStrategy::Rounded(RoundingMode::ToNegativeInfinity),
             6u32 => WithdrawStrategy::Rounded(RoundingMode::ToPositiveInfinity),
             _ => WithdrawStrategy::Rounded(RoundingMode::ToZero),
+        }
+    }
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
+pub enum FuzzTxnResult {
+    TrivialSuccess,
+    Success,
+    TrivialFailure,
+    Failure,
+}
+
+impl FuzzTxnResult {
+    pub fn from_outcome(outcome: &TransactionOutcome, trivial: bool) -> Self {
+        match (outcome, trivial) {
+            (TransactionOutcome::Success(..), true) => FuzzTxnResult::TrivialSuccess,
+            (TransactionOutcome::Success(..), false) => FuzzTxnResult::Success,
+            (TransactionOutcome::Failure(..), true) => FuzzTxnResult::TrivialFailure,
+            (TransactionOutcome::Failure(..), false) => FuzzTxnResult::Failure,
         }
     }
 }

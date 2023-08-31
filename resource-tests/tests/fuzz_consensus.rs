@@ -5,7 +5,7 @@ use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use resource_tests::consensus_manager::ConsensusManagerFuzzAction;
 use resource_tests::validator::{ValidatorFuzzAction, ValidatorMeta};
-use resource_tests::TestFuzzer;
+use resource_tests::{FuzzTxnResult, TestFuzzer};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -42,26 +42,6 @@ fn fuzz_consensus() {
 enum ConsensusFuzzAction {
     ConsensusManager(ConsensusManagerFuzzAction),
     Validator(ValidatorFuzzAction),
-}
-
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-enum FuzzTxnResult {
-    TrivialSuccess,
-    Success,
-    TrivialFailure,
-    Failure,
-}
-
-impl FuzzTxnResult {
-    pub fn from_outcome(outcome: &TransactionOutcome, trivial: bool) -> Self {
-        match (outcome, trivial) {
-            (TransactionOutcome::Success(..), true) => FuzzTxnResult::TrivialSuccess,
-            (TransactionOutcome::Success(..), false) => FuzzTxnResult::Success,
-            (TransactionOutcome::Failure(..), true) => FuzzTxnResult::TrivialFailure,
-            (TransactionOutcome::Failure(..), false) => FuzzTxnResult::Failure,
-        }
-    }
 }
 
 struct ConsensusFuzzTest {
