@@ -107,18 +107,6 @@ impl Decimal {
         self.safe_round(0, RoundingMode::ToPositiveInfinity)
     }
 
-    // check if integer part of self equals integer part of MAX
-    #[inline]
-    fn integer_is_not_max(&self) -> Option<bool> {
-        Some(Self::MAX.safe_sub(*self)? > Self::from_str("0.177722232017256447").unwrap())
-    }
-
-    // check if integer part of self equals integer part of MIN
-    #[inline]
-    fn integer_is_not_min(&self) -> Option<bool> {
-        Some(Self::MIN.safe_sub(*self)? < Self::from_str("-0.177722232017256448").unwrap())
-    }
-
     /// Rounds this number to the specified decimal places.
     ///
     /// # Panics
@@ -130,143 +118,53 @@ impl Decimal {
 
         let n = Self::SCALE - decimal_places as u32;
         let divisor: I192 = I192::TEN.pow(n);
-        let rounded = match mode {
-            RoundingMode::ToPositiveInfinity => {
-                if self.0 % divisor == I192::ZERO {
-                    *self
-                } else if self.is_positive() {
-                    if self.integer_is_not_max()? {
-                        Self((self.0 / divisor + I192::ONE) * divisor)
+        let positive_remainder = {
+            // % is the "C" style remainder operator, rather than the mathematical modulo operater,
+            // So we fix that here https://internals.rust-lang.org/t/mathematical-modulo-operator/5952
+            let remainder = self.0 % divisor;
+            match remainder.cmp(&I192::ZERO) {
+                Ordering::Less => divisor + remainder,
+                Ordering::Equal => return Some(*self),
+                Ordering::Greater => remainder,
+            }
+        };
+
+        let resolved_strategy =
+            ResolvedRoundingStrategy::from_mode(mode, self.is_positive(), || {
+                let midpoint = divisor >> 1; // Half the divisor
+                positive_remainder.cmp(&midpoint)
+            });
+
+        let rounded_subunits = match resolved_strategy {
+            ResolvedRoundingStrategy::RoundUp => {
+                let to_add = divisor.safe_sub(positive_remainder).expect("Always safe");
+                self.0.safe_add(to_add)?
+            }
+            ResolvedRoundingStrategy::RoundDown => self.0.safe_sub(positive_remainder)?,
+            ResolvedRoundingStrategy::RoundToEven => {
+                let double_divisor = divisor << 1; // Double the divisor
+                if self.is_positive() {
+                    // If positive, we try rounding down first (to avoid accidental overflow)
+                    let rounded_down = self.0.safe_sub(positive_remainder)?;
+                    if rounded_down % double_divisor == I192::ZERO {
+                        rounded_down
                     } else {
-                        return None;
+                        rounded_down.safe_add(divisor)?
                     }
                 } else {
-                    Self(self.0 / divisor * divisor)
-                }
-            }
-            RoundingMode::ToNegativeInfinity => {
-                if self.0 % divisor == I192::ZERO {
-                    *self
-                } else if self.is_negative() {
-                    if self.integer_is_not_min()? {
-                        Self((self.0 / divisor - I192::ONE) * divisor)
+                    // If negative, we try rounding up first (to avoid accidental overflow)
+                    let to_add = divisor.safe_sub(positive_remainder).expect("Always safe");
+                    let rounded_up = self.0.safe_add(to_add)?;
+                    if rounded_up % double_divisor == I192::ZERO {
+                        rounded_up
                     } else {
-                        return None;
-                    }
-                } else {
-                    Self(self.0 / divisor * divisor)
-                }
-            }
-            RoundingMode::ToZero => {
-                if self.0 % divisor == I192::ZERO {
-                    *self
-                } else {
-                    Self(self.0 / divisor * divisor)
-                }
-            }
-            RoundingMode::AwayFromZero => {
-                if self.0 % divisor == I192::ZERO {
-                    *self
-                } else if self.is_negative() {
-                    if self.integer_is_not_min()? {
-                        Self((self.0 / divisor - I192::ONE) * divisor)
-                    } else {
-                        return None;
-                    }
-                // check if integer part of self equals integer part of MAX
-                } else if self.integer_is_not_max()? {
-                    Self((self.0 / divisor + I192::ONE) * divisor)
-                } else {
-                    return None;
-                }
-            }
-            RoundingMode::ToNearestMidpointTowardZero => {
-                let remainder = (self.0 % divisor).abs();
-                if remainder == I192::ZERO {
-                    *self
-                } else {
-                    let mid_point = divisor / I192::from(2);
-                    if remainder > mid_point {
-                        if self.is_negative() {
-                            if self.integer_is_not_min()? {
-                                Self((self.0 / divisor - I192::ONE) * divisor)
-                            } else {
-                                return None;
-                            }
-                        } else if self.integer_is_not_max()? {
-                            Self((self.0 / divisor + I192::ONE) * divisor)
-                        } else {
-                            return None;
-                        }
-                    } else {
-                        Self(self.0 / divisor * divisor)
-                    }
-                }
-            }
-            RoundingMode::ToNearestMidpointAwayFromZero => {
-                let remainder = (self.0 % divisor).abs();
-                if remainder == I192::ZERO {
-                    *self
-                } else {
-                    let mid_point = divisor / I192::from(2);
-                    if remainder >= mid_point {
-                        if self.is_negative() {
-                            if self.integer_is_not_min()? {
-                                Self((self.0 / divisor - I192::ONE) * divisor)
-                            } else {
-                                return None;
-                            }
-                        } else if self.integer_is_not_max()? {
-                            Self((self.0 / divisor + I192::ONE) * divisor)
-                        } else {
-                            return None;
-                        }
-                    } else {
-                        Self(self.0 / divisor * divisor)
-                    }
-                }
-            }
-            RoundingMode::ToNearestMidpointToEven => {
-                let remainder = (self.0 % divisor).abs();
-                if remainder == I192::ZERO {
-                    *self
-                } else {
-                    let mid_point = divisor / I192::from(2);
-                    match remainder.cmp(&mid_point) {
-                        Ordering::Greater => {
-                            if self.is_negative() {
-                                if self.integer_is_not_min()? {
-                                    Self((self.0 / divisor - I192::ONE) * divisor)
-                                } else {
-                                    return None;
-                                }
-                            } else if self.integer_is_not_max()? {
-                                Self((self.0 / divisor + I192::ONE) * divisor)
-                            } else {
-                                return None;
-                            }
-                        }
-                        Ordering::Equal => {
-                            if self.0 / divisor % I192::from(2) == I192::ZERO {
-                                Self(self.0 / divisor * divisor)
-                            } else if self.is_negative() {
-                                if self.integer_is_not_min()? {
-                                    Self((self.0 / divisor - I192::ONE) * divisor)
-                                } else {
-                                    return None;
-                                }
-                            } else if self.integer_is_not_max()? {
-                                Self((self.0 / divisor + I192::ONE) * divisor)
-                            } else {
-                                return None;
-                            }
-                        }
-                        Ordering::Less => Self(self.0 / divisor * divisor),
+                        rounded_up.safe_sub(divisor)?
                     }
                 }
             }
         };
-        Some(rounded)
+
+        Some(Self(rounded_subunits))
     }
 
     /// Calculates power using exponentiation by squaring".
