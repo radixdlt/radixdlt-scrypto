@@ -23,8 +23,8 @@ impl Ed25519PublicKey {
         self.0.to_vec()
     }
 
-    pub fn to_hash(&self) -> Vec<u8> {
-        self.0.to_vec()
+    pub fn to_hash(&self) -> Ed25519PublicKeyHash {
+        Ed25519PublicKeyHash::new_from_public_key(self)
     }
 }
 
