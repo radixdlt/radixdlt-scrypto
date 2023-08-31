@@ -1,3 +1,5 @@
+use radix_engine::blueprints::resource::NonFungibleVaultError;
+use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -45,4 +47,33 @@ fn get_non_fungibles_on_vault_with_size_larger_than_vault_size_should_return() {
 #[test]
 fn get_non_fungibles_on_vault_with_size_less_than_vault_size_should_return() {
     get_non_fungibles_on_vault(100, 99, 99);
+}
+
+#[test]
+fn withdraw_1_from_empty_non_fungible_vault_should_return_error() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package = test_runner.compile_and_publish("./tests/blueprints/vault");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleVault",
+            "withdraw_one_from_empty",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleVaultError(
+                NonFungibleVaultError::NotEnoughAmount
+            ))
+        )
+    });
 }

@@ -409,29 +409,42 @@ impl NonFungibleVaultBlueprint {
             }
         }
 
-        let amount =
-            amount
-                .for_withdrawal(0, withdraw_strategy)
-                .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::DecimalOverflow),
-                ))?;
-
         // Check amount
-        let n = check_non_fungible_amount(&amount).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
-        })?;
+        let (amount, count) = {
+            let amount = amount.for_withdrawal(0, withdraw_strategy).ok_or(
+                RuntimeError::ApplicationError(ApplicationError::NonFungibleVaultError(
+                    NonFungibleVaultError::DecimalOverflow,
+                )),
+            )?;
+
+            let n = check_non_fungible_amount(&amount).map_err(|_| {
+                RuntimeError::ApplicationError(ApplicationError::VaultError(
+                    VaultError::InvalidAmount,
+                ))
+            })?;
+
+            let amount = Decimal::from(n);
+
+            if balance.amount < amount {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::NotEnoughAmount),
+                ));
+            }
+
+            (amount, n)
+        };
 
         // Take
         balance.amount = balance
             .amount
-            .safe_sub(n)
+            .safe_sub(amount)
             .ok_or_else(|| VaultError::DecimalOverflow)?;
         let taken = {
             let ids: Vec<(NonFungibleLocalId, NonFungibleVaultNonFungibleEntryPayload)> = api
                 .actor_index_drain_typed(
                     ACTOR_STATE_SELF,
                     NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
-                    n,
+                    count,
                 )?;
             LiquidNonFungibleResource {
                 ids: ids.into_iter().map(|(key, _value)| key).collect(),
