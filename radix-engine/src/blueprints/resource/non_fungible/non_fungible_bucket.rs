@@ -58,7 +58,9 @@ impl NonFungibleBucketBlueprint {
         }
 
         // Apply withdraw strategy
-        let amount = amount.for_withdrawal(0, withdraw_strategy);
+        let amount = amount
+            .for_withdrawal(0, withdraw_strategy)
+            .ok_or(BucketError::DecimalOverflow)?;
 
         // Check amount
         let n = check_non_fungible_amount(&amount).map_err(|_| {

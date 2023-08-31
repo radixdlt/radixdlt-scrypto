@@ -802,7 +802,13 @@ impl FungibleResourceManagerBlueprint {
             )?
             .into_latest();
 
-        Ok(amount.for_withdrawal(divisibility, withdraw_strategy))
+        Ok(amount
+            .for_withdrawal(divisibility, withdraw_strategy)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::FungibleResourceManagerError(
+                    FungibleResourceManagerError::UnexpectedDecimalComputationError,
+                ),
+            ))?)
     }
 
     fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>

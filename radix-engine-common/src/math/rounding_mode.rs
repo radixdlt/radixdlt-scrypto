@@ -1,3 +1,4 @@
+use core::cmp::Ordering;
 use sbor::Sbor;
 
 /// Defines the rounding strategy.
@@ -20,4 +21,62 @@ pub enum RoundingMode {
     ToNearestMidpointAwayFromZero,
     /// The number is rounded to the nearest, and when it is halfway between two others, it's rounded toward the nearest even number. Also known as "Bankers Rounding".
     ToNearestMidpointToEven,
+}
+
+/// The resolved rounding strategy internal to the round method
+pub(crate) enum ResolvedRoundingStrategy {
+    RoundUp,
+    RoundDown,
+    RoundToEven,
+}
+
+impl ResolvedRoundingStrategy {
+    pub fn from_mode(
+        mode: RoundingMode,
+        is_positive: bool,
+        compare_to_midpoint: impl FnOnce() -> Ordering,
+    ) -> Self {
+        match mode {
+            RoundingMode::ToPositiveInfinity => ResolvedRoundingStrategy::RoundUp,
+            RoundingMode::ToNegativeInfinity => ResolvedRoundingStrategy::RoundDown,
+            RoundingMode::ToZero => ResolvedRoundingStrategy::towards_zero(is_positive),
+            RoundingMode::AwayFromZero => ResolvedRoundingStrategy::away_from_zero(is_positive),
+            RoundingMode::ToNearestMidpointTowardZero => Self::from_midpoint_ordering(
+                compare_to_midpoint(),
+                ResolvedRoundingStrategy::towards_zero(is_positive),
+            ),
+            RoundingMode::ToNearestMidpointAwayFromZero => Self::from_midpoint_ordering(
+                compare_to_midpoint(),
+                ResolvedRoundingStrategy::away_from_zero(is_positive),
+            ),
+            RoundingMode::ToNearestMidpointToEven => Self::from_midpoint_ordering(
+                compare_to_midpoint(),
+                ResolvedRoundingStrategy::RoundToEven,
+            ),
+        }
+    }
+
+    fn from_midpoint_ordering(ordering: Ordering, equal_strategy: Self) -> Self {
+        match ordering {
+            Ordering::Less => Self::RoundDown,
+            Ordering::Equal => equal_strategy,
+            Ordering::Greater => Self::RoundUp,
+        }
+    }
+
+    fn towards_zero(is_positive: bool) -> Self {
+        if is_positive {
+            Self::RoundDown
+        } else {
+            Self::RoundUp
+        }
+    }
+
+    fn away_from_zero(is_positive: bool) -> Self {
+        if is_positive {
+            Self::RoundUp
+        } else {
+            Self::RoundDown
+        }
+    }
 }

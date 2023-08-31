@@ -1,12 +1,12 @@
 [package]
 name = "radix-engine-macros"
-version = "0.12.0"
+version = "0.13.0"
 edition = "2021"
 
 [dependencies]
 proc-macro2 = "1.0.66"
 quote = "1.0.33"
-syn = { version = "2.0.29", features = ["full"] }
+syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = ["full", "extra-traits"] }
 
 [lib]
 proc-macro = true

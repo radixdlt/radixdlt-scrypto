@@ -1504,7 +1504,13 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        Ok(amount.for_withdrawal(0, withdraw_strategy))
+        Ok(amount
+            .for_withdrawal(0, withdraw_strategy)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::UnexpectedDecimalComputationError,
+                ),
+            ))?)
     }
 }
 
