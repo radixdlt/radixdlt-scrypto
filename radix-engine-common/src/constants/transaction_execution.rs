@@ -7,8 +7,9 @@ pub const EXECUTION_COST_UNIT_LIMIT: u32 = 100_000_000;
 /// The finalization cost unit limit.
 pub const FINALIZATION_COST_UNIT_LIMIT: u32 = 50_000_000;
 
-/// The free credit, for preview only.
-pub const FREE_CREDIT_IN_XRD: &str = "100";
+/// The free credit amount used by preview.
+/// 1000000 XRD = $60000, which should be enough to cover all sensible preview requests.
+pub const PREVIEW_CREDIT_IN_XRD: &str = "1000000";
 
 pub const MAX_EXECUTION_TRACE_DEPTH: usize = 16;
 

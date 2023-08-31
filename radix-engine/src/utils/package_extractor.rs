@@ -41,7 +41,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
         &CostingParameters::default(),
         &TransactionCostingParameters {
             tip_percentage: 0,
-            free_credit_in_xrd: Decimal::try_from(FREE_CREDIT_IN_XRD).unwrap(),
+            free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap(),
         },
         false,
     );
