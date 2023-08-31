@@ -6,28 +6,6 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-fn local_component_should_return_correct_info() {
-    // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_function(
-            package_address,
-            "Secret",
-            "check_info_of_local_component",
-            manifest_args!(package_address, "Secret".to_string()),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
 fn local_component_should_be_callable_read_only() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

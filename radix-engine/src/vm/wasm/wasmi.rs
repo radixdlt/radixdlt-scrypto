@@ -173,8 +173,10 @@ fn call_module_method(
 
 fn call_function(
     mut caller: Caller<'_, HostState>,
-    blueprint_id_ptr: u32,
-    blueprint_id_len: u32,
+    package_address_ptr: u32,
+    package_address_len: u32,
+    blueprint_name_ptr: u32,
+    blueprint_name_len: u32,
     ident_ptr: u32,
     ident_len: u32,
     args_ptr: u32,
@@ -182,24 +184,30 @@ fn call_function(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let blueprint_id = read_memory(
+    let package_address = read_memory(
         caller.as_context_mut(),
         memory,
-        blueprint_id_ptr,
-        blueprint_id_len,
+        package_address_ptr,
+        package_address_len,
+    )?;
+    let blueprint_name = read_memory(
+        caller.as_context_mut(),
+        memory,
+        blueprint_name_ptr,
+        blueprint_name_len,
     )?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .blueprint_call(blueprint_id, ident, args)
+        .blueprint_call(package_address, blueprint_name, ident, args)
         .map(|buffer| buffer.0)
 }
 
 fn new_object(
     mut caller: Caller<'_, HostState>,
-    blueprint_ident_ptr: u32,
-    blueprint_ident_len: u32,
+    blueprint_name_ptr: u32,
+    blueprint_name_len: u32,
     object_states_ptr: u32,
     object_states_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -210,8 +218,8 @@ fn new_object(
             read_memory(
                 caller.as_context_mut(),
                 memory,
-                blueprint_ident_ptr,
-                blueprint_ident_len,
+                blueprint_name_ptr,
+                blueprint_name_len,
             )?,
             read_memory(
                 caller.as_context_mut(),
@@ -242,18 +250,28 @@ fn new_key_value_store(
 
 fn allocate_global_address(
     mut caller: Caller<'_, HostState>,
-    blueprint_id_ptr: u32,
-    blueprint_id_len: u32,
+    package_address_ptr: u32,
+    package_address_len: u32,
+    blueprint_name_ptr: u32,
+    blueprint_name_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .address_allocate(read_memory(
-            caller.as_context_mut(),
-            memory,
-            blueprint_id_ptr,
-            blueprint_id_len,
-        )?)
+        .address_allocate(
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                package_address_ptr,
+                package_address_len,
+            )?,
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                blueprint_name_ptr,
+                blueprint_name_len,
+            )?,
+        )
         .map(|buffer| buffer.0)
 }
 
@@ -348,21 +366,37 @@ fn globalize_object(
         .map(|buffer| buffer.0)
 }
 
-fn get_object_info(
+fn instance_of(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
     component_id_len: u32,
-) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    package_address_ptr: u32,
+    package_address_len: u32,
+    blueprint_name_ptr: u32,
+    blueprint_name_len: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    runtime
-        .get_blueprint_id(read_memory(
+    runtime.instance_of(
+        read_memory(
             caller.as_context_mut(),
             memory,
             component_id_ptr,
             component_id_len,
-        )?)
-        .map(|buffer| buffer.0)
+        )?,
+        read_memory(
+            caller.as_context_mut(),
+            memory,
+            package_address_ptr,
+            package_address_len,
+        )?,
+        read_memory(
+            caller.as_context_mut(),
+            memory,
+            blueprint_name_ptr,
+            blueprint_name_len,
+        )?,
+    )
 }
 
 fn get_outer_object(
@@ -501,10 +535,18 @@ fn actor_get_node_id(
     runtime.actor_get_node_id(handle).map(|buffer| buffer.0)
 }
 
-fn get_actor(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+fn get_package_address(
+    caller: Caller<'_, HostState>,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.actor_get_blueprint().map(|buffer| buffer.0)
+    runtime.actor_get_package_address().map(|buffer| buffer.0)
+}
+
+fn get_blueprint_name(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.actor_get_blueprint_name().map(|buffer| buffer.0)
 }
 
 fn consume_wasm_execution_units(
@@ -726,8 +768,10 @@ impl WasmiModule {
         let host_blueprint_call = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             blueprint_id_ptr: u32,
-             blueprint_id_len: u32,
+             package_address_ptr: u32,
+             package_address_len: u32,
+             blueprint_name_ptr: u32,
+             blueprint_name_len: u32,
              ident_ptr: u32,
              ident_len: u32,
              args_ptr: u32,
@@ -735,8 +779,10 @@ impl WasmiModule {
              -> Result<u64, Trap> {
                 call_function(
                     caller,
-                    blueprint_id_ptr,
-                    blueprint_id_len,
+                    package_address_ptr,
+                    package_address_len,
+                    blueprint_name_ptr,
+                    blueprint_name_len,
                     ident_ptr,
                     ident_len,
                     args_ptr,
@@ -749,15 +795,15 @@ impl WasmiModule {
         let host_new_component = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             blueprint_ident_ptr: u32,
-             blueprint_ident_len: u32,
+             blueprint_name_ptr: u32,
+             blueprint_name_len: u32,
              object_states_ptr: u32,
              object_states_len: u32|
              -> Result<u64, Trap> {
                 new_object(
                     caller,
-                    blueprint_ident_ptr,
-                    blueprint_ident_len,
+                    blueprint_name_ptr,
+                    blueprint_name_len,
                     object_states_ptr,
                     object_states_len,
                 )
@@ -778,11 +824,19 @@ impl WasmiModule {
         let host_allocate_global_address = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             blueprint_id_ptr: u32,
-             blueprint_id_len: u32|
+             package_address_ptr: u32,
+             package_address_len: u32,
+             blueprint_name_ptr: u32,
+             blueprint_name_len: u32|
              -> Result<u64, Trap> {
-                allocate_global_address(caller, blueprint_id_ptr, blueprint_id_len)
-                    .map_err(|e| e.into())
+                allocate_global_address(
+                    caller,
+                    package_address_ptr,
+                    package_address_len,
+                    blueprint_name_ptr,
+                    blueprint_name_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 
@@ -868,13 +922,26 @@ impl WasmiModule {
             },
         );
 
-        let host_get_object_info = Func::wrap(
+        let host_instance_of = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              object_id_ptr: u32,
-             object_id_len: u32|
-             -> Result<u64, Trap> {
-                get_object_info(caller, object_id_ptr, object_id_len).map_err(|e| e.into())
+             object_id_len: u32,
+             package_address_ptr: u32,
+             package_address_len: u32,
+             blueprint_name_ptr: u32,
+             blueprint_name_len: u32|
+             -> Result<u32, Trap> {
+                instance_of(
+                    caller,
+                    object_id_ptr,
+                    object_id_len,
+                    package_address_ptr,
+                    package_address_len,
+                    blueprint_name_ptr,
+                    blueprint_name_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 
@@ -997,10 +1064,17 @@ impl WasmiModule {
             },
         );
 
-        let host_get_blueprint = Func::wrap(
+        let host_get_package_address = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                get_actor(caller).map_err(|e| e.into())
+                get_package_address(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_get_blueprint_name = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                get_blueprint_name(caller).map_err(|e| e.into())
             },
         );
 
@@ -1142,11 +1216,7 @@ impl WasmiModule {
             OBJECT_GLOBALIZE_FUNCTION_NAME,
             host_globalize_object
         );
-        linker_define!(
-            linker,
-            OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME,
-            host_get_object_info
-        );
+        linker_define!(linker, OBJECT_INSTANCE_OF_FUNCTION_NAME, host_instance_of);
         linker_define!(
             linker,
             OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME,
@@ -1208,8 +1278,13 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME,
-            host_get_blueprint
+            ACTOR_GET_PACKAGE_ADDRESS_FUNCTION_NAME,
+            host_get_package_address
+        );
+        linker_define!(
+            linker,
+            ACTOR_GET_BLUEPRINT_NAME_FUNCTION_NAME,
+            host_get_blueprint_name
         );
         linker_define!(
             linker,

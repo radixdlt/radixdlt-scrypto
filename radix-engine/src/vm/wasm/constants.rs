@@ -14,7 +14,7 @@ pub const ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME: &str = "address_get_res
 //=================
 pub const OBJECT_NEW_FUNCTION_NAME: &str = "object_new";
 pub const OBJECT_GLOBALIZE_FUNCTION_NAME: &str = "object_globalize";
-pub const OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "object_get_blueprint_id";
+pub const OBJECT_INSTANCE_OF_FUNCTION_NAME: &str = "object_instance_of";
 pub const OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME: &str = "object_get_outer_object";
 pub const OBJECT_CALL_FUNCTION_NAME: &str = "object_call";
 pub const OBJECT_CALL_DIRECT_FUNCTION_NAME: &str = "object_call_direct";
@@ -23,7 +23,8 @@ pub const OBJECT_CALL_MODULE_FUNCTION_NAME: &str = "object_call_module";
 //=================
 // Actor
 //=================
-pub const ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME: &str = "actor_get_blueprint_id";
+pub const ACTOR_GET_PACKAGE_ADDRESS_FUNCTION_NAME: &str = "actor_get_package_address";
+pub const ACTOR_GET_BLUEPRINT_NAME_FUNCTION_NAME: &str = "actor_get_blueprint_name";
 pub const ACTOR_OPEN_FIELD_FUNCTION_NAME: &str = "actor_open_field";
 pub const ACTOR_GET_OBJECT_ID_FUNCTION_NAME: &str = "actor_get_object_id";
 pub const ACTOR_EMIT_EVENT_FUNCTION_NAME: &str = "actor_emit_event";

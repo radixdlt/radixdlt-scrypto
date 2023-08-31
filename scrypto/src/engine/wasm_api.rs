@@ -33,8 +33,10 @@ pub mod blueprint {
     super::wasm_extern_c! {
         /// Invokes a blueprint function
         pub fn blueprint_call(
-            blueprint_id_ptr: *const u8,
-            blueprint_id_len: usize,
+            package_address_ptr: *const u8,
+            package_address_len: usize,
+            blueprint_name_ptr: *const u8,
+            blueprint_name_len: usize,
             ident_ptr: *const u8,
             ident_len: usize,
             args_ptr: *const u8,
@@ -49,7 +51,12 @@ pub mod addr {
 
     super::wasm_extern_c! {
         /// Reserves a global address for a given blueprint
-        pub fn address_allocate(blueprint_id_ptr: *const u8, blueprint_id_len: usize) -> Buffer;
+        pub fn address_allocate(
+            package_address_ptr: *const u8,
+            package_address_len: usize,
+            blueprint_name_ptr: *const u8,
+            blueprint_name_len: usize,
+        ) -> Buffer;
 
         /// Get the address associated with an address reservation
         pub fn address_get_reservation_address(
@@ -67,8 +74,8 @@ pub mod object {
         /// Creates a new object of a given blueprint defined in the same
         /// package as the current actor
         pub fn object_new(
-            blueprint_id_ptr: *const u8,
-            blueprint_id: usize,
+            blueprint_name_ptr: *const u8,
+            blueprint_name_len: usize,
             obj_fields_ptr: *const u8,
             obj_fields_len: usize,
         ) -> Buffer;
@@ -84,7 +91,14 @@ pub mod object {
         ) -> Buffer;
 
         /// Get the Blueprint Identifier of a given object
-        pub fn object_get_blueprint_id(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
+        pub fn object_instance_of(
+            obj_id_ptr: *const u8,
+            obj_id_len: usize,
+            package_address_ptr: *const u8,
+            package_address_len: usize,
+            blueprint_name_ptr: *const u8,
+            blueprint_name_len: usize,
+        ) -> u32;
 
         /// Get the address of the outer object of a given object
         pub fn object_get_outer_object(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
@@ -129,8 +143,11 @@ pub mod actor {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
-        /// Get the blueprint id of the current actor
-        pub fn actor_get_blueprint_id() -> Buffer;
+        /// Get the package address of the current actor
+        pub fn actor_get_package_address() -> Buffer;
+
+        /// Get the blueprint name of the current actor
+        pub fn actor_get_blueprint_name() -> Buffer;
 
         /// Get the object id of a reference of the current actor
         pub fn actor_get_object_id(actor_ref_handle: ActorRefHandle) -> Buffer;

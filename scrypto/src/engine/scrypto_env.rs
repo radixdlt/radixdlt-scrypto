@@ -23,13 +23,12 @@ impl ScryptoVmV1Api {
         function_name: &str,
         args: Vec<u8>,
     ) -> Vec<u8> {
-        let blueprint_id = BlueprintId::new(&package_address, blueprint_name);
-        let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
-
         copy_buffer(unsafe {
             blueprint::blueprint_call(
-                blueprint_id.as_ptr(),
-                blueprint_id.len(),
+                package_address.as_ref().as_ptr(),
+                package_address.as_ref().len(),
+                blueprint_name.as_ptr(),
+                blueprint_name.len(),
                 function_name.as_ptr(),
                 function_name.len(),
                 args.as_ptr(),
@@ -39,20 +38,20 @@ impl ScryptoVmV1Api {
     }
 
     pub fn object_new(
-        blueprint_ident: &str,
+        blueprint_name: &str,
         object_states: IndexMap<FieldIndex, FieldValue>,
     ) -> NodeId {
         let object_states = scrypto_encode(&object_states).unwrap();
 
         let bytes = copy_buffer(unsafe {
             object::object_new(
-                blueprint_ident.as_ptr(),
-                blueprint_ident.len(),
+                blueprint_name.as_ptr(),
+                blueprint_name.len(),
                 object_states.as_ptr(),
                 object_states.len(),
             )
         });
-        scrypto_decode(&bytes).unwrap()
+        NodeId(bytes.try_into().unwrap())
     }
 
     pub fn object_globalize(
@@ -73,15 +72,22 @@ impl ScryptoVmV1Api {
                 address_reservation.len(),
             )
         });
-        scrypto_decode(&bytes).unwrap()
+        GlobalAddress::try_from(bytes.as_slice()).unwrap()
     }
 
-    pub fn object_get_blueprint_id(node_id: &NodeId) -> BlueprintId {
-        let bytes = copy_buffer(unsafe {
-            object::object_get_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
-        });
+    pub fn object_instance_of(node_id: &NodeId, blueprint_id: &BlueprintId) -> bool {
+        let rtn = unsafe {
+            object::object_instance_of(
+                node_id.as_ref().as_ptr(),
+                node_id.as_ref().len(),
+                blueprint_id.package_address.as_ref().as_ptr(),
+                blueprint_id.package_address.as_ref().len(),
+                blueprint_id.blueprint_name.as_ptr(),
+                blueprint_id.blueprint_name.len(),
+            )
+        };
 
-        scrypto_decode(&bytes).unwrap()
+        rtn == 1
     }
 
     pub fn object_get_outer_object(node_id: &NodeId) -> GlobalAddress {
@@ -89,7 +95,7 @@ impl ScryptoVmV1Api {
             object::object_get_outer_object(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });
 
-        scrypto_decode(&bytes).unwrap()
+        GlobalAddress::try_from(bytes.as_slice()).unwrap()
     }
 
     pub fn object_call(receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
@@ -140,7 +146,7 @@ impl ScryptoVmV1Api {
     pub fn kv_store_new(schema: KeyValueStoreGenericArgs) -> NodeId {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { kv_store::kv_store_new(schema.as_ptr(), schema.len()) });
-        scrypto_decode(&bytes).unwrap()
+        NodeId(bytes.try_into().unwrap())
     }
 
     pub fn kv_store_open_entry(
@@ -182,13 +188,19 @@ impl ScryptoVmV1Api {
     pub fn actor_get_object_id(actor_ref_handle: ActorRefHandle) -> NodeId {
         let node_id = copy_buffer(unsafe { actor::actor_get_object_id(actor_ref_handle) });
 
-        scrypto_decode(&node_id).unwrap()
+        NodeId(node_id.try_into().unwrap())
     }
 
-    pub fn actor_get_blueprint_id() -> BlueprintId {
-        let blueprint_id = copy_buffer(unsafe { actor::actor_get_blueprint_id() });
+    pub fn actor_get_package_address() -> PackageAddress {
+        let package_address = copy_buffer(unsafe { actor::actor_get_package_address() });
 
-        scrypto_decode(&blueprint_id).unwrap()
+        PackageAddress::try_from(package_address.as_slice()).unwrap()
+    }
+
+    pub fn actor_get_blueprint_name() -> String {
+        let blueprint_name = copy_buffer(unsafe { actor::actor_get_blueprint_name() });
+
+        String::from_utf8(blueprint_name).unwrap()
     }
 
     pub fn actor_emit_event(event_name: String, event_data: Vec<u8>, flags: EventFlags) {
@@ -268,8 +280,7 @@ impl ScryptoVmV1Api {
         let encoded = copy_buffer(unsafe {
             system::sys_bech32_encode_address(global_address.as_ptr(), global_address.len())
         });
-
-        scrypto_decode(&encoded).unwrap()
+        String::from_utf8(encoded).unwrap()
     }
 
     pub fn sys_log(level: Level, message: String) {
@@ -278,15 +289,15 @@ impl ScryptoVmV1Api {
     }
 
     pub fn sys_get_transaction_hash() -> Hash {
-        let actor = copy_buffer(unsafe { system::sys_get_transaction_hash() });
+        let hash = copy_buffer(unsafe { system::sys_get_transaction_hash() });
 
-        scrypto_decode(&actor).unwrap()
+        Hash(hash.try_into().unwrap())
     }
 
     pub fn sys_generate_ruid() -> [u8; 32] {
-        let actor = copy_buffer(unsafe { system::sys_generate_ruid() });
+        let ruid = copy_buffer(unsafe { system::sys_generate_ruid() });
 
-        scrypto_decode(&actor).unwrap()
+        ruid.try_into().unwrap()
     }
 
     pub fn sys_panic(message: String) {

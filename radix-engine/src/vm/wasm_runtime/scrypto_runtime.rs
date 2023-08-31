@@ -39,6 +39,17 @@ where
             max_number_of_buffers: MAX_NUMBER_OF_BUFFERS,
         }
     }
+
+    pub fn parse_blueprint_id(
+        package_address: Vec<u8>,
+        blueprint_name: Vec<u8>,
+    ) -> Result<(PackageAddress, String), InvokeError<WasmRuntimeError>> {
+        let package_address = PackageAddress::try_from(package_address.as_slice())
+            .map_err(|_| WasmRuntimeError::InvalidPackageAddress)?;
+        let blueprint_name =
+            String::from_utf8(blueprint_name).map_err(|_| WasmRuntimeError::InvalidString)?;
+        Ok((package_address, blueprint_name))
+    }
 }
 
 impl<'y, Y> WasmRuntime for ScryptoRuntime<'y, Y>
@@ -135,18 +146,19 @@ where
 
     fn blueprint_call(
         &mut self,
-        blueprint_id: Vec<u8>,
+        package_address: Vec<u8>,
+        blueprint_name: Vec<u8>,
         function_ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let blueprint_id = scrypto_decode::<BlueprintId>(&blueprint_id)
-            .map_err(WasmRuntimeError::InvalidBlueprintId)?;
+        let (package_address, blueprint_name) =
+            Self::parse_blueprint_id(package_address, blueprint_name)?;
         let function_ident =
             String::from_utf8(function_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
         let return_data = self.api.call_function(
-            blueprint_id.package_address,
-            blueprint_id.blueprint_name.as_str(),
+            package_address,
+            blueprint_name.as_str(),
             &function_ident,
             args,
         )?;
@@ -156,35 +168,37 @@ where
 
     fn object_new(
         &mut self,
-        blueprint_ident: Vec<u8>,
+        blueprint_name: Vec<u8>,
         object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let blueprint_ident =
-            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
+        let blueprint_name =
+            String::from_utf8(blueprint_name).map_err(|_| WasmRuntimeError::InvalidString)?;
         let object_states = scrypto_decode::<IndexMap<u8, FieldValue>>(&object_states)
             .map_err(WasmRuntimeError::InvalidObjectStates)?;
 
         let component_id = self
             .api
-            .new_simple_object(blueprint_ident.as_ref(), object_states)?;
-        let component_id_encoded =
-            scrypto_encode(&component_id).expect("Failed to encode component id");
+            .new_simple_object(blueprint_name.as_ref(), object_states)?;
 
-        self.allocate_buffer(component_id_encoded)
+        self.allocate_buffer(component_id.to_vec())
     }
 
     fn address_allocate(
         &mut self,
-        blueprint_id: Vec<u8>,
+        package_address: Vec<u8>,
+        blueprint_name: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let blueprint_id = scrypto_decode::<BlueprintId>(&blueprint_id)
-            .map_err(WasmRuntimeError::InvalidBlueprintId)?;
+        let (package_address, blueprint_name) =
+            Self::parse_blueprint_id(package_address, blueprint_name)?;
 
-        let object_address = self.api.allocate_global_address(blueprint_id)?;
-        let object_address_encoded =
-            scrypto_encode(&object_address).expect("Failed to encode object address");
+        let address_reservation_and_address = self.api.allocate_global_address(BlueprintId {
+            package_address,
+            blueprint_name,
+        })?;
+        let encoded = scrypto_encode(&address_reservation_and_address)
+            .expect("Failed to encode object address");
 
-        self.allocate_buffer(object_address_encoded)
+        self.allocate_buffer(encoded)
     }
 
     fn address_get_reservation_address(
@@ -220,9 +234,7 @@ where
 
         let address = self.api.globalize(node_id, modules, address_reservation)?;
 
-        let address_encoded = scrypto_encode(&address).expect("Failed to encode object address");
-
-        self.allocate_buffer(address_encoded)
+        self.allocate_buffer(address.to_vec())
     }
 
     fn key_value_store_new(
@@ -233,10 +245,8 @@ where
             .map_err(WasmRuntimeError::InvalidKeyValueStoreSchema)?;
 
         let key_value_store_id = self.api.key_value_store_new(schema)?;
-        let key_value_store_id_encoded =
-            scrypto_encode(&key_value_store_id).expect("Failed to encode package address");
 
-        self.allocate_buffer(key_value_store_id_encoded)
+        self.allocate_buffer(key_value_store_id.to_vec())
     }
 
     fn key_value_store_open_entry(
@@ -348,15 +358,19 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_id = self.api.actor_get_node_id(actor_ref_handle)?;
 
-        let buffer = scrypto_encode(&node_id).expect("Failed to encode node id");
-        self.allocate_buffer(buffer)
+        self.allocate_buffer(node_id.0.to_vec())
     }
 
-    fn actor_get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let actor = self.api.actor_get_blueprint_id()?;
+    fn actor_get_package_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let blueprint_id = self.api.actor_get_blueprint_id()?;
 
-        let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
-        self.allocate_buffer(buffer)
+        self.allocate_buffer(blueprint_id.package_address.to_vec())
+    }
+
+    fn actor_get_blueprint_name(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let blueprint_id = self.api.actor_get_blueprint_id()?;
+
+        self.allocate_buffer(blueprint_id.blueprint_name.into_bytes())
     }
 
     fn consume_wasm_execution_units(
@@ -383,18 +397,27 @@ where
         Ok(())
     }
 
-    fn get_blueprint_id(
+    fn instance_of(
         &mut self,
-        node_id: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node_id = NodeId(
-            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+        object_id: Vec<u8>,
+        package_address: Vec<u8>,
+        blueprint_name: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let object_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(object_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let blueprint_id = self.api.get_blueprint_id(&node_id)?;
+        let (package_address, blueprint_name) =
+            Self::parse_blueprint_id(package_address, blueprint_name)?;
+        let blueprint_id = self.api.get_blueprint_id(&object_id)?;
 
-        let buffer = scrypto_encode(&blueprint_id).expect("Failed to encode type_info");
-        self.allocate_buffer(buffer)
+        if blueprint_id.package_address.eq(&package_address)
+            && blueprint_id.blueprint_name.eq(&blueprint_name)
+        {
+            Ok(1)
+        } else {
+            Ok(0)
+        }
     }
 
     fn get_outer_object(
@@ -407,8 +430,7 @@ where
         );
         let address = self.api.get_outer_object(&node_id)?;
 
-        let buffer = scrypto_encode(&address).expect("Failed to encode GlobalAddress");
-        self.allocate_buffer(buffer)
+        self.allocate_buffer(address.to_vec())
     }
 
     fn actor_emit_event(
@@ -444,7 +466,7 @@ where
         let address =
             scrypto_decode::<GlobalAddress>(&address).map_err(WasmRuntimeError::InvalidAddress)?;
         let encoded = self.api.bech32_encode_address(address)?;
-        self.allocate_buffer(scrypto_encode(&encoded).expect("Failed to encoded address"))
+        self.allocate_buffer(encoded.into_bytes())
     }
 
     fn sys_panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
@@ -456,13 +478,13 @@ where
     fn sys_get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let hash = self.api.get_transaction_hash()?;
 
-        self.allocate_buffer(scrypto_encode(&hash).expect("Failed to encode transaction hash"))
+        self.allocate_buffer(hash.to_vec())
     }
 
     fn sys_generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let ruid = self.api.generate_ruid()?;
 
-        self.allocate_buffer(scrypto_encode(&ruid).expect("Failed to encode RUID"))
+        self.allocate_buffer(ruid.to_vec())
     }
 
     fn costing_get_execution_cost_unit_limit(

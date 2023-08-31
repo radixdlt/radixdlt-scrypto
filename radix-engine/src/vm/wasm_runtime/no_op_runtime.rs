@@ -71,7 +71,8 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
 
     fn blueprint_call(
         &mut self,
-        blueprint_id: Vec<u8>,
+        package_address: Vec<u8>,
+        blueprint_name: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -80,7 +81,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
 
     fn object_new(
         &mut self,
-        blueprint_ident: Vec<u8>,
+        blueprint_name: Vec<u8>,
         object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
@@ -88,7 +89,8 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
 
     fn address_allocate(
         &mut self,
-        blueprint_id: Vec<u8>,
+        package_address: Vec<u8>,
+        blueprint_name: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
@@ -191,7 +193,11 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn actor_get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn actor_get_package_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn actor_get_blueprint_name(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
@@ -208,10 +214,12 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::FeeReserveError(e)))
     }
 
-    fn get_blueprint_id(
+    fn instance_of(
         &mut self,
         component_id: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        package_address: Vec<u8>,
+        blueprint_name: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
