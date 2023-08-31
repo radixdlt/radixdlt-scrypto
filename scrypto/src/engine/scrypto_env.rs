@@ -146,7 +146,7 @@ impl ScryptoVmV1Api {
     pub fn kv_store_new(schema: KeyValueStoreGenericArgs) -> NodeId {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { kv_store::kv_store_new(schema.as_ptr(), schema.len()) });
-        scrypto_decode(&bytes).unwrap()
+        NodeId(bytes.try_into().unwrap())
     }
 
     pub fn kv_store_open_entry(

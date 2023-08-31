@@ -249,10 +249,8 @@ where
             .map_err(WasmRuntimeError::InvalidKeyValueStoreSchema)?;
 
         let key_value_store_id = self.api.key_value_store_new(schema)?;
-        let key_value_store_id_encoded =
-            scrypto_encode(&key_value_store_id).expect("Failed to encode package address");
 
-        self.allocate_buffer(key_value_store_id_encoded)
+        self.allocate_buffer(key_value_store_id.to_vec())
     }
 
     fn key_value_store_open_entry(
