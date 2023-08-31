@@ -1307,9 +1307,6 @@ impl WasmiModule {
 
         linker_define!(linker, SYS_GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
 
-        let global_value = Global::new(store.as_context_mut(), Value::I32(-1), Mutability::Var);
-        linker_define!(linker, "test_global_mutable_value", global_value);
-
         linker.instantiate(store.as_context_mut(), &module)
     }
 
