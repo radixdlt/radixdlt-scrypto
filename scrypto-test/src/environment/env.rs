@@ -2,7 +2,6 @@
 
 use super::*;
 use crate::prelude::*;
-use std::ops::AddAssign;
 
 /// The environment that all tests of this testing framework are run against.
 ///
@@ -823,22 +822,6 @@ impl TestEnvironment {
     //=========
     // Helpers
     //=========
-
-    // TODO: Feels hacky, something better is needed.
-    /// Determines the device that the node is in based on whether it's in the heap or not.
-    fn get_node_device(kernel: &TestKernel<'_>, node_id: &NodeId) -> SubstateDevice {
-        let substate_io = kernel.kernel_substate_io();
-        if substate_io
-            .heap
-            .scan_keys(node_id, MAIN_BASE_PARTITION, 1)
-            .len()
-            == 1
-        {
-            SubstateDevice::Heap
-        } else {
-            SubstateDevice::Store
-        }
-    }
 
     /// Allows us to perform some action as another actor.
     ///
