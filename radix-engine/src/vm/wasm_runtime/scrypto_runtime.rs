@@ -484,7 +484,7 @@ where
     fn sys_get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let hash = self.api.get_transaction_hash()?;
 
-        self.allocate_buffer(scrypto_encode(&hash).expect("Failed to encode transaction hash"))
+        self.allocate_buffer(hash.to_vec())
     }
 
     fn sys_generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {

@@ -289,9 +289,9 @@ impl ScryptoVmV1Api {
     }
 
     pub fn sys_get_transaction_hash() -> Hash {
-        let actor = copy_buffer(unsafe { system::sys_get_transaction_hash() });
+        let hash = copy_buffer(unsafe { system::sys_get_transaction_hash() });
 
-        scrypto_decode(&actor).unwrap()
+        Hash(hash.try_into().unwrap())
     }
 
     pub fn sys_generate_ruid() -> [u8; 32] {
