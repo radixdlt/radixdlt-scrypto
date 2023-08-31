@@ -21,6 +21,18 @@ mod vault_test {
             Vault::with_bucket(bucket.into())
         }
 
+        fn create_empty_non_fungible_vault() -> Vault {
+            let resource_manager =
+                ResourceBuilder::new_integer_non_fungible::<Data>(OwnerRole::None)
+                    .metadata(metadata! {
+                        init {
+                            "name" => "TestToken".to_owned(), locked;
+                        }
+                    })
+                    .create_with_no_initial_supply();
+            resource_manager.create_empty_vault()
+        }
+
         fn create_non_fungible_vault() -> Vault {
             let bucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
                 .metadata(metadata! {
@@ -30,6 +42,16 @@ mod vault_test {
                 })
                 .mint_initial_supply([(1u64.into(), Data {}), (2u64.into(), Data {})]);
             Vault::with_bucket(bucket.into())
+        }
+
+        pub fn withdraw_one_from_empty() -> Global<NonFungibleVault> {
+            let mut vault = Self::create_empty_non_fungible_vault();
+            let bucket = vault.take(1);
+            bucket.drop_empty();
+            Self { vault }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
 
         pub fn new_non_fungible_vault() -> Global<NonFungibleVault> {
