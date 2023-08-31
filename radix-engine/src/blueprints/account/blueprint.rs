@@ -591,9 +591,9 @@ impl AccountBlueprint {
                 let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
                 Self::create_virtual(public_key_hash, input.address_reservation, api)
             }
-            x => Err(RuntimeError::ApplicationError(ApplicationError::Panic(
-                format!("Unexpected variant id: {:?}", x),
-            ))),
+            x => Err(RuntimeError::ApplicationError(
+                ApplicationError::PanicMessage(format!("Unexpected variant id: {:?}", x)),
+            )),
         }
     }
 

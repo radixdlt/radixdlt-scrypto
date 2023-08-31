@@ -1,8 +1,9 @@
 use radix_engine::{
-    errors::{RuntimeError, SystemModuleError},
+    errors::{RuntimeError, SystemModuleError, VmError},
     system::system_modules::limits::TransactionLimitsError,
     transaction::{CostingParameters, ExecutionConfig},
     types::*,
+    vm::wasm::WasmRuntimeError,
 };
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -335,4 +336,44 @@ fn verify_panic_size_limit() {
             ),)
         )
     })
+}
+
+#[test]
+fn test_allocating_buffers_exceeding_limit() {
+    let (code, definition) = Compile::compile("tests/blueprints/transaction_limits");
+
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+    let component_address = test_runner
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .call_function(package_address, "BufferLimit", "new", manifest_args!())
+                .build(),
+            vec![],
+        )
+        .expect_commit_success()
+        .new_component_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(
+            component_address,
+            "allocate_buffers",
+            manifest_args!(100 as u32),
+        )
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::TooManyBuffers))
+        )
+    });
 }

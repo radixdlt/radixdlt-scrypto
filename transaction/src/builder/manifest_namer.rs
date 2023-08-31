@@ -646,6 +646,126 @@ pub struct NamedManifestAddress {
 // OTHER RESOLVABLE TRAITS FOR THE MANIFEST BUILDER
 //=================================================
 
+pub trait ResolvableBucketBatch {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue;
+}
+
+impl<B: ExistingManifestBucket> ResolvableBucketBatch for BTreeSet<B> {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self.into_iter().map(|b| b.resolve(registrar)).collect();
+        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+    }
+}
+
+impl<B: ExistingManifestBucket, const N: usize> ResolvableBucketBatch for [B; N] {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self.into_iter().map(|b| b.resolve(registrar)).collect();
+        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+    }
+}
+
+impl<B: ExistingManifestBucket> ResolvableBucketBatch for Vec<B> {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self.into_iter().map(|b| b.resolve(registrar)).collect();
+        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+    }
+}
+
+impl ResolvableBucketBatch for ManifestExpression {
+    fn resolve(self, _: &ManifestNameRegistrar) -> ManifestValue {
+        match &self {
+            ManifestExpression::EntireWorktop => {
+                manifest_decode(&manifest_encode(&self).unwrap()).unwrap()
+            }
+            ManifestExpression::EntireAuthZone => {
+                panic!("Not an allowed expression for a batch of buckets")
+            }
+        }
+    }
+}
+
+/// This is created so that you can put TransactionSignatures::None in your TestRunner
+/// Because [] can't resolve the correct generic when used as a trait impl
+pub enum TransactionSignatures {
+    None,
+    Some(Vec<NonFungibleGlobalId>),
+}
+
+pub trait ResolvableTransactionSignatures {
+    fn resolve(self) -> Vec<NonFungibleGlobalId>;
+}
+
+impl ResolvableTransactionSignatures for TransactionSignatures {
+    fn resolve(self) -> Vec<NonFungibleGlobalId> {
+        match self {
+            TransactionSignatures::None => vec![],
+            TransactionSignatures::Some(signatures) => signatures,
+        }
+    }
+}
+
+impl ResolvableTransactionSignatures for Vec<NonFungibleGlobalId> {
+    fn resolve(self) -> Vec<NonFungibleGlobalId> {
+        self
+    }
+}
+
+impl<const N: usize> ResolvableTransactionSignatures for [NonFungibleGlobalId; N] {
+    fn resolve(self) -> Vec<NonFungibleGlobalId> {
+        self.into()
+    }
+}
+
+impl ResolvableTransactionSignatures for NonFungibleGlobalId {
+    fn resolve(self) -> Vec<NonFungibleGlobalId> {
+        vec![self]
+    }
+}
+
+impl ResolvableTransactionSignatures for Vec<PublicKey> {
+    fn resolve(self) -> Vec<NonFungibleGlobalId> {
+        self.into_iter()
+            .map(|key| NonFungibleGlobalId::from_public_key(&key))
+            .collect()
+    }
+}
+
+impl<const N: usize> ResolvableTransactionSignatures for [PublicKey; N] {
+    fn resolve(self) -> Vec<NonFungibleGlobalId> {
+        self.into_iter()
+            .map(|key| NonFungibleGlobalId::from_public_key(&key))
+            .collect()
+    }
+}
+
+impl ResolvableTransactionSignatures for PublicKey {
+    fn resolve(self) -> Vec<NonFungibleGlobalId> {
+        vec![NonFungibleGlobalId::from_public_key(&self)]
+    }
+}
+
+impl ResolvableTransactionSignatures for Vec<PublicKeyHash> {
+    fn resolve(self) -> Vec<NonFungibleGlobalId> {
+        self.into_iter()
+            .map(|key_hash| NonFungibleGlobalId::from_public_key_hash(key_hash))
+            .collect()
+    }
+}
+
+impl<const N: usize> ResolvableTransactionSignatures for [PublicKeyHash; N] {
+    fn resolve(self) -> Vec<NonFungibleGlobalId> {
+        self.into_iter()
+            .map(|key_hash| NonFungibleGlobalId::from_public_key_hash(key_hash))
+            .collect()
+    }
+}
+
+impl ResolvableTransactionSignatures for PublicKeyHash {
+    fn resolve(self) -> Vec<NonFungibleGlobalId> {
+        vec![NonFungibleGlobalId::from_public_key_hash(self)]
+    }
+}
+
 pub trait ResolvableComponentAddress {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress;
 }

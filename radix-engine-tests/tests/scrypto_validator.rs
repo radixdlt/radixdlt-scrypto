@@ -43,7 +43,7 @@ fn can_call_total_stake_xrd_amount_in_scrypto() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 VALIDATOR_OWNER_BADGE,
-                &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+                [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
             )
             .withdraw_from_account(account, XRD, 10)
             .take_all_from_worktop(XRD, "xrd")
@@ -87,7 +87,7 @@ fn can_call_total_stake_unit_supply_in_scrypto() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 VALIDATOR_OWNER_BADGE,
-                &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+                [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
             )
             .withdraw_from_account(account, XRD, 10)
             .take_all_from_worktop(XRD, "xrd")
@@ -131,7 +131,7 @@ fn can_call_validator_get_redemption_value_in_scrypto() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 VALIDATOR_OWNER_BADGE,
-                &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+                [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
             )
             .withdraw_from_account(account, XRD, 10)
             .take_all_from_worktop(XRD, "xrd")

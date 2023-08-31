@@ -1,5 +1,5 @@
 /// The execution cost units loaned from system
-pub const EXECUTION_COST_UNIT_LOAN: u32 = 10_000_000;
+pub const EXECUTION_COST_UNIT_LOAN: u32 = 4_000_000;
 
 /// The execution cost unit limit.
 pub const EXECUTION_COST_UNIT_LIMIT: u32 = 100_000_000;
@@ -43,13 +43,13 @@ pub const NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE: u8 = 25;
 pub const NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 25;
 
 /// The max event size
-pub const MAX_EVENT_SIZE: usize = 64 * 1024;
+pub const MAX_EVENT_SIZE: usize = 32 * 1024;
 
 /// The max log size
-pub const MAX_LOG_SIZE: usize = 64 * 1024;
+pub const MAX_LOG_SIZE: usize = 32 * 1024;
 
 /// The max panic message size
-pub const MAX_PANIC_MESSAGE_SIZE: usize = 64 * 1024;
+pub const MAX_PANIC_MESSAGE_SIZE: usize = 32 * 1024;
 
 /// The max number of events
 pub const MAX_NUMBER_OF_EVENTS: usize = 256;
@@ -61,7 +61,13 @@ pub const MAX_NUMBER_OF_LOGS: usize = 256;
 pub const MAX_METADATA_KEY_STRING_LEN: usize = 100;
 
 /// The max SBOR size of metadata value
-pub const MAX_METADATA_VALUE_SBOR_LEN: usize = 512;
+pub const MAX_METADATA_VALUE_SBOR_LEN: usize = 4096;
+
+/// The max length of a URL in metadata
+pub const MAX_URL_LENGTH: usize = 1024;
+
+/// The max length of an Origin in metadata
+pub const MAX_ORIGIN_LENGTH: usize = 1024;
 
 /// The max depth of an access rule, to protect unbounded native stack useage
 pub const MAX_ACCESS_RULE_DEPTH: usize = 8;
@@ -102,3 +108,6 @@ pub const USD_PRICE_IN_XRD: &str = "16.666666666666666666";
 
 /// The maximum that a package or component owner is allowed to set their method royalty to. 10 USD
 pub const MAX_PER_FUNCTION_ROYALTY_IN_XRD: &str = "166.666666666666666666";
+
+/// The maximum number of "live" buffers maintained by Scrypto runtime.
+pub const MAX_NUMBER_OF_BUFFERS: usize = 32;

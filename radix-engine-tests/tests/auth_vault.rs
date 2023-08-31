@@ -14,7 +14,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 500, token_resource_address, 1)
-        .try_deposit_batch_or_abort(other_account, None)
+        .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -40,11 +40,11 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
             account,
             500,
             auth_resource_address,
-            &indexset!(NonFungibleLocalId::integer(1)),
+            [NonFungibleLocalId::integer(1)],
         )
         .take_non_fungibles_from_worktop(
             auth_resource_address,
-            &indexset!(NonFungibleLocalId::integer(1)),
+            [NonFungibleLocalId::integer(1)],
             "bucket",
         )
         .create_proof_from_bucket_of_all("bucket", "proof")
@@ -53,7 +53,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .pop_from_auth_zone("proof2")
         .drop_proof("proof2")
         .return_to_worktop("bucket")
-        .try_deposit_batch_or_abort(other_account, None)
+        .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

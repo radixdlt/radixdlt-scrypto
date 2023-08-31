@@ -108,16 +108,20 @@ impl ActiveValidatorSet {
     }
 
     /// Note for performance - this is calculated by iterating over the whole validator set.
-    pub fn total_active_stake_xrd(&self) -> Decimal {
+    pub fn total_active_stake_xrd(&self) -> Result<Decimal, RuntimeError> {
         let mut sum = Decimal::ZERO;
         for v in self
             .validators_by_stake_desc
             .iter()
             .map(|(_, validator)| validator.stake)
         {
-            sum = sum.safe_add(v).unwrap();
+            sum = sum.safe_add(v).ok_or(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::UnexpectedDecimalComputationError,
+                ),
+            ))?;
         }
-        sum
+        Ok(sum)
     }
 
     pub fn validator_count(&self) -> usize {
@@ -182,12 +186,18 @@ impl ProposalStatistic {
     /// A ratio of successful to total proposals.
     /// There is a special case of a validator which did not have a chance of leading even a single
     /// round of consensus - currently we assume they should not be punished (i.e. we return `1.0`).
-    pub fn success_ratio(&self) -> Decimal {
+    pub fn success_ratio(&self) -> Result<Decimal, RuntimeError> {
         let total = self.made + self.missed;
         if total == 0 {
-            return Decimal::one();
+            return Ok(Decimal::one());
         }
-        Decimal::from(self.made).safe_div(total).unwrap()
+        Ok(Decimal::from(self.made)
+            .safe_div(total)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::UnexpectedDecimalComputationError,
+                ),
+            ))?)
     }
 }
 
@@ -211,6 +221,7 @@ pub enum ConsensusManagerError {
     },
     AlreadyStarted,
     NotXrd,
+    UnexpectedDecimalComputationError,
 }
 
 declare_native_blueprint_state! {
@@ -852,7 +863,11 @@ impl ConsensusManagerBlueprint {
                 .config
                 .validator_creation_usd_cost
                 .safe_mul(api.usd_price()?)
-                .unwrap();
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
             Some(validator_creation_xrd_cost)
         } else {
             None
@@ -1094,7 +1109,11 @@ impl ConsensusManagerBlueprint {
         {
             next_validator_set_total_stake = next_validator_set_total_stake
                 .safe_add(validator.stake)
-                .unwrap();
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
             let rtn = api.call_method(
                 validator_address.as_node_id(),
                 VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT,
@@ -1105,15 +1124,24 @@ impl ConsensusManagerBlueprint {
                 let entry = significant_protocol_update_readiness
                     .entry(protocol_update_readiness)
                     .or_insert(Decimal::zero());
-                *entry = entry.safe_add(validator.stake).unwrap()
+                *entry = entry
+                    .safe_add(validator.stake)
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::ConsensusManagerError(
+                            ConsensusManagerError::UnexpectedDecimalComputationError,
+                        ),
+                    ))?;
             }
         }
 
         // Only store protocol updates that have been signalled by at
         // least 10% of the new epoch's validator set total stake.
-        let significant_protocol_update_readiness_stake_threshold = next_validator_set_total_stake
-            .safe_mul(dec!("0.1"))
-            .unwrap();
+        let significant_protocol_update_readiness_stake_threshold =
+            next_validator_set_total_stake.safe_mul(dec!("0.1")).ok_or(
+                RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::UnexpectedDecimalComputationError,
+                )),
+            )?;
         significant_protocol_update_readiness.retain(|_, stake_signalled| {
             *stake_signalled >= significant_protocol_update_readiness_stake_threshold
         });
@@ -1184,7 +1212,7 @@ impl ConsensusManagerBlueprint {
                 validator.stake,
                 validator_statistics[index].clone(),
                 config.min_validator_reliability,
-            ) {
+            )? {
                 validator_infos.insert(
                     TryInto::<u8>::try_into(index)
                         .expect("Validator index exceeds the range of u8"),
@@ -1205,7 +1233,11 @@ impl ConsensusManagerBlueprint {
                 .values()
                 .map(|validator_info| validator_info.stake_xrd)
             {
-                sum = sum.safe_add(v).unwrap();
+                sum = sum.safe_add(v).ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
             }
             sum
         };
@@ -1219,17 +1251,30 @@ impl ConsensusManagerBlueprint {
         let emission_per_staked_xrd = config
             .total_emission_xrd_per_epoch
             .safe_div(stake_sum_xrd)
-            .unwrap();
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::UnexpectedDecimalComputationError,
+                ),
+            ))?;
         let effective_total_emission_xrd = {
             let mut sum = Decimal::ZERO;
 
-            for v in validator_infos.values().map(|validator_info| {
-                validator_info
+            for v in validator_infos.values() {
+                let emission = v
                     .effective_stake_xrd
                     .safe_mul(emission_per_staked_xrd)
-                    .unwrap()
-            }) {
-                sum = sum.safe_add(v).unwrap();
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::ConsensusManagerError(
+                            ConsensusManagerError::UnexpectedDecimalComputationError,
+                        ),
+                    ))?;
+                sum = sum
+                    .safe_add(emission)
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::ConsensusManagerError(
+                            ConsensusManagerError::UnexpectedDecimalComputationError,
+                        ),
+                    ))?;
             }
             sum
         };
@@ -1242,7 +1287,11 @@ impl ConsensusManagerBlueprint {
                 validator_info
                     .effective_stake_xrd
                     .safe_mul(emission_per_staked_xrd)
-                    .unwrap(),
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::ConsensusManagerError(
+                            ConsensusManagerError::UnexpectedDecimalComputationError,
+                        ),
+                    ))?,
                 api,
             )?;
             api.call_method(
@@ -1266,28 +1315,39 @@ impl ConsensusManagerBlueprint {
             let mut sum = Decimal::ZERO;
 
             for v in validator_rewards.proposer_rewards.values() {
-                sum = sum.safe_add(*v).unwrap();
+                sum = sum.safe_add(*v).ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
             }
             sum
         };
 
-        let reward_per_staked_xrd = (validator_rewards
+        let reward_per_staked_xrd = validator_rewards
             .rewards_vault
             .amount(api)?
             .safe_sub(total_individual_amount)
-            .unwrap())
-        .safe_div(stake_sum_xrd)
-        .unwrap();
+            .and_then(|amount| amount.safe_div(stake_sum_xrd))
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::UnexpectedDecimalComputationError,
+                ),
+            ))?;
         for (index, validator_info) in validator_infos {
             let from_self = validator_rewards
                 .proposer_rewards
                 .remove(&index)
                 .unwrap_or_default();
-            let from_pool = validator_info
+            let reward_amount = validator_info
                 .effective_stake_xrd
                 .safe_mul(reward_per_staked_xrd)
-                .unwrap();
-            let reward_amount = from_self.safe_add(from_pool).unwrap();
+                .and_then(|from_pool| from_self.safe_add(from_pool))
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
             if reward_amount.is_zero() {
                 continue;
             }
@@ -1321,43 +1381,65 @@ impl ValidatorInfo {
         stake_xrd: Decimal,
         proposal_statistic: ProposalStatistic,
         min_required_reliability: Decimal,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, RuntimeError> {
         if stake_xrd.is_positive() {
             let reliability_factor = Self::to_reliability_factor(
-                proposal_statistic.success_ratio(),
+                proposal_statistic.success_ratio()?,
                 min_required_reliability,
-            );
-            let effective_stake_xrd = stake_xrd.safe_mul(reliability_factor).unwrap();
-            Some(Self {
+            )?;
+            let effective_stake_xrd =
+                stake_xrd
+                    .safe_mul(reliability_factor)
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::ConsensusManagerError(
+                            ConsensusManagerError::UnexpectedDecimalComputationError,
+                        ),
+                    ))?;
+            Ok(Some(Self {
                 address,
                 stake_xrd,
                 proposal_statistic,
                 effective_stake_xrd,
-            })
+            }))
         } else {
-            None
+            Ok(None)
         }
     }
 
     /// Converts the absolute reliability measure (e.g. "0.97 uptime") into a reliability factor
     /// which directly drives the fraction of received emission (e.g. "0.25 of base emission"), by
     /// rescaling it into the allowed reliability range (e.g. "required >0.96 uptime").
-    fn to_reliability_factor(reliability: Decimal, min_required_reliability: Decimal) -> Decimal {
-        let reliability_reserve = reliability.safe_sub(min_required_reliability).unwrap();
+    fn to_reliability_factor(
+        reliability: Decimal,
+        min_required_reliability: Decimal,
+    ) -> Result<Decimal, RuntimeError> {
+        let reliability_reserve = reliability.safe_sub(min_required_reliability).ok_or(
+            RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                ConsensusManagerError::UnexpectedDecimalComputationError,
+            )),
+        )?;
         if reliability_reserve.is_negative() {
-            return Decimal::zero();
+            return Ok(Decimal::zero());
         }
-        let max_allowed_unreliability = Decimal::one().safe_sub(min_required_reliability).unwrap();
+        let max_allowed_unreliability = Decimal::one().safe_sub(min_required_reliability).ok_or(
+            RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                ConsensusManagerError::UnexpectedDecimalComputationError,
+            )),
+        )?;
         if max_allowed_unreliability.is_zero() {
             // special-casing the dirac delta behavior
             if reliability == Decimal::one() {
-                return Decimal::one();
+                return Ok(Decimal::one());
             } else {
-                return Decimal::zero();
+                return Ok(Decimal::zero());
             }
         }
-        reliability_reserve
+        Ok(reliability_reserve
             .safe_div(max_allowed_unreliability)
-            .unwrap()
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::UnexpectedDecimalComputationError,
+                ),
+            ))?)
     }
 }

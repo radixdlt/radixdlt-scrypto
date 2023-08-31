@@ -292,69 +292,6 @@ PUBLISH_PACKAGE_ADVANCED
                     Map<String, Enum>(),
                     Tuple(
                         Map<String, Tuple>(
-                            "get_address" => Tuple(
-                                Enum<1u8>(
-                                    Tuple(
-                                        Enum<0u8>(),
-                                        Tuple(
-                                            1u32
-                                        )
-                                    )
-                                ),
-                                Enum<0u8>(
-                                    Enum<1u8>(
-                                        10u64
-                                    )
-                                ),
-                                Enum<0u8>(
-                                    Enum<0u8>(
-                                        129u8
-                                    )
-                                ),
-                                "MetadataTest_get_address"
-                            ),
-                            "get_array" => Tuple(
-                                Enum<1u8>(
-                                    Tuple(
-                                        Enum<0u8>(),
-                                        Tuple(
-                                            1u32
-                                        )
-                                    )
-                                ),
-                                Enum<0u8>(
-                                    Enum<1u8>(
-                                        11u64
-                                    )
-                                ),
-                                Enum<0u8>(
-                                    Enum<1u8>(
-                                        8u64
-                                    )
-                                ),
-                                "MetadataTest_get_array"
-                            ),
-                            "get_string" => Tuple(
-                                Enum<1u8>(
-                                    Tuple(
-                                        Enum<0u8>(),
-                                        Tuple(
-                                            1u32
-                                        )
-                                    )
-                                ),
-                                Enum<0u8>(
-                                    Enum<1u8>(
-                                        9u64
-                                    )
-                                ),
-                                Enum<0u8>(
-                                    Enum<0u8>(
-                                        12u8
-                                    )
-                                ),
-                                "MetadataTest_get_string"
-                            ),
                             "new" => Tuple(
                                 Enum<0u8>(),
                                 Enum<0u8>(
@@ -396,6 +333,27 @@ PUBLISH_PACKAGE_ADVANCED
                                     )
                                 ),
                                 "MetadataTest_new_with_initial_metadata"
+                            ),
+                            "set_string" => Tuple(
+                                Enum<1u8>(
+                                    Tuple(
+                                        Enum<0u8>(),
+                                        Tuple(
+                                            1u32
+                                        )
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        5u64
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<0u8>(
+                                        66u8
+                                    )
+                                ),
+                                "MetadataTest_set_string"
                             ),
                             "set_address" => Tuple(
                                 Enum<1u8>(
@@ -439,7 +397,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 "MetadataTest_set_array"
                             ),
-                            "set_string" => Tuple(
+                            "get_string" => Tuple(
                                 Enum<1u8>(
                                     Tuple(
                                         Enum<0u8>(),
@@ -450,15 +408,57 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        5u64
+                                        9u64
                                     )
                                 ),
                                 Enum<0u8>(
                                     Enum<0u8>(
-                                        66u8
+                                        12u8
                                     )
                                 ),
-                                "MetadataTest_set_string"
+                                "MetadataTest_get_string"
+                            ),
+                            "get_address" => Tuple(
+                                Enum<1u8>(
+                                    Tuple(
+                                        Enum<0u8>(),
+                                        Tuple(
+                                            1u32
+                                        )
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        10u64
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<0u8>(
+                                        129u8
+                                    )
+                                ),
+                                "MetadataTest_get_address"
+                            ),
+                            "get_array" => Tuple(
+                                Enum<1u8>(
+                                    Tuple(
+                                        Enum<0u8>(),
+                                        Tuple(
+                                            1u32
+                                        )
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        11u64
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        8u64
+                                    )
+                                ),
+                                "MetadataTest_get_array"
                             )
                         )
                     ),
@@ -474,7 +474,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("154c5f7fe81b2bc9cab1139439e5a297ca6bef5917218b01f0eaec64154b1379")
+    Blob("28b6ff1e5e7c399fd1cd39ab5f2566ced3e505ad1d78f90fae65a83be5afc543")
     Map<String, Tuple>(
         "address" => Tuple(
             Enum<1u8>(

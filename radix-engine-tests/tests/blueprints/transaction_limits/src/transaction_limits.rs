@@ -160,3 +160,31 @@ mod invoke_limits {
         pub fn callee(_: Vec<u8>) {}
     }
 }
+
+#[blueprint]
+mod buffer_limit {
+    struct BufferLimit {
+        state: Vec<u8>,
+    }
+
+    impl BufferLimit {
+        pub fn new() -> Global<BufferLimit> {
+            BufferLimit {
+                state: [0u8; 200 * 1024].to_vec(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize()
+        }
+
+        pub fn allocate_buffers(&self, n: u32) {
+            let handle =
+                ScryptoVmV1Api::actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::empty());
+            for _ in 0..n {
+                unsafe {
+                    scrypto::engine::wasm_api::field_entry::field_entry_read(handle);
+                }
+            }
+        }
+    }
+}

@@ -51,7 +51,7 @@ pub mod prelude {
     pub use crate::api::field_api::*;
     pub use crate::api::node_modules::metadata::*;
     pub use crate::api::*;
-    pub use crate::blueprints::resource::NonFungibleGlobalId;
+    pub use crate::blueprints::resource::*;
     pub use crate::macros::*;
     pub use crate::schema::*;
     pub use crate::traits::*;

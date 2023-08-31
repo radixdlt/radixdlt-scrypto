@@ -81,7 +81,7 @@ fn test_resource_manager() {
             "update_resource_metadata",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -108,7 +108,7 @@ fn mint_with_bad_granularity_should_fail() {
             "create_fungible_and_mint",
             manifest_args!(0u8, dec!("0.1")),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -185,7 +185,7 @@ fn mint_too_much_should_fail() {
                 dec!("1461501637330902918203684832717")
             ),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -223,10 +223,10 @@ fn can_mint_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &indexset!(NonFungibleLocalId::integer(1)),
+            [NonFungibleLocalId::integer(1)],
         )
         .mint_fungible(resource, 1)
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -257,10 +257,10 @@ fn cannot_mint_in_component_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &indexset!(NonFungibleLocalId::integer(1)),
+            [NonFungibleLocalId::integer(1)],
         )
         .call_method(component, "mint", manifest_args!(resource))
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -298,7 +298,7 @@ fn can_burn_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &indexset!(NonFungibleLocalId::integer(1)),
+            [NonFungibleLocalId::integer(1)],
         )
         .mint_fungible(resource, 1)
         .burn_all_from_worktop(resource)
@@ -332,7 +332,7 @@ fn cannot_burn_in_component_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &indexset!(NonFungibleLocalId::integer(1)),
+            [NonFungibleLocalId::integer(1)],
         )
         .mint_fungible(resource, 1)
         .take_all_from_worktop(resource, "to_burn")
@@ -372,7 +372,7 @@ fn test_fungible_resource_amount_for_withdrawal() {
             "fungible_resource_amount_for_withdrawal",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -396,7 +396,7 @@ fn test_non_fungible_resource_amount_for_withdrawal() {
             "non_fungible_resource_amount_for_withdrawal",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -420,7 +420,7 @@ fn test_fungible_resource_take_advanced() {
             "fungible_resource_take_advanced",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -532,7 +532,7 @@ fn test_non_fungible_resource_take_advanced() {
             "non_fungible_resource_take_advanced",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -556,7 +556,7 @@ fn can_use_fungible_types_in_interface() {
             "test_fungible_types",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -580,7 +580,7 @@ fn can_use_non_fungible_types_in_interface() {
             "test_non_fungible_types",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account, None)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

@@ -17,7 +17,6 @@ pub struct HrpSet {
     pub pool: String,
     pub transaction_tracker: String,
     pub internal_vault: String,
-    pub internal_account: String,
     pub internal_component: String,
     pub internal_key_value_store: String,
 
@@ -48,7 +47,6 @@ impl HrpSet {
             EntityType::GlobalVirtualEd25519Identity => &self.identity,
             EntityType::InternalFungibleVault => &self.internal_vault,
             EntityType::InternalNonFungibleVault => &self.internal_vault,
-            EntityType::InternalAccount => &self.internal_account,
             EntityType::InternalGenericComponent => &self.internal_component,
             EntityType::InternalKeyValueStore => &self.internal_key_value_store,
             EntityType::GlobalOneResourcePool
@@ -75,7 +73,6 @@ impl From<&NetworkDefinition> for HrpSet {
             pool: format!("pool_{}", suffix),
             transaction_tracker: format!("transactiontracker_{}", suffix),
             internal_vault: format!("internal_vault_{}", suffix),
-            internal_account: format!("internal_account_{}", suffix),
             internal_component: format!("internal_component_{}", suffix),
             internal_key_value_store: format!("internal_keyvaluestore_{}", suffix),
 

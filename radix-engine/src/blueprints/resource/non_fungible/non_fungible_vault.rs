@@ -416,7 +416,10 @@ impl NonFungibleVaultBlueprint {
         })?;
 
         // Take
-        balance.amount = balance.amount.safe_sub(n).unwrap();
+        balance.amount = balance
+            .amount
+            .safe_sub(n)
+            .ok_or_else(|| VaultError::DecimalOverflow)?;
         let taken = {
             let ids: Vec<(NonFungibleLocalId, NonFungibleVaultNonFungibleEntryPayload)> = api
                 .actor_index_drain_typed(
@@ -487,11 +490,11 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let amount = Self::liquid_amount(api)?
+        Self::liquid_amount(api)?
             .safe_add(Self::locked_amount(api)?)
-            .unwrap();
-
-        Ok(amount)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::DecimalOverflow),
+            ))
     }
 
     pub fn contains_non_fungible<Y>(
@@ -921,7 +924,12 @@ impl NonFungibleVaultBlueprint {
                 ApplicationError::NonFungibleVaultError(NonFungibleVaultError::NotEnoughAmount),
             ));
         }
-        balance.amount = balance.amount.safe_sub(n).unwrap();
+        balance.amount = balance
+            .amount
+            .safe_sub(n)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::DecimalOverflow),
+            ))?;
 
         let taken = {
             let ids: Vec<(NonFungibleLocalId, NonFungibleVaultNonFungibleEntryPayload)> = api
@@ -960,7 +968,13 @@ impl NonFungibleVaultBlueprint {
             .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
             .into_latest();
 
-        substate_ref.amount = substate_ref.amount.safe_sub(ids.len()).unwrap();
+        substate_ref.amount =
+            substate_ref
+                .amount
+                .safe_sub(ids.len())
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::DecimalOverflow),
+                ))?;
 
         // TODO: Batch remove
         for id in ids {
@@ -1008,7 +1022,13 @@ impl NonFungibleVaultBlueprint {
             .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
             .into_latest();
 
-        vault.amount = vault.amount.safe_add(resource.ids.len()).unwrap();
+        vault.amount =
+            vault
+                .amount
+                .safe_add(resource.ids.len())
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::DecimalOverflow),
+                ))?;
 
         // update liquidity
         // TODO: Batch update
