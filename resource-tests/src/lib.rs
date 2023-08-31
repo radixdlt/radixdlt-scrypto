@@ -1,5 +1,6 @@
 pub mod consensus_manager;
 pub mod one_pool;
+pub mod two_pool;
 pub mod validator;
 
 use radix_engine::transaction::TransactionOutcome;
