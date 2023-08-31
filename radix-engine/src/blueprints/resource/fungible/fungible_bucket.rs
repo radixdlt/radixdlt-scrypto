@@ -77,7 +77,9 @@ impl FungibleBucketBlueprint {
 
         // Apply withdraw strategy
         let divisibility = Self::get_divisibility(api)?;
-        let amount = amount.for_withdrawal(divisibility, withdraw_strategy);
+        let amount = amount
+            .for_withdrawal(divisibility, withdraw_strategy)
+            .ok_or(BucketError::DecimalOverflow)?;
 
         // Check amount
         if !(check_fungible_amount(&amount, divisibility)) {

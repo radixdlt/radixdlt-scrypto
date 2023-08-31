@@ -16,6 +16,7 @@ use radix_engine_interface::types::*;
 pub enum NonFungibleVaultError {
     MissingId(NonFungibleLocalId),
     NotEnoughAmount,
+    DecimalOverflow,
 }
 
 declare_native_blueprint_state! {
@@ -408,7 +409,12 @@ impl NonFungibleVaultBlueprint {
             }
         }
 
-        let amount = amount.for_withdrawal(0, withdraw_strategy);
+        let amount =
+            amount
+                .for_withdrawal(0, withdraw_strategy)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::DecimalOverflow),
+                ))?;
 
         // Check amount
         let n = check_non_fungible_amount(&amount).map_err(|_| {
