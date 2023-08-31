@@ -490,7 +490,7 @@ where
     fn sys_generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let ruid = self.api.generate_ruid()?;
 
-        self.allocate_buffer(scrypto_encode(&ruid).expect("Failed to encode RUID"))
+        self.allocate_buffer(ruid.to_vec())
     }
 
     fn costing_get_execution_cost_unit_limit(

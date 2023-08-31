@@ -295,9 +295,9 @@ impl ScryptoVmV1Api {
     }
 
     pub fn sys_generate_ruid() -> [u8; 32] {
-        let actor = copy_buffer(unsafe { system::sys_generate_ruid() });
+        let ruid = copy_buffer(unsafe { system::sys_generate_ruid() });
 
-        scrypto_decode(&actor).unwrap()
+        ruid.try_into().unwrap()
     }
 
     pub fn sys_panic(message: String) {
