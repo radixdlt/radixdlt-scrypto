@@ -474,11 +474,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-<<<<<<< HEAD
-    Blob("4291c79a34b22077c06bab78518125aa6ab6324e13da970bb63e9547997bf528")
-=======
-    Blob("28b6ff1e5e7c399fd1cd39ab5f2566ced3e505ad1d78f90fae65a83be5afc543")
->>>>>>> feature/basic-wasm-opt
+    Blob("1a702df3b8fe9ab060ced77951a1d1080bed24c008b124eed1190d6608a84e3e")
     Map<String, Tuple>(
         "address" => Tuple(
             Enum<1u8>(

@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,     7.997651746646853074,    100.0%
-- Execution Cost (XRD)                                                     ,                0.3231038,      4.0%
+Total Cost (XRD)                                                           ,     7.996285346646853074,    100.0%
+- Execution Cost (XRD)                                                     ,                0.3217374,      4.0%
 - Finalization Cost (XRD)                                                  ,                2.4964143,     31.2%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
-- Storage Cost (XRD)                                                       ,     5.178133646646853074,     64.7%
+- Storage Cost (XRD)                                                       ,     5.178133646646853074,     64.8%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  6462076,    100.0%
+Execution Cost Breakdown                                                   ,                  6434748,    100.0%
 - AllocateNodeId                                                           ,                     2288,      0.0%
 - BeforeInvoke                                                             ,                    10824,      0.2%
 - CloseSubstate                                                            ,                    51975,      0.8%
@@ -19,22 +19,22 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   121600,      1.9%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43214,      0.7%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    12970,      0.2%
-- OpenSubstate::GlobalPackage                                              ,                  3189647,     49.4%
+- OpenSubstate::GlobalPackage                                              ,                  3180239,     49.4%
 - OpenSubstate::InternalFungibleVault                                      ,                    85460,      1.3%
 - OpenSubstate::InternalGenericComponent                                   ,                    50791,      0.8%
 - OpenSubstate::InternalKeyValueStore                                      ,                    40474,      0.6%
 - OpenSubstate::InternalNonFungibleVault                                   ,                   118359,      1.8%
 - PinNode                                                                  ,                    48963,      0.8%
-- PrepareWasmCode                                                          ,                   566346,      8.8%
+- PrepareWasmCode                                                          ,                   557386,      8.7%
 - QueryActor                                                               ,                     3000,      0.0%
-- ReadSubstate                                                             ,                   842816,     13.0%
+- ReadSubstate                                                             ,                   833856,     13.0%
 - RunNativeCode::Worktop_drain                                             ,                    13505,      0.2%
 - RunNativeCode::Worktop_drop                                              ,                    15385,      0.2%
 - RunNativeCode::Worktop_put                                               ,                    18262,      0.3%
 - RunNativeCode::create                                                    ,                    31390,      0.5%
 - RunNativeCode::create_empty_vault_NonFungibleResourceManager             ,                    60214,      0.9%
 - RunNativeCode::create_with_data                                          ,                    27941,      0.4%
-- RunNativeCode::create_with_initial_supply_NonFungibleResourceManager     ,                   177210,      2.7%
+- RunNativeCode::create_with_initial_supply_NonFungibleResourceManager     ,                   177210,      2.8%
 - RunNativeCode::get_amount_NonFungibleBucket                              ,                    17866,      0.3%
 - RunNativeCode::get_non_fungible_local_ids_NonFungibleBucket              ,                     8361,      0.1%
 - RunNativeCode::lock_fee                                                  ,                    48766,      0.8%
