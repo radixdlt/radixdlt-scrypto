@@ -36,8 +36,6 @@ fn fuzz_consensus() {
     }
 
     println!("{:#?}", summed_results);
-
-    panic!("oops");
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -118,7 +116,7 @@ impl ConsensusFuzzTest {
         let mut fuzz_results: BTreeMap<ConsensusFuzzAction, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
 
-        for i in 0u8..100u8 {
+        for i in 0u64..1000u64 {
             // Build new transaction
             let (fuzz_action, builder, trivial) = {
                 let builder = ManifestBuilder::new();
@@ -163,7 +161,6 @@ impl ConsensusFuzzTest {
                     )],
                 );
                 let result = receipt.expect_commit_ignore_outcome();
-                println!("{:?}", result.outcome);
 
                 result
                     .new_component_addresses()

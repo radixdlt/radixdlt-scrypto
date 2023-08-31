@@ -17,7 +17,7 @@ pub enum ConsensusManagerFuzzAction {
 impl ConsensusManagerFuzzAction {
     pub fn add_to_manifest(
         &self,
-        uuid: u8,
+        uuid: u64,
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
         account_address: ComponentAddress,
