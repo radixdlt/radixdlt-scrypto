@@ -173,8 +173,8 @@ fn call_module_method(
 
 fn call_function(
     mut caller: Caller<'_, HostState>,
-    package_node_id_ptr: u32,
-    package_node_id_len: u32,
+    package_address_ptr: u32,
+    package_address_len: u32,
     blueprint_name_ptr: u32,
     blueprint_name_len: u32,
     ident_ptr: u32,
@@ -184,11 +184,11 @@ fn call_function(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let package_node_id = read_memory(
+    let package_address = read_memory(
         caller.as_context_mut(),
         memory,
-        package_node_id_ptr,
-        package_node_id_len,
+        package_address_ptr,
+        package_address_len,
     )?;
     let blueprint_name = read_memory(
         caller.as_context_mut(),
@@ -200,7 +200,7 @@ fn call_function(
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .blueprint_call(package_node_id, blueprint_name, ident, args)
+        .blueprint_call(package_address, blueprint_name, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -250,8 +250,8 @@ fn new_key_value_store(
 
 fn allocate_global_address(
     mut caller: Caller<'_, HostState>,
-    package_node_id_ptr: u32,
-    package_node_id_len: u32,
+    package_address_ptr: u32,
+    package_address_len: u32,
     blueprint_name_ptr: u32,
     blueprint_name_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -262,8 +262,8 @@ fn allocate_global_address(
             read_memory(
                 caller.as_context_mut(),
                 memory,
-                package_node_id_ptr,
-                package_node_id_len,
+                package_address_ptr,
+                package_address_len,
             )?,
             read_memory(
                 caller.as_context_mut(),
@@ -370,8 +370,8 @@ fn instance_of(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
     component_id_len: u32,
-    package_node_id_ptr: u32,
-    package_node_id_len: u32,
+    package_address_ptr: u32,
+    package_address_len: u32,
     blueprint_name_ptr: u32,
     blueprint_name_len: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
@@ -387,8 +387,8 @@ fn instance_of(
         read_memory(
             caller.as_context_mut(),
             memory,
-            package_node_id_ptr,
-            package_node_id_len,
+            package_address_ptr,
+            package_address_len,
         )?,
         read_memory(
             caller.as_context_mut(),
@@ -768,8 +768,8 @@ impl WasmiModule {
         let host_blueprint_call = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             package_node_id_ptr: u32,
-             package_node_id_len: u32,
+             package_address_ptr: u32,
+             package_address_len: u32,
              blueprint_name_ptr: u32,
              blueprint_name_len: u32,
              ident_ptr: u32,
@@ -779,8 +779,8 @@ impl WasmiModule {
              -> Result<u64, Trap> {
                 call_function(
                     caller,
-                    package_node_id_ptr,
-                    package_node_id_len,
+                    package_address_ptr,
+                    package_address_len,
                     blueprint_name_ptr,
                     blueprint_name_len,
                     ident_ptr,
@@ -824,15 +824,15 @@ impl WasmiModule {
         let host_allocate_global_address = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             package_node_id_ptr: u32,
-             package_node_id_len: u32,
+             package_address_ptr: u32,
+             package_address_len: u32,
              blueprint_name_ptr: u32,
              blueprint_name_len: u32|
              -> Result<u64, Trap> {
                 allocate_global_address(
                     caller,
-                    package_node_id_ptr,
-                    package_node_id_len,
+                    package_address_ptr,
+                    package_address_len,
                     blueprint_name_ptr,
                     blueprint_name_len,
                 )
@@ -927,8 +927,8 @@ impl WasmiModule {
             |caller: Caller<'_, HostState>,
              object_id_ptr: u32,
              object_id_len: u32,
-             package_node_id_ptr: u32,
-             package_node_id_len: u32,
+             package_address_ptr: u32,
+             package_address_len: u32,
              blueprint_name_ptr: u32,
              blueprint_name_len: u32|
              -> Result<u32, Trap> {
@@ -936,8 +936,8 @@ impl WasmiModule {
                     caller,
                     object_id_ptr,
                     object_id_len,
-                    package_node_id_ptr,
-                    package_node_id_len,
+                    package_address_ptr,
+                    package_address_len,
                     blueprint_name_ptr,
                     blueprint_name_len,
                 )

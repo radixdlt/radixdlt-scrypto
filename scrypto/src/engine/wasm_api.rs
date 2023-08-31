@@ -33,8 +33,8 @@ pub mod blueprint {
     super::wasm_extern_c! {
         /// Invokes a blueprint function
         pub fn blueprint_call(
-            package_node_id_ptr: *const u8,
-            package_node_id_len: usize,
+            package_address_ptr: *const u8,
+            package_address_len: usize,
             blueprint_name_ptr: *const u8,
             blueprint_name_len: usize,
             ident_ptr: *const u8,
@@ -52,8 +52,8 @@ pub mod addr {
     super::wasm_extern_c! {
         /// Reserves a global address for a given blueprint
         pub fn address_allocate(
-            package_node_id_ptr: *const u8,
-            package_node_id_len: usize,
+            package_address_ptr: *const u8,
+            package_address_len: usize,
             blueprint_name_ptr: *const u8,
             blueprint_name_len: usize,
         ) -> Buffer;
@@ -94,8 +94,8 @@ pub mod object {
         pub fn object_instance_of(
             obj_id_ptr: *const u8,
             obj_id_len: usize,
-            package_node_id_ptr: *const u8,
-            package_node_id_len: usize,
+            package_address_ptr: *const u8,
+            package_address_len: usize,
             blueprint_name_ptr: *const u8,
             blueprint_name_len: usize,
         ) -> u32;

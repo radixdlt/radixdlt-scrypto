@@ -41,7 +41,7 @@ pub trait WasmRuntime {
 
     fn blueprint_call(
         &mut self,
-        package_node_id: Vec<u8>,
+        package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
@@ -55,7 +55,7 @@ pub trait WasmRuntime {
 
     fn address_allocate(
         &mut self,
-        package_node_id: Vec<u8>,
+        package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
@@ -109,7 +109,7 @@ pub trait WasmRuntime {
     fn instance_of(
         &mut self,
         object_id: Vec<u8>,
-        package_node_id: Vec<u8>,
+        package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>>;
 

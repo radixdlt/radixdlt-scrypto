@@ -71,7 +71,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
 
     fn blueprint_call(
         &mut self,
-        package_node_id: Vec<u8>,
+        package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
@@ -89,7 +89,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
 
     fn address_allocate(
         &mut self,
-        package_node_id: Vec<u8>,
+        package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
@@ -217,7 +217,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
     fn instance_of(
         &mut self,
         component_id: Vec<u8>,
-        package_node_id: Vec<u8>,
+        package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))

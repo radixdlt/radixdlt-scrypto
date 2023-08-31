@@ -41,10 +41,10 @@ where
     }
 
     pub fn parse_blueprint_id(
-        package_node_id: Vec<u8>,
+        package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
     ) -> Result<(PackageAddress, String), InvokeError<WasmRuntimeError>> {
-        let package_address = PackageAddress::try_from(package_node_id.as_slice())
+        let package_address = PackageAddress::try_from(package_address.as_slice())
             .map_err(|_| WasmRuntimeError::InvalidPackageAddress)?;
         let blueprint_name =
             String::from_utf8(blueprint_name).map_err(|_| WasmRuntimeError::InvalidString)?;
@@ -146,13 +146,13 @@ where
 
     fn blueprint_call(
         &mut self,
-        package_node_id: Vec<u8>,
+        package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
         function_ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let (package_address, blueprint_name) =
-            Self::parse_blueprint_id(package_node_id, blueprint_name)?;
+            Self::parse_blueprint_id(package_address, blueprint_name)?;
         let function_ident =
             String::from_utf8(function_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
@@ -185,11 +185,11 @@ where
 
     fn address_allocate(
         &mut self,
-        package_node_id: Vec<u8>,
+        package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let (package_address, blueprint_name) =
-            Self::parse_blueprint_id(package_node_id, blueprint_name)?;
+            Self::parse_blueprint_id(package_address, blueprint_name)?;
 
         let address_reservation_and_address = self.api.allocate_global_address(BlueprintId {
             package_address,
@@ -400,7 +400,7 @@ where
     fn instance_of(
         &mut self,
         object_id: Vec<u8>,
-        package_node_id: Vec<u8>,
+        package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         let object_id = NodeId(
@@ -408,7 +408,7 @@ where
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
         let (package_address, blueprint_name) =
-            Self::parse_blueprint_id(package_node_id, blueprint_name)?;
+            Self::parse_blueprint_id(package_address, blueprint_name)?;
         let blueprint_id = self.api.get_blueprint_id(&object_id)?;
 
         if blueprint_id.package_address.eq(&package_address)
