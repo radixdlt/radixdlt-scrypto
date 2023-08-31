@@ -111,7 +111,7 @@ fn bench_spin_loop(c: &mut Criterion) {
             let fee_reserve = SystemLoanFeeReserve::new(
                 &CostingParameters::default(),
                 &TransactionCostingParameters {
-                    free_credit_in_xrd: Decimal::try_from(FREE_CREDIT_IN_XRD).unwrap(),
+                    free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap(),
                     tip_percentage: DEFAULT_TIP_PERCENTAGE,
                 },
                 false,
