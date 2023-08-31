@@ -94,7 +94,6 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-
         tests-dir: scrypto
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
@@ -106,7 +105,7 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto-derive
-
+  
   scrypto-integration-tests:
     name: Run Scrypto integration tests
     runs-on: ${{ matrix.os }}
@@ -125,7 +124,7 @@ jobs:
       with:
         tests-dir: scrypto-derive-tests
         flags: --no-default-features --features alloc
-
+  
   scrypto-examples:
     name: Run Scrypto examples
     runs-on: ${{ matrix.os }}

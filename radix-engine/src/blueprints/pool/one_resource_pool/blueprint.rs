@@ -588,7 +588,9 @@ impl OneResourcePoolBlueprint {
         let amount_owed = if pool_resource_divisibility == 18 {
             amount_owed
         } else {
-            amount_owed.round(pool_resource_divisibility, RoundingMode::ToNegativeInfinity)
+            amount_owed
+                .safe_round(pool_resource_divisibility, RoundingMode::ToNegativeInfinity)
+                .ok_or(OneResourcePoolError::DecimalOverflowError)?
         };
 
         Ok(amount_owed)
