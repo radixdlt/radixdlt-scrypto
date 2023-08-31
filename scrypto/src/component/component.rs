@@ -84,7 +84,7 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
     fn instantiate(self) -> Owned<Self> {
         let node_id = ScryptoVmV1Api::object_new(
             Self::BLUEPRINT_NAME,
-            btreemap![0u8 => FieldValue::new(&self)],
+            indexmap![0u8 => FieldValue::new(&self)],
         );
 
         let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
@@ -269,7 +269,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         mut self,
         royalties: (C::Royalties, RoleAssignmentInit),
     ) -> Self {
-        let mut royalty_amounts = BTreeMap::new();
+        let mut royalty_amounts = index_map_new();
         for (method, (royalty, updatable)) in royalties.0.to_mapping() {
             royalty_amounts.insert(method, (royalty, !updatable));
         }
@@ -290,8 +290,8 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     pub fn globalize(mut self) -> Global<C> {
-        let mut modules = BTreeMap::new();
-        let mut roles = BTreeMap::new();
+        let mut modules = index_map_new();
+        let mut roles = index_map_new();
 
         // Main
         {
@@ -465,12 +465,10 @@ trait TypeCheckable {
 
 impl<O: HasTypeInfo> TypeCheckable for O {
     fn check(node_id: &NodeId) -> Result<(), ComponentCastError> {
-        let blueprint_id = ScryptoVmV1Api::object_get_blueprint_id(node_id);
-        let to = O::blueprint_id();
-        if !blueprint_id.eq(&to) {
-            return Err(ComponentCastError::CannotCast {
-                actual: blueprint_id,
-                to,
+        if !ScryptoVmV1Api::object_instance_of(node_id, &O::blueprint_id()) {
+            return Err(ComponentCastError::InvalidCast {
+                node_id: *node_id,
+                blueprint_id: O::blueprint_id(),
             });
         }
 
@@ -486,9 +484,9 @@ impl TypeCheckable for AnyComponent {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum ComponentCastError {
-    CannotCast {
-        to: BlueprintId,
-        actual: BlueprintId,
+    InvalidCast {
+        node_id: NodeId,
+        blueprint_id: BlueprintId,
     },
 }
 

@@ -2,7 +2,7 @@ use crate::blueprints::resource::Proof;
 use crate::*;
 use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::blueprints::resource::Bucket;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::IndexSet;
 use sbor::rust::prelude::*;
 
 pub const NON_FUNGIBLE_VAULT_BLUEPRINT: &str = "NonFungibleVault";
@@ -11,7 +11,7 @@ pub const NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT: &str = "take_non_fungible
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleVaultTakeNonFungiblesInput {
-    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+    pub non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
 }
 
 pub type NonFungibleVaultTakeNonFungiblesOutput = Bucket;
@@ -23,7 +23,7 @@ pub struct NonFungibleVaultGetNonFungibleLocalIdsInput {
     pub limit: u32,
 }
 
-pub type NonFungibleVaultGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
+pub type NonFungibleVaultGetNonFungibleLocalIdsOutput = IndexSet<NonFungibleLocalId>;
 
 pub const NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT: &str = "contains_non_fungible";
 
@@ -38,7 +38,7 @@ pub const NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT: &str = "recall_non_fung
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleVaultRecallNonFungiblesInput {
-    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+    pub non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
 }
 
 pub type NonFungibleVaultRecallNonFungiblesOutput = Bucket;
@@ -48,7 +48,7 @@ pub const NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str =
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleVaultCreateProofOfNonFungiblesInput {
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
 }
 
 pub type NonFungibleVaultCreateProofOfNonFungiblesOutput = Proof;
@@ -57,7 +57,7 @@ pub const NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT: &str = "lock_non_fungible
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleVaultLockNonFungiblesInput {
-    pub local_ids: BTreeSet<NonFungibleLocalId>,
+    pub local_ids: IndexSet<NonFungibleLocalId>,
 }
 
 pub type NonFungibleVaultLockNonFungiblesOutput = ();
@@ -66,7 +66,7 @@ pub const NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT: &str = "unlock_non_fung
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleVaultUnlockNonFungiblesInput {
-    pub local_ids: BTreeSet<NonFungibleLocalId>,
+    pub local_ids: IndexSet<NonFungibleLocalId>,
 }
 
 pub type NonFungibleVaultUnlockNonFungiblesOutput = ();
@@ -75,7 +75,7 @@ pub const NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT: &str = "burn_non_fungible
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleVaultBurnNonFungiblesInput {
-    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+    pub non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
 }
 
 pub type NonFungibleVaultBurnNonFungiblesOutput = ();

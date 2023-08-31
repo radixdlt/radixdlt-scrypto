@@ -56,7 +56,7 @@ impl MultiResourcePoolBlueprint {
         let feature_set = MultiResourcePoolFeatureSet::all_features();
         let state = MultiResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = BTreeMap::new();
+        let mut functions = index_map_new();
 
         functions.insert(
             MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
@@ -183,7 +183,7 @@ impl MultiResourcePoolBlueprint {
         BlueprintDefinitionInit {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
-            dependencies: btreeset!(),
+            dependencies: indexset!(),
             feature_set,
 
             schema: BlueprintSchemaInit {
@@ -215,7 +215,7 @@ impl MultiResourcePoolBlueprint {
     }
 
     pub fn instantiate<Y>(
-        resource_addresses: BTreeSet<ResourceAddress>,
+        resource_addresses: IndexSet<ResourceAddress>,
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
         address_reservation: Option<GlobalAddressReservation>,
@@ -286,7 +286,7 @@ impl MultiResourcePoolBlueprint {
         // Creating the pool nodes
         let role_assignment = RoleAssignment::create(
             owner_role,
-            btreemap! {
+            indexmap! {
                 ObjectModuleId::Main => roles_init! {
                     RoleKey { key: POOL_MANAGER_ROLE.to_owned() } => pool_manager_rule;
                 }
@@ -315,7 +315,7 @@ impl MultiResourcePoolBlueprint {
             };
             api.new_simple_object(
                 MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
-                btreemap! {
+                indexmap! {
                     MultiResourcePoolField::State.field_index() => FieldValue::new(&VersionedMultiResourcePoolState::V1(substate)),
                 },
             )?
@@ -323,7 +323,7 @@ impl MultiResourcePoolBlueprint {
 
         api.globalize(
             object_id,
-            btreemap!(
+            indexmap!(
                 ModuleId::RoleAssignment => role_assignment.0,
                 ModuleId::Metadata => metadata.0,
                 ModuleId::Royalty => royalty.0,
@@ -411,7 +411,7 @@ impl MultiResourcePoolBlueprint {
                 .vaults
                 .keys()
                 .map(|resource_address| (*resource_address, Decimal::ZERO))
-                .collect::<BTreeMap<ResourceAddress, Decimal>>();
+                .collect::<IndexMap<ResourceAddress, Decimal>>();
             for bucket in buckets.iter() {
                 let bucket_resource_address = bucket.resource_address(api)?;
                 let bucket_amount = bucket.amount(api)?;
@@ -439,7 +439,7 @@ impl MultiResourcePoolBlueprint {
                         None
                     }
                 })
-                .collect::<BTreeSet<ResourceAddress>>();
+                .collect::<IndexSet<ResourceAddress>>();
 
             if resources_with_missing_buckets.len() != 0 {
                 Err(MultiResourcePoolError::MissingOrEmptyBuckets {
@@ -516,7 +516,8 @@ impl MultiResourcePoolBlueprint {
                 }
             }
 
-            let mut vaults_and_buckets = BTreeMap::<ResourceAddress, (Vault, Bucket)>::new();
+            let mut vaults_and_buckets: IndexMap<ResourceAddress, (Vault, Bucket)> =
+                index_map_new();
             for bucket in buckets.into_iter() {
                 let bucket_resource_address = bucket.resource_address(api)?;
 
@@ -556,7 +557,7 @@ impl MultiResourcePoolBlueprint {
                 .unwrap();
 
             let mut change = vec![];
-            let mut contributed_resources = BTreeMap::new();
+            let mut contributed_resources = index_map_new();
             for (resource_address, (mut vault, bucket)) in vaults_and_buckets.into_iter() {
                 let divisibility = ResourceManager(resource_address).resource_type(api)
                     .map(|resource_type| {
@@ -635,7 +636,7 @@ impl MultiResourcePoolBlueprint {
             .pool_unit_resource_manager
             .total_supply(api)?
             .expect("Total supply is always enabled for pool unit resource.");
-        let mut reserves = BTreeMap::new();
+        let mut reserves = index_map_new();
         for (resource_address, vault) in substate.vaults.iter() {
             let amount = vault.amount(api)?;
             let divisibility = ResourceManager(*resource_address).resource_type(api)
@@ -761,7 +762,7 @@ impl MultiResourcePoolBlueprint {
             return Err(MultiResourcePoolError::InvalidGetRedemptionAmount.into());
         }
 
-        let mut reserves = BTreeMap::new();
+        let mut reserves = index_map_new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;
             let divisibility = ResourceManager(resource_address).resource_type(api)
@@ -804,7 +805,7 @@ impl MultiResourcePoolBlueprint {
             .map(|(resource_address, vault)| {
                 vault.amount(api).map(|amount| (resource_address, amount))
             })
-            .collect::<Result<BTreeMap<_, _>, _>>()?;
+            .collect::<Result<IndexMap<_, _>, _>>()?;
 
         api.field_close(handle)?;
         Ok(amounts)
@@ -834,8 +835,8 @@ impl MultiResourcePoolBlueprint {
     fn calculate_amount_owed(
         pool_units_to_redeem: Decimal,
         pool_units_total_supply: Decimal,
-        reserves: BTreeMap<ResourceAddress, ReserveResourceInformation>,
-    ) -> Result<BTreeMap<ResourceAddress, Decimal>, RuntimeError> {
+        reserves: IndexMap<ResourceAddress, ReserveResourceInformation>,
+    ) -> Result<IndexMap<ResourceAddress, Decimal>, RuntimeError> {
         reserves
             .into_iter()
             .map(

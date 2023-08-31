@@ -19,7 +19,7 @@ pub struct TypeMetadata {
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ChildNames {
     NamedFields(Vec<Cow<'static, str>>),
-    EnumVariants(BTreeMap<u8, TypeMetadata>),
+    EnumVariants(IndexMap<u8, TypeMetadata>),
 }
 
 impl TypeMetadata {
@@ -48,7 +48,7 @@ impl TypeMetadata {
         }
     }
 
-    pub fn enum_variants(name: &'static str, variant_naming: BTreeMap<u8, TypeMetadata>) -> Self {
+    pub fn enum_variants(name: &'static str, variant_naming: IndexMap<u8, TypeMetadata>) -> Self {
         Self {
             type_name: Some(Cow::Borrowed(name)),
             child_names: Some(ChildNames::EnumVariants(variant_naming)),

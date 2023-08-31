@@ -7,7 +7,7 @@ use radix_engine_interface::data::scrypto::{
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
@@ -74,7 +74,7 @@ impl Worktop {
     pub fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
@@ -149,7 +149,7 @@ impl Worktop {
     pub fn assert_contains_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), E>
     where

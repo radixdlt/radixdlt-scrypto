@@ -17,10 +17,10 @@ pub struct BurnFungibleResourceEvent {
 
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct MintNonFungibleResourceEvent {
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct BurnNonFungibleResourceEvent {
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
 }

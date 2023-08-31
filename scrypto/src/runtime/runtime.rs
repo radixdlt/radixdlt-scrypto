@@ -31,9 +31,13 @@ impl Runtime {
     pub fn allocate_component_address(
         blueprint_id: BlueprintId,
     ) -> (GlobalAddressReservation, ComponentAddress) {
-        let blueprint_id = scrypto_encode(&blueprint_id).unwrap();
         let bytes = copy_buffer(unsafe {
-            addr::address_allocate(blueprint_id.as_ptr(), blueprint_id.len())
+            addr::address_allocate(
+                blueprint_id.package_address.as_ref().as_ptr(),
+                blueprint_id.package_address.as_ref().len(),
+                blueprint_id.blueprint_name.as_ptr(),
+                blueprint_id.blueprint_name.len(),
+            )
         });
         scrypto_decode(&bytes).unwrap()
     }
@@ -61,7 +65,11 @@ impl Runtime {
 
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
-        ScryptoVmV1Api::actor_get_blueprint_id().package_address
+        ScryptoVmV1Api::actor_get_package_address()
+    }
+
+    pub fn blueprint_name() -> String {
+        ScryptoVmV1Api::actor_get_blueprint_name()
     }
 
     pub fn package_token() -> NonFungibleGlobalId {

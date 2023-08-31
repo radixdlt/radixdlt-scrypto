@@ -41,22 +41,6 @@ mod secret {
                 .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
-
-        pub fn check_info_of_local_component(
-            expected_package_address: PackageAddress,
-            expected_blueprint_name: String,
-        ) -> Global<Secret> {
-            let local_component = Self { secret: 12345 }.instantiate();
-
-            let blueprint = local_component.blueprint();
-
-            assert_eq!(blueprint.package_address, expected_package_address);
-            assert_eq!(blueprint.blueprint_name, expected_blueprint_name);
-
-            local_component
-                .prepare_to_globalize(OwnerRole::None)
-                .globalize()
-        }
     }
 }
 

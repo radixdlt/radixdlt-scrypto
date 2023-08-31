@@ -17,7 +17,7 @@ pub enum ParseResourceSpecifierError {
 #[derive(Debug, PartialEq, Eq)]
 pub enum ResourceSpecifier {
     Amount(Decimal, ResourceAddress),
-    Ids(BTreeSet<NonFungibleLocalId>, ResourceAddress),
+    Ids(IndexSet<NonFungibleLocalId>, ResourceAddress),
 }
 
 impl FromStr for ResourceSpecifier {
@@ -137,7 +137,7 @@ pub fn parse_resource_specifier(
         let non_fungible_local_ids = tokens[1]
             .split(',')
             .map(|s| NonFungibleLocalId::from_str(s.trim()))
-            .collect::<Result<BTreeSet<_>, _>>()
+            .collect::<Result<IndexSet<_>, _>>()
             .map_err(ParseResourceSpecifierError::InvalidNonFungibleLocalId)?;
 
         Ok(ResourceSpecifier::Ids(
@@ -193,7 +193,7 @@ mod test {
         assert_eq!(
             resource_specifier,
             ResourceSpecifier::Ids(
-                BTreeSet::from([NonFungibleLocalId::bytes(vec![
+                IndexSet::from([NonFungibleLocalId::bytes(vec![
                     31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124, 185,
                     57, 234, 210, 144, 88, 253, 255, 44
                 ])
@@ -220,7 +220,7 @@ mod test {
         assert_eq!(
             resource_specifier,
             ResourceSpecifier::Ids(
-                BTreeSet::from([
+                IndexSet::from([
                     NonFungibleLocalId::bytes(vec![
                         31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124,
                         185, 57, 234, 210, 144, 88, 253, 255, 44

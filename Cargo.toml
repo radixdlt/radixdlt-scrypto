@@ -21,7 +21,7 @@ members = [
     "scrypto-derive",
     "scrypto",
     "scrypto-test",
-    "scrypto-tests",
+    "scrypto-derive-tests",
     "scrypto-unit",
     "transaction",
     "transaction-scenarios",

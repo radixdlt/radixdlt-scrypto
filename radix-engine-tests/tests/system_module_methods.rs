@@ -113,7 +113,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
         {
             match export_name {
                 "test" => {
-                    let node_id = api.new_simple_object(BLUEPRINT_NAME, btreemap![])?;
+                    let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap![])?;
                     let _ = api.call_module_method(
                         &node_id,
                         ModuleId::Metadata,
@@ -183,13 +183,13 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                 "test" => {
                     let child = api.new_simple_object(
                         BLUEPRINT_NAME,
-                        btreemap! {
+                        indexmap! {
                             0u8 => FieldValue::new(&Option::<Own>::None),
                         },
                     )?;
                     let parent = api.new_simple_object(
                         BLUEPRINT_NAME,
-                        btreemap! {
+                        indexmap! {
                             0u8 => FieldValue::new(&Option::<Own>::Some(Own(child))),
                         },
                     )?;
@@ -197,11 +197,11 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                     let parent_node_id = if self.globalized_parent {
                         let metadata = Metadata::create(api)?;
                         let role_assignment =
-                            RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
+                            RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
 
                         let address = api.globalize(
                             parent,
-                            btreemap!(
+                            indexmap!(
                                 ModuleId::Metadata => metadata.0,
                                 ModuleId::RoleAssignment => role_assignment.0.0,
                             ),

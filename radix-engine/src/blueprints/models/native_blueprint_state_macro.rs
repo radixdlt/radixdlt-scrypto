@@ -376,8 +376,8 @@ macro_rules! declare_native_blueprint_state {
                 }
 
                 impl [<$blueprint_ident FeatureSet>] {
-                    pub fn all_features() -> BTreeSet<String> {
-                        let mut features = BTreeSet::new();
+                    pub fn all_features() -> IndexSet<String> {
+                        let mut features = index_set_new();
                         $($(
                             features.insert(
                                 [<$blueprint_ident Feature>]::$feature_ident.feature_name().to_string()

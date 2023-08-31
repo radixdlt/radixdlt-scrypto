@@ -57,7 +57,7 @@ impl TwoResourcePoolBlueprint {
         let feature_set = TwoResourcePoolFeatureSet::all_features();
         let state = TwoResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = BTreeMap::new();
+        let mut functions = index_map_new();
 
         functions.insert(
             TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
@@ -181,7 +181,7 @@ impl TwoResourcePoolBlueprint {
         BlueprintDefinitionInit {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
-            dependencies: btreeset!(),
+            dependencies: indexset!(),
             feature_set,
 
             schema: BlueprintSchemaInit {
@@ -284,7 +284,7 @@ impl TwoResourcePoolBlueprint {
         // Creating the pool nodes
         let role_assignment = RoleAssignment::create(
             owner_role,
-            btreemap! {
+            indexmap! {
                 ObjectModuleId::Main => roles_init! {
                     RoleKey { key: POOL_MANAGER_ROLE.to_owned() } => pool_manager_rule;
                 }
@@ -315,7 +315,7 @@ impl TwoResourcePoolBlueprint {
             };
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
-                btreemap! {
+                indexmap! {
                     TwoResourcePoolField::State.field_index() => FieldValue::immutable(&TwoResourcePoolStateFieldPayload::from_content_source(substate)),
                 },
             )?
@@ -323,7 +323,7 @@ impl TwoResourcePoolBlueprint {
 
         api.globalize(
             object_id,
-            btreemap!(
+            indexmap!(
                 ModuleId::RoleAssignment => role_assignment.0,
                 ModuleId::Metadata => metadata.0,
                 ModuleId::Royalty => royalty.0,
@@ -542,7 +542,7 @@ impl TwoResourcePoolBlueprint {
 
         // Construct the event - this will be emitted once the resources are contributed to the pool
         let event = ContributionEvent {
-            contributed_resources: btreemap! {
+            contributed_resources: indexmap! {
                 bucket1.resource_address(api)? => amount1,
                 bucket2.resource_address(api)? => amount2,
             },
@@ -607,7 +607,7 @@ impl TwoResourcePoolBlueprint {
             .pool_unit_resource_manager
             .total_supply(api)?
             .expect("Total supply is always enabled for pool unit resource.");
-        let mut reserves = BTreeMap::new();
+        let mut reserves = index_map_new();
         for (resource_address, vault) in substate.vaults.iter() {
             let amount = vault.amount(api)?;
             let divisibility = ResourceManager(*resource_address).resource_type(api)
@@ -732,7 +732,7 @@ impl TwoResourcePoolBlueprint {
             return Err(TwoResourcePoolError::InvalidGetRedemptionAmount.into());
         }
 
-        let mut reserves = BTreeMap::new();
+        let mut reserves = index_map_new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;
             let divisibility = ResourceManager(resource_address).resource_type(api)
@@ -775,7 +775,7 @@ impl TwoResourcePoolBlueprint {
             .map(|(resource_address, vault)| {
                 vault.amount(api).map(|amount| (resource_address, amount))
             })
-            .collect::<Result<BTreeMap<_, _>, _>>()?;
+            .collect::<Result<IndexMap<_, _>, _>>()?;
 
         api.field_close(handle)?;
         Ok(amounts)
@@ -808,8 +808,8 @@ impl TwoResourcePoolBlueprint {
     fn calculate_amount_owed(
         pool_units_to_redeem: Decimal,
         pool_units_total_supply: Decimal,
-        reserves: BTreeMap<ResourceAddress, ReserveResourceInformation>,
-    ) -> Result<BTreeMap<ResourceAddress, Decimal>, RuntimeError> {
+        reserves: IndexMap<ResourceAddress, ReserveResourceInformation>,
+    ) -> Result<IndexMap<ResourceAddress, Decimal>, RuntimeError> {
         reserves
             .into_iter()
             .map(

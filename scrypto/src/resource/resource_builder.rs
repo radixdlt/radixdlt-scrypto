@@ -827,7 +827,7 @@ impl<D: NonFungibleData>
 
 fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungibleLocalId>(
     entries: T,
-) -> BTreeMap<NonFungibleLocalId, (ScryptoValue,)> {
+) -> IndexMap<NonFungibleLocalId, (ScryptoValue,)> {
     entries
         .into_iter()
         .map(|(id, data)| {

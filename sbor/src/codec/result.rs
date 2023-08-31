@@ -63,7 +63,7 @@ impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, E: Describe<C>> Describe<C
         use crate::rust::collections::*;
         TypeData::enum_variants(
             "Result",
-            btreemap![
+            indexmap![
                 RESULT_VARIANT_OK => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![T::TYPE_ID]}, "Ok"),
                 RESULT_VARIANT_ERR => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![E::TYPE_ID]}, "Err"),
             ],

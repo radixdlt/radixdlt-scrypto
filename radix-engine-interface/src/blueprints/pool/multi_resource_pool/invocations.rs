@@ -11,14 +11,14 @@ define_invocation! {
     input: struct {
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
-        resource_addresses: BTreeSet<ResourceAddress>,
+        resource_addresses: IndexSet<ResourceAddress>,
         address_reservation: Option<GlobalAddressReservation>
     },
     output: type ComponentAddress,
     manifest_input: struct {
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
-        resource_addresses: BTreeSet<ResourceAddress>,
+        resource_addresses: IndexSet<ResourceAddress>,
         address_reservation: Option<ManifestAddressReservation>
     }
 }
@@ -81,7 +81,7 @@ define_invocation! {
     input: struct {
         amount_of_pool_units: Decimal
     },
-    output: type BTreeMap<ResourceAddress, Decimal>,
+    output: type IndexMap<ResourceAddress, Decimal>,
     manifest_input: struct {
         amount_of_pool_units: Decimal
     }
@@ -91,6 +91,6 @@ define_invocation! {
     blueprint_name: MultiResourcePool,
     function_name: get_vault_amounts,
     input: struct {},
-    output: type BTreeMap<ResourceAddress, Decimal>,
+    output: type IndexMap<ResourceAddress, Decimal>,
     manifest_input: struct {}
 }

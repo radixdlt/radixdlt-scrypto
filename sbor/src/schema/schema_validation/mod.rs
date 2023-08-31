@@ -95,7 +95,7 @@ mod tests {
     pub fn duplicate_enum_variant_names_not_allowed() {
         let schema = create_schema(vec![TypeData::enum_variants(
             "TestEnum",
-            btreemap![
+            indexmap![
                 0 => TypeData::struct_with_unit_fields("VariantA"),
                 1 => TypeData::struct_with_unit_fields("VariantB"),
                 2 => TypeData::struct_with_unit_fields("VariantA"), // Repeat!

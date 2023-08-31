@@ -171,7 +171,7 @@ impl FungibleResourceManagerBlueprint {
 
         let state = FungibleResourceManagerStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = BTreeMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {
@@ -348,7 +348,7 @@ impl FungibleResourceManagerBlueprint {
             blueprint_type: BlueprintType::Outer,
             is_transient: false,
             feature_set: FungibleResourceManagerFeatureSet::all_features(),
-            dependencies: btreeset!(),
+            dependencies: indexset!(),
             schema: BlueprintSchemaInit {
                 generics: vec![],
                 schema,
@@ -416,7 +416,7 @@ impl FungibleResourceManagerBlueprint {
             }
         };
 
-        let mut fields = btreemap! {
+        let mut fields = indexmap! {
             FungibleResourceManagerField::Divisibility.into() => FieldValue::immutable(
                     &FungibleResourceManagerDivisibilityFieldPayload::from_content_source(
                         divisibility,
@@ -453,7 +453,7 @@ impl FungibleResourceManagerBlueprint {
             features.feature_names_str(),
             GenericArgs::default(),
             fields,
-            btreemap!(),
+            indexmap!(),
         )?;
 
         let resource_address = globalize_resource_manager(
@@ -494,7 +494,7 @@ impl FungibleResourceManagerBlueprint {
             }
         };
 
-        let mut fields = btreemap! {
+        let mut fields = indexmap! {
             FungibleResourceManagerField::Divisibility.into() => FieldValue::immutable(
                     &FungibleResourceManagerDivisibilityFieldPayload::from_content_source(
                         divisibility,
@@ -531,7 +531,7 @@ impl FungibleResourceManagerBlueprint {
             features.feature_names_str(),
             GenericArgs::default(),
             fields,
-            btreemap!(),
+            indexmap!(),
         )?;
 
         check_mint_amount(divisibility, initial_supply)?;
@@ -699,7 +699,7 @@ impl FungibleResourceManagerBlueprint {
     {
         let bucket_id = api.new_simple_object(
             FUNGIBLE_BUCKET_BLUEPRINT,
-            btreemap! {
+            indexmap! {
                 FungibleBucketField::Liquid.into() => FieldValue::new(&LiquidFungibleResource::new(amount)),
                 FungibleBucketField::Locked.into() => FieldValue::new(&LockedFungibleResource::default()),
             },
@@ -712,7 +712,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut fields: BTreeMap<FieldIndex, FieldValue> = btreemap! {
+        let mut fields: IndexMap<FieldIndex, FieldValue> = indexmap! {
             FungibleVaultField::Balance.into() => FieldValue::new(&FungibleVaultBalanceFieldPayload::from_content_source(
                     LiquidFungibleResource::default(),
                 )),

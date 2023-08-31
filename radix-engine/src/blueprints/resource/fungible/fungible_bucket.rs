@@ -168,7 +168,7 @@ impl FungibleBucketBlueprint {
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof_evidence = FungibleProofSubstate::new(
             amount,
-            btreemap!(
+            indexmap!(
                 LocalRef::Bucket(Reference(receiver.clone())) => amount
             ),
         )
@@ -179,7 +179,7 @@ impl FungibleBucketBlueprint {
         })?;
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
-            btreemap! {
+            indexmap! {
                 0u8 => FieldValue::new(&proof_info),
                 1u8 => FieldValue::new(&proof_evidence),
             },

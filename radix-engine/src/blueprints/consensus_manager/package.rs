@@ -12,7 +12,7 @@ pub struct ConsensusManagerNativePackage;
 
 impl ConsensusManagerNativePackage {
     pub fn definition() -> PackageDefinition {
-        let blueprints = btreemap!(
+        let blueprints = indexmap!(
             CONSENSUS_MANAGER_BLUEPRINT.to_string() => ConsensusManagerBlueprint::definition(),
             VALIDATOR_BLUEPRINT.to_string() => ValidatorBlueprint::definition(),
         );

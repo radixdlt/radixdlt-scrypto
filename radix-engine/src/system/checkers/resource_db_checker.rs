@@ -77,6 +77,11 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                             info.outer_obj_info.expect().into_node_id().0,
                         );
                         let amount = vault_balance.into_latest().amount();
+
+                        if amount.is_negative() {
+                            panic!("Found Fungible Vault negative balance");
+                        }
+
                         let tracker = self.resources.entry(address).or_default();
                         tracker.tracking_supply = tracker.tracking_supply.safe_add(amount).unwrap();
 
@@ -116,6 +121,11 @@ impl ApplicationChecker for ResourceDatabaseChecker {
 
                         let non_fungible_vault_tracker =
                             self.non_fungible_vaults.entry(node_id).or_default();
+
+                        if vault_balance.amount.is_negative() {
+                            panic!("Found Non Fungible Vault negative balance");
+                        }
+
                         non_fungible_vault_tracker.expected = Some(vault_balance.amount);
                     }
                     _ => {}

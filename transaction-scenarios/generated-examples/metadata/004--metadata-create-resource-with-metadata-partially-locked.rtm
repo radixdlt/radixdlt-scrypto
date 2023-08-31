@@ -50,14 +50,6 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     )
     Tuple(
         Map<String, Tuple>(
-            "locked_later" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "Hi"
-                    )
-                ),
-                false
-            ),
             "locked_on_create" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
@@ -65,6 +57,14 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                     )
                 ),
                 true
+            ),
+            "locked_later" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "Hi"
+                    )
+                ),
+                false
             )
         ),
         Map<String, Enum>()

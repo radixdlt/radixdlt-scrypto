@@ -86,6 +86,7 @@ pub trait Encoder<X: CustomValueKind>: Sized {
         self.write_byte(ty.as_u8())
     }
 
+    #[inline]
     fn write_discriminator(&mut self, discriminator: u8) -> Result<(), EncodeError> {
         self.write_byte(discriminator)
     }

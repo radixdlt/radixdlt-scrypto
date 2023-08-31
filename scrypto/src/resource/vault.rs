@@ -62,7 +62,7 @@ pub trait ScryptoFungibleVault {
 }
 
 pub trait ScryptoNonFungibleVault {
-    fn non_fungible_local_ids(&self, limit: u32) -> BTreeSet<NonFungibleLocalId>;
+    fn non_fungible_local_ids(&self, limit: u32) -> IndexSet<NonFungibleLocalId>;
 
     fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool;
 
@@ -79,19 +79,19 @@ pub trait ScryptoNonFungibleVault {
 
     fn take_non_fungibles(
         &mut self,
-        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: &IndexSet<NonFungibleLocalId>,
     ) -> NonFungibleBucket;
 
-    fn burn_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>);
+    fn burn_non_fungibles(&mut self, non_fungible_local_ids: &IndexSet<NonFungibleLocalId>);
 
     fn create_proof_of_non_fungibles(
         &self,
-        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: &IndexSet<NonFungibleLocalId>,
     ) -> NonFungibleProof;
 
     fn authorize_with_non_fungibles<F: FnOnce() -> O, O>(
         &self,
-        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: &IndexSet<NonFungibleLocalId>,
         f: F,
     ) -> O;
 }
@@ -398,7 +398,7 @@ impl ScryptoVault for NonFungibleVault {
 }
 
 impl ScryptoNonFungibleVault for NonFungibleVault {
-    fn non_fungible_local_ids(&self, limit: u32) -> BTreeSet<NonFungibleLocalId> {
+    fn non_fungible_local_ids(&self, limit: u32) -> IndexSet<NonFungibleLocalId> {
         let rtn = ScryptoVmV1Api::object_call(
             self.0 .0.as_node_id(),
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
@@ -461,12 +461,12 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
         &mut self,
         non_fungible_local_id: &NonFungibleLocalId,
     ) -> NonFungibleBucket {
-        self.take_non_fungibles(&BTreeSet::from([non_fungible_local_id.clone()]))
+        self.take_non_fungibles(&indexset!(non_fungible_local_id.clone()))
     }
 
     fn take_non_fungibles(
         &mut self,
-        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: &IndexSet<NonFungibleLocalId>,
     ) -> NonFungibleBucket {
         let rtn = ScryptoVmV1Api::object_call(
             self.0 .0.as_node_id(),
@@ -481,7 +481,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
 
     fn create_proof_of_non_fungibles(
         &self,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: &IndexSet<NonFungibleLocalId>,
     ) -> NonFungibleProof {
         let rtn = ScryptoVmV1Api::object_call(
             self.0 .0.as_node_id(),
@@ -492,7 +492,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn burn_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>) {
+    fn burn_non_fungibles(&mut self, non_fungible_local_ids: &IndexSet<NonFungibleLocalId>) {
         let rtn = ScryptoVmV1Api::object_call(
             self.0 .0.as_node_id(),
             NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT,
@@ -506,7 +506,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
 
     fn authorize_with_non_fungibles<F: FnOnce() -> O, O>(
         &self,
-        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: &IndexSet<NonFungibleLocalId>,
         f: F,
     ) -> O {
         LocalAuthZone::push(self.create_proof_of_non_fungibles(non_fungible_local_ids));

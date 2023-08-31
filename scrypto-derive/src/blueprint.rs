@@ -580,7 +580,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                     // Aggregate functions
                     let functions = {
-                        let mut functions: BTreeMap<String, FunctionSchemaInit> = BTreeMap::new();
+                        let mut functions: IndexMap<String, FunctionSchemaInit> = index_map_new();
                         #(
                             functions.insert(#fn_names.to_string(), #fn_schemas);
                         )*
@@ -592,7 +592,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                     // Aggregate event schemas
                     let events = {
-                        let mut event_schema = BTreeMap::new();
+                        let mut event_schema = index_map_new();
                         #({
                             let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
                             event_schema.insert(#event_type_names.to_owned(), TypeRef::Static(local_type_index));
@@ -614,7 +614,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     }
                 };
 
-                let mut dependencies = BTreeSet::new();
+                let mut dependencies = index_set_new();
                 #({
                     dependencies.insert(#dependency_exprs.into());
                 })*
@@ -631,7 +631,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                     blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
                     is_transient: false,
-                    feature_set: BTreeSet::default(),
+                    feature_set: IndexSet::default(),
                     dependencies,
                     schema,
                     auth_config,
@@ -1737,7 +1737,7 @@ mod tests {
                             };
 
                             let functions = {
-                                let mut functions: BTreeMap<String, FunctionSchemaInit> = BTreeMap::new();
+                                let mut functions: IndexMap<String, FunctionSchemaInit> = index_map_new();
                                 functions.insert(
                                     "x".to_string(),
                                     FunctionSchemaInit {
@@ -1763,7 +1763,7 @@ mod tests {
                             };
 
                             let events = {
-                                let mut event_schema = BTreeMap::new();
+                                let mut event_schema = index_map_new();
                                 BlueprintEventSchemaInit {
                                     event_schema,
                                 }
@@ -1781,7 +1781,7 @@ mod tests {
                             }
                         };
 
-                        let mut dependencies = BTreeSet::new();
+                        let mut dependencies = index_set_new();
 
                         let auth_config = {
                             scrypto::blueprints::package::AuthConfig {
@@ -1795,7 +1795,7 @@ mod tests {
                         let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                             blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
                             is_transient: false,
-                            feature_set: BTreeSet::default(),
+                            feature_set: IndexSet::default(),
                             dependencies,
                             schema,
                             auth_config,

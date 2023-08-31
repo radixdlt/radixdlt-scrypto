@@ -15,7 +15,7 @@ pub const POOL_MANAGER_ROLE: &'static str = "pool_manager_role";
 pub struct PoolNativePackage;
 impl PoolNativePackage {
     pub fn definition() -> PackageDefinition {
-        let blueprints = btreemap!(
+        let blueprints = indexmap!(
             ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => OneResourcePoolBlueprint::definition(),
             TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => TwoResourcePoolBlueprint::definition(),
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT.to_string() => MultiResourcePoolBlueprint::definition(),

@@ -73,7 +73,7 @@ impl LocalAuthZone {
     }
 
     pub fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: &IndexSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<Proof, E>

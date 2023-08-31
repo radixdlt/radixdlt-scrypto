@@ -469,11 +469,10 @@ pub mod collections {
 
         #[macro_export]
         macro_rules! indexset {
-            ( ) => ({
+            () => ({
                 $crate::rust::collections::index_set_new()
             });
-            ($($key:expr,)+) => ( $crate::rust::collections::index_set::indexset!{$($key),*} );
-            ($($key:expr),*) => ({
+            ($($key:expr),+$(,)?) => ({
                 // Note: `stringify!($key)` is just here to consume the repetition,
                 // but we throw away that string literal during constant evaluation.
                 const CAP: usize = <[()]>::len(&[$({ stringify!($key); }),*]);

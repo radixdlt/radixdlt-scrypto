@@ -468,12 +468,11 @@ fn test_worktop_changes() {
             worktop_changes.get(&2),
             Some(&vec![WorktopChange::Put(ResourceSpecifier::Ids(
                 non_fungible_resource,
-                [
+                indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3),
-                ]
-                .into()
+                )
             ))])
         );
 
@@ -514,24 +513,22 @@ fn test_worktop_changes() {
             worktop_changes.get(&7),
             Some(&vec![WorktopChange::Take(ResourceSpecifier::Ids(
                 non_fungible_resource,
-                [
+                indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3),
-                ]
-                .into()
+                )
             ))])
         );
         assert_eq!(
             worktop_changes.get(&8),
             Some(&vec![WorktopChange::Put(ResourceSpecifier::Ids(
                 non_fungible_resource,
-                [
+                indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3),
-                ]
-                .into()
+                )
             ))])
         );
 
@@ -540,22 +537,20 @@ fn test_worktop_changes() {
             worktop_changes.get(&9),
             Some(&vec![WorktopChange::Take(ResourceSpecifier::Ids(
                 non_fungible_resource,
-                [
+                indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2),
-                ]
-                .into()
+                )
             ))])
         );
         assert_eq!(
             worktop_changes.get(&10),
             Some(&vec![WorktopChange::Put(ResourceSpecifier::Ids(
                 non_fungible_resource,
-                [
+                indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2),
-                ]
-                .into()
+                )
             ))])
         );
 
@@ -564,22 +559,20 @@ fn test_worktop_changes() {
             worktop_changes.get(&11),
             Some(&vec![WorktopChange::Take(ResourceSpecifier::Ids(
                 non_fungible_resource,
-                [
+                indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(3),
-                ]
-                .into()
+                )
             ))])
         );
         assert_eq!(
             worktop_changes.get(&12),
             Some(&vec![WorktopChange::Put(ResourceSpecifier::Ids(
                 non_fungible_resource,
-                [
+                indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(3),
-                ]
-                .into()
+                )
             ))])
         );
 
@@ -590,12 +583,11 @@ fn test_worktop_changes() {
                 WorktopChange::Take(ResourceSpecifier::Amount(fungible_resource, 100.into())),
                 WorktopChange::Take(ResourceSpecifier::Ids(
                     non_fungible_resource,
-                    [
+                    indexset!(
                         NonFungibleLocalId::integer(1),
                         NonFungibleLocalId::integer(2),
                         NonFungibleLocalId::integer(3),
-                    ]
-                    .into()
+                    )
                 )),
             ])
         );

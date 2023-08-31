@@ -146,13 +146,13 @@ fn contributing_provides_expected_amount_of_pool_units1() {
     // Arrange
     let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
 
-    let contributions = btreemap!(
+    let contributions = indexmap!(
         test_runner.pool_resources[0] => dec!("100"),
         test_runner.pool_resources[1] => dec!("100"),
         test_runner.pool_resources[2] => dec!("100")
     );
 
-    let expected_change = btreemap!(
+    let expected_change = indexmap!(
         test_runner.pool_resources[0] => dec!("0"),
         test_runner.pool_resources[1] => dec!("0"),
         test_runner.pool_resources[2] => dec!("0")
@@ -191,7 +191,7 @@ fn contributing_provides_expected_amount_of_pool_units2() {
     let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
 
     {
-        let contributions = btreemap!(
+        let contributions = indexmap!(
             test_runner.pool_resources[0] => dec!("100"),
             test_runner.pool_resources[1] => dec!("100"),
             test_runner.pool_resources[2] => dec!("100")
@@ -201,13 +201,13 @@ fn contributing_provides_expected_amount_of_pool_units2() {
             .expect_commit_success();
     }
 
-    let contributions = btreemap!(
+    let contributions = indexmap!(
         test_runner.pool_resources[0] => dec!("100"),
         test_runner.pool_resources[1] => dec!("100"),
         test_runner.pool_resources[2] => dec!("100")
     );
 
-    let expected_change = btreemap!(
+    let expected_change = indexmap!(
         test_runner.pool_resources[0] => dec!("0"),
         test_runner.pool_resources[1] => dec!("0"),
         test_runner.pool_resources[2] => dec!("0")
@@ -246,7 +246,7 @@ fn contributing_provides_expected_amount_of_pool_units3() {
     let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
 
     {
-        let contributions = btreemap!(
+        let contributions = indexmap!(
             test_runner.pool_resources[0] => dec!("100"),
             test_runner.pool_resources[1] => dec!("100"),
             test_runner.pool_resources[2] => dec!("100")
@@ -256,13 +256,13 @@ fn contributing_provides_expected_amount_of_pool_units3() {
             .expect_commit_success();
     }
 
-    let contributions = btreemap!(
+    let contributions = indexmap!(
         test_runner.pool_resources[0] => dec!("100"),
         test_runner.pool_resources[1] => dec!("90"),
         test_runner.pool_resources[2] => dec!("100")
     );
 
-    let expected_change = btreemap!(
+    let expected_change = indexmap!(
         test_runner.pool_resources[0] => dec!("10"),
         test_runner.pool_resources[1] => dec!("0"),
         test_runner.pool_resources[2] => dec!("10")
@@ -301,7 +301,7 @@ fn contributing_provides_expected_amount_of_pool_units4() {
     let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
 
     {
-        let contributions = btreemap!(
+        let contributions = indexmap!(
             test_runner.pool_resources[0] => dec!("100"),
             test_runner.pool_resources[1] => dec!("100"),
             test_runner.pool_resources[2] => dec!("100")
@@ -311,13 +311,13 @@ fn contributing_provides_expected_amount_of_pool_units4() {
             .expect_commit_success();
     }
 
-    let contributions = btreemap!(
+    let contributions = indexmap!(
         test_runner.pool_resources[0] => dec!("100"),
         test_runner.pool_resources[1] => dec!("90"),
         test_runner.pool_resources[2] => dec!("80")
     );
 
-    let expected_change = btreemap!(
+    let expected_change = indexmap!(
         test_runner.pool_resources[0] => dec!("20"),
         test_runner.pool_resources[1] => dec!("10"),
         test_runner.pool_resources[2] => dec!("0")
@@ -355,7 +355,7 @@ fn initial_contribution_to_pool_check_amounts() {
     // Arrange
     let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
 
-    let contributions = btreemap!(
+    let contributions = indexmap!(
         test_runner.pool_resources[0] => dec!("10"),
         test_runner.pool_resources[1] => dec!("10"),
         test_runner.pool_resources[2] => dec!("10")
@@ -387,7 +387,7 @@ fn contributing_tokens_that_do_not_belong_to_pool_fails() {
             test_runner.account_component_address,
         );
 
-    let contributions = btreemap!(
+    let contributions = indexmap!(
         resource_address => dec!("100"),
         test_runner.pool_resources[1] => dec!("100"),
         test_runner.pool_resources[2] => dec!("100")
@@ -416,7 +416,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
             MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
             MultiResourcePoolInstantiateManifestInput {
-                resource_addresses: [non_fungible_resource].into(),
+                resource_addresses: indexset!(non_fungible_resource),
                 pool_manager_rule: rule!(allow_all),
                 owner_role: OwnerRole::None,
                 address_reservation: None,
@@ -436,11 +436,11 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
     // Arrange
     let mut test_runner = TestEnvironment::<2>::new([18, 2]);
 
-    let contributions = btreemap!(
+    let contributions = indexmap!(
         test_runner.pool_resources[0] => dec!("100"),
         test_runner.pool_resources[1] => dec!("100"),
     );
-    let expected_change = btreemap!(
+    let expected_change = indexmap!(
         test_runner.pool_resources[0] => dec!("1.11111111111111"),
         test_runner.pool_resources[1] => dec!("1.11"),
     );
@@ -485,7 +485,7 @@ fn contribution_calculations_work_for_resources_with_divisibility_not_18() {
     let mut test_runner = TestEnvironment::<2>::new([18, 2]);
 
     {
-        let contributions = btreemap!(
+        let contributions = indexmap!(
             test_runner.pool_resources[0] => dec!("100"),
             test_runner.pool_resources[1] => dec!("100"),
         );
@@ -494,7 +494,7 @@ fn contribution_calculations_work_for_resources_with_divisibility_not_18() {
             .expect_commit_success()
     };
 
-    let contributions = btreemap!(
+    let contributions = indexmap!(
         test_runner.pool_resources[0] => dec!("1.1111111111111"),
         test_runner.pool_resources[1] => dec!("500"),
     );
@@ -526,7 +526,7 @@ fn contribution_emits_expected_event() {
     // Arrange
     let mut test_runner = TestEnvironment::<2>::new([2, 2]);
 
-    let contributions = btreemap!(
+    let contributions = indexmap!(
         test_runner.pool_resources[0] => dec!("2.22"),
         test_runner.pool_resources[1] => dec!("8.88"),
     );
@@ -559,7 +559,7 @@ fn redemption_emits_expected_event() {
     // Arrange
     let mut test_runner = TestEnvironment::<2>::new([2, 2]);
 
-    let contributions = btreemap!(
+    let contributions = indexmap!(
         test_runner.pool_resources[0] => dec!("2.22"),
         test_runner.pool_resources[1] => dec!("8.88"),
     );
@@ -701,7 +701,7 @@ fn cant_contribute_without_proper_signature() {
     // Arrange
     let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
 
-    let contributions = btreemap!(
+    let contributions = indexmap!(
         test_runner.pool_resources[0] => dec!("100"),
         test_runner.pool_resources[1] => dec!("100"),
         test_runner.pool_resources[2] => dec!("100")
@@ -754,7 +754,7 @@ fn contribution_of_large_values_should_not_cause_panic() {
 
     // Act
     let receipt = test_runner.contribute(
-        btreemap!(
+        indexmap!(
             test_runner.pool_resources[0] => max_mint_amount,
             test_runner.pool_resources[1] => max_mint_amount,
             test_runner.pool_resources[2] => max_mint_amount,
@@ -779,7 +779,7 @@ fn get_redemption_value_should_not_panic_on_large_values() {
     let mint_amount = Decimal(I192::from(2).pow(40));
     let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
     let receipt = test_runner.contribute(
-        btreemap!(
+        indexmap!(
             test_runner.pool_resources[0] => mint_amount,
             test_runner.pool_resources[1] => mint_amount,
             test_runner.pool_resources[2] => mint_amount,
@@ -854,7 +854,7 @@ impl<const N: usize> TestEnvironment<N> {
                     MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
                     MultiResourcePoolInstantiateManifestInput {
-                        resource_addresses: resource_addresses.clone().into(),
+                        resource_addresses: resource_addresses.into_iter().collect(),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                         owner_role,
                         address_reservation: None,
@@ -882,7 +882,7 @@ impl<const N: usize> TestEnvironment<N> {
 
     pub fn contribute(
         &mut self,
-        resource_to_amount_mapping: BTreeMap<ResourceAddress, Decimal>,
+        resource_to_amount_mapping: IndexMap<ResourceAddress, Decimal>,
         sign: bool,
     ) -> TransactionReceipt {
         let mut manifest_builder = ManifestBuilder::new();

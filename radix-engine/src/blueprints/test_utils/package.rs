@@ -12,7 +12,7 @@ pub struct TestUtilsNativePackage;
 impl TestUtilsNativePackage {
     pub fn definition() -> PackageDefinition {
         PackageDefinition {
-            blueprints: btreemap! {
+            blueprints: indexmap! {
                 TEST_UTILS_BLUEPRINT.to_owned() => TestUtilsBlueprint::get_definition()
             },
         }

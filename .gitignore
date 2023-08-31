@@ -45,7 +45,7 @@ scrypto/Cargo.lock
 scrypto-unit/Cargo.lock
 scrypto-derive/Cargo.lock
 scrypto-schema/Cargo.lock
-scrypto-tests/Cargo.lock
+scrypto-derive-tests/Cargo.lock
 transaction/Cargo.lock
 sbor/Cargo.lock
 sbor-derive/Cargo.lock

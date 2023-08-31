@@ -30,7 +30,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         aggregator.add_child_type_and_descendents::<()>(),
     ));
 
-    let mut functions = BTreeMap::new();
+    let mut functions = index_map_new();
     functions.insert(
         "f".to_string(),
         FunctionSchemaInit {
@@ -56,8 +56,8 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         is_transient: false,
-        dependencies: btreeset!(),
-        feature_set: btreeset!(),
+        dependencies: indexset!(),
+        feature_set: indexset!(),
         schema,
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
@@ -80,7 +80,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         aggregator.add_child_type_and_descendents::<()>(),
     ));
 
-    let mut functions = BTreeMap::new();
+    let mut functions = index_map_new();
     functions.insert(
         "f".to_string(),
         FunctionSchemaInit {
@@ -106,8 +106,8 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         is_transient: false,
-        dependencies: btreeset!(),
-        feature_set: btreeset!(),
+        dependencies: indexset!(),
+        feature_set: indexset!(),
         schema,
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
@@ -130,7 +130,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         aggregator.add_child_type_and_descendents::<()>(),
     ));
 
-    let mut functions = BTreeMap::new();
+    let mut functions = index_map_new();
     functions.insert(
         "f".to_string(),
         FunctionSchemaInit {
@@ -156,8 +156,8 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         is_transient: false,
-        dependencies: btreeset!(),
-        feature_set: btreeset!(),
+        dependencies: indexset!(),
+        feature_set: indexset!(),
         schema,
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {

@@ -529,10 +529,10 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 "compose_vault_and_bucket_proof_by_ids",
                 manifest_args!(
                     lookup.bucket("bucket"),
-                    BTreeSet::from([
+                    indexset!(
                         NonFungibleLocalId::integer(1),
                         NonFungibleLocalId::integer(2),
-                    ])
+                    )
                 ),
             )
         })

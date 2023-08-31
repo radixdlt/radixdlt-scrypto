@@ -24,7 +24,7 @@ mod vault_burn {
             self.vault.burn(amount)
         }
 
-        pub fn burn_ids(&mut self, ids: BTreeSet<NonFungibleLocalId>) {
+        pub fn burn_ids(&mut self, ids: IndexSet<NonFungibleLocalId>) {
             self.vault.as_non_fungible().burn_non_fungibles(&ids)
         }
 
@@ -32,7 +32,7 @@ mod vault_burn {
             self.vault.as_fungible().take(amount).0
         }
 
-        pub fn take_ids(&mut self, ids: BTreeSet<NonFungibleLocalId>) -> Bucket {
+        pub fn take_ids(&mut self, ids: IndexSet<NonFungibleLocalId>) -> Bucket {
             self.vault.as_non_fungible().take_non_fungibles(&ids).0
         }
     }

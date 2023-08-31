@@ -158,7 +158,7 @@ impl ResourceManager {
     /// Mints non-fungible resources
     pub fn mint_non_fungible<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
         &self,
-        data: BTreeMap<NonFungibleLocalId, T>,
+        data: IndexMap<NonFungibleLocalId, T>,
         api: &mut Y,
     ) -> Result<NonFungibleResourceManagerMintOutput, E>
     where

@@ -84,23 +84,23 @@ impl LiquidFungibleResource {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleResource {
     /// The total non-fungible ids.
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
 }
 
 impl LiquidNonFungibleResource {
-    pub fn new(ids: BTreeSet<NonFungibleLocalId>) -> Self {
+    pub fn new(ids: IndexSet<NonFungibleLocalId>) -> Self {
         Self { ids }
     }
 
     pub fn default() -> Self {
-        Self::new(BTreeSet::new())
+        Self::new(IndexSet::default())
     }
 
-    pub fn ids(&self) -> &BTreeSet<NonFungibleLocalId> {
+    pub fn ids(&self) -> &IndexSet<NonFungibleLocalId> {
         &self.ids
     }
 
-    pub fn into_ids(self) -> BTreeSet<NonFungibleLocalId> {
+    pub fn into_ids(self) -> IndexSet<NonFungibleLocalId> {
         self.ids
     }
 
@@ -124,13 +124,13 @@ impl LiquidNonFungibleResource {
                 requested: Decimal::from(n),
             });
         }
-        let ids: BTreeSet<NonFungibleLocalId> = self.ids.iter().take(n as usize).cloned().collect();
+        let ids: IndexSet<NonFungibleLocalId> = self.ids.iter().take(n as usize).cloned().collect();
         self.take_by_ids(&ids)
     }
 
     pub fn take_by_ids(
         &mut self,
-        ids_to_take: &BTreeSet<NonFungibleLocalId>,
+        ids_to_take: &IndexSet<NonFungibleLocalId>,
     ) -> Result<LiquidNonFungibleResource, ResourceError> {
         for id in ids_to_take {
             if !self.ids.remove(&id) {
@@ -142,7 +142,7 @@ impl LiquidNonFungibleResource {
 
     pub fn take_all(&mut self) -> LiquidNonFungibleResource {
         LiquidNonFungibleResource {
-            ids: core::mem::replace(&mut self.ids, btreeset!()),
+            ids: core::mem::replace(&mut self.ids, indexset!()),
         }
     }
 }
@@ -150,13 +150,13 @@ impl LiquidNonFungibleResource {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LockedFungibleResource {
     /// The locked amounts and the corresponding times of being locked.
-    pub amounts: BTreeMap<Decimal, usize>,
+    pub amounts: IndexMap<Decimal, usize>,
 }
 
 impl LockedFungibleResource {
     pub fn default() -> Self {
         Self {
-            amounts: BTreeMap::new(),
+            amounts: index_map_new(),
         }
     }
 
@@ -165,24 +165,26 @@ impl LockedFungibleResource {
     }
 
     pub fn amount(&self) -> Decimal {
-        self.amounts
-            .last_key_value()
-            .map(|(k, _)| k)
-            .cloned()
-            .unwrap_or(Decimal::zero())
+        let mut max = Decimal::ZERO;
+        for amount in self.amounts.keys() {
+            if amount > &max {
+                max = amount.clone()
+            }
+        }
+        max
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LockedNonFungibleResource {
     /// The locked non-fungible ids and the corresponding times of being locked.
-    pub ids: BTreeMap<NonFungibleLocalId, usize>,
+    pub ids: IndexMap<NonFungibleLocalId, usize>,
 }
 
 impl LockedNonFungibleResource {
     pub fn default() -> Self {
         Self {
-            ids: BTreeMap::new(),
+            ids: index_map_new(),
         }
     }
 
@@ -194,7 +196,7 @@ impl LockedNonFungibleResource {
         self.ids.len().into()
     }
 
-    pub fn ids(&self) -> BTreeSet<NonFungibleLocalId> {
+    pub fn ids(&self) -> IndexSet<NonFungibleLocalId> {
         self.ids.keys().cloned().collect()
     }
 }

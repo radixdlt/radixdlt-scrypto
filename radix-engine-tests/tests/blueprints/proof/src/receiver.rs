@@ -25,7 +25,7 @@ mod receiver {
 
         pub fn assert_ids(
             proof: Proof,
-            ids: BTreeSet<NonFungibleLocalId>,
+            ids: IndexSet<NonFungibleLocalId>,
             resource_address: ResourceAddress,
         ) {
             let proof = proof.skip_checking();

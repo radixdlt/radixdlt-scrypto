@@ -8,7 +8,7 @@ pub extern "C" fn BadFunctionSchema_f(_args: u64) -> Slice {
 
 #[no_mangle]
 pub extern "C" fn BadFunctionSchema_schema() -> Slice {
-    let mut functions = BTreeMap::new();
+    let mut functions = index_map_new();
     functions.insert(
         "f".to_string(),
         FunctionSchemaInit {
@@ -29,8 +29,8 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         is_transient: false,
-        dependencies: btreeset!(),
-        feature_set: btreeset!(),
+        dependencies: indexset!(),
+        feature_set: indexset!(),
         schema: BlueprintSchemaInit {
             generics: vec![],
             schema: empty_schema,

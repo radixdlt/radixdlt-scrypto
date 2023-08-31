@@ -3,12 +3,7 @@ use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_interface::api::ObjectModuleId;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::str;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 
 use super::AccessRule;
 
@@ -211,16 +206,16 @@ impl Into<OwnerRoleEntry> for OwnerRole {
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct RoleAssignmentInit {
-    pub data: BTreeMap<RoleKey, Option<AccessRule>>,
+    pub data: IndexMap<RoleKey, Option<AccessRule>>,
 }
 
 impl RoleAssignmentInit {
     pub fn new() -> Self {
         RoleAssignmentInit {
-            data: BTreeMap::new(),
+            data: index_map_new(),
         }
     }
 

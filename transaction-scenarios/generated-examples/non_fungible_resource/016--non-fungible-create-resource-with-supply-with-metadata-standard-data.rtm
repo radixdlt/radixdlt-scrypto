@@ -124,10 +124,29 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     )
     Tuple(
         Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "Radix - Defi Use-cases"
+                    )
+                ),
+                true
+            ),
             "description" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
                         "[EXAMPLE] An example NF using the metadata standard"
+                    )
+                ),
+                true
+            ),
+            "tags" => Tuple(
+                Enum<1u8>(
+                    Enum<128u8>(
+                        Array<String>(
+                            "collection",
+                            "example-tag"
+                        )
                     )
                 ),
                 true
@@ -144,25 +163,6 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 Enum<1u8>(
                     Enum<13u8>(
                         "https://developers.radixdlt.com/ecosystem"
-                    )
-                ),
-                true
-            ),
-            "name" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "Radix - Defi Use-cases"
-                    )
-                ),
-                true
-            ),
-            "tags" => Tuple(
-                Enum<1u8>(
-                    Enum<128u8>(
-                        Array<String>(
-                            "collection",
-                            "example-tag"
-                        )
                     )
                 ),
                 true

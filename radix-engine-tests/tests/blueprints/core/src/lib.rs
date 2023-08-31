@@ -9,7 +9,7 @@ mod globalize_test {
 
     impl GlobalizeTest {
         pub fn globalize(x: Own) {
-            let modules = btreemap!(
+            let modules = indexmap!(
                 ModuleId::Metadata => Metadata::new().0.as_node_id().clone(),
                 ModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
             );
@@ -65,7 +65,7 @@ mod globalize_test {
         }
 
         pub fn globalize_role_assignment() {
-            let ra = RoleAssignment::new(OwnerRole::None, btreemap!())
+            let ra = RoleAssignment::new(OwnerRole::None, indexmap!())
                 .0
                 .as_node_id()
                 .clone();
@@ -108,7 +108,7 @@ mod globalize_test {
         }
 
         pub fn store_role_assignment() {
-            let ra = RoleAssignment::new(OwnerRole::None, btreemap!())
+            let ra = RoleAssignment::new(OwnerRole::None, indexmap!())
                 .0
                 .as_node_id()
                 .clone();

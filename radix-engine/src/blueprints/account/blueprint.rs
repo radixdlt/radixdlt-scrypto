@@ -126,7 +126,7 @@ impl AccountBlueprint {
         let feature_set = AccountFeatureSet::all_features();
         let state = AccountStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = BTreeMap::new();
+        let mut functions = index_map_new();
 
         functions.insert(
             ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
@@ -500,7 +500,7 @@ impl AccountBlueprint {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
             feature_set,
-            dependencies: btreeset!(
+            dependencies: indexset!(
                 SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
                 ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
                 ACCOUNT_OWNER_BADGE.into(),
@@ -514,7 +514,7 @@ impl AccountBlueprint {
                 events,
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit {
-                    hooks: btreemap!(BlueprintHook::OnVirtualize => ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME.to_string()),
+                    hooks: indexmap!(BlueprintHook::OnVirtualize => ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME.to_string()),
                 },
             },
 
@@ -560,14 +560,14 @@ impl AccountBlueprint {
         role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
-    ) -> Result<BTreeMap<ModuleId, Own>, RuntimeError>
+    ) -> Result<IndexMap<ModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let metadata = Metadata::create_with_data(metadata_init, api)?;
 
         // No component royalties
-        let modules = btreemap!(
+        let modules = indexmap!(
             ModuleId::RoleAssignment => role_assignment.0,
             ModuleId::Metadata => metadata,
         );
@@ -724,12 +724,12 @@ impl AccountBlueprint {
             ACCOUNT_BLUEPRINT,
             vec![],
             GenericArgs::default(),
-            btreemap! {
+            indexmap! {
                 AccountField::DepositRule.field_index() => FieldValue::new(&AccountDepositRuleFieldPayload::from_content_source(AccountDepositRuleV1 {
                     default_deposit_rule: DefaultDepositRule::Accept,
                 }))
             },
-            btreemap!(),
+            indexmap!(),
         )?;
 
         Ok(Own(account_id))
@@ -1003,7 +1003,7 @@ impl AccountBlueprint {
 
     pub fn withdraw_non_fungibles<Y>(
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
@@ -1040,7 +1040,7 @@ impl AccountBlueprint {
 
     pub fn burn_non_fungibles<Y>(
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -1078,7 +1078,7 @@ impl AccountBlueprint {
     pub fn lock_fee_and_withdraw_non_fungibles<Y>(
         amount_to_lock: Decimal,
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
@@ -1116,7 +1116,7 @@ impl AccountBlueprint {
 
     pub fn create_proof_of_non_fungibles<Y>(
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where

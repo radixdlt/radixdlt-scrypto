@@ -915,7 +915,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
         .call_method(
             account,
             "burn_non_fungibles",
-            manifest_args!(resource_address, btreeset!(NonFungibleLocalId::integer(1))),
+            manifest_args!(resource_address, indexset!(NonFungibleLocalId::integer(1))),
         )
         .build();
     let receipt =

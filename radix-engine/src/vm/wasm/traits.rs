@@ -41,20 +41,22 @@ pub trait WasmRuntime {
 
     fn blueprint_call(
         &mut self,
-        blueprint_ident: Vec<u8>,
+        package_address: Vec<u8>,
+        blueprint_name: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn object_new(
         &mut self,
-        blueprint_ident: Vec<u8>,
+        blueprint_name: Vec<u8>,
         object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn address_allocate(
         &mut self,
-        blueprint_id: Vec<u8>,
+        package_address: Vec<u8>,
+        blueprint_name: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn address_get_reservation_address(
@@ -104,10 +106,12 @@ pub trait WasmRuntime {
         key: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_blueprint_id(
+    fn instance_of(
         &mut self,
-        component_id: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+        object_id: Vec<u8>,
+        package_address: Vec<u8>,
+        blueprint_name: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>>;
 
     fn get_outer_object(
         &mut self,
@@ -142,7 +146,9 @@ pub trait WasmRuntime {
         actor_ref_handle: ActorRefHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn actor_get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn actor_get_package_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn actor_get_blueprint_name(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn consume_wasm_execution_units(&mut self, n: u32)
         -> Result<(), InvokeError<WasmRuntimeError>>;

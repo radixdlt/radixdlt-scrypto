@@ -34,7 +34,7 @@ pub struct RoleAssignment(pub ModuleHandle);
 impl RoleAssignment {
     pub fn new<R: Into<OwnerRoleEntry>>(
         owner_role: R,
-        roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>,
+        roles: IndexMap<ObjectModuleId, RoleAssignmentInit>,
     ) -> Self {
         let rtn = ScryptoVmV1Api::blueprint_call(
             ROLE_ASSIGNMENT_MODULE_PACKAGE,

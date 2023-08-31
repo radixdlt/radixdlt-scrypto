@@ -4,7 +4,7 @@ use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::IndexSet;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 use crate::resource::ScryptoAuthZone;
@@ -37,7 +37,7 @@ impl LocalAuthZone {
     }
 
     pub fn create_proof_of_non_fungibles(
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> Proof {
         let node_id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_AUTH_ZONE);

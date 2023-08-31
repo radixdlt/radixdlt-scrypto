@@ -174,6 +174,8 @@ impl WasmModule {
                                     ValType::I32,
                                     ValType::I32,
                                     ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
                                 ],
                                 vec![ValType::I64],
                             ) {
@@ -391,7 +393,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME => {
+                    ACTOR_GET_PACKAGE_ADDRESS_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -404,7 +406,25 @@ impl WasmModule {
 
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    ACTOR_GET_BLUEPRINT_ID_FUNCTION_NAME.to_string(),
+                                    ACTOR_GET_PACKAGE_ADDRESS_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
+                    ACTOR_GET_BLUEPRINT_NAME_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    ACTOR_GET_BLUEPRINT_NAME_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -556,7 +576,7 @@ impl WasmModule {
                             if Self::function_type_matches(
                                 &self.module,
                                 type_index,
-                                vec![ValType::I32, ValType::I32],
+                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
                                 vec![ValType::I64],
                             ) {
                                 continue;
@@ -626,19 +646,26 @@ impl WasmModule {
                             ));
                         }
                     }
-                    OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME => {
+                    OBJECT_INSTANCE_OF_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
                                 type_index,
-                                vec![ValType::I32, ValType::I32],
-                                vec![ValType::I64],
+                                vec![
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                ],
+                                vec![ValType::I32],
                             ) {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                    OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME.to_string(),
+                                    OBJECT_INSTANCE_OF_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -1382,14 +1409,14 @@ mod tests {
 
     #[test]
     fn test_blueprint_constraints() {
-        let mut blueprints = BTreeMap::new();
+        let mut blueprints = index_map_new();
         blueprints.insert(
             "Test".to_string(),
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 is_transient: false,
-                feature_set: btreeset!(),
-                dependencies: btreeset!(),
+                feature_set: indexset!(),
+                dependencies: indexset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1406,7 +1433,7 @@ mod tests {
                     },
                     events: Default::default(),
                     functions: BlueprintFunctionsSchemaInit {
-                        functions: btreemap!(
+                        functions: indexmap!(
                             "f".to_string() => FunctionSchemaInit {
                                 receiver: Option::None,
                                 input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),

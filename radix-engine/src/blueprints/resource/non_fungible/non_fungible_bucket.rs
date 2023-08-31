@@ -83,7 +83,7 @@ impl NonFungibleBucketBlueprint {
     }
 
     pub fn take_non_fungibles<Y>(
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: &IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
@@ -112,7 +112,7 @@ impl NonFungibleBucketBlueprint {
 
     pub fn get_non_fungible_local_ids<Y>(
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -164,7 +164,7 @@ impl NonFungibleBucketBlueprint {
 
     pub fn create_proof_of_non_fungibles<Y>(
         receiver: &NodeId,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
@@ -175,7 +175,7 @@ impl NonFungibleBucketBlueprint {
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof_evidence = NonFungibleProofSubstate::new(
             ids.clone(),
-            btreemap!(
+            indexmap!(
                 LocalRef::Bucket(Reference(receiver.clone())) => ids
             ),
         )
@@ -186,7 +186,7 @@ impl NonFungibleBucketBlueprint {
         })?;
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
-            btreemap! {
+            indexmap! {
                 0u8 => FieldValue::new(&proof_info),
                 1u8 => FieldValue::new(&proof_evidence),
             },
@@ -206,7 +206,7 @@ impl NonFungibleBucketBlueprint {
     //===================
 
     pub fn lock_non_fungibles<Y>(
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: &IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -220,7 +220,7 @@ impl NonFungibleBucketBlueprint {
         let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
 
         // Take from liquid if needed
-        let delta: BTreeSet<NonFungibleLocalId> = ids
+        let delta: IndexSet<NonFungibleLocalId> = ids
             .iter()
             .cloned()
             .filter(|id| !locked.ids.contains_key(id))
@@ -239,7 +239,7 @@ impl NonFungibleBucketBlueprint {
     }
 
     pub fn unlock_non_fungibles<Y>(
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -252,7 +252,7 @@ impl NonFungibleBucketBlueprint {
         )?;
         let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
 
-        let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
+        let mut liquid_non_fungibles: IndexSet<NonFungibleLocalId> = index_set_new();
         for id in ids {
             let cnt = locked
                 .ids
@@ -306,7 +306,7 @@ impl NonFungibleBucketBlueprint {
 
     fn liquid_non_fungible_local_ids<Y>(
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -323,7 +323,7 @@ impl NonFungibleBucketBlueprint {
 
     fn locked_non_fungible_local_ids<Y>(
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -339,7 +339,7 @@ impl NonFungibleBucketBlueprint {
     }
 
     fn internal_take<Y>(
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: &IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where

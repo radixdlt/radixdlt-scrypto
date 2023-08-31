@@ -97,7 +97,7 @@ pub fn validate_field_names(
 
 pub fn validate_enum_metadata(
     type_metadata: &TypeMetadata,
-    variants: &BTreeMap<u8, Vec<LocalTypeIndex>>,
+    variants: &IndexMap<u8, Vec<LocalTypeIndex>>,
 ) -> Result<(), SchemaValidationError> {
     let TypeMetadata {
         type_name,

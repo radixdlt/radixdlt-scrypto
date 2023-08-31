@@ -58,7 +58,7 @@ use radix_engine_interface::types::InternalAddress;
 use radix_engine_interface::types::ResourceAddress;
 use radix_engine_interface::*;
 use sbor::rust::borrow::Borrow;
-use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::IndexMap;
 use sbor::rust::str::FromStr;
 use sbor::rust::vec;
 use sbor::*;
@@ -125,10 +125,10 @@ pub enum NameResolverError {
 
 #[derive(Default)]
 pub struct NameResolver {
-    named_buckets: BTreeMap<String, ManifestBucket>,
-    named_proofs: BTreeMap<String, ManifestProof>,
-    named_address_reservations: BTreeMap<String, ManifestAddressReservation>,
-    named_addresses: BTreeMap<String, u32>,
+    named_buckets: IndexMap<String, ManifestBucket>,
+    named_proofs: IndexMap<String, ManifestProof>,
+    named_address_reservations: IndexMap<String, ManifestAddressReservation>,
+    named_addresses: IndexMap<String, u32>,
 }
 
 impl NameResolver {
@@ -1502,6 +1502,7 @@ mod tests {
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
+    use utils::prelude::IndexMap;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1736,9 +1737,9 @@ mod tests {
                         .try_into()
                         .unwrap()
                     ),
-                    BTreeMap::<String, BlueprintStateSchemaInit>::new(),
-                    BTreeMap::<String, PackageRoyaltyConfig>::new(),
-                    BTreeMap::<String, MetadataValue>::new(),
+                    IndexMap::<String, BlueprintStateSchemaInit>::new(),
+                    IndexMap::<String, PackageRoyaltyConfig>::new(),
+                    IndexMap::<String, MetadataValue>::new(),
                     RoleAssignmentInit::new()
                 )
                 .into(),
@@ -1908,7 +1909,7 @@ mod tests {
                                 "name" => "Token".to_string(), locked;
                             }
                         },
-                        entries: BTreeMap::from([(
+                        entries: IndexMap::from([(
                             NonFungibleLocalId::integer(1),
                             (to_manifest_value_and_unwrap!(&(
                                 String::from("Hello World"),
@@ -2032,7 +2033,7 @@ mod tests {
                 address: resource_address.into(),
                 method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerMintManifestInput {
-                    entries: BTreeMap::from([(
+                    entries: IndexMap::from([(
                         NonFungibleLocalId::integer(1),
                         (to_manifest_value_and_unwrap!(&(
                             String::from("Hello World"),

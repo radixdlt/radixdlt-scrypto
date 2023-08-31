@@ -20,7 +20,7 @@ pub trait SecurifiedRoleAssignment {
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
-        let roles = btreemap!(ObjectModuleId::Main => roles);
+        let roles = indexmap!(ObjectModuleId::Main => roles);
         let role_assignment = RoleAssignment::create(owner_role, roles, api)?;
         Ok(role_assignment)
     }
@@ -36,7 +36,7 @@ pub trait SecurifiedRoleAssignment {
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
-        let roles = btreemap!(ObjectModuleId::Main => roles);
+        let roles = indexmap!(ObjectModuleId::Main => roles);
         let role_assignment = RoleAssignment::create(OwnerRole::Fixed(owner_role), roles, api)?;
         Ok((role_assignment, bucket))
     }
@@ -50,7 +50,7 @@ pub trait SecurifiedRoleAssignment {
         let (bucket, owner_local_id) = if let Some(owner_local_id) = non_fungible_local_id {
             (
                 owner_token.mint_non_fungible(
-                    btreemap!(
+                    indexmap!(
                         owner_local_id.clone() => owner_badge_data
                     ),
                     api,
@@ -76,7 +76,7 @@ pub trait PresecurifiedRoleAssignment: SecurifiedRoleAssignment {
             roles.define_role(RoleKey::new(securify_role), owner_role.clone());
         }
 
-        let roles = btreemap!(
+        let roles = indexmap!(
             ObjectModuleId::Main => roles,
         );
 

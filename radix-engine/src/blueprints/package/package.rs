@@ -123,7 +123,7 @@ pub enum PackageError {
 }
 
 fn validate_package_schema(
-    blueprints: &BTreeMap<String, BlueprintDefinitionInit>,
+    blueprints: &IndexMap<String, BlueprintDefinitionInit>,
 ) -> Result<(), PackageError> {
     for bp_def in blueprints.values() {
         let bp_schema = &bp_def.schema;
@@ -578,7 +578,7 @@ impl SecurifiedRoleAssignment for SecurifiedPackage {
 fn blueprint_state_schema(
     package: PackageDefinition,
     blueprint_name: &str,
-    system_mappings: BTreeMap<usize, PartitionNumber>,
+    system_mappings: IndexMap<usize, PartitionNumber>,
 ) -> IndexedStateSchema {
     let package_blueprint = package.blueprints.get(blueprint_name).unwrap();
     IndexedStateSchema::from_schema(
@@ -609,7 +609,7 @@ pub fn create_bootstrap_package_partitions(
         let package_schema = blueprint_state_schema(
             PackageNativePackage::definition(),
             PACKAGE_BLUEPRINT,
-            btreemap!(PackageCollection::SchemaKeyValue.collection_index() as usize => SCHEMAS_PARTITION),
+            indexmap!(PackageCollection::SchemaKeyValue.collection_index() as usize => SCHEMAS_PARTITION),
         );
         let package_system_struct =
             PackageNativePackage::init_system_struct(None, package_structure);
@@ -630,7 +630,7 @@ pub fn create_bootstrap_package_partitions(
         let metadata_schema = blueprint_state_schema(
             MetadataNativePackage::definition(),
             METADATA_BLUEPRINT,
-            btreemap!(),
+            indexmap!(),
         );
         let metadata_system_struct = MetadataNativePackage::init_system_struct(metadata).unwrap();
         let metadata_substates = SystemMapper::system_struct_to_node_substates(
@@ -645,10 +645,10 @@ pub fn create_bootstrap_package_partitions(
         let role_assignment_schema = blueprint_state_schema(
             RoleAssignmentNativePackage::definition(),
             ROLE_ASSIGNMENT_BLUEPRINT,
-            btreemap!(),
+            indexmap!(),
         );
         let role_assignment_system_struct =
-            RoleAssignmentNativePackage::init_system_struct(OwnerRole::None.into(), btreemap!())
+            RoleAssignmentNativePackage::init_system_struct(OwnerRole::None.into(), indexmap!())
                 .unwrap();
         let role_assignment_substates = SystemMapper::system_struct_to_node_substates(
             &role_assignment_schema,
@@ -673,7 +673,7 @@ pub fn create_bootstrap_package_partitions(
                     generic_substitutions: vec![],
                 },
                 object_type: ObjectType::Global {
-                    modules: btreemap!(
+                    modules: indexmap!(
                         ModuleId::Metadata => BlueprintVersion::default(),
                         ModuleId::RoleAssignment => BlueprintVersion::default(),
                     ),
@@ -710,7 +710,7 @@ where
 
     let address = api.globalize(
         package_object,
-        btreemap!(
+        indexmap!(
             ModuleId::Metadata => metadata.0,
             ModuleId::RoleAssignment => role_assignment.0.0,
         ),
@@ -721,14 +721,14 @@ where
 }
 
 pub struct PackageStructure {
-    pub definitions: BTreeMap<String, PackageBlueprintVersionDefinitionEntryPayload>,
-    pub dependencies: BTreeMap<String, PackageBlueprintVersionDependenciesEntryPayload>,
-    pub schemas: BTreeMap<SchemaHash, PackageSchemaEntryPayload>,
-    pub vm_type: BTreeMap<CodeHash, PackageCodeVmTypeEntryPayload>,
-    pub original_code: BTreeMap<CodeHash, PackageCodeOriginalCodeEntryPayload>,
-    pub instrumented_code: BTreeMap<CodeHash, PackageCodeInstrumentedCodeEntryPayload>,
-    pub auth_configs: BTreeMap<String, PackageBlueprintVersionAuthConfigEntryPayload>,
-    pub package_royalties: BTreeMap<String, PackageBlueprintVersionRoyaltyConfigEntryPayload>,
+    pub definitions: IndexMap<String, PackageBlueprintVersionDefinitionEntryPayload>,
+    pub dependencies: IndexMap<String, PackageBlueprintVersionDependenciesEntryPayload>,
+    pub schemas: IndexMap<SchemaHash, PackageSchemaEntryPayload>,
+    pub vm_type: IndexMap<CodeHash, PackageCodeVmTypeEntryPayload>,
+    pub original_code: IndexMap<CodeHash, PackageCodeOriginalCodeEntryPayload>,
+    pub instrumented_code: IndexMap<CodeHash, PackageCodeInstrumentedCodeEntryPayload>,
+    pub auth_configs: IndexMap<String, PackageBlueprintVersionAuthConfigEntryPayload>,
+    pub package_royalties: IndexMap<String, PackageBlueprintVersionRoyaltyConfigEntryPayload>,
 }
 
 pub struct PackageNativePackage;
@@ -739,7 +739,7 @@ impl PackageNativePackage {
 
         let state = PackageStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = BTreeMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             FunctionSchemaInit {
@@ -794,12 +794,12 @@ impl PackageNativePackage {
         );
 
         let schema = generate_full_schema(aggregator);
-        let blueprints = btreemap!(
+        let blueprints = indexmap!(
             PACKAGE_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 is_transient: false,
                 feature_set: PackageFeatureSet::all_features(),
-                dependencies: btreeset!(
+                dependencies: indexset!(
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     PACKAGE_OWNER_BADGE.into(),
                 ),
@@ -816,7 +816,7 @@ impl PackageNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AccessRules(
-                        btreemap!(
+                        indexmap!(
                             PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
                             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
                             PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
@@ -905,10 +905,10 @@ impl PackageNativePackage {
         royalty_vault: Option<Vault>,
         package_structure: PackageStructure,
     ) -> (
-        BTreeMap<u8, FieldValue>,
-        BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+        IndexMap<u8, FieldValue>,
+        IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>,
     ) {
-        let mut fields = BTreeMap::new();
+        let mut fields = index_map_new();
         if let Some(vault) = royalty_vault {
             let royalty = PackageRoyaltyAccumulator {
                 royalty_vault: vault,
@@ -917,9 +917,9 @@ impl PackageNativePackage {
             fields.insert(0u8, FieldValue::immutable(&royalty));
         }
 
-        let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>> = BTreeMap::new();
+        let mut kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>> = index_map_new();
         {
-            let mut definition_partition = BTreeMap::new();
+            let mut definition_partition = index_map_new();
             for (blueprint, definition) in package_structure.definitions {
                 let key = BlueprintVersionKey::new_default(blueprint);
                 let entry = KVEntry {
@@ -935,7 +935,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut dependency_partition = BTreeMap::new();
+            let mut dependency_partition = index_map_new();
             for (blueprint, dependencies) in package_structure.dependencies {
                 let key = BlueprintVersionKey::new_default(blueprint);
                 let entry = KVEntry {
@@ -951,7 +951,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut package_royalties_partition = BTreeMap::new();
+            let mut package_royalties_partition = index_map_new();
             for (blueprint, package_royalty) in package_structure.package_royalties {
                 let key = BlueprintVersionKey::new_default(blueprint);
                 let entry = KVEntry {
@@ -967,7 +967,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut auth_partition = BTreeMap::new();
+            let mut auth_partition = index_map_new();
             for (blueprint, auth_config) in package_structure.auth_configs {
                 let key = BlueprintVersionKey::new_default(blueprint);
                 let entry = KVEntry {
@@ -983,7 +983,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut vm_type_partition = BTreeMap::new();
+            let mut vm_type_partition = index_map_new();
             for (hash, code_substate) in package_structure.vm_type {
                 let entry = KVEntry {
                     value: Some(scrypto_encode(&code_substate).unwrap()),
@@ -998,7 +998,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut original_code_partition = BTreeMap::new();
+            let mut original_code_partition = index_map_new();
             for (hash, code_substate) in package_structure.original_code {
                 let entry = KVEntry {
                     value: Some(scrypto_encode(&code_substate).unwrap()),
@@ -1013,7 +1013,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut instrumented_code_partition = BTreeMap::new();
+            let mut instrumented_code_partition = index_map_new();
             for (hash, code_substate) in package_structure.instrumented_code {
                 let entry = KVEntry {
                     value: Some(scrypto_encode(&code_substate).unwrap()),
@@ -1028,7 +1028,7 @@ impl PackageNativePackage {
         }
 
         {
-            let mut schemas_partition = BTreeMap::new();
+            let mut schemas_partition = index_map_new();
             for (hash, schema) in package_structure.schemas {
                 let entry = KVEntry {
                     value: Some(scrypto_encode(&schema).unwrap()),
@@ -1066,14 +1066,14 @@ impl PackageNativePackage {
             VmPackageValidation::validate(&definition, vm_type, &original_code)?;
 
         // Build Package structure
-        let mut definitions = BTreeMap::new();
-        let mut dependencies = BTreeMap::new();
-        let mut schemas = BTreeMap::new();
-        let mut package_royalties = BTreeMap::new();
-        let mut auth_configs = BTreeMap::new();
-        let mut vm_type_substates = BTreeMap::new();
-        let mut original_code_substates = BTreeMap::new();
-        let mut instrumented_code_substates = BTreeMap::new();
+        let mut definitions = index_map_new();
+        let mut dependencies = index_map_new();
+        let mut schemas = index_map_new();
+        let mut package_royalties = index_map_new();
+        let mut auth_configs = index_map_new();
+        let mut vm_type_substates = index_map_new();
+        let mut original_code_substates = index_map_new();
+        let mut instrumented_code_substates = index_map_new();
 
         let code_hash = CodeHash::from_hash(hash(&original_code));
         vm_type_substates.insert(code_hash, PackageCodeVmType { vm_type }.into_payload());
@@ -1102,8 +1102,8 @@ impl PackageNativePackage {
                 let schema_hash = blueprint_schema.generate_schema_hash();
                 schemas.insert(schema_hash, blueprint_schema.into_payload());
 
-                let mut functions = BTreeMap::new();
-                let mut function_exports = BTreeMap::new();
+                let mut functions = index_map_new();
+                let mut function_exports = index_map_new();
                 for (function, function_schema_init) in definition_init.schema.functions.functions {
                     let input = match function_schema_init.input {
                         TypeRef::Static(input_type_index) => input_type_index,
@@ -1143,7 +1143,7 @@ impl PackageNativePackage {
                     function_exports.insert(function, export);
                 }
 
-                let mut events = BTreeMap::new();
+                let mut events = index_map_new();
                 for (key, type_ref) in definition_init.schema.events.event_schema {
                     events.insert(
                         key,
@@ -1156,7 +1156,7 @@ impl PackageNativePackage {
                     .cloned()
                     .unwrap_or_default();
 
-                let mut system_mappings = BTreeMap::new();
+                let mut system_mappings = index_map_new();
                 for system_instruction in system_instructions {
                     match system_instruction {
                         SystemInstruction::MapCollectionToPhysicalPartition {
@@ -1246,7 +1246,7 @@ impl PackageNativePackage {
             native_package_code_id.to_be_bytes().to_vec(),
             Default::default(),
         )?;
-        let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
+        let role_assignment = RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
 
         globalize_package(

@@ -74,7 +74,7 @@ impl NonFungibleVaultBlueprint {
 
         let state = NonFungibleVaultStateSchemaInit::create_schema_init(&mut aggregator);
 
-        let mut functions = BTreeMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             VAULT_TAKE_IDENT.to_string(),
             FunctionSchemaInit {
@@ -320,7 +320,7 @@ impl NonFungibleVaultBlueprint {
                 outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             },
             is_transient: false,
-            dependencies: btreeset!(),
+            dependencies: indexset!(),
             feature_set: NonFungibleVaultFeatureSet::all_features(),
 
             schema: BlueprintSchemaInit {
@@ -409,29 +409,42 @@ impl NonFungibleVaultBlueprint {
             }
         }
 
-        let amount =
-            amount
-                .for_withdrawal(0, withdraw_strategy)
-                .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::DecimalOverflow),
-                ))?;
-
         // Check amount
-        let n = check_non_fungible_amount(&amount).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
-        })?;
+        let (amount, count) = {
+            let amount = amount.for_withdrawal(0, withdraw_strategy).ok_or(
+                RuntimeError::ApplicationError(ApplicationError::NonFungibleVaultError(
+                    NonFungibleVaultError::DecimalOverflow,
+                )),
+            )?;
+
+            let n = check_non_fungible_amount(&amount).map_err(|_| {
+                RuntimeError::ApplicationError(ApplicationError::VaultError(
+                    VaultError::InvalidAmount,
+                ))
+            })?;
+
+            let amount = Decimal::from(n);
+
+            if balance.amount < amount {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::NotEnoughAmount),
+                ));
+            }
+
+            (amount, n)
+        };
 
         // Take
         balance.amount = balance
             .amount
-            .safe_sub(n)
+            .safe_sub(amount)
             .ok_or_else(|| VaultError::DecimalOverflow)?;
         let taken = {
             let ids: Vec<(NonFungibleLocalId, NonFungibleVaultNonFungibleEntryPayload)> = api
                 .actor_index_drain_typed(
                     ACTOR_STATE_SELF,
                     NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
-                    n,
+                    count,
                 )?;
             LiquidNonFungibleResource {
                 ids: ids.into_iter().map(|(key, _value)| key).collect(),
@@ -454,7 +467,7 @@ impl NonFungibleVaultBlueprint {
     }
 
     pub fn take_non_fungibles<Y>(
-        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: &IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
@@ -538,7 +551,7 @@ impl NonFungibleVaultBlueprint {
     pub fn get_non_fungible_local_ids<Y>(
         limit: u32,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -621,7 +634,7 @@ impl NonFungibleVaultBlueprint {
     }
 
     pub fn recall_non_fungibles<Y>(
-        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
@@ -641,7 +654,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn create_proof_of_non_fungibles<Y>(
         receiver: &NodeId,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
@@ -652,7 +665,7 @@ impl NonFungibleVaultBlueprint {
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof_evidence = NonFungibleProofSubstate::new(
             ids.clone(),
-            btreemap!(
+            indexmap!(
                 LocalRef::Vault(Reference(receiver.clone().into()))=> ids
             ),
         )
@@ -661,7 +674,7 @@ impl NonFungibleVaultBlueprint {
         })?;
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
-            btreemap! {
+            indexmap! {
                 0u8 => FieldValue::new(&proof_info),
                 1u8 => FieldValue::new(&proof_evidence),
             },
@@ -680,7 +693,7 @@ impl NonFungibleVaultBlueprint {
     }
 
     pub fn burn_non_fungibles<Y>(
-        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: &IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -697,7 +710,7 @@ impl NonFungibleVaultBlueprint {
     //===================
 
     pub fn lock_non_fungibles<Y>(
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: &IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -713,7 +726,7 @@ impl NonFungibleVaultBlueprint {
             .into_latest();
 
         // Take from liquid if needed
-        let delta: BTreeSet<NonFungibleLocalId> = ids
+        let delta: IndexSet<NonFungibleLocalId> = ids
             .iter()
             .cloned()
             .filter(|id| !locked.ids.contains_key(id))
@@ -735,7 +748,7 @@ impl NonFungibleVaultBlueprint {
     }
 
     pub fn unlock_non_fungibles<Y>(
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -750,7 +763,7 @@ impl NonFungibleVaultBlueprint {
             .field_read_typed::<NonFungibleVaultLockedResourceFieldPayload>(handle)?
             .into_latest();
 
-        let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
+        let mut liquid_non_fungibles: IndexSet<NonFungibleLocalId> = index_set_new();
         for id in ids {
             let cnt = locked
                 .ids
@@ -874,7 +887,7 @@ impl NonFungibleVaultBlueprint {
     fn liquid_non_fungible_local_ids<Y>(
         limit: u32,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -890,7 +903,7 @@ impl NonFungibleVaultBlueprint {
     fn locked_non_fungible_local_ids<Y>(
         limit: u32,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -959,7 +972,7 @@ impl NonFungibleVaultBlueprint {
     }
 
     pub fn internal_take_non_fungibles<Y>(
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: &IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where

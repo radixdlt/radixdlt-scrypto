@@ -30,10 +30,6 @@ mod component_test {
             .globalize()
         }
 
-        pub fn get_component_info(component: Global<AnyComponent>) -> BlueprintId {
-            component.blueprint()
-        }
-
         pub fn get_component_state(&self) -> String {
             self.secret.clone()
         }

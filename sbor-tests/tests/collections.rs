@@ -45,7 +45,7 @@ pub fn index_map_creations_compile() {
     let _: IndexMap<_, _> = [(1u32, "entry_one")].into_iter().collect();
 
     // Note - these don't work with no_std on:
-    // let _: IndexMap<K, V> = IndexMap::new();
+    // let _: IndexMap<K, V> = index_map_new();
     // let _: IndexMap<K, V> = IndexMap::with_capacity(n);
 }
 
@@ -63,6 +63,6 @@ pub fn index_set_creations_compile() {
     let _: IndexSet<_> = [1u32, 2u32].into_iter().collect();
 
     // Note - these don't work with no_std on:
-    // let _: IndexMap<K, V> = IndexMap::new();
+    // let _: IndexMap<K, V> = index_map_new();
     // let _: IndexMap<K, V> = IndexMap::with_capacity(n);
 }

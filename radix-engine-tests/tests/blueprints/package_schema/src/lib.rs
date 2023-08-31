@@ -31,7 +31,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         aggregator.add_child_type_and_descendents::<()>(),
     ));
 
-    let mut functions = BTreeMap::new();
+    let mut functions = index_map_new();
 
     functions.insert(
         "invalid_output".to_string(),
@@ -163,7 +163,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         "tree_map".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<BTreeMap<(), ()>>()),
+            input: TypeRef::Static(aggregator.add_child_type_and_descendents::<IndexMap<(), ()>>()),
             output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "dummy_export".to_string(),
         },
@@ -190,7 +190,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         hooks: BlueprintHooksInit::default(),
     };
 
-    let function_auth: BTreeMap<String, AccessRule> = btreemap!(
+    let function_auth: IndexMap<String, AccessRule> = indexmap!(
         "invalid_output".to_string() => AccessRule::AllowAll,
         "unit".to_string() => AccessRule::AllowAll,
         "bool".to_string() => AccessRule::AllowAll,
@@ -212,8 +212,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         is_transient: false,
-        dependencies: btreeset!(),
-        feature_set: btreeset!(),
+        dependencies: indexset!(),
+        feature_set: indexset!(),
         schema,
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {

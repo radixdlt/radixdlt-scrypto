@@ -1,5 +1,5 @@
 [package]
-name = "scrypto-tests"
+name = "scrypto-derive-tests"
 version = "0.13.0"
 edition = "2021"
 

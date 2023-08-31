@@ -1,5 +1,5 @@
 use super::*;
-use crate::rust::collections::BTreeMap;
+use crate::rust::collections::IndexMap;
 use crate::rust::vec::Vec;
 
 /// A schema for the values that a codec can decode / views as valid
@@ -27,7 +27,7 @@ pub enum TypeKind<C: CustomTypeKind<L>, L: SchemaTypeLink> {
 
     Tuple { field_types: Vec<L> },
 
-    Enum { variants: BTreeMap<u8, Vec<L>> },
+    Enum { variants: IndexMap<u8, Vec<L>> },
 
     Map { key_type: L, value_type: L },
 
