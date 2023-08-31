@@ -280,8 +280,7 @@ impl ScryptoVmV1Api {
         let encoded = copy_buffer(unsafe {
             system::sys_bech32_encode_address(global_address.as_ptr(), global_address.len())
         });
-
-        scrypto_decode(&encoded).unwrap()
+        String::from_utf8(encoded).unwrap()
     }
 
     pub fn sys_log(level: Level, message: String) {

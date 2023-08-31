@@ -472,7 +472,7 @@ where
         let address =
             scrypto_decode::<GlobalAddress>(&address).map_err(WasmRuntimeError::InvalidAddress)?;
         let encoded = self.api.bech32_encode_address(address)?;
-        self.allocate_buffer(scrypto_encode(&encoded).expect("Failed to encoded address"))
+        self.allocate_buffer(encoded.into_bytes())
     }
 
     fn sys_panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
