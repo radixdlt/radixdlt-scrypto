@@ -203,14 +203,22 @@ pub enum WithdrawStrategy {
 }
 
 pub trait ForWithdrawal {
-    fn for_withdrawal(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal;
+    fn for_withdrawal(
+        &self,
+        divisibility: u8,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Option<Decimal>;
 }
 
 impl ForWithdrawal for Decimal {
-    fn for_withdrawal(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal {
+    fn for_withdrawal(
+        &self,
+        divisibility: u8,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Option<Decimal> {
         match withdraw_strategy {
-            WithdrawStrategy::Exact => self.clone(),
-            WithdrawStrategy::Rounded(mode) => self.round(divisibility, mode),
+            WithdrawStrategy::Exact => Some(self.clone()),
+            WithdrawStrategy::Rounded(mode) => self.safe_round(divisibility, mode),
         }
     }
 }
