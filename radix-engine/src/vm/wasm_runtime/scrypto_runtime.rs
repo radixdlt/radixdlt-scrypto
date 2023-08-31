@@ -179,10 +179,8 @@ where
         let component_id = self
             .api
             .new_simple_object(blueprint_name.as_ref(), object_states)?;
-        let component_id_encoded =
-            scrypto_encode(&component_id).expect("Failed to encode component id");
 
-        self.allocate_buffer(component_id_encoded)
+        self.allocate_buffer(component_id.to_vec())
     }
 
     fn address_allocate(
@@ -193,14 +191,14 @@ where
         let (package_address, blueprint_name) =
             Self::parse_blueprint_id(package_node_id, blueprint_name)?;
 
-        let object_address = self.api.allocate_global_address(BlueprintId {
+        let address_reservation_and_address = self.api.allocate_global_address(BlueprintId {
             package_address,
             blueprint_name,
         })?;
-        let object_address_encoded =
-            scrypto_encode(&object_address).expect("Failed to encode object address");
+        let encoded = scrypto_encode(&address_reservation_and_address)
+            .expect("Failed to encode object address");
 
-        self.allocate_buffer(object_address_encoded)
+        self.allocate_buffer(encoded)
     }
 
     fn address_get_reservation_address(

@@ -51,7 +51,7 @@ impl ScryptoVmV1Api {
                 object_states.len(),
             )
         });
-        scrypto_decode(&bytes).unwrap()
+        NodeId(bytes.try_into().unwrap())
     }
 
     pub fn object_globalize(
