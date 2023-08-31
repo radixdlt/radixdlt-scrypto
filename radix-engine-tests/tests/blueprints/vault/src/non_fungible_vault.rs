@@ -22,13 +22,14 @@ mod vault_test {
         }
 
         fn create_empty_non_fungible_vault() -> Vault {
-            let resource_manager = ResourceBuilder::new_integer_non_fungible::<Data>(OwnerRole::None)
-                .metadata(metadata! {
-                    init {
-                        "name" => "TestToken".to_owned(), locked;
-                    }
-                })
-                .create_with_no_initial_supply();
+            let resource_manager =
+                ResourceBuilder::new_integer_non_fungible::<Data>(OwnerRole::None)
+                    .metadata(metadata! {
+                        init {
+                            "name" => "TestToken".to_owned(), locked;
+                        }
+                    })
+                    .create_with_no_initial_supply();
             resource_manager.create_empty_vault()
         }
 

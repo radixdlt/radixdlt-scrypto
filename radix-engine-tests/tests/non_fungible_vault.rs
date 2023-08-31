@@ -1,3 +1,5 @@
+use radix_engine::blueprints::resource::NonFungibleVaultError;
+use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -56,10 +58,22 @@ fn withdraw_1_from_empty_non_fungible_vault_should_return_error() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_function(package, "NonFungibleVault", "withdraw_one_from_empty", manifest_args!())
+        .call_function(
+            package,
+            "NonFungibleVault",
+            "withdraw_one_from_empty",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_success();
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleVaultError(
+                NonFungibleVaultError::NotEnoughAmount
+            ))
+        )
+    });
 }
