@@ -3,6 +3,7 @@ pub mod one_pool;
 pub mod two_pool;
 pub mod validator;
 pub mod multi_pool;
+pub mod resource;
 
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;

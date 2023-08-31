@@ -14,117 +14,50 @@ use radix_engine_interface::prelude::node_modules::ModuleConfig;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use resource_tests::TestFuzzer;
+use resource_tests::{FuzzTxnResult, TestFuzzer};
+use resource_tests::resource::{BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID, FungibleResourceFuzzGetBucketAction, FungibleResourceFuzzUseBucketAction, VaultTestInvoke};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
 fn fuzz_fungible_resource() {
-    let results: Vec<BTreeMap<ResourceFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>>> =
-        (1u64..64u64)
-            .into_par_iter()
-            .map(|seed| {
-                let mut resource_fuzz_test = ResourceFuzzTest::new(seed);
-                resource_fuzz_test.run_fuzz()
-            })
-            .collect();
+    let mut summed_results: BTreeMap<ResourceFuzzAction, BTreeMap<FuzzTxnResult, u64>> =
+        BTreeMap::new();
 
-    println!("{:#?}", results);
+    let results: Vec<BTreeMap<ResourceFuzzAction, BTreeMap<FuzzTxnResult, u64>>> = (1u64..=64u64)
+        .into_par_iter()
+        .map(|seed| {
+            let mut fuzz_test = FungibleResourceFuzzTest::new(seed);
+            fuzz_test.run_fuzz()
+        })
+        .collect();
 
-    panic!("oops");
-}
+    for run_result in results {
+        for (txn, txn_results) in run_result {
+            for (txn_result, count) in txn_results {
+                summed_results
+                    .entry(txn)
+                    .or_default()
+                    .entry(txn_result)
+                    .or_default()
+                    .add_assign(&count);
+            }
+        }
+    }
 
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-enum FungibleResourceFuzzStartAction {
-    Mint,
-    VaultTake,
-    VaultTakeAdvanced,
-    VaultRecall,
-}
-
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-enum FungibleResourceFuzzEndAction {
-    Burn,
-    VaultPut,
+    println!("{:#?}", summed_results);
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 struct ResourceFuzzAction(
-    FungibleResourceFuzzStartAction,
-    FungibleResourceFuzzEndAction,
+    FungibleResourceFuzzGetBucketAction,
+    FungibleResourceFuzzUseBucketAction,
 );
 
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-enum ConsensusFuzzActionResult {
-    TrivialSuccess,
-    Success,
-    TrivialFailure,
-    Failure,
-}
 
-const BLUEPRINT_NAME: &str = "MyBlueprint";
-const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
-
-#[derive(Clone)]
-struct TestInvoke;
-impl VmInvoke for TestInvoke {
-    fn invoke<Y>(
-        &mut self,
-        export_name: &str,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-    {
-        match export_name {
-            "call_vault" => {
-                let handle = api
-                    .actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::read_only())
-                    .unwrap();
-                let vault: Vault = api.field_read_typed(handle).unwrap();
-
-                let input: (String, ScryptoValue) = scrypto_decode(input.as_slice()).unwrap();
-
-                let rtn = api.call_method(
-                    vault.0.as_node_id(),
-                    input.0.as_str(),
-                    scrypto_encode(&input.1).unwrap(),
-                )?;
-                return Ok(IndexedScryptoValue::from_vec(rtn).unwrap());
-            }
-            "new" => {
-                let resource_address: (ResourceAddress,) =
-                    scrypto_decode(input.as_slice()).unwrap();
-                let vault = Vault::create(resource_address.0, api).unwrap();
-
-                let metadata = Metadata::create(api)?;
-                let access_rules = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
-                let node_id = api
-                    .new_simple_object(BLUEPRINT_NAME, btreemap!(0u8 => FieldValue::new(&vault)))?;
-
-                api.globalize(
-                    node_id,
-                    btreemap!(
-                        ModuleId::Metadata => metadata.0,
-                        ModuleId::RoleAssignment => access_rules.0.0,
-                    ),
-                    None,
-                )?;
-            }
-            _ => {}
-        }
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
-}
-
-struct ResourceFuzzTest {
+struct FungibleResourceFuzzTest {
     fuzzer: TestFuzzer,
-    test_runner: TestRunner<OverridePackageCode<TestInvoke>, InMemorySubstateDatabase>,
+    test_runner: TestRunner<OverridePackageCode<VaultTestInvoke>, InMemorySubstateDatabase>,
     resource_address: ResourceAddress,
     component_address: ComponentAddress,
     vault_id: InternalAddress,
@@ -132,11 +65,11 @@ struct ResourceFuzzTest {
     account_component_address: ComponentAddress,
 }
 
-impl ResourceFuzzTest {
+impl FungibleResourceFuzzTest {
     fn new(seed: u64) -> Self {
         let fuzzer = TestFuzzer::new(seed);
         let mut test_runner = TestRunnerBuilder::new()
-            .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
+            .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, VaultTestInvoke))
             .build();
         let package_address = test_runner.publish_native_package(
             CUSTOM_PACKAGE_CODE_ID,
@@ -209,89 +142,30 @@ impl ResourceFuzzTest {
 
     fn run_fuzz(
         &mut self,
-    ) -> BTreeMap<ResourceFuzzAction, BTreeMap<ConsensusFuzzActionResult, u64>> {
+    ) -> BTreeMap<ResourceFuzzAction, BTreeMap<FuzzTxnResult, u64>> {
         let mut fuzz_results: BTreeMap<
             ResourceFuzzAction,
-            BTreeMap<ConsensusFuzzActionResult, u64>,
+            BTreeMap<FuzzTxnResult, u64>,
         > = BTreeMap::new();
         for _ in 0..500 {
             let builder = ManifestBuilder::new();
-            let start =
-                FungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(4u8)).unwrap();
-            let (mut builder, mut trivial) = match start {
-                FungibleResourceFuzzStartAction::Mint => {
-                    let amount = self.next_amount();
-                    let builder = builder.call_method(
-                        self.resource_address,
-                        FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-                        FungibleResourceManagerMintInput { amount },
-                    );
-                    (builder, amount.is_zero())
-                }
-                FungibleResourceFuzzStartAction::VaultTake => {
-                    let amount = self.next_amount();
-                    let builder = builder.call_method(
-                        self.component_address,
-                        "call_vault",
-                        manifest_args!(VAULT_TAKE_IDENT, (amount,)),
-                    );
-                    (builder, amount.is_zero())
-                }
-                FungibleResourceFuzzStartAction::VaultTakeAdvanced => {
-                    let amount = self.next_amount();
-                    let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
-                    let builder = builder.call_method(
-                        self.component_address,
-                        "call_vault",
-                        manifest_args!(VAULT_TAKE_ADVANCED_IDENT, (amount, withdraw_strategy)),
-                    );
-                    (builder, amount.is_zero())
-                }
-                FungibleResourceFuzzStartAction::VaultRecall => {
-                    let amount = self.next_amount();
-                    let builder = builder.recall(self.vault_id, amount);
-                    (builder, amount.is_zero())
-                }
-            };
+            let get_action =
+                FungibleResourceFuzzGetBucketAction::from_repr(self.fuzzer.next_u8(4u8)).unwrap();
+            let (mut builder, mut trivial) = get_action.add_to_manifest(
+                builder,
+                &mut self.fuzzer,
+                self.component_address,
+                self.resource_address,
+                self.vault_id,
+            );
 
-            for _ in 0u8..self.fuzzer.next(0u8..2u8) {
-                let (next_builder, next_trivial) = {
-                    let amount = self.next_amount();
-                    let builder = builder.call_method(
-                        self.component_address,
-                        "call_vault",
-                        manifest_args!(FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT, (amount,)),
-                    );
-                    (builder, amount.is_zero())
-                };
-
-                builder = next_builder;
-                trivial = trivial || next_trivial;
-            }
-
-            let end = FungibleResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
-            let (builder, end_trivial) = match end {
-                FungibleResourceFuzzEndAction::Burn => {
-                    let amount = self.next_amount();
-                    let builder = builder
-                        .take_from_worktop(self.resource_address, amount, "bucket")
-                        .burn_resource("bucket");
-                    (builder, amount.is_zero())
-                }
-                FungibleResourceFuzzEndAction::VaultPut => {
-                    let amount = self.next_amount();
-                    let builder = builder
-                        .take_from_worktop(self.resource_address, amount, "bucket")
-                        .with_bucket("bucket", |builder, bucket| {
-                            builder.call_method(
-                                self.component_address,
-                                "call_vault",
-                                manifest_args!(VAULT_PUT_IDENT, (bucket,)),
-                            )
-                        });
-                    (builder, amount.is_zero())
-                }
-            };
+            let use_action = FungibleResourceFuzzUseBucketAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
+            let (mut builder, end_trivial) = use_action.add_to_manifest(
+                builder,
+                &mut self.fuzzer,
+                self.resource_address,
+                self.component_address,
+            );
             trivial = trivial || end_trivial;
 
             let manifest = builder
@@ -305,19 +179,10 @@ impl ResourceFuzzTest {
             );
 
             let result = receipt.expect_commit_ignore_outcome();
-            let result = match (&result.outcome, trivial) {
-                (TransactionOutcome::Success(..), true) => {
-                    ConsensusFuzzActionResult::TrivialSuccess
-                }
-                (TransactionOutcome::Success(..), false) => ConsensusFuzzActionResult::Success,
-                (TransactionOutcome::Failure(..), true) => {
-                    ConsensusFuzzActionResult::TrivialFailure
-                }
-                (TransactionOutcome::Failure(..), false) => ConsensusFuzzActionResult::Failure,
-            };
+            let result = FuzzTxnResult::from_outcome(&result.outcome, trivial);
 
             let results = fuzz_results
-                .entry(ResourceFuzzAction(start, end))
+                .entry(ResourceFuzzAction(get_action, use_action))
                 .or_default();
             results.entry(result).or_default().add_assign(&1);
         }
