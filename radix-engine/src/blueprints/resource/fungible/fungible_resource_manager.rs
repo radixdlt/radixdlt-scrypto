@@ -77,6 +77,7 @@ pub enum FungibleResourceManagerError {
     DropNonEmptyBucket,
     NotMintable,
     NotBurnable,
+    UnexpectedDecimalComputationError,
 }
 
 pub fn verify_divisibility(divisibility: u8) -> Result<(), RuntimeError> {
@@ -588,7 +589,13 @@ impl FungibleResourceManagerBlueprint {
                     total_supply_handle,
                 )?
                 .into_latest();
-            total_supply = total_supply.safe_add(amount).unwrap();
+            total_supply = total_supply
+                .safe_add(amount)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::FungibleResourceManagerError(
+                        FungibleResourceManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
             api.field_write_typed(
                 total_supply_handle,
                 &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(total_supply),
@@ -647,7 +654,11 @@ impl FungibleResourceManagerBlueprint {
                     total_supply_handle,
                 )?
                 .into_latest();
-            total_supply = total_supply.safe_sub(other_bucket.liquid.amount()).unwrap();
+            total_supply = total_supply.safe_sub(other_bucket.liquid.amount()).ok_or(
+                RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
+                    FungibleResourceManagerError::UnexpectedDecimalComputationError,
+                )),
+            )?;
             api.field_write_typed(
                 total_supply_handle,
                 &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(total_supply),

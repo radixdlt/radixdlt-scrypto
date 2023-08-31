@@ -11,7 +11,7 @@ pub const MAX_NUMBER_OF_BR_TABLE_TARGETS: u32 = 256;
 pub const MAX_NUMBER_OF_GLOBALS: u32 = 512;
 
 /// The max number of functions
-pub const MAX_NUMBER_OF_FUNCTIONS: u32 = 64 * 1024;
+pub const MAX_NUMBER_OF_FUNCTIONS: u32 = 4 * 1024;
 
 /// The max number of function parameters
 pub const MAX_NUMBER_OF_FUNCTION_PARAMS: u32 = 32;
@@ -21,7 +21,3 @@ pub const MAX_NUMBER_OF_FUNCTION_LOCALS: u32 = 128;
 
 /// The number of entries in the engine cache
 pub const WASM_ENGINE_CACHE_SIZE: usize = 1000;
-
-pub const MAX_URL_LENGTH: usize = 1024;
-
-pub const MAX_ORIGIN_LENGTH: usize = 512;

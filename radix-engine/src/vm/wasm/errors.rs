@@ -149,6 +149,8 @@ pub enum WasmRuntimeError {
     InvalidEventFlags(u32),
 
     InvalidPackageAddress,
+
+    TooManyBuffers,
 }
 
 impl SelfError for WasmRuntimeError {

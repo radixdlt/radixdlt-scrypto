@@ -120,10 +120,10 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        tests-dir: scrypto-tests
+        tests-dir: scrypto-derive-tests
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        tests-dir: scrypto-tests
+        tests-dir: scrypto-derive-tests
         flags: --no-default-features --features alloc
 
   scrypto-examples:

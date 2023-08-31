@@ -651,7 +651,11 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
+<<<<<<< HEAD
     Blob("ff58aa06b908277a6d90966d5100c5b020c67297e8d5b53659d62ea2fd1f4742")
+=======
+    Blob("c60c4715f1382e392ad8a7e0fe9a617563eb81a3f23541e9ec333a7b0dd7d94c")
+>>>>>>> feature/basic-wasm-opt
     Map<String, Tuple>(
         "name" => Tuple(
             Enum<1u8>(

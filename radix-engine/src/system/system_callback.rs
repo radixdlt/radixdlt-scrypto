@@ -257,7 +257,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Y: KernelApi<SystemConfig<C>>,
     {
         let mut system = SystemService::new(api);
-        let actor = system.current_actor();
+        let actor = system.current_actor()?;
         let node_id = actor.node_id();
         let is_direct_access = actor.is_direct_access();
 

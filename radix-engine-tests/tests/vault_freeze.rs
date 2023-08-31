@@ -176,9 +176,6 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
     let vaults = test_runner.get_component_vaults(account, resource_address);
     let vault_id = vaults[0];
     let internal_address = InternalAddress::new_or_panic(vault_id.into());
-    let mut ids = index_set_new();
-    ids.insert(NonFungibleLocalId::integer(1));
-    ids.insert(NonFungibleLocalId::integer(2));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -193,9 +190,21 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .assert_worktop_contains_non_fungibles(resource_address, &index_set_new())
-        .recall_non_fungibles(internal_address, &ids)
-        .assert_worktop_contains_non_fungibles(resource_address, &ids)
+        .assert_worktop_contains_non_fungibles(resource_address, [])
+        .recall_non_fungibles(
+            internal_address,
+            [
+                NonFungibleLocalId::integer(1),
+                NonFungibleLocalId::integer(2),
+            ],
+        )
+        .assert_worktop_contains_non_fungibles(
+            resource_address,
+            [
+                NonFungibleLocalId::integer(1),
+                NonFungibleLocalId::integer(2),
+            ],
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

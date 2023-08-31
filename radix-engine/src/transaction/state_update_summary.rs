@@ -197,6 +197,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                     .map(|old_balance| old_balance.into_payload().into_latest().amount())
                     .unwrap_or(Decimal::ZERO);
 
+                // TODO: Handle potential Decimal arithmetic operation (safe_sub) errors instead of panicking.
                 new_balance.safe_sub(old_balance).unwrap()
             })
             .filter(|change| change != &Decimal::ZERO) // prune

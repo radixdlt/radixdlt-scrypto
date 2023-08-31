@@ -8,9 +8,16 @@ sbor = { path = "../../../sbor" }
 scrypto = { path = "../../../scrypto" }
 
 [dev-dependencies]
+radiswap = { path = ".", features = ["test"] }
+native-sdk = { path = "../../../native-sdk" }
 transaction = { path = "../../../transaction" }
 radix-engine = { path = "../../../radix-engine" }
 scrypto-unit = { path = "../../../scrypto-unit" }
+scrypto-test = { path = "../../../scrypto-test" }
+
+[features]
+default = []
+test = []
 
 [lib]
 crate-type = ["cdylib", "lib"]

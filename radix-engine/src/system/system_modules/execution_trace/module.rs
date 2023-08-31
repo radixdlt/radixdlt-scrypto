@@ -18,6 +18,10 @@ use sbor::rust::fmt::Debug;
 // Note: ExecutionTrace must not produce any error or transactional side effect!
 //===================================================================================
 
+// TODO: Handle potential Decimal arithmetic operation (saf_add, safe_sub) errors instead of panicking.
+// ATM, ExecutionTrace cannot return any errors (as stated above), so it shall be thoroughly
+// designed.
+
 #[derive(Debug, Clone)]
 pub struct ExecutionTraceModule {
     /// Maximum depth up to which kernel calls are being traced.

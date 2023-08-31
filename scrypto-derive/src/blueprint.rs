@@ -1,6 +1,7 @@
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, ToTokens};
 use radix_engine_common::address::AddressBech32Decoder;
+use std::str::FromStr;
 use syn::parse::{Parse, ParseStream, Parser};
 use syn::spanned::Spanned;
 use syn::token::{Brace, Comma};
@@ -688,7 +689,110 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     let output_stubs = generate_stubs(&stub_ident, &functions_ident, bp_ident, bp_items)?;
 
+    let output_test_bindings_struct = quote! {
+        #[derive(Debug, Clone, Copy)]
+        pub struct #bp_ident(pub NodeId);
+    };
+
+    let output_test_struct_impls = quote! {
+        impl<D: ::sbor::Decoder<::scrypto::prelude::ScryptoCustomValueKind>>
+            ::scrypto::prelude::Decode<::scrypto::prelude::ScryptoCustomValueKind, D>
+            for #bp_ident
+        {
+            #[inline]
+            fn decode_body_with_value_kind(
+                decoder: &mut D,
+                value_kind: ::scrypto::prelude::ValueKind<
+                    ::scrypto::prelude::ScryptoCustomValueKind,
+                >,
+            ) -> Result<Self, ::scrypto::prelude::DecodeError> {
+                let node_id = match value_kind {
+                    ValueKind::Custom(::scrypto::prelude::ScryptoCustomValueKind::Reference) => {
+                        <::scrypto::prelude::Reference as ::scrypto::prelude::Decode<
+                            ::scrypto::prelude::ScryptoCustomValueKind,
+                            D,
+                        >>::decode_body_with_value_kind(decoder, value_kind)
+                        .map(|reference| reference.0)
+                    }
+                    ValueKind::Custom(::scrypto::prelude::ScryptoCustomValueKind::Own) => {
+                        <::scrypto::prelude::Own as ::scrypto::prelude::Decode<
+                            ::scrypto::prelude::ScryptoCustomValueKind,
+                            D,
+                        >>::decode_body_with_value_kind(decoder, value_kind)
+                        .map(|own| own.0)
+                    }
+                    _ => Err(::scrypto::prelude::DecodeError::InvalidCustomValue),
+                }?;
+                Ok(Self(node_id))
+            }
+        }
+
+        impl ::core::convert::TryFrom<#bp_ident> for ::scrypto::prelude::ComponentAddress {
+            type Error = ::scrypto::prelude::ParseComponentAddressError;
+
+            fn try_from(value: #bp_ident) -> ::std::result::Result<Self, Self::Error> {
+                ::scrypto::prelude::ComponentAddress::try_from(value.0)
+            }
+        }
+        impl ::core::convert::TryFrom<#bp_ident> for ::scrypto::prelude::ResourceAddress {
+            type Error = ::scrypto::prelude::ParseResourceAddressError;
+
+            fn try_from(value: #bp_ident) -> ::std::result::Result<Self, Self::Error> {
+                ::scrypto::prelude::ResourceAddress::try_from(value.0)
+            }
+        }
+        impl ::core::convert::TryFrom<#bp_ident> for ::scrypto::prelude::PackageAddress {
+            type Error = ::scrypto::prelude::ParsePackageAddressError;
+
+            fn try_from(value: #bp_ident) -> ::std::result::Result<Self, Self::Error> {
+                ::scrypto::prelude::PackageAddress::try_from(value.0)
+            }
+        }
+        impl ::core::convert::TryFrom<#bp_ident> for ::scrypto::prelude::GlobalAddress {
+            type Error = ::scrypto::prelude::ParseGlobalAddressError;
+
+            fn try_from(value: #bp_ident) -> ::std::result::Result<Self, Self::Error> {
+                ::scrypto::prelude::GlobalAddress::try_from(value.0)
+            }
+        }
+        impl ::core::convert::TryFrom<#bp_ident> for ::scrypto::prelude::InternalAddress {
+            type Error = ::scrypto::prelude::ParseInternalAddressError;
+
+            fn try_from(value: #bp_ident) -> ::std::result::Result<Self, Self::Error> {
+                ::scrypto::prelude::InternalAddress::try_from(value.0)
+            }
+        }
+        impl ::core::convert::From<#bp_ident> for ::scrypto::prelude::Own {
+            fn from(value: #bp_ident) -> Self {
+                Self(value.0)
+            }
+        }
+        impl ::core::convert::From<#bp_ident> for ::scrypto::prelude::Reference {
+            fn from(value: #bp_ident) -> Self {
+                Self(value.0)
+            }
+        }
+        impl ::core::convert::From<#bp_ident> for ::scrypto::prelude::NodeId {
+            fn from(value: #bp_ident) -> ::scrypto::prelude::NodeId {
+                value.0
+            }
+        }
+    };
+
+    let output_test_bindings_fns = {
+        let fns = generate_test_bindings_fns(&bp_name, bp_items)?;
+
+        quote! {
+            impl #bp_ident {
+                #(#fns)*
+            }
+        }
+    };
+
+    let output_test_bindings_state = generate_test_bindings_state(bp_strut);
+
     let output = quote! {
+        #[automatically_derived]
         pub mod #module_ident {
             #(#use_statements)*
 
@@ -713,6 +817,21 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #output_schema
 
             #output_stubs
+        }
+
+        // Only available when the blueprint is build with the test feature.
+        #[cfg(feature = "test")]
+        #[automatically_derived]
+        pub mod test_bindings {
+            #(#use_statements)*
+
+            #output_test_bindings_state
+
+            #output_test_bindings_struct
+
+            #output_test_struct_impls
+
+            #output_test_bindings_fns
         }
     };
 
@@ -1283,6 +1402,162 @@ fn replace_self_with(t: &Type, name: &Ident) -> Type {
     }
 }
 
+fn generate_test_bindings_fns(bp_name: &str, items: &[ImplItem]) -> Result<Vec<TokenStream>> {
+    let mut functions = Vec::new();
+
+    for item in items {
+        if let ImplItem::Method(ref impl_item) = item {
+            // Ignore any method that is not public - it doesn't need to have test bindings for it.
+            match impl_item.vis {
+                Visibility::Public(..) => {}
+                _ => continue,
+            }
+            let func_ident = &impl_item.sig.ident;
+
+            // A flag that keeps track of whether this is a function or a method by tracking whether
+            // a receiver has been encountered or not.
+            let mut is_receiver_encountered = false;
+            let mut args = Vec::<TokenStream>::new();
+            let mut arg_idents = Vec::<Ident>::new();
+            for (i, arg) in impl_item.sig.inputs.iter().enumerate() {
+                match arg {
+                    FnArg::Receiver(receiver) => {
+                        args.push(quote!(#receiver));
+                        is_receiver_encountered = true;
+                    }
+                    FnArg::Typed(typed) => {
+                        let arg_ident = match typed.pat.as_ref() {
+                            Pat::Ident(PatIdent { ident, .. }) => ident.clone(),
+                            _ => parse2(
+                                TokenStream::from_str(&format!("unnamed_argument_index_{}", i))
+                                    .unwrap(),
+                            )?,
+                        };
+                        let arg_type = typed.ty.as_ref();
+
+                        // We do some replacements in here for the argument types to be compatible
+                        // with the test stubs.
+                        // * Global<...> => Reference
+                        // * Owned<...> => Own
+                        let arg_type = {
+                            let str = arg_type.to_token_stream().to_string().replace(" ", "");
+                            if str.contains("Owned<") {
+                                parse_quote! { ::scrypto::prelude::Own }
+                            } else if str.contains("Global<") {
+                                parse_quote!(::scrypto::prelude::Reference)
+                            } else {
+                                arg_type.clone()
+                            }
+                        };
+
+                        args.push(quote! { #arg_ident: #arg_type });
+                        arg_idents.push(arg_ident.clone());
+                    }
+                }
+            }
+
+            if !is_receiver_encountered {
+                args.push(quote! { blueprint_package_address: ::scrypto::prelude::PackageAddress })
+            }
+            args.push(quote! { env: &mut Y });
+
+            let invocation_type = TokenStream::from_str(if is_receiver_encountered {
+                "call_method"
+            } else {
+                "call_function"
+            })?;
+            let invocation_args = {
+                if !is_receiver_encountered {
+                    quote! { blueprint_package_address, #bp_name, stringify!(#func_ident), ::scrypto::prelude::scrypto_encode(&( #(#arg_idents,)* )).unwrap() }
+                } else {
+                    quote! { &self.0, stringify!(#func_ident), ::scrypto::prelude::scrypto_encode(&( #(#arg_idents,)* )).unwrap() }
+                }
+            };
+
+            let rtn_type = match &impl_item.sig.output {
+                ReturnType::Default => parse_quote!(()),
+                ReturnType::Type(_, rtn_type) => {
+                    let str = rtn_type.to_token_stream().to_string().replace(" ", "");
+                    if str.contains(format!("Owned<{}>", bp_name).as_str())
+                        || str.contains(format!("Global<{}>", bp_name).as_str())
+                    {
+                        parse_quote! { Self }
+                    } else if str.contains("Owned<") {
+                        parse_quote! { ::scrypto::prelude::InternalAddress }
+                    } else if str.contains("Global<") {
+                        parse_quote! { ::scrypto::prelude::GlobalAddress }
+                    } else {
+                        rtn_type.as_ref().clone()
+                    }
+                }
+            };
+
+            let func = quote! {
+                pub fn #func_ident<Y, E> (
+                    #(#args),*
+                ) -> Result<#rtn_type, E>
+                where
+                    Y: ::scrypto::api::ClientApi<E>,
+                    E: ::std::fmt::Debug
+                {
+                    let rtn = env. #invocation_type ( #invocation_args )?;
+                    Ok(::scrypto::prelude::scrypto_decode(&rtn).unwrap())
+                }
+            };
+            functions.push(func);
+        }
+    }
+    Ok(functions)
+}
+
+fn generate_test_bindings_state(bp_struct: &ItemStruct) -> ItemStruct {
+    let mut bp_struct = bp_struct.clone();
+    bp_struct.ident = format_ident!("{}State", bp_struct.ident);
+
+    match &mut bp_struct.fields {
+        Fields::Unit => {}
+        Fields::Named(named) => named.named.iter_mut().for_each(|Field { ty, vis, .. }| {
+            *ty = type_replacement(ty, bp_struct.ident.to_string().as_str());
+            *vis = Visibility::Public(VisPublic {
+                pub_token: token::Pub::default(),
+            });
+        }),
+        Fields::Unnamed(unnamed) => {
+            unnamed
+                .unnamed
+                .iter_mut()
+                .for_each(|Field { ty, vis, .. }| {
+                    *ty = type_replacement(ty, bp_struct.ident.to_string().as_str());
+                    *vis = Visibility::Public(VisPublic {
+                        pub_token: token::Pub::default(),
+                    });
+                })
+        }
+    };
+
+    bp_struct.attrs = vec![parse_quote! { #[derive(::scrypto::prelude::ScryptoSbor)] }];
+    bp_struct.vis = Visibility::Public(VisPublic {
+        pub_token: token::Pub::default(),
+    });
+
+    bp_struct
+}
+
+fn type_replacement(ty: &Type, bp_name: &str) -> Type {
+    let str = ty.to_token_stream().to_string().replace(" ", "");
+    if str.contains(format!("Owned<{}>", bp_name).as_str())
+        || str.contains(format!("Global<{}>", bp_name).as_str())
+    {
+        parse_quote! { Self }
+    } else if str.contains("Owned<") {
+        parse_quote! { ::scrypto::prelude::InternalAddress }
+    } else if str.contains("Global<") {
+        parse_quote! { ::scrypto::prelude::GlobalAddress }
+    } else {
+        ty.clone()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1311,6 +1586,7 @@ mod tests {
             output,
             quote! {
 
+                #[automatically_derived]
                 pub mod test {
                     use scrypto::prelude::*;
                     use super::*;
@@ -1561,6 +1837,132 @@ mod tests {
                     impl TestFunctions for ::scrypto::component::Blueprint<Test> {
                         fn y(i: u32) -> u32 {
                             Self::call_function_raw("y", scrypto_args!(i))
+                        }
+                    }
+                }
+
+                #[cfg(feature = "test")]
+                #[automatically_derived]
+                pub mod test_bindings {
+                    use scrypto::prelude::*;
+                    use super::*;
+                    use scrypto::prelude::MethodAccessibility::*;
+                    use scrypto::prelude::RoyaltyAmount::*;
+
+                    #[derive(:: scrypto :: prelude :: ScryptoSbor)]
+                    pub struct TestState {
+                        pub a: u32,
+                        pub admin: ResourceManager
+                    }
+
+                    #[derive(Debug, Clone, Copy)]
+                    pub struct Test(pub NodeId);
+
+                    impl<D: ::sbor::Decoder<::scrypto::prelude::ScryptoCustomValueKind>>
+                        ::scrypto::prelude::Decode<::scrypto::prelude::ScryptoCustomValueKind, D> for Test
+                    {
+                        #[inline]
+                        fn decode_body_with_value_kind(
+                            decoder: &mut D,
+                            value_kind: ::scrypto::prelude::ValueKind<::scrypto::prelude::ScryptoCustomValueKind,>,
+                        ) -> Result<Self, ::scrypto::prelude::DecodeError> {
+                            let node_id = match value_kind {
+                                ValueKind::Custom(::scrypto::prelude::ScryptoCustomValueKind::Reference) => {
+                                    <::scrypto::prelude::Reference as ::scrypto::prelude::Decode<
+                                        ::scrypto::prelude::ScryptoCustomValueKind,
+                                        D,
+                                    >>::decode_body_with_value_kind(decoder, value_kind)
+                                    .map(|reference| reference.0)
+                                }
+                                ValueKind::Custom(::scrypto::prelude::ScryptoCustomValueKind::Own) => {
+                                    <::scrypto::prelude::Own as ::scrypto::prelude::Decode<
+                                        ::scrypto::prelude::ScryptoCustomValueKind,
+                                        D,
+                                    >>::decode_body_with_value_kind(decoder, value_kind)
+                                    .map(|own| own.0)
+                                }
+                                _ => Err(::scrypto::prelude::DecodeError::InvalidCustomValue),
+                            }?;
+                            Ok(Self(node_id))
+                        }
+                    }
+
+                    impl ::core::convert::TryFrom<Test> for ::scrypto::prelude::ComponentAddress {
+                        type Error = ::scrypto::prelude::ParseComponentAddressError;
+                        fn try_from(value: Test) -> ::std::result::Result<Self, Self::Error> {
+                            ::scrypto::prelude::ComponentAddress::try_from(value.0)
+                        }
+                    }
+                    impl ::core::convert::TryFrom<Test> for ::scrypto::prelude::ResourceAddress {
+                        type Error = ::scrypto::prelude::ParseResourceAddressError;
+                        fn try_from(value: Test) -> ::std::result::Result<Self, Self::Error> {
+                            ::scrypto::prelude::ResourceAddress::try_from(value.0)
+                        }
+                    }
+                    impl ::core::convert::TryFrom<Test> for ::scrypto::prelude::PackageAddress {
+                        type Error = ::scrypto::prelude::ParsePackageAddressError;
+                        fn try_from(value: Test) -> ::std::result::Result<Self, Self::Error> {
+                            ::scrypto::prelude::PackageAddress::try_from(value.0)
+                        }
+                    }
+                    impl ::core::convert::TryFrom<Test> for ::scrypto::prelude::GlobalAddress {
+                        type Error = ::scrypto::prelude::ParseGlobalAddressError;
+                        fn try_from(value: Test) -> ::std::result::Result<Self, Self::Error> {
+                            ::scrypto::prelude::GlobalAddress::try_from(value.0)
+                        }
+                    }
+                    impl ::core::convert::TryFrom<Test> for ::scrypto::prelude::InternalAddress {
+                        type Error = ::scrypto::prelude::ParseInternalAddressError;
+                        fn try_from(value: Test) -> ::std::result::Result<Self, Self::Error> {
+                            ::scrypto::prelude::InternalAddress::try_from(value.0)
+                        }
+                    }
+                    impl ::core::convert::From<Test> for ::scrypto::prelude::Own {
+                        fn from(value: Test) -> Self {
+                            Self(value.0)
+                        }
+                    }
+                    impl ::core::convert::From<Test> for ::scrypto::prelude::Reference {
+                        fn from(value: Test) -> Self {
+                            Self(value.0)
+                        }
+                    }
+                    impl ::core::convert::From<Test> for ::scrypto::prelude::NodeId {
+                        fn from(value: Test) -> ::scrypto::prelude::NodeId {
+                            value.0
+                        }
+                    }
+
+                    impl Test {
+                        pub fn x<Y, E>(&self, i: u32, env: &mut Y) -> Result<u32, E>
+                        where
+                            Y: ::scrypto::api::ClientApi<E>,
+                            E: ::std::fmt::Debug
+                        {
+                            let rtn = env.call_method(
+                                &self.0,
+                                stringify!(x),
+                                ::scrypto::prelude::scrypto_encode(&(i,)).unwrap()
+                            )?;
+                            Ok(::scrypto::prelude::scrypto_decode(&rtn).unwrap())
+                        }
+
+                        pub fn y<Y, E>(
+                            i: u32,
+                            blueprint_package_address: ::scrypto::prelude::PackageAddress,
+                            env: &mut Y
+                        ) -> Result<u32, E>
+                        where
+                            Y: ::scrypto::api::ClientApi<E>,
+                            E: ::std::fmt::Debug
+                        {
+                            let rtn = env.call_function(
+                                blueprint_package_address,
+                                "Test",
+                                stringify!(y),
+                                ::scrypto::prelude::scrypto_encode(&(i,)).unwrap()
+                            )?;
+                            Ok(::scrypto::prelude::scrypto_decode(&rtn).unwrap())
                         }
                     }
                 }

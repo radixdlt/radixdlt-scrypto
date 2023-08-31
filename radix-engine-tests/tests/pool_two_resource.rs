@@ -925,7 +925,7 @@ fn contribution_of_large_values_should_not_cause_panic() {
                 },
             )
         })
-        .try_deposit_batch_or_abort(test_runner.account_component_address, None)
+        .try_deposit_entire_worktop_or_abort(test_runner.account_component_address, None)
         .build();
 
     // Act
@@ -996,7 +996,7 @@ fn contributing_to_a_pool_with_very_large_difference_in_reserves_succeeds() {
                     },
                 )
             })
-            .try_deposit_batch_or_abort(test_runner.account_component_address, None)
+            .try_deposit_entire_worktop_or_abort(test_runner.account_component_address, None)
             .build()
     };
     test_runner
@@ -1124,7 +1124,7 @@ impl TestEnvironment {
                     },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address, None)
+            .try_deposit_entire_worktop_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -1145,7 +1145,7 @@ impl TestEnvironment {
                     TwoResourcePoolRedeemManifestInput { bucket },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address, None)
+            .try_deposit_entire_worktop_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -1189,7 +1189,7 @@ impl TestEnvironment {
                     withdraw_strategy,
                 },
             )
-            .try_deposit_batch_or_abort(self.account_component_address, None)
+            .try_deposit_entire_worktop_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }

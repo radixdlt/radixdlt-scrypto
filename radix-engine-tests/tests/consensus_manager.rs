@@ -436,7 +436,7 @@ fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_
             .withdraw_from_account(account, XRD, amount)
             .take_all_from_worktop(XRD, "creation_fee")
             .create_validator(public_key, Decimal::ONE, "creation_fee")
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -526,7 +526,7 @@ fn register_validator_with_auth_succeeds() {
         .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -597,7 +597,7 @@ fn unregister_validator_with_auth_succeeds() {
         .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .unregister_validator(validator_address)
         .build();
@@ -665,7 +665,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -686,7 +686,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         builder = builder.create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         );
     }
 
@@ -701,7 +701,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
                 builder.call_method(validator_address, "stake", manifest_args!(bucket))
             }
         })
-        .try_deposit_batch_or_abort(validator_account_address, None)
+        .try_deposit_entire_worktop_or_abort(validator_account_address, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -759,7 +759,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
         .create_proof_from_account_of_non_fungibles(
             account_address,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1144,7 +1144,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -1300,28 +1300,25 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     let mut total_rewards = Decimal::ZERO;
     let mut last_reward;
 
-    last_reward =
-        test_runner
-            .execute_manifest(
-                ManifestBuilder::new()
-                    .lock_fee_from_faucet()
-                    .create_proof_from_account_of_non_fungibles(
-                        validator_account,
-                        VALIDATOR_OWNER_BADGE,
-                        &indexset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
-                    )
-                    .call_method(
-                        validator_address,
-                        VALIDATOR_UPDATE_FEE_IDENT,
-                        manifest_args!(Decimal::zero()),
-                    )
-                    .build(),
-                vec![NonFungibleGlobalId::from_public_key(&validator_key)],
-            )
-            .fee_summary
-            .expected_reward_if_single_validator();
+    last_reward = test_runner
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .create_proof_from_account_of_non_fungibles(
+                    validator_account,
+                    VALIDATOR_OWNER_BADGE,
+                    [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
+                )
+                .call_method(
+                    validator_address,
+                    VALIDATOR_UPDATE_FEE_IDENT,
+                    manifest_args!(Decimal::zero()),
+                )
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .fee_summary
+        .expected_reward_if_single_validator();
     total_rewards = total_rewards.safe_add(last_reward).unwrap();
 
     // ... and wait 1 epoch to make it effective
@@ -1333,28 +1330,25 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     let current_epoch = initial_epoch.next();
 
     // Act: request the fee increase
-    last_reward =
-        test_runner
-            .execute_manifest(
-                ManifestBuilder::new()
-                    .lock_fee_from_faucet()
-                    .create_proof_from_account_of_non_fungibles(
-                        validator_account,
-                        VALIDATOR_OWNER_BADGE,
-                        &indexset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
-                    )
-                    .call_method(
-                        validator_address,
-                        VALIDATOR_UPDATE_FEE_IDENT,
-                        manifest_args!(increased_fee_factor),
-                    )
-                    .build(),
-                vec![NonFungibleGlobalId::from_public_key(&validator_key)],
-            )
-            .fee_summary
-            .expected_reward_if_single_validator();
+    last_reward = test_runner
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .create_proof_from_account_of_non_fungibles(
+                    validator_account,
+                    VALIDATOR_OWNER_BADGE,
+                    [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
+                )
+                .call_method(
+                    validator_address,
+                    VALIDATOR_UPDATE_FEE_IDENT,
+                    manifest_args!(increased_fee_factor),
+                )
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .fee_summary
+        .expected_reward_if_single_validator();
     total_rewards = total_rewards.safe_add(last_reward).unwrap();
     let increase_effective_at_epoch = current_epoch.after(fee_increase_delay_epochs);
 
@@ -1523,15 +1517,13 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &indexset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .register_validator(validator_address)
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
-                    .try_deposit_batch_or_abort(account_address, None)
+                    .try_deposit_entire_worktop_or_abort(account_address, None)
                     .build();
                 vec![manifest]
             }
@@ -1541,15 +1533,13 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &indexset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
                     .register_validator(validator_address)
-                    .try_deposit_batch_or_abort(account_address, None)
+                    .try_deposit_entire_worktop_or_abort(account_address, None)
                     .build();
                 vec![manifest]
             }
@@ -1559,9 +1549,7 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &indexset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .register_validator(validator_address)
                     .build();
@@ -1571,14 +1559,12 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &indexset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
-                    .try_deposit_batch_or_abort(account_address, None)
+                    .try_deposit_entire_worktop_or_abort(account_address, None)
                     .build();
 
                 vec![register_manifest, stake_manifest]
@@ -1589,9 +1575,7 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &indexset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .register_validator(validator_address)
                     .build();
@@ -1601,14 +1585,12 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &indexset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
-                    .try_deposit_batch_or_abort(account_address, None)
+                    .try_deposit_entire_worktop_or_abort(account_address, None)
                     .build();
 
                 vec![stake_manifest, register_manifest]
@@ -1854,7 +1836,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .unregister_validator(validator_address)
         .build();
@@ -1909,7 +1891,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -1969,7 +1951,7 @@ fn cannot_claim_unstake_immediately() {
         .unstake_validator(validator_address, "stake_units")
         .take_all_from_worktop(validator_substate.claim_nft, "unstake_nft")
         .claim_xrd(validator_address, "unstake_nft")
-        .try_deposit_batch_or_abort(account_with_su, None)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -2013,7 +1995,7 @@ fn can_claim_unstake_after_epochs() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su, None)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -2028,7 +2010,7 @@ fn can_claim_unstake_after_epochs() {
         .withdraw_from_account(account_with_su, validator_substate.claim_nft, 1)
         .take_all_from_worktop(validator_substate.claim_nft, "unstake_receipt")
         .claim_xrd(validator_address, "unstake_receipt")
-        .try_deposit_batch_or_abort(account_with_su, None)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -2065,7 +2047,7 @@ fn owner_can_lock_stake_units() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2134,7 +2116,7 @@ fn owner_can_start_unlocking_stake_units() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2163,7 +2145,7 @@ fn owner_can_start_unlocking_stake_units() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2235,7 +2217,7 @@ fn owner_can_start_unlock_of_max_should_not_panic() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2264,7 +2246,7 @@ fn owner_can_start_unlock_of_max_should_not_panic() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2319,7 +2301,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2356,7 +2338,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
             .create_proof_from_account_of_non_fungibles(
                 validator_account,
                 VALIDATOR_OWNER_BADGE,
-                &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+                [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
             )
             .call_method(
                 validator_address,
@@ -2435,7 +2417,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2464,7 +2446,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2486,7 +2468,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2557,7 +2539,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2586,7 +2568,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2608,7 +2590,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2680,7 +2662,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2709,7 +2691,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2731,7 +2713,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2796,7 +2778,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su, None)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt1 = test_runner.execute_manifest(
         manifest,
@@ -3120,27 +3102,27 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
         .create_proof_from_account_of_non_fungibles(
             validators_owner_badge_holders[0],
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validators_addresses[0].as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validators_addresses[0].as_node_id().0).unwrap()],
         )
         .signal_protocol_update_readiness(validators_addresses[0], "a".repeat(32).as_str())
         .create_proof_from_account_of_non_fungibles(
             validators_owner_badge_holders[1],
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validators_addresses[1].as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validators_addresses[1].as_node_id().0).unwrap()],
         )
         .signal_protocol_update_readiness(validators_addresses[1], "a".repeat(32).as_str())
         // Validator 2 (10 units of stake) signals the readiness for protocol update "b..bb"
         .create_proof_from_account_of_non_fungibles(
             validators_owner_badge_holders[2],
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validators_addresses[2].as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validators_addresses[2].as_node_id().0).unwrap()],
         )
         .signal_protocol_update_readiness(validators_addresses[2], "b".repeat(32).as_str())
         // Validator 3 (3 units of stake) signals the readiness for protocol update "c..cc"
         .create_proof_from_account_of_non_fungibles(
             validators_owner_badge_holders[3],
             VALIDATOR_OWNER_BADGE,
-            &indexset!(NonFungibleLocalId::bytes(validators_addresses[3].as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validators_addresses[3].as_node_id().0).unwrap()],
         )
         .signal_protocol_update_readiness(validators_addresses[3], "c".repeat(32).as_str())
         .build();

@@ -61,11 +61,11 @@ impl Transfer {
                 builder.withdraw_from_account(default_account, resource_address, amount)
             }
             ResourceSpecifier::Ids(ids, resource_address) => {
-                builder.withdraw_non_fungibles_from_account(default_account, resource_address, &ids)
+                builder.withdraw_non_fungibles_from_account(default_account, resource_address, ids)
             }
         };
         let manifest = builder
-            .try_deposit_batch_or_refund(self.recipient.0, None)
+            .try_deposit_entire_worktop_or_refund(self.recipient.0, None)
             .build();
         handle_manifest(
             manifest,

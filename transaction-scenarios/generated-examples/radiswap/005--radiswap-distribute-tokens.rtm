@@ -40,13 +40,21 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1tkh9nv83pp7vw5zwd352crx5ujq4n66s0jhpxe9xq6lw8krqd4x7gk")
+=======
+    Address("resource_sim1tku90j8spman3mmfjlkzvjl57e7cs2ds7k5fmfs7nf09tzv4vm5jwl")
+>>>>>>> feature/basic-wasm-opt
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1thc2nl5qv949zwspgh5hpzj2jesd42jfpas7lu6k8k2j0dwhklk9xs")
+=======
+    Address("resource_sim1th85kg3yh86nd7ushyznlyvrurmc38gdcrfjhaje6mq90mez77a6gq")
+>>>>>>> feature/basic-wasm-opt
     Decimal("333")
 ;
 CALL_METHOD
@@ -82,13 +90,21 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1tkh9nv83pp7vw5zwd352crx5ujq4n66s0jhpxe9xq6lw8krqd4x7gk")
+=======
+    Address("resource_sim1tku90j8spman3mmfjlkzvjl57e7cs2ds7k5fmfs7nf09tzv4vm5jwl")
+>>>>>>> feature/basic-wasm-opt
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1thc2nl5qv949zwspgh5hpzj2jesd42jfpas7lu6k8k2j0dwhklk9xs")
+=======
+    Address("resource_sim1th85kg3yh86nd7ushyznlyvrurmc38gdcrfjhaje6mq90mez77a6gq")
+>>>>>>> feature/basic-wasm-opt
     Decimal("333")
 ;
 CALL_METHOD
@@ -124,13 +140,21 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1tkh9nv83pp7vw5zwd352crx5ujq4n66s0jhpxe9xq6lw8krqd4x7gk")
+=======
+    Address("resource_sim1tku90j8spman3mmfjlkzvjl57e7cs2ds7k5fmfs7nf09tzv4vm5jwl")
+>>>>>>> feature/basic-wasm-opt
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1thc2nl5qv949zwspgh5hpzj2jesd42jfpas7lu6k8k2j0dwhklk9xs")
+=======
+    Address("resource_sim1th85kg3yh86nd7ushyznlyvrurmc38gdcrfjhaje6mq90mez77a6gq")
+>>>>>>> feature/basic-wasm-opt
     Decimal("333")
 ;
 CALL_METHOD

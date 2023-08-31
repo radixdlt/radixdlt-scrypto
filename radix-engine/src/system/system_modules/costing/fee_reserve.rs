@@ -177,6 +177,9 @@ impl SystemLoanFeeReserve {
         transaction_costing_parameters: &TransactionCostingParameters,
         abort_when_loan_repaid: bool,
     ) -> Self {
+        // NOTE: Decimal arithmetic operation safe unwrap.
+        // No chance to overflow considering current costing parameters
+
         let tip_percentage = Decimal::ONE
             .safe_add(
                 transaction_costing_parameters

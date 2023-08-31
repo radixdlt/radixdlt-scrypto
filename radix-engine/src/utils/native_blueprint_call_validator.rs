@@ -212,7 +212,6 @@ fn get_arguments_schema<'s>(
                     .get(VALIDATOR_BLUEPRINT),
 
                 EntityType::GlobalAccount
-                | EntityType::InternalAccount
                 | EntityType::GlobalVirtualEd25519Account
                 | EntityType::GlobalVirtualSecp256k1Account => {
                     ACCOUNT_PACKAGE_DEFINITION.blueprints.get(ACCOUNT_BLUEPRINT)

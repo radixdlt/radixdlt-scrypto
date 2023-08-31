@@ -1,7 +1,10 @@
+use radix_engine::transaction::CostingParameters;
+use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionFeeDetails;
 use radix_engine::transaction::TransactionFeeSummary;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto::api::node_modules::ModuleConfig;
 use scrypto::prelude::metadata;
@@ -356,7 +359,7 @@ fn run_basic_transfer(mode: Mode) {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
         .withdraw_from_account(account1, XRD, 100)
-        .try_deposit_batch_or_abort(account2, None)
+        .try_deposit_entire_worktop_or_abort(account2, None)
         .build();
 
     let (receipt, _) = execute_with_time_logging(
@@ -381,7 +384,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
         .withdraw_from_account(account1, XRD, 100)
-        .try_deposit_batch_or_abort(account2, None)
+        .try_deposit_entire_worktop_or_abort(account2, None)
         .build();
 
     let (receipt, _) = execute_with_time_logging(
@@ -425,7 +428,7 @@ fn run_radiswap(mode: Mode) {
                     "new",
                     manifest_args!(OwnerRole::None, btc, eth),
                 )
-                .try_deposit_batch_or_abort(account2, None)
+                .try_deposit_entire_worktop_or_abort(account2, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
@@ -450,7 +453,7 @@ fn run_radiswap(mode: Mode) {
                         manifest_args!(lookup.bucket("btc"), lookup.bucket("eth")),
                     )
                 })
-                .try_deposit_batch_or_abort(account2, None)
+                .try_deposit_entire_worktop_or_abort(account2, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
@@ -463,7 +466,7 @@ fn run_radiswap(mode: Mode) {
             ManifestBuilder::new()
                 .lock_fee(account2, 500)
                 .withdraw_from_account(account2, btc, btc_amount)
-                .try_deposit_batch_or_abort(account3, None)
+                .try_deposit_entire_worktop_or_abort(account3, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
@@ -481,7 +484,7 @@ fn run_radiswap(mode: Mode) {
                 let bucket = lookup.bucket("to_trade");
                 builder.call_method(component_address, "swap", manifest_args!(bucket))
             })
-            .try_deposit_batch_or_abort(account3, None)
+            .try_deposit_entire_worktop_or_abort(account3, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
@@ -528,7 +531,7 @@ fn run_flash_loan(mode: Mode) {
                         manifest_args!(lookup.bucket("bucket")),
                     )
                 })
-                .try_deposit_batch_or_abort(account2, None)
+                .try_deposit_entire_worktop_or_abort(account2, None)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
@@ -553,7 +556,7 @@ fn run_flash_loan(mode: Mode) {
                     manifest_args!(lookup.bucket("repayment"), lookup.bucket("promise")),
                 )
             })
-            .try_deposit_batch_or_abort(account3, None)
+            .try_deposit_entire_worktop_or_abort(account3, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
@@ -663,7 +666,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
                 metadata! {},
                 Some(entries),
             )
-            .try_deposit_batch_or_abort(account, None)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let transaction = create_notarized_transaction(
             TransactionParams {
@@ -723,7 +726,9 @@ fn can_run_large_manifest() {
             .take_from_worktop(XRD, 1, &bucket)
             .return_to_worktop(bucket);
     }
-    let manifest = builder.try_deposit_batch_or_abort(account, None).build();
+    let manifest = builder
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
 
     let (receipt, _) = execute_with_time_logging(
         &mut test_runner,
@@ -838,4 +843,51 @@ fn publish_package_1mib() {
 
     // internally validates if publish succeeded
     test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+}
+
+/// Based on product requirements, system loan should be just enough to cover:
+/// 1. Notary + 3 signatures in TX
+/// 2. Ask AccessController to produce a badge
+/// 3. Call withdraw_and_lock_fee on Account
+#[test]
+fn system_loan_should_cover_intended_use_case() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let network = NetworkDefinition::simulator();
+    let (_pk1, sk1, _pk2, sk2, _pk3, sk3, _pk4, sk4, account, access_controller) =
+        test_runner.new_ed25519_virtual_account_with_access_controller(3);
+
+    let manifest1 = ManifestBuilder::new()
+        .call_method(
+            access_controller,
+            ACCESS_CONTROLLER_CREATE_PROOF_IDENT,
+            manifest_args!(),
+        )
+        .lock_fee_and_withdraw(account, dec!(10), XRD, dec!(10))
+        .then(|mut builder| {
+            // Artificial workload
+            for _ in 0..10 {
+                builder = builder
+                    .withdraw_from_account(account, XRD, 1)
+                    .try_deposit_entire_worktop_or_abort(account, None);
+            }
+            builder
+        })
+        .build();
+    let tx1 = create_notarized_transaction_advanced(
+        &mut test_runner,
+        &network,
+        manifest1,
+        vec![&sk1, &sk2, &sk3], // sign
+        &sk4,                   // notarize
+        false,
+    );
+    let receipt = test_runner.execute_transaction(
+        validate_notarized_transaction(&network, &tx1).get_executable(),
+        CostingParameters::default(),
+        ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
+            .with_cost_breakdown(true),
+    );
+    receipt.expect_commit_success();
+    println!("\n{:?}", receipt);
 }
