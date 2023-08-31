@@ -436,8 +436,7 @@ where
         );
         let address = self.api.get_outer_object(&node_id)?;
 
-        let buffer = scrypto_encode(&address).expect("Failed to encode GlobalAddress");
-        self.allocate_buffer(buffer)
+        self.allocate_buffer(address.to_vec())
     }
 
     fn actor_emit_event(

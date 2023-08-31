@@ -95,7 +95,7 @@ impl ScryptoVmV1Api {
             object::object_get_outer_object(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });
 
-        scrypto_decode(&bytes).unwrap()
+        GlobalAddress::try_from(bytes.as_slice()).unwrap()
     }
 
     pub fn object_call(receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
