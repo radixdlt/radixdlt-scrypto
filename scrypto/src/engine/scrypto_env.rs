@@ -72,7 +72,7 @@ impl ScryptoVmV1Api {
                 address_reservation.len(),
             )
         });
-        scrypto_decode(&bytes).unwrap()
+        GlobalAddress::try_from(bytes.as_slice()).unwrap()
     }
 
     pub fn object_instance_of(node_id: &NodeId, blueprint_id: &BlueprintId) -> bool {

@@ -236,9 +236,7 @@ where
 
         let address = self.api.globalize(node_id, modules, address_reservation)?;
 
-        let address_encoded = scrypto_encode(&address).expect("Failed to encode object address");
-
-        self.allocate_buffer(address_encoded)
+        self.allocate_buffer(address.to_vec())
     }
 
     fn key_value_store_new(
