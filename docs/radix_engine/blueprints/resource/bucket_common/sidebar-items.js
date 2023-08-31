@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["BucketError"],"fn":["drop_fungible_bucket","drop_non_fungible_bucket"],"struct":["DroppedFungibleBucket","DroppedNonFungibleBucket"]};

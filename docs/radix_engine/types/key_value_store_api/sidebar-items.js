@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["KV_STORE_DATA_SCHEMA_VARIANT_LOCAL","KV_STORE_DATA_SCHEMA_VARIANT_REMOTE"],"enum":["KeyValueStoreDataSchema"],"struct":["LocalKeyValueStoreDataSchema","RemoteKeyValueStoreDataSchema"],"trait":["ClientKeyValueStoreApi"]};

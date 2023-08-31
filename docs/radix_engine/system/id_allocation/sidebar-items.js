@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["IDAllocation"],"fn":["get_global_entity_type","get_internal_entity_type"]};

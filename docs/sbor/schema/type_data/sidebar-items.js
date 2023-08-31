@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["type_kind","type_metadata","type_validation"],"struct":["TypeData"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ParseHashError"],"fn":["hash"],"struct":["Hash"],"trait":["IsHash"]};

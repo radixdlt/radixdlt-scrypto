@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["address_allocate","address_get_reservation_address"],"struct":["Buffer","Slice"],"type":["BufferId"]};

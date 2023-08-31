@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["declare_key_new_type"],"trait":["IndexKeyContentSource","IndexKeyPayload","KeyValueKeyContentSource","KeyValueKeyPayload","SortedIndexKeyContentSource","SortedIndexKeyFullContent","SortedIndexKeyPayload"]};

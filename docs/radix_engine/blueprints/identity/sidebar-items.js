@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["IDENTITY_CREATE_VIRTUAL_ED25519_ID","IDENTITY_CREATE_VIRTUAL_SECP256K1_ID","IDENTITY_ON_VIRTUALIZE_EXPORT_NAME"],"mod":["package"],"struct":["IdentityBlueprint","IdentityNativePackage","IdentityOwnerBadgeData"]};

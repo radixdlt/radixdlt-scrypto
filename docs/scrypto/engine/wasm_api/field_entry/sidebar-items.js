@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["field_entry_close","field_entry_read","field_entry_write"],"struct":["Buffer","Slice"],"type":["BufferId"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["ContributionEvent","DepositEvent","RedemptionEvent","WithdrawEvent"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME"],"struct":["AccountNativePackage"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Mutability"],"struct":["RoleAssignment"],"trait":["HasRoleAssignment"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["FeeReserveError","RoyaltyRecipient","StorageType"],"fn":["checked_add","checked_add_assign"],"struct":["SystemLoanFeeReserve"],"trait":["ExecutionFeeReserve","FeeReserve","FinalizingFeeReserve","PreExecutionFeeReserve"]};

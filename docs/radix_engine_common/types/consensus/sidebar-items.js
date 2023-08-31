@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Epoch","Round"],"type":["ValidatorIndex"]};

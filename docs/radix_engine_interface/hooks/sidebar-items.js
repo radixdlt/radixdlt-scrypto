@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["OnDropInput","OnMoveInput","OnVirtualizeInput"],"type":["OnDropOutput","OnMoveOutput","OnVirtualizeOutput"]};

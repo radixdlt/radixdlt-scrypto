@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["BucketSnapshot","ProofSnapshot","ResourceSpecifier","TraceActor","TraceOrigin","VaultOp","WorktopChange"],"fn":["calculate_fee_locks","calculate_resource_changes"],"mod":["module"],"struct":["ApplicationFnIdentifier","ExecutionTrace","ExecutionTraceModule","ResourceChange","ResourceSummary"]};

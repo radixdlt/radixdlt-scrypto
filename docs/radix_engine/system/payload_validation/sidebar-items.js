@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["SchemaOrigin","TypeInfoForValidation"],"fn":["apply_custom_validation_to_custom_value","resolve_type_info"],"struct":["SystemServiceTypeInfoLookup"],"trait":["ValidationContext"],"type":["Lookup"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["TransactionLimitsError"],"mod":["module"],"struct":["LimitsModule","TransactionLimitsConfig"]};

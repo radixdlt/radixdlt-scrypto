@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DisplayMode","FormattingError","PrintMode","ValueDisplayParameters"],"fn":["format_payload_as_nested_string","format_payload_as_rustlike_value"],"mod":["display","serde_serialization","traits"],"struct":["NestedStringDisplayContext","RustLikeDisplayContext"],"trait":["CustomDisplayContext","FormattableCustomExtension"]};

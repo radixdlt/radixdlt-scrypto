@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["EVENT_FLAGS_LEN"],"mod":["module"],"struct":["Event","TransactionRuntimeModule"]};

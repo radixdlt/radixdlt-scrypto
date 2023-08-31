@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BadgeWithdrawEvent","CancelBadgeWithdrawAttemptEvent","CancelRecoveryProposalEvent","InitiateBadgeWithdrawAttemptEvent","InitiateRecoveryEvent","LockPrimaryRoleEvent","RuleSetUpdateEvent","StopTimedRecoveryEvent","UnlockPrimaryRoleEvent"]};

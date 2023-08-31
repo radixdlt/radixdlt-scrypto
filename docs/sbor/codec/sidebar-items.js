@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["array","boolean","collection","integer","misc","option","result","string","tuple"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["ClientKeyValueEntryApi","KeyValueEntryPayloadMarker","KeyValueKeyPayloadMarker"],"type":["KeyValueEntryHandle"]};

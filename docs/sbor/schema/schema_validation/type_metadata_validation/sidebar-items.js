@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["validate_childless_metadata","validate_enum_metadata","validate_field_names","validate_schema_enum_variant_name","validate_schema_field_name","validate_schema_ident","validate_schema_type_name","validate_tuple_metadata","validate_type_metadata_with_type_kind"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["define_type_info_marker"],"struct":["Global","Owned"],"trait":["TypeInfoMarker"]};

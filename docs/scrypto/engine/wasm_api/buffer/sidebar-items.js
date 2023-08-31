@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["buffer_consume"],"struct":["Buffer","Slice"],"type":["BufferId"]};

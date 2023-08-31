@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["multi_resource_pool","one_resource_pool","two_resource_pool"]};

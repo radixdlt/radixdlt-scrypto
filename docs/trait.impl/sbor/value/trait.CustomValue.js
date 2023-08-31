@@ -1,0 +1,8 @@
+(function() {var implementors = {
+"radix_engine":[],
+"radix_engine_common":[["impl <a class=\"trait\" href=\"radix_engine_common/prelude/trait.CustomValue.html\" title=\"trait radix_engine_common::prelude::CustomValue\">CustomValue</a>&lt;<a class=\"enum\" href=\"radix_engine_common/data/scrypto/custom_value_kind/enum.ScryptoCustomValueKind.html\" title=\"enum radix_engine_common::data::scrypto::custom_value_kind::ScryptoCustomValueKind\">ScryptoCustomValueKind</a>&gt; for <a class=\"enum\" href=\"radix_engine_common/data/scrypto/custom_value/enum.ScryptoCustomValue.html\" title=\"enum radix_engine_common::data::scrypto::custom_value::ScryptoCustomValue\">ScryptoCustomValue</a>"],["impl <a class=\"trait\" href=\"radix_engine_common/prelude/trait.CustomValue.html\" title=\"trait radix_engine_common::prelude::CustomValue\">CustomValue</a>&lt;<a class=\"enum\" href=\"radix_engine_common/data/manifest/custom_value_kind/enum.ManifestCustomValueKind.html\" title=\"enum radix_engine_common::data::manifest::custom_value_kind::ManifestCustomValueKind\">ManifestCustomValueKind</a>&gt; for <a class=\"enum\" href=\"radix_engine_common/data/manifest/custom_value/enum.ManifestCustomValue.html\" title=\"enum radix_engine_common::data::manifest::custom_value::ManifestCustomValue\">ManifestCustomValue</a>"]],
+"radix_engine_interface":[],
+"sbor":[],
+"scrypto":[],
+"scrypto_test":[]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

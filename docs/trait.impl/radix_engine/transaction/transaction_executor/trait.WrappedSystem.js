@@ -1,0 +1,5 @@
+(function() {var implementors = {
+"radix_engine":[],
+"scrypto_test":[],
+"scrypto_unit":[["impl&lt;C: <a class=\"trait\" href=\"radix_engine/system/system_callback_api/trait.SystemCallbackObject.html\" title=\"trait radix_engine::system::system_callback_api::SystemCallbackObject\">SystemCallbackObject</a>&gt; <a class=\"trait\" href=\"radix_engine/transaction/transaction_executor/trait.WrappedSystem.html\" title=\"trait radix_engine::transaction::transaction_executor::WrappedSystem\">WrappedSystem</a>&lt;C&gt; for <a class=\"struct\" href=\"scrypto_unit/inject_costing_err/struct.InjectCostingError.html\" title=\"struct scrypto_unit::inject_costing_err::InjectCostingError\">InjectCostingError</a>&lt;<a class=\"struct\" href=\"radix_engine/system/system_callback/struct.SystemConfig.html\" title=\"struct radix_engine::system::system_callback::SystemConfig\">SystemConfig</a>&lt;C&gt;&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

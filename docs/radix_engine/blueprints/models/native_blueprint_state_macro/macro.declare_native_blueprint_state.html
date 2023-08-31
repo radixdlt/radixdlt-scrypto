@@ -1,0 +1,116 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Generates types and typed-interfaces for native blueprints, their state models, features, and schemas."><title>declare_native_blueprint_state in radix_engine::blueprints::models::native_blueprint_state_macro - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="radix_engine" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.1 (7cf61ebde 2024-03-27)" data-channel="1.77.1" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../../radix_engine/index.html">radix_engine</a><span class="version">1.1.2</span></h2></div><div class="sidebar-elems"><h2><a href="index.html">In radix_engine::blueprints::models::native_blueprint_state_macro</a></h2></div></nav><div class="sidebar-resizer"></div>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../radix_engine/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Macro <a href="../../../index.html">radix_engine</a>::<wbr><a href="../../index.html">blueprints</a>::<wbr><a href="../index.html">models</a>::<wbr><a href="index.html">native_blueprint_state_macro</a>::<wbr><a class="macro" href="#">declare_native_blueprint_state</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../../../../src/radix_engine/blueprints/models/native_blueprint_state_macro.rs.html#54-553">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><span class="macro">macro_rules! </span>declare_native_blueprint_state {
+    (
+        blueprint_ident: <span class="macro-nonterminal">$blueprint_ident</span>:ident,
+        blueprint_snake_case: <span class="macro-nonterminal">$blueprint_property_name</span>:ident,
+        $(
+            outer_blueprint: {
+                ident: <span class="macro-nonterminal">$outer_blueprint_ident</span>:ident
+                $(,)<span class="question-mark">?
+            </span>},
+        )<span class="question-mark">?
+        </span>$(
+            generics: {
+                $(
+                    <span class="macro-nonterminal">$generic_property_name</span>:ident: {
+                        ident: <span class="macro-nonterminal">$generic_ident</span>:ident,
+                        description: <span class="macro-nonterminal">$generic_description</span>:expr
+                        $(,)<span class="question-mark">?
+                    </span>}
+                ),*
+                $(,)<span class="question-mark">?
+            </span>},
+        )<span class="question-mark">?
+        </span>$(
+            features: {
+                $(
+                    <span class="macro-nonterminal">$feature_property_name</span>:ident: {
+                        ident: <span class="macro-nonterminal">$feature_ident</span>:ident,
+                        description: <span class="macro-nonterminal">$feature_description</span>:expr,
+                    }
+                ),*
+                $(,)<span class="question-mark">?
+            </span>},
+        )<span class="question-mark">?
+        </span>fields: {
+            $(
+                <span class="macro-nonterminal">$field_property_name</span>:ident: {
+                    ident: <span class="macro-nonterminal">$field_ident</span>:ident,
+                    field_type: <span class="macro-nonterminal">$field_type</span>:tt
+                    $(, condition: <span class="macro-nonterminal">$field_condition</span>:expr)<span class="question-mark">?
+                    </span>$(, transience: <span class="macro-nonterminal">$field_transience</span>:expr)<span class="question-mark">?
+                    </span>$(,)<span class="question-mark">? </span><span class="comment">// Optional trailing comma
+                </span>}
+            ),*
+            $(,)<span class="question-mark">? </span><span class="comment">// Optional trailing comma
+        </span>},
+        collections: {
+            $(
+                <span class="macro-nonterminal">$collection_property_name</span>:ident: <span class="macro-nonterminal">$collection_type</span>:ident {
+                    entry_ident: <span class="macro-nonterminal">$collection_ident</span>:ident,
+                    $(mapped_physical_partition: <span class="macro-nonterminal">$mapped_physical_partition</span>:expr,)<span class="question-mark">?
+                    </span>key_type: <span class="macro-nonterminal">$collection_key_type</span>:tt,
+                    <span class="comment">// The full_key_content is required if it's a sorted index
+                    </span>$(full_key_content: <span class="macro-nonterminal">$full_key_content</span>:tt,)<span class="question-mark">?
+                    </span>value_type: <span class="macro-nonterminal">$collection_value_type</span>:tt,
+                    allow_ownership: <span class="macro-nonterminal">$collection_allow_ownership</span>:expr
+                    $(,)<span class="question-mark">? </span><span class="comment">// Optional trailing comma
+                </span>}
+            ),*
+            $(,)<span class="question-mark">? </span><span class="comment">// Optional trailing comma
+        </span>}
+        $(,)<span class="question-mark">?
+    </span>) =&gt; { ... };
+}</pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Generates types and typed-interfaces for native blueprints, their
+state models, features, and schemas.</p>
+<p>See the below structure for detail on how it should look - or check
+out [../package/substates.rs](the package substates definition).</p>
+<p>For each field, the following types will be created:</p>
+<ul>
+<li><code>&lt;BlueprintIdent&gt;&lt;FieldIdent&gt;FieldPayload</code> - a transparent new type for the field content</li>
+<li><code>&lt;BlueprintIdent&gt;&lt;FieldIdent&gt;FieldSubstate</code> - a type for the full system-wrapped substate</li>
+</ul>
+<p>For each collection value, the following types will be created:</p>
+<ul>
+<li><code>&lt;BlueprintIdent&gt;&lt;CollectionIdent&gt;EntryPayload</code> - a transparent new type for the entry content</li>
+<li><code>&lt;BlueprintIdent&gt;&lt;CollectionIdent&gt;EntrySubstate</code> - a type for the full system-wrapped substate</li>
+</ul>
+<p>For each collection key, the following types will be created:</p>
+<ul>
+<li><code>&lt;BlueprintIdent&gt;&lt;CollectionIdent&gt;KeyPayload</code> - a new type for the key payload (eg includes the u16 for a sorted index key)</li>
+</ul>
+<p>The content of each of the above can take a number of forms. This is configured via specifying the type as one of the following.
+Only Static is supported for keys at present. By default, you should choose StaticSingleVersioned for fields and collection values.</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>    {
+        kind: StaticSingleVersioned,
+    }
+    {
+        kind: Static,
+        content_type: x,
+    },
+    {
+        kind: Generic,
+        ident: BlueprintGenericParameterIdent,
+    },
+    <span class="comment">// In future
+    </span>{
+        kind: StaticMultiVersioned,
+        previous_versions: [V1, V2],
+        latest: V3,
+    }</code></pre></div>
+<p>Choosing  <code>StaticSingleVersioned</code>, which will create a
+forward-compatible enum wrapper with a single version for the content.
+For Fields, it will assume the existence of a type called
+<code>&lt;BlueprintIdent&gt;&lt;FieldIdent&gt;V1</code> and will generate the following types:</p>
+<ul>
+<li><code>&lt;BlueprintIdent&gt;&lt;FieldIdent&gt;</code> - a type alias for the latest version (V1).</li>
+<li><code>Versioned&lt;BlueprintIdent&gt;&lt;FieldIdent&gt;</code> - the enum wrapper with a single version. This will be the content of <code>&lt;BlueprintIdent&gt;&lt;FieldIdent&gt;FieldPayload</code>.</li>
+</ul>
+<p>For collection values, it will assume the existence of <code>&lt;BlueprintIdent&gt;&lt;CollectionIdent&gt;V1</code>
+and generate the following types:</p>
+<ul>
+<li><code>&lt;BlueprintIdent&gt;&lt;CollectionIdent&gt;</code> - a type alias for the latest version (V1).</li>
+<li><code>Versioned&lt;BlueprintIdent&gt;&lt;CollectionIdent&gt;</code> - the enum wrapper with a single version. This will be the content of <code>&lt;BlueprintIdent&gt;&lt;CollectionIdent&gt;EntryPayload</code>.</li>
+</ul>
+</div></details></section></div></main></body></html>

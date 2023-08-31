@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["EncodeError"],"struct":["VecEncoder"],"trait":["Encoder"]};

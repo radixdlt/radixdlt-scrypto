@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DatabaseUpdate","PartitionDatabaseUpdates"],"struct":["DatabaseUpdates","DbPartitionKey","DbSortKey","NodeDatabaseUpdates"],"trait":["CommittableSubstateDatabase","ListableSubstateDatabase","SubstateDatabase"],"type":["DbNodeKey","DbPartitionNum","DbSubstateKey","DbSubstateValue","PartitionEntry"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CPU_INSTRUCTIONS_TO_COST_UNIT"],"fn":["add","cast","mul","sub"],"struct":["FeeTable","NATIVE_FUNCTION_BASE_COSTS","NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT"]};

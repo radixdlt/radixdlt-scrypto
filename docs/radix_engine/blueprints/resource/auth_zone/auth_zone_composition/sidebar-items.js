@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ComposeProofError","ComposedProof","NonFungiblesSpecification"],"fn":["compose_fungible_proof","compose_non_fungible_proof","compose_proof_by_amount","compose_proof_by_ids","max_amount_locked","max_ids_locked"]};

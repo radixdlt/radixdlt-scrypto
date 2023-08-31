@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ModuleHandle"],"struct":["Attached"],"trait":["Attachable"]};

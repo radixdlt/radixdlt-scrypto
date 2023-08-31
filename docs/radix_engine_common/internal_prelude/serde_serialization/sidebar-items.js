@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["SerializableType","SerializationError","SerializationMode","SerializationParameters","ValueContext"],"struct":["CustomTypeSerialization","SerdeValueMapAggregator","SerializableArrayElements","SerializableFields","SerializableMapElements","SerializableMapEntry","SerializationContext"],"trait":["SerializableCustomExtension"]};

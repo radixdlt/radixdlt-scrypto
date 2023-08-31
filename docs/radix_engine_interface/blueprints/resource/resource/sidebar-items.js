@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ResourceError"],"struct":["LiquidFungibleResource","LiquidNonFungibleResource","LiquidNonFungibleVault","LockedFungibleResource","LockedNonFungibleResource","VaultFrozenFlag"]};

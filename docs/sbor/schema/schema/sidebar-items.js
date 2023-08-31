@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["VersionedSchema"],"macro":["VersionedSchema_trait_impl","VersionedSchema_versionable_impl"],"struct":["ArrayData","MapData","SchemaV1"],"trait":["VersionedSchemaVersion"],"type":["Schema","SchemaTypeKind"]};

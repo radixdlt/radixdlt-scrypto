@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["radix_engine","radix_engine_common","radix_engine_interface","radix_engine_queries","radix_engine_store_interface","radix_engine_stores","sbor","scrypto","scrypto_test","scrypto_unit"];

@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"radix_engine_stores":[["impl&lt;D: CommittableSubstateDatabase&gt; CommittableSubstateDatabase for <a class=\"struct\" href=\"radix_engine_stores/hash_tree_support/struct.HashTreeUpdatingDatabase.html\" title=\"struct radix_engine_stores::hash_tree_support::HashTreeUpdatingDatabase\">HashTreeUpdatingDatabase</a>&lt;D&gt;"],["impl CommittableSubstateDatabase for <a class=\"struct\" href=\"radix_engine_stores/memory_db/struct.InMemorySubstateDatabase.html\" title=\"struct radix_engine_stores::memory_db::InMemorySubstateDatabase\">InMemorySubstateDatabase</a>"]],
+"scrypto_test":[]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

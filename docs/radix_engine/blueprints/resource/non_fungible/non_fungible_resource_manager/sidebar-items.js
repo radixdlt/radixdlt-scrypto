@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["InvalidNonFungibleSchema","NonFungibleResourceManagerError"],"fn":["create_non_fungibles","to_features_and_roles"],"mod":["non_fungible_resource_manager_models"],"struct":["NonFungibleResourceManagerBlueprint","NonFungibleResourceManagerMutableFieldsV1"],"type":["NonFungibleResourceManagerIdTypeV1","NonFungibleResourceManagerTotalSupplyV1"]};

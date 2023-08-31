@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["generate_full_schema","generate_full_schema_from_single_type","linearize","localize_well_known","localize_well_known_type_data","resolve_index","resolve_local_type_id"],"struct":["TypeAggregator"]};

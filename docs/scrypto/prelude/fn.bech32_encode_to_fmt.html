@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="NOTE: The below code is copied with minor alterations from the bech32 crate. These alterations are to avoid using std for allocations, and fit with the sbor no-alloc options."><title>bech32_encode_to_fmt in scrypto::prelude - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="scrypto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.1 (7cf61ebde 2024-03-27)" data-channel="1.77.1" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../scrypto/index.html">scrypto</a><span class="version">1.1.2</span></h2></div><div class="sidebar-elems"><h2><a href="index.html">In scrypto::prelude</a></h2></div></nav><div class="sidebar-resizer"></div>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../scrypto/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Function <a href="../index.html">scrypto</a>::<wbr><a href="index.html">prelude</a>::<wbr><a class="fn" href="#">bech32_encode_to_fmt</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../../src/radix_engine_common/address/encoder.rs.html#103-108">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>pub fn bech32_encode_to_fmt&lt;F, T&gt;(
+    fmt: <a class="primitive" href="https://doc.rust-lang.org/1.77.1/std/primitive.reference.html">&amp;mut F</a>,
+    hrp: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.77.1/std/primitive.str.html">str</a>,
+    data: T,
+    variant: Variant
+) -&gt; <a class="enum" href="enum.Result.html" title="enum scrypto::prelude::Result">Result</a>&lt;<a class="enum" href="enum.Result.html" title="enum scrypto::prelude::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.77.1/std/primitive.unit.html">()</a>, <a class="struct" href="radix_engine_common/prelude/fmt/struct.Error.html" title="struct scrypto::prelude::radix_engine_common::prelude::fmt::Error">Error</a>&gt;, Error&gt;<div class="where">where
+    F: <a class="trait" href="radix_engine_common/prelude/fmt/trait.Write.html" title="trait scrypto::prelude::radix_engine_common::prelude::fmt::Write">Write</a>,
+    T: <a class="trait" href="trait.AsRef.html" title="trait scrypto::prelude::AsRef">AsRef</a>&lt;[u5]&gt;,</div></code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>NOTE:
+The below code is copied with minor alterations from the bech32 crate.
+These alterations are to avoid using std for allocations, and fit with the sbor no-alloc options.</p>
+<p>The original source for the bech32 crate is under MIT license: https://crates.io/crates/bech32
+This license permits modification without restriction, but requires the license copying below.</p>
+<p>Important additional note - the use of this modified code is also covered under the Radix license,
+as per all code in this repository.</p>
+<hr />
+<p>MIT License</p>
+<p>Copyright (c) [year] [fullname]</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+Encode a bech32 payload to an <a href="radix_engine_common/prelude/fmt/trait.Write.html" title="trait scrypto::prelude::radix_engine_common::prelude::fmt::Write">fmt::Write</a>.
+This method is intended for implementing traits from <a href="radix_engine_common/prelude/fmt/index.html" title="mod scrypto::prelude::radix_engine_common::prelude::fmt">std::fmt</a>.
+This method uses the std::fmt traits</p>
+<h2 id="errors"><a class="doc-anchor" href="#errors">§</a>Errors</h2>
+<ul>
+<li>If [check_hrp] returns an error for the given HRP.</li>
+</ul>
+<h2 id="deviations-from-standard"><a class="doc-anchor" href="#deviations-from-standard">§</a>Deviations from standard</h2>
+<ul>
+<li>No length limits are enforced for the data part</li>
+</ul>
+</div></details></section></div></main></body></html>

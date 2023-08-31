@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["OwnValidation","ReferenceValidation","ScryptoCustomTypeKind","ScryptoCustomTypeValidation"],"fn":["replace_self_package_address"],"struct":["EMPTY_SCHEMA","ScryptoCustomSchema"],"trait":["HasSchemaHash"],"type":["ScryptoTypeData","ScryptoTypeKind","VersionedScryptoSchema"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["wrapped_api","wrapped_internal_api"],"struct":["InjectCostingError","WrappedKernelApi","WrappedKernelInternalApi"],"type":["InjectSystemCostingError"]};

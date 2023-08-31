@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DataOrigin"],"struct":["ComponentStatePointer","DataRef","DataRefMut"]};

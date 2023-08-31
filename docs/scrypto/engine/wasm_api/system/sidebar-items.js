@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["sys_bech32_encode_address","sys_generate_ruid","sys_get_transaction_hash","sys_log","sys_panic"],"struct":["Buffer","Slice"],"type":["BufferId"]};

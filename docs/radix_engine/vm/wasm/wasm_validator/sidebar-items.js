@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["SCRYPTO_V1_LATEST_MINOR_VERSION"],"struct":["ScryptoV1WasmValidator"]};

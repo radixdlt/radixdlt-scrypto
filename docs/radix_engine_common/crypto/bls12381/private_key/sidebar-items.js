@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Bls12381G1PrivateKey"]};

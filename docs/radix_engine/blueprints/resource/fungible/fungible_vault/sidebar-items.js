@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["fungible_vault_models"],"struct":["FungibleVaultBlueprint"],"type":["FungibleVaultBalanceV1","FungibleVaultFreezeStatusV1","FungibleVaultLockedBalanceV1"]};

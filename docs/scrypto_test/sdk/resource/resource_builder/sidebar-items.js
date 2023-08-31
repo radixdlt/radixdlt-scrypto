@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DIVISIBILITY_MAXIMUM","DIVISIBILITY_NONE"],"fn":["map_entries"],"mod":["private"],"struct":["FungibleResourceType","InProgressResourceBuilder","NonFungibleResourceType","ResourceBuilder"],"trait":["AnyResourceType","CreateWithNoSupplyBuilder","SetAddressReservationBuilder","SetOwnerBuilder","UpdateAuthBuilder","UpdateMetadataBuilder"]};

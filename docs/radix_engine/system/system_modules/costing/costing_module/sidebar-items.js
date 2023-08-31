@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CostingError","OnApplyCost"],"fn":["apply_royalty_cost"],"struct":["CostingModule"]};

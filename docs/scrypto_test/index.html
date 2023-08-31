@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="This crate is an implementation of for Scrypto-Test, a unit testing framework for Scrypto that follows an invocation-based approach instead of a transaction-based approach to testing, allowing Scrypto developers to write tests that look and feel like Scrypto. Scrypto-Test is not a replacement for transaction-based tests offered by the TestRunner, it would just be an addition and another way for Scrypto developers to test their code where Scrypto-Test could be classified as a unit-testing framework while the TestRunner could be classified as an integration-testing framework."><title>scrypto_test - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="scrypto_test" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.1 (7cf61ebde 2024-03-27)" data-channel="1.77.1" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../static.files/storage-4c98445ec4002617.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../scrypto_test/index.html">scrypto_test</a><span class="version">1.1.2</span></h2></div><div class="sidebar-elems"><ul class="block">
+            <li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#modules">Modules</a></li></ul></section></div></nav><div class="sidebar-resizer"></div>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../scrypto_test/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">scrypto_test</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../src/scrypto_test/lib.rs.html#1-86">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>This crate is an implementation of for Scrypto-Test, a unit testing framework for Scrypto that
+follows an invocation-based approach instead of a transaction-based approach to testing,
+allowing Scrypto developers to write tests that look and feel like Scrypto. Scrypto-Test is not
+a replacement for transaction-based tests offered by the TestRunner, it would just be an
+addition and another way for Scrypto developers to test their code where Scrypto-Test could be
+classified as a unit-testing framework while the TestRunner could be classified as an
+integration-testing framework.</p>
+<h2 id="why"><a class="doc-anchor" href="#why">§</a>Why</h2>
+<p>We already have a way to test Scrypto blueprints in the from of the scrypto_unit::TestRunner
+which is essentially an in-memory ledger that we can run transactions against, get back
+transaction receipts, and determine-based on the TransactionReceipt-if the behavior of the
+blueprint or component is as we expect or not. This approach is tried and tested and has been
+proven to work as evident by the hundreds and thousands of tests in the radix_engine_tests crate
+that make it clear that the transaction-based approach works. However, it has a number of
+issues, especially when we think about the target audience of our testing framework: DeFi
+developers.</p>
+<p>In the current (transaction-based) model, there is a lot of boilerplate code involved to write
+what should be a straightforward test. As an example, to test that a contribution of X and Y
+resources to Radiswap results in Z pool units minted the test author needs to:</p>
+<ul>
+<li>Create these two resources to use for testing.</li>
+<li>Decide on whether these resources should just be mintable on demand or if the supply of these
+resources should be stored in some account that will be used in the test to withdraw from.</li>
+<li>If an account will hold those resources, then the author needs to create that account.</li>
+<li>Split out the instructions into multiple manifests as needed such as in cases where one
+instruction depends on the output of a previous instruction.</li>
+<li>Ensure that the execution of the previous transactions did indeed succeed and extract out the
+information required from receipts either through the worktop changes, balance changes, or by
+other means.</li>
+<li>Manage and ensure that the worktop by the end of the transaction is empty of all resources and
+that the accounts that the resources will be deposited into sign the transaction.</li>
+</ul>
+<p>Most if not all of the items listed above are not core to what the developer wishes to test,
+recall that they wished to test whether a contribution of X and Y resources returns Z pool
+units. However, they spent a majority of their time thinking about completely different
+problems. Thus, there is not only a large amount of boilerplate code, but there is also large
+mental overhead for a test should be conceptually easy and simple to write. As you can see from
+the description above, most of the time that is spent writing tests is <strong>not spent writing
+tests</strong>, but spend initializing and creating the environment and managing side effects just to
+then write a simple test in the form of a method call to some node id.</p>
+<h2 id="scrypto-test-model"><a class="doc-anchor" href="#scrypto-test-model">§</a>Scrypto-Test Model</h2>
+<p>This model differs from the transaction based model of writing tests in that we do not have
+transaction instructions, processor, and worktop at all. In fact, <strong>nothing</strong> related to
+transactions exists in this model. Instead, there exists a <a href="environment/env/struct.TestEnvironment.html" title="struct scrypto_test::environment::env::TestEnvironment"><code>TestEnvironment</code></a> struct that each
+test can instantiate instances of. Each <a href="environment/env/struct.TestEnvironment.html" title="struct scrypto_test::environment::env::TestEnvironment"><code>TestEnvironment</code></a> instance has a substate store,
+track, and kernel. On top of that, <a href="environment/env/struct.TestEnvironment.html" title="struct scrypto_test::environment::env::TestEnvironment"><code>TestEnvironment</code></a> implements the <a href="prelude/trait.ClientApi.html" title="trait scrypto_test::prelude::ClientApi"><code>ClientApi</code></a> trait. The
+<a href="environment/env/struct.TestEnvironment.html" title="struct scrypto_test::environment::env::TestEnvironment"><code>TestEnvironment</code></a> can be looked at as self-contained Radix Engine that’s exposed through the
+<a href="prelude/trait.ClientApi.html" title="trait scrypto_test::prelude::ClientApi"><code>ClientApi</code></a> and that has some other high-level helper methods as it contains all of the layers
+of the engine. This means that:</p>
+<ul>
+<li>A <a href="environment/env/struct.TestEnvironment.html" title="struct scrypto_test::environment::env::TestEnvironment"><code>TestEnvironment</code></a> instance is a self-contained instance of the Radix Engine and Kernel
+which are exposed through the <a href="prelude/trait.ClientApi.html" title="trait scrypto_test::prelude::ClientApi"><code>ClientApi</code></a>.</li>
+<li>Since <a href="environment/env/struct.TestEnvironment.html" title="struct scrypto_test::environment::env::TestEnvironment"><code>TestEnvironment</code></a> implements the <a href="prelude/trait.ClientApi.html" title="trait scrypto_test::prelude::ClientApi"><code>ClientApi</code></a> it can be used as a substitute to
+ScryptoEnv from Scrypto and the SystemService from native. This means that the simple
+interface seen in the native_sdk crate can be used within tests.</li>
+<li>If each test has it’s own <a href="environment/env/struct.TestEnvironment.html" title="struct scrypto_test::environment::env::TestEnvironment"><code>TestEnvironment</code></a> instance (they instantiate that themselves if
+they need it), then tests have no shared dependencies and are isolated.</li>
+<li>The biggest struggle with the transaction-based model was around dealing with transient nodes.
+More specifically, if we wanted to make sure that bucket X returned from some invocation
+contained Y resources, how would we do that? Unfortunately, there was no easy way to do it. In
+this model, if we make an invocation and get a Bucket back, there is no worktop for the bucket
+to go into, we have a proper Bucket object that we can call amount() on and assert against.
+Thus, this approach makes it easier to have assertions around transient nodes.</li>
+</ul>
+<p>Once the <a href="environment/env/struct.TestEnvironment.html" title="struct scrypto_test::environment::env::TestEnvironment"><code>TestEnvironment</code></a> has been instantiated we would get a Kernel with two Call Frames:</p>
+<ol>
+<li><strong>The Root Call Frame:</strong> We have a root Call Frame to be consistent with how other parts of
+the stack use the kernel where there is always a root Call Frame. After the instantiation is
+complete, the root callframe is pushed onto the stack of previous Call Frames the kernel has.</li>
+<li><strong>The Test Call Frame:</strong> This is the Call Frame that is used for all of the invocation that
+will be made throughout the test. This Call Frame functions exactly like any other Call
+Frame, it can own nodes, get messages from other Call Frames, and so on. As an example, say
+we invoke a method on some node that returns a Bucket, this Bucket is now owned and visible
+to this Call Frame. We are now able to call methods such as resource_address() and amount()
+on this Bucket since it’s a node we own and the <a href="environment/env/struct.TestEnvironment.html" title="struct scrypto_test::environment::env::TestEnvironment"><code>TestEnvironment</code></a> has a Heap.</li>
+</ol>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="environment/index.html" title="mod scrypto_test::environment">environment</a></div><div class="desc docblock-short">This module implements the test-environment that all tests run in.</div></li><li><div class="item-name"><a class="mod" href="prelude/index.html" title="mod scrypto_test::prelude">prelude</a></div></li><li><div class="item-name"><a class="mod" href="sdk/index.html" title="mod scrypto_test::sdk">sdk</a></div></li></ul></section></div></main></body></html>

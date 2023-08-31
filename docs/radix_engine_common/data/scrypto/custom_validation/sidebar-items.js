@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["apply_static_custom_validation_to_custom_value"]};

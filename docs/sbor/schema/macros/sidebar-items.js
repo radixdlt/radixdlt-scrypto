@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["describe_basic_well_known_type","wrapped_double_generic_describe","wrapped_generic_describe"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CallbackError","IOAccess","StoreCommit","TrackedSubstateInfo"],"struct":["CanonicalPartition","CanonicalSubstateKey"],"trait":["BootStore","CommitableSubstateStore"],"type":["NodeSubstates","StoreCommitInfo"]};

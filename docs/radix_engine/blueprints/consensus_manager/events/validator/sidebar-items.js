@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["ClaimXrdEvent","ProtocolUpdateReadinessSignalEvent","RegisterValidatorEvent","StakeEvent","UnregisterValidatorEvent","UnstakeEvent","UpdateAcceptingStakeDelegationStateEvent","ValidatorEmissionAppliedEvent","ValidatorRewardAppliedEvent"]};

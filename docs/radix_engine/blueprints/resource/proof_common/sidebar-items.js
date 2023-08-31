@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["LocalRef","ProofError"],"struct":["ProofMoveableSubstate"]};

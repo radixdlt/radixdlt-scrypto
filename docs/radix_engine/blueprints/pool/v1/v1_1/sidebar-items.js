@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["multi_resource_pool_blueprint","one_resource_pool_blueprint","two_resource_pool_blueprint"],"struct":["MultiResourcePoolBlueprint","OneResourcePoolBlueprint","TwoResourcePoolBlueprint"]};

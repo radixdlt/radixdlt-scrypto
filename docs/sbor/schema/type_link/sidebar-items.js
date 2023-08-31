@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["LocalTypeId","RustTypeId"],"fn":["capture_dependent_type_ids","capture_names","capture_type_data","generate_type_hash"],"struct":["WellKnownTypeId"],"trait":["SchemaTypeLink"],"type":["TypeHash"]};

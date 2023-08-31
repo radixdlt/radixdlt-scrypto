@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["TypeMismatchError","TypedTraversalError","TypedTraversalEvent"],"struct":["CurrentValueInfo","TypedLocatedTraversalEvent","TypedLocation"]};

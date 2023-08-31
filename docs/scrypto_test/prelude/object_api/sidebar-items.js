@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AttachedModuleId","ModuleId"],"struct":["AttachedModuleIdIter","FieldValue","GenericArgs","KVEntry","ModuleIdIter"],"trait":["ClientObjectApi"],"type":["ObjectModuleId"]};

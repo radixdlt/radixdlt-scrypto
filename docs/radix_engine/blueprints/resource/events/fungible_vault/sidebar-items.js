@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["define_events"],"struct":["DepositEvent","LockFeeEvent","PayFeeEvent","RecallEvent","WithdrawEvent"]};

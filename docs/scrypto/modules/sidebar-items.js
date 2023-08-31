@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ModuleHandle","Mutability"],"mod":["metadata","module","role_assignment","royalty"],"struct":["Attached","Metadata","RoleAssignment","Royalty","RoyaltyRoles"],"trait":["Attachable","HasComponentRoyalties","HasMetadata","HasRoleAssignment"]};

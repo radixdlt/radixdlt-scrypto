@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["define_invocation","resolve_struct_definition","resolve_type_definition"]};

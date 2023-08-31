@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["InvalidNameError"],"fn":["check_name"],"mod":["name_checker","securify"],"trait":["PresecurifiedRoleAssignment","SecurifiedRoleAssignment"]};

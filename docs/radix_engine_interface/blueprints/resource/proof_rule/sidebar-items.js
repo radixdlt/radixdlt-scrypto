@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AccessRule","AccessRuleNode","ProofRule","ResourceOrNonFungible"],"fn":["global_caller","package_of_direct_caller","require","require_all_of","require_amount","require_any_of","require_n_of"],"struct":["ResourceOrNonFungibleList"],"trait":["AccessRuleVisitor"]};

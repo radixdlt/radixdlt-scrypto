@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["enum_filter_out_ignored","generate_content_type","generate_key_type","generate_system_substate_type_alias","if_exists","ignore_arg","map_collection_schema","map_entry_substate_to_kv_entry","map_type_ref","match_filter_out_ignored","optional_or_fallback"]};

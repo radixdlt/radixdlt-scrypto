@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["blueprint_call"],"struct":["Buffer","Slice"],"type":["BufferId"]};

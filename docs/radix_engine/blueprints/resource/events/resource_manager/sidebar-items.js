@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BurnFungibleResourceEvent","BurnNonFungibleResourceEvent","MintFungibleResourceEvent","MintNonFungibleResourceEvent","VaultCreationEvent"]};

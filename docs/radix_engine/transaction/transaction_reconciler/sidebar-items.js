@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["compute_resource_changes_from_resman_events","compute_resource_changes_from_state","compute_resource_changes_from_vault_events","reconcile_resource_state_and_events"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["NON_FUNGIBLE_PROOF_BLUEPRINT","NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT"],"struct":["NonFungibleProofGetLocalIdsInput"],"type":["NonFungibleProofGetLocalIdsOutput"]};

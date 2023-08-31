@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ObjectCollectionKey","ObjectPartitionDescriptor","SystemPartitionDescription","SystemPartitionDescriptor","SystemReaderError"],"struct":["ResolvedPayloadSchema","SystemDatabaseReader","SystemDatabaseWriter","ValidationPayloadCheckerContext"]};

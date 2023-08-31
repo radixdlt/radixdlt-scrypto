@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["copy_buffer","forget_vec"],"macro":["wasm_extern_c"],"mod":["actor","addr","blueprint","buffer","costing","crypto_utils","field_entry","kv_entry","kv_store","object","system"],"struct":["Buffer","Slice"],"type":["BufferId"]};

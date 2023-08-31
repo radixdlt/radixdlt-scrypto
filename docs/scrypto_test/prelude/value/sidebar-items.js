@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Value"],"fn":["traverse_any"],"struct":["EnumVariantValue"],"trait":["CustomValue","ValueVisitor"]};

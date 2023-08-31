@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["BLS12381_CIPHERSITE_V1"],"enum":["ParseBlsSignatureError"],"struct":["Bls12381G2Signature"]};

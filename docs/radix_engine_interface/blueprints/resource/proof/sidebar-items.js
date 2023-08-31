@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["PROOF_CLONE_IDENT","PROOF_DROP_IDENT","PROOF_GET_AMOUNT_IDENT","PROOF_GET_RESOURCE_ADDRESS_IDENT"],"struct":["FungibleProof","NonFungibleProof","Proof","ProofCloneInput","ProofDropInput","ProofGetAmountInput","ProofGetResourceAddressInput"],"type":["ProofCloneOutput","ProofDropOutput","ProofGetAmountOutput","ProofGetResourceAddressOutput"]};

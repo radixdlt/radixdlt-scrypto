@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["generate_pools_v1_1_state_updates","generate_seconds_precision_state_updates","generate_validator_fee_fix_state_updates","generate_vm_boot_scrypto_minor_version_state_updates"]};

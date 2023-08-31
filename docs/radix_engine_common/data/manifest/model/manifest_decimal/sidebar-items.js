@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DECIMAL_SIZE"],"enum":["ParseManifestDecimalError"],"struct":["ManifestDecimal"]};

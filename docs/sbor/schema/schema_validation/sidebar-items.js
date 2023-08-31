@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["SchemaValidationError"],"fn":["validate_schema"],"mod":["type_kind_validation","type_metadata_validation","type_validation_validation"],"struct":["SchemaContext"]};

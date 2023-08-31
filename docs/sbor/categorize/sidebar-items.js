@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["categorize_generic","categorize_simple"],"trait":["Categorize","SborEnum","SborTuple"]};

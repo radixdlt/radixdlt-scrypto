@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["call_zero","cost_args","cost_instr","cost_instr_no_params","replace_token"],"struct":["InstructionWeights","Weight"],"trait":["WeightInfo"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["fungible_bucket","fungible_proof","fungible_resource_manager","fungible_vault"]};

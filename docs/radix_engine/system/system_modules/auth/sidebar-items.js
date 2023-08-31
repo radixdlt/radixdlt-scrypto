@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AuthError","AuthorityListAuthorizationResult","AuthorizationCheckResult","FailedAccessRules","ResolvedPermission"],"mod":["auth_module","authorization"],"struct":["AuthModule","Authorization","Unauthorized"]};

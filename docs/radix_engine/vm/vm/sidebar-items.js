@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["BOOT_LOADER_VM_SUBSTATE_FIELD_KEY"],"enum":["VmBoot"],"struct":["Vm","VmPackageValidation","VmVersion"],"trait":["VmApi","VmInvoke"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["role_assignment_models"],"struct":["OwnerRoleSubstate"],"type":["RoleAssignmentAccessRuleV1","RoleAssignmentOwnerV1"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ChildNames"],"struct":["EnumVariantData","NovelTypeMetadata","TupleData","TypeMetadata"]};

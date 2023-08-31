@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["PackageRoyaltyDatabaseCheckerError"],"struct":["PackageRoyaltyDatabaseChecker"]};

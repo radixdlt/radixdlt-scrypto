@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["InstructionSchemaValidationError","Invocation"],"fn":["get_arguments_schema","get_blueprint_schema","is_direct_access_receiver","is_function_receiver","is_self_or_mut_self_receiver","validate_call_arguments_to_native_components"],"struct":["LocatedInstructionSchemaValidationError"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["db_key_mapper","interface"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["kv_entry_close","kv_entry_read","kv_entry_remove","kv_entry_write"],"struct":["Buffer","Slice"],"type":["BufferId"]};

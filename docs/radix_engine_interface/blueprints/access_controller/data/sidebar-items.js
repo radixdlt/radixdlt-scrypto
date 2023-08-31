@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Proposer","Role"],"struct":["RecoveryProposal","RuleSet"]};

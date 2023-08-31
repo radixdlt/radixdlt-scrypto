@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["NativeVmInstance"],"struct":["NativeVm","NoExtension","NullVmInvoke","OverridePackageCode"],"trait":["NativeVmExtension"],"type":["DefaultNativeVm"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["object_call","object_call_direct","object_call_module","object_get_blueprint_id","object_get_outer_object","object_globalize","object_instance_of","object_new"],"struct":["Buffer","Slice"],"type":["BufferId"]};

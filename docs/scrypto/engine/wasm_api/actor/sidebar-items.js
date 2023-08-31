@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["actor_emit_event","actor_get_blueprint_name","actor_get_object_id","actor_get_package_address","actor_open_field"],"struct":["Buffer","Slice"],"type":["BufferId"]};

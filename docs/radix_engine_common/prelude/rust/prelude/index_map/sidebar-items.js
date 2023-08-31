@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["new","with_capacity"],"macro":["indexmap"],"mod":["indexmap"],"type":["DefaultHashBuilder","IndexMap"]};

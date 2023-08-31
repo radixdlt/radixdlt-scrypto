@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["metadata","role_assignment","royalty"]};

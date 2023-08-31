@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["component_address","local_address","package_address","resource_address"],"mod":["component_address","global_address","internal_address","package_address","resource_address"]};
